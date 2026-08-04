@@ -4,16 +4,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/main.dart';
 
 void main() {
-  testWidgets('Dash grid renders with slider', (WidgetTester tester) async {
+  testWidgets('Defaults to non-edit mode, no grid or slider', (WidgetTester tester) async {
     await tester.pumpWidget(const ParaBeaconApp());
 
-    // Should find the grid icon in the slider panel
-    expect(find.byIcon(Icons.grid_on), findsOneWidget);
+    // Slider should NOT be visible in default (non-edit) mode
+    expect(find.byType(Slider), findsNothing);
+    expect(find.byType(CustomPaint), findsNothing);
+  });
 
-    // Should find a Slider widget
-    expect(find.byType(Slider), findsOneWidget);
+  testWidgets('Menu contains Edit Mode toggle', (WidgetTester tester) async {
+    await tester.pumpWidget(const ParaBeaconApp());
 
-    // Default grid size is 50
-    expect(find.text('50'), findsOneWidget);
+    // Open the menu by dragging down
+    await tester.fling(find.byType(GestureDetector).first, const Offset(0, 200), 500);
+    await tester.pumpAndSettle();
+
+    // Edit Mode switch should be visible in the menu
+    expect(find.text('Edit Mode'), findsOneWidget);
+    expect(find.byType(SwitchListTile), findsOneWidget);
   });
 }

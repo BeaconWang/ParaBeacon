@@ -36,6 +36,7 @@ class _DashGridPageState extends State<DashGridPage>
     with SingleTickerProviderStateMixin {
   double _gridSize = 50.0;
   bool _menuOpen = false;
+  bool _isEditMode = false;
 
   late final AnimationController _menuController;
   late final Animation<double> _menuAnimation;
@@ -114,7 +115,7 @@ class _DashGridPageState extends State<DashGridPage>
     return Scaffold(
       body: Stack(
         children: [
-          // Fullscreen dash grid (drag down anywhere to open, tap to dismiss)
+          // Fullscreen main panel (drag down anywhere to open menu, tap to dismiss)
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -124,10 +125,12 @@ class _DashGridPageState extends State<DashGridPage>
               onVerticalDragStart: _menuOpen ? null : _onDragStart,
               onVerticalDragUpdate: _menuOpen ? null : _onDragUpdate,
               onVerticalDragEnd: _menuOpen ? null : _onDragEnd,
-              child: CustomPaint(
-                painter: DashGridPainter(gridSize: _gridSize),
-                size: Size.infinite,
-              ),
+              child: _isEditMode
+                  ? CustomPaint(
+                      painter: DashGridPainter(gridSize: _gridSize),
+                      size: Size.infinite,
+                    )
+                  : const SizedBox.expand(),
             ),
           ),
 
@@ -148,8 +151,9 @@ class _DashGridPageState extends State<DashGridPage>
             child: _buildMenuPanel(),
           ),
 
-          // Slider bar at the bottom
-          Positioned(
+          // Slider bar at the bottom (only in edit mode)
+          if (_isEditMode)
+            Positioned(
             left: 0,
             right: 0,
             bottom: 0,
@@ -206,7 +210,16 @@ class _DashGridPageState extends State<DashGridPage>
               child: const SizedBox(height: 0),
             ),
             // Menu items
-            const Expanded(child: _MenuContent()),
+            Expanded(
+              child: _MenuContent(
+                isEditMode: _isEditMode,
+                onToggleEditMode: () {
+                  setState(() {
+                    _isEditMode = !_isEditMode;
+                  });
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -265,17 +278,24 @@ class _DashGridPageState extends State<DashGridPage>
 }
 
 class _MenuContent extends StatelessWidget {
-  const _MenuContent();
+  final bool isEditMode;
+  final VoidCallback onToggleEditMode;
+
+  const _MenuContent({
+    required this.isEditMode,
+    required this.onToggleEditMode,
+  });
 
   @override
   Widget build(BuildContext context) {
     final menuItems = [
-      (_Icons.grid, 'Grid Settings'),
-      (_Icons.palette, 'Theme'),
-      (_Icons.layers, 'Layers'),
-      (_Icons.save, 'Save Project'),
-      (_Icons.folder, 'Open Project'),
-      (_Icons.settings, 'Preferences'),
+      (_Icons.mode, 'Edit Mode', true),
+      (_Icons.grid, 'Grid Settings', false),
+      (_Icons.palette, 'Theme', false),
+      (_Icons.layers, 'Layers', false),
+      (_Icons.save, 'Save Project', false),
+      (_Icons.folder, 'Open Project', false),
+      (_Icons.settings, 'Preferences', false),
     ];
 
     return ListView.separated(
@@ -283,7 +303,15 @@ class _MenuContent extends StatelessWidget {
       itemCount: menuItems.length,
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        final (icon, label) = menuItems[index];
+        final (icon, label, isToggle) = menuItems[index];
+        if (isToggle) {
+          return SwitchListTile(
+            secondary: Icon(icon, color: Theme.of(context).colorScheme.primary),
+            title: Text(label),
+            value: isEditMode,
+            onChanged: (_) => onToggleEditMode(),
+          );
+        }
         return ListTile(
           leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
           title: Text(label),
@@ -299,6 +327,7 @@ class _MenuContent extends StatelessWidget {
 
 // Icon aliases for cleaner table definition
 const _Icons = (
+  mode: Icons.edit_outlined,
   grid: Icons.grid_4x4,
   palette: Icons.palette_outlined,
   layers: Icons.layers_outlined,

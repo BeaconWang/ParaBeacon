@@ -69,11 +69,13 @@ class _DashGridPageState extends State<DashGridPage>
 
   void _openMenu() {
     _menuOpen = true;
+    _menuController.value = (_dragOffset / _menuHeight).clamp(0.0, 1.0);
     _menuController.forward();
   }
 
   void _closeMenu() {
     _menuOpen = false;
+    _menuController.value = (_dragOffset / _menuHeight).clamp(0.0, 1.0);
     _menuController.reverse();
   }
 
@@ -112,13 +114,16 @@ class _DashGridPageState extends State<DashGridPage>
     return Scaffold(
       body: Stack(
         children: [
-          // Fullscreen dash grid (tap outside to dismiss menu)
+          // Fullscreen dash grid (drag down anywhere to open, tap to dismiss)
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () {
                 if (_menuOpen) _closeMenu();
               },
+              onVerticalDragStart: _menuOpen ? null : _onDragStart,
+              onVerticalDragUpdate: _menuOpen ? null : _onDragUpdate,
+              onVerticalDragEnd: _menuOpen ? null : _onDragEnd,
               child: CustomPaint(
                 painter: DashGridPainter(gridSize: _gridSize),
                 size: Size.infinite,
@@ -142,41 +147,6 @@ class _DashGridPageState extends State<DashGridPage>
             top: _effectiveMenuOffset - _menuHeight,
             child: _buildMenuPanel(),
           ),
-
-          // Drag handle zone at the very top
-          if (!_menuOpen)
-            Positioned(
-              left: 0,
-              right: 0,
-              top: 0,
-              height: 40,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onVerticalDragStart: _onDragStart,
-                onVerticalDragUpdate: _onDragUpdate,
-                onVerticalDragEnd: _onDragEnd,
-                child: const SizedBox.expand(),
-              ),
-            ),
-
-          // Visible pull tab when menu is closed
-          if (!_menuOpen)
-            Positioned(
-              left: 0,
-              right: 0,
-              top: 0,
-              child: Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(80),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-            ),
 
           // Slider bar at the bottom
           Positioned(

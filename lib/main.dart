@@ -34,7 +34,7 @@ class DashGridPage extends StatefulWidget {
 
 class _DashGridPageState extends State<DashGridPage>
     with SingleTickerProviderStateMixin {
-  double _gridSize = 50.0;
+  double _gridSize = 48.0;
   bool _menuOpen = false;
   bool _isEditMode = false;
 
@@ -249,9 +249,9 @@ class _DashGridPageState extends State<DashGridPage>
             Expanded(
               child: Slider(
                 value: _gridSize,
-                min: 10.0,
-                max: 200.0,
-                divisions: 38, // step ≈ 5
+                min: 16.0,
+                max: 120.0,
+                divisions: 26, // step = 4px
                 label: '${_gridSize.round()} px',
                 onChanged: (value) {
                   setState(() {

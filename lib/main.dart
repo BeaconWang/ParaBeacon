@@ -32,24 +32,151 @@ class DashGridPage extends StatefulWidget {
   State<DashGridPage> createState() => _DashGridPageState();
 }
 
-class _DashGridPageState extends State<DashGridPage> {
-  double _gridSize = 50.0; // default grid cell size in logical pixels
+class _DashGridPageState extends State<DashGridPage>
+    with SingleTickerProviderStateMixin {
+  double _gridSize = 50.0;
+  bool _menuOpen = false;
+
+  late final AnimationController _menuController;
+  late final Animation<double> _menuAnimation;
+
+  // Drag state
+  double _dragOffset = 0.0;
+  double _menuHeight = 300.0; // will be sized in build
+
+  @override
+  void initState() {
+    super.initState();
+    _menuController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _menuAnimation = CurvedAnimation(
+      parent: _menuController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    _menuController.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _menuController.dispose();
+    super.dispose();
+  }
+
+  void _openMenu() {
+    _menuOpen = true;
+    _menuController.forward();
+  }
+
+  void _closeMenu() {
+    _menuOpen = false;
+    _menuController.reverse();
+  }
+
+  void _onDragStart(DragStartDetails details) {
+    _dragOffset = 0;
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _dragOffset = (_dragOffset + details.delta.dy).clamp(0.0, _menuHeight);
+    });
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    if (_dragOffset > _menuHeight * 0.4) {
+      // Snap open
+      _openMenu();
+    } else {
+      // Snap closed
+      _closeMenu();
+    }
+    _dragOffset = 0.0;
+  }
+
+  double get _effectiveMenuOffset {
+    if (_menuController.isAnimating || _menuOpen) {
+      return _menuHeight * _menuAnimation.value;
+    }
+    return _dragOffset;
+  }
 
   @override
   Widget build(BuildContext context) {
+    _menuHeight = MediaQuery.of(context).size.height * 0.45;
+
     return Scaffold(
       body: Stack(
         children: [
-          // Fullscreen dash grid
+          // Fullscreen dash grid (tap outside to dismiss menu)
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
+              onTap: () {
+                if (_menuOpen) _closeMenu();
+              },
               child: CustomPaint(
                 painter: DashGridPainter(gridSize: _gridSize),
                 size: Size.infinite,
               ),
             ),
           ),
+
+          // Dim overlay when menu is open
+          if (_effectiveMenuOffset > 0 || _menuOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _closeMenu,
+                child: Container(color: Colors.black.withAlpha(80)),
+              ),
+            ),
+
+          // Top swipe menu panel
+          Positioned(
+            left: 0,
+            right: 0,
+            top: _effectiveMenuOffset - _menuHeight,
+            child: _buildMenuPanel(),
+          ),
+
+          // Drag handle zone at the very top
+          if (!_menuOpen)
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              height: 40,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onVerticalDragStart: _onDragStart,
+                onVerticalDragUpdate: _onDragUpdate,
+                onVerticalDragEnd: _onDragEnd,
+                child: const SizedBox.expand(),
+              ),
+            ),
+
+          // Visible pull tab when menu is closed
+          if (!_menuOpen)
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              child: Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(80),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
 
           // Slider bar at the bottom
           Positioned(
@@ -59,6 +186,59 @@ class _DashGridPageState extends State<DashGridPage> {
             child: _buildSliderPanel(),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMenuPanel() {
+    return Container(
+      height: _menuHeight,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(20),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(100),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          children: [
+            // Drag handle inside menu
+            SizedBox(
+              height: 48,
+              child: Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(100),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+            // Dismiss gesture on the handle
+            GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onVerticalDragEnd: (details) {
+                if (details.primaryVelocity != null &&
+                    details.primaryVelocity! > 300) {
+                  _closeMenu();
+                }
+              },
+              child: const SizedBox(height: 0),
+            ),
+            // Menu items
+            const Expanded(child: _MenuContent()),
+          ],
+        ),
       ),
     );
   }
@@ -113,6 +293,49 @@ class _DashGridPageState extends State<DashGridPage> {
     );
   }
 }
+
+class _MenuContent extends StatelessWidget {
+  const _MenuContent();
+
+  @override
+  Widget build(BuildContext context) {
+    final menuItems = [
+      (_Icons.grid, 'Grid Settings'),
+      (_Icons.palette, 'Theme'),
+      (_Icons.layers, 'Layers'),
+      (_Icons.save, 'Save Project'),
+      (_Icons.folder, 'Open Project'),
+      (_Icons.settings, 'Preferences'),
+    ];
+
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: menuItems.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final (icon, label) = menuItems[index];
+        return ListTile(
+          leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+          title: Text(label),
+          trailing: const Icon(Icons.chevron_right, size: 20),
+          onTap: () {
+            // Placeholder: menu item tap
+          },
+        );
+      },
+    );
+  }
+}
+
+// Icon aliases for cleaner table definition
+const _Icons = (
+  grid: Icons.grid_4x4,
+  palette: Icons.palette_outlined,
+  layers: Icons.layers_outlined,
+  save: Icons.save_outlined,
+  folder: Icons.folder_open_outlined,
+  settings: Icons.settings_outlined,
+);
 
 class DashGridPainter extends CustomPainter {
   final double gridSize;

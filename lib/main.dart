@@ -36,7 +36,7 @@ class _DashGridPageState extends State<DashGridPage>
     with SingleTickerProviderStateMixin {
   double _gridSize = 48.0;
   bool _menuOpen = false;
-  bool _isEditMode = false;
+  bool _isEditMode = true;
 
   late final AnimationController _menuController;
   late final Animation<double> _menuAnimation;

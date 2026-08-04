@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.beacon.para" "\0"
-            VALUE "FileDescription", "parabeacon" "\0"
+            VALUE "FileDescription", "ParaBeacon" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "parabeacon" "\0"
+            VALUE "InternalName", "ParaBeacon" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.beacon.para. All rights reserved." "\0"
-            VALUE "OriginalFilename", "parabeacon.exe" "\0"
-            VALUE "ProductName", "parabeacon" "\0"
+            VALUE "OriginalFilename", "ParaBeacon.exe" "\0"
+            VALUE "ProductName", "ParaBeacon" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -4,12 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/main.dart';
 
 void main() {
-  testWidgets('Defaults to non-edit mode, no grid or slider', (WidgetTester tester) async {
+  testWidgets('Defaults to edit mode, grid and slider visible', (WidgetTester tester) async {
     await tester.pumpWidget(const ParaBeaconApp());
 
-    // Slider should NOT be visible in default (non-edit) mode
-    expect(find.byType(Slider), findsNothing);
-    expect(find.byType(CustomPaint), findsNothing);
+    // Slider and grid should be visible in default (edit) mode since panel has no controls
+    expect(find.byType(Slider), findsOneWidget);
+    expect(find.byType(CustomPaint), findsOneWidget);
   });
 
   testWidgets('Menu contains Edit Mode toggle', (WidgetTester tester) async {

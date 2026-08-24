@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 
+import 'controls/add_control_sheet.dart';
+import 'controls/control_catalog.dart';
+import 'controls/control_widget.dart';
+import 'controls/placed_control.dart';
+
 void main() {
   runApp(const ParaBeaconApp());
 }
@@ -37,6 +42,16 @@ class _DashGridPageState extends State<DashGridPage>
   double _gridSize = 48.0;
   bool _menuOpen = false;
   bool _isEditMode = true;
+
+  // Controls placed on the dashboard grid.
+  final List<PlacedControl> _controls = [];
+  String? _selectedControlId;
+  int _controlSeq = 0;
+
+  // Accumulated pixel offset during a control drag (before grid snapping).
+  Offset _dragAccum = Offset.zero;
+  int _dragStartCol = 0;
+  int _dragStartRow = 0;
 
   late final AnimationController _menuController;
   late final Animation<double> _menuAnimation;
@@ -108,6 +123,101 @@ class _DashGridPageState extends State<DashGridPage>
     return _dragOffset;
   }
 
+  /// Handles a tap on a menu item.
+  Future<void> _onMenuAction(String action) async {
+    switch (action) {
+      case 'add_control':
+        _closeMenu();
+        await _addControlFromMenu();
+        break;
+      case 'toggle_edit':
+        setState(() {
+          _isEditMode = !_isEditMode;
+          if (!_isEditMode) _selectedControlId = null;
+        });
+        break;
+    }
+  }
+
+  /// Opens the control chooser and, on selection, places the new control on
+  /// the grid at the first free spot.
+  Future<void> _addControlFromMenu() async {
+    final ControlType? type = await showAddControlSheet(context);
+    if (type == null || !mounted) return;
+
+    final position = _findFreeCell(type.defaultCols, type.defaultRows);
+    setState(() {
+      final control = PlacedControl.fromType(
+        type,
+        instanceId: 'ctrl_${_controlSeq++}',
+        col: position.$1,
+        row: position.$2,
+      );
+      _controls.add(control);
+      _selectedControlId = control.instanceId;
+      // Adding a control implies we want to see/edit it.
+      _isEditMode = true;
+    });
+  }
+
+  /// Finds a grid cell (col, row) where a control of the given size does not
+  /// overlap an existing one. Falls back to (0, 0) if the grid is full.
+  (int, int) _findFreeCell(int cols, int rows) {
+    final size = MediaQuery.of(context).size;
+    final maxCols = (size.width / _gridSize).floor();
+    final maxRows = (size.height / _gridSize).floor();
+
+    for (int row = 0; row + rows <= maxRows; row++) {
+      for (int col = 0; col + cols <= maxCols; col++) {
+        if (!_overlapsExisting(col, row, cols, rows)) {
+          return (col, row);
+        }
+      }
+    }
+    return (0, 0);
+  }
+
+  bool _overlapsExisting(int col, int row, int cols, int rows) {
+    for (final c in _controls) {
+      final overlapX = col < c.col + c.cols && col + cols > c.col;
+      final overlapY = row < c.row + c.rows && row + rows > c.row;
+      if (overlapX && overlapY) return true;
+    }
+    return false;
+  }
+
+  void _deleteControl(String instanceId) {
+    setState(() {
+      _controls.removeWhere((c) => c.instanceId == instanceId);
+      if (_selectedControlId == instanceId) _selectedControlId = null;
+    });
+  }
+
+  void _onControlDragStart(PlacedControl control) {
+    _dragAccum = Offset.zero;
+    _dragStartCol = control.col;
+    _dragStartRow = control.row;
+    setState(() => _selectedControlId = control.instanceId);
+  }
+
+  void _onControlDragUpdate(PlacedControl control, Offset delta) {
+    _dragAccum += delta;
+    setState(() {
+      final size = MediaQuery.of(context).size;
+      final maxCols = (size.width / _gridSize).floor();
+      final maxRows = (size.height / _gridSize).floor();
+
+      final colDelta = (_dragAccum.dx / _gridSize).round();
+      final rowDelta = (_dragAccum.dy / _gridSize).round();
+
+      control.col = (_dragStartCol + colDelta)
+          .clamp(0, (maxCols - control.cols).clamp(0, maxCols));
+      control.row = (_dragStartRow + rowDelta)
+          .clamp(0, (maxRows - control.rows).clamp(0, maxRows));
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     _menuHeight = MediaQuery.of(context).size.height * 0.45;
@@ -120,7 +230,11 @@ class _DashGridPageState extends State<DashGridPage>
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () {
-                if (_menuOpen) _closeMenu();
+                if (_menuOpen) {
+                  _closeMenu();
+                } else if (_selectedControlId != null) {
+                  setState(() => _selectedControlId = null);
+                }
               },
               onVerticalDragStart: _menuOpen ? null : _onDragStart,
               onVerticalDragUpdate: _menuOpen ? null : _onDragUpdate,
@@ -133,6 +247,10 @@ class _DashGridPageState extends State<DashGridPage>
                   : const SizedBox.expand(),
             ),
           ),
+
+          // Placed controls layer.
+          ..._buildPlacedControls(),
+
 
           // Dim overlay when menu is open
           if (_effectiveMenuOffset > 0 || _menuOpen)
@@ -162,6 +280,43 @@ class _DashGridPageState extends State<DashGridPage>
         ],
       ),
     );
+  }
+
+  /// Builds the positioned control widgets, laid out by grid cell.
+  List<Widget> _buildPlacedControls() {
+    return _controls.map((control) {
+      final left = control.col * _gridSize;
+      final top = control.row * _gridSize;
+      final width = control.cols * _gridSize;
+      final height = control.rows * _gridSize;
+      final isSelected = _selectedControlId == control.instanceId;
+
+      final child = ControlWidget(
+        control: control,
+        isEditMode: _isEditMode,
+        isSelected: isSelected,
+        onTap: _isEditMode
+            ? () => setState(() => _selectedControlId = control.instanceId)
+            : null,
+        onDelete: () => _deleteControl(control.instanceId),
+      );
+
+      return Positioned(
+        left: left,
+        top: top,
+        width: width,
+        height: height,
+        child: _isEditMode
+            ? GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: (_) => _onControlDragStart(control),
+                onPanUpdate: (details) =>
+                    _onControlDragUpdate(control, details.delta),
+                child: child,
+              )
+            : child,
+      );
+    }).toList();
   }
 
   Widget _buildMenuPanel() {
@@ -213,11 +368,8 @@ class _DashGridPageState extends State<DashGridPage>
             Expanded(
               child: _MenuContent(
                 isEditMode: _isEditMode,
-                onToggleEditMode: () {
-                  setState(() {
-                    _isEditMode = !_isEditMode;
-                  });
-                },
+                onToggleEditMode: () => _onMenuAction('toggle_edit'),
+                onAddControl: () => _onMenuAction('add_control'),
               ),
             ),
           ],
@@ -280,46 +432,59 @@ class _DashGridPageState extends State<DashGridPage>
 class _MenuContent extends StatelessWidget {
   final bool isEditMode;
   final VoidCallback onToggleEditMode;
+  final VoidCallback onAddControl;
 
   const _MenuContent({
     required this.isEditMode,
     required this.onToggleEditMode,
+    required this.onAddControl,
   });
 
   @override
   Widget build(BuildContext context) {
-    final menuItems = [
-      (_Icons.mode, 'Edit Mode', true),
-      (_Icons.grid, 'Grid Settings', false),
-      (_Icons.palette, 'Theme', false),
-      (_Icons.layers, 'Layers', false),
-      (_Icons.save, 'Save Project', false),
-      (_Icons.folder, 'Open Project', false),
-      (_Icons.settings, 'Preferences', false),
-    ];
-
-    return ListView.separated(
+    final theme = Theme.of(context);
+    return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: menuItems.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final (icon, label, isToggle) = menuItems[index];
-        if (isToggle) {
-          return SwitchListTile(
-            secondary: Icon(icon, color: Theme.of(context).colorScheme.primary),
-            title: Text(label),
-            value: isEditMode,
-            onChanged: (_) => onToggleEditMode(),
-          );
-        }
-        return ListTile(
-          leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-          title: Text(label),
-          trailing: const Icon(Icons.chevron_right, size: 20),
-          onTap: () {
-            // Placeholder: menu item tap
-          },
-        );
+      children: [
+        SwitchListTile(
+          secondary: Icon(_Icons.mode, color: theme.colorScheme.primary),
+          title: const Text('Edit Mode'),
+          value: isEditMode,
+          onChanged: (_) => onToggleEditMode(),
+        ),
+        // "Add Control" is only meaningful in edit mode.
+        if (isEditMode) ...[
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.add_box_outlined, color: theme.colorScheme.primary),
+            title: const Text('Add Control'),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: onAddControl,
+          ),
+        ],
+        const Divider(height: 1),
+        _staticItem(context, _Icons.grid, 'Grid Settings'),
+        const Divider(height: 1),
+        _staticItem(context, _Icons.palette, 'Theme'),
+        const Divider(height: 1),
+        _staticItem(context, _Icons.layers, 'Layers'),
+        const Divider(height: 1),
+        _staticItem(context, _Icons.save, 'Save Project'),
+        const Divider(height: 1),
+        _staticItem(context, _Icons.folder, 'Open Project'),
+        const Divider(height: 1),
+        _staticItem(context, _Icons.settings, 'Preferences'),
+      ],
+    );
+  }
+
+  Widget _staticItem(BuildContext context, IconData icon, String label) {
+    return ListTile(
+      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+      title: Text(label),
+      trailing: const Icon(Icons.chevron_right, size: 20),
+      onTap: () {
+        // Placeholder: menu item tap
       },
     );
   }

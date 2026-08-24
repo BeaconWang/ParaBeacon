@@ -1,0 +1,205 @@
+import 'package:flutter/material.dart';
+import 'control_catalog.dart';
+
+/// A modal bottom sheet that lets the user pick a control to add to the
+/// dashboard, grouped by category (like XCTrack's "Add widget" chooser).
+///
+/// Returns the selected [ControlType] via [Navigator.pop], or null if
+/// dismissed.
+Future<ControlType?> showAddControlSheet(BuildContext context) {
+  return showModalBottomSheet<ControlType>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => const _AddControlSheet(),
+  );
+}
+
+class _AddControlSheet extends StatefulWidget {
+  const _AddControlSheet();
+
+  @override
+  State<_AddControlSheet> createState() => _AddControlSheetState();
+}
+
+class _AddControlSheetState extends State<_AddControlSheet> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final query = _query.trim().toLowerCase();
+
+    // Filter categories/controls by the search query.
+    final categories = ControlCatalog.categories
+        .map((category) {
+          final matches = query.isEmpty
+              ? category.controls
+              : category.controls
+                  .where((c) => c.label.toLowerCase().contains(query))
+                  .toList();
+          return (category.title, matches);
+        })
+        .where((entry) => entry.$2.isNotEmpty)
+        .toList();
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Row(
+                children: [
+                  Text('Add Control', style: theme.textTheme.titleLarge),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                autofocus: false,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: 'Search controls',
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: (value) => setState(() => _query = value),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: categories.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No controls match "$_query"',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
+                      itemCount: categories.length,
+                      itemBuilder: (context, index) {
+                        final (title, controls) = categories[index];
+                        return _CategorySection(
+                          title: title,
+                          controls: controls,
+                          onSelected: (control) =>
+                              Navigator.of(context).pop(control),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CategorySection extends StatelessWidget {
+  final String title;
+  final List<ControlType> controls;
+  final ValueChanged<ControlType> onSelected;
+
+  const _CategorySection({
+    required this.title,
+    required this.controls,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+          child: Text(
+            title.toUpperCase(),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 180,
+            mainAxisExtent: 84,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: controls.length,
+          itemBuilder: (context, index) {
+            final control = controls[index];
+            return _ControlTile(
+              control: control,
+              onTap: () => onSelected(control),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ControlTile extends StatelessWidget {
+  final ControlType control;
+  final VoidCallback onTap;
+
+  const _ControlTile({required this.control, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              Icon(control.icon, color: theme.colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  control.label,
+                  style: theme.textTheme.bodyMedium,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -296,8 +296,9 @@ class _DashGridPageState extends State<DashGridPage>
             child: _buildMenuPanel(),
           ),
 
-          // Slider bar at the bottom (only in edit mode)
-          if (_isEditMode)
+          // Slider bar at the bottom (only in edit mode, and hidden while a
+          // control is selected).
+          if (_isEditMode && _selectedControlId == null)
             Positioned(
             left: 0,
             right: 0,

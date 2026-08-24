@@ -34,17 +34,16 @@ class _AddControlSheetState extends State<_AddControlSheet> {
     final theme = Theme.of(context);
     final query = _query.trim().toLowerCase();
 
-    // Filter categories/controls by the search query.
-    final categories = ControlCatalog.categories
-        .map((category) {
+    // Filter directories/controls by the search query.
+    final directories = ControlCatalog.directories
+        .map((directory) {
           final matches = query.isEmpty
-              ? category.controls
-              : category.controls
+              ? directory.controls
+              : directory.controls
                   .where((c) => c.label.toLowerCase().contains(query))
                   .toList();
-          return (category.title, matches);
+          return (directory, matches);
         })
-        .where((entry) => entry.$2.isNotEmpty)
         .toList();
 
     return DraggableScrollableSheet(
@@ -87,21 +86,23 @@ class _AddControlSheetState extends State<_AddControlSheet> {
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: categories.isEmpty
+              child: directories.every((entry) => entry.$2.isEmpty)
                   ? Center(
                       child: Text(
-                        'No controls match "$_query"',
+                        query.isEmpty
+                            ? 'No controls available yet'
+                            : 'No controls match "$_query"',
                         style: theme.textTheme.bodyMedium,
                       ),
                     )
                   : ListView.builder(
                       controller: scrollController,
                       padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
-                      itemCount: categories.length,
+                      itemCount: directories.length,
                       itemBuilder: (context, index) {
-                        final (title, controls) = categories[index];
-                        return _CategorySection(
-                          title: title,
+                        final (directory, controls) = directories[index];
+                        return _DirectorySection(
+                          directory: directory,
                           controls: controls,
                           onSelected: (control) =>
                               Navigator.of(context).pop(control),
@@ -116,13 +117,13 @@ class _AddControlSheetState extends State<_AddControlSheet> {
   }
 }
 
-class _CategorySection extends StatelessWidget {
-  final String title;
+class _DirectorySection extends StatelessWidget {
+  final ControlDirectory directory;
   final List<ControlType> controls;
   final ValueChanged<ControlType> onSelected;
 
-  const _CategorySection({
-    required this.title,
+  const _DirectorySection({
+    required this.directory,
     required this.controls,
     required this.onSelected,
   });
@@ -135,33 +136,50 @@ class _CategorySection extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-          child: Text(
-            title.toUpperCase(),
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.primary,
-              letterSpacing: 1.2,
+          child: Row(
+            children: [
+              Icon(directory.icon, size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                directory.title.toUpperCase(),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (controls.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: Text(
+              'No controls in this directory yet',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 180,
+              mainAxisExtent: 84,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: controls.length,
+            itemBuilder: (context, index) {
+              final control = controls[index];
+              return _ControlTile(
+                control: control,
+                onTap: () => onSelected(control),
+              );
+            },
           ),
-        ),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 180,
-            mainAxisExtent: 84,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: controls.length,
-          itemBuilder: (context, index) {
-            final control = controls[index];
-            return _ControlTile(
-              control: control,
-              onTap: () => onSelected(control),
-            );
-          },
-        ),
       ],
     );
   }

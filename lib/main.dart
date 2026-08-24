@@ -52,6 +52,8 @@ class _DashGridPageState extends State<DashGridPage>
   Offset _dragAccum = Offset.zero;
   int _dragStartCol = 0;
   int _dragStartRow = 0;
+  int _dragStartCols = 0;
+  int _dragStartRows = 0;
 
   late final AnimationController _menuController;
   late final Animation<double> _menuAnimation;
@@ -217,6 +219,31 @@ class _DashGridPageState extends State<DashGridPage>
     });
   }
 
+  void _onControlResizeStart(PlacedControl control) {
+    _dragAccum = Offset.zero;
+    _dragStartCols = control.cols;
+    _dragStartRows = control.rows;
+    setState(() => _selectedControlId = control.instanceId);
+  }
+
+  void _onControlResizeUpdate(PlacedControl control, Offset delta) {
+    _dragAccum += delta;
+    setState(() {
+      final size = MediaQuery.of(context).size;
+      final maxCols = (size.width / _gridSize).floor();
+      final maxRows = (size.height / _gridSize).floor();
+
+      final colDelta = (_dragAccum.dx / _gridSize).round();
+      final rowDelta = (_dragAccum.dy / _gridSize).round();
+
+      // At least 1 cell; cannot extend past the grid edge from current origin.
+      control.cols = (_dragStartCols + colDelta)
+          .clamp(1, (maxCols - control.col).clamp(1, maxCols));
+      control.rows = (_dragStartRows + rowDelta)
+          .clamp(1, (maxRows - control.row).clamp(1, maxRows));
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -307,12 +334,34 @@ class _DashGridPageState extends State<DashGridPage>
         width: width,
         height: height,
         child: _isEditMode
-            ? GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onPanStart: (_) => _onControlDragStart(control),
-                onPanUpdate: (details) =>
-                    _onControlDragUpdate(control, details.delta),
-                child: child,
+            ? Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanStart: (_) => _onControlDragStart(control),
+                      onPanUpdate: (details) =>
+                          _onControlDragUpdate(control, details.delta),
+                      child: child,
+                    ),
+                  ),
+                  // Resize handle (bottom-right), shown when selected.
+                  if (isSelected)
+                    Positioned(
+                      right: -10,
+                      bottom: -10,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onPanStart: (_) => _onControlResizeStart(control),
+                        onPanUpdate: (details) =>
+                            _onControlResizeUpdate(control, details.delta),
+                        child: _ResizeHandle(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                ],
               )
             : child,
       );
@@ -500,6 +549,38 @@ const _Icons = (
   folder: Icons.folder_open_outlined,
   settings: Icons.settings_outlined,
 );
+
+/// A small draggable handle used to resize a selected control by its
+/// bottom-right corner.
+class _ResizeHandle extends StatelessWidget {
+  final Color color;
+
+  const _ResizeHandle({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(80),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: const Icon(
+        Icons.open_in_full,
+        size: 16,
+        color: Colors.white,
+      ),
+    );
+  }
+}
 
 class DashGridPainter extends CustomPainter {
   final double gridSize;

@@ -5,27 +5,52 @@ import 'controls/add_control_sheet.dart';
 import 'controls/control_catalog.dart';
 import 'controls/control_widget.dart';
 import 'controls/placed_control.dart';
+import 'data/flight_data_provider.dart';
+import 'data/flight_data_source.dart';
 
 void main() {
   runApp(const ParaBeaconApp());
 }
 
-class ParaBeaconApp extends StatelessWidget {
+class ParaBeaconApp extends StatefulWidget {
   const ParaBeaconApp({super.key});
 
   @override
+  State<ParaBeaconApp> createState() => _ParaBeaconAppState();
+}
+
+class _ParaBeaconAppState extends State<ParaBeaconApp> {
+  // The single, unified flight-data source for the whole app.
+  late final FlightDataSource _dataSource;
+
+  @override
+  void initState() {
+    super.initState();
+    _dataSource = SimulatedFlightDataSource()..start();
+  }
+
+  @override
+  void dispose() {
+    _dataSource.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ParaBeacon',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-          brightness: Brightness.dark,
+    return FlightDataProvider(
+      source: _dataSource,
+      child: MaterialApp(
+        title: 'ParaBeacon',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.indigo,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
+        home: const DashGridPage(),
       ),
-      home: const DashGridPage(),
     );
   }
 }

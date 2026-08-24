@@ -1,5 +1,6 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+
+import '../data/flight_data_provider.dart';
 
 /// A vertical Vario column gauge, inspired by XCTrack's `WVarioColumn`.
 ///
@@ -9,10 +10,11 @@ import 'package:flutter/material.dart';
 /// strong climb is red, moderate climb orange, gentle climb green, and sink
 /// is blue.
 ///
-/// If [verticalSpeed] is null the control animates a simulated value so it is
-/// alive on the dashboard until a real sensor feed is wired in.
-class VarioControl extends StatefulWidget {
-  /// Vertical speed in m/s. When null, a simulated value is used.
+/// Reads from the unified [FlightDataProvider]. An optional [verticalSpeed]
+/// override can be supplied (e.g. for tests/previews).
+class VarioControl extends StatelessWidget {
+  /// Optional override for the vertical speed in m/s. When null the value is
+  /// read from the shared flight-data source.
   final double? verticalSpeed;
 
   /// Absolute scale limit in m/s for the column extent.
@@ -25,63 +27,13 @@ class VarioControl extends StatefulWidget {
   });
 
   @override
-  State<VarioControl> createState() => _VarioControlState();
-}
-
-class _VarioControlState extends State<VarioControl>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ticker;
-  final math.Random _rand = math.Random();
-  double _simValue = 0.0;
-  double _simTarget = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..addListener(_onTick);
-    if (widget.verticalSpeed == null) {
-      _ticker.repeat();
-    }
-  }
-
-  @override
-  void didUpdateWidget(VarioControl oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final live = widget.verticalSpeed == null;
-    if (live && !_ticker.isAnimating) {
-      _ticker.repeat();
-    } else if (!live && _ticker.isAnimating) {
-      _ticker.stop();
-    }
-  }
-
-  void _onTick() {
-    // Ease the simulated value toward a target, occasionally picking a new one.
-    if (_rand.nextDouble() < 0.03) {
-      _simTarget = (_rand.nextDouble() * 2 - 1) * widget.maxScale;
-    }
-    setState(() {
-      _simValue += (_simTarget - _simValue) * 0.08;
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    super.dispose();
-  }
-
-  double get _value => widget.verticalSpeed ?? _simValue;
-
-  @override
   Widget build(BuildContext context) {
+    final value =
+        verticalSpeed ?? FlightDataProvider.of(context).verticalSpeed;
     return CustomPaint(
       painter: _VarioPainter(
-        value: _value,
-        maxScale: widget.maxScale,
+        value: value,
+        maxScale: maxScale,
         theme: Theme.of(context),
       ),
       child: const SizedBox.expand(),

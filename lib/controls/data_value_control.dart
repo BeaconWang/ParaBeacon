@@ -1,5 +1,6 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+
+import '../data/flight_data_provider.dart';
 
 /// Color state of a data value, mirroring XCTrack's value coloring.
 enum ValueState { neutral, good, bad }
@@ -96,62 +97,18 @@ class DataValueControl extends StatelessWidget {
 /// Displays vertical speed in m/s with color state: green when climbing
 /// (>= 0), red when sinking hard (<= -1), neutral for gentle sink.
 ///
-/// When [verticalSpeed] is null a simulated value animates so the control is
-/// alive until a real sensor feed is wired in.
-class VerticalSpeedControl extends StatefulWidget {
-  /// Vertical speed in m/s. When null, a simulated value is used.
+/// Reads from the unified [FlightDataProvider]. An optional [verticalSpeed]
+/// override can be supplied (e.g. for tests/previews).
+class VerticalSpeedControl extends StatelessWidget {
+  /// Optional override for the vertical speed in m/s. When null the value is
+  /// read from the shared flight-data source.
   final double? verticalSpeed;
 
   const VerticalSpeedControl({super.key, this.verticalSpeed});
 
   @override
-  State<VerticalSpeedControl> createState() => _VerticalSpeedControlState();
-}
-
-class _VerticalSpeedControlState extends State<VerticalSpeedControl>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ticker;
-  final math.Random _rand = math.Random();
-  double _simValue = 0.0;
-  double _simTarget = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..addListener(_onTick);
-    if (widget.verticalSpeed == null) _ticker.repeat();
-  }
-
-  @override
-  void didUpdateWidget(VerticalSpeedControl oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final live = widget.verticalSpeed == null;
-    if (live && !_ticker.isAnimating) {
-      _ticker.repeat();
-    } else if (!live && _ticker.isAnimating) {
-      _ticker.stop();
-    }
-  }
-
-  void _onTick() {
-    if (_rand.nextDouble() < 0.03) {
-      _simTarget = (_rand.nextDouble() * 2 - 1) * 6.0;
-    }
-    setState(() => _simValue += (_simTarget - _simValue) * 0.08);
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final v = widget.verticalSpeed ?? _simValue;
+    final v = verticalSpeed ?? FlightDataProvider.of(context).verticalSpeed;
     final ValueState state;
     if (v >= 0.0) {
       state = ValueState.good;

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'placed_control.dart';
+import 'data_value_control.dart';
+import 'vario_control.dart';
 
 /// Visual representation of a [PlacedControl] on the dashboard.
 ///
@@ -47,26 +49,7 @@ class ControlWidget extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(6),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        control.type.icon,
-                        size: 22,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(height: 4),
-                      Flexible(
-                        child: Text(
-                          control.type.label,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: _buildFace(context, theme),
                 ),
               ),
             ),
@@ -89,5 +72,40 @@ class ControlWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Builds the actual control face. Specific control types get a custom
+  /// renderer; everything else falls back to a generic icon + label face.
+  Widget _buildFace(BuildContext context, ThemeData theme) {
+    switch (control.type.id) {
+      case 'vario':
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: const VarioControl(),
+        );
+      case 'vertical_speed':
+        return const VerticalSpeedControl();
+      default:
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              control.type.icon,
+              size: 22,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(height: 4),
+            Flexible(
+              child: Text(
+                control.type.label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall,
+              ),
+            ),
+          ],
+        );
+    }
   }
 }

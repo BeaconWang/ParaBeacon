@@ -86,11 +86,29 @@ class ControlCatalog {
   static const List<ControlDirectory> directories = [
     ControlDirectory(
       kind: ControlKind.data,
-      controls: [],
+      controls: [
+        ControlType(
+          id: 'vertical_speed',
+          label: 'Vertical Speed',
+          icon: Icons.swap_vert,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+      ],
     ),
     ControlDirectory(
       kind: ControlKind.widget,
-      controls: [],
+      controls: [
+        ControlType(
+          id: 'vario',
+          label: 'Vario',
+          icon: Icons.swap_vert,
+          kind: ControlKind.widget,
+          defaultCols: 2,
+          defaultRows: 5,
+        ),
+      ],
     ),
   ];
 

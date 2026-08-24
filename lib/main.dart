@@ -165,7 +165,149 @@ class _DashGridPageState extends State<DashGridPage>
           if (!_isEditMode) _selectedControlId = null;
         });
         break;
+      case 'preferences':
+        _closeMenu();
+        await _openPreferences();
+        break;
     }
+  }
+
+  /// Opens the app preferences sheet.
+  Future<void> _openPreferences() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        // Local state within the sheet, applied back via the parent setState.
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final theme = Theme.of(context);
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.settings_outlined,
+                            color: theme.colorScheme.primary),
+                        const SizedBox(width: 10),
+                        Text('Preferences', style: theme.textTheme.titleLarge),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      secondary: Icon(_Icons.mode,
+                          color: theme.colorScheme.primary),
+                      title: const Text('Edit mode'),
+                      value: _isEditMode,
+                      onChanged: (v) {
+                        setState(() {
+                          _isEditMode = v;
+                          if (!v) _selectedControlId = null;
+                        });
+                        setSheetState(() {});
+                      },
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(_Icons.grid,
+                                  color: theme.colorScheme.primary, size: 20),
+                              const SizedBox(width: 10),
+                              const Expanded(child: Text('Grid size')),
+                              Text(
+                                '${_gridSize.round()} px',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Slider(
+                            value: _gridSize,
+                            min: 16.0,
+                            max: 120.0,
+                            divisions: 26,
+                            label: '${_gridSize.round()} px',
+                            onChanged: (v) {
+                              setState(() => _gridSize = v);
+                              setSheetState(() {});
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.delete_sweep_outlined,
+                          color: theme.colorScheme.error),
+                      title: Text(
+                        'Clear all controls',
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                      subtitle: Text('${_controls.length} placed'),
+                      enabled: _controls.isNotEmpty,
+                      onTap: _controls.isEmpty
+                          ? null
+                          : () async {
+                              final confirmed = await _confirmClearAll(context);
+                              if (confirmed == true) {
+                                setState(() {
+                                  _controls.clear();
+                                  _selectedControlId = null;
+                                });
+                                setSheetState(() {});
+                              }
+                            },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<bool?> _confirmClearAll(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear all controls?'),
+        content: const Text(
+            'This removes every control from the dashboard. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Opens the control chooser and, on selection, places the new control on
@@ -501,6 +643,7 @@ class _DashGridPageState extends State<DashGridPage>
                 isEditMode: _isEditMode,
                 onToggleEditMode: () => _onMenuAction('toggle_edit'),
                 onAddControl: () => _onMenuAction('add_control'),
+                onOpenPreferences: () => _onMenuAction('preferences'),
               ),
             ),
           ],
@@ -564,11 +707,13 @@ class _MenuContent extends StatelessWidget {
   final bool isEditMode;
   final VoidCallback onToggleEditMode;
   final VoidCallback onAddControl;
+  final VoidCallback onOpenPreferences;
 
   const _MenuContent({
     required this.isEditMode,
     required this.onToggleEditMode,
     required this.onAddControl,
+    required this.onOpenPreferences,
   });
 
   @override
@@ -604,7 +749,12 @@ class _MenuContent extends StatelessWidget {
         const Divider(height: 1),
         _staticItem(context, _Icons.folder, 'Open Project'),
         const Divider(height: 1),
-        _staticItem(context, _Icons.settings, 'Preferences'),
+        ListTile(
+          leading: Icon(_Icons.settings, color: theme.colorScheme.primary),
+          title: const Text('Preferences'),
+          trailing: const Icon(Icons.chevron_right, size: 20),
+          onTap: onOpenPreferences,
+        ),
       ],
     );
   }

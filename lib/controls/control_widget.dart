@@ -26,9 +26,15 @@ class ControlWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final showBorder = control.boolSetting('showBorder', fallback: true);
     final borderColor = isSelected
         ? theme.colorScheme.primary
         : theme.colorScheme.outlineVariant.withAlpha(isEditMode ? 160 : 60);
+    // Keep a subtle border while editing (for hit feedback) even if the user
+    // disabled it, but hide it in view mode when requested.
+    final effectiveBorderColor = (showBorder || isEditMode || isSelected)
+        ? borderColor
+        : Colors.transparent;
 
     return Material(
       color: theme.colorScheme.surface.withAlpha(isEditMode ? 210 : 235),
@@ -43,7 +49,7 @@ class ControlWidget extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: borderColor,
+                    color: effectiveBorderColor,
                     width: isSelected ? 2 : 1,
                   ),
                 ),
@@ -77,14 +83,17 @@ class ControlWidget extends StatelessWidget {
   /// Builds the actual control face. Specific control types get a custom
   /// renderer; everything else falls back to a generic icon + label face.
   Widget _buildFace(BuildContext context, ThemeData theme) {
+    final showTitle = control.boolSetting('showTitle', fallback: true);
     switch (control.type.id) {
       case 'vario':
         return ClipRRect(
           borderRadius: BorderRadius.circular(4),
-          child: const VarioControl(),
+          child: VarioControl(
+            maxScale: control.doubleSetting('maxScale', fallback: 8.0),
+          ),
         );
       case 'vertical_speed':
-        return const VerticalSpeedControl();
+        return VerticalSpeedControl(showTitle: showTitle);
       default:
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -94,16 +103,18 @@ class ControlWidget extends StatelessWidget {
               size: 22,
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(height: 4),
-            Flexible(
-              child: Text(
-                control.type.label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall,
+            if (showTitle) ...[
+              const SizedBox(height: 4),
+              Flexible(
+                child: Text(
+                  control.type.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall,
+                ),
               ),
-            ),
+            ],
           ],
         );
     }

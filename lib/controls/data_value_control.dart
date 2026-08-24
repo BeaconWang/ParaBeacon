@@ -104,7 +104,14 @@ class VerticalSpeedControl extends StatelessWidget {
   /// read from the shared flight-data source.
   final double? verticalSpeed;
 
-  const VerticalSpeedControl({super.key, this.verticalSpeed});
+  /// Whether to show the "Vertical Speed" title.
+  final bool showTitle;
+
+  const VerticalSpeedControl({
+    super.key,
+    this.verticalSpeed,
+    this.showTitle = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +129,7 @@ class VerticalSpeedControl extends StatelessWidget {
       value: '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)}',
       unit: 'm/s',
       state: state,
+      showTitle: showTitle,
     );
   }
 }

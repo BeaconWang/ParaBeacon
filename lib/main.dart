@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 
 import 'controls/add_control_sheet.dart';
 import 'controls/control_catalog.dart';
+import 'controls/control_context_menu.dart';
+import 'controls/control_settings_sheet.dart';
 import 'controls/control_widget.dart';
 import 'controls/placed_control.dart';
 import 'data/flight_data_provider.dart';
@@ -220,6 +222,55 @@ class _DashGridPageState extends State<DashGridPage>
     });
   }
 
+  /// Shows the long-press context menu for [control] and performs the action.
+  Future<void> _showControlMenu(PlacedControl control) async {
+    setState(() => _selectedControlId = control.instanceId);
+    final action = await showControlContextMenu(context, control: control);
+    if (action == null || !mounted) return;
+
+    switch (action) {
+      case ControlAction.settings:
+        await showControlSettingsSheet(
+          context,
+          control: control,
+          onChanged: () => setState(() {}),
+        );
+        break;
+      case ControlAction.duplicate:
+        _duplicateControl(control);
+        break;
+      case ControlAction.bringToFront:
+        setState(() {
+          _controls.remove(control);
+          _controls.add(control);
+        });
+        break;
+      case ControlAction.sendToBack:
+        setState(() {
+          _controls.remove(control);
+          _controls.insert(0, control);
+        });
+        break;
+      case ControlAction.delete:
+        _deleteControl(control.instanceId);
+        break;
+    }
+  }
+
+  void _duplicateControl(PlacedControl control) {
+    final position = _findFreeCell(control.cols, control.rows);
+    setState(() {
+      final copy = control.copyAt(
+        instanceId: 'ctrl_${_controlSeq++}',
+        col: position.$1,
+        row: position.$2,
+      );
+      _controls.add(copy);
+      _selectedControlId = copy.instanceId;
+      _isEditMode = true;
+    });
+  }
+
   void _onControlDragStart(PlacedControl control) {
     _dragAccum = Offset.zero;
     _dragStartCol = control.col;
@@ -366,6 +417,7 @@ class _DashGridPageState extends State<DashGridPage>
                   Positioned.fill(
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
+                      onLongPress: () => _showControlMenu(control),
                       onPanStart: (_) => _onControlDragStart(control),
                       onPanUpdate: (details) =>
                           _onControlDragUpdate(control, details.delta),
@@ -389,7 +441,11 @@ class _DashGridPageState extends State<DashGridPage>
                     ),
                 ],
               )
-            : child,
+            : GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onLongPress: () => _showControlMenu(control),
+                child: child,
+              ),
       );
     }).toList();
   }

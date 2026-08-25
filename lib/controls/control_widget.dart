@@ -37,42 +37,50 @@ class ControlWidget extends StatelessWidget {
         : Colors.transparent;
 
     return Material(
-      color: theme.colorScheme.surface.withAlpha(isEditMode ? 210 : 235),
-      borderRadius: BorderRadius.circular(8),
-      clipBehavior: Clip.antiAlias,
+      color: Colors.transparent,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Positioned.fill(
-            child: InkWell(
-              onTap: onTap,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: effectiveBorderColor,
-                    width: isSelected ? 2 : 1,
+            child: Material(
+              color: theme.colorScheme.surface.withAlpha(isEditMode ? 210 : 235),
+              borderRadius: BorderRadius.circular(8),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onTap,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: effectiveBorderColor,
+                      width: isSelected ? 2 : 1,
+                    ),
                   ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: _buildFace(context, theme),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: _buildFace(context, theme),
+                  ),
                 ),
               ),
             ),
           ),
           if (isEditMode && isSelected && onDelete != null)
             Positioned(
-              top: -2,
-              right: -2,
-              child: IconButton(
-                iconSize: 18,
-                visualDensity: VisualDensity.compact,
-                style: IconButton.styleFrom(
-                  backgroundColor: theme.colorScheme.errorContainer,
-                  foregroundColor: theme.colorScheme.onErrorContainer,
+              top: 0,
+              right: 0,
+              // Shift the button so its center sits on the top-right corner.
+              child: FractionalTranslation(
+                translation: const Offset(0.5, -0.5),
+                child: IconButton(
+                  iconSize: 18,
+                  visualDensity: VisualDensity.compact,
+                  style: IconButton.styleFrom(
+                    backgroundColor: theme.colorScheme.errorContainer,
+                    foregroundColor: theme.colorScheme.onErrorContainer,
+                  ),
+                  icon: const Icon(Icons.close),
+                  onPressed: onDelete,
                 ),
-                icon: const Icon(Icons.close),
-                onPressed: onDelete,
               ),
             ),
         ],

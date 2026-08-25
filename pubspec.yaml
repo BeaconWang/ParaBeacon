@@ -35,11 +35,18 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
-  # Cross-platform low-latency audio engine (SoLoud) used by the real-time
-  # Vario audio module (lib/audio/vario_audio_service.dart). Chosen because it
-  # supports Windows/Linux/macOS/Android/iOS/Web and exposes a push-based raw
-  # PCM buffer stream (setBufferStream + addAudioDataStream). No audio assets.
-  flutter_soloud: ^4.1.7
+  # Cross-platform low-latency audio engine for the real-time Vario audio
+  # module (lib/audio/vario_audio_service.dart). flutter_miniaudio is an FFI
+  # wrapper around miniaudio using WASAPI (Windows) / AAudio (Android) /
+  # CoreAudio (macOS/iOS) / ALSA (Linux). It exposes a lock-free Int16 FIFO with
+  # bufferLatency-based flow control, giving true low-latency PCM output with no
+  # backlog. We synthesize 16-bit PCM in pure Dart and write() it directly.
+  flutter_miniaudio:
+    git:
+      url: https://github.com/bill0015/flutter_miniaudio.git
+
+  # Native memory helpers (malloc/free, Utf8) for the miniaudio FFI buffer.
+  ffi: ^2.1.0
 
 dev_dependencies:
   flutter_test:

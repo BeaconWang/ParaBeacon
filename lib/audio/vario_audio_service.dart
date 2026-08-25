@@ -1,61 +1,71 @@
 // vario_audio_service.dart
 // -----------------------------------------------------------------------------
-// Real-time XCTrack-style vario audio engine.
+// Near-zero-latency, XCTrack-faithful real-time Vario audio engine.
 //
-// The engine SYNTHESIZES signed 16-bit PCM in pure Dart (no MP3/WAV assets) and
-// pushes it into a low-latency native playback queue. Nothing about the sound
-// is pre-baked: pitch, beep-rate and waveform are computed sample-by-sample
-// from the live vertical speed, so latency is a single small buffer (~ a few
-// milliseconds) and pitch/rate transitions are glitch-free.
+// Rewritten after analysing XCTrack's decompiled native sound engine
+// (org.xcontest.XCTrack.info.e1 / c1 / u7). It reproduces XCTrack's behaviour:
+//   * 22050 Hz mono 16-bit PCM (see VarioAudioConfig).
+//   * Triangle oscillator u7.a(x) and its TICK/TACK/SQUARE/LONG blends.
+//   * Phase-continuous EXPONENTIAL pitch glide inside a beep (phase = analytic
+//     integral of instantaneous frequency) -> zero clicks on pitch change.
+//   * 5%/5% exponential fade envelope on toned segments (skipped for LONG).
+//   * Climb cadence + pitch and sink pitch formulas copied verbatim.
+//
+// LATENCY STRATEGY (goal < 20 ms):
+//   XCTrack uses a blocking AudioTrack.write() loop at getMinBufferSize() with
+//   usage=USAGE_ASSISTANCE_SONIFICATION (fast mixer path). We reproduce that
+//   model with a PULL-friendly engine: a small hardware buffer + a lock-free
+//   Int16 FIFO. A timer keeps the FIFO topped up to a tiny target latency
+//   (VarioAudioConfig.lookAheadMs). The FIFO provides natural back-pressure, so
+//   there is no unbounded backlog (the cause of earlier "seconds of delay") and
+//   no starvation (the cause of earlier silence). End-to-end latency ~=
+//   lookAheadMs + device buffer.
 //
 // -----------------------------------------------------------------------------
-// REQUIRED DEPENDENCY (add to pubspec.yaml, then `flutter pub get`):
+// DEPENDENCY (pubspec.yaml, then `flutter pub get`):
 //
 //   dependencies:
-//     flutter_soloud: ^4.1.7   # cross-platform low-latency audio engine
+//     flutter_miniaudio:
+//       git:
+//         url: https://github.com/bill0015/flutter_miniaudio.git
 //
-// Why flutter_soloud (instead of flutter_pcm_sound)?
-//   * flutter_pcm_sound only ships native code for Android/iOS/macOS, so it is
-//     SILENT on Windows and Linux (no platform implementation) — which is why
-//     this app produced no sound on Windows.
-//   * flutter_soloud supports Windows, Linux, macOS, Android, iOS and Web, and
-//     exposes a push-based raw-PCM buffer stream:
-//         setBufferStream(format: BufferType.s16le, ...)  -> AudioSource
-//         addAudioDataStream(source, Uint8List pcmChunk)  -> queue samples
-//     This matches our "synthesize 16-bit PCM in pure Dart" model exactly.
+// Why flutter_miniaudio?
+//   * FFI wrapper around miniaudio: WASAPI (Windows), AAudio (Android),
+//     CoreAudio (macOS/iOS), ALSA (Linux) -> genuinely cross-platform incl.
+//     Windows (flutter_pcm_sound has no Windows/Linux native code, and the
+//     flutter_soloud buffer-stream push API proved fragile / silent for a
+//     continuous live synth).
+//   * Exposes exactly our model: write(Pointer<Int16> data, int frames) into a
+//     lock-free FIFO, with `bufferLatency` (seconds queued) and
+//     `fifoAvailableFrames` for precise, non-blocking flow control.
+//   * PCM format: interleaved signed 16-bit; write() arg is FRAMES; returns
+//     frames actually accepted (respects remaining FIFO space).
 //
-// SoLoud is PUSH-based (we feed it) rather than pull-based, so instead of a
-// "feed me" callback we run a short periodic timer that pushes small PCM
-// chunks, maintaining a small bounded look-ahead for low latency.
-//
-// This file is written so that the ONLY coupling to the plugin lives inside
-// `_PcmSink` (see bottom). Swap that class to change backends; the DSP core
-// (`_VarioSynth`) stays identical.
+// This file is written so the ONLY coupling to the plugin lives inside
+// `_PcmSink`. Swap that class to change backends; `_VarioSynth` stays identical.
 // -----------------------------------------------------------------------------
 
 import 'dart:async';
+import 'dart:ffi';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_soloud/flutter_soloud.dart';
+import 'package:flutter_miniaudio/flutter_miniaudio.dart';
 
 import 'vario_config.dart';
 
 /// Public, injectable vario audio service.
 ///
-/// Typical lifecycle:
 /// ```dart
 /// final vario = VarioAudioService();      // or VarioAudioService.instance
 /// await vario.init();
-/// // in your 20-50 Hz sensor callback:
-/// vario.updateSpeed(flightData.verticalSpeed);
-/// // ...
+/// vario.updateSpeed(flightData.verticalSpeed); // 20-50 Hz, cheap
 /// vario.dispose();
 /// ```
 class VarioAudioService {
-  /// Shared singleton for apps that want one global vario. You may also just
-  /// construct instances directly (e.g. for DI / testing).
+  /// Shared singleton for a single global vario.
   static final VarioAudioService instance = VarioAudioService();
 
   VarioAudioService({VarioAudioConfig config = VarioAudioConfig.xcTrack})
@@ -71,7 +81,6 @@ class VarioAudioService {
   VarioAudioConfig get config => _synth.config;
 
   /// Replaces the active sound profile at runtime (e.g. from settings UI).
-  /// Safe to call while playing; transitions are smoothed by the envelope.
   void setConfig(VarioAudioConfig config) => _synth.config = config;
 
   /// Initializes the native audio stream. Idempotent.
@@ -80,30 +89,28 @@ class VarioAudioService {
     await _sink.open(
       sampleRate: config.sampleRate,
       channels: config.channels,
-      // The sink calls us back whenever it needs more PCM.
-      onFeed: _feed,
+      chunkMs: config.chunkMs,
+      lookAheadMs: config.lookAheadMs,
+      onRender: _synth.render,
     );
     _initialized = true;
   }
 
   /// Core driver. Call at 20-50 Hz with the latest vertical speed (m/s).
-  ///
-  /// This is intentionally cheap: it only stores the new target. The actual
-  /// waveform is generated on the audio callback thread, so calling this more
-  /// or less often never causes clicks and never blocks the sensor loop.
+  /// Only stores the new target; the waveform is generated in small chunks by
+  /// the sink, so this never blocks and never causes clicks.
   void updateSpeed(double verticalSpeed) {
     if (verticalSpeed.isNaN || verticalSpeed.isInfinite) return;
     _synth.setTargetSpeed(verticalSpeed);
   }
 
-  /// Mutes/unmutes without tearing down the stream. Gain is ramped by the
-  /// envelope, so muting mid-beep does not click.
+  /// Mute/unmute (gain is ramped, so no click).
   void setMuted(bool isMuted) {
     _muted = isMuted;
     _applyOutputGain();
   }
 
-  /// Sets output volume in the range 0..1.
+  /// Output volume, 0..1.
   void setVolume(double volume) {
     _volume = volume.clamp(0.0, 1.0);
     _applyOutputGain();
@@ -112,9 +119,7 @@ class VarioAudioService {
   bool get isMuted => _muted;
   double get volume => _volume;
 
-  void _applyOutputGain() {
-    _synth.outputGain = _muted ? 0.0 : _volume;
-  }
+  void _applyOutputGain() => _synth.outputGain = _muted ? 0.0 : _volume;
 
   /// Releases the native stream and all resources. Idempotent.
   void dispose() {
@@ -122,74 +127,64 @@ class VarioAudioService {
     _initialized = false;
     _sink.close();
   }
-
-  /// Fills [frameCount] frames of PCM on demand. Called by the sink's push
-  /// timer to obtain the next chunk of synthesized audio.
-  Int16List _feed(int frameCount) => _synth.render(frameCount);
 }
 
 // =============================================================================
-// DSP CORE — pure, backend-agnostic PCM synthesis.
+// DSP CORE — pure, backend-agnostic PCM synthesis (XCTrack-faithful).
 // =============================================================================
 
-/// Discrete vario states.
 enum _VarioState { deadband, climb, sink }
 
-/// The real-time synthesizer.
+/// Real-time synthesizer.
 ///
-/// Design notes for a click-free result:
-///  * A single phase accumulator drives the oscillator; frequency changes never
-///    reset the phase, so pitch glides are continuous.
-///  * Every audible edge (beep on/off, state change, mute) is multiplied by a
-///    per-sample envelope that ramps over [VarioAudioConfig.fadeMs].
-///  * Target speed is one-pole smoothed toward its setpoint so rapid sensor
-///    jitter does not produce zipper noise.
+/// Runs a continuous "beep cycle" state machine. Within a climb beep it glides
+/// pitch exponentially and applies XCTrack's 5% fades; between beeps it emits
+/// silence. Sink is a continuous LONG (pure-triangle) tone. A SINGLE phase
+/// accumulator is advanced every sample with
+/// `phase += frequency / sampleRate` (cycles, not radians) so the waveform is
+/// always continuous even when the target speed / pitch changes.
 class _VarioSynth {
-  _VarioSynth(this._config);
+  _VarioSynth(this._config) {
+    _recompute();
+  }
 
   VarioAudioConfig _config;
   VarioAudioConfig get config => _config;
   set config(VarioAudioConfig c) {
     _config = c;
-    _recomputeCoeffs();
+    _recompute();
   }
 
-  // --- runtime setpoints (written by the UI/sensor thread) -------------------
-
-  // Using plain doubles is fine: Dart is single-isolate and flutter_pcm_sound
-  // delivers its feed callback on the platform thread within the same isolate,
-  // so there is no true data race. We still keep writes trivial (store-only).
+  // Setpoints written by the sensor thread (store-only; single isolate).
   double _targetSpeed = 0.0;
-  double outputGain = 1.0; // 0..1, set by mute/volume.
+  double outputGain = 1.0;
 
   void setTargetSpeed(double v) => _targetSpeed = v;
 
-  // --- smoothed internal state -----------------------------------------------
+  // Smoothed / running state.
+  double _smoothedSpeed = 0.0;
+  double _phase = 0.0; // oscillator phase in CYCLES [0,1)
+  double _appliedGain = 0.0;
 
-  double _smoothedSpeed = 0.0; // one-pole smoothed vertical speed
-  double _phase = 0.0; // oscillator phase, radians [0, 2pi)
-  double _beepPhase = 0.0; // beep cycle phase [0, 1)
-  double _env = 0.0; // current output envelope 0..1
-  double _appliedGain = 0.0; // smoothed master/volume gain 0..1
-  double _lpState = 0.0; // low-pass filter memory (climb square)
+  // Beep-cycle state machine.
+  bool _inTone = false; // currently emitting the toned part of a cycle
+  double _segElapsed = 0.0; // seconds elapsed in current segment
+  double _segDuration = 0.0; // seconds of current segment
+  double _toneStartFreq = 0.0; // frequency at start of the current tone
+  double _toneEndFreq = 0.0; // frequency at end of the current tone (glide)
+  VarioWaveform _segWave = VarioWaveform.tack;
 
-  // --- cached coefficients ----------------------------------------------------
+  double _sr = 22050.0;
+  double _dt = 1.0 / 22050.0;
+  double _speedSmoothing = 0.02;
+  double _gainSmoothing = 0.02;
 
-  late double _fadeSamples; // envelope ramp length in samples
-  late double _speedSmoothing; // one-pole coeff for speed
-  late double _gainSmoothing; // one-pole coeff for gain
-
-  bool _coeffsReady = false;
-
-  void _recomputeCoeffs() {
-    final sr = _config.sampleRate.toDouble();
-    _fadeSamples = math.max(1.0, _config.fadeMs * 0.001 * sr);
-    // ~30 ms time-constant speed smoothing keeps low-speed sensitivity while
-    // taming jitter. coeff = 1 - exp(-1 / (tau * sr)).
-    _speedSmoothing = 1.0 - math.exp(-1.0 / (0.030 * sr));
-    // Fast (~5 ms) gain smoothing for mute/volume so it is click-free but snappy.
-    _gainSmoothing = 1.0 - math.exp(-1.0 / (0.005 * sr));
-    _coeffsReady = true;
+  void _recompute() {
+    _sr = _config.sampleRate.toDouble();
+    _dt = 1.0 / _sr;
+    // ~30 ms speed smoothing (sensitivity vs jitter) and ~5 ms gain smoothing.
+    _speedSmoothing = 1.0 - math.exp(-1.0 / (0.030 * _sr));
+    _gainSmoothing = 1.0 - math.exp(-1.0 / (0.005 * _sr));
   }
 
   _VarioState _stateFor(double speed) {
@@ -200,204 +195,275 @@ class _VarioSynth {
 
   /// Renders [frameCount] mono frames as signed-16 LE PCM.
   Int16List render(int frameCount) {
-    if (!_coeffsReady) _recomputeCoeffs();
-
-    final sr = _config.sampleRate.toDouble();
     final channels = _config.channels;
     final out = Int16List(frameCount * channels);
 
-    final twoPi = 2 * math.pi;
-    final fadeInc = 1.0 / _fadeSamples;
-
     for (var i = 0; i < frameCount; i++) {
-      // 1) Smooth the incoming speed toward its target (one-pole).
+      // Smooth speed toward target (removes zipper noise).
       _smoothedSpeed += (_targetSpeed - _smoothedSpeed) * _speedSmoothing;
-      final speed = _smoothedSpeed;
-      final state = _stateFor(speed);
 
-      // 2) Determine instantaneous pitch + whether this sample should sound.
-      double freq;
-      double sample;
-      bool gateOpen; // whether the tone should be audible right now
+      // Advance the beep-cycle state machine by one sample.
+      _tickCycle();
 
-      switch (state) {
-        case _VarioState.deadband:
-          // Silence. Let the envelope ramp down; keep phases coasting so a
-          // re-entry into climb/sink resumes without a discontinuity.
-          freq = 0.0;
-          gateOpen = false;
-          _advancePhase(0.0, sr, twoPi);
-          sample = 0.0;
-          break;
+      double sample = 0.0;
+      if (_inTone) {
+        // Instantaneous frequency: exponential glide across the tone.
+        final freq = _instantaneousFreq();
+        // Phase-continuous accumulation (cycles). Never reset on freq change.
+        _phase += freq * _dt;
+        if (_phase >= 1.0) _phase -= _phase.floorToDouble();
 
-        case _VarioState.climb:
-          freq = _config.climbFrequencyFor(speed);
-          final rate = _config.climbBeepRateFor(speed).clamp(0.01, 60.0);
-          // Advance the beep cycle; "on" for the duty-cycle fraction.
-          _beepPhase += rate / sr;
-          if (_beepPhase >= 1.0) _beepPhase -= _beepPhase.floorToDouble();
-          gateOpen = _beepPhase < _config.climbDutyCycle;
-          _advancePhase(freq, sr, twoPi);
-          sample = _osc(_config.climbWaveform, _phase);
-          if (_config.climbWaveform == VarioWaveform.square) {
-            sample = _applyLowPass(sample, _config.climbLowPass);
-          }
-          break;
-
-        case _VarioState.sink:
-          // Continuous tone: no beep gating.
-          freq = _config.sinkFrequencyFor(speed);
-          gateOpen = true;
-          _beepPhase = 0.0;
-          _advancePhase(freq, sr, twoPi);
-          sample = _osc(_config.sinkWaveform, _phase);
-          break;
+        sample = _oscBlend(_segWave, _phase);
+        sample *= _envelope(); // 5%/5% fade (skipped for LONG)
       }
 
-      // 3) Envelope: ramp toward 1 when the gate is open, toward 0 otherwise.
-      //    This single ramp removes clicks at beep edges AND state changes.
-      final envTarget = gateOpen ? 1.0 : 0.0;
-      if (_env < envTarget) {
-        _env = math.min(envTarget, _env + fadeInc);
-      } else if (_env > envTarget) {
-        _env = math.max(envTarget, _env - fadeInc);
-      }
-
-      // 4) Smooth master gain (mute/volume) to avoid clicks on toggle.
+      // Smooth master gain (mute/volume) to avoid clicks.
       _appliedGain += (outputGain - _appliedGain) * _gainSmoothing;
 
-      final value = sample *
-          _env *
-          _appliedGain *
-          _config.masterGain; // final amplitude, -1..1
-
+      final value = sample * _appliedGain * _config.masterGain;
       final s16 = (value.clamp(-1.0, 1.0) * 32767.0).round();
       final base = i * channels;
       for (var c = 0; c < channels; c++) {
         out[base + c] = s16;
       }
     }
-
     return out;
   }
 
-  /// Advances the main oscillator phase for one sample at [freq] Hz.
-  void _advancePhase(double freq, double sr, double twoPi) {
-    _phase += twoPi * freq / sr;
-    if (_phase >= twoPi) _phase -= twoPi * (_phase / twoPi).floorToDouble();
-  }
+  /// Advances the tone/silence segment machine by exactly one sample, starting
+  /// new segments as needed based on the current (smoothed) speed.
+  void _tickCycle() {
+    _segElapsed += _dt;
+    if (_segElapsed < _segDuration) return; // still inside current segment
 
-  /// Evaluates the selected waveform at [phase] radians. Range -1..1.
-  double _osc(VarioWaveform w, double phase) {
-    switch (w) {
-      case VarioWaveform.sine:
-        return math.sin(phase);
-      case VarioWaveform.square:
-        return math.sin(phase) >= 0.0 ? 1.0 : -1.0;
+    // Segment finished -> decide the next one from the CURRENT speed. This is
+    // where a changed vertical speed takes effect, at a beep boundary, which is
+    // exactly how XCTrack schedules its `w`/`h0` commands.
+    final speed = _smoothedSpeed;
+    final state = _stateFor(speed);
+    _segElapsed = 0.0;
+
+    switch (state) {
+      case _VarioState.deadband:
+        _inTone = false;
+        _segDuration = 0.02; // re-evaluate quickly (silence)
+        break;
+
+      case _VarioState.climb:
+        if (_inTone) {
+          // Just finished a tone -> emit the trailing silence gap.
+          _inTone = false;
+          final period = _config.climbPeriodFor(speed);
+          _segDuration =
+              math.max(0.001, period - _config.climbToneSeconds);
+        } else {
+          // Start a new climb beep (TACK). XCTrack uses a fixed 0.1 s tone.
+          _inTone = true;
+          _segWave = _config.climbWaveform;
+          _segDuration = _config.climbToneSeconds;
+          // No pitch glide inside the climb beep (XCTrack passes f0==f1 there),
+          // but we keep the glide machinery general.
+          final f = _config.climbFrequencyFor(speed);
+          _toneStartFreq = f;
+          _toneEndFreq = f;
+        }
+        break;
+
+      case _VarioState.sink:
+        // Continuous LONG tone; refresh pitch each short segment so descending
+        // sink smoothly lowers pitch without ever gating to silence.
+        _inTone = true;
+        _segWave = _config.sinkWaveform;
+        _segDuration = 0.05; // refresh pitch 20x/sec
+        final f = _config.sinkFrequencyFor(speed);
+        // Glide from the previous end frequency to the new one over the segment
+        // to avoid any step in pitch as |sink| changes.
+        _toneStartFreq = _toneEndFreq == 0.0 ? f : _toneEndFreq;
+        _toneEndFreq = f;
+        break;
     }
   }
 
-  /// One-pole low-pass to soften the square wave. [amount] 0..1 (0 = raw).
-  double _applyLowPass(double x, double amount) {
-    if (amount <= 0.0) return x;
-    // Higher amount -> more smoothing. Clamp for stability.
-    final a = amount.clamp(0.0, 0.99);
-    _lpState = _lpState + (x - _lpState) * (1.0 - a);
-    return _lpState;
+  /// Instantaneous frequency within the current tone segment.
+  ///
+  /// Exponential glide f(t) = f0 * (f1/f0)^(t/T). When f0==f1 this is just f0.
+  double _instantaneousFreq() {
+    if (_toneStartFreq == _toneEndFreq || _segDuration <= 0) {
+      return _toneStartFreq;
+    }
+    final t = (_segElapsed / _segDuration).clamp(0.0, 1.0);
+    return _toneStartFreq *
+        math.pow(_toneEndFreq / _toneStartFreq, t).toDouble();
+  }
+
+  /// XCTrack oscillator blends. Base `u7.a` is a triangle in [-1,1].
+  ///
+  /// Verbatim amplitude ratios from c1.a (normalised to +-1 here):
+  ///   TACK/LONG : tri(p)                     (single triangle)
+  ///   SQUARE    : tri(p)*20000 + square*10000
+  ///   TICK      : tri(p)*5000 + square*10000 + tri(p/2)*7500
+  ///             + tri(2p)*3000 + tri(p/4)*3000
+  double _oscBlend(VarioWaveform w, double p) {
+    switch (w) {
+      case VarioWaveform.tack:
+      case VarioWaveform.long:
+        return _tri(p);
+      case VarioWaveform.square:
+        final sq = (p % 1.0) < 0.5 ? 1.0 : -1.0;
+        // (20000*tri + 10000*square) / 30000
+        return (_tri(p) * 20000.0 + sq * 10000.0) / 30000.0;
+      case VarioWaveform.tick:
+        final sq = (p % 1.0) < 0.5 ? 1.0 : -1.0;
+        final v = _tri(p) * 5000.0 +
+            sq * 10000.0 +
+            _tri(p / 2.0) * 7500.0 +
+            _tri(p * 2.0) * 3000.0 +
+            _tri(p / 4.0) * 3000.0;
+        return v / 28500.0; // normalise to ~[-1,1]
+    }
+  }
+
+  /// Triangle wave, XCTrack `u7.a`: period 1.0, phase-shifted +0.25, range -1..1.
+  double _tri(double x) {
+    final d = (x + 0.25) % 1.0;
+    final dd = d < 0 ? d + 1.0 : d;
+    return dd < 0.5 ? (4.0 * dd - 1.0) : (-(dd - 0.5) * 4.0 + 1.0);
+  }
+
+  /// XCTrack 5%/5% exponential fade envelope (skipped for LONG).
+  ///
+  /// XCTrack: for x in first 5% -> ramp = exp((x/0.05)*ln2) - 1  (0->1),
+  /// for x in last 5% -> exp((|1-x|/0.05)*ln2) - 1. `ln2` makes exp() span 1..2
+  /// so the multiplier spans 0..1.
+  double _envelope() {
+    if (_segWave == VarioWaveform.long) return 1.0;
+    if (_segDuration <= 0) return 1.0;
+    final x = (_segElapsed / _segDuration).clamp(0.0, 1.0);
+    final f = _config.fadeFraction;
+    double r;
+    if (x < f) {
+      r = x / f;
+    } else if (x > 1.0 - f) {
+      r = (1.0 - x) / f;
+    } else {
+      return 1.0;
+    }
+    // exp(r*ln2) - 1  == 2^r - 1, in [0,1].
+    return math.pow(2.0, r).toDouble() - 1.0;
   }
 }
 
 // =============================================================================
-// BACKEND SINK — the ONLY place that touches flutter_soloud.
+// BACKEND SINK — the ONLY place that touches flutter_miniaudio.
 // =============================================================================
 
-/// Thin wrapper around [SoLoud] providing a push-based PCM feed.
+/// Low-latency PCM sink over miniaudio's lock-free Int16 FIFO.
 ///
-/// SoLoud is push-based: we create an s16le buffer-stream [AudioSource], start
-/// playing it, then repeatedly push freshly synthesized PCM chunks with
-/// [SoLoud.addAudioDataStream]. A short periodic timer keeps a small look-ahead
-/// buffer full so latency stays low while never underrunning.
+/// Flow control is FIFO-based (not open-loop): a timer wakes frequently and,
+/// whenever the queued audio (`bufferLatency`) drops below the target
+/// look-ahead, synthesizes and writes just enough frames to refill it —
+/// clamped to the FIFO's currently available space. `write()` accepts at most
+/// the free space, so we can never overflow (no backlog / delayed sound) and,
+/// by always refilling to the target, we never underrun (no silence).
 class _PcmSink {
   bool _open = false;
-  late Int16List Function(int frameCount) _onFeed;
+  late Int16List Function(int frameCount) _onRender;
 
-  int _sampleRate = 44100;
+  int _sampleRate = 22050;
+  int _channels = 1;
+  double _targetLatencySeconds = 0.02;
+  int _fifoCapacityFrames = 0;
 
-  SoLoud? _soloud;
-  AudioSource? _source;
-  SoundHandle? _handle;
-  Timer? _pushTimer;
+  MiniaudioPlayer? _player;
 
-  /// How often we push a chunk. Small enough for low latency, large enough to
-  /// keep CPU/overhead low.
-  static const Duration _pushInterval = Duration(milliseconds: 20);
+  /// Reusable native buffer for the largest chunk we ever write (interleaved
+  /// Int16). Allocated once to avoid per-tick malloc/free.
+  Pointer<Int16>? _native;
+  int _nativeCapacityFrames = 0;
 
-  /// Target look-ahead we try to keep queued (seconds). Roughly two push
-  /// intervals of cushion to survive UI-thread jitter without audible gaps.
-  static const double _lookAheadSeconds = 0.08;
+  Timer? _timer;
 
   Future<void> open({
     required int sampleRate,
     required int channels,
-    required Int16List Function(int frameCount) onFeed,
+    required double chunkMs,
+    required double lookAheadMs,
+    required Int16List Function(int frameCount) onRender,
   }) async {
-    _onFeed = onFeed;
+    _onRender = onRender;
     _sampleRate = sampleRate;
+    _channels = channels;
+    _targetLatencySeconds = (lookAheadMs * 0.001).clamp(0.008, 0.5);
 
-    final soloud = SoLoud.instance;
-    if (!soloud.isInitialized) {
-      await soloud.init();
-    }
-    _soloud = soloud;
+    // Small hardware buffer for low latency; FIFO big enough for our look-ahead.
+    final bufferFrames =
+        math.max(128, (chunkMs * 0.001 * sampleRate).round());
+    final fifoCapacityFrames =
+        math.max(bufferFrames * 4, (0.25 * sampleRate).round());
+    _fifoCapacityFrames = fifoCapacityFrames;
 
-    // Create a raw signed-16-bit little-endian PCM buffer stream. We keep the
-    // buffer "released" so old audio is discarded as it plays (this is a live
-    // stream, not a seekable clip), preventing unbounded memory growth.
-    _source = soloud.setBufferStream(
+    final player = MiniaudioPlayer(
       sampleRate: sampleRate,
-      channels: channels == 1 ? Channels.mono : Channels.stereo,
-      format: BufferType.s16le,
-      bufferingType: BufferingType.released,
-      // Start playing as soon as a little data is queued -> low startup latency.
-      bufferingTimeNeeds: _lookAheadSeconds,
+      channels: channels,
+      bufferFrames: bufferFrames,
+      fifoCapacityFrames: fifoCapacityFrames,
     );
+    _player = player;
+
+    // Native scratch buffer sized to a full target look-ahead (worst-case fill).
+    _nativeCapacityFrames =
+        math.max(bufferFrames, (_targetLatencySeconds * sampleRate).ceil());
+    _native = malloc<Int16>(_nativeCapacityFrames * channels);
 
     _open = true;
 
-    // Prime with an initial look-ahead so playback starts cleanly, then play.
-    // SoLoud.play() returns a SoundHandle synchronously (not a Future).
-    _pushChunk(seconds: _lookAheadSeconds);
-    _handle = soloud.play(_source!);
-    // Keep the stream topped up.
-    _pushTimer = Timer.periodic(_pushInterval, (_) => _tick());
+    player.start();
+    // Prime the FIFO so playback has data the instant the device pulls.
+    _refill();
+
+    // Poll well above the chunk rate; each wake only tops up the deficit.
+    final tickUs = (chunkMs * 1000 * 0.5).round().clamp(1000, 10000);
+    _timer = Timer.periodic(Duration(microseconds: tickUs), (_) => _refill());
   }
 
-  void _tick() {
-    if (!_open) return;
-    // Push a little more than one interval's worth each tick to maintain the
-    // look-ahead cushion regardless of small timer drift.
-    _pushChunk(seconds: _pushInterval.inMilliseconds / 1000.0 * 1.5);
-  }
+  /// Refills the FIFO up to the target look-ahead, bounded by free space.
+  ///
+  /// IMPORTANT plugin semantics: MiniaudioPlayer.fifoAvailableFrames returns the
+  /// number of frames CURRENTLY QUEUED (data waiting to be played), NOT the free
+  /// space. bufferLatency == fifoAvailableFrames / sampleRate. Free space is
+  /// therefore (fifoCapacityFrames - queuedFrames). (Getting this backwards
+  /// clamps writes to 0 at startup -> total silence.)
+  void _refill() {
+    final player = _player;
+    final native = _native;
+    if (!_open || player == null || native == null) return;
 
-  /// Renders [seconds] of audio and pushes it into the SoLoud buffer stream.
-  void _pushChunk({required double seconds}) {
-    final soloud = _soloud;
-    final source = _source;
-    if (!_open || soloud == null || source == null) return;
+    // Frames currently queued in the FIFO (waiting to play).
+    final queuedFrames = player.fifoAvailableFrames;
+    final targetFrames = (_targetLatencySeconds * _sampleRate).round();
 
-    final frames = math.max(1, (seconds * _sampleRate).round());
-    final Int16List pcm = _onFeed(frames);
-    // View the Int16List as raw little-endian bytes (host is LE on all targets
-    // Flutter supports); addAudioDataStream expects a Uint8List of s16le PCM.
-    final bytes = pcm.buffer.asUint8List(
-      pcm.offsetInBytes,
-      pcm.lengthInBytes,
-    );
+    // How many more frames we want queued to reach the target look-ahead.
+    var wantFrames = targetFrames - queuedFrames;
+    if (wantFrames <= 0) return; // enough queued -> don't overfill
+
+    // Never exceed real free space in the FIFO (leave 1 frame headroom).
+    final freeFrames =
+        math.max(0, _fifoCapacityFrames - queuedFrames - 1);
+    wantFrames = math.min(wantFrames, freeFrames);
+    // Bound by our native scratch capacity.
+    wantFrames = math.min(wantFrames, _nativeCapacityFrames);
+    if (wantFrames <= 0) return;
+
+    // Synthesize into the native buffer (interleaved Int16) and write frames.
+    final Int16List pcm = _onRender(wantFrames);
+    final n = math.min(wantFrames * _channels, pcm.length);
+    final dst = native.asTypedList(_nativeCapacityFrames * _channels);
+    dst.setRange(0, n, pcm);
     try {
-      soloud.addAudioDataStream(source, bytes);
+      player.write(native, wantFrames);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('VarioAudioService: addAudioDataStream failed: $e');
+        debugPrint('VarioAudioService: miniaudio write failed: $e');
       }
     }
   }
@@ -405,29 +471,30 @@ class _PcmSink {
   void close() {
     if (!_open) return;
     _open = false;
+    _timer?.cancel();
+    _timer = null;
 
-    _pushTimer?.cancel();
-    _pushTimer = null;
-
-    final soloud = _soloud;
-    final source = _source;
-    final handle = _handle;
-    if (soloud != null && source != null) {
+    final player = _player;
+    if (player != null) {
       try {
-        soloud.setDataIsEnded(source);
-        if (handle != null) soloud.stop(handle);
-        soloud.disposeSource(source);
+        player.stop();
+        player.dispose();
       } catch (e) {
-        // Disposing an already-torn-down source is harmless; log in debug only.
         if (kDebugMode) {
-          debugPrint('VarioAudioService: PCM sink close warning: $e');
+          debugPrint('VarioAudioService: miniaudio close warning: $e');
         }
       }
     }
-    _handle = null;
-    _source = null;
-    // Note: we intentionally do NOT call soloud.deinit() here — the SoLoud
-    // engine is a shared singleton that other audio features may use. If the
-    // vario is the sole audio user, call SoLoud.instance.deinit() at app exit.
+    _player = null;
+
+    final native = _native;
+    if (native != null) {
+      malloc.free(native);
+      _native = null;
+    }
   }
+
+  /// Applies output volume to the native mixer (0..1). Optional fast path so
+  /// mute/volume can bypass the per-sample gain if desired.
+  set hardwareVolume(double v) => _player?.setVolume(v.clamp(0.0, 1.0));
 }

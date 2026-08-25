@@ -6,6 +6,7 @@ import 'controls/control_catalog.dart';
 import 'controls/control_context_menu.dart';
 import 'controls/control_settings_sheet.dart';
 import 'controls/control_widget.dart';
+import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_source.dart';
@@ -70,8 +71,16 @@ class _DashGridPageState extends State<DashGridPage>
   bool _menuOpen = false;
   bool _isEditMode = true;
 
-  // Controls placed on the dashboard grid.
-  final List<PlacedControl> _controls = [];
+  // Dashboard pages (tabs). The user swipes horizontally to switch pages in
+  // view mode and can add pages in edit mode.
+  final List<DashPage> _pages = [DashPage(id: 'page_0')];
+  int _currentPage = 0;
+  int _pageSeq = 1;
+  late final PageController _pageController;
+
+  /// Controls on the currently visible page.
+  List<PlacedControl> get _controls => _pages[_currentPage].controls;
+
   String? _selectedControlId;
   int _controlSeq = 0;
 
@@ -92,6 +101,7 @@ class _DashGridPageState extends State<DashGridPage>
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     _menuController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -108,6 +118,7 @@ class _DashGridPageState extends State<DashGridPage>
 
   @override
   void dispose() {
+    _pageController.dispose();
     _menuController.dispose();
     super.dispose();
   }
@@ -159,6 +170,10 @@ class _DashGridPageState extends State<DashGridPage>
         _closeMenu();
         await _addControlFromMenu();
         break;
+      case 'add_page':
+        _closeMenu();
+        _addPage();
+        break;
       case 'toggle_edit':
         setState(() {
           _isEditMode = !_isEditMode;
@@ -170,6 +185,41 @@ class _DashGridPageState extends State<DashGridPage>
         await _openPreferences();
         break;
     }
+  }
+
+  /// Adds a new empty page after the current one and navigates to it.
+  void _addPage() {
+    setState(() {
+      final newPage = DashPage(id: 'page_${_pageSeq++}');
+      final insertAt = _currentPage + 1;
+      _pages.insert(insertAt, newPage);
+      _currentPage = insertAt;
+      _selectedControlId = null;
+      _isEditMode = true;
+    });
+    // Jump the PageView to the new page after the frame so it exists.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(_currentPage);
+      }
+    });
+  }
+
+  /// Deletes the current page (keeping at least one page).
+  void _deleteCurrentPage() {
+    if (_pages.length <= 1) return;
+    setState(() {
+      _pages.removeAt(_currentPage);
+      if (_currentPage >= _pages.length) {
+        _currentPage = _pages.length - 1;
+      }
+      _selectedControlId = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(_currentPage);
+      }
+    });
   }
 
   /// Opens the app preferences sheet.
@@ -470,32 +520,35 @@ class _DashGridPageState extends State<DashGridPage>
     return Scaffold(
       body: Stack(
         children: [
-          // Fullscreen main panel (drag down anywhere to open menu, tap to dismiss)
+          // Pages (tabs). Swipe horizontally to switch pages in view mode;
+          // in edit mode swiping is disabled so controls can be dragged.
           Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                if (_menuOpen) {
-                  _closeMenu();
-                } else if (_selectedControlId != null) {
-                  setState(() => _selectedControlId = null);
-                }
+            child: PageView.builder(
+              controller: _pageController,
+              physics: _isEditMode
+                  ? const NeverScrollableScrollPhysics()
+                  : const PageScrollPhysics(),
+              itemCount: _pages.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPage = index;
+                  _selectedControlId = null;
+                });
               },
-              onVerticalDragStart: _menuOpen ? null : _onDragStart,
-              onVerticalDragUpdate: _menuOpen ? null : _onDragUpdate,
-              onVerticalDragEnd: _menuOpen ? null : _onDragEnd,
-              child: _isEditMode
-                  ? CustomPaint(
-                      painter: DashGridPainter(gridSize: _gridSize),
-                      size: Size.infinite,
-                    )
-                  : const SizedBox.expand(),
+              itemBuilder: (context, index) => _buildPageContent(index),
             ),
           ),
 
-          // Placed controls layer.
-          ..._buildPlacedControls(),
-
+          // Page indicator (hidden while the menu is open). Shown with more
+          // than one page, or in edit mode so a single page's icon can be
+          // customized.
+          if ((_pages.length > 1 || _isEditMode) && !_menuOpen)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: (_isEditMode && _selectedControlId == null) ? 84 : 16,
+              child: _buildPageIndicator(),
+            ),
 
           // Dim overlay when menu is open
           if (_effectiveMenuOffset > 0 || _menuOpen)
@@ -528,9 +581,160 @@ class _DashGridPageState extends State<DashGridPage>
     );
   }
 
-  /// Builds the positioned control widgets, laid out by grid cell.
-  List<Widget> _buildPlacedControls() {
-    return _controls.map((control) {
+  /// Builds the content (grid + controls + gesture layer) for one page.
+  Widget _buildPageContent(int pageIndex) {
+    final page = _pages[pageIndex];
+    return Stack(
+      children: [
+        // Fullscreen main panel: drag down to open menu, tap to dismiss.
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              if (_menuOpen) {
+                _closeMenu();
+              } else if (_selectedControlId != null) {
+                setState(() => _selectedControlId = null);
+              }
+            },
+            onVerticalDragStart: _menuOpen ? null : _onDragStart,
+            onVerticalDragUpdate: _menuOpen ? null : _onDragUpdate,
+            onVerticalDragEnd: _menuOpen ? null : _onDragEnd,
+            child: _isEditMode
+                ? CustomPaint(
+                    painter: DashGridPainter(gridSize: _gridSize),
+                    size: Size.infinite,
+                  )
+                : const SizedBox.expand(),
+          ),
+        ),
+
+        // Placed controls layer for this page.
+        ..._buildPlacedControls(page.controls),
+      ],
+    );
+  }
+
+  /// A row of page-header icons showing the current page position.
+  ///
+  /// Tapping an inactive page navigates to it. Tapping the active page in edit
+  /// mode opens the icon picker to customize its header icon.
+  Widget _buildPageIndicator() {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_pages.length, (i) {
+        final active = i == _currentPage;
+        final page = _pages[i];
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: Material(
+            color: active
+                ? theme.colorScheme.primary
+                : theme.colorScheme.surfaceContainerHighest.withAlpha(200),
+            shape: const StadiumBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () {
+                if (active) {
+                  if (_isEditMode) _customizePageIcon(page);
+                } else {
+                  _pageController.animateToPage(
+                    i,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: EdgeInsets.symmetric(
+                  horizontal: active ? 12 : 8,
+                  vertical: 6,
+                ),
+                child: Icon(
+                  page.icon,
+                  size: 18,
+                  color: active
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  /// Opens a picker to choose the header icon for [page].
+  Future<void> _customizePageIcon(DashPage page) async {
+    final selected = await showModalBottomSheet<IconData>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final theme = Theme.of(context);
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Page icon', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: kPageHeaderIcons.map((icon) {
+                    final isCurrent = icon == page.icon;
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => Navigator.of(context).pop(icon),
+                      child: Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: isCurrent
+                              ? theme.colorScheme.primaryContainer
+                              : theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                          border: isCurrent
+                              ? Border.all(
+                                  color: theme.colorScheme.primary, width: 2)
+                              : null,
+                        ),
+                        child: Icon(
+                          icon,
+                          color: isCurrent
+                              ? theme.colorScheme.onPrimaryContainer
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected != null && mounted) {
+      setState(() => page.icon = selected);
+    }
+  }
+
+  /// Builds the positioned control widgets for the given [controls], laid out
+  /// by grid cell.
+  List<Widget> _buildPlacedControls(List<PlacedControl> controls) {
+    return controls.map((control) {
       final left = control.col * _gridSize;
       final top = control.row * _gridSize;
       final width = control.cols * _gridSize;
@@ -641,8 +845,15 @@ class _DashGridPageState extends State<DashGridPage>
             Expanded(
               child: _MenuContent(
                 isEditMode: _isEditMode,
+                pageIndex: _currentPage,
+                pageCount: _pages.length,
                 onToggleEditMode: () => _onMenuAction('toggle_edit'),
                 onAddControl: () => _onMenuAction('add_control'),
+                onAddPage: () => _onMenuAction('add_page'),
+                onDeletePage: () {
+                  _closeMenu();
+                  _deleteCurrentPage();
+                },
                 onOpenPreferences: () => _onMenuAction('preferences'),
               ),
             ),
@@ -705,14 +916,22 @@ class _DashGridPageState extends State<DashGridPage>
 
 class _MenuContent extends StatelessWidget {
   final bool isEditMode;
+  final int pageIndex;
+  final int pageCount;
   final VoidCallback onToggleEditMode;
   final VoidCallback onAddControl;
+  final VoidCallback onAddPage;
+  final VoidCallback onDeletePage;
   final VoidCallback onOpenPreferences;
 
   const _MenuContent({
     required this.isEditMode,
+    required this.pageIndex,
+    required this.pageCount,
     required this.onToggleEditMode,
     required this.onAddControl,
+    required this.onAddPage,
+    required this.onDeletePage,
     required this.onOpenPreferences,
   });
 
@@ -725,10 +944,11 @@ class _MenuContent extends StatelessWidget {
         SwitchListTile(
           secondary: Icon(_Icons.mode, color: theme.colorScheme.primary),
           title: const Text('Edit Mode'),
+          subtitle: Text('Page ${pageIndex + 1} of $pageCount'),
           value: isEditMode,
           onChanged: (_) => onToggleEditMode(),
         ),
-        // "Add Control" is only meaningful in edit mode.
+        // Control- and page-editing items are only meaningful in edit mode.
         if (isEditMode) ...[
           const Divider(height: 1),
           ListTile(
@@ -736,6 +956,32 @@ class _MenuContent extends StatelessWidget {
             title: const Text('Add Control'),
             trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: onAddControl,
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.note_add_outlined, color: theme.colorScheme.primary),
+            title: const Text('Add Page'),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: onAddPage,
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(
+              Icons.delete_outline,
+              color: pageCount > 1
+                  ? theme.colorScheme.error
+                  : theme.disabledColor,
+            ),
+            title: Text(
+              'Delete Page',
+              style: TextStyle(
+                color: pageCount > 1
+                    ? theme.colorScheme.error
+                    : theme.disabledColor,
+              ),
+            ),
+            enabled: pageCount > 1,
+            onTap: pageCount > 1 ? onDeletePage : null,
           ),
         ],
         const Divider(height: 1),

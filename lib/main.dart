@@ -96,7 +96,21 @@ class _DashGridPageState extends State<DashGridPage>
 
   // Drag state
   double _dragOffset = 0.0;
-  double _menuHeight = 300.0; // will be sized in build
+  double _menuHeight = 300.0; // measured from the menu panel after layout
+  final GlobalKey _menuKey = GlobalKey();
+
+  /// Measures the actual rendered menu-panel height and updates [_menuHeight]
+  /// so the slide-in offset matches the content (no blank space below items).
+  void _measureMenu() {
+    final ctx = _menuKey.currentContext;
+    if (ctx == null) return;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final h = box.size.height;
+    if ((h - _menuHeight).abs() > 0.5) {
+      setState(() => _menuHeight = h);
+    }
+  }
 
   @override
   void initState() {
@@ -152,6 +166,33 @@ class _DashGridPageState extends State<DashGridPage>
     } else {
       // Snap closed
       _closeMenu();
+    }
+    _dragOffset = 0.0;
+  }
+
+  // --- Drag-to-close (dragging up on the open menu) ---
+
+  void _onCloseDragStart(DragStartDetails details) {
+    // Start tracking from the fully-open position.
+    _menuOpen = false;
+    _menuController.stop();
+    _dragOffset = _menuHeight;
+    setState(() {});
+  }
+
+  void _onCloseDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _dragOffset = (_dragOffset + details.delta.dy).clamp(0.0, _menuHeight);
+    });
+  }
+
+  void _onCloseDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    // Close on a clear upward fling, or when dragged past the halfway point up.
+    if (velocity < -300 || _dragOffset < _menuHeight * 0.6) {
+      _closeMenu();
+    } else {
+      _openMenu();
     }
     _dragOffset = 0.0;
   }
@@ -515,7 +556,9 @@ class _DashGridPageState extends State<DashGridPage>
 
   @override
   Widget build(BuildContext context) {
-    _menuHeight = MediaQuery.of(context).size.height * 0.45;
+    // Measure the real menu height after this frame so the slide offset
+    // matches the content exactly (avoids blank space below the last item).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureMenu());
 
     return Scaffold(
       body: Stack(
@@ -797,8 +840,10 @@ class _DashGridPageState extends State<DashGridPage>
   }
 
   Widget _buildMenuPanel() {
+    final maxMenuHeight = MediaQuery.of(context).size.height * 0.88;
     return Container(
-      height: _menuHeight,
+      key: _menuKey,
+      constraints: BoxConstraints(maxHeight: maxMenuHeight),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: const BorderRadius.vertical(
@@ -815,34 +860,36 @@ class _DashGridPageState extends State<DashGridPage>
       child: Material(
         color: Colors.transparent,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle inside menu
-            SizedBox(
-              height: 48,
-              child: Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(100),
-                    borderRadius: BorderRadius.circular(2),
+            // Draggable handle region: drag up (or fling up) to close.
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _closeMenu,
+              onVerticalDragStart: _onCloseDragStart,
+              onVerticalDragUpdate: _onCloseDragUpdate,
+              onVerticalDragEnd: _onCloseDragEnd,
+              child: SizedBox(
+                height: 48 + MediaQuery.of(context).padding.top,
+                width: double.infinity,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(120),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-            // Dismiss gesture on the handle
-            GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onVerticalDragEnd: (details) {
-                if (details.primaryVelocity != null &&
-                    details.primaryVelocity! > 300) {
-                  _closeMenu();
-                }
-              },
-              child: const SizedBox(height: 0),
-            ),
-            // Menu items
-            Expanded(
+            // Menu items — wraps content, scrolls only if it exceeds the cap.
+            Flexible(
               child: _MenuContent(
                 isEditMode: _isEditMode,
                 pageIndex: _currentPage,
@@ -939,7 +986,15 @@ class _MenuContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      // Wrap content height so the panel matches the items (no blank space);
+      // scrolls only when the items exceed the panel's max height.
+      shrinkWrap: true,
+      padding: EdgeInsets.fromLTRB(
+        16,
+        0,
+        16,
+        16 + MediaQuery.of(context).padding.bottom,
+      ),
       children: [
         SwitchListTile(
           secondary: Icon(_Icons.mode, color: theme.colorScheme.primary),

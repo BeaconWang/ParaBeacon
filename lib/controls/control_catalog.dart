@@ -108,6 +108,14 @@ class ControlCatalog {
           defaultCols: 2,
           defaultRows: 5,
         ),
+        ControlType(
+          id: 'debug_sensor',
+          label: 'Debug Sensor',
+          icon: Icons.bluetooth_searching,
+          kind: ControlKind.widget,
+          defaultCols: 4,
+          defaultRows: 6,
+        ),
       ],
     ),
   ];

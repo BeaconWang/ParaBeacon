@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'placed_control.dart';
 import 'data_value_control.dart';
+import 'debug_sensor_control.dart';
 import 'vario_control.dart';
 
 /// Visual representation of a [PlacedControl] on the dashboard.
@@ -102,6 +103,8 @@ class ControlWidget extends StatelessWidget {
         );
       case 'vertical_speed':
         return VerticalSpeedControl(showTitle: showTitle);
+      case 'debug_sensor':
+        return const DebugSensorControl();
       default:
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,

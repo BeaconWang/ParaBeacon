@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>ParaBeacon uses Bluetooth to connect to external flight sensors (vario, barometer, heart rate).</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>ParaBeacon uses Bluetooth to connect to external flight sensors (vario, barometer, heart rate).</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 
 import 'controls/add_control_sheet.dart';
+import 'controls/bluetooth_sensor_sheet.dart';
 import 'controls/control_catalog.dart';
 import 'controls/control_context_menu.dart';
 import 'controls/control_settings_sheet.dart';
@@ -342,6 +343,17 @@ class _DashGridPageState extends State<DashGridPage>
                           ),
                         ],
                       ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.bluetooth,
+                          color: theme.colorScheme.primary),
+                      title: const Text('Bluetooth Sensor'),
+                      subtitle:
+                          const Text('Connect an external BLE sensor'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => showBluetoothSensorSheet(context),
                     ),
                     const Divider(height: 1),
                     ListTile(

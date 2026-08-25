@@ -35,6 +35,17 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Bluetooth Low Energy (mobile only – iOS/Android). All calls into this
+  # package are guarded by platform checks so the app still compiles and runs
+  # on desktop (Windows/Linux/macOS) where BLE is not wired up.
+  flutter_blue_plus: ^1.35.5
+
+  # Runtime permission requests for BLE scanning/connecting on mobile.
+  permission_handler: ^11.3.1
+
+  # Persist the selected sensor so it can auto-reconnect on next launch.
+  shared_preferences: ^2.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

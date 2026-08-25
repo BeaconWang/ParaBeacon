@@ -35,6 +35,12 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Cross-platform low-latency audio engine (SoLoud) used by the real-time
+  # Vario audio module (lib/audio/vario_audio_service.dart). Chosen because it
+  # supports Windows/Linux/macOS/Android/iOS/Web and exposes a push-based raw
+  # PCM buffer stream (setBufferStream + addAudioDataStream). No audio assets.
+  flutter_soloud: ^4.1.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -10,6 +10,7 @@ import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_source.dart';
+import 'audio/vario_audio_example.dart';
 
 void main() {
   runApp(const ParaBeaconApp());
@@ -26,14 +27,24 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> {
   // The single, unified flight-data source for the whole app.
   late final FlightDataSource _dataSource;
 
+  // Drives the Vario audio directly from the vertical speed of [_dataSource].
+  // Every FlightData update forwards `verticalSpeed` into the audio engine, so
+  // the sound is always a function of the current vertical speed.
+  late final VarioAudioBridge _varioAudio;
+
   @override
   void initState() {
     super.initState();
     _dataSource = SimulatedFlightDataSource()..start();
+    _varioAudio = VarioAudioBridge(source: _dataSource);
+    // Initialize the audio stream and start forwarding vertical speed. Safe to
+    // fire-and-forget; forwarding begins as soon as init() completes.
+    _varioAudio.attach();
   }
 
   @override
   void dispose() {
+    _varioAudio.dispose();
     _dataSource.dispose();
     super.dispose();
   }

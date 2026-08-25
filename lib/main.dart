@@ -36,7 +36,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> {
   @override
   void initState() {
     super.initState();
-    _dataSource = SimulatedFlightDataSource()..start();
+    // Bluetooth-sensor tier is the raw feed; a debug override (installed via the
+    // Debug Sensor control) always wins over it (Debug > Bluetooth sensor).
+    // Falls back to the built-in simulator until a real BLE device is paired.
+    _dataSource = BluetoothSensorFlightDataSource()..start();
     // Use the shared VarioAudioService singleton so the Preferences panel can
     // control the same engine (mute/volume) without threading it through the
     // widget tree.

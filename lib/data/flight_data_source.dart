@@ -82,38 +82,64 @@ class FlightDataOverride {
   }
 }
 
+/// Priority tiers for a flight-data field, highest first.
+///
+/// The effective value of any field is taken from the highest-priority tier
+/// that currently provides it:
+///
+///   1. [debugOverride]   — manual debug/bench values (ALWAYS wins).
+///   2. [bluetoothSensor] — the real (or simulated) sensor feed.
+///
+/// i.e. **Debug > Bluetooth sensor**.
+enum FlightDataPriority { debugOverride, bluetoothSensor }
+
 /// Unified flight-data source.
 ///
 /// Controls listen to this notifier and read [data] for the latest snapshot.
-/// Concrete implementations (simulated, sensor-backed, external feed, ...) can
-/// be swapped without changing any control.
+/// Concrete implementations (bluetooth sensor, simulated, external feed, ...)
+/// produce the raw feed via [update]; a debug [override] can force individual
+/// fields on top of it.
 ///
-/// A debug [override] can be installed to force individual fields to fixed
-/// values; those always win over the raw source data (highest priority).
+/// PRIORITY (per field, highest first):
+///   [FlightDataPriority.debugOverride] > [FlightDataPriority.bluetoothSensor]
+///
+/// The resolution is per-field: e.g. a debug override on `verticalSpeed` wins
+/// for that field even while the bluetooth sensor keeps streaming all other
+/// fields at full rate.
 abstract class FlightDataSource extends ChangeNotifier {
   FlightData _rawData = FlightData.empty;
   FlightDataOverride _override = FlightDataOverride.none;
 
-  /// The latest flight-data snapshot with any debug overrides applied.
+  /// The latest flight-data snapshot with the priority order applied
+  /// (debug override > bluetooth sensor).
   FlightData get data => _override.applyTo(_rawData);
 
-  /// The raw snapshot as produced by the source, ignoring debug overrides.
+  /// The raw snapshot as produced by the sensor feed, ignoring debug overrides
+  /// (i.e. the [FlightDataPriority.bluetoothSensor] tier only).
   FlightData get rawData => _rawData;
 
-  /// The currently installed debug override (highest priority).
+  /// The currently installed debug override (highest priority tier).
   FlightDataOverride get override => _override;
 
+  /// Which priority tier currently supplies the effective vertical speed.
+  /// Returns [FlightDataPriority.debugOverride] when a debug vertical-speed
+  /// override is active, otherwise [FlightDataPriority.bluetoothSensor].
+  FlightDataPriority get verticalSpeedSource => _override.verticalSpeed != null
+      ? FlightDataPriority.debugOverride
+      : FlightDataPriority.bluetoothSensor;
+
   /// Installs a new debug [override]. Overridden fields take precedence over
-  /// the raw source data. Notifies listeners so controls rebuild immediately.
+  /// the raw sensor data. Notifies listeners so controls rebuild immediately.
   void setOverride(FlightDataOverride override) {
     _override = override;
     notifyListeners();
   }
 
-  /// Removes all debug overrides, reverting to the raw source data.
+  /// Removes all debug overrides, reverting to the raw sensor data.
   void clearOverride() => setOverride(FlightDataOverride.none);
 
-  /// Replaces the current raw snapshot and notifies listeners.
+  /// Replaces the current raw (bluetooth-sensor tier) snapshot and notifies
+  /// listeners. Debug overrides, if any, still win over these values.
   @protected
   void update(FlightData next) {
     _rawData = next;
@@ -213,6 +239,81 @@ class SimulatedFlightDataSource extends FlightDataSource {
   @override
   void dispose() {
     stop();
+    super.dispose();
+  }
+}
+
+/// Bluetooth-sensor flight-data source (the [FlightDataPriority.bluetoothSensor]
+/// tier).
+///
+/// This is the lower-priority raw feed: whatever a paired BLE vario/baro sensor
+/// reports flows in via [ingestVerticalSpeed] / [ingestSnapshot] and becomes
+/// [rawData]. Any active debug override still wins over these values
+/// (Debug > Bluetooth sensor).
+///
+/// Until a physical device is wired to a BLE plugin, [connectSimulated] can be
+/// used to feed plausible values so the rest of the app (and the vario audio)
+/// runs end-to-end. Swap that for real BLE notifications without touching any
+/// consumer — controls and the vario only read [data].
+class BluetoothSensorFlightDataSource extends FlightDataSource {
+  /// Optional simulator used before a real BLE device is connected.
+  SimulatedFlightDataSource? _sim;
+
+  bool _connected = false;
+
+  /// Whether a sensor (real or simulated) is currently feeding data.
+  bool get isConnected => _connected;
+
+  /// Feeds a single vertical-speed reading from the BLE sensor (m/s), keeping
+  /// all other fields as they were. This is the field the vario audio consumes.
+  void ingestVerticalSpeed(double verticalSpeed) {
+    if (verticalSpeed.isNaN || verticalSpeed.isInfinite) return;
+    update(rawData.copyWith(verticalSpeed: verticalSpeed));
+    _connected = true;
+  }
+
+  /// Feeds a full sensor snapshot from the BLE device.
+  void ingestSnapshot(FlightData snapshot) {
+    update(snapshot);
+    _connected = true;
+  }
+
+  /// Development helper: drive the sensor tier with the built-in simulator so
+  /// the app runs without a physical device. Values still sit at the
+  /// bluetooth-sensor priority, so debug overrides continue to win.
+  void connectSimulated({
+    Duration tickInterval = const Duration(milliseconds: 100),
+  }) {
+    _sim ??= SimulatedFlightDataSource(tickInterval: tickInterval);
+    // Mirror the simulator's raw output into this source's raw tier.
+    _sim!.addListener(_onSim);
+    _sim!.start();
+    _connected = true;
+  }
+
+  void _onSim() {
+    final sim = _sim;
+    if (sim != null) update(sim.rawData);
+  }
+
+  @override
+  void start() {
+    // If nothing else connected a real device, fall back to the simulator so
+    // there is always a bluetooth-sensor-tier feed.
+    if (!_connected) connectSimulated();
+  }
+
+  @override
+  void stop() {
+    _sim?.removeListener(_onSim);
+    _sim?.stop();
+  }
+
+  @override
+  void dispose() {
+    stop();
+    _sim?.dispose();
+    _sim = null;
     super.dispose();
   }
 }

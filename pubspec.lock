@@ -81,11 +81,9 @@ packages:
   flutter_miniaudio:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "582431e3d9aabc4192ed7c499633091af0131cff"
-      url: "https://github.com/bill0015/flutter_miniaudio.git"
-    source: git
+      path: "third_party/flutter_miniaudio"
+      relative: true
+    source: path
     version: "1.0.7"
   flutter_test:
     dependency: "direct dev"

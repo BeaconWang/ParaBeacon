@@ -41,9 +41,15 @@ dependencies:
   # CoreAudio (macOS/iOS) / ALSA (Linux). It exposes a lock-free Int16 FIFO with
   # bufferLatency-based flow control, giving true low-latency PCM output with no
   # backlog. We synthesize 16-bit PCM in pure Dart and write() it directly.
+  #
+  # VENDORED into third_party/ (from github.com/bill0015/flutter_miniaudio) with
+  # two Windows build fixes baked in so they persist across `flutter pub get`:
+  #   1. src/CMakeLists.txt: only apply -Wall/-O2 for GCC/Clang (MSVC /O2 clashes
+  #      with Debug /RTC1 -> error D8016).
+  #   2. src/miniaudio_bridge.c: portable memory barrier (MSVC lacks
+  #      __sync_synchronize -> LNK2019).
   flutter_miniaudio:
-    git:
-      url: https://github.com/bill0015/flutter_miniaudio.git
+    path: third_party/flutter_miniaudio
 
   # Native memory helpers (malloc/free, Utf8) for the miniaudio FFI buffer.
   ffi: ^2.1.0

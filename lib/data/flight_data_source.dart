@@ -5,21 +5,118 @@ import 'package:flutter/foundation.dart';
 
 import 'flight_data.dart';
 
+/// A set of manual overrides for individual flight-data fields.
+///
+/// Any non-null field replaces the corresponding value coming from the raw
+/// data source. This is used by the debug bluetooth-sensor control to force
+/// specific readings for testing; overridden fields take the highest priority
+/// over whatever a real (or simulated) sensor reports.
+@immutable
+class FlightDataOverride {
+  final double? verticalSpeed;
+  final double? altitude;
+  final double? groundSpeed;
+  final double? heading;
+  final double? windSpeed;
+  final double? windDirection;
+
+  const FlightDataOverride({
+    this.verticalSpeed,
+    this.altitude,
+    this.groundSpeed,
+    this.heading,
+    this.windSpeed,
+    this.windDirection,
+  });
+
+  static const FlightDataOverride none = FlightDataOverride();
+
+  /// Whether any field is currently overridden.
+  bool get isEmpty =>
+      verticalSpeed == null &&
+      altitude == null &&
+      groundSpeed == null &&
+      heading == null &&
+      windSpeed == null &&
+      windDirection == null;
+
+  /// Returns a copy with the given fields changed. Passing `clearX: true`
+  /// removes an existing override for that field.
+  FlightDataOverride copyWith({
+    double? verticalSpeed,
+    bool clearVerticalSpeed = false,
+    double? altitude,
+    bool clearAltitude = false,
+    double? groundSpeed,
+    bool clearGroundSpeed = false,
+    double? heading,
+    bool clearHeading = false,
+    double? windSpeed,
+    bool clearWindSpeed = false,
+    double? windDirection,
+    bool clearWindDirection = false,
+  }) {
+    return FlightDataOverride(
+      verticalSpeed:
+          clearVerticalSpeed ? null : (verticalSpeed ?? this.verticalSpeed),
+      altitude: clearAltitude ? null : (altitude ?? this.altitude),
+      groundSpeed: clearGroundSpeed ? null : (groundSpeed ?? this.groundSpeed),
+      heading: clearHeading ? null : (heading ?? this.heading),
+      windSpeed: clearWindSpeed ? null : (windSpeed ?? this.windSpeed),
+      windDirection:
+          clearWindDirection ? null : (windDirection ?? this.windDirection),
+    );
+  }
+
+  /// Applies these overrides on top of [base], returning the effective data.
+  FlightData applyTo(FlightData base) {
+    if (isEmpty) return base;
+    return base.copyWith(
+      verticalSpeed: verticalSpeed,
+      altitude: altitude,
+      groundSpeed: groundSpeed,
+      heading: heading,
+      windSpeed: windSpeed,
+      windDirection: windDirection,
+    );
+  }
+}
+
 /// Unified flight-data source.
 ///
 /// Controls listen to this notifier and read [data] for the latest snapshot.
 /// Concrete implementations (simulated, sensor-backed, external feed, ...) can
 /// be swapped without changing any control.
+///
+/// A debug [override] can be installed to force individual fields to fixed
+/// values; those always win over the raw source data (highest priority).
 abstract class FlightDataSource extends ChangeNotifier {
-  FlightData _data = FlightData.empty;
+  FlightData _rawData = FlightData.empty;
+  FlightDataOverride _override = FlightDataOverride.none;
 
-  /// The latest flight-data snapshot.
-  FlightData get data => _data;
+  /// The latest flight-data snapshot with any debug overrides applied.
+  FlightData get data => _override.applyTo(_rawData);
 
-  /// Replaces the current snapshot and notifies listeners.
+  /// The raw snapshot as produced by the source, ignoring debug overrides.
+  FlightData get rawData => _rawData;
+
+  /// The currently installed debug override (highest priority).
+  FlightDataOverride get override => _override;
+
+  /// Installs a new debug [override]. Overridden fields take precedence over
+  /// the raw source data. Notifies listeners so controls rebuild immediately.
+  void setOverride(FlightDataOverride override) {
+    _override = override;
+    notifyListeners();
+  }
+
+  /// Removes all debug overrides, reverting to the raw source data.
+  void clearOverride() => setOverride(FlightDataOverride.none);
+
+  /// Replaces the current raw snapshot and notifies listeners.
   @protected
   void update(FlightData next) {
-    _data = next;
+    _rawData = next;
     notifyListeners();
   }
 
@@ -61,7 +158,7 @@ class SimulatedFlightDataSource extends FlightDataSource {
   }
 
   void _tick() {
-    final prev = data;
+    final prev = rawData;
 
     // Occasionally pick new targets to create gentle, believable motion.
     if (_rand.nextDouble() < 0.03) {

@@ -65,13 +65,16 @@ class VarioAudioConfig {
   // Latency / buffering
   // ---------------------------------------------------------------------------
 
-  /// Target size of each PCM push, in milliseconds. Small => low latency.
-  /// 10-15 ms keeps end-to-end latency well under the 20 ms goal while staying
-  /// large enough to avoid underruns from UI-thread jitter.
+  /// Hardware period / render granularity, in milliseconds. Larger => fewer,
+  /// bigger writes => far more robust against Dart UI-isolate timer jitter
+  /// (which is what causes underrun crackle). 20 ms is a good balance.
   final double chunkMs;
 
-  /// How much audio we try to keep queued ahead of the play head (ms). This is
-  /// the dominant contributor to output latency; keep it small (~2 chunks).
+  /// How much audio we keep queued ahead of the play head (ms). This is the
+  /// dominant contributor to output latency, BUT it is also the buffer that
+  /// absorbs GC pauses / layout / setState stalls on the UI isolate. Too small
+  /// (<40 ms) causes static & stuttering; ~80-100 ms is smooth while still
+  /// low-latency enough for a vario.
   final double lookAheadMs;
 
   // ---------------------------------------------------------------------------
@@ -141,8 +144,8 @@ class VarioAudioConfig {
     this.sampleRate = 22050,
     this.bitsPerSample = 16,
     this.channels = 1,
-    this.chunkMs = 8.0,
-    this.lookAheadMs = 20.0,
+    this.chunkMs = 20.0,
+    this.lookAheadMs = 90.0,
     this.climbThreshold = 0.2,
     this.sinkThreshold = -2.0,
     this.climbBaseFreq = 660.0,

@@ -395,11 +395,16 @@ class _PcmSink {
     _channels = channels;
     _targetLatencySeconds = (lookAheadMs * 0.001).clamp(0.008, 0.5);
 
-    // Small hardware buffer for low latency; FIFO big enough for our look-ahead.
+    // Hardware period. A larger period means fewer, bigger device callbacks and
+    // is much more tolerant of UI-isolate timer jitter (the cause of crackle).
     final bufferFrames =
-        math.max(128, (chunkMs * 0.001 * sampleRate).round());
-    final fifoCapacityFrames =
-        math.max(bufferFrames * 4, (0.25 * sampleRate).round());
+        math.max(256, (chunkMs * 0.001 * sampleRate).round());
+    // FIFO must comfortably hold several look-aheads so a stalled timer cannot
+    // drain it before the next refill. Size it to >= 3x target look-ahead.
+    final fifoCapacityFrames = math.max(
+      bufferFrames * 4,
+      (_targetLatencySeconds * 3.0 * sampleRate).round(),
+    );
     _fifoCapacityFrames = fifoCapacityFrames;
 
     final player = MiniaudioPlayer(
@@ -418,11 +423,12 @@ class _PcmSink {
     _open = true;
 
     player.start();
-    // Prime the FIFO so playback has data the instant the device pulls.
+    // Prime the FIFO with a full look-ahead so playback starts with a cushion.
     _refill();
 
-    // Poll well above the chunk rate; each wake only tops up the deficit.
-    final tickUs = (chunkMs * 1000 * 0.5).round().clamp(1000, 10000);
+    // Poll several times per look-ahead period so a single missed tick never
+    // empties the buffer. Bounded to a sane range.
+    final tickUs = (lookAheadMs * 1000 / 4).round().clamp(2000, 15000);
     _timer = Timer.periodic(Duration(microseconds: tickUs), (_) => _refill());
   }
 
@@ -456,9 +462,15 @@ class _PcmSink {
 
     // Synthesize into the native buffer (interleaved Int16) and write frames.
     final Int16List pcm = _onRender(wantFrames);
-    final n = math.min(wantFrames * _channels, pcm.length);
+    final needed = wantFrames * _channels;
+    final n = math.min(needed, pcm.length);
     final dst = native.asTypedList(_nativeCapacityFrames * _channels);
     dst.setRange(0, n, pcm);
+    // Zero-pad any shortfall so we never write stale native memory (which would
+    // play back as a burst of noise / click).
+    for (var k = n; k < needed; k++) {
+      dst[k] = 0;
+    }
     try {
       player.write(native, wantFrames);
     } catch (e) {

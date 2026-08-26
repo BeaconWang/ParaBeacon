@@ -1014,12 +1014,20 @@ class _DashGridPageState extends State<DashGridPage>
   /// Builds the positioned control widgets for the given [controls], laid out
   /// by grid cell.
   List<Widget> _buildPlacedControls(List<PlacedControl> controls) {
+    // Diameter of the corner affordances (delete button and resize handle).
+    // When a control is selected in edit mode we enlarge its outer layout
+    // box by half of this so both affordances fall fully inside a hittable
+    // area, even though visually they still overhang the control corners.
+    const double affordanceSize = 32;
+    const double overhang = affordanceSize / 2;
+
     return controls.map((control) {
       final left = control.col * _gridSize;
       final top = control.row * _gridSize;
       final width = control.cols * _gridSize;
       final height = control.rows * _gridSize;
       final isSelected = _selectedControlId == control.instanceId;
+      final showAffordances = _isEditMode && isSelected;
 
       final child = ControlWidget(
         control: control,
@@ -1028,19 +1036,32 @@ class _DashGridPageState extends State<DashGridPage>
         onTap: _isEditMode
             ? () => setState(() => _selectedControlId = control.instanceId)
             : null,
-        onDelete: () => _deleteControl(control.instanceId),
       );
 
+      // When affordances are visible, expand the layout box by `overhang` on
+      // every side so the corner buttons fit inside it and remain hittable.
+      final outerLeft = showAffordances ? left - overhang : left;
+      final outerTop = showAffordances ? top - overhang : top;
+      final outerWidth = showAffordances ? width + affordanceSize : width;
+      final outerHeight = showAffordances ? height + affordanceSize : height;
+
       return Positioned(
-        left: left,
-        top: top,
-        width: width,
-        height: height,
+        left: outerLeft,
+        top: outerTop,
+        width: outerWidth,
+        height: outerHeight,
         child: _isEditMode
             ? Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Positioned.fill(
+                  // The actual control face is inset by [overhang] on every
+                  // side (only when affordances are shown) so its position
+                  // and size on the grid stay exactly as before.
+                  Positioned(
+                    left: showAffordances ? overhang : 0,
+                    top: showAffordances ? overhang : 0,
+                    width: width,
+                    height: height,
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onLongPress: () => _showControlMenu(control),
@@ -1051,19 +1072,43 @@ class _DashGridPageState extends State<DashGridPage>
                       child: child,
                     ),
                   ),
-                  // Resize handle (bottom-right), shown when selected.
-                  if (isSelected)
+                  // Delete button — centered on the top-right corner of the
+                  // control. Rendered here (at the enlarged outer layer) so
+                  // its full circular area is inside a hittable region.
+                  if (showAffordances)
                     Positioned(
-                      right: -10,
-                      bottom: -10,
+                      top: 0,
+                      right: 0,
+                      width: affordanceSize,
+                      height: affordanceSize,
+                      child: _CornerButton(
+                        icon: Icons.close,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.errorContainer,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onErrorContainer,
+                        onPressed: () => _deleteControl(control.instanceId),
+                      ),
+                    ),
+                  // Resize handle — centered on the bottom-right corner of
+                  // the control. Same trick: laid out at the very edge of
+                  // the enlarged box so every pixel of it receives gestures.
+                  if (showAffordances)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      width: affordanceSize,
+                      height: affordanceSize,
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onPanStart: (_) => _onControlResizeStart(control),
                         onPanUpdate: (details) =>
                             _onControlResizeUpdate(control, details.delta),
                         onPanEnd: (_) => _saveLayout(),
-                        child: _ResizeHandle(
-                          color: Theme.of(context).colorScheme.primary,
+                        child: Center(
+                          child: _ResizeHandle(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
                       ),
                     ),
@@ -1324,6 +1369,39 @@ class _ResizeHandle extends StatelessWidget {
         Icons.open_in_full,
         size: 16,
         color: Colors.white,
+      ),
+    );
+  }
+}
+
+/// A circular tappable button rendered at a control's corner. The button
+/// itself fills its parent square so every pixel of the visual glyph is
+/// hittable — used for the "delete control" affordance in edit mode.
+class _CornerButton extends StatelessWidget {
+  final IconData icon;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback onPressed;
+
+  const _CornerButton({
+    required this.icon,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: backgroundColor,
+      shape: const CircleBorder(),
+      elevation: 2,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onPressed,
+        child: Center(
+          child: Icon(icon, size: 18, color: foregroundColor),
+        ),
       ),
     );
   }

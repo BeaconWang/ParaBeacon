@@ -9,14 +9,15 @@ import 'vario_control.dart';
 
 /// Visual representation of a [PlacedControl] on the dashboard.
 ///
-/// In edit mode it shows a selectable/movable card with a delete affordance;
-/// in view mode it renders as a plain control face.
+/// In edit mode it renders as a selectable/movable card (the edit-mode
+/// overlays — delete button, resize handle — are added by the host at the
+/// dashboard level so their hit area can extend beyond the control bounds).
+/// In view mode it renders as a plain control face.
 class ControlWidget extends StatelessWidget {
   final PlacedControl control;
   final bool isEditMode;
   final bool isSelected;
   final VoidCallback? onTap;
-  final VoidCallback? onDelete;
 
   const ControlWidget({
     super.key,
@@ -24,7 +25,6 @@ class ControlWidget extends StatelessWidget {
     required this.isEditMode,
     required this.isSelected,
     this.onTap,
-    this.onDelete,
   });
 
   @override
@@ -95,55 +95,29 @@ class ControlWidget extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: Opacity(
-              opacity: effectiveControlOpacity.toDouble(),
-              child: Material(
-                color: surfaceColor,
+      child: Opacity(
+        opacity: effectiveControlOpacity.toDouble(),
+        child: Material(
+          color: surfaceColor,
+          borderRadius: outerRadius,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
                 borderRadius: outerRadius,
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: onTap,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: outerRadius,
-                      border: Border.all(
-                        color: effectiveBorderColor,
-                        width: effectiveBorderWidth,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: _buildFace(context, theme, innerRadius),
-                    ),
-                  ),
+                border: Border.all(
+                  color: effectiveBorderColor,
+                  width: effectiveBorderWidth,
                 ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: _buildFace(context, theme, innerRadius),
               ),
             ),
           ),
-          if (isEditMode && isSelected && onDelete != null)
-            Positioned(
-              top: 0,
-              right: 0,
-              // Shift the button so its center sits on the top-right corner.
-              child: FractionalTranslation(
-                translation: const Offset(0.5, -0.5),
-                child: IconButton(
-                  iconSize: 18,
-                  visualDensity: VisualDensity.compact,
-                  style: IconButton.styleFrom(
-                    backgroundColor: theme.colorScheme.errorContainer,
-                    foregroundColor: theme.colorScheme.onErrorContainer,
-                  ),
-                  icon: const Icon(Icons.close),
-                  onPressed: onDelete,
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

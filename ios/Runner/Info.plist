@@ -83,5 +83,12 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Fullscreen: hide the status bar at launch and keep it hidden while
+	     the app is running. The dashboard is an instrument panel and must
+	     not be covered by the OS status bar. -->
+	<key>UIStatusBarHidden</key>
+	<true/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 </dict>
 </plist>

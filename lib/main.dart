@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'dart:ui' as ui;
 
@@ -29,6 +30,11 @@ void main() {
   // audio/GPS/sensor loops running rather than being suspended when the user
   // isn't touching the screen. Best-effort — unsupported platforms are no-ops.
   WakelockPlus.enable().catchError((_) {});
+  // Run fullscreen: hide the system status bar (and Android navigation bar)
+  // so the dashboard uses every pixel. `immersiveSticky` restores the bars
+  // briefly when the user swipes from the edge, then auto-hides them again
+  // — appropriate for an instrument panel that must stay unobstructed.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(const ParaBeaconApp());
 }
 
@@ -39,7 +45,7 @@ class ParaBeaconApp extends StatefulWidget {
   State<ParaBeaconApp> createState() => _ParaBeaconAppState();
 }
 
-class _ParaBeaconAppState extends State<ParaBeaconApp> {
+class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserver {
   // The single, unified flight-data source for the whole app.
   late final BluetoothSensorFlightDataSource _dataSource;
 
@@ -56,6 +62,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> {
   @override
   void initState() {
     super.initState();
+    // Watch app lifecycle so we can restore fullscreen after the OS
+    // temporarily shows the system bars (e.g. after a permission dialog or
+    // when the user returns from another app).
+    WidgetsBinding.instance.addObserver(this);
     // Load persisted debug preferences (e.g. the simulated-source toggle,
     // default off). Loading notifies listeners, so if the simulator was
     // previously enabled the data source resumes it automatically.
@@ -94,10 +104,20 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _bleBridge.dispose();
     _varioAudio.dispose();
     _dataSource.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Re-assert fullscreen: some system events (permission prompts, task
+      // switcher, etc.) can bring the status/nav bars back.
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
   }
 
   @override

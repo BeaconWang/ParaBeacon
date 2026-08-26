@@ -136,6 +136,10 @@ class _MapControlState extends State<MapControl> {
   /// moves (calling [MapController.move] before the first frame throws).
   bool _ready = false;
 
+  /// Current map rotation in degrees (0 = north up). Tracked so we can show
+  /// a "reset north" affordance whenever the user has rotated the map.
+  double _rotationDeg = 0.0;
+
   /// Latest device GPS position (WGS-84), or null when unavailable/denied.
   Position? _gps;
   StreamSubscription<Position>? _gpsSub;
@@ -255,6 +259,12 @@ class _MapControlState extends State<MapControl> {
                 if (hasGesture && _follow) {
                   setState(() => _follow = false);
                 }
+                // Keep the reset-north button in sync with the live map
+                // rotation. Rebuild only when it actually changed to avoid
+                // per-frame setState churn while the user is panning.
+                if ((camera.rotation - _rotationDeg).abs() > 0.01) {
+                  setState(() => _rotationDeg = camera.rotation);
+                }
               },
               onMapReady: () {
                 _ready = true;
@@ -315,22 +325,41 @@ class _MapControlState extends State<MapControl> {
             child: _glassChip(theme, icon: Icons.gps_off, label: 'No GPS fix'),
           ),
 
-        if (!_follow)
-          Positioned(
-            right: 8,
-            bottom: 8,
-            child: _MapButton(
-              icon: Icons.my_location,
-              tooltip: 'Re-center',
-              onTap: () {
-                setState(() => _follow = true);
-                final p = _lastWgs;
-                if (p != null && _ready) {
-                  _map.move(_shift(p, widget.tileSource), _map.camera.zoom);
-                }
-              },
-            ),
+        // Column of map affordances stacked in the bottom-right corner.
+        // The reset-north button is shown whenever the map is rotated away
+        // from north; the re-center button appears when following is off.
+        Positioned(
+          right: 8,
+          bottom: 8,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (_rotationDeg.abs() > 0.5) ...[
+                _CompassButton(
+                  // Rotate the icon so it visually reflects the current map
+                  // orientation — the needle always points to true north.
+                  rotationDeg: _rotationDeg,
+                  onTap: _resetNorth,
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (!_follow)
+                _MapButton(
+                  icon: Icons.my_location,
+                  tooltip: 'Re-center',
+                  onTap: () {
+                    setState(() => _follow = true);
+                    final p = _lastWgs;
+                    if (p != null && _ready) {
+                      _map.move(
+                          _shift(p, widget.tileSource), _map.camera.zoom);
+                    }
+                  },
+                ),
+            ],
           ),
+        ),
 
         // Attribution (required by the tile providers' usage policies).
         Positioned(
@@ -340,6 +369,14 @@ class _MapControlState extends State<MapControl> {
         ),
       ],
     );
+  }
+
+  /// Rotates the map back to north-up. No-op when the map isn't ready or is
+  /// already aligned.
+  void _resetNorth() {
+    if (!_ready) return;
+    _map.rotate(0);
+    setState(() => _rotationDeg = 0);
   }
 
   Widget _glassChip(
@@ -456,6 +493,47 @@ class _MapButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: Icon(icon, size: 20, color: theme.colorScheme.primary),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A compass affordance that shows the current map [rotationDeg] and, when
+/// tapped, snaps the map back to north-up. Same visual style as [_MapButton]
+/// but rotates its icon so the "N" needle always points at true north.
+class _CompassButton extends StatelessWidget {
+  final double rotationDeg;
+  final VoidCallback onTap;
+
+  const _CompassButton({required this.rotationDeg, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // flutter_map's camera rotation is measured counter-clockwise (positive
+    // rotates the tiles CCW). To keep the needle pointing at true north on
+    // screen we counter-rotate the icon by the same amount.
+    final iconAngleRad = -rotationDeg * math.pi / 180.0;
+    return Tooltip(
+      message: 'Reset north',
+      child: Material(
+        color: theme.colorScheme.surface.withAlpha(210),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Transform.rotate(
+              angle: iconAngleRad,
+              child: Icon(
+                Icons.explore,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+            ),
           ),
         ),
       ),

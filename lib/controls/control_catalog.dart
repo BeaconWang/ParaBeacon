@@ -95,6 +95,14 @@ class ControlCatalog {
           defaultCols: 3,
           defaultRows: 2,
         ),
+        ControlType(
+          id: 'location',
+          label: 'Location',
+          icon: Icons.my_location,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
       ],
     ),
     ControlDirectory(

@@ -104,6 +104,13 @@ class ControlWidget extends StatelessWidget {
         );
       case 'vertical_speed':
         return VerticalSpeedControl(showTitle: showTitle);
+      case 'location':
+        final fmt = control.setting('format');
+        return LocationControl(
+          showTitle: showTitle,
+          format:
+              fmt == 'dms' ? LocationFormat.dms : LocationFormat.decimal,
+        );
       case 'debug_sensor':
         return const DebugSensorControl();
       case 'map':

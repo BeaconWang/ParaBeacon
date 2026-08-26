@@ -108,6 +108,17 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       unit: 's',
     ),
   ],
+  'location': [
+    ControlSetting.choice(
+      key: 'format',
+      label: 'Coordinate format',
+      defaultValue: 'decimal',
+      options: {
+        'decimal': 'Decimal degrees',
+        'dms': 'Deg / min / sec',
+      },
+    ),
+  ],
   'map': [
     ControlSetting.toggle(
       key: 'follow',

@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'controls/add_control_sheet.dart';
 import 'controls/bluetooth_sensor_sheet.dart';
+import 'controls/tracklogs_sheet.dart';
 import 'controls/control_catalog.dart';
 import 'controls/control_context_menu.dart';
 import 'controls/control_settings_sheet.dart';
@@ -1212,6 +1213,14 @@ class _MenuContent extends StatelessWidget {
             onTap: pageCount > 1 ? onDeletePage : null,
           ),
         ],
+        const Divider(height: 1),
+        ListTile(
+          leading: Icon(Icons.route, color: theme.colorScheme.primary),
+          title: const Text('Tracklogs'),
+          subtitle: const Text('Recorded flights'),
+          trailing: const Icon(Icons.chevron_right, size: 20),
+          onTap: () => showTracklogsSheet(context),
+        ),
         const Divider(height: 1),
         ListTile(
           leading: Icon(_Icons.settings, color: theme.colorScheme.primary),

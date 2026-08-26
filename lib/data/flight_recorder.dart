@@ -147,6 +147,28 @@ class FlightRecorder extends ChangeNotifier {
   FlightTrack? _lastCompleted;
   FlightTrack? get lastCompletedTrack => _lastCompleted;
 
+  /// All completed flight records, newest first. Backs the Tracklogs screen.
+  final List<FlightTrack> _tracks = [];
+  List<FlightTrack> get tracks => List.unmodifiable(_tracks);
+
+  /// Removes a completed track from the log.
+  void deleteTrack(FlightTrack track) {
+    if (_tracks.remove(track)) {
+      if (identical(_lastCompleted, track)) {
+        _lastCompleted = _tracks.isNotEmpty ? _tracks.first : null;
+      }
+      notifyListeners();
+    }
+  }
+
+  /// Clears the entire flight log.
+  void clearTracks() {
+    if (_tracks.isEmpty) return;
+    _tracks.clear();
+    _lastCompleted = null;
+    notifyListeners();
+  }
+
   /// The in-progress track, or null when not recording.
   FlightTrack? get currentTrack => _current;
 
@@ -201,6 +223,8 @@ class FlightRecorder extends ChangeNotifier {
     if (t != null) {
       t.endTime = DateTime.now();
       _lastCompleted = t;
+      // Keep only tracks that actually captured something.
+      if (t.pointCount > 0) _tracks.insert(0, t);
     }
     _current = null;
     _lastStored = null;

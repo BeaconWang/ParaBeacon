@@ -1201,16 +1201,6 @@ class _MenuContent extends StatelessWidget {
           ),
         ],
         const Divider(height: 1),
-        _staticItem(context, _Icons.grid, 'Grid Settings'),
-        const Divider(height: 1),
-        _staticItem(context, _Icons.palette, 'Theme'),
-        const Divider(height: 1),
-        _staticItem(context, _Icons.layers, 'Layers'),
-        const Divider(height: 1),
-        _staticItem(context, _Icons.save, 'Save Project'),
-        const Divider(height: 1),
-        _staticItem(context, _Icons.folder, 'Open Project'),
-        const Divider(height: 1),
         ListTile(
           leading: Icon(_Icons.settings, color: theme.colorScheme.primary),
           title: const Text('Preferences'),
@@ -1220,27 +1210,12 @@ class _MenuContent extends StatelessWidget {
       ],
     );
   }
-
-  Widget _staticItem(BuildContext context, IconData icon, String label) {
-    return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(label),
-      trailing: const Icon(Icons.chevron_right, size: 20),
-      onTap: () {
-        // Placeholder: menu item tap
-      },
-    );
-  }
 }
 
 // Icon aliases for cleaner table definition
 const _Icons = (
   mode: Icons.edit_outlined,
   grid: Icons.grid_4x4,
-  palette: Icons.palette_outlined,
-  layers: Icons.layers_outlined,
-  save: Icons.save_outlined,
-  folder: Icons.folder_open_outlined,
   settings: Icons.settings_outlined,
 );
 

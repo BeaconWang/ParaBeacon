@@ -38,32 +38,51 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
 
   Timer? _testTimer;
 
+  /// Current audition vertical speed (m/s) driven by the preview slider.
+  double _previewSpeed = 0.0;
+
   @override
   void initState() {
     super.initState();
     _settings.load();
+    // Take over the vario sound while the panel is open so the live sensor
+    // feed can't fight the audition. Starts silent (0 m/s).
+    _audio.beginPreview(_previewSpeed);
   }
 
   @override
   void dispose() {
-    _stopTest();
+    _testTimer?.cancel();
+    // Hand control of the vario sound back to the live feed.
+    _audio.endPreview();
     super.dispose();
   }
 
   /// Briefly drives the vario with a fixed vertical speed so the user can hear
-  /// the current profile, then returns it to zero.
+  /// the current profile, then returns it to the slider's current value.
   void _playTest(double verticalSpeed) {
     _testTimer?.cancel();
-    _audio.updateSpeed(verticalSpeed);
+    setState(() => _previewSpeed = verticalSpeed);
+    _audio.setPreviewSpeed(verticalSpeed);
     _testTimer = Timer(const Duration(seconds: 2), () {
-      _audio.updateSpeed(0.0);
+      if (!mounted) return;
+      setState(() => _previewSpeed = 0.0);
+      _audio.setPreviewSpeed(0.0);
     });
   }
 
   void _stopTest() {
     _testTimer?.cancel();
     _testTimer = null;
-    _audio.updateSpeed(0.0);
+    setState(() => _previewSpeed = 0.0);
+    _audio.setPreviewSpeed(0.0);
+  }
+
+  void _setPreviewSpeed(double v) {
+    _testTimer?.cancel();
+    _testTimer = null;
+    setState(() => _previewSpeed = v);
+    _audio.setPreviewSpeed(v);
   }
 
   @override
@@ -215,6 +234,8 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
 
   // ── Test controls ─────────────────────────────────────────────────────────
   Widget _testCard(ThemeData theme) {
+    final speedLabel = '${_previewSpeed >= 0 ? '+' : ''}'
+        '${_previewSpeed.toStringAsFixed(1)} m/s';
     return _card(theme, [
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -226,8 +247,53 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
             Expanded(
               child: Text('Preview sound', style: theme.textTheme.bodyMedium),
             ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'LIVE',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+      const Divider(height: 1),
+      Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Row(
+          children: [
+            Icon(Icons.height, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child:
+                  Text('Vertical speed', style: theme.textTheme.bodyMedium),
+            ),
+            Text(
+              speedLabel,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+      Slider(
+        value: _previewSpeed.clamp(-6.0, 6.0),
+        min: -6.0,
+        max: 6.0,
+        divisions: 120,
+        label: speedLabel,
+        onChanged: _setPreviewSpeed,
       ),
       const Divider(height: 1),
       Padding(

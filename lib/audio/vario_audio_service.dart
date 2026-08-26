@@ -78,7 +78,43 @@ class VarioAudioService {
   bool _muted = false;
   double _volume = 1.0;
 
+  // Preview takeover. When active, live vertical-speed updates (e.g. from the
+  // flight-data bridge) are ignored and the engine is driven by the preview
+  // speed instead. Used by the Vario Sound Settings panel so the user can
+  // audition a chosen vertical speed without the live sensor feed fighting it.
+  bool _previewActive = false;
+  double _previewSpeed = 0.0;
+
   VarioAudioConfig get config => _synth.config;
+
+  /// Whether preview takeover is currently engaged.
+  bool get isPreviewActive => _previewActive;
+
+  /// Begins preview takeover: subsequent [updateSpeed] calls from live sources
+  /// are ignored and the engine plays [initialSpeed] until [setPreviewSpeed] is
+  /// called or [endPreview] releases control back to the live feed.
+  void beginPreview([double initialSpeed = 0.0]) {
+    _previewActive = true;
+    _previewSpeed = initialSpeed;
+    _synth.setTargetSpeed(_previewSpeed);
+  }
+
+  /// Updates the audition speed while preview takeover is engaged. No-op if
+  /// preview is not active.
+  void setPreviewSpeed(double verticalSpeed) {
+    if (!_previewActive) return;
+    if (verticalSpeed.isNaN || verticalSpeed.isInfinite) return;
+    _previewSpeed = verticalSpeed;
+    _synth.setTargetSpeed(_previewSpeed);
+  }
+
+  /// Ends preview takeover and hands control back to the live feed. The engine
+  /// is reset to silence until the next live [updateSpeed] arrives.
+  void endPreview() {
+    if (!_previewActive) return;
+    _previewActive = false;
+    _synth.setTargetSpeed(0.0);
+  }
 
   /// Replaces the active sound profile at runtime (e.g. from settings UI).
   void setConfig(VarioAudioConfig config) => _synth.config = config;
@@ -99,7 +135,12 @@ class VarioAudioService {
   /// Core driver. Call at 20-50 Hz with the latest vertical speed (m/s).
   /// Only stores the new target; the waveform is generated in small chunks by
   /// the sink, so this never blocks and never causes clicks.
+  ///
+  /// While preview takeover is engaged (see [beginPreview]) live updates are
+  /// ignored so the settings panel's audition can't be overwritten by the
+  /// sensor feed.
   void updateSpeed(double verticalSpeed) {
+    if (_previewActive) return;
     if (verticalSpeed.isNaN || verticalSpeed.isInfinite) return;
     _synth.setTargetSpeed(verticalSpeed);
   }

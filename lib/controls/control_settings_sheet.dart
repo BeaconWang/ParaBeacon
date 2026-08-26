@@ -102,6 +102,21 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
   }
 
   Widget _buildSettingTile(BuildContext context, ControlSetting setting) {
+    final control = widget.control;
+
+    // Border color/width only take effect when `showBorder` is on. Grey out
+    // those rows in that case so the user understands why toggling them has
+    // no visible effect, but still let them edit the value ahead of time.
+    final borderOff = !control.boolSetting('showBorder', fallback: true);
+    final isBorderChild =
+        setting.key == 'borderColor' || setting.key == 'borderWidth';
+    final dimmed = isBorderChild && borderOff;
+    final tile = _buildSettingTileBody(context, setting);
+    if (!dimmed) return tile;
+    return Opacity(opacity: 0.5, child: tile);
+  }
+
+  Widget _buildSettingTileBody(BuildContext context, ControlSetting setting) {
     final theme = Theme.of(context);
     final control = widget.control;
 
@@ -174,6 +189,86 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
             ],
           ),
         );
+
+      case SettingKind.color:
+        final value = control.intSetting(
+          setting.key,
+          fallback: setting.defaultValue as int,
+        );
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(setting.label),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: setting.palette
+                    .map((argb) => _ColorSwatch(
+                          argb: argb,
+                          selected: argb == value,
+                          onTap: () => _set(setting.key, argb),
+                        ))
+                    .toList(),
+              ),
+            ],
+          ),
+        );
     }
+  }
+}
+
+/// Small square swatch used by the color picker. Renders a diagonal "auto"
+/// glyph for the special sentinel value `0` so the user can revert to the
+/// theme default.
+class _ColorSwatch extends StatelessWidget {
+  final int argb;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ColorSwatch({
+    required this.argb,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isAuto = argb == 0;
+    final color = isAuto ? theme.colorScheme.surfaceContainerHighest : Color(argb);
+    final ringColor =
+        selected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: isAuto ? 'Automatic color' : 'Color 0x${argb.toRadixString(16)}',
+      child: InkResponse(
+        onTap: onTap,
+        radius: 24,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: ringColor,
+              width: selected ? 3 : 1,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: isAuto
+              ? Icon(
+                  Icons.auto_awesome,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                )
+              : null,
+        ),
+      ),
+    );
   }
 }

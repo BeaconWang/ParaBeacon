@@ -5,6 +5,7 @@ enum SettingKind {
   toggle,
   slider,
   choice,
+  color,
 }
 
 /// Definition of a single configurable setting for a control.
@@ -36,6 +37,12 @@ class ControlSetting {
   /// Options for a choice setting: value -> label.
   final Map<Object, String> options;
 
+  /// Palette for a color setting: an ordered list of ARGB int swatches to
+  /// choose from. The special value `0` is treated as "use theme default"
+  /// (i.e. the widget's own fallback) so the user can revert to the
+  /// automatic outline color.
+  final List<int> palette;
+
   const ControlSetting.toggle({
     required this.key,
     required this.label,
@@ -45,7 +52,8 @@ class ControlSetting {
         max = 1,
         divisions = null,
         unit = '',
-        options = const {};
+        options = const {},
+        palette = const [];
 
   const ControlSetting.slider({
     required this.key,
@@ -56,7 +64,8 @@ class ControlSetting {
     this.divisions,
     this.unit = '',
   })  : kind = SettingKind.slider,
-        options = const {};
+        options = const {},
+        palette = const [];
 
   const ControlSetting.choice({
     required this.key,
@@ -67,8 +76,42 @@ class ControlSetting {
         min = 0,
         max = 1,
         divisions = null,
-        unit = '';
+        unit = '',
+        palette = const [];
+
+  /// A color setting. [defaultValue] and every entry in [palette] must be an
+  /// ARGB int (e.g. `0xFF2196F3`). A value of `0` in the palette means
+  /// "automatic / theme default".
+  const ControlSetting.color({
+    required this.key,
+    required this.label,
+    required int this.defaultValue,
+    required this.palette,
+  })  : kind = SettingKind.color,
+        min = 0,
+        max = 1,
+        divisions = null,
+        unit = '',
+        options = const {};
 }
+
+/// Default palette for the border color picker.
+///
+/// The first entry (`0`) means "automatic" — the control widget will fall
+/// back to the theme's outline color, which is the historical behavior.
+const List<int> _borderColorPalette = [
+  0x00000000, // automatic (theme default)
+  0xFFFFFFFF, // white
+  0xFF000000, // black
+  0xFF9E9E9E, // grey
+  0xFFF44336, // red
+  0xFFFF9800, // orange
+  0xFFFFEB3B, // yellow
+  0xFF4CAF50, // green
+  0xFF00BCD4, // cyan
+  0xFF2196F3, // blue
+  0xFF9C27B0, // purple
+];
 
 /// Common settings that every control shares.
 const List<ControlSetting> _commonSettings = [
@@ -81,6 +124,21 @@ const List<ControlSetting> _commonSettings = [
     key: 'showBorder',
     label: 'Show border',
     defaultValue: true,
+  ),
+  ControlSetting.color(
+    key: 'borderColor',
+    label: 'Border color',
+    defaultValue: 0, // 0 == automatic (theme outline)
+    palette: _borderColorPalette,
+  ),
+  ControlSetting.slider(
+    key: 'borderWidth',
+    label: 'Border width',
+    defaultValue: 1.0,
+    min: 0.5,
+    max: 6.0,
+    divisions: 11,
+    unit: 'px',
   ),
 ];
 

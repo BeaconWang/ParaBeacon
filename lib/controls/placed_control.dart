@@ -65,6 +65,22 @@ class PlacedControl {
     return fallback;
   }
 
+  /// Reads an int setting, falling back to [fallback] if missing.
+  ///
+  /// Accepts an `int` directly or a `double` (truncated). Also tolerates a
+  /// string of digits, which can happen after a JSON round-trip on some
+  /// platforms.
+  int intSetting(String key, {int fallback = 0}) {
+    final v = settings[key];
+    if (v is int) return v;
+    if (v is double) return v.toInt();
+    if (v is String) {
+      final parsed = int.tryParse(v);
+      if (parsed != null) return parsed;
+    }
+    return fallback;
+  }
+
   /// Reads a setting value as-is.
   Object? setting(String key) => settings[key];
 

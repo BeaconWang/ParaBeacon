@@ -31,14 +31,33 @@ class ControlWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final showBorder = control.boolSetting('showBorder', fallback: true);
-    final borderColor = isSelected
-        ? theme.colorScheme.primary
-        : theme.colorScheme.outlineVariant.withAlpha(isEditMode ? 160 : 60);
+
+    // User-picked border color, stored as ARGB int; 0 == "automatic" (fall
+    // back to the theme outline the app has always used).
+    final customBorderArgb = control.intSetting('borderColor', fallback: 0);
+    final autoBorderColor =
+        theme.colorScheme.outlineVariant.withAlpha(isEditMode ? 160 : 60);
+    final baseBorderColor = customBorderArgb == 0
+        ? autoBorderColor
+        : Color(customBorderArgb);
+
+    // Selection highlight always wins over the user's color so it stays
+    // obvious which control is being edited.
+    final borderColor =
+        isSelected ? theme.colorScheme.primary : baseBorderColor;
+
     // Keep a subtle border while editing (for hit feedback) even if the user
     // disabled it, but hide it in view mode when requested.
     final effectiveBorderColor = (showBorder || isEditMode || isSelected)
         ? borderColor
         : Colors.transparent;
+
+    // User-picked width, clamped to a safe range. Selection state bumps it
+    // slightly so the highlight is visible regardless of the base width.
+    final userWidth =
+        control.doubleSetting('borderWidth', fallback: 1.0).clamp(0.5, 6.0);
+    final effectiveBorderWidth =
+        isSelected ? (userWidth + 1.0) : userWidth.toDouble();
 
     return Material(
       color: Colors.transparent,
@@ -57,7 +76,7 @@ class ControlWidget extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: effectiveBorderColor,
-                      width: isSelected ? 2 : 1,
+                      width: effectiveBorderWidth,
                     ),
                   ),
                   child: Padding(

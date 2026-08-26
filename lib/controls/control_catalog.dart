@@ -125,6 +125,14 @@ class ControlCatalog {
           defaultRows: 6,
         ),
         ControlType(
+          id: 'data_monitor',
+          label: 'Data Monitor',
+          icon: Icons.data_object,
+          kind: ControlKind.widget,
+          defaultCols: 4,
+          defaultRows: 6,
+        ),
+        ControlType(
           id: 'map',
           label: 'Map',
           icon: Icons.map_outlined,

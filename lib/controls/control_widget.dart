@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'placed_control.dart';
 import 'data_value_control.dart';
+import 'data_monitor_control.dart';
 import 'debug_sensor_control.dart';
 import 'flight_button_control.dart';
 import 'map_control.dart';
@@ -114,6 +115,8 @@ class ControlWidget extends StatelessWidget {
         );
       case 'debug_sensor':
         return const DebugSensorControl();
+      case 'data_monitor':
+        return const DataMonitorControl();
       case 'flight_button':
         return FlightButtonControl(
           showAutoDetect:

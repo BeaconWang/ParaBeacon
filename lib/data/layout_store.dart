@@ -6,14 +6,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../controls/dash_page.dart';
 
-/// The persisted dashboard layout: the list of pages (with their controls) plus
-/// the grid cell size.
+/// The persisted dashboard layout: the list of pages (with their controls),
+/// the grid cell size, and the last page the user was viewing.
 @immutable
 class SavedLayout {
-  const SavedLayout({required this.pages, required this.gridSize});
+  const SavedLayout({
+    required this.pages,
+    required this.gridSize,
+    required this.currentPage,
+  });
 
   final List<DashPage> pages;
   final double gridSize;
+
+  /// Index of the page that was last shown, so a cold launch can restore
+  /// the user to where they left off. Always clamped by the caller into
+  /// `[0, pages.length - 1]`.
+  final int currentPage;
 }
 
 /// Persists and restores the dashboard layout (pages, placed controls and their
@@ -55,7 +64,14 @@ class LayoutStore {
       if (pages.isEmpty) return null;
 
       final gridSize = (decoded['gridSize'] as num?)?.toDouble() ?? 40.0;
-      return SavedLayout(pages: pages, gridSize: gridSize);
+      // Older payloads (before the current-page field) simply default to 0.
+      final rawCurrent = (decoded['currentPage'] as num?)?.toInt() ?? 0;
+      final currentPage = rawCurrent.clamp(0, pages.length - 1);
+      return SavedLayout(
+        pages: pages,
+        gridSize: gridSize,
+        currentPage: currentPage,
+      );
     } catch (_) {
       // Corrupt / incompatible data: fall back to defaults.
       return null;
@@ -66,10 +82,11 @@ class LayoutStore {
   void save({
     required List<DashPage> pages,
     required double gridSize,
+    required int currentPage,
     Duration debounce = const Duration(milliseconds: 400),
   }) {
     _debounce?.cancel();
-    _debounce = Timer(debounce, () => _writeNow(pages, gridSize));
+    _debounce = Timer(debounce, () => _writeNow(pages, gridSize, currentPage));
   }
 
   /// Writes immediately, cancelling any pending debounced save (e.g. call this
@@ -77,18 +94,21 @@ class LayoutStore {
   Future<void> flush({
     required List<DashPage> pages,
     required double gridSize,
+    required int currentPage,
   }) async {
     _debounce?.cancel();
     _debounce = null;
-    await _writeNow(pages, gridSize);
+    await _writeNow(pages, gridSize, currentPage);
   }
 
-  Future<void> _writeNow(List<DashPage> pages, double gridSize) async {
+  Future<void> _writeNow(
+      List<DashPage> pages, double gridSize, int currentPage) async {
     try {
       final sp = await SharedPreferences.getInstance();
       final payload = jsonEncode({
         'version': _schemaVersion,
         'gridSize': gridSize,
+        'currentPage': currentPage,
         'pages': pages.map((p) => p.toJson()).toList(),
       });
       await sp.setString(_kLayoutKey, payload);

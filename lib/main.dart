@@ -220,7 +220,8 @@ class _DashGridPageState extends State<DashGridPage>
     _loadLayout();
   }
 
-  /// Restores the saved dashboard layout (pages, controls, grid size) if any.
+  /// Restores the saved dashboard layout (pages, controls, grid size,
+  /// last-viewed page) if any.
   Future<void> _loadLayout() async {
     final saved = await LayoutStore.instance.load();
     if (saved == null || !mounted) return;
@@ -229,7 +230,9 @@ class _DashGridPageState extends State<DashGridPage>
         ..clear()
         ..addAll(saved.pages);
       _gridSize = saved.gridSize;
-      _currentPage = 0;
+      // Restore the page the user was last viewing (already clamped by the
+      // store to a valid index).
+      _currentPage = saved.currentPage;
       _selectedControlId = null;
 
       // Advance the id sequences past any restored ids so new pages/controls
@@ -245,6 +248,15 @@ class _DashGridPageState extends State<DashGridPage>
         if (pn != null && pn >= _pageSeq) _pageSeq = pn + 1;
       }
     });
+    // Sync the PageView to the restored page once it exists. Using jumpTo
+    // (not animateTo) so the initial navigation isn't visible to the user.
+    if (_currentPage != 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          _pageController.jumpToPage(_currentPage);
+        }
+      });
+    }
   }
 
   /// Extracts the numeric suffix of an id like `ctrl_12` / `page_3`.
@@ -255,7 +267,11 @@ class _DashGridPageState extends State<DashGridPage>
 
   /// Persists the current layout (debounced).
   void _saveLayout() {
-    LayoutStore.instance.save(pages: _pages, gridSize: _gridSize);
+    LayoutStore.instance.save(
+      pages: _pages,
+      gridSize: _gridSize,
+      currentPage: _currentPage,
+    );
   }
 
   @override
@@ -826,6 +842,9 @@ class _DashGridPageState extends State<DashGridPage>
                   _currentPage = index;
                   _selectedControlId = null;
                 });
+                // Persist the last-viewed page so re-launching the app
+                // returns the user to where they left off.
+                _saveLayout();
               },
               itemBuilder: (context, index) => _buildPageContent(index),
             ),

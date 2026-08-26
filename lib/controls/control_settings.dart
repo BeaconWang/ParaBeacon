@@ -241,11 +241,24 @@ const Map<String, List<ControlSetting>> _typeSettings = {
   ],
 };
 
+/// Control type ids whose face never renders a title. For these the
+/// "Show title" toggle is meaningless and should be hidden from the
+/// settings sheet to avoid confusing the user.
+const Set<String> _controlsWithoutTitle = {
+  'vario',
+  'debug_sensor',
+  'data_monitor',
+  'flight_button',
+  'map',
+};
+
 /// Returns the full ordered list of settings for a control type id
 /// (common settings first, then type-specific ones).
 List<ControlSetting> settingsSchemaFor(String typeId) {
+  final hidesTitle = _controlsWithoutTitle.contains(typeId);
   return [
-    ..._commonSettings,
+    for (final setting in _commonSettings)
+      if (!(hidesTitle && setting.key == 'showTitle')) setting,
     ...(_typeSettings[typeId] ?? const []),
   ];
 }

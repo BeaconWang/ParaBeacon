@@ -151,7 +151,10 @@ class _DashGridPageState extends State<DashGridPage>
     with SingleTickerProviderStateMixin {
   double _gridSize = 48.0;
   bool _menuOpen = false;
-  bool _isEditMode = true;
+  // Start in view mode on cold launch: pilots opening the app in flight
+  // should see their instrument dashboard, not the edit affordances. Edit
+  // mode is opt-in via the top menu.
+  bool _isEditMode = false;
 
   // Vario audio settings (backed by the shared VarioAudioService singleton).
   bool _varioMuted = VarioAudioService.instance.isMuted;

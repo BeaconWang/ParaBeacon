@@ -264,10 +264,28 @@ class _MapControlState extends State<MapControl> {
             ),
             children: [
               TileLayer(
+                // Rebuild the layer when the source changes so tiles/caches for
+                // the previous provider are dropped cleanly.
+                key: ValueKey(src.id),
                 urlTemplate: src.urlTemplate,
                 userAgentPackageName: 'com.parabeacon.app',
                 maxNativeZoom: src.maxZoom.round(),
-                tileProvider: NetworkTileProvider(),
+                // Re-request tiles that failed transiently (mobile network
+                // hiccups) once they're off-screen, instead of leaving blank
+                // or stale tiles that "never update".
+                evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
+                // Keep already-loaded tiles around and preload a ring of
+                // neighbours so panning/following doesn't flash empty tiles.
+                keepBuffer: 3,
+                panBuffer: 2,
+                tileProvider: NetworkTileProvider(
+                  headers: const {
+                    // OSM's tile-usage policy requires an identifying UA;
+                    // a missing/blank UA is periodically throttled, which
+                    // shows up as tiles that intermittently fail to update.
+                    'User-Agent': 'ParaBeacon/1.0 (flutter_map; com.parabeacon.app)',
+                  },
+                ),
               ),
               if (hasFix)
                 MarkerLayer(

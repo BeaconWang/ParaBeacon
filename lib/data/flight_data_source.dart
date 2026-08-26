@@ -215,16 +215,36 @@ class SimulatedFlightDataSource extends FlightDataSource {
     _lon += (metersPerTick * math.sin(headingRad)) /
         (111320.0 * math.cos(_lat * math.pi / 180.0));
 
+    // Derive plausible maintenance data from the simulated altitude:
+    //   * pressure via the International Standard Atmosphere,
+    //   * temperature via a 6.5 °C/km lapse rate from 15 °C at sea level,
+    //   * a slowly-draining battery and a gently varying heart rate.
+    const seaLevelHpa = 1013.25;
+    final pressure = seaLevelHpa * math.pow(1.0 - altitude / 44330.0, 5.255);
+    final temperature = 15.0 - altitude * 0.0065;
+    final now = DateTime.now();
+    final battery = (100 - (now.millisecondsSinceEpoch ~/ 60000) % 100).clamp(1, 100);
+    final heartRate = 70 + (math.sin(now.millisecondsSinceEpoch / 3000.0) * 15).round();
+
     update(prev.copyWith(
       verticalSpeed: vs,
       altitude: altitude,
+      baroAltitude: altitude,
+      gpsAltitude: altitude + 3.0, // GPS altitude typically differs from baro
       groundSpeed: groundSpeed,
       heading: heading,
       latitude: _lat,
       longitude: _lon,
       windSpeed: 12.0,
       windDirection: windDir,
+      pressure: pressure.toDouble(),
+      temperature: temperature,
+      gpsAccuracy: 4.0,
+      satellites: 12,
+      battery: battery,
+      heartRate: heartRate,
       hasFix: true,
+      timestamp: now,
     ));
   }
 

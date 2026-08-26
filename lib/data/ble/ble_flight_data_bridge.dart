@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import '../flight_data.dart';
 import '../flight_data_source.dart';
 import 'ble_sensor_service.dart';
 import 'sensor_readings.dart';
@@ -81,13 +80,25 @@ class BleFlightDataBridge {
     // Vertical speed is the primary field the vario audio consumes.
     final vario = r.varioMs;
 
+    // The sensor's altitude is barometric (derived from pressure by the
+    // parser). Feed it into both the barometric-specific field and the
+    // effective [altitude] convenience value.
+    final baroAlt = r.altitudeM;
+
     // Build a snapshot preserving previously-known fields, updating only the
-    // ones this sensor reports.
+    // ones this sensor reports (all maintenance fields are forwarded so the
+    // data layer exposes GPS/baro/temperature/battery/HR uniformly).
     final base = source.rawData;
     final next = base.copyWith(
       verticalSpeed: vario,
-      altitude: r.altitudeM,
+      altitude: baroAlt,
+      baroAltitude: baroAlt,
+      pressure: r.pressureHpa,
+      temperature: r.temperatureC,
+      battery: r.batteryPct,
+      heartRate: r.heartRate,
       hasFix: base.hasFix,
+      timestamp: r.updatedAt,
     );
 
     // ingestSnapshot marks the real sensor active (suppressing the simulator)

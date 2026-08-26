@@ -132,6 +132,14 @@ class ControlCatalog {
           defaultCols: 6,
           defaultRows: 6,
         ),
+        ControlType(
+          id: 'flight_button',
+          label: 'Flight Button',
+          icon: Icons.flight_takeoff,
+          kind: ControlKind.widget,
+          defaultCols: 2,
+          defaultRows: 2,
+        ),
       ],
     ),
   ];

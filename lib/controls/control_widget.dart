@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'placed_control.dart';
 import 'data_value_control.dart';
 import 'debug_sensor_control.dart';
+import 'flight_button_control.dart';
 import 'map_control.dart';
 import 'vario_control.dart';
 
@@ -113,6 +114,8 @@ class ControlWidget extends StatelessWidget {
         );
       case 'debug_sensor':
         return const DebugSensorControl();
+      case 'flight_button':
+        return const FlightButtonControl();
       case 'map':
         final source = control.setting('tileSource');
         return ClipRRect(

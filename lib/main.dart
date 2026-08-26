@@ -835,7 +835,7 @@ class _DashGridPageState extends State<DashGridPage>
             Positioned(
               left: 0,
               right: 0,
-              bottom: (_isEditMode && _selectedControlId == null) ? 84 : 16,
+              bottom: 16,
               child: _buildPageIndicator(),
             ),
 
@@ -854,16 +854,6 @@ class _DashGridPageState extends State<DashGridPage>
             right: 0,
             top: _effectiveMenuOffset - _menuHeight,
             child: _buildMenuPanel(),
-          ),
-
-          // Slider bar at the bottom (only in edit mode, and hidden while a
-          // control is selected).
-          if (_isEditMode && _selectedControlId == null)
-            Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildSliderPanel(),
           ),
         ],
       ),
@@ -1143,6 +1133,11 @@ class _DashGridPageState extends State<DashGridPage>
                 isEditMode: _isEditMode,
                 pageIndex: _currentPage,
                 pageCount: _pages.length,
+                gridSize: _gridSize,
+                onGridSizeChanged: (value) {
+                  setState(() => _gridSize = value);
+                  _saveLayout();
+                },
                 onToggleEditMode: () => _onMenuAction('toggle_edit'),
                 onAddControl: () => _onMenuAction('add_control'),
                 onAddPage: () => _onMenuAction('add_page'),
@@ -1158,63 +1153,14 @@ class _DashGridPageState extends State<DashGridPage>
       ),
     );
   }
-
-  Widget _buildSliderPanel() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(80),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            const Icon(Icons.grid_on, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Slider(
-                value: _gridSize,
-                min: 16.0,
-                max: 120.0,
-                divisions: 26, // step = 4px
-                label: '${_gridSize.round()} px',
-                onChanged: (value) {
-                  setState(() {
-                    _gridSize = value;
-                  });
-                  _saveLayout();
-                },
-              ),
-            ),
-            SizedBox(
-              width: 56,
-              child: Text(
-                '${_gridSize.round()}',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontFeatures: const [ui.FontFeature.tabularFigures()],
-                    ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _MenuContent extends StatelessWidget {
   final bool isEditMode;
   final int pageIndex;
   final int pageCount;
+  final double gridSize;
+  final ValueChanged<double> onGridSizeChanged;
   final VoidCallback onToggleEditMode;
   final VoidCallback onAddControl;
   final VoidCallback onAddPage;
@@ -1225,6 +1171,8 @@ class _MenuContent extends StatelessWidget {
     required this.isEditMode,
     required this.pageIndex,
     required this.pageCount,
+    required this.gridSize,
+    required this.onGridSizeChanged,
     required this.onToggleEditMode,
     required this.onAddControl,
     required this.onAddPage,
@@ -1287,6 +1235,39 @@ class _MenuContent extends StatelessWidget {
             ),
             enabled: pageCount > 1,
             onTap: pageCount > 1 ? onDeletePage : null,
+          ),
+          const Divider(height: 1),
+          // Grid size slider — only meaningful while placing/resizing
+          // controls, so it lives under the edit-mode section of the menu.
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(_Icons.grid, color: theme.colorScheme.primary, size: 20),
+                    const SizedBox(width: 10),
+                    const Expanded(child: Text('Grid size')),
+                    Text(
+                      '${gridSize.round()} px',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontFeatures: const [ui.FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: gridSize.clamp(16.0, 120.0),
+                  min: 16.0,
+                  max: 120.0,
+                  divisions: 26, // step = 4px
+                  label: '${gridSize.round()} px',
+                  onChanged: onGridSizeChanged,
+                ),
+              ],
+            ),
           ),
         ],
         const Divider(height: 1),

@@ -149,6 +149,15 @@ const List<ControlSetting> _commonSettings = [
     divisions: 32,
     unit: 'px',
   ),
+  ControlSetting.slider(
+    key: 'backgroundOpacity',
+    label: 'Background opacity',
+    defaultValue: 92.0,
+    min: 0.0,
+    max: 100.0,
+    divisions: 100,
+    unit: '%',
+  ),
 ];
 
 /// Type-specific settings, keyed by control type id.

@@ -69,6 +69,19 @@ class ControlWidget extends StatelessWidget {
       (outerRadiusValue - 4).clamp(0.0, 64.0).toDouble(),
     );
 
+    // User-picked background opacity (stored as percent 0..100). In edit
+    // mode we floor the effective alpha so a nearly-transparent widget can
+    // still be picked up, moved, and deleted; the user's real value is used
+    // verbatim in view mode.
+    final userOpacity =
+        (control.doubleSetting('backgroundOpacity', fallback: 92.0) / 100.0)
+            .clamp(0.0, 1.0);
+    const editModeMinOpacity = 0.35;
+    final effectiveOpacity =
+        isEditMode ? userOpacity.clamp(editModeMinOpacity, 1.0) : userOpacity;
+    final surfaceColor = theme.colorScheme.surface
+        .withAlpha((effectiveOpacity * 255).round().clamp(0, 255));
+
     return Material(
       color: Colors.transparent,
       child: Stack(
@@ -76,7 +89,7 @@ class ControlWidget extends StatelessWidget {
         children: [
           Positioned.fill(
             child: Material(
-              color: theme.colorScheme.surface.withAlpha(isEditMode ? 210 : 235),
+              color: surfaceColor,
               borderRadius: outerRadius,
               clipBehavior: Clip.antiAlias,
               child: InkWell(

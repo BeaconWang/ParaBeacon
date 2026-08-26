@@ -116,6 +116,14 @@ class ControlCatalog {
           defaultCols: 4,
           defaultRows: 6,
         ),
+        ControlType(
+          id: 'map',
+          label: 'Map',
+          icon: Icons.map_outlined,
+          kind: ControlKind.widget,
+          defaultCols: 6,
+          defaultRows: 6,
+        ),
       ],
     ),
   ];

@@ -65,6 +65,17 @@ dependencies:
   # Persist the selected sensor so it can auto-reconnect on next launch.
   shared_preferences: ^2.3.2
 
+  # Interactive slippy-map for the Map control (lib/controls/map_control.dart).
+  # flutter_map renders raster tiles (OSM by default) with pan/zoom; latlong2
+  # provides the LatLng type it consumes.
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # Device GPS for the Map control: streams the real position/heading and
+  # handles the location-permission request on Android/iOS. On desktop it
+  # degrades gracefully (the map falls back to the flight-data position).
+  geolocator: ^13.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

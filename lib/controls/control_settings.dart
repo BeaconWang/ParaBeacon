@@ -108,6 +108,34 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       unit: 's',
     ),
   ],
+  'map': [
+    ControlSetting.toggle(
+      key: 'follow',
+      label: 'Follow position',
+      defaultValue: true,
+    ),
+    ControlSetting.slider(
+      key: 'zoom',
+      label: 'Zoom',
+      defaultValue: 13.0,
+      min: 3.0,
+      max: 18.0,
+      divisions: 15,
+    ),
+    ControlSetting.choice(
+      key: 'tileSource',
+      label: 'Map source',
+      defaultValue: 'osm',
+      options: {
+        'osm': 'OpenStreetMap',
+        'osmfr': 'OSM France',
+        'carto-dark': 'Carto Dark',
+        'carto-voyager': 'Carto Voyager',
+        'amap': '高德地图',
+        'amap-sat': '高德卫星',
+      },
+    ),
+  ],
 };
 
 /// Returns the full ordered list of settings for a control type id

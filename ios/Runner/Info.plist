@@ -8,6 +8,10 @@
 	<string>ParaBeacon uses Bluetooth to connect to external flight sensors (vario, barometer, heart rate).</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>ParaBeacon uses Bluetooth to connect to external flight sensors (vario, barometer, heart rate).</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ParaBeacon uses your location to show your position on the map and follow your flight.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>ParaBeacon uses your location to show your position on the map and track your flight.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

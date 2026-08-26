@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'placed_control.dart';
 import 'data_value_control.dart';
 import 'debug_sensor_control.dart';
+import 'map_control.dart';
 import 'vario_control.dart';
 
 /// Visual representation of a [PlacedControl] on the dashboard.
@@ -105,6 +106,16 @@ class ControlWidget extends StatelessWidget {
         return VerticalSpeedControl(showTitle: showTitle);
       case 'debug_sensor':
         return const DebugSensorControl();
+      case 'map':
+        final source = control.setting('tileSource');
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: MapControl(
+            follow: control.boolSetting('follow', fallback: true),
+            initialZoom: control.doubleSetting('zoom', fallback: 13.0),
+            tileSource: source is String ? source : 'osm',
+          ),
+        );
       default:
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,

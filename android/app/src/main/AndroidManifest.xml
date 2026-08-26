@@ -11,8 +11,14 @@
         android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
-        android:maxSdkVersion="30" />
+
+    <!-- Fine + coarse location: used by legacy BLE scanning (Android 11-) and
+         by the Map control's device GPS (geolocator) across all SDK levels. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Required to download online map tiles for the Map control. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:label="ParaBeacon"

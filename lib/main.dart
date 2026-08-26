@@ -15,6 +15,7 @@ import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
+import 'data/flight_recorder.dart';
 import 'data/flight_data_source.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
@@ -69,6 +70,11 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> {
     // its vertical speed takes over from the simulator.
     BleSensorService.instance.init();
     _bleBridge = BleFlightDataBridge(source: _dataSource)..attach();
+
+    // Continuously record the full flight-data feed while a flight is in
+    // progress (driven by the shared FlightState; supports auto take-off /
+    // landing detection when enabled).
+    FlightRecorder.instance.bind(_dataSource);
 
     // Load the user's persisted Vario sound profile and apply it to the audio
     // engine (no-op beyond defaults on first launch).

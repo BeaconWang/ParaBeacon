@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/flight_recorder.dart';
 import '../data/flight_state.dart';
 
 /// A widget control that starts/stops a flight.
@@ -141,6 +142,12 @@ class _FlightButtonControlState extends State<FlightButtonControl> {
                               ],
                             ),
                           ),
+                          _RecordingReadout(
+                            fgColor: fgColor,
+                            fontSize: (timeSize * 0.85)
+                                .clamp(8.0, 14.0)
+                                .toDouble(),
+                          ),
                         ],
                       ],
                     ),
@@ -236,6 +243,48 @@ class _AutoDetectBadge extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A tiny "● REC · N pts" readout backed by the [FlightRecorder]. Rebuilds as
+/// samples are appended so the pilot can see recording is live and growing.
+class _RecordingReadout extends StatelessWidget {
+  final Color fgColor;
+  final double fontSize;
+
+  const _RecordingReadout({required this.fgColor, required this.fontSize});
+
+  @override
+  Widget build(BuildContext context) {
+    final recorder = FlightRecorder.instance;
+    return AnimatedBuilder(
+      animation: recorder,
+      builder: (context, _) {
+        if (!recorder.isRecording) return const SizedBox.shrink();
+        final track = recorder.currentTrack!;
+        final km = track.distanceM / 1000.0;
+        return Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.fiber_manual_record,
+                  size: fontSize + 2, color: fgColor),
+              const SizedBox(width: 3),
+              Text(
+                'REC · ${track.pointCount} pts · ${km.toStringAsFixed(1)} km',
+                style: TextStyle(
+                  fontSize: fontSize,
+                  color: fgColor.withAlpha(230),
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

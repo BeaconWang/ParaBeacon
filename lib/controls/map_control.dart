@@ -60,14 +60,14 @@ class MapTileSources {
     MapTileSource(
       id: 'carto-dark',
       label: 'Carto Dark Matter',
-      urlTemplate: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      urlTemplate: 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
       attribution: '© OSM · CARTO',
     ),
     MapTileSource(
       id: 'carto-voyager',
       label: 'Carto Voyager',
       urlTemplate:
-          'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+          'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
       attribution: '© OSM · CARTO',
     ),
     MapTileSource(

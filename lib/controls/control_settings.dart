@@ -119,6 +119,13 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       },
     ),
   ],
+  'flight_button': [
+    ControlSetting.toggle(
+      key: 'showAutoDetect',
+      label: 'Show auto-detect checkbox',
+      defaultValue: true,
+    ),
+  ],
   'map': [
     ControlSetting.toggle(
       key: 'follow',

@@ -10,8 +10,16 @@ import '../data/flight_state.dart';
 /// one of them toggles the same global flight session and every button (across
 /// pages) updates in sync. While flying it shows the elapsed time and a "Stop"
 /// affordance; when idle it shows "Start".
+///
+/// When [showAutoDetect] is true, a checkbox is shown to the left of the
+/// button; ticking it enables system auto start/stop (take-off & landing
+/// detection). That flag is also shared via [FlightState], so it stays in sync
+/// across every Flight button that shows the checkbox.
 class FlightButtonControl extends StatefulWidget {
-  const FlightButtonControl({super.key});
+  /// Whether the auto-detect checkbox is shown to the left of the button.
+  final bool showAutoDetect;
+
+  const FlightButtonControl({super.key, this.showAutoDetect = true});
 
   @override
   State<FlightButtonControl> createState() => _FlightButtonControlState();
@@ -69,58 +77,165 @@ class _FlightButtonControlState extends State<FlightButtonControl> {
     final theme = Theme.of(context);
     final flying = _flight.isFlying;
 
-    final color = flying ? theme.colorScheme.error : Colors.green.shade600;
-    final onColor = Colors.white;
+    // Single unified pill: strong colored background, "onColor" foreground.
+    final bgColor = flying ? theme.colorScheme.error : Colors.green.shade600;
+    final fgColor = Colors.white;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final base = constraints.biggest.shortestSide;
-        final iconSize = (base * 0.34).clamp(18.0, 48.0).toDouble();
-        final labelSize = (base * 0.16).clamp(11.0, 22.0).toDouble();
-        final timeSize = (base * 0.13).clamp(10.0, 18.0).toDouble();
+        final iconSize = (base * 0.30).clamp(16.0, 40.0).toDouble();
+        final labelSize = (base * 0.15).clamp(11.0, 20.0).toDouble();
+        final timeSize = (base * 0.12).clamp(10.0, 16.0).toDouble();
 
         return Material(
-          color: color,
-          borderRadius: BorderRadius.circular(8),
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
           clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: _flight.toggle,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    flying ? Icons.stop_circle_outlined : Icons.play_circle_outline,
-                    size: iconSize,
-                    color: onColor,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    flying ? 'Stop' : 'Start',
-                    style: TextStyle(
-                      fontSize: labelSize,
-                      fontWeight: FontWeight.bold,
-                      color: onColor,
+          child: Row(
+            children: [
+              // Left: integrated auto-detect badge, its own hit area, divided
+              // from the main button by a subtle vertical rule.
+              if (widget.showAutoDetect)
+                _AutoDetectBadge(
+                  enabled: _flight.autoDetect,
+                  fgColor: fgColor,
+                  onChanged: _flight.setAutoDetect,
+                ),
+
+              // Right: the main start/stop tap area.
+              Expanded(
+                child: InkWell(
+                  onTap: _flight.toggle,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          flying
+                              ? Icons.stop_circle_outlined
+                              : Icons.play_circle_outline,
+                          size: iconSize,
+                          color: fgColor,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          flying ? 'STOP' : 'START',
+                          style: TextStyle(
+                            fontSize: labelSize,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.0,
+                            color: fgColor,
+                          ),
+                        ),
+                        if (flying) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            _fmtElapsed(_flight.elapsed),
+                            style: TextStyle(
+                              fontSize: timeSize,
+                              color: fgColor.withAlpha(220),
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  if (flying) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      _fmtElapsed(_flight.elapsed),
-                      style: TextStyle(
-                        fontSize: timeSize,
-                        color: onColor.withAlpha(220),
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+/// The integrated "auto detect take-off / landing" badge shown on the left of
+/// the Flight button.
+///
+/// Matches the reference design: a flight icon + "AUTO" caps label above a
+/// compact [Switch], its own tap area, separated from the main button by a
+/// translucent vertical rule. Toggling flips the shared [FlightState.autoDetect]
+/// flag so every visible badge stays in sync.
+class _AutoDetectBadge extends StatelessWidget {
+  final bool enabled;
+  final Color fgColor;
+  final ValueChanged<bool> onChanged;
+
+  const _AutoDetectBadge({
+    required this.enabled,
+    required this.fgColor,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dim = fgColor.withAlpha(115);
+    final labelColor = enabled ? fgColor : dim;
+
+    return Tooltip(
+      message: 'Auto-detect take-off / landing',
+      child: InkWell(
+        onTap: () => onChanged(!enabled),
+        child: Container(
+          height: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(color: fgColor.withAlpha(64), width: 1),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    enabled ? Icons.flight_takeoff : Icons.flight,
+                    color: labelColor,
+                    size: 13,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    'AUTO',
+                    style: TextStyle(
+                      color: labelColor,
+                      fontSize: 9,
+                      height: 1.0,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              // Compact switch scaled to fit within the button height.
+              SizedBox(
+                width: 36,
+                height: 20,
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: Switch(
+                    value: enabled,
+                    onChanged: onChanged,
+                    activeThumbColor: fgColor,
+                    activeTrackColor: fgColor.withAlpha(140),
+                    inactiveThumbColor: fgColor.withAlpha(180),
+                    inactiveTrackColor: fgColor.withAlpha(40),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

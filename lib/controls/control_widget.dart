@@ -115,7 +115,10 @@ class ControlWidget extends StatelessWidget {
       case 'debug_sensor':
         return const DebugSensorControl();
       case 'flight_button':
-        return const FlightButtonControl();
+        return FlightButtonControl(
+          showAutoDetect:
+              control.boolSetting('showAutoDetect', fallback: true),
+        );
       case 'map':
         final source = control.setting('tileSource');
         return ClipRRect(

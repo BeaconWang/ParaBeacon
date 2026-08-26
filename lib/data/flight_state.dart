@@ -31,6 +31,23 @@ class FlightState extends ChangeNotifier {
     return DateTime.now().difference(start);
   }
 
+  /// Whether the system should automatically detect take-off / landing and
+  /// start / stop the flight on its own. This is a shared, app-wide preference
+  /// (toggled from the checkbox next to any Flight button), so every button
+  /// reflects the same auto-detect mode.
+  bool _autoDetect = false;
+  bool get autoDetect => _autoDetect;
+
+  /// Enables or disables automatic flight detection.
+  void setAutoDetect(bool value) {
+    if (_autoDetect == value) return;
+    _autoDetect = value;
+    notifyListeners();
+  }
+
+  /// Toggles automatic flight detection.
+  void toggleAutoDetect() => setAutoDetect(!_autoDetect);
+
   /// Starts a flight. No-op if one is already in progress.
   void start() {
     if (_isFlying) return;

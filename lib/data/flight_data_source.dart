@@ -261,19 +261,62 @@ class BluetoothSensorFlightDataSource extends FlightDataSource {
 
   bool _connected = false;
 
+  /// Whether a *real* (physical) BLE sensor is currently feeding data. When
+  /// true, the built-in simulator is suppressed so it never competes with or
+  /// overwrites the live sensor readings.
+  bool _realSensorActive = false;
+
   /// Whether a sensor (real or simulated) is currently feeding data.
   bool get isConnected => _connected;
 
+  /// Whether the live feed is coming from a real BLE sensor (as opposed to the
+  /// development simulator).
+  bool get isRealSensorActive => _realSensorActive;
+
+  /// Marks that a real BLE sensor is now the active source. This pauses the
+  /// development simulator (if running) so the live sensor's vertical speed is
+  /// the single source of truth for the bluetooth-sensor tier.
+  void beginRealSensor() {
+    _realSensorActive = true;
+    // Pause the simulator so it stops overwriting real readings.
+    _sim?.removeListener(_onSim);
+    _sim?.stop();
+    _connected = true;
+    notifyListeners();
+  }
+
+  /// Marks that the real BLE sensor is no longer active (disconnected). By
+  /// default the development simulator resumes so the app keeps producing a
+  /// bluetooth-sensor-tier feed; pass [resumeSimulator] = false to leave the
+  /// last values frozen instead.
+  void endRealSensor({bool resumeSimulator = true}) {
+    _realSensorActive = false;
+    if (resumeSimulator) {
+      connectSimulated();
+    } else {
+      _connected = false;
+    }
+    notifyListeners();
+  }
+
   /// Feeds a single vertical-speed reading from the BLE sensor (m/s), keeping
   /// all other fields as they were. This is the field the vario audio consumes.
+  ///
+  /// Receiving a real reading implicitly marks the real sensor as active,
+  /// suppressing the simulator so the sensor's value always wins.
   void ingestVerticalSpeed(double verticalSpeed) {
     if (verticalSpeed.isNaN || verticalSpeed.isInfinite) return;
+    if (!_realSensorActive) beginRealSensor();
     update(rawData.copyWith(verticalSpeed: verticalSpeed));
     _connected = true;
   }
 
   /// Feeds a full sensor snapshot from the BLE device.
+  ///
+  /// Receiving a real snapshot implicitly marks the real sensor as active,
+  /// suppressing the simulator so the sensor's values always win.
   void ingestSnapshot(FlightData snapshot) {
+    if (!_realSensorActive) beginRealSensor();
     update(snapshot);
     _connected = true;
   }
@@ -281,26 +324,32 @@ class BluetoothSensorFlightDataSource extends FlightDataSource {
   /// Development helper: drive the sensor tier with the built-in simulator so
   /// the app runs without a physical device. Values still sit at the
   /// bluetooth-sensor priority, so debug overrides continue to win.
+  ///
+  /// No-op while a real sensor is active — the live feed always takes priority.
   void connectSimulated({
     Duration tickInterval = const Duration(milliseconds: 100),
   }) {
+    if (_realSensorActive) return;
     _sim ??= SimulatedFlightDataSource(tickInterval: tickInterval);
     // Mirror the simulator's raw output into this source's raw tier.
+    _sim!.removeListener(_onSim); // avoid double-subscription
     _sim!.addListener(_onSim);
     _sim!.start();
     _connected = true;
   }
 
   void _onSim() {
+    // Ignore simulator ticks once a real sensor has taken over.
+    if (_realSensorActive) return;
     final sim = _sim;
     if (sim != null) update(sim.rawData);
   }
 
   @override
   void start() {
-    // If nothing else connected a real device, fall back to the simulator so
+    // If a real device is not (yet) feeding data, fall back to the simulator so
     // there is always a bluetooth-sensor-tier feed.
-    if (!_connected) connectSimulated();
+    if (!_realSensorActive && !_connected) connectSimulated();
   }
 
   @override

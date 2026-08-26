@@ -9,6 +9,8 @@ import 'controls/control_settings_sheet.dart';
 import 'controls/control_widget.dart';
 import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
+import 'data/ble/ble_flight_data_bridge.dart';
+import 'data/ble/ble_sensor_service.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_source.dart';
 import 'audio/vario_audio_example.dart';
@@ -27,12 +29,17 @@ class ParaBeaconApp extends StatefulWidget {
 
 class _ParaBeaconAppState extends State<ParaBeaconApp> {
   // The single, unified flight-data source for the whole app.
-  late final FlightDataSource _dataSource;
+  late final BluetoothSensorFlightDataSource _dataSource;
 
   // Drives the Vario audio directly from the vertical speed of [_dataSource].
   // Every FlightData update forwards `verticalSpeed` into the audio engine, so
   // the sound is always a function of the current vertical speed.
   late final VarioAudioBridge _varioAudio;
+
+  // Forwards a connected BLE sensor's readings into [_dataSource] so that,
+  // whenever a real sensor is connected, its vertical speed drives the app
+  // (and the vario audio) instead of the development simulator.
+  late final BleFlightDataBridge _bleBridge;
 
   @override
   void initState() {
@@ -41,6 +48,13 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> {
     // Debug Sensor control) always wins over it (Debug > Bluetooth sensor).
     // Falls back to the built-in simulator until a real BLE device is paired.
     _dataSource = BluetoothSensorFlightDataSource()..start();
+
+    // Bring up the BLE sensor service (best-effort; no-op on desktop/web) and
+    // bridge its readings into the unified data source. When a sensor connects,
+    // its vertical speed takes over from the simulator.
+    BleSensorService.instance.init();
+    _bleBridge = BleFlightDataBridge(source: _dataSource)..attach();
+
     // Use the shared VarioAudioService singleton so the Preferences panel can
     // control the same engine (mute/volume) without threading it through the
     // widget tree.
@@ -53,6 +67,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> {
 
   @override
   void dispose() {
+    _bleBridge.dispose();
     _varioAudio.dispose();
     _dataSource.dispose();
     super.dispose();

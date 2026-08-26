@@ -82,29 +82,43 @@ class ControlWidget extends StatelessWidget {
     final surfaceColor = theme.colorScheme.surface
         .withAlpha((effectiveOpacity * 255).round().clamp(0, 255));
 
+    // User-picked whole-control opacity (percent 0..100). This fades the
+    // entire control (background + border + face contents) together via a
+    // single Opacity layer. The delete button stays outside this wrapper so
+    // a user who fully hid a widget can still recover it in edit mode.
+    final userControlOpacity =
+        (control.doubleSetting('controlOpacity', fallback: 100.0) / 100.0)
+            .clamp(0.0, 1.0);
+    final effectiveControlOpacity = isEditMode
+        ? userControlOpacity.clamp(editModeMinOpacity, 1.0)
+        : userControlOpacity;
+
     return Material(
       color: Colors.transparent,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Positioned.fill(
-            child: Material(
-              color: surfaceColor,
-              borderRadius: outerRadius,
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: onTap,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: outerRadius,
-                    border: Border.all(
-                      color: effectiveBorderColor,
-                      width: effectiveBorderWidth,
+            child: Opacity(
+              opacity: effectiveControlOpacity.toDouble(),
+              child: Material(
+                color: surfaceColor,
+                borderRadius: outerRadius,
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: onTap,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: outerRadius,
+                      border: Border.all(
+                        color: effectiveBorderColor,
+                        width: effectiveBorderWidth,
+                      ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: _buildFace(context, theme, innerRadius),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: _buildFace(context, theme, innerRadius),
+                    ),
                   ),
                 ),
               ),

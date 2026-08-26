@@ -150,6 +150,15 @@ const List<ControlSetting> _commonSettings = [
     unit: 'px',
   ),
   ControlSetting.slider(
+    key: 'controlOpacity',
+    label: 'Control opacity',
+    defaultValue: 100.0,
+    min: 0.0,
+    max: 100.0,
+    divisions: 100,
+    unit: '%',
+  ),
+  ControlSetting.slider(
     key: 'backgroundOpacity',
     label: 'Background opacity',
     defaultValue: 92.0,

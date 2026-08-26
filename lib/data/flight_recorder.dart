@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'flight_data.dart';
 import 'flight_data_source.dart';
 import 'flight_state.dart';
+import 'tracklog_store.dart';
 
 /// One recorded sample of the full flight-data snapshot at a moment in time.
 ///
@@ -25,10 +26,32 @@ class FlightSample {
 class FlightTrack {
   FlightTrack({required this.startTime});
 
+  /// Restores a completed track from a persisted summary. Per-sample data
+  /// (the [samples] list) is intentionally not persisted — only the summary
+  /// statistics that the Tracklogs sheet displays.
+  FlightTrack._fromSummary({
+    required this.startTime,
+    required this.endTime,
+    required double distanceM,
+    required double maxAltitude,
+    required double minAltitude,
+    required double maxClimb,
+    required double maxSink,
+    required int pointCount,
+  }) {
+    _distanceM = distanceM;
+    _maxAltitude = maxAltitude;
+    _minAltitude = minAltitude;
+    _maxClimb = maxClimb;
+    _maxSink = maxSink;
+    _persistedPointCount = pointCount;
+  }
+
   final DateTime startTime;
   DateTime? endTime;
 
-  /// All recorded samples (full snapshots), in chronological order.
+  /// All recorded samples (full snapshots), in chronological order. Empty for
+  /// tracks restored from a persisted summary.
   final List<FlightSample> samples = [];
 
   // ── Incrementally-maintained statistics ────────────────────────────────────
@@ -37,6 +60,10 @@ class FlightTrack {
   double _minAltitude = double.infinity;
   double _maxClimb = 0.0;
   double _maxSink = 0.0;
+
+  /// Point count carried across a persistence round-trip when [samples] is
+  /// empty (i.e. the track was restored from disk).
+  int? _persistedPointCount;
 
   /// Cumulative ground track distance in meters.
   double get distanceM => _distanceM;
@@ -51,7 +78,7 @@ class FlightTrack {
   double get maxClimb => _maxClimb;
   double get maxSink => _maxSink;
 
-  int get pointCount => samples.length;
+  int get pointCount => _persistedPointCount ?? samples.length;
 
   Duration get duration => (endTime ?? DateTime.now()).difference(startTime);
 
@@ -76,6 +103,42 @@ class FlightTrack {
         s.data.longitude,
       );
     }
+  }
+
+  /// Serializes the track's summary (no per-sample data) to a JSON map. Used
+  /// by the persistent tracklog store so completed flights survive an app
+  /// restart.
+  Map<String, dynamic> toSummaryJson() {
+    return {
+      'startTime': startTime.toIso8601String(),
+      'endTime': endTime?.toIso8601String(),
+      'distanceM': _distanceM,
+      'maxAltitude':
+          _maxAltitude == double.negativeInfinity ? 0.0 : _maxAltitude,
+      'minAltitude': _minAltitude == double.infinity ? 0.0 : _minAltitude,
+      'maxClimb': _maxClimb,
+      'maxSink': _maxSink,
+      'pointCount': pointCount,
+    };
+  }
+
+  /// Inverse of [toSummaryJson]. Returns null if the payload is malformed
+  /// (missing/unparseable start/end times).
+  static FlightTrack? fromSummaryJson(Map<String, dynamic> json) {
+    final start = DateTime.tryParse(json['startTime'] as String? ?? '');
+    if (start == null) return null;
+    final end = DateTime.tryParse(json['endTime'] as String? ?? '');
+    if (end == null) return null;
+    return FlightTrack._fromSummary(
+      startTime: start,
+      endTime: end,
+      distanceM: (json['distanceM'] as num?)?.toDouble() ?? 0.0,
+      maxAltitude: (json['maxAltitude'] as num?)?.toDouble() ?? 0.0,
+      minAltitude: (json['minAltitude'] as num?)?.toDouble() ?? 0.0,
+      maxClimb: (json['maxClimb'] as num?)?.toDouble() ?? 0.0,
+      maxSink: (json['maxSink'] as num?)?.toDouble() ?? 0.0,
+      pointCount: (json['pointCount'] as num?)?.toInt() ?? 0,
+    );
   }
 
   static double _haversineM(double lat1, double lon1, double lat2, double lon2) {
@@ -157,6 +220,7 @@ class FlightRecorder extends ChangeNotifier {
       if (identical(_lastCompleted, track)) {
         _lastCompleted = _tracks.isNotEmpty ? _tracks.first : null;
       }
+      TrackLogStore.instance.save(_tracks);
       notifyListeners();
     }
   }
@@ -166,6 +230,20 @@ class FlightRecorder extends ChangeNotifier {
     if (_tracks.isEmpty) return;
     _tracks.clear();
     _lastCompleted = null;
+    TrackLogStore.instance.save(_tracks);
+    notifyListeners();
+  }
+
+  /// Loads previously-persisted flight tracks from disk (best-effort).
+  /// Idempotent — calling more than once merges nothing; the on-disk list
+  /// replaces the in-memory one.
+  Future<void> loadPersisted() async {
+    final loaded = await TrackLogStore.instance.load();
+    if (loaded.isEmpty) return;
+    _tracks
+      ..clear()
+      ..addAll(loaded);
+    _lastCompleted = _tracks.first;
     notifyListeners();
   }
 
@@ -223,8 +301,11 @@ class FlightRecorder extends ChangeNotifier {
     if (t != null) {
       t.endTime = DateTime.now();
       _lastCompleted = t;
-      // Keep only tracks that actually captured something.
-      if (t.pointCount > 0) _tracks.insert(0, t);
+      // Log every finished flight so the pilot can see it in the Tracklogs
+      // sheet — even if no samples were captured (e.g. no sensor / no GPS
+      // fix). The summary still has meaningful start/end times.
+      _tracks.insert(0, t);
+      TrackLogStore.instance.save(_tracks);
     }
     _current = null;
     _lastStored = null;

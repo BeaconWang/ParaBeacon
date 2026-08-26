@@ -87,6 +87,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // progress (driven by the shared FlightState; supports auto take-off /
     // landing detection when enabled).
     FlightRecorder.instance.bind(_dataSource);
+    // Restore previously-saved flight summaries so the Tracklogs sheet
+    // shows past flights across app restarts (best-effort; failures are
+    // silent so a corrupt on-disk log doesn't block startup).
+    FlightRecorder.instance.loadPersisted();
 
     // Load the user's persisted Vario sound profile and apply it to the audio
     // engine (no-op beyond defaults on first launch).

@@ -17,6 +17,7 @@ import 'data/ble/ble_sensor_service.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_recorder.dart';
+import 'data/layout_store.dart';
 import 'data/flight_data_source.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
@@ -193,6 +194,45 @@ class _DashGridPageState extends State<DashGridPage>
     _menuController.addListener(() {
       setState(() {});
     });
+    _loadLayout();
+  }
+
+  /// Restores the saved dashboard layout (pages, controls, grid size) if any.
+  Future<void> _loadLayout() async {
+    final saved = await LayoutStore.instance.load();
+    if (saved == null || !mounted) return;
+    setState(() {
+      _pages
+        ..clear()
+        ..addAll(saved.pages);
+      _gridSize = saved.gridSize;
+      _currentPage = 0;
+      _selectedControlId = null;
+
+      // Advance the id sequences past any restored ids so new pages/controls
+      // never collide with loaded ones.
+      _pageSeq = _pages.length;
+      _controlSeq = 0;
+      for (final page in _pages) {
+        for (final c in page.controls) {
+          final n = _seqFromId(c.instanceId, 'ctrl_');
+          if (n != null && n >= _controlSeq) _controlSeq = n + 1;
+        }
+        final pn = _seqFromId(page.id, 'page_');
+        if (pn != null && pn >= _pageSeq) _pageSeq = pn + 1;
+      }
+    });
+  }
+
+  /// Extracts the numeric suffix of an id like `ctrl_12` / `page_3`.
+  int? _seqFromId(String id, String prefix) {
+    if (!id.startsWith(prefix)) return null;
+    return int.tryParse(id.substring(prefix.length));
+  }
+
+  /// Persists the current layout (debounced).
+  void _saveLayout() {
+    LayoutStore.instance.save(pages: _pages, gridSize: _gridSize);
   }
 
   @override
@@ -303,6 +343,7 @@ class _DashGridPageState extends State<DashGridPage>
       _selectedControlId = null;
       _isEditMode = true;
     });
+    _saveLayout();
     // Jump the PageView to the new page after the frame so it exists.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_pageController.hasClients) {
@@ -321,6 +362,7 @@ class _DashGridPageState extends State<DashGridPage>
       }
       _selectedControlId = null;
     });
+    _saveLayout();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_pageController.hasClients) {
         _pageController.jumpToPage(_currentPage);
@@ -474,6 +516,7 @@ class _DashGridPageState extends State<DashGridPage>
                             onChanged: (v) {
                               setState(() => _gridSize = v);
                               setSheetState(() {});
+                              _saveLayout();
                             },
                           ),
                         ],
@@ -535,6 +578,7 @@ class _DashGridPageState extends State<DashGridPage>
                                   _controls.clear();
                                   _selectedControlId = null;
                                 });
+                                _saveLayout();
                                 setSheetState(() {});
                               }
                             },
@@ -594,6 +638,7 @@ class _DashGridPageState extends State<DashGridPage>
       // Adding a control implies we want to see/edit it.
       _isEditMode = true;
     });
+    _saveLayout();
   }
 
   /// Finds a grid cell (col, row) where a control of the given size does not
@@ -627,6 +672,7 @@ class _DashGridPageState extends State<DashGridPage>
       _controls.removeWhere((c) => c.instanceId == instanceId);
       if (_selectedControlId == instanceId) _selectedControlId = null;
     });
+    _saveLayout();
   }
 
   /// Shows the long-press context menu for [control] and performs the action.
@@ -640,7 +686,10 @@ class _DashGridPageState extends State<DashGridPage>
         await showControlSettingsSheet(
           context,
           control: control,
-          onChanged: () => setState(() {}),
+          onChanged: () {
+            setState(() {});
+            _saveLayout();
+          },
         );
         break;
       case ControlAction.duplicate:
@@ -651,12 +700,14 @@ class _DashGridPageState extends State<DashGridPage>
           _controls.remove(control);
           _controls.add(control);
         });
+        _saveLayout();
         break;
       case ControlAction.sendToBack:
         setState(() {
           _controls.remove(control);
           _controls.insert(0, control);
         });
+        _saveLayout();
         break;
       case ControlAction.delete:
         _deleteControl(control.instanceId);
@@ -676,6 +727,7 @@ class _DashGridPageState extends State<DashGridPage>
       _selectedControlId = copy.instanceId;
       _isEditMode = true;
     });
+    _saveLayout();
   }
 
   void _onControlDragStart(PlacedControl control) {
@@ -945,6 +997,7 @@ class _DashGridPageState extends State<DashGridPage>
 
     if (selected != null && mounted) {
       setState(() => page.icon = selected);
+      _saveLayout();
     }
   }
 
@@ -984,6 +1037,7 @@ class _DashGridPageState extends State<DashGridPage>
                       onPanStart: (_) => _onControlDragStart(control),
                       onPanUpdate: (details) =>
                           _onControlDragUpdate(control, details.delta),
+                      onPanEnd: (_) => _saveLayout(),
                       child: child,
                     ),
                   ),
@@ -997,6 +1051,7 @@ class _DashGridPageState extends State<DashGridPage>
                         onPanStart: (_) => _onControlResizeStart(control),
                         onPanUpdate: (details) =>
                             _onControlResizeUpdate(control, details.delta),
+                        onPanEnd: (_) => _saveLayout(),
                         child: _ResizeHandle(
                           color: Theme.of(context).colorScheme.primary,
                         ),
@@ -1115,6 +1170,7 @@ class _DashGridPageState extends State<DashGridPage>
                   setState(() {
                     _gridSize = value;
                   });
+                  _saveLayout();
                 },
               ),
             ),

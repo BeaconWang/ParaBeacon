@@ -85,4 +85,47 @@ class PlacedControl {
       settings: Map<String, dynamic>.from(settings),
     );
   }
+
+  /// Serializes this control to a JSON-safe map for layout persistence.
+  ///
+  /// Only the [ControlType.id] is stored (not the whole type); on load it is
+  /// resolved back via [ControlCatalog.byId]. Settings are stored as-is, so
+  /// they must contain only JSON-encodable values (bool/num/String), which the
+  /// settings schema guarantees.
+  Map<String, dynamic> toJson() => {
+        'instanceId': instanceId,
+        'typeId': type.id,
+        'col': col,
+        'row': row,
+        'cols': cols,
+        'rows': rows,
+        'settings': settings,
+      };
+
+  /// Rebuilds a control from [toJson] output. Returns null if the type id is
+  /// no longer known (e.g. a control removed from the catalog).
+  static PlacedControl? fromJson(Map<String, dynamic> json) {
+    final typeId = json['typeId'] as String?;
+    if (typeId == null) return null;
+    final type = ControlCatalog.byId(typeId);
+    if (type == null) return null;
+
+    // Start from the type defaults, then overlay any persisted settings so a
+    // layout saved before a new setting existed still gets sensible defaults.
+    final settings = defaultSettingsFor(typeId);
+    final saved = json['settings'];
+    if (saved is Map) {
+      saved.forEach((k, v) => settings[k.toString()] = v);
+    }
+
+    return PlacedControl(
+      instanceId: (json['instanceId'] as String?) ?? 'ctrl',
+      type: type,
+      col: (json['col'] as num?)?.toInt() ?? 0,
+      row: (json['row'] as num?)?.toInt() ?? 0,
+      cols: (json['cols'] as num?)?.toInt() ?? type.defaultCols,
+      rows: (json['rows'] as num?)?.toInt() ?? type.defaultRows,
+      settings: settings,
+    );
+  }
 }

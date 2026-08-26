@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
+import 'debug_settings.dart';
 import 'flight_data.dart';
 
 /// A set of manual overrides for individual flight-data fields.
@@ -266,6 +267,30 @@ class BluetoothSensorFlightDataSource extends FlightDataSource {
   /// overwrites the live sensor readings.
   bool _realSensorActive = false;
 
+  /// Debug preferences that gate the development simulator. The simulator only
+  /// runs as a fallback feed while [DebugSettings.simulatorEnabled] is true.
+  final DebugSettings _debug;
+
+  BluetoothSensorFlightDataSource({DebugSettings? debugSettings})
+      : _debug = debugSettings ?? DebugSettings.instance {
+    // React to the simulator toggle being flipped at runtime.
+    _debug.addListener(_onDebugSettingsChanged);
+  }
+
+  void _onDebugSettingsChanged() {
+    if (_realSensorActive) return;
+    if (_debug.simulatorEnabled) {
+      // Turned on: start feeding simulated data if nothing else is.
+      connectSimulated();
+    } else {
+      // Turned off: stop the simulator and freeze the last values.
+      _sim?.removeListener(_onSim);
+      _sim?.stop();
+      _connected = false;
+      notifyListeners();
+    }
+  }
+
   /// Whether a sensor (real or simulated) is currently feeding data.
   bool get isConnected => _connected;
 
@@ -289,9 +314,12 @@ class BluetoothSensorFlightDataSource extends FlightDataSource {
   /// default the development simulator resumes so the app keeps producing a
   /// bluetooth-sensor-tier feed; pass [resumeSimulator] = false to leave the
   /// last values frozen instead.
+  ///
+  /// The simulator only actually resumes when [DebugSettings.simulatorEnabled]
+  /// is true; otherwise the feed is left frozen regardless of [resumeSimulator].
   void endRealSensor({bool resumeSimulator = true}) {
     _realSensorActive = false;
-    if (resumeSimulator) {
+    if (resumeSimulator && _debug.simulatorEnabled) {
       connectSimulated();
     } else {
       _connected = false;
@@ -326,10 +354,13 @@ class BluetoothSensorFlightDataSource extends FlightDataSource {
   /// bluetooth-sensor priority, so debug overrides continue to win.
   ///
   /// No-op while a real sensor is active — the live feed always takes priority.
+  /// Also a no-op while [DebugSettings.simulatorEnabled] is false, so the app
+  /// never fabricates flight data unless the debug simulator is turned on.
   void connectSimulated({
     Duration tickInterval = const Duration(milliseconds: 100),
   }) {
     if (_realSensorActive) return;
+    if (!_debug.simulatorEnabled) return;
     _sim ??= SimulatedFlightDataSource(tickInterval: tickInterval);
     // Mirror the simulator's raw output into this source's raw tier.
     _sim!.removeListener(_onSim); // avoid double-subscription
@@ -348,7 +379,8 @@ class BluetoothSensorFlightDataSource extends FlightDataSource {
   @override
   void start() {
     // If a real device is not (yet) feeding data, fall back to the simulator so
-    // there is always a bluetooth-sensor-tier feed.
+    // there is always a bluetooth-sensor-tier feed — but only when the debug
+    // simulator is enabled (connectSimulated is a no-op otherwise).
     if (!_realSensorActive && !_connected) connectSimulated();
   }
 
@@ -360,6 +392,7 @@ class BluetoothSensorFlightDataSource extends FlightDataSource {
 
   @override
   void dispose() {
+    _debug.removeListener(_onDebugSettingsChanged);
     stop();
     _sim?.dispose();
     _sim = null;

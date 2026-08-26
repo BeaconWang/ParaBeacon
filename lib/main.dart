@@ -12,6 +12,7 @@ import 'controls/placed_control.dart';
 import 'controls/vario_sound_settings_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
+import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_source.dart';
 import 'audio/vario_audio_example.dart';
@@ -46,9 +47,15 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> {
   @override
   void initState() {
     super.initState();
+    // Load persisted debug preferences (e.g. the simulated-source toggle,
+    // default off). Loading notifies listeners, so if the simulator was
+    // previously enabled the data source resumes it automatically.
+    DebugSettings.instance.load();
+
     // Bluetooth-sensor tier is the raw feed; a debug override (installed via the
     // Debug Sensor control) always wins over it (Debug > Bluetooth sensor).
-    // Falls back to the built-in simulator until a real BLE device is paired.
+    // Falls back to the built-in simulator only when the debug simulator toggle
+    // is enabled; otherwise no data is fabricated until a real BLE device pairs.
     _dataSource = BluetoothSensorFlightDataSource()..start();
 
     // Bring up the BLE sensor service (best-effort; no-op on desktop/web) and
@@ -456,6 +463,31 @@ class _DashGridPageState extends State<DashGridPage>
                           const Text('Connect an external BLE sensor'),
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () => showBluetoothSensorSheet(context),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12, bottom: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.bug_report_outlined,
+                              color: theme.colorScheme.primary, size: 20),
+                          const SizedBox(width: 10),
+                          Text('Debug', style: theme.textTheme.titleMedium),
+                        ],
+                      ),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      secondary: Icon(Icons.sensors,
+                          color: theme.colorScheme.primary),
+                      title: const Text('Simulated flight data'),
+                      subtitle: const Text(
+                          'Feed fake sensor values when no BLE device is connected'),
+                      value: DebugSettings.instance.simulatorEnabled,
+                      onChanged: (on) {
+                        DebugSettings.instance.setSimulatorEnabled(on);
+                        setSheetState(() {});
+                      },
                     ),
                     const Divider(height: 1),
                     ListTile(

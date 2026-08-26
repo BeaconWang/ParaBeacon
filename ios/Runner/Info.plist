@@ -4,6 +4,15 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Background execution: keep the vario audio playing, GPS position
+	     tracking and BLE sensor link alive while the app is backgrounded or the
+	     screen is locked (like a navigation app running in the background). -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>audio</string>
+		<string>bluetooth-central</string>
+	</array>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>ParaBeacon uses Bluetooth to connect to external flight sensors (vario, barometer, heart rate).</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>

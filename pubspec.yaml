@@ -76,6 +76,10 @@ dependencies:
   # degrades gracefully (the map falls back to the flight-data position).
   geolocator: ^13.0.2
 
+  # Keep the screen awake while the app is in the foreground (a flight
+  # instrument must stay visible); also helps keep work alive when backgrounded.
+  wakelock_plus: ^1.2.8
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

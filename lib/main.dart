@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'dart:ui' as ui;
 
 import 'controls/add_control_sheet.dart';
@@ -20,6 +21,11 @@ import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Keep the display awake: a flight instrument must stay visible and its
+  // audio/GPS/sensor loops running rather than being suspended when the user
+  // isn't touching the screen. Best-effort — unsupported platforms are no-ops.
+  WakelockPlus.enable().catchError((_) {});
   runApp(const ParaBeaconApp());
 }
 

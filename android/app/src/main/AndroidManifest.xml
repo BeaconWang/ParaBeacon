@@ -20,6 +20,16 @@
     <!-- Required to download online map tiles for the Map control. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Background execution: keep GPS/vario/BLE working with the screen off or
+         the app backgrounded. WAKE_LOCK keeps the CPU alive (also used by the
+         keep-awake wakelock); the FOREGROUND_SERVICE_* permissions let a
+         location foreground service run on Android 10+/14+, and
+         POST_NOTIFICATIONS (Android 13+) is required to show its notification. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:label="ParaBeacon"
         android:name="${applicationName}"

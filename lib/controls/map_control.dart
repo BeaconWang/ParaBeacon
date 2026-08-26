@@ -268,7 +268,6 @@ class _MapControlState extends State<MapControl> {
                 // the previous provider are dropped cleanly.
                 key: ValueKey(src.id),
                 urlTemplate: src.urlTemplate,
-                userAgentPackageName: 'com.parabeacon.app',
                 maxNativeZoom: src.maxZoom.round(),
                 // Re-request tiles that failed transiently (mobile network
                 // hiccups) once they're off-screen, instead of leaving blank
@@ -279,11 +278,15 @@ class _MapControlState extends State<MapControl> {
                 keepBuffer: 3,
                 panBuffer: 2,
                 tileProvider: NetworkTileProvider(
-                  headers: const {
+                  // NOTE: must be a *mutable* map — flutter_map augments the
+                  // headers at runtime (it injects the User-Agent), so passing
+                  // a `const {}` here throws "Cannot modify unmodifiable map".
+                  headers: {
                     // OSM's tile-usage policy requires an identifying UA;
                     // a missing/blank UA is periodically throttled, which
                     // shows up as tiles that intermittently fail to update.
-                    'User-Agent': 'ParaBeacon/1.0 (flutter_map; com.parabeacon.app)',
+                    'User-Agent':
+                        'ParaBeacon/1.0 (flutter_map; com.parabeacon.app)',
                   },
                 ),
               ),

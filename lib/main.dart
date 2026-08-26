@@ -9,12 +9,14 @@ import 'controls/control_settings_sheet.dart';
 import 'controls/control_widget.dart';
 import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
+import 'controls/vario_sound_settings_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_source.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
+import 'audio/vario_sound_settings.dart';
 
 void main() {
   runApp(const ParaBeaconApp());
@@ -54,6 +56,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> {
     // its vertical speed takes over from the simulator.
     BleSensorService.instance.init();
     _bleBridge = BleFlightDataBridge(source: _dataSource)..attach();
+
+    // Load the user's persisted Vario sound profile and apply it to the audio
+    // engine (no-op beyond defaults on first launch).
+    VarioSoundSettings.instance.load();
 
     // Use the shared VarioAudioService singleton so the Preferences panel can
     // control the same engine (mute/volume) without threading it through the
@@ -395,6 +401,16 @@ class _DashGridPageState extends State<DashGridPage>
                               VarioAudioService.instance.setVolume(v);
                               setSheetState(() {});
                             },
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.graphic_eq,
+                          color: theme.colorScheme.primary),
+                      title: const Text('Vario sound settings'),
+                      subtitle: const Text(
+                          'Thresholds, pitch, waveform and gain'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => showVarioSoundSettingsSheet(context),
                     ),
                     const Divider(height: 1),
                     Padding(

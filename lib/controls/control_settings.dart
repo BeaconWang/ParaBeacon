@@ -140,6 +140,15 @@ const List<ControlSetting> _commonSettings = [
     divisions: 11,
     unit: 'px',
   ),
+  ControlSetting.slider(
+    key: 'borderRadius',
+    label: 'Corner radius',
+    defaultValue: 8.0,
+    min: 0.0,
+    max: 32.0,
+    divisions: 32,
+    unit: 'px',
+  ),
 ];
 
 /// Type-specific settings, keyed by control type id.

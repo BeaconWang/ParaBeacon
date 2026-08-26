@@ -59,6 +59,16 @@ class ControlWidget extends StatelessWidget {
     final effectiveBorderWidth =
         isSelected ? (userWidth + 1.0) : userWidth.toDouble();
 
+    // User-picked outer corner radius. The face-level clip radius shrinks
+    // with it (min 0) so nested content like the map/vario preview keeps
+    // sitting just inside the border like before.
+    final outerRadiusValue =
+        control.doubleSetting('borderRadius', fallback: 8.0).clamp(0.0, 64.0);
+    final outerRadius = BorderRadius.circular(outerRadiusValue.toDouble());
+    final innerRadius = BorderRadius.circular(
+      (outerRadiusValue - 4).clamp(0.0, 64.0).toDouble(),
+    );
+
     return Material(
       color: Colors.transparent,
       child: Stack(
@@ -67,13 +77,13 @@ class ControlWidget extends StatelessWidget {
           Positioned.fill(
             child: Material(
               color: theme.colorScheme.surface.withAlpha(isEditMode ? 210 : 235),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: outerRadius,
               clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: onTap,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: outerRadius,
                     border: Border.all(
                       color: effectiveBorderColor,
                       width: effectiveBorderWidth,
@@ -81,7 +91,7 @@ class ControlWidget extends StatelessWidget {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(6),
-                    child: _buildFace(context, theme),
+                    child: _buildFace(context, theme, innerRadius),
                   ),
                 ),
               ),
@@ -113,12 +123,13 @@ class ControlWidget extends StatelessWidget {
 
   /// Builds the actual control face. Specific control types get a custom
   /// renderer; everything else falls back to a generic icon + label face.
-  Widget _buildFace(BuildContext context, ThemeData theme) {
+  Widget _buildFace(
+      BuildContext context, ThemeData theme, BorderRadius innerRadius) {
     final showTitle = control.boolSetting('showTitle', fallback: true);
     switch (control.type.id) {
       case 'vario':
         return ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: innerRadius,
           child: VarioControl(
             maxScale: control.doubleSetting('maxScale', fallback: 8.0),
           ),
@@ -144,7 +155,7 @@ class ControlWidget extends StatelessWidget {
       case 'map':
         final source = control.setting('tileSource');
         return ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: innerRadius,
           child: MapControl(
             follow: control.boolSetting('follow', fallback: true),
             initialZoom: control.doubleSetting('zoom', fallback: 13.0),

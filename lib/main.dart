@@ -315,38 +315,51 @@ class _DashGridPageState extends State<DashGridPage>
     });
   }
 
-  /// Opens the app preferences sheet.
+  /// Opens the app preferences sheet (full screen).
   Future<void> _openPreferences() async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      showDragHandle: true,
+      useSafeArea: true,
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      // Full-screen: no rounded corners, occupies the entire available height.
+      shape: const RoundedRectangleBorder(),
+      constraints: const BoxConstraints.expand(),
       builder: (context) {
         // Local state within the sheet, applied back via the parent setState.
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final theme = Theme.of(context);
             return SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Pinned header with a close button.
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                    child: Row(
                       children: [
                         Icon(Icons.settings_outlined,
                             color: theme.colorScheme.primary),
                         const SizedBox(width: 10),
-                        Text('Preferences', style: theme.textTheme.titleLarge),
+                        Expanded(
+                          child: Text('Preferences',
+                              style: theme.textTheme.titleLarge),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: 'Close',
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                  ),
+                  const Divider(height: 1),
+                  // Scrollable settings content fills the rest of the screen.
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      children: [
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       secondary: Icon(_Icons.mode,
@@ -513,8 +526,10 @@ class _DashGridPageState extends State<DashGridPage>
                               }
                             },
                     ),
-                  ],
-                ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             );
           },

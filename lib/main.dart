@@ -1033,9 +1033,10 @@ class _DashGridPageState extends State<DashGridPage>
         control: control,
         isEditMode: _isEditMode,
         isSelected: isSelected,
-        onTap: _isEditMode
-            ? () => setState(() => _selectedControlId = control.instanceId)
-            : null,
+        // In edit mode taps are handled by the outer GestureDetector so we
+        // can also ignore the control's internal interactions (e.g. map pan,
+        // buttons). Passing null here disables the inner InkWell.
+        onTap: null,
       );
 
       // When affordances are visible, expand the layout box by `overhang` on
@@ -1064,12 +1065,18 @@ class _DashGridPageState extends State<DashGridPage>
                     height: height,
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
+                      onTap: () => setState(
+                          () => _selectedControlId = control.instanceId),
                       onLongPress: () => _showControlMenu(control),
                       onPanStart: (_) => _onControlDragStart(control),
                       onPanUpdate: (details) =>
                           _onControlDragUpdate(control, details.delta),
                       onPanEnd: (_) => _saveLayout(),
-                      child: child,
+                      // Swallow every pointer event before it reaches the
+                      // control's own contents so its internal interactions
+                      // (map pan/zoom, buttons, list scroll, etc.) are
+                      // disabled while the user is arranging the dashboard.
+                      child: IgnorePointer(child: child),
                     ),
                   ),
                   // Delete button — centered on the top-right corner of the

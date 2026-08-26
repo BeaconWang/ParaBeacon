@@ -214,6 +214,20 @@ class _VarioSynth {
   double _toneStartFreq = 0.0; // frequency at start of the current tone
   double _toneEndFreq = 0.0; // frequency at end of the current tone (glide)
   VarioWaveform _segWave = VarioWaveform.tack;
+  // Force a fade envelope on the current tone even for the LONG waveform. Used
+  // by the gated sink tick so its start/end don't click against the silence.
+  bool _segForceFade = false;
+
+  // Sink tick sub-phase. Each 1 s sink period plays TWO discrete steady tones
+  // (no glide) then silence:
+  //   0 -> start-frequency segment (sinkBaseFreq)
+  //   1 -> current-frequency segment (sinkFrequencyFor(speed))
+  //   2 -> trailing silence to complete the period
+  int _sinkPhase = 0;
+
+  // The vario state of the previous segment, so we can detect a fresh entry
+  // into the sink state and (re)start its tick at phase 0.
+  _VarioState _prevState = _VarioState.deadband;
 
   double _sr = 22050.0;
   double _dt = 1.0 / 22050.0;
@@ -283,10 +297,10 @@ class _VarioSynth {
     final speed = _smoothedSpeed;
     final state = _stateFor(speed);
     _segElapsed = 0.0;
-
     switch (state) {
       case _VarioState.deadband:
         _inTone = false;
+        _segForceFade = false;
         _segDuration = 0.02; // re-evaluate quickly (silence)
         break;
 
@@ -300,6 +314,7 @@ class _VarioSynth {
         } else {
           // Start a new climb beep (TACK). XCTrack uses a fixed 0.1 s tone.
           _inTone = true;
+          _segForceFade = false;
           _segWave = _config.climbWaveform;
           _segDuration = _config.climbToneSeconds;
           // No pitch glide inside the climb beep (XCTrack passes f0==f1 there),
@@ -311,18 +326,54 @@ class _VarioSynth {
         break;
 
       case _VarioState.sink:
-        // Continuous LONG tone; refresh pitch each short segment so descending
-        // sink smoothly lowers pitch without ever gating to silence.
-        _inTone = true;
-        _segWave = _config.sinkWaveform;
-        _segDuration = 0.05; // refresh pitch 20x/sec
-        final f = _config.sinkFrequencyFor(speed);
-        // Glide from the previous end frequency to the new one over the segment
-        // to avoid any step in pitch as |sink| changes.
-        _toneStartFreq = _toneEndFreq == 0.0 ? f : _toneEndFreq;
-        _toneEndFreq = f;
+        // XCTrack-style gated sink alarm: one tick per second, made of TWO
+        // discrete steady tones (NO glide), then silence:
+        //   phase 0 -> the sink START frequency (sinkBaseFreq, i.e. the pitch
+        //              at the sink threshold),
+        //   phase 1 -> the CURRENT sink-rate frequency (sinkFrequencyFor),
+        //   phase 2 -> silence for the remainder of the period.
+        // So each tick you hear the start pitch first, then the current pitch.
+        final toneEach = math.min(
+          _config.sinkToneSeconds * 0.5,
+          _config.sinkPeriodSeconds * 0.5,
+        );
+        if (_prevState != _VarioState.sink) {
+          // Fresh entry into sink -> (re)start the tick at phase 0.
+          _sinkPhase = 0;
+        } else {
+          _sinkPhase = (_sinkPhase + 1) % 3;
+        }
+
+        if (_sinkPhase == 0) {
+          // Segment 1: sink start frequency (steady, no glide).
+          _inTone = true;
+          _segForceFade = true;
+          _segWave = _config.sinkWaveform;
+          _segDuration = toneEach;
+          _toneStartFreq = _config.sinkBaseFreq;
+          _toneEndFreq = _config.sinkBaseFreq;
+        } else if (_sinkPhase == 1) {
+          // Segment 2: current sink-rate frequency (steady, no glide).
+          _inTone = true;
+          _segForceFade = true;
+          _segWave = _config.sinkWaveform;
+          _segDuration = toneEach;
+          final f = _config.sinkFrequencyFor(speed);
+          _toneStartFreq = f;
+          _toneEndFreq = f;
+        } else {
+          // Trailing silence to complete the 1 s period.
+          _inTone = false;
+          _segForceFade = false;
+          _segDuration = math.max(
+            0.001,
+            _config.sinkPeriodSeconds - 2 * toneEach,
+          );
+        }
         break;
     }
+
+    _prevState = state;
   }
 
   /// Instantaneous frequency within the current tone segment.
@@ -377,7 +428,9 @@ class _VarioSynth {
   /// for x in last 5% -> exp((|1-x|/0.05)*ln2) - 1. `ln2` makes exp() span 1..2
   /// so the multiplier spans 0..1.
   double _envelope() {
-    if (_segWave == VarioWaveform.long) return 1.0;
+    // LONG normally has no envelope, but a gated tone (e.g. the sink tick) sets
+    // _segForceFade so its edges still fade against the surrounding silence.
+    if (_segWave == VarioWaveform.long && !_segForceFade) return 1.0;
     if (_segDuration <= 0) return 1.0;
     final x = (_segElapsed / _segDuration).clamp(0.0, 1.0);
     final f = _config.fadeFraction;

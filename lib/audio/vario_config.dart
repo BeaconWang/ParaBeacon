@@ -126,6 +126,16 @@ class VarioAudioConfig {
   final double sinkStepsPerMs; // 2.0
   final double sinkSemitonesPerOctave; // 12.0
 
+  /// Sink beep cadence: like XCTrack, the sink alarm is a repeating tick rather
+  /// than a continuous tone. One tick fires every [sinkPeriodSeconds] (1 s).
+  final double sinkPeriodSeconds;
+
+  /// Duration of the audible tone portion of each sink tick, seconds. The
+  /// remainder of [sinkPeriodSeconds] is silence. Within the tone the pitch
+  /// glides from the sink *start* frequency ([sinkBaseFreq]) down to the pitch
+  /// for the current sink rate ([sinkFrequencyFor]).
+  final double sinkToneSeconds;
+
   /// Waveform for the sink tone (LONG = pure triangle, no envelope).
   final VarioWaveform sinkWaveform;
 
@@ -159,6 +169,8 @@ class VarioAudioConfig {
     this.sinkBaseFreq = 660.0,
     this.sinkStepsPerMs = 2.0,
     this.sinkSemitonesPerOctave = 12.0,
+    this.sinkPeriodSeconds = 1.0,
+    this.sinkToneSeconds = 0.5,
     this.sinkWaveform = VarioWaveform.long,
     this.fadeFraction = 0.05,
     this.masterGain = 0.9,
@@ -186,6 +198,8 @@ class VarioAudioConfig {
     double? sinkBaseFreq,
     double? sinkStepsPerMs,
     double? sinkSemitonesPerOctave,
+    double? sinkPeriodSeconds,
+    double? sinkToneSeconds,
     VarioWaveform? sinkWaveform,
     double? fadeFraction,
     double? masterGain,
@@ -210,6 +224,8 @@ class VarioAudioConfig {
       sinkStepsPerMs: sinkStepsPerMs ?? this.sinkStepsPerMs,
       sinkSemitonesPerOctave:
           sinkSemitonesPerOctave ?? this.sinkSemitonesPerOctave,
+      sinkPeriodSeconds: sinkPeriodSeconds ?? this.sinkPeriodSeconds,
+      sinkToneSeconds: sinkToneSeconds ?? this.sinkToneSeconds,
       sinkWaveform: sinkWaveform ?? this.sinkWaveform,
       fadeFraction: fadeFraction ?? this.fadeFraction,
       masterGain: masterGain ?? this.masterGain,

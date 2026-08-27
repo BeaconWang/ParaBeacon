@@ -17,9 +17,10 @@ import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
+import 'data/flight_data_transformer.dart';
 import 'data/flight_recorder.dart';
 import 'data/layout_store.dart';
-import 'data/flight_data_source.dart';
+import 'data/raw_flight_data_source.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
@@ -46,8 +47,15 @@ class ParaBeaconApp extends StatefulWidget {
 }
 
 class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserver {
-  // The single, unified flight-data source for the whole app.
+  // The single, unified raw flight-data source for the whole app (raw data
+  // layer: resolves each field by priority Debug > Bluetooth > Other).
   late final BluetoothSensorFlightDataSource _dataSource;
+
+  // Data-transform layer: wraps [_dataSource] and derives display-ready values
+  // (e.g. the trailing-2s-average vertical speed). Controls, the vario audio
+  // and the recorder all read from this so they share the same transforms.
+  //   [control] <- [_transformer] <- [_dataSource] <- [raw data]
+  late final FlightDataTransformer _transformer;
 
   // Drives the Vario audio directly from the vertical speed of [_dataSource].
   // Every FlightData update forwards `verticalSpeed` into the audio engine, so
@@ -77,6 +85,11 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // is enabled; otherwise no data is fabricated until a real BLE device pairs.
     _dataSource = BluetoothSensorFlightDataSource()..start();
 
+    // Wrap the raw source in the data-transform layer. Everything downstream
+    // (controls, recorder, vario audio) reads the transformed feed so they all
+    // see the same derived values (e.g. the averaged vertical speed).
+    _transformer = FlightDataTransformer(rawSource: _dataSource);
+
     // Bring up the BLE sensor service (best-effort; no-op on desktop/web) and
     // bridge its readings into the unified data source. When a sensor connects,
     // its vertical speed takes over from the simulator.
@@ -85,8 +98,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
 
     // Continuously record the full flight-data feed while a flight is in
     // progress (driven by the shared FlightState; supports auto take-off /
-    // landing detection when enabled).
-    FlightRecorder.instance.bind(_dataSource);
+    // landing detection when enabled). Records the transformed feed.
+    FlightRecorder.instance.bind(_transformer);
     // Restore previously-saved flight summaries so the Tracklogs sheet
     // shows past flights across app restarts (best-effort; failures are
     // silent so a corrupt on-disk log doesn't block startup).
@@ -98,9 +111,9 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
 
     // Use the shared VarioAudioService singleton so the Preferences panel can
     // control the same engine (mute/volume) without threading it through the
-    // widget tree.
-    _varioAudio =
-        VarioAudioBridge(source: _dataSource, audio: VarioAudioService.instance);
+    // widget tree. Driven by the transformed vertical speed.
+    _varioAudio = VarioAudioBridge(
+        source: _transformer, audio: VarioAudioService.instance);
     // Initialize the audio stream and start forwarding vertical speed. Safe to
     // fire-and-forget; forwarding begins as soon as init() completes.
     _varioAudio.attach();
@@ -111,6 +124,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     WidgetsBinding.instance.removeObserver(this);
     _bleBridge.dispose();
     _varioAudio.dispose();
+    _transformer.dispose();
     _dataSource.dispose();
     super.dispose();
   }
@@ -127,7 +141,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     return FlightDataProvider(
-      source: _dataSource,
+      transformer: _transformer,
       child: MaterialApp(
         title: 'ParaBeacon',
         debugShowCheckedModeBanner: false,

@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 
 import 'flight_data.dart';
-import 'flight_data_source.dart';
 import 'flight_state.dart';
 import 'tracklog_store.dart';
 
@@ -196,7 +195,7 @@ class FlightRecorder extends ChangeNotifier {
   static const Duration _confirmWindow = Duration(seconds: 8);
 
   FlightState? _flightState;
-  FlightDataSource? _source;
+  FlightDataView? _source;
   bool _bound = false;
 
   FlightTrack? _current;
@@ -253,8 +252,11 @@ class FlightRecorder extends ChangeNotifier {
   bool get isRecording => _current != null;
   int get pointCount => _current?.pointCount ?? 0;
 
-  /// Binds to the shared flight state and a data source. Idempotent.
-  void bind(FlightDataSource source, {FlightState? flightState}) {
+  /// Binds to the shared flight state and a data view. Idempotent.
+  ///
+  /// [source] is normally the data-transform layer so recorded samples use the
+  /// same derived values (e.g. averaged vertical speed) the controls display.
+  void bind(FlightDataView source, {FlightState? flightState}) {
     final fs = flightState ?? FlightState.instance;
     if (_bound && _source == source && _flightState == fs) return;
     _unbind();

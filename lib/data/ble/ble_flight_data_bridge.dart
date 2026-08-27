@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import '../flight_data_source.dart';
+import '../raw_flight_data_source.dart';
 import 'ble_sensor_service.dart';
 import 'sensor_readings.dart';
 

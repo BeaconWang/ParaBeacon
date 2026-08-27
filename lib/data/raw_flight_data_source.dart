@@ -85,52 +85,74 @@ class FlightDataOverride {
 
 /// Priority tiers for a flight-data field, highest first.
 ///
-/// The effective value of any field is taken from the highest-priority tier
-/// that currently provides it:
+/// The effective *raw* value of any field is taken from the highest-priority
+/// tier that currently provides it:
 ///
 ///   1. [debugOverride]   — manual debug/bench values (ALWAYS wins).
-///   2. [bluetoothSensor] — the real (or simulated) sensor feed.
+///   2. [bluetoothSensor] — the real (or simulated) BLE sensor feed.
+///   3. [other]           — any other/fallback feed (e.g. defaults, GPS-derived).
 ///
-/// i.e. **Debug > Bluetooth sensor**.
-enum FlightDataPriority { debugOverride, bluetoothSensor }
+/// i.e. **Debug > Bluetooth sensor > Other**.
+///
+/// This ordering describes the *raw data layer*; the downstream data-transform
+/// layer then derives values (e.g. an averaged vertical speed) from whatever
+/// raw value won here.
+enum FlightDataPriority { debugOverride, bluetoothSensor, other }
 
-/// Unified flight-data source.
+/// The **raw data layer**.
 ///
-/// Controls listen to this notifier and read [data] for the latest snapshot.
 /// Concrete implementations (bluetooth sensor, simulated, external feed, ...)
 /// produce the raw feed via [update]; a debug [override] can force individual
-/// fields on top of it.
+/// fields on top of it. The exposed [data] is the *raw* per-field resolution
+/// with no transforms applied — smoothing/averaging lives in the separate
+/// data-transform layer that wraps this source.
 ///
-/// PRIORITY (per field, highest first):
+/// RAW PRIORITY (per field, highest first):
 ///   [FlightDataPriority.debugOverride] > [FlightDataPriority.bluetoothSensor]
+///   > [FlightDataPriority.other]
 ///
 /// The resolution is per-field: e.g. a debug override on `verticalSpeed` wins
 /// for that field even while the bluetooth sensor keeps streaming all other
 /// fields at full rate.
-abstract class FlightDataSource extends ChangeNotifier {
+abstract class RawFlightDataSource extends ChangeNotifier
+    implements FlightDataView {
   FlightData _rawData = FlightData.empty;
   FlightDataOverride _override = FlightDataOverride.none;
 
-  /// The latest flight-data snapshot with the priority order applied
-  /// (debug override > bluetooth sensor).
+  /// The latest *raw* flight-data snapshot with the priority order applied
+  /// (debug override > bluetooth sensor > other). No transforms are applied
+  /// here; the data-transform layer derives smoothed values from this.
+  @override
   FlightData get data => _override.applyTo(_rawData);
 
   /// The raw snapshot as produced by the sensor feed, ignoring debug overrides
-  /// (i.e. the [FlightDataPriority.bluetoothSensor] tier only).
+  /// (i.e. the [FlightDataPriority.bluetoothSensor] / [FlightDataPriority.other]
+  /// tiers only).
   FlightData get rawData => _rawData;
 
   /// The currently installed debug override (highest priority tier).
-  FlightDataOverride get override => _override;
+  FlightDataOverride get activeOverride => _override;
 
-  /// Which priority tier currently supplies the effective vertical speed.
-  /// Returns [FlightDataPriority.debugOverride] when a debug vertical-speed
-  /// override is active, otherwise [FlightDataPriority.bluetoothSensor].
-  FlightDataPriority get verticalSpeedSource => _override.verticalSpeed != null
-      ? FlightDataPriority.debugOverride
-      : FlightDataPriority.bluetoothSensor;
+  /// Which priority tier currently supplies the effective raw vertical speed:
+  /// [FlightDataPriority.debugOverride] when a debug vertical-speed override is
+  /// active, [FlightDataPriority.bluetoothSensor] when a sensor/simulator feed
+  /// is providing it, otherwise [FlightDataPriority.other].
+  FlightDataPriority get verticalSpeedSource {
+    if (_override.verticalSpeed != null) {
+      return FlightDataPriority.debugOverride;
+    }
+    if (_hasBluetoothFeed) return FlightDataPriority.bluetoothSensor;
+    return FlightDataPriority.other;
+  }
+
+  /// Whether a bluetooth-sensor-tier feed is currently supplying values.
+  /// Subclasses that represent a BLE feed override this to reflect their live
+  /// connection state; the default is `false` (i.e. values come from "other").
+  bool get _hasBluetoothFeed => false;
 
   /// Installs a new debug [override]. Overridden fields take precedence over
-  /// the raw sensor data. Notifies listeners so controls rebuild immediately.
+  /// the raw sensor data. Notifies listeners so downstream layers rebuild
+  /// immediately.
   void setOverride(FlightDataOverride override) {
     _override = override;
     notifyListeners();
@@ -139,8 +161,8 @@ abstract class FlightDataSource extends ChangeNotifier {
   /// Removes all debug overrides, reverting to the raw sensor data.
   void clearOverride() => setOverride(FlightDataOverride.none);
 
-  /// Replaces the current raw (bluetooth-sensor tier) snapshot and notifies
-  /// listeners. Debug overrides, if any, still win over these values.
+  /// Replaces the current raw (bluetooth-sensor / other tier) snapshot and
+  /// notifies listeners. Debug overrides, if any, still win over these values.
   @protected
   void update(FlightData next) {
     _rawData = next;
@@ -158,7 +180,7 @@ abstract class FlightDataSource extends ChangeNotifier {
 ///
 /// Useful for development and demos until real sensors are wired in. Emits a
 /// new [FlightData] snapshot at [tickInterval].
-class SimulatedFlightDataSource extends FlightDataSource {
+class SimulatedFlightDataSource extends RawFlightDataSource {
   final Duration tickInterval;
   final math.Random _rand = math.Random();
 
@@ -276,7 +298,7 @@ class SimulatedFlightDataSource extends FlightDataSource {
 /// used to feed plausible values so the rest of the app (and the vario audio)
 /// runs end-to-end. Swap that for real BLE notifications without touching any
 /// consumer — controls and the vario only read [data].
-class BluetoothSensorFlightDataSource extends FlightDataSource {
+class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   /// Optional simulator used before a real BLE device is connected.
   SimulatedFlightDataSource? _sim;
 
@@ -296,6 +318,13 @@ class BluetoothSensorFlightDataSource extends FlightDataSource {
     // React to the simulator toggle being flipped at runtime.
     _debug.addListener(_onDebugSettingsChanged);
   }
+
+  /// A bluetooth-tier feed is considered active while a sensor (real BLE or the
+  /// development simulator) is connected and streaming; this makes the raw
+  /// vertical speed resolve to [FlightDataPriority.bluetoothSensor] rather than
+  /// [FlightDataPriority.other].
+  @override
+  bool get _hasBluetoothFeed => _connected;
 
   void _onDebugSettingsChanged() {
     if (_realSensorActive) return;

@@ -1,5 +1,17 @@
 import 'package:flutter/foundation.dart';
 
+/// A read-only, observable view of the latest [FlightData].
+///
+/// Both the *raw data layer* (`RawFlightDataSource`) and the *data-transform
+/// layer* (`FlightDataTransformer`) implement this, so consumers (vario audio,
+/// flight recorder, ...) can depend on whichever layer is appropriate without
+/// caring about the concrete type. Being a [Listenable], callers can subscribe
+/// to be notified whenever [data] changes.
+abstract class FlightDataView implements Listenable {
+  /// The latest flight-data snapshot.
+  FlightData get data;
+}
+
 /// An immutable snapshot of all flight data at a point in time.
 ///
 /// This is the single, unified shape that every control reads from, so that

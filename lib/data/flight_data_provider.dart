@@ -1,31 +1,48 @@
 import 'package:flutter/widgets.dart';
 
 import 'flight_data.dart';
-import 'flight_data_source.dart';
+import 'raw_flight_data_source.dart';
+import 'flight_data_transformer.dart';
 
-/// Provides a [FlightDataSource] to the widget subtree and rebuilds dependents
-/// whenever the source notifies (i.e. new [FlightData] arrives).
+/// Provides the [FlightDataTransformer] (the *data-transform layer*) to the
+/// widget subtree and rebuilds dependents whenever it notifies (i.e. new
+/// transformed [FlightData] is available).
 ///
-/// Controls read the latest data with:
+/// Pipeline:
+/// ```
+/// [control] <- [FlightDataTransformer] <- [RawFlightDataSource] <- [raw data]
+/// ```
+///
+/// Controls read the latest *transformed* data with:
 /// ```dart
 /// final data = FlightDataProvider.of(context);
 /// ```
-class FlightDataProvider extends InheritedNotifier<FlightDataSource> {
+///
+/// Debug controls that need to write into the *raw data layer* (e.g. installing
+/// a vertical-speed override) reach it via [FlightDataProvider.sourceOf].
+class FlightDataProvider extends InheritedNotifier<FlightDataTransformer> {
   const FlightDataProvider({
     super.key,
-    required FlightDataSource source,
+    required FlightDataTransformer transformer,
     required super.child,
-  }) : super(notifier: source);
+  }) : super(notifier: transformer);
 
-  /// The data source itself (does not subscribe to rebuilds).
-  static FlightDataSource sourceOf(BuildContext context) {
+  /// The data-transform layer itself (does not subscribe to rebuilds).
+  static FlightDataTransformer transformerOf(BuildContext context) {
     final provider =
         context.getInheritedWidgetOfExactType<FlightDataProvider>();
     assert(provider != null, 'No FlightDataProvider found in context');
     return provider!.notifier!;
   }
 
-  /// The latest [FlightData], subscribing the caller to rebuilds on change.
+  /// The underlying raw data source (does not subscribe to rebuilds). Used by
+  /// debug controls to install/clear overrides at the raw layer.
+  static RawFlightDataSource sourceOf(BuildContext context) {
+    return transformerOf(context).rawSource;
+  }
+
+  /// The latest transformed [FlightData], subscribing the caller to rebuilds on
+  /// change.
   static FlightData of(BuildContext context) {
     final provider =
         context.dependOnInheritedWidgetOfExactType<FlightDataProvider>();

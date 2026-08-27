@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/flight_data_provider.dart';
-import '../data/flight_data_source.dart';
+import '../data/raw_flight_data_source.dart';
 
 /// A debug control that lets you manually drive the shared flight data with a
 /// stack of sliders — one per sensor field.
@@ -53,7 +53,7 @@ class _DebugSensorControlState extends State<DebugSensorControl> {
   /// The current slider value for each field.
   final Map<String, double> _values = {};
 
-  FlightDataSource? _source;
+  RawFlightDataSource? _source;
 
   @override
   void initState() {

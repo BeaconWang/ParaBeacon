@@ -5,7 +5,7 @@
 // Shows the correct way to drive [VarioAudioService] from this project's
 // existing barometer/flight-data pipeline. Two variants are shown:
 //
-//   A) Bridging the app's ChangeNotifier `FlightDataSource` (recommended here).
+//   A) Bridging the app's ChangeNotifier `FlightDataView` (recommended here).
 //   B) A raw Stream / Timer barometer callback (generic reference).
 //
 // Both simply call `updateSpeed(...)` at 20-50 Hz. The service does the rest.
@@ -14,31 +14,32 @@
 
 import 'dart:async';
 
-import '../data/flight_data_source.dart';
+import '../data/flight_data.dart';
 import 'vario_audio_service.dart';
 import 'vario_config.dart';
 
 // ---------------------------------------------------------------------------
-// Variant A — bridge the existing FlightDataSource (ChangeNotifier) to audio.
+// Variant A — bridge a FlightDataView (ChangeNotifier) to audio.
 //
-// Attach one of these near where `SimulatedFlightDataSource` is created
-// (e.g. in `_ParaBeaconAppState.initState`). It listens to the unified source
+// Attach one of these near where the data-transform layer is created
+// (e.g. in `_ParaBeaconAppState.initState`). It listens to the unified feed
 // and forwards vertical speed to the vario on every notification.
 // ---------------------------------------------------------------------------
 
-/// Connects a [FlightDataSource] to a [VarioAudioService] for its lifetime.
+/// Connects a [FlightDataView] to a [VarioAudioService] for its lifetime.
 ///
 /// ```dart
 /// // in _ParaBeaconAppState.initState():
-/// _dataSource = SimulatedFlightDataSource()..start();
-/// _varioBridge = VarioAudioBridge(source: _dataSource);
+/// _dataSource = BluetoothSensorFlightDataSource()..start();
+/// _transformer = FlightDataTransformer(rawSource: _dataSource);
+/// _varioBridge = VarioAudioBridge(source: _transformer);
 /// await _varioBridge.attach();          // safe to fire-and-forget
 ///
 /// // in dispose():
 /// _varioBridge.dispose();
 /// ```
 class VarioAudioBridge {
-  final FlightDataSource source;
+  final FlightDataView source;
   final VarioAudioService audio;
 
   VarioAudioBridge({

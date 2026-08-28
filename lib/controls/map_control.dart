@@ -139,6 +139,18 @@ class MapControl extends StatefulWidget {
   /// Prefer an activated offline `.mbtiles` basemap over online tiles.
   final bool useOffline;
 
+  /// Show the vario colour-scale legend (bottom-centre).
+  final bool showLegend;
+
+  /// Show the zoom-level readout chip (top-right).
+  final bool showZoomLevel;
+
+  /// Show the map attribution / offline-source chip (top-right).
+  final bool showAttribution;
+
+  /// Show the HDG/ALT readout and the "No GPS fix" status chip (top-left).
+  final bool showStatus;
+
   const MapControl({
     super.key,
     this.initialZoom = 13.0,
@@ -148,6 +160,10 @@ class MapControl extends StatefulWidget {
     this.showThermal = true,
     this.showAirspace = true,
     this.useOffline = true,
+    this.showLegend = false,
+    this.showZoomLevel = true,
+    this.showAttribution = true,
+    this.showStatus = true,
   });
 
   @override
@@ -406,7 +422,7 @@ class _MapControlState extends State<MapControl> {
             ),
           ),
 
-          if (!hasFix)
+          if (!hasFix && widget.showStatus)
             Positioned(
               left: 8,
               top: 8,
@@ -415,7 +431,7 @@ class _MapControlState extends State<MapControl> {
             ),
 
           // Top-left: HDG / ALT readout (only with a fix).
-          if (hasFix)
+          if (hasFix && widget.showStatus)
             Positioned(
               left: 8,
               top: 8,
@@ -438,9 +454,10 @@ class _MapControlState extends State<MapControl> {
             ),
           ),
 
-          // Bottom-center: vario colour-scale legend (feature 20 legend). Only
-          // shown when the track layer is enabled.
-          if (widget.showTrack)
+          // Bottom-center: vario colour-scale legend (feature 20 legend).
+          // Requires the track layer to be enabled (the legend explains the
+          // track's colours) and its own toggle; hidden by default.
+          if (widget.showTrack && widget.showLegend)
             Positioned(
               left: 0,
               right: 0,
@@ -454,26 +471,31 @@ class _MapControlState extends State<MapControl> {
               ),
             ),
 
-          // Top-right: zoom-level readout (feature 32) + attribution.
-          Positioned(
-            right: 4,
-            top: 4,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _glassChip(theme, label: 'Z ${_zoom.toStringAsFixed(1)}',
-                    small: true),
-                const SizedBox(height: 4),
-                _glassChip(
-                  theme,
-                  label: _offlineActive
-                      ? 'Offline · ${OfflineTilesService.instance.activeFileName}'
-                      : src.attribution,
-                  small: true,
-                ),
-              ],
+          // Top-right: zoom-level readout (feature 32) + attribution. Each has
+          // its own toggle; the whole column is omitted when both are hidden.
+          if (widget.showZoomLevel || widget.showAttribution)
+            Positioned(
+              right: 4,
+              top: 4,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (widget.showZoomLevel)
+                    _glassChip(theme, label: 'Z ${_zoom.toStringAsFixed(1)}',
+                        small: true),
+                  if (widget.showZoomLevel && widget.showAttribution)
+                    const SizedBox(height: 4),
+                  if (widget.showAttribution)
+                    _glassChip(
+                      theme,
+                      label: _offlineActive
+                          ? 'Offline · ${OfflineTilesService.instance.activeFileName}'
+                          : src.attribution,
+                      small: true,
+                    ),
+                ],
+              ),
             ),
-          ),
 
           // Column of map affordances stacked in the bottom-right corner.
           Positioned(

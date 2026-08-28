@@ -258,6 +258,26 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       label: 'Show airspace',
       defaultValue: true,
     ),
+    ControlSetting.toggle(
+      key: 'showLegend',
+      label: 'Show vario legend',
+      defaultValue: false,
+    ),
+    ControlSetting.toggle(
+      key: 'showZoomLevel',
+      label: 'Show zoom level',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showAttribution',
+      label: 'Show map attribution',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showStatus',
+      label: 'Show HDG/ALT & GPS status',
+      defaultValue: true,
+    ),
   ],
 };
 

@@ -165,6 +165,12 @@ class ControlWidget extends StatelessWidget {
             showTrack: control.boolSetting('showTrack', fallback: true),
             showThermal: control.boolSetting('showThermal', fallback: true),
             showAirspace: control.boolSetting('showAirspace', fallback: true),
+            showLegend: control.boolSetting('showLegend', fallback: false),
+            showZoomLevel:
+                control.boolSetting('showZoomLevel', fallback: true),
+            showAttribution:
+                control.boolSetting('showAttribution', fallback: true),
+            showStatus: control.boolSetting('showStatus', fallback: true),
           ),
         );
       default:

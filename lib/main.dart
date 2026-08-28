@@ -712,12 +712,25 @@ class _DashGridPageState extends State<DashGridPage>
     _saveLayout();
   }
 
+  /// Number of grid columns/rows that best matches the user's desired cell
+  /// size ([_gridSize]) for the given [size]. Rounded (not floored) so the
+  /// whole screen is used and the cell size stays closest to the target.
+  int _gridCols(Size size) => (size.width / _gridSize).round().clamp(1, 1000);
+  int _gridRows(Size size) => (size.height / _gridSize).round().clamp(1, 1000);
+
+  /// Effective cell dimensions that divide *evenly* into the full screen:
+  /// `cols * cellWidth == width` and `rows * cellHeight == height` exactly,
+  /// regardless of the grid dimensions. Cells may be slightly non-square, but
+  /// they tile the screen with no leftover gap at the right/bottom edges.
+  double _cellWidth(Size size) => size.width / _gridCols(size);
+  double _cellHeight(Size size) => size.height / _gridRows(size);
+
   /// Finds a grid cell (col, row) where a control of the given size does not
   /// overlap an existing one. Falls back to (0, 0) if the grid is full.
   (int, int) _findFreeCell(int cols, int rows) {
     final size = MediaQuery.of(context).size;
-    final maxCols = (size.width / _gridSize).floor();
-    final maxRows = (size.height / _gridSize).floor();
+    final maxCols = _gridCols(size);
+    final maxRows = _gridRows(size);
 
     for (int row = 0; row + rows <= maxRows; row++) {
       for (int col = 0; col + cols <= maxCols; col++) {
@@ -812,11 +825,14 @@ class _DashGridPageState extends State<DashGridPage>
     _dragAccum += delta;
     setState(() {
       final size = MediaQuery.of(context).size;
-      final maxCols = (size.width / _gridSize).floor();
-      final maxRows = (size.height / _gridSize).floor();
+      final maxCols = _gridCols(size);
+      final maxRows = _gridRows(size);
 
-      final colDelta = (_dragAccum.dx / _gridSize).round();
-      final rowDelta = (_dragAccum.dy / _gridSize).round();
+      // Convert pixel movement to whole cells using the *effective* cell size
+      // (which divides evenly into the screen), so dragging tracks the visible
+      // grid regardless of dimensions.
+      final colDelta = (_dragAccum.dx / _cellWidth(size)).round();
+      final rowDelta = (_dragAccum.dy / _cellHeight(size)).round();
 
       control.col = (_dragStartCol + colDelta)
           .clamp(0, (maxCols - control.cols).clamp(0, maxCols));
@@ -836,11 +852,11 @@ class _DashGridPageState extends State<DashGridPage>
     _dragAccum += delta;
     setState(() {
       final size = MediaQuery.of(context).size;
-      final maxCols = (size.width / _gridSize).floor();
-      final maxRows = (size.height / _gridSize).floor();
+      final maxCols = _gridCols(size);
+      final maxRows = _gridRows(size);
 
-      final colDelta = (_dragAccum.dx / _gridSize).round();
-      final rowDelta = (_dragAccum.dy / _gridSize).round();
+      final colDelta = (_dragAccum.dx / _cellWidth(size)).round();
+      final rowDelta = (_dragAccum.dy / _cellHeight(size)).round();
 
       // At least 1 cell; cannot extend past the grid edge from current origin.
       control.cols = (_dragStartCols + colDelta)
@@ -935,7 +951,10 @@ class _DashGridPageState extends State<DashGridPage>
             onVerticalDragEnd: _menuOpen ? null : _onDragEnd,
             child: _isEditMode
                 ? CustomPaint(
-                    painter: DashGridPainter(gridSize: _gridSize),
+                    painter: DashGridPainter(
+                      cellWidth: _cellWidth(MediaQuery.of(context).size),
+                      cellHeight: _cellHeight(MediaQuery.of(context).size),
+                    ),
                     size: Size.infinite,
                   )
                 : const SizedBox.expand(),
@@ -1075,11 +1094,17 @@ class _DashGridPageState extends State<DashGridPage>
     const double affordanceSize = 32;
     const double overhang = affordanceSize / 2;
 
+    // Effective per-cell dimensions that divide evenly into the screen, so
+    // controls tile it with no leftover gap regardless of grid dimensions.
+    final size = MediaQuery.of(context).size;
+    final cellW = _cellWidth(size);
+    final cellH = _cellHeight(size);
+
     return controls.map((control) {
-      final left = control.col * _gridSize;
-      final top = control.row * _gridSize;
-      final width = control.cols * _gridSize;
-      final height = control.rows * _gridSize;
+      final left = control.col * cellW;
+      final top = control.row * cellH;
+      final width = control.cols * cellW;
+      final height = control.rows * cellH;
       final isSelected = _selectedControlId == control.instanceId;
       final showAffordances = _isEditMode && isSelected;
 
@@ -1469,9 +1494,13 @@ class _CornerButton extends StatelessWidget {
 }
 
 class DashGridPainter extends CustomPainter {
-  final double gridSize;
+  /// Effective cell width/height that divide evenly into the canvas, so the
+  /// painted grid lines land exactly on the same boundaries used to lay out
+  /// controls (no leftover partial cell at the right/bottom edge).
+  final double cellWidth;
+  final double cellHeight;
 
-  DashGridPainter({required this.gridSize});
+  DashGridPainter({required this.cellWidth, required this.cellHeight});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1483,21 +1512,32 @@ class DashGridPainter extends CustomPainter {
       ..color = Colors.white.withAlpha(25)
       ..strokeWidth = 0.5;
 
-    // Draw solid grid lines
-    for (double x = 0; x <= size.width; x += gridSize) {
+    // Integer cell counts; the grid divides the canvas evenly by construction.
+    final cols = cellWidth > 0 ? (size.width / cellWidth).round() : 0;
+    final rows = cellHeight > 0 ? (size.height / cellHeight).round() : 0;
+
+    // Draw solid grid lines on exact cell boundaries (i == cols/rows lands on
+    // the far edge precisely).
+    for (int i = 0; i <= cols; i++) {
+      final x = i == cols ? size.width : i * cellWidth;
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
-    for (double y = 0; y <= size.height; y += gridSize) {
+    for (int i = 0; i <= rows; i++) {
+      final y = i == rows ? size.height : i * cellHeight;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
 
-    // Draw dashed sub-grid lines at half intervals
-    if (gridSize >= 30) {
-      final half = gridSize / 2;
-      for (double x = half; x <= size.width; x += gridSize) {
+    // Draw dashed sub-grid lines at half-cell intervals (only when cells are
+    // large enough for the extra detail to be legible).
+    if (cellWidth >= 30) {
+      for (int i = 0; i < cols; i++) {
+        final x = (i + 0.5) * cellWidth;
         _drawDashedLine(canvas, Offset(x, 0), Offset(x, size.height), dashPaint);
       }
-      for (double y = half; y <= size.height; y += gridSize) {
+    }
+    if (cellHeight >= 30) {
+      for (int i = 0; i < rows; i++) {
+        final y = (i + 0.5) * cellHeight;
         _drawDashedLine(canvas, Offset(0, y), Offset(size.width, y), dashPaint);
       }
     }
@@ -1527,6 +1567,7 @@ class DashGridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(DashGridPainter oldDelegate) {
-    return gridSize != oldDelegate.gridSize;
+    return cellWidth != oldDelegate.cellWidth ||
+        cellHeight != oldDelegate.cellHeight;
   }
 }

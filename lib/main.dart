@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 
 import 'controls/add_control_sheet.dart';
 import 'controls/bluetooth_sensor_sheet.dart';
-import 'controls/tracklogs_sheet.dart';
+import 'controls/flights_sheet.dart';
 import 'controls/control_catalog.dart';
 import 'controls/control_context_menu.dart';
 import 'controls/control_settings_sheet.dart';
@@ -102,7 +102,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // progress (driven by the shared FlightState; supports auto take-off /
     // landing detection when enabled). Records the transformed feed.
     FlightRecorder.instance.bind(_transformer);
-    // Restore previously-saved flight summaries so the Tracklogs sheet
+    // Restore previously-saved flight summaries so the Flights sheet
     // shows past flights across app restarts (best-effort; failures are
     // silent so a corrupt on-disk log doesn't block startup).
     FlightRecorder.instance.loadPersisted();
@@ -1379,10 +1379,10 @@ class _MenuContent extends StatelessWidget {
         const Divider(height: 1),
         ListTile(
           leading: Icon(Icons.route, color: theme.colorScheme.primary),
-          title: const Text('Tracklogs'),
+          title: const Text('Flights'),
           subtitle: const Text('Recorded flights'),
           trailing: const Icon(Icons.chevron_right, size: 20),
-          onTap: () => showTracklogsSheet(context),
+          onTap: () => showFlightsSheet(context),
         ),
         const Divider(height: 1),
         ListTile(

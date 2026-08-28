@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../data/flight_recorder.dart';
-import 'track_replay_sheet.dart';
+import 'flight_replay_sheet.dart';
 
-/// Opens the Tracklogs screen (all recorded flights) as a full-screen sheet.
-Future<void> showTracklogsSheet(BuildContext context) {
+/// Opens the Flights screen (all recorded flights) as a full-screen sheet.
+Future<void> showFlightsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -12,18 +12,18 @@ Future<void> showTracklogsSheet(BuildContext context) {
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (context) => const _TracklogsSheet(),
+    builder: (context) => const _FlightsSheet(),
   );
 }
 
-class _TracklogsSheet extends StatefulWidget {
-  const _TracklogsSheet();
+class _FlightsSheet extends StatefulWidget {
+  const _FlightsSheet();
 
   @override
-  State<_TracklogsSheet> createState() => _TracklogsSheetState();
+  State<_FlightsSheet> createState() => _FlightsSheetState();
 }
 
-class _TracklogsSheetState extends State<_TracklogsSheet> {
+class _FlightsSheetState extends State<_FlightsSheet> {
   final FlightRecorder _recorder = FlightRecorder.instance;
 
   @override
@@ -59,7 +59,7 @@ class _TracklogsSheetState extends State<_TracklogsSheet> {
                 Icon(Icons.route, color: theme.colorScheme.primary),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Tracklogs', style: theme.textTheme.titleLarge),
+                  child: Text('Flights', style: theme.textTheme.titleLarge),
                 ),
                 if (tracks.isNotEmpty)
                   IconButton(
@@ -150,7 +150,7 @@ class _TracklogsSheetState extends State<_TracklogsSheet> {
   }
 
   void _replay(FlightTrack track) {
-    showTrackReplaySheet(context, track);
+    showFlightReplaySheet(context, track);
   }
 
   void _showDetail(FlightTrack track) {
@@ -224,7 +224,7 @@ class _TracklogsSheetState extends State<_TracklogsSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear all tracklogs?'),
+        title: const Text('Clear all flights?'),
         content: const Text('This removes every recorded flight.'),
         actions: [
           TextButton(

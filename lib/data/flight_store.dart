@@ -12,10 +12,12 @@ import 'flight_recorder.dart';
 /// point count) is stored — not the per-sample data — so the storage footprint
 /// stays small even for hundreds of flights. Writes are debounced so a burst of
 /// changes (bulk delete, etc.) results in a single write.
-class TrackLogStore {
-  TrackLogStore._();
-  static final TrackLogStore instance = TrackLogStore._();
+class FlightStore {
+  FlightStore._();
+  static final FlightStore instance = FlightStore._();
 
+  // NOTE: storage key kept as `pb.tracks.v1` for backward compatibility so
+  // existing users' saved flights still load after the rename.
   static const _kTracksKey = 'pb.tracks.v1';
 
   /// Bump when the serialized shape changes incompatibly.
@@ -23,9 +25,9 @@ class TrackLogStore {
 
   Timer? _debounce;
 
-  /// Loads all persisted flight tracks, newest first (matching the in-memory
-  /// order used by [FlightRecorder.tracks]). Returns an empty list when
-  /// nothing is stored or the payload is corrupt.
+  /// Loads all persisted flights, newest first (matching the in-memory order
+  /// used by [FlightRecorder.tracks]). Returns an empty list when nothing is
+  /// stored or the payload is corrupt.
   Future<List<FlightTrack>> load() async {
     try {
       final sp = await SharedPreferences.getInstance();
@@ -56,7 +58,7 @@ class TrackLogStore {
     }
   }
 
-  /// Schedules a debounced save of the given track summaries.
+  /// Schedules a debounced save of the given flight summaries.
   void save(
     List<FlightTrack> tracks, {
     Duration debounce = const Duration(milliseconds: 400),

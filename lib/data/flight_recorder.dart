@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import 'flight_data.dart';
 import 'flight_state.dart';
-import 'tracklog_store.dart';
+import 'flight_store.dart';
 
 /// One recorded sample of the full flight-data snapshot at a moment in time.
 ///
@@ -27,7 +27,7 @@ class FlightTrack {
 
   /// Restores a completed track from a persisted summary. Per-sample data
   /// (the [samples] list) is intentionally not persisted — only the summary
-  /// statistics that the Tracklogs sheet displays.
+  /// statistics that the Flights sheet displays.
   FlightTrack._fromSummary({
     required this.startTime,
     required this.endTime,
@@ -105,7 +105,7 @@ class FlightTrack {
   }
 
   /// Serializes the track's summary (no per-sample data) to a JSON map. Used
-  /// by the persistent tracklog store so completed flights survive an app
+  /// by the persistent flight store so completed flights survive an app
   /// restart.
   Map<String, dynamic> toSummaryJson() {
     return {
@@ -209,7 +209,7 @@ class FlightRecorder extends ChangeNotifier {
   FlightTrack? _lastCompleted;
   FlightTrack? get lastCompletedTrack => _lastCompleted;
 
-  /// All completed flight records, newest first. Backs the Tracklogs screen.
+  /// All completed flight records, newest first. Backs the Flights screen.
   final List<FlightTrack> _tracks = [];
   List<FlightTrack> get tracks => List.unmodifiable(_tracks);
 
@@ -219,7 +219,7 @@ class FlightRecorder extends ChangeNotifier {
       if (identical(_lastCompleted, track)) {
         _lastCompleted = _tracks.isNotEmpty ? _tracks.first : null;
       }
-      TrackLogStore.instance.save(_tracks);
+      FlightStore.instance.save(_tracks);
       notifyListeners();
     }
   }
@@ -229,7 +229,7 @@ class FlightRecorder extends ChangeNotifier {
     if (_tracks.isEmpty) return;
     _tracks.clear();
     _lastCompleted = null;
-    TrackLogStore.instance.save(_tracks);
+    FlightStore.instance.save(_tracks);
     notifyListeners();
   }
 
@@ -237,7 +237,7 @@ class FlightRecorder extends ChangeNotifier {
   /// Idempotent — calling more than once merges nothing; the on-disk list
   /// replaces the in-memory one.
   Future<void> loadPersisted() async {
-    final loaded = await TrackLogStore.instance.load();
+    final loaded = await FlightStore.instance.load();
     if (loaded.isEmpty) return;
     _tracks
       ..clear()
@@ -303,11 +303,11 @@ class FlightRecorder extends ChangeNotifier {
     if (t != null) {
       t.endTime = DateTime.now();
       _lastCompleted = t;
-      // Log every finished flight so the pilot can see it in the Tracklogs
+      // Log every finished flight so the pilot can see it in the Flights
       // sheet — even if no samples were captured (e.g. no sensor / no GPS
       // fix). The summary still has meaningful start/end times.
       _tracks.insert(0, t);
-      TrackLogStore.instance.save(_tracks);
+      FlightStore.instance.save(_tracks);
     }
     _current = null;
     _lastStored = null;

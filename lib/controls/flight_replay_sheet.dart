@@ -11,15 +11,15 @@ import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
 import 'map_control.dart' show MapTileSources, MapTileSource;
 
-/// Opens the flight-track replay screen for a completed [track] as a
-/// full-screen sheet (feature 6: track replay — animated playback on the map
-/// with optional vario-audio sync).
+/// Opens the flight replay screen for a completed [track] as a full-screen
+/// sheet (feature 6: replay — animated playback on the map with optional
+/// vario-audio sync).
 ///
-/// Only tracks that still carry per-sample data can be replayed. Tracks
+/// Only flights that still carry per-sample data can be replayed. Flights
 /// restored from disk store just the summary (see [FlightTrack]) and therefore
 /// cannot be replayed; the caller should gate the entry point on
 /// [FlightTrack.samples] being non-empty.
-Future<void> showTrackReplaySheet(BuildContext context, FlightTrack track) {
+Future<void> showFlightReplaySheet(BuildContext context, FlightTrack track) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -27,20 +27,20 @@ Future<void> showTrackReplaySheet(BuildContext context, FlightTrack track) {
     backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (context) => _TrackReplaySheet(track: track),
+    builder: (context) => _FlightReplaySheet(track: track),
   );
 }
 
-class _TrackReplaySheet extends StatefulWidget {
-  const _TrackReplaySheet({required this.track});
+class _FlightReplaySheet extends StatefulWidget {
+  const _FlightReplaySheet({required this.track});
 
   final FlightTrack track;
 
   @override
-  State<_TrackReplaySheet> createState() => _TrackReplaySheetState();
+  State<_FlightReplaySheet> createState() => _FlightReplaySheetState();
 }
 
-class _TrackReplaySheetState extends State<_TrackReplaySheet>
+class _FlightReplaySheetState extends State<_FlightReplaySheet>
     with SingleTickerProviderStateMixin {
   /// Tile source used for the replay basemap. A neutral online source keeps the
   /// screen self-contained without depending on the live Map control's config.

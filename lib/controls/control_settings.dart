@@ -220,7 +220,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ControlSetting.slider(
       key: 'zoom',
       label: 'Zoom',
-      defaultValue: 13.0,
+      defaultValue: 17.0,
       min: 3.0,
       max: 18.0,
       divisions: 15,

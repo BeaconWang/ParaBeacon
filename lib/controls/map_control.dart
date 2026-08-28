@@ -153,7 +153,7 @@ class MapControl extends StatefulWidget {
 
   const MapControl({
     super.key,
-    this.initialZoom = 13.0,
+    this.initialZoom = 17.0,
     this.follow = true,
     this.tileSource = 'osm',
     this.showTrack = true,

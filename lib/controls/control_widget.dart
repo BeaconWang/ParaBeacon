@@ -159,7 +159,7 @@ class ControlWidget extends StatelessWidget {
           borderRadius: innerRadius,
           child: MapControl(
             follow: control.boolSetting('follow', fallback: true),
-            initialZoom: control.doubleSetting('zoom', fallback: 13.0),
+            initialZoom: control.doubleSetting('zoom', fallback: 17.0),
             tileSource: source is String ? source : 'osm',
             useOffline: control.boolSetting('useOffline', fallback: true),
             showTrack: control.boolSetting('showTrack', fallback: true),

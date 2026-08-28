@@ -161,6 +161,10 @@ class ControlWidget extends StatelessWidget {
             follow: control.boolSetting('follow', fallback: true),
             initialZoom: control.doubleSetting('zoom', fallback: 13.0),
             tileSource: source is String ? source : 'osm',
+            useOffline: control.boolSetting('useOffline', fallback: true),
+            showTrack: control.boolSetting('showTrack', fallback: true),
+            showThermal: control.boolSetting('showThermal', fallback: true),
+            showAirspace: control.boolSetting('showAirspace', fallback: true),
           ),
         );
       default:

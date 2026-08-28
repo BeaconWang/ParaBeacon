@@ -3,13 +3,18 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 
+import '../data/airspace_store.dart';
 import '../data/flight_data_provider.dart';
+import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
+import '../data/offline_tiles_service.dart';
+import '../data/thermal_detector.dart';
 
 /// A raster map tile source available to the [MapControl].
 @immutable
@@ -101,6 +106,12 @@ class MapTileSources {
 /// map re-centers on the aircraft as it moves; the user can pan/zoom freely,
 /// and a re-center button restores following.
 ///
+/// Overlays (all optional, controlled by flags): the recorded flight track
+/// coloured by vertical speed, a thermal/climb-assistant ring, airspace
+/// polygons coloured by proximity, plus HDG/ALT, zoom-level and required-L/D
+/// readouts. Offline `.mbtiles` basemaps are used automatically when the user
+/// has activated one via [OfflineTilesService].
+///
 /// Position comes from the device GPS (via `geolocator`, requesting the
 /// location permission on Android/iOS) when available, otherwise it falls back
 /// to the unified [FlightDataProvider] feed (simulator / BLE sensor).
@@ -114,11 +125,27 @@ class MapControl extends StatefulWidget {
   /// Tile source id (see [MapTileSources]).
   final String tileSource;
 
+  /// Draw the recorded flight track (coloured by vertical speed).
+  final bool showTrack;
+
+  /// Draw the thermal / climb-assistant ring when climbing.
+  final bool showThermal;
+
+  /// Draw airspace polygons (only visible when airspace data is loaded).
+  final bool showAirspace;
+
+  /// Prefer an activated offline `.mbtiles` basemap over online tiles.
+  final bool useOffline;
+
   const MapControl({
     super.key,
     this.initialZoom = 13.0,
     this.follow = true,
     this.tileSource = 'osm',
+    this.showTrack = true,
+    this.showThermal = true,
+    this.showAirspace = true,
+    this.useOffline = true,
   });
 
   @override
@@ -140,6 +167,10 @@ class _MapControlState extends State<MapControl> {
   /// a "reset north" affordance whenever the user has rotated the map.
   double _rotationDeg = 0.0;
 
+  /// Current zoom level, mirrored from the camera so the readout and zoom
+  /// buttons stay in sync with pinch gestures.
+  late double _zoom = widget.initialZoom;
+
   /// Latest device GPS position (WGS-84), or null when unavailable/denied.
   Position? _gps;
   StreamSubscription<Position>? _gpsSub;
@@ -147,10 +178,26 @@ class _MapControlState extends State<MapControl> {
   /// Last WGS-84 position pushed to the map (for re-center / follow).
   LatLng? _lastWgs;
 
+  /// Self-contained thermal detector fed from the flight-data / GPS feed.
+  final ThermalDetector _thermalDetector = ThermalDetector();
+  ThermalHint? _thermal;
+
+  /// Latest airspace proximity list (drives boundary colouring).
+  List<AirspaceProximity> _airspaceProximity = const [];
+  StreamSubscription<List<AirspaceProximity>>? _airspaceSub;
+
   @override
   void initState() {
     super.initState();
     _initGps();
+    _airspaceProximity = AirspaceStore.instance.lastProximity;
+    _airspaceSub = AirspaceStore.instance.proximityStream.listen((l) {
+      if (mounted) setState(() => _airspaceProximity = l);
+    });
+    // Rebuild the tile layer when the active offline source changes, and when
+    // the recorder appends new track points.
+    OfflineTilesService.instance.revision.addListener(_onExternalChange);
+    FlightRecorder.instance.addListener(_onExternalChange);
   }
 
   @override
@@ -164,7 +211,14 @@ class _MapControlState extends State<MapControl> {
   @override
   void dispose() {
     _gpsSub?.cancel();
+    _airspaceSub?.cancel();
+    OfflineTilesService.instance.revision.removeListener(_onExternalChange);
+    FlightRecorder.instance.removeListener(_onExternalChange);
     super.dispose();
+  }
+
+  void _onExternalChange() {
+    if (mounted) setState(() {});
   }
 
   /// Requests the location permission and starts streaming device GPS.
@@ -213,13 +267,18 @@ class _MapControlState extends State<MapControl> {
   }
 
   /// Applies the GCJ-02 offset when the active [sourceId] needs it, so the
-  /// WGS-84 [wgs] position aligns with the tiles.
+  /// WGS-84 [wgs] position aligns with the tiles. Offline mbtiles are assumed
+  /// WGS-84 (no shift).
   LatLng _shift(LatLng wgs, String sourceId) {
+    if (_offlineActive) return wgs;
     final src = MapTileSources.byId(sourceId);
     if (!src.requiresGcjShift) return wgs;
     final p = Gcj02.wgsToGcj(wgs.latitude, wgs.longitude);
     return LatLng(p[0], p[1]);
   }
+
+  bool get _offlineActive =>
+      widget.useOffline && OfflineTilesService.instance.isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -229,6 +288,7 @@ class _MapControlState extends State<MapControl> {
 
     // Prefer real device GPS; fall back to the flight-data feed.
     LatLng? wgs;
+    double climb = data.verticalSpeed;
     if (_gps != null) {
       wgs = LatLng(_gps!.latitude, _gps!.longitude);
     } else if (data.hasFix) {
@@ -237,138 +297,231 @@ class _MapControlState extends State<MapControl> {
     final hasFix = wgs != null;
 
     final heading = _gps?.heading ?? data.heading;
+    final altMsl = _gps?.altitude ?? data.altitude;
 
-    if (hasFix) _maybeFollow(wgs);
+    if (hasFix) {
+      _maybeFollow(wgs);
+      // Feed the thermal detector + airspace proximity from the live fix.
+      _thermal = _thermalDetector.add(
+        lat: wgs.latitude,
+        lon: wgs.longitude,
+        climbMps: climb,
+      );
+      AirspaceStore.instance
+          .updatePosition(wgs.latitude, wgs.longitude, altMsl);
+    }
 
     // Render position in the tile coordinate system (GCJ-shifted if needed).
     final renderPos = hasFix
         ? _shift(wgs, widget.tileSource)
         : _shift(const LatLng(46.5197, 6.6323), widget.tileSource);
 
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: FlutterMap(
-            mapController: _map,
-            options: MapOptions(
-              initialCenter: renderPos,
-              initialZoom: widget.initialZoom,
-              minZoom: 2,
-              maxZoom: src.maxZoom,
-              onPositionChanged: (camera, hasGesture) {
-                if (hasGesture && _follow) {
-                  setState(() => _follow = false);
-                }
-                // Keep the reset-north button in sync with the live map
-                // rotation. Rebuild only when it actually changed to avoid
-                // per-frame setState churn while the user is panning.
-                if ((camera.rotation - _rotationDeg).abs() > 0.01) {
-                  setState(() => _rotationDeg = camera.rotation);
-                }
-              },
-              onMapReady: () {
-                _ready = true;
-                final p = _lastWgs;
-                if (p != null) _maybeFollow(p);
-              },
-            ),
-            children: [
-              TileLayer(
-                // Rebuild the layer when the source changes so tiles/caches for
-                // the previous provider are dropped cleanly.
-                key: ValueKey(src.id),
-                urlTemplate: src.urlTemplate,
-                maxNativeZoom: src.maxZoom.round(),
-                // Re-request tiles that failed transiently (mobile network
-                // hiccups) once they're off-screen, instead of leaving blank
-                // or stale tiles that "never update".
-                evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
-                // Keep already-loaded tiles around and preload a ring of
-                // neighbours so panning/following doesn't flash empty tiles.
-                keepBuffer: 3,
-                panBuffer: 2,
-                tileProvider: NetworkTileProvider(
-                  // NOTE: must be a *mutable* map — flutter_map augments the
-                  // headers at runtime (it injects the User-Agent), so passing
-                  // a `const {}` here throws "Cannot modify unmodifiable map".
-                  headers: {
-                    // OSM's tile-usage policy requires an identifying UA;
-                    // a missing/blank UA is periodically throttled, which
-                    // shows up as tiles that intermittently fail to update.
-                    'User-Agent':
-                        'ParaBeacon/1.0 (flutter_map; com.parabeacon.app)',
-                  },
-                ),
+    return _SuppressPageSwipe(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: FlutterMap(
+              mapController: _map,
+              options: MapOptions(
+                initialCenter: renderPos,
+                initialZoom: widget.initialZoom,
+                minZoom: 2,
+                maxZoom: src.maxZoom,
+                onPositionChanged: (camera, hasGesture) {
+                  if (hasGesture && _follow) {
+                    setState(() => _follow = false);
+                  }
+                  // Keep the reset-north button + zoom readout in sync with the
+                  // live camera. Rebuild only when values actually change to
+                  // avoid per-frame setState churn while panning.
+                  final rotChanged =
+                      (camera.rotation - _rotationDeg).abs() > 0.01;
+                  final zoomChanged = (camera.zoom - _zoom).abs() > 0.01;
+                  if (rotChanged || zoomChanged) {
+                    setState(() {
+                      _rotationDeg = camera.rotation;
+                      _zoom = camera.zoom;
+                    });
+                  }
+                },
+                onMapReady: () {
+                  _ready = true;
+                  final p = _lastWgs;
+                  if (p != null) _maybeFollow(p);
+                },
               ),
-              if (hasFix)
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: renderPos,
-                      width: 40,
-                      height: 40,
-                      child: _HeadingMarker(
-                        heading: heading,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        ),
+              children: [
+                _buildTileLayer(src),
 
-        if (!hasFix)
+                // Airspace polygons (below track/markers so labels stay legible).
+                if (widget.showAirspace)
+                  PolygonLayer(polygons: _buildAirspacePolygons()),
+
+                // Recorded flight track coloured by vertical speed.
+                if (widget.showTrack)
+                  PolylineLayer(polylines: _buildTrackPolylines()),
+
+                // Thermal / climb-assistant ring.
+                if (widget.showThermal && _thermal != null)
+                  CircleLayer(circles: [_buildThermalCircle(_thermal!)]),
+
+                if (hasFix)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: renderPos,
+                        width: 40,
+                        height: 40,
+                        child: _HeadingMarker(
+                          heading: heading,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+
+          if (!hasFix)
+            Positioned(
+              left: 8,
+              top: 8,
+              child:
+                  _glassChip(theme, icon: Icons.gps_off, label: 'No GPS fix'),
+            ),
+
+          // Top-left: HDG / ALT readout (only with a fix).
+          if (hasFix)
+            Positioned(
+              left: 8,
+              top: 8,
+              child: _glassChip(
+                theme,
+                label: 'HDG ${heading.round()}°  ·  ALT ${altMsl.round()}m',
+                small: true,
+              ),
+            ),
+
+          // Bottom-left: required L/D readout (feature 31).
           Positioned(
             left: 8,
-            top: 8,
-            child: _glassChip(theme, icon: Icons.gps_off, label: 'No GPS fix'),
+            bottom: 8,
+            child: _glassChip(
+              theme,
+              icon: Icons.trending_down,
+              label: 'L/D REQ ${_ldReqStr(data)}',
+              small: true,
+            ),
           ),
 
-        // Column of map affordances stacked in the bottom-right corner.
-        // The reset-north button is shown whenever the map is rotated away
-        // from north; the re-center button appears when following is off.
-        Positioned(
-          right: 8,
-          bottom: 8,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (_rotationDeg.abs() > 0.5) ...[
-                _CompassButton(
-                  // Rotate the icon so it visually reflects the current map
-                  // orientation — the needle always points to true north.
-                  rotationDeg: _rotationDeg,
-                  onTap: _resetNorth,
+          // Top-right: zoom-level readout (feature 32) + attribution.
+          Positioned(
+            right: 4,
+            top: 4,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _glassChip(theme, label: 'Z ${_zoom.toStringAsFixed(1)}',
+                    small: true),
+                const SizedBox(height: 4),
+                _glassChip(
+                  theme,
+                  label: _offlineActive
+                      ? 'Offline · ${OfflineTilesService.instance.activeFileName}'
+                      : src.attribution,
+                  small: true,
+                ),
+              ],
+            ),
+          ),
+
+          // Column of map affordances stacked in the bottom-right corner.
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (_rotationDeg.abs() > 0.5) ...[
+                  _CompassButton(
+                    rotationDeg: _rotationDeg,
+                    onTap: _resetNorth,
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (!_follow) ...[
+                  _MapButton(
+                    icon: Icons.my_location,
+                    tooltip: 'Re-center',
+                    onTap: () {
+                      setState(() => _follow = true);
+                      final p = _lastWgs;
+                      if (p != null && _ready) {
+                        _map.move(
+                            _shift(p, widget.tileSource), _map.camera.zoom);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                // Zoom in / out buttons (feature 15).
+                _MapButton(
+                  icon: Icons.add,
+                  tooltip: 'Zoom in',
+                  onTap: () => _zoomBy(1),
                 ),
                 const SizedBox(height: 8),
-              ],
-              if (!_follow)
                 _MapButton(
-                  icon: Icons.my_location,
-                  tooltip: 'Re-center',
-                  onTap: () {
-                    setState(() => _follow = true);
-                    final p = _lastWgs;
-                    if (p != null && _ready) {
-                      _map.move(
-                          _shift(p, widget.tileSource), _map.camera.zoom);
-                    }
-                  },
+                  icon: Icons.remove,
+                  tooltip: 'Zoom out',
+                  onTap: () => _zoomBy(-1),
                 ),
-            ],
+              ],
+            ),
           ),
-        ),
-
-        // Attribution (required by the tile providers' usage policies).
-        Positioned(
-          right: 4,
-          top: 4,
-          child: _glassChip(theme, label: src.attribution, small: true),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  /// Builds the base tile layer: an activated offline `.mbtiles` source takes
+  /// precedence, otherwise the selected online source.
+  Widget _buildTileLayer(MapTileSource src) {
+    if (_offlineActive) {
+      final tp = OfflineTilesService.instance.tileProvider();
+      if (tp != null) {
+        return TileLayer(
+          key: ValueKey('offline-${OfflineTilesService.instance.activeFileName}'),
+          tileProvider: tp,
+          maxNativeZoom: 19,
+          userAgentPackageName: 'com.parabeacon.app',
+        );
+      }
+    }
+    return TileLayer(
+      key: ValueKey(src.id),
+      urlTemplate: src.urlTemplate,
+      maxNativeZoom: src.maxZoom.round(),
+      evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
+      keepBuffer: 3,
+      panBuffer: 2,
+      tileProvider: NetworkTileProvider(
+        headers: {
+          'User-Agent': 'ParaBeacon/1.0 (flutter_map; com.parabeacon.app)',
+        },
+      ),
+    );
+  }
+
+  /// Zooms in/out by [delta] levels, clamped to the source's range.
+  void _zoomBy(double delta) {
+    if (!_ready) return;
+    final src = MapTileSources.byId(widget.tileSource);
+    final next = (_map.camera.zoom + delta).clamp(2.0, src.maxZoom);
+    _map.move(_map.camera.center, next);
+    setState(() => _zoom = next);
   }
 
   /// Rotates the map back to north-up. No-op when the map isn't ready or is
@@ -377,6 +530,142 @@ class _MapControlState extends State<MapControl> {
     if (!_ready) return;
     _map.rotate(0);
     setState(() => _rotationDeg = 0);
+  }
+
+  // ── Overlay builders ───────────────────────────────────────────────────────
+
+  /// Builds the recorded-flight-track polylines, split into runs of a common
+  /// vario colour so climbs/sinks are visually distinct (feature 20).
+  List<Polyline> _buildTrackPolylines() {
+    final track = FlightRecorder.instance.currentTrack;
+    final samples = track?.samples ?? const [];
+    if (samples.length < 2) return const [];
+
+    // Lightly decimate very long tracks to keep rendering smooth.
+    const cap = 2000;
+    final List<dynamic> pts;
+    if (samples.length <= cap) {
+      pts = samples;
+    } else {
+      final step = samples.length / cap;
+      pts = [
+        for (int i = 0; i < cap; i++) samples[(i * step).floor()],
+        samples.last,
+      ];
+    }
+
+    LatLng at(int i) {
+      final d = pts[i].data;
+      return _shift(LatLng(d.latitude, d.longitude), widget.tileSource);
+    }
+
+    double vario(int i) => (pts[i].data.verticalSpeed as double);
+
+    final out = <Polyline>[];
+    int runStart = 0;
+    Color runColor = _varioColor(vario(1));
+
+    void flush(int endExclusive) {
+      if (endExclusive - runStart < 2) return;
+      out.add(Polyline(
+        points: [for (int i = runStart; i < endExclusive; i++) at(i)],
+        strokeWidth: 3,
+        color: runColor,
+      ));
+    }
+
+    for (int i = 2; i < pts.length; i++) {
+      final c = _varioColor(vario(i));
+      if (c != runColor) {
+        flush(i);
+        runStart = i - 1; // share the endpoint for visual continuity
+        runColor = c;
+      }
+    }
+    flush(pts.length);
+    return out;
+  }
+
+  /// 7-level vario colour ramp (strong lift → strong sink).
+  Color _varioColor(double v) {
+    if (v.isNaN) return const Color(0xFFBAC9CC);
+    if (v >= 3.0) return const Color(0xFF13FF43);
+    if (v >= 1.5) return const Color(0xFF72FF70);
+    if (v >= 0.3) return const Color(0xFFD4FF6A);
+    if (v > -0.3) return const Color(0xFFBAC9CC);
+    if (v > -1.5) return const Color(0xFF6AB7FF);
+    if (v > -3.0) return const Color(0xFF3B82F6);
+    return const Color(0xFFFF3B30);
+  }
+
+  /// Builds the thermal/climb-assistant ring at the detected core (feature 27).
+  CircleMarker _buildThermalCircle(ThermalHint t) {
+    final pos =
+        _shift(LatLng(t.centerLat, t.centerLon), widget.tileSource);
+    // Greener the stronger the climb.
+    final strong = t.avgClimbMps >= 2.0;
+    final color = strong ? const Color(0xFF13FF43) : const Color(0xFFD4FF6A);
+    return CircleMarker(
+      point: pos,
+      radius: t.radiusM,
+      useRadiusInMeter: true,
+      color: color.withAlpha(38),
+      borderColor: color,
+      borderStrokeWidth: 2,
+    );
+  }
+
+  /// Builds altitude-aware airspace polygons (feature 19).
+  List<Polygon> _buildAirspacePolygons() {
+    final airspaces = AirspaceStore.instance.all;
+    if (airspaces.isEmpty) return const [];
+    final out = <Polygon>[];
+    for (final a in airspaces.take(80)) {
+      if (a.polygon.length < 3) continue;
+      final color = _airspaceColor(a);
+      out.add(Polygon(
+        points: a.polygon
+            .map((pt) => _shift(LatLng(pt[0], pt[1]), widget.tileSource))
+            .toList(growable: false),
+        borderColor: color,
+        borderStrokeWidth: a.severity == AirspaceSeverity.high ? 2 : 1,
+        color: color.withAlpha(20),
+      ));
+    }
+    return out;
+  }
+
+  /// Picks a boundary colour by proximity: inside = red, near = orange,
+  /// else grey (bolder for high-severity classes).
+  Color _airspaceColor(Airspace a) {
+    final pr = _airspaceProximity.firstWhere(
+      (p) => p.airspace.name == a.name,
+      orElse: () => AirspaceProximity(
+        airspace: a,
+        horizontalM: double.infinity,
+        verticalM: double.infinity,
+        inside: false,
+      ),
+    );
+    if (pr.inside) return const Color(0xFFFF3B30); // red: penetrating
+    if (pr.horizontalM < 1000 || pr.verticalM < 200) {
+      return const Color(0xFFFF9800); // orange: about to enter
+    }
+    return a.severity == AirspaceSeverity.high
+        ? const Color(0xFF9E9E9E)
+        : const Color(0x889E9E9E);
+  }
+
+  /// Required glide ratio to sustain the current descent: ground speed / sink.
+  /// Only meaningful while sinking (vertical speed < 0).
+  String _ldReqStr(dynamic data) {
+    final v = data.verticalSpeed as double; // m/s (+climb / -sink)
+    if (v >= -0.1) return '--';
+    final groundMps = (data.groundSpeed as double) / 3.6; // km/h -> m/s
+    final ld = groundMps / -v;
+    if (!ld.isFinite || ld <= 0) return '--';
+    if (ld >= 100) return '99+';
+    return ld.toStringAsFixed(1);
   }
 
   Widget _glassChip(
@@ -409,6 +698,48 @@ class _MapControlState extends State<MapControl> {
       ),
     );
   }
+}
+
+/// Absorbs horizontal drag gestures so panning the map does not bubble up to a
+/// parent horizontally-scrolling `PageView` (which would flip dashboard pages
+/// mid-pan). Implements feature 17 ("page-swipe lock").
+///
+/// It claims the horizontal-drag gesture arena with a no-op recognizer that
+/// always wins, so flutter_map still receives the pointer for panning while the
+/// enclosing PageView never does.
+class _SuppressPageSwipe extends StatelessWidget {
+  const _SuppressPageSwipe({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return RawGestureDetector(
+      behavior: HitTestBehavior.translucent,
+      gestures: {
+        _AlwaysWinHorizontalDragRecognizer:
+            GestureRecognizerFactoryWithHandlers<
+                _AlwaysWinHorizontalDragRecognizer>(
+          () => _AlwaysWinHorizontalDragRecognizer(),
+          (instance) {},
+        ),
+      },
+      child: child,
+    );
+  }
+}
+
+/// A horizontal-drag recognizer that eagerly accepts the gesture (so the
+/// ancestor PageView loses the arena) but performs no action itself.
+class _AlwaysWinHorizontalDragRecognizer
+    extends HorizontalDragGestureRecognizer {
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    super.addAllowedPointer(event);
+    resolve(GestureDisposition.accepted);
+  }
+
+  @override
+  String get debugDescription => 'suppressPageSwipe';
 }
 
 /// A north-up map marker: a filled arrow rotated to the current [heading].
@@ -467,7 +798,7 @@ class _ArrowPainter extends CustomPainter {
   bool shouldRepaint(_ArrowPainter oldDelegate) => oldDelegate.color != color;
 }
 
-/// Small circular glass button used for map affordances (re-center).
+/// Small circular glass button used for map affordances (re-center, zoom).
 class _MapButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;

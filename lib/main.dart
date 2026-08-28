@@ -15,11 +15,13 @@ import 'controls/placed_control.dart';
 import 'controls/vario_sound_settings_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
+import 'data/airspace_store.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_transformer.dart';
 import 'data/flight_recorder.dart';
 import 'data/layout_store.dart';
+import 'data/offline_tiles_service.dart';
 import 'data/raw_flight_data_source.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
@@ -104,6 +106,12 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // shows past flights across app restarts (best-effort; failures are
     // silent so a corrupt on-disk log doesn't block startup).
     FlightRecorder.instance.loadPersisted();
+
+    // Map control: re-open the last-activated offline basemap (.mbtiles) and
+    // load airspace data if the pilot has dropped an OpenAir file. Both are
+    // best-effort and leave the map on online tiles / no airspace on failure.
+    OfflineTilesService.instance.warmup();
+    AirspaceStore.instance.warmup();
 
     // Load the user's persisted Vario sound profile and apply it to the audio
     // engine (no-op beyond defaults on first launch).

@@ -238,6 +238,26 @@ const Map<String, List<ControlSetting>> _typeSettings = {
         'amap-sat': '高德卫星',
       },
     ),
+    ControlSetting.toggle(
+      key: 'useOffline',
+      label: 'Prefer offline maps (.mbtiles)',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showTrack',
+      label: 'Show flight track',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showThermal',
+      label: 'Show thermal assistant',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showAirspace',
+      label: 'Show airspace',
+      defaultValue: true,
+    ),
   ],
 };
 

@@ -76,6 +76,19 @@ dependencies:
   # degrades gracefully (the map falls back to the flight-data position).
   geolocator: ^13.0.2
 
+  # Offline raster basemaps for the Map control: read .mbtiles files and feed
+  # their tiles to flutter_map (used when the user activates an offline source
+  # in the Map control settings). `mbtiles` is the reader; `flutter_map_mbtiles`
+  # bridges it to flutter_map's TileProvider.
+  flutter_map_mbtiles: ^1.0.4
+  mbtiles: ^0.4.2
+
+  # Resolve the app documents directory that holds imported .mbtiles files,
+  # and let the user pick a .mbtiles file to import.
+  path_provider: ^2.1.4
+  path: ^1.9.0
+  file_picker: ^8.1.3
+
   # Keep the screen awake while the app is in the foreground (a flight
   # instrument must stay visible); also helps keep work alive when backgrounded.
   wakelock_plus: ^1.2.8

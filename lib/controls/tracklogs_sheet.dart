@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/flight_recorder.dart';
+import 'track_replay_sheet.dart';
 
 /// Opens the Tracklogs screen (all recorded flights) as a full-screen sheet.
 Future<void> showTracklogsSheet(BuildContext context) {
@@ -115,6 +116,7 @@ class _TracklogsSheetState extends State<_TracklogsSheet> {
   }
 
   Widget _trackTile(ThemeData theme, FlightTrack track) {
+    final canReplay = track.samples.length >= 2;
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: theme.colorScheme.primaryContainer,
@@ -126,13 +128,29 @@ class _TracklogsSheetState extends State<_TracklogsSheet> {
         '${(track.distanceM / 1000).toStringAsFixed(2)} km · '
         '${track.pointCount} pts',
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.delete_outline),
-        tooltip: 'Delete',
-        onPressed: () => _recorder.deleteTrack(track),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.play_circle_outline),
+            tooltip: canReplay
+                ? 'Replay'
+                : 'No track points to replay',
+            onPressed: canReplay ? () => _replay(track) : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Delete',
+            onPressed: () => _recorder.deleteTrack(track),
+          ),
+        ],
       ),
       onTap: () => _showDetail(track),
     );
+  }
+
+  void _replay(FlightTrack track) {
+    showTrackReplaySheet(context, track);
   }
 
   void _showDetail(FlightTrack track) {
@@ -167,6 +185,16 @@ class _TracklogsSheetState extends State<_TracklogsSheet> {
             ],
           ),
           actions: [
+            if (track.samples.length >= 2)
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _replay(track);
+                },
+                icon: const Icon(Icons.play_circle_outline),
+                label: Text('Replay',
+                    style: TextStyle(color: theme.colorScheme.primary)),
+              ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text('Close',

@@ -90,6 +90,28 @@ class VarioAudioConfig {
   final double sinkThreshold;
 
   // ---------------------------------------------------------------------------
+  // Deadband cue — double-beep pattern played between sink and climb thresholds.
+  // ---------------------------------------------------------------------------
+
+  /// Whether the deadband double-beep cue is enabled. When true it plays for
+  /// `sinkThreshold < v < climbThreshold` (i.e. the whole deadband, when there
+  /// is neither a climb beep nor a sink alarm). Set false to keep the deadband
+  /// silent.
+  final bool nearLiftEnabled;
+
+  /// Audible duration of each deadband beep, seconds.
+  final double nearLiftToneSeconds;
+
+  /// Silent gap between the two beeps of a pair, seconds.
+  final double nearLiftBeepGapSeconds;
+
+  /// Silent pause after a pair, before the next pair, seconds (the "[0.5s]").
+  final double nearLiftPairPauseSeconds;
+
+  /// Waveform for the deadband beeps.
+  final VarioWaveform nearLiftWaveform;
+
+  // ---------------------------------------------------------------------------
   // Climb tone (from t#a, iOrdinal == climb branch)
   // ---------------------------------------------------------------------------
 
@@ -158,6 +180,11 @@ class VarioAudioConfig {
     this.lookAheadMs = 90.0,
     this.climbThreshold = 0.2,
     this.sinkThreshold = -2.0,
+    this.nearLiftEnabled = true,
+    this.nearLiftToneSeconds = 0.2,
+    this.nearLiftBeepGapSeconds = 0.08,
+    this.nearLiftPairPauseSeconds = 0.5,
+    this.nearLiftWaveform = VarioWaveform.tack,
     this.climbBaseFreq = 660.0,
     this.climbFreqSpan = 660.0,
     this.climbSpeedRef = 8.0,
@@ -187,6 +214,11 @@ class VarioAudioConfig {
     double? lookAheadMs,
     double? climbThreshold,
     double? sinkThreshold,
+    bool? nearLiftEnabled,
+    double? nearLiftToneSeconds,
+    double? nearLiftBeepGapSeconds,
+    double? nearLiftPairPauseSeconds,
+    VarioWaveform? nearLiftWaveform,
     double? climbBaseFreq,
     double? climbFreqSpan,
     double? climbSpeedRef,
@@ -212,6 +244,13 @@ class VarioAudioConfig {
       lookAheadMs: lookAheadMs ?? this.lookAheadMs,
       climbThreshold: climbThreshold ?? this.climbThreshold,
       sinkThreshold: sinkThreshold ?? this.sinkThreshold,
+      nearLiftEnabled: nearLiftEnabled ?? this.nearLiftEnabled,
+      nearLiftToneSeconds: nearLiftToneSeconds ?? this.nearLiftToneSeconds,
+      nearLiftBeepGapSeconds:
+          nearLiftBeepGapSeconds ?? this.nearLiftBeepGapSeconds,
+      nearLiftPairPauseSeconds:
+          nearLiftPairPauseSeconds ?? this.nearLiftPairPauseSeconds,
+      nearLiftWaveform: nearLiftWaveform ?? this.nearLiftWaveform,
       climbBaseFreq: climbBaseFreq ?? this.climbBaseFreq,
       climbFreqSpan: climbFreqSpan ?? this.climbFreqSpan,
       climbSpeedRef: climbSpeedRef ?? this.climbSpeedRef,

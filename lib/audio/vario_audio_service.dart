@@ -174,7 +174,7 @@ class VarioAudioService {
 // DSP CORE — pure, backend-agnostic PCM synthesis (XCTrack-faithful).
 // =============================================================================
 
-enum _VarioState { deadband, climb, sink }
+enum _VarioState { deadband, nearLift, climb, sink }
 
 /// Real-time synthesizer.
 ///
@@ -225,6 +225,13 @@ class _VarioSynth {
   //   2 -> trailing silence to complete the period
   int _sinkPhase = 0;
 
+  // Near-lift pattern sub-phase, producing "beep beep [pause]" repeatedly:
+  //   0 -> first beep (tone)
+  //   1 -> short gap between the pair
+  //   2 -> second beep (tone)
+  //   3 -> trailing pause before the next pair
+  int _nearLiftPhase = 0;
+
   // The vario state of the previous segment, so we can detect a fresh entry
   // into the sink state and (re)start its tick at phase 0.
   _VarioState _prevState = _VarioState.deadband;
@@ -245,6 +252,9 @@ class _VarioSynth {
   _VarioState _stateFor(double speed) {
     if (speed >= _config.climbThreshold) return _VarioState.climb;
     if (speed <= _config.sinkThreshold) return _VarioState.sink;
+    // Deadband (sinkThreshold < speed < climbThreshold): play the double-beep
+    // cue across the whole band when enabled, otherwise stay silent.
+    if (_config.nearLiftEnabled) return _VarioState.nearLift;
     return _VarioState.deadband;
   }
 
@@ -302,6 +312,39 @@ class _VarioSynth {
         _inTone = false;
         _segForceFade = false;
         _segDuration = 0.02; // re-evaluate quickly (silence)
+        break;
+
+      case _VarioState.nearLift:
+        // Deadband cue: "beep beep [pause]" repeating across the whole band
+        // between sink and climb thresholds. Uses the climb base frequency.
+        // Advance the 4-phase sub-cycle (beep, gap, beep, pause); restart at
+        // phase 0 on a fresh entry into the state.
+        if (_prevState != _VarioState.nearLift) {
+          _nearLiftPhase = 0;
+        } else {
+          _nearLiftPhase = (_nearLiftPhase + 1) % 4;
+        }
+
+        if (_nearLiftPhase == 0 || _nearLiftPhase == 2) {
+          // A beep (either of the pair): short chirp at the climb base pitch.
+          _inTone = true;
+          _segForceFade = true; // clean edges against the surrounding silence
+          _segWave = _config.nearLiftWaveform;
+          _segDuration = math.max(0.001, _config.nearLiftToneSeconds);
+          final f = _config.climbBaseFreq;
+          _toneStartFreq = f;
+          _toneEndFreq = f;
+        } else if (_nearLiftPhase == 1) {
+          // Short silent gap between the two beeps of the pair.
+          _inTone = false;
+          _segForceFade = false;
+          _segDuration = math.max(0.001, _config.nearLiftBeepGapSeconds);
+        } else {
+          // Trailing pause after the pair, before the next "beep beep".
+          _inTone = false;
+          _segForceFade = false;
+          _segDuration = math.max(0.001, _config.nearLiftPairPauseSeconds);
+        }
         break;
 
       case _VarioState.climb:

@@ -16,10 +16,13 @@ import 'raw_flight_data_source.dart';
 /// re-emitting whenever new raw data arrives.
 ///
 /// Current transform:
-///   * **Vertical speed** — replaced with the average of the raw vertical
-///     speed over the trailing [verticalSpeedWindow] (default 2s). The raw
-///     input is sampled on every update and the output is recomputed from those
-///     raw samples (never fed back its own averaged output).
+///   * **Vertical speed** — replaced with the *time-weighted* average of the
+///     raw vertical speed over the trailing [verticalSpeedWindow] (default 2s).
+///     Each raw sample is weighted by how long it stays in effect (zero-order
+///     hold: it holds until the next sample arrives, and the newest sample
+///     extends to "now"), so uneven sampling rates do not bias the result. The
+///     raw input is sampled on every update and the output is recomputed from
+///     those raw samples (never fed back its own averaged output).
 ///
 /// All other fields are passed through unchanged. Controls read the transformed
 /// snapshot via [data]; debug controls that need to write overrides reach the
@@ -73,13 +76,14 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
     notifyListeners();
   }
 
-  /// Records the raw input [raw] at [when] and returns the mean of all raw
-  /// samples in the trailing [verticalSpeedWindow], evicting stale samples.
+  /// Records the raw input [raw] at [when] and returns the *time-weighted* mean
+  /// of all raw samples in the trailing [verticalSpeedWindow], evicting stale
+  /// samples.
   double _averagedVerticalSpeed(double raw, DateTime when) {
     if (raw.isNaN || raw.isInfinite) {
       // Ignore bogus readings; keep the last known average.
       if (_vsSamples.isEmpty) return 0.0;
-      return _mean();
+      return _timeWeightedMean(when);
     }
 
     _vsSamples.add(_VsSample(when, raw));
@@ -88,16 +92,34 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
     while (_vsSamples.length > 1 && _vsSamples.first.time.isBefore(cutoff)) {
       _vsSamples.removeAt(0);
     }
-    return _mean();
+    return _timeWeightedMean(when);
   }
 
-  double _mean() {
+  /// Time-weighted (zero-order hold) mean of the buffered samples up to [now].
+  ///
+  /// Each sample's weight is the duration it stays in effect: the gap until the
+  /// next sample, and for the newest sample the gap until [now]. Falls back to a
+  /// plain value when all weights are zero (e.g. a single instantaneous sample).
+  double _timeWeightedMean(DateTime now) {
     if (_vsSamples.isEmpty) return 0.0;
-    var sum = 0.0;
-    for (final e in _vsSamples) {
-      sum += e.value;
+    if (_vsSamples.length == 1) return _vsSamples.first.value;
+
+    var weightedSum = 0.0;
+    var totalWeight = 0.0;
+    for (var i = 0; i < _vsSamples.length; i++) {
+      final current = _vsSamples[i];
+      final until =
+          i + 1 < _vsSamples.length ? _vsSamples[i + 1].time : now;
+      var dtMicros = until.difference(current.time).inMicroseconds;
+      if (dtMicros < 0) dtMicros = 0; // guard against out-of-order timestamps
+      final w = dtMicros.toDouble();
+      weightedSum += current.value * w;
+      totalWeight += w;
     }
-    return sum / _vsSamples.length;
+
+    // All samples share the same instant (zero span): fall back to the newest.
+    if (totalWeight <= 0.0) return _vsSamples.last.value;
+    return weightedSum / totalWeight;
   }
 
   @override

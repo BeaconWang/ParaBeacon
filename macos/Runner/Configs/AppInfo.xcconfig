@@ -8,7 +8,7 @@
 PRODUCT_NAME = parabeacon
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.beacon.para.parabeacon
+PRODUCT_BUNDLE_IDENTIFIER = com.beacon.parabeacon
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.beacon.para. All rights reserved.

@@ -33,6 +33,9 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Gradle output is redirected here by android/build.gradle.kts (newBuildDir).
+/android/build/
+
 # Symbolication related
 app.*.symbols
 

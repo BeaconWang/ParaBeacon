@@ -1,4 +1,4 @@
-package com.beacon.para.parabeacon
+package com.beacon.parabeacon
 
 import io.flutter.embedding.android.FlutterActivity
 

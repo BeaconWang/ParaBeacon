@@ -9,12 +9,14 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 
+import '../audio/vario_sound_settings.dart';
 import '../data/airspace_store.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
 import '../data/offline_tiles_service.dart';
 import '../data/thermal_detector.dart';
+import '../data/vario_color_scale.dart';
 
 /// A raster map tile source available to the [MapControl].
 @immutable
@@ -186,6 +188,19 @@ class _MapControlState extends State<MapControl> {
   List<AirspaceProximity> _airspaceProximity = const [];
   StreamSubscription<List<AirspaceProximity>>? _airspaceSub;
 
+  /// Vario → colour scale for the flight track. Rebuilt from the live
+  /// [VarioSoundSettings] thresholds whenever the user changes them, so the
+  /// track (and legend) recolour dynamically.
+  late VarioColorScale _varioScale = _buildVarioScale();
+
+  VarioColorScale _buildVarioScale() {
+    final s = VarioSoundSettings.instance;
+    return VarioColorScale(
+      sinkThreshold: s.sinkThreshold,
+      liftThreshold: s.liftThreshold,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -198,6 +213,8 @@ class _MapControlState extends State<MapControl> {
     // the recorder appends new track points.
     OfflineTilesService.instance.revision.addListener(_onExternalChange);
     FlightRecorder.instance.addListener(_onExternalChange);
+    // Recolour the track/legend when the vario thresholds change.
+    VarioSoundSettings.instance.addListener(_onThresholdsChanged);
   }
 
   @override
@@ -214,11 +231,17 @@ class _MapControlState extends State<MapControl> {
     _airspaceSub?.cancel();
     OfflineTilesService.instance.revision.removeListener(_onExternalChange);
     FlightRecorder.instance.removeListener(_onExternalChange);
+    VarioSoundSettings.instance.removeListener(_onThresholdsChanged);
     super.dispose();
   }
 
   void _onExternalChange() {
     if (mounted) setState(() {});
+  }
+
+  void _onThresholdsChanged() {
+    if (!mounted) return;
+    setState(() => _varioScale = _buildVarioScale());
   }
 
   /// Requests the location permission and starts streaming device GPS.
@@ -415,6 +438,22 @@ class _MapControlState extends State<MapControl> {
             ),
           ),
 
+          // Bottom-center: vario colour-scale legend (feature 20 legend). Only
+          // shown when the track layer is enabled.
+          if (widget.showTrack)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 8,
+              child: Center(
+                child: _VarioLegend(
+                  scale: _varioScale,
+                  background: theme.colorScheme.surface.withAlpha(180),
+                  textColor: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+
           // Top-right: zoom-level readout (feature 32) + attribution.
           Positioned(
             right: 4,
@@ -534,8 +573,13 @@ class _MapControlState extends State<MapControl> {
 
   // ── Overlay builders ───────────────────────────────────────────────────────
 
-  /// Builds the recorded-flight-track polylines, split into runs of a common
-  /// vario colour so climbs/sinks are visually distinct (feature 20).
+  /// Builds the recorded-flight-track polylines, coloured by vertical speed
+  /// with a continuous gradient (feature 20).
+  ///
+  /// Each track segment (pair of consecutive points) becomes its own short
+  /// [Polyline] tinted by that segment's vario, so the colour varies smoothly
+  /// along the track rather than in a few discrete bands. Adjacent segments of
+  /// identical colour are merged to keep the layer element count low.
   List<Polyline> _buildTrackPolylines() {
     final track = FlightRecorder.instance.currentTrack;
     final samples = track?.samples ?? const [];
@@ -563,7 +607,9 @@ class _MapControlState extends State<MapControl> {
 
     final out = <Polyline>[];
     int runStart = 0;
-    Color runColor = _varioColor(vario(1));
+    // A segment's colour is derived from the vario at its *end* point via the
+    // threshold-aware [VarioColorScale].
+    Color runColor = _varioScale.colorFor(vario(1));
 
     void flush(int endExclusive) {
       if (endExclusive - runStart < 2) return;
@@ -575,7 +621,7 @@ class _MapControlState extends State<MapControl> {
     }
 
     for (int i = 2; i < pts.length; i++) {
-      final c = _varioColor(vario(i));
+      final c = _varioScale.colorFor(vario(i));
       if (c != runColor) {
         flush(i);
         runStart = i - 1; // share the endpoint for visual continuity
@@ -584,18 +630,6 @@ class _MapControlState extends State<MapControl> {
     }
     flush(pts.length);
     return out;
-  }
-
-  /// 7-level vario colour ramp (strong lift → strong sink).
-  Color _varioColor(double v) {
-    if (v.isNaN) return const Color(0xFFBAC9CC);
-    if (v >= 3.0) return const Color(0xFF13FF43);
-    if (v >= 1.5) return const Color(0xFF72FF70);
-    if (v >= 0.3) return const Color(0xFFD4FF6A);
-    if (v > -0.3) return const Color(0xFFBAC9CC);
-    if (v > -1.5) return const Color(0xFF6AB7FF);
-    if (v > -3.0) return const Color(0xFF3B82F6);
-    return const Color(0xFFFF3B30);
   }
 
   /// Builds the thermal/climb-assistant ring at the detected core (feature 27).
@@ -796,6 +830,137 @@ class _ArrowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ArrowPainter oldDelegate) => oldDelegate.color != color;
+}
+
+/// A compact legend for the vario colour [scale].
+///
+/// Renders the gradient bar plus SINK / NEUTRAL / LIFT captions and the tick
+/// labels -10 · sinkThreshold · 0 · liftThreshold · +10. The threshold values
+/// are read live from the scale, so the legend updates whenever the user
+/// changes them.
+class _VarioLegend extends StatelessWidget {
+  const _VarioLegend({
+    required this.scale,
+    required this.background,
+    required this.textColor,
+  });
+
+  final VarioColorScale scale;
+  final Color background;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final labelStyle = theme.textTheme.labelSmall?.copyWith(
+      color: textColor,
+      fontSize: 9,
+      height: 1.0,
+    );
+    final captionStyle = theme.textTheme.labelSmall?.copyWith(
+      color: textColor,
+      fontSize: 9,
+      height: 1.0,
+      fontWeight: FontWeight.w600,
+    );
+
+    String fmt(double v) {
+      final s = v.toStringAsFixed(1);
+      return v > 0 ? '+$s' : s;
+    }
+
+    // Fractions (0..1 over the visualisation range) at which the threshold
+    // ticks sit, so the labels line up with the gradient bar.
+    double frac(double mps) =>
+        ((mps - scale.colorMin) / (scale.colorMax - scale.colorMin))
+            .clamp(0.0, 1.0);
+
+    const barWidth = 220.0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // SINK / NEUTRAL / LIFT captions.
+          SizedBox(
+            width: barWidth,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('SINK', style: captionStyle),
+                Text('NEUTRAL', style: captionStyle),
+                Text('LIFT', style: captionStyle),
+              ],
+            ),
+          ),
+          const SizedBox(height: 3),
+          // Gradient bar sampled from the scale.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: Container(
+              width: barWidth,
+              height: 8,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: scale.sampleGradient(24),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          // Tick labels: colorMin · sink · 0 · lift · colorMax, positioned to
+          // align with their value on the bar. Endpoints and thresholds are all
+          // derived from the scale (nothing hard-coded).
+          SizedBox(
+            width: barWidth,
+            height: 11,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                _tick(0.0, fmt(scale.colorMin), labelStyle, barWidth,
+                    Alignment.centerLeft),
+                _tick(frac(scale.effectiveSinkThreshold),
+                    fmt(scale.effectiveSinkThreshold), labelStyle, barWidth,
+                    Alignment.center),
+                _tick(frac(0), '0', labelStyle, barWidth, Alignment.center),
+                _tick(frac(scale.effectiveLiftThreshold),
+                    fmt(scale.effectiveLiftThreshold), labelStyle, barWidth,
+                    Alignment.center),
+                _tick(1.0, fmt(scale.colorMax), labelStyle, barWidth,
+                    Alignment.centerRight),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Positions a tick [label] at horizontal [fraction] (0..1) of [barWidth].
+  Widget _tick(
+    double fraction,
+    String label,
+    TextStyle? style,
+    double barWidth,
+    Alignment align,
+  ) {
+    const halfLabel = 14.0;
+    double left = fraction * barWidth - halfLabel;
+    left = left.clamp(0.0, barWidth - 2 * halfLabel);
+    return Positioned(
+      left: left,
+      top: 0,
+      child: SizedBox(
+        width: 2 * halfLabel,
+        child: Text(label, style: style, textAlign: TextAlign.center),
+      ),
+    );
+  }
 }
 
 /// Small circular glass button used for map affordances (re-center, zoom).

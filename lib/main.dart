@@ -330,7 +330,13 @@ class _DashGridPageState extends State<DashGridPage>
   }
 
   void _onDragEnd(DragEndDetails details) {
-    if (_dragOffset > _menuHeight * 0.4) {
+    final velocity = details.primaryVelocity ?? 0;
+    // Open on a clear downward fling, or after only a short drag. Previously
+    // this required dragging past 40% of the full menu height (~120px), which
+    // felt too long; a fixed ~64px threshold plus velocity makes the menu open
+    // with a quick flick.
+    const openDistance = 64.0;
+    if (velocity > 300 || _dragOffset > openDistance) {
       // Snap open
       _openMenu();
     } else {

@@ -99,6 +99,10 @@ class VarioAudioConfig {
   /// silent.
   final bool nearLiftEnabled;
 
+  /// Pitch of the deadband double-beep cue, Hz (default 400). Independent of
+  /// the climb/sink pitches so the deadband cue reads as its own distinct tone.
+  final double nearLiftFreq;
+
   /// Audible duration of each deadband beep, seconds.
   final double nearLiftToneSeconds;
 
@@ -181,6 +185,7 @@ class VarioAudioConfig {
     this.climbThreshold = 0.2,
     this.sinkThreshold = -2.0,
     this.nearLiftEnabled = true,
+    this.nearLiftFreq = 400.0,
     this.nearLiftToneSeconds = 0.2,
     this.nearLiftBeepGapSeconds = 0.08,
     this.nearLiftPairPauseSeconds = 0.5,
@@ -215,6 +220,7 @@ class VarioAudioConfig {
     double? climbThreshold,
     double? sinkThreshold,
     bool? nearLiftEnabled,
+    double? nearLiftFreq,
     double? nearLiftToneSeconds,
     double? nearLiftBeepGapSeconds,
     double? nearLiftPairPauseSeconds,
@@ -245,6 +251,7 @@ class VarioAudioConfig {
       climbThreshold: climbThreshold ?? this.climbThreshold,
       sinkThreshold: sinkThreshold ?? this.sinkThreshold,
       nearLiftEnabled: nearLiftEnabled ?? this.nearLiftEnabled,
+      nearLiftFreq: nearLiftFreq ?? this.nearLiftFreq,
       nearLiftToneSeconds: nearLiftToneSeconds ?? this.nearLiftToneSeconds,
       nearLiftBeepGapSeconds:
           nearLiftBeepGapSeconds ?? this.nearLiftBeepGapSeconds,

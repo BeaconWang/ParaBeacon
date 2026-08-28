@@ -316,9 +316,9 @@ class _VarioSynth {
 
       case _VarioState.nearLift:
         // Deadband cue: "beep beep [pause]" repeating across the whole band
-        // between sink and climb thresholds. Uses the climb base frequency.
-        // Advance the 4-phase sub-cycle (beep, gap, beep, pause); restart at
-        // phase 0 on a fresh entry into the state.
+        // between sink and climb thresholds. Uses the dedicated deadband pitch
+        // (nearLiftFreq). Advance the 4-phase sub-cycle (beep, gap, beep,
+        // pause); restart at phase 0 on a fresh entry into the state.
         if (_prevState != _VarioState.nearLift) {
           _nearLiftPhase = 0;
         } else {
@@ -326,12 +326,12 @@ class _VarioSynth {
         }
 
         if (_nearLiftPhase == 0 || _nearLiftPhase == 2) {
-          // A beep (either of the pair): short chirp at the climb base pitch.
+          // A beep (either of the pair): short chirp at the deadband pitch.
           _inTone = true;
           _segForceFade = true; // clean edges against the surrounding silence
           _segWave = _config.nearLiftWaveform;
           _segDuration = math.max(0.001, _config.nearLiftToneSeconds);
-          final f = _config.climbBaseFreq;
+          final f = _config.nearLiftFreq;
           _toneStartFreq = f;
           _toneEndFreq = f;
         } else if (_nearLiftPhase == 1) {

@@ -81,21 +81,21 @@ class VarioAudioConfig {
   // State thresholds (m/s) — XCTrack defaults (t0.x1 / t0.y1 config keys).
   // ---------------------------------------------------------------------------
 
-  /// At/above this climb rate the climb beeper is active (XCTrack `f26099c`,
+  /// At/above this lift rate the lift beeper is active (XCTrack `f26099c`,
   /// default +0.2 m/s).
-  final double climbThreshold;
+  final double liftThreshold;
 
   /// At/below this sink rate the sink alarm is active (XCTrack `f26100d`,
   /// default -2.0 m/s; note XCTrack stores it negated).
   final double sinkThreshold;
 
   // ---------------------------------------------------------------------------
-  // Deadband cue — double-beep pattern played between sink and climb thresholds.
+  // Deadband cue — double-beep pattern played between sink and lift thresholds.
   // ---------------------------------------------------------------------------
 
   /// Whether the deadband double-beep cue is enabled. When true it plays for
-  /// `sinkThreshold < v < climbThreshold` (i.e. the whole deadband, when there
-  /// is neither a climb beep nor a sink alarm). Set false to keep the deadband
+  /// `sinkThreshold < v < liftThreshold` (i.e. the whole deadband, when there
+  /// is neither a lift beep nor a sink alarm). Set false to keep the deadband
   /// silent.
   final bool nearLiftEnabled;
 
@@ -116,29 +116,29 @@ class VarioAudioConfig {
   final VarioWaveform nearLiftWaveform;
 
   // ---------------------------------------------------------------------------
-  // Climb tone (from t#a, iOrdinal == climb branch)
+  // Lift tone (from t#a, iOrdinal == climb branch)
   // ---------------------------------------------------------------------------
 
-  /// Base pitch at zero climb, Hz (XCTrack constant 660).
-  final double climbBaseFreq;
+  /// Base pitch at zero lift, Hz (XCTrack constant 660).
+  final double liftBaseFreq;
 
-  /// Pitch gain: freq = climbBaseFreq + (v / climbSpeedRef) * climbFreqSpan.
-  final double climbFreqSpan; // 660 in XCTrack
-  final double climbSpeedRef; // 8.0 m/s normaliser in XCTrack
+  /// Pitch gain: freq = liftBaseFreq + (v / liftSpeedRef) * liftFreqSpan.
+  final double liftFreqSpan; // 660 in XCTrack
+  final double liftSpeedRef; // 8.0 m/s normaliser in XCTrack
 
-  /// Beep cadence: period = 1/(cadenceA*(v/climbSpeedRef)+cadenceB) - cadenceC.
+  /// Beep cadence: period = 1/(cadenceA*(v/liftSpeedRef)+cadenceB) - cadenceC.
   /// XCTrack: cadenceA=3, cadenceB=2, cadenceC=0.1.
   final double cadenceA;
   final double cadenceB;
   final double cadenceC;
 
-  /// Duration of the audible tone portion of each climb beep, seconds
+  /// Duration of the audible tone portion of each lift beep, seconds
   /// (XCTrack passes 0.1 s as the `w` command length; the remainder of the
   /// period is silence `h0`).
-  final double climbToneSeconds;
+  final double liftToneSeconds;
 
-  /// Waveform used for the climb beep.
-  final VarioWaveform climbWaveform;
+  /// Waveform used for the lift beep.
+  final VarioWaveform liftWaveform;
 
   // ---------------------------------------------------------------------------
   // Sink tone (from t#a, sink branch)
@@ -182,7 +182,7 @@ class VarioAudioConfig {
     this.channels = 1,
     this.chunkMs = 20.0,
     this.lookAheadMs = 90.0,
-    this.climbThreshold = 0.2,
+    this.liftThreshold = 0.2,
     this.sinkThreshold = -2.0,
     this.nearLiftEnabled = true,
     this.nearLiftFreq = 400.0,
@@ -190,14 +190,14 @@ class VarioAudioConfig {
     this.nearLiftBeepGapSeconds = 0.08,
     this.nearLiftPairPauseSeconds = 0.5,
     this.nearLiftWaveform = VarioWaveform.tack,
-    this.climbBaseFreq = 660.0,
-    this.climbFreqSpan = 660.0,
-    this.climbSpeedRef = 8.0,
+    this.liftBaseFreq = 660.0,
+    this.liftFreqSpan = 660.0,
+    this.liftSpeedRef = 8.0,
     this.cadenceA = 3.0,
     this.cadenceB = 2.0,
     this.cadenceC = 0.1,
-    this.climbToneSeconds = 0.1,
-    this.climbWaveform = VarioWaveform.tack,
+    this.liftToneSeconds = 0.1,
+    this.liftWaveform = VarioWaveform.tack,
     this.sinkBaseFreq = 660.0,
     this.sinkStepsPerMs = 2.0,
     this.sinkSemitonesPerOctave = 12.0,
@@ -217,7 +217,7 @@ class VarioAudioConfig {
     int? channels,
     double? chunkMs,
     double? lookAheadMs,
-    double? climbThreshold,
+    double? liftThreshold,
     double? sinkThreshold,
     bool? nearLiftEnabled,
     double? nearLiftFreq,
@@ -225,14 +225,14 @@ class VarioAudioConfig {
     double? nearLiftBeepGapSeconds,
     double? nearLiftPairPauseSeconds,
     VarioWaveform? nearLiftWaveform,
-    double? climbBaseFreq,
-    double? climbFreqSpan,
-    double? climbSpeedRef,
+    double? liftBaseFreq,
+    double? liftFreqSpan,
+    double? liftSpeedRef,
     double? cadenceA,
     double? cadenceB,
     double? cadenceC,
-    double? climbToneSeconds,
-    VarioWaveform? climbWaveform,
+    double? liftToneSeconds,
+    VarioWaveform? liftWaveform,
     double? sinkBaseFreq,
     double? sinkStepsPerMs,
     double? sinkSemitonesPerOctave,
@@ -248,7 +248,7 @@ class VarioAudioConfig {
       channels: channels ?? this.channels,
       chunkMs: chunkMs ?? this.chunkMs,
       lookAheadMs: lookAheadMs ?? this.lookAheadMs,
-      climbThreshold: climbThreshold ?? this.climbThreshold,
+      liftThreshold: liftThreshold ?? this.liftThreshold,
       sinkThreshold: sinkThreshold ?? this.sinkThreshold,
       nearLiftEnabled: nearLiftEnabled ?? this.nearLiftEnabled,
       nearLiftFreq: nearLiftFreq ?? this.nearLiftFreq,
@@ -258,14 +258,14 @@ class VarioAudioConfig {
       nearLiftPairPauseSeconds:
           nearLiftPairPauseSeconds ?? this.nearLiftPairPauseSeconds,
       nearLiftWaveform: nearLiftWaveform ?? this.nearLiftWaveform,
-      climbBaseFreq: climbBaseFreq ?? this.climbBaseFreq,
-      climbFreqSpan: climbFreqSpan ?? this.climbFreqSpan,
-      climbSpeedRef: climbSpeedRef ?? this.climbSpeedRef,
+      liftBaseFreq: liftBaseFreq ?? this.liftBaseFreq,
+      liftFreqSpan: liftFreqSpan ?? this.liftFreqSpan,
+      liftSpeedRef: liftSpeedRef ?? this.liftSpeedRef,
       cadenceA: cadenceA ?? this.cadenceA,
       cadenceB: cadenceB ?? this.cadenceB,
       cadenceC: cadenceC ?? this.cadenceC,
-      climbToneSeconds: climbToneSeconds ?? this.climbToneSeconds,
-      climbWaveform: climbWaveform ?? this.climbWaveform,
+      liftToneSeconds: liftToneSeconds ?? this.liftToneSeconds,
+      liftWaveform: liftWaveform ?? this.liftWaveform,
       sinkBaseFreq: sinkBaseFreq ?? this.sinkBaseFreq,
       sinkStepsPerMs: sinkStepsPerMs ?? this.sinkStepsPerMs,
       sinkSemitonesPerOctave:
@@ -282,24 +282,24 @@ class VarioAudioConfig {
   // XCTrack pitch/cadence math (pure functions of the config, unit-testable).
   // ---------------------------------------------------------------------------
 
-  /// Climb pitch (Hz) for a positive [speed]. Mirrors `t#a`:
+  /// Lift pitch (Hz) for a positive [speed]. Mirrors `t#a`:
   ///   d12 = v/8 ;  f = 660 + d12*660.
-  double climbFrequencyFor(double speed) {
-    final norm = speed / climbSpeedRef;
-    return climbBaseFreq + norm * climbFreqSpan;
+  double liftFrequencyFor(double speed) {
+    final norm = speed / liftSpeedRef;
+    return liftBaseFreq + norm * liftFreqSpan;
   }
 
   /// Total beep period (tone + trailing silence) for a positive [speed], s.
   /// Mirrors `t#a`:  period = 1/(3*(v/8)+2) - 0.1  (clamped to be > tone).
-  double climbPeriodFor(double speed) {
-    final norm = speed / climbSpeedRef;
+  double liftPeriodFor(double speed) {
+    final norm = speed / liftSpeedRef;
     final p = (1.0 / (cadenceA * norm + cadenceB)) - cadenceC;
-    // The audible tone is climbToneSeconds; ensure at least a tiny gap.
-    return math.max(p, climbToneSeconds + 0.005);
+    // The audible tone is liftToneSeconds; ensure at least a tiny gap.
+    return math.max(p, liftToneSeconds + 0.005);
   }
 
   /// Beep repetition rate (Hz) for a positive [speed] — convenience/telemetry.
-  double climbBeepRateFor(double speed) => 1.0 / climbPeriodFor(speed);
+  double liftBeepRateFor(double speed) => 1.0 / liftPeriodFor(speed);
 
   /// Sink pitch (Hz) for a negative [speed]. Mirrors `t#a`:
   ///   f = 660 / 2^(floor(2*|v|)/12).

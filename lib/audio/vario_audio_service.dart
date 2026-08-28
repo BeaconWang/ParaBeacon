@@ -9,7 +9,7 @@
 //   * Phase-continuous EXPONENTIAL pitch glide inside a beep (phase = analytic
 //     integral of instantaneous frequency) -> zero clicks on pitch change.
 //   * 5%/5% exponential fade envelope on toned segments (skipped for LONG).
-//   * Climb cadence + pitch and sink pitch formulas copied verbatim.
+//   * Lift cadence + pitch and sink pitch formulas copied verbatim.
 //
 // LATENCY STRATEGY (goal < 20 ms):
 //   XCTrack uses a blocking AudioTrack.write() loop at getMinBufferSize() with
@@ -174,11 +174,11 @@ class VarioAudioService {
 // DSP CORE — pure, backend-agnostic PCM synthesis (XCTrack-faithful).
 // =============================================================================
 
-enum _VarioState { deadband, nearLift, climb, sink }
+enum _VarioState { deadband, nearLift, lift, sink }
 
 /// Real-time synthesizer.
 ///
-/// Runs a continuous "beep cycle" state machine. Within a climb beep it glides
+/// Runs a continuous "beep cycle" state machine. Within a lift beep it glides
 /// pitch exponentially and applies XCTrack's 5% fades; between beeps it emits
 /// silence. Sink is a continuous LONG (pure-triangle) tone. A SINGLE phase
 /// accumulator is advanced every sample with
@@ -250,9 +250,9 @@ class _VarioSynth {
   }
 
   _VarioState _stateFor(double speed) {
-    if (speed >= _config.climbThreshold) return _VarioState.climb;
+    if (speed >= _config.liftThreshold) return _VarioState.lift;
     if (speed <= _config.sinkThreshold) return _VarioState.sink;
-    // Deadband (sinkThreshold < speed < climbThreshold): play the double-beep
+    // Deadband (sinkThreshold < speed < liftThreshold): play the double-beep
     // cue across the whole band when enabled, otherwise stay silent.
     if (_config.nearLiftEnabled) return _VarioState.nearLift;
     return _VarioState.deadband;
@@ -316,7 +316,7 @@ class _VarioSynth {
 
       case _VarioState.nearLift:
         // Deadband cue: "beep beep [pause]" repeating across the whole band
-        // between sink and climb thresholds. Uses the dedicated deadband pitch
+        // between sink and lift thresholds. Uses the dedicated deadband pitch
         // (nearLiftFreq). Advance the 4-phase sub-cycle (beep, gap, beep,
         // pause); restart at phase 0 on a fresh entry into the state.
         if (_prevState != _VarioState.nearLift) {
@@ -347,22 +347,22 @@ class _VarioSynth {
         }
         break;
 
-      case _VarioState.climb:
+      case _VarioState.lift:
         if (_inTone) {
           // Just finished a tone -> emit the trailing silence gap.
           _inTone = false;
-          final period = _config.climbPeriodFor(speed);
+          final period = _config.liftPeriodFor(speed);
           _segDuration =
-              math.max(0.001, period - _config.climbToneSeconds);
+              math.max(0.001, period - _config.liftToneSeconds);
         } else {
-          // Start a new climb beep (TACK). XCTrack uses a fixed 0.1 s tone.
+          // Start a new lift beep (TACK). XCTrack uses a fixed 0.1 s tone.
           _inTone = true;
           _segForceFade = false;
-          _segWave = _config.climbWaveform;
-          _segDuration = _config.climbToneSeconds;
-          // No pitch glide inside the climb beep (XCTrack passes f0==f1 there),
+          _segWave = _config.liftWaveform;
+          _segDuration = _config.liftToneSeconds;
+          // No pitch glide inside the lift beep (XCTrack passes f0==f1 there),
           // but we keep the glide machinery general.
-          final f = _config.climbFrequencyFor(speed);
+          final f = _config.liftFrequencyFor(speed);
           _toneStartFreq = f;
           _toneEndFreq = f;
         }

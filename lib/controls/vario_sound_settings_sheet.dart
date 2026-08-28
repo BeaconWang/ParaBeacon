@@ -8,7 +8,7 @@ import '../audio/vario_sound_settings.dart';
 
 /// Opens the Vario Sound Settings screen as a modal bottom sheet.
 ///
-/// Lets the user tune the vario beeper (climb/sink thresholds, pitch, waveform
+/// Lets the user tune the vario beeper (lift/sink thresholds, pitch, waveform
 /// and master gain). Changes apply live to [VarioAudioService] and are
 /// persisted via [VarioSoundSettings].
 Future<void> showVarioSoundSettingsSheet(BuildContext context) {
@@ -136,13 +136,13 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                       _sliderCard(
                         theme,
                         icon: Icons.trending_up,
-                        label: 'Climb threshold',
-                        value: _settings.climbThreshold,
+                        label: 'Lift threshold',
+                        value: _settings.liftThreshold,
                         min: 0.0,
                         max: 3.0,
                         divisions: 30,
-                        display: '${_settings.climbThreshold.toStringAsFixed(1)} m/s',
-                        onChanged: _settings.setClimbThreshold,
+                        display: '${_settings.liftThreshold.toStringAsFixed(1)} m/s',
+                        onChanged: _settings.setLiftThreshold,
                       ),
                       _sliderCard(
                         theme,
@@ -161,24 +161,24 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                       _sliderCard(
                         theme,
                         icon: Icons.music_note,
-                        label: 'Climb base pitch',
-                        value: _settings.climbBaseFreq,
+                        label: 'Lift base pitch',
+                        value: _settings.liftBaseFreq,
                         min: 300.0,
                         max: 1200.0,
                         divisions: 90,
-                        display: '${_settings.climbBaseFreq.round()} Hz',
-                        onChanged: _settings.setClimbBaseFreq,
+                        display: '${_settings.liftBaseFreq.round()} Hz',
+                        onChanged: _settings.setLiftBaseFreq,
                       ),
                       _sliderCard(
                         theme,
                         icon: Icons.stacked_line_chart,
-                        label: 'Climb pitch range',
-                        value: _settings.climbFreqSpan,
+                        label: 'Lift pitch range',
+                        value: _settings.liftFreqSpan,
                         min: 200.0,
                         max: 1500.0,
                         divisions: 130,
-                        display: '+${_settings.climbFreqSpan.round()} Hz',
-                        onChanged: _settings.setClimbFreqSpan,
+                        display: '+${_settings.liftFreqSpan.round()} Hz',
+                        onChanged: _settings.setLiftFreqSpan,
                       ),
                       _sliderCard(
                         theme,
@@ -196,9 +196,9 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                       const SizedBox(height: 8),
                       _waveformCard(
                         theme,
-                        label: 'Climb waveform',
-                        value: _settings.climbWaveform,
-                        onChanged: _settings.setClimbWaveform,
+                        label: 'Lift waveform',
+                        value: _settings.liftWaveform,
+                        onChanged: _settings.setLiftWaveform,
                       ),
                       const SizedBox(height: 8),
                       _waveformCard(
@@ -304,7 +304,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
             OutlinedButton.icon(
               onPressed: () => _playTest(2.0),
               icon: const Icon(Icons.trending_up, size: 18),
-              label: const Text('Climb'),
+              label: const Text('Lift'),
             ),
             OutlinedButton.icon(
               onPressed: () => _playTest(-3.0),

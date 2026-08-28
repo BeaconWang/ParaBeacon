@@ -21,33 +21,39 @@ class VarioSoundSettings extends ChangeNotifier {
   static final VarioSoundSettings instance = VarioSoundSettings._();
 
   // ── Persistence keys ──────────────────────────────────────────────────────
-  static const _kClimbThreshold = 'pb.vario.climbThreshold';
+  static const _kLiftThreshold = 'pb.vario.liftThreshold';
   static const _kSinkThreshold = 'pb.vario.sinkThreshold';
-  static const _kClimbBaseFreq = 'pb.vario.climbBaseFreq';
-  static const _kClimbFreqSpan = 'pb.vario.climbFreqSpan';
+  static const _kLiftBaseFreq = 'pb.vario.liftBaseFreq';
+  static const _kLiftFreqSpan = 'pb.vario.liftFreqSpan';
   static const _kSinkBaseFreq = 'pb.vario.sinkBaseFreq';
-  static const _kClimbWaveform = 'pb.vario.climbWaveform';
+  static const _kLiftWaveform = 'pb.vario.liftWaveform';
   static const _kSinkWaveform = 'pb.vario.sinkWaveform';
   static const _kMasterGain = 'pb.vario.masterGain';
+
+  // ── Legacy keys (pre-"climb → lift" rename) read once for migration ───────
+  static const _kLegacyClimbThreshold = 'pb.vario.climbThreshold';
+  static const _kLegacyClimbBaseFreq = 'pb.vario.climbBaseFreq';
+  static const _kLegacyClimbFreqSpan = 'pb.vario.climbFreqSpan';
+  static const _kLegacyClimbWaveform = 'pb.vario.climbWaveform';
 
   static const VarioAudioConfig _base = VarioAudioConfig.xcTrack;
 
   // ── Current values (initialized to the XCTrack defaults) ──────────────────
-  double _climbThreshold = _base.climbThreshold;
+  double _liftThreshold = _base.liftThreshold;
   double _sinkThreshold = _base.sinkThreshold;
-  double _climbBaseFreq = _base.climbBaseFreq;
-  double _climbFreqSpan = _base.climbFreqSpan;
+  double _liftBaseFreq = _base.liftBaseFreq;
+  double _liftFreqSpan = _base.liftFreqSpan;
   double _sinkBaseFreq = _base.sinkBaseFreq;
-  VarioWaveform _climbWaveform = _base.climbWaveform;
+  VarioWaveform _liftWaveform = _base.liftWaveform;
   VarioWaveform _sinkWaveform = _base.sinkWaveform;
   double _masterGain = _base.masterGain;
 
-  double get climbThreshold => _climbThreshold;
+  double get liftThreshold => _liftThreshold;
   double get sinkThreshold => _sinkThreshold;
-  double get climbBaseFreq => _climbBaseFreq;
-  double get climbFreqSpan => _climbFreqSpan;
+  double get liftBaseFreq => _liftBaseFreq;
+  double get liftFreqSpan => _liftFreqSpan;
   double get sinkBaseFreq => _sinkBaseFreq;
-  VarioWaveform get climbWaveform => _climbWaveform;
+  VarioWaveform get liftWaveform => _liftWaveform;
   VarioWaveform get sinkWaveform => _sinkWaveform;
   double get masterGain => _masterGain;
 
@@ -56,33 +62,48 @@ class VarioSoundSettings extends ChangeNotifier {
 
   /// Builds the effective [VarioAudioConfig] from the current settings.
   VarioAudioConfig get config => _base.copyWith(
-        climbThreshold: _climbThreshold,
+        liftThreshold: _liftThreshold,
         sinkThreshold: _sinkThreshold,
-        climbBaseFreq: _climbBaseFreq,
-        climbFreqSpan: _climbFreqSpan,
+        liftBaseFreq: _liftBaseFreq,
+        liftFreqSpan: _liftFreqSpan,
         sinkBaseFreq: _sinkBaseFreq,
-        climbWaveform: _climbWaveform,
+        liftWaveform: _liftWaveform,
         sinkWaveform: _sinkWaveform,
         masterGain: _masterGain,
       );
 
   /// Loads persisted values (if any) and applies them to the audio service.
   /// Safe to call multiple times; only the first load reads storage.
+  ///
+  /// Migration: values saved under the old `pb.vario.climb*` keys (before the
+  /// "climb → lift" rename) are read as a fallback and re-persisted under the
+  /// new `pb.vario.lift*` keys, after which the legacy keys are removed.
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
     try {
       final sp = await SharedPreferences.getInstance();
-      _climbThreshold = sp.getDouble(_kClimbThreshold) ?? _climbThreshold;
+
+      // New keys first, falling back to legacy keys for a one-time migration.
+      _liftThreshold = sp.getDouble(_kLiftThreshold) ??
+          sp.getDouble(_kLegacyClimbThreshold) ??
+          _liftThreshold;
       _sinkThreshold = sp.getDouble(_kSinkThreshold) ?? _sinkThreshold;
-      _climbBaseFreq = sp.getDouble(_kClimbBaseFreq) ?? _climbBaseFreq;
-      _climbFreqSpan = sp.getDouble(_kClimbFreqSpan) ?? _climbFreqSpan;
+      _liftBaseFreq = sp.getDouble(_kLiftBaseFreq) ??
+          sp.getDouble(_kLegacyClimbBaseFreq) ??
+          _liftBaseFreq;
+      _liftFreqSpan = sp.getDouble(_kLiftFreqSpan) ??
+          sp.getDouble(_kLegacyClimbFreqSpan) ??
+          _liftFreqSpan;
       _sinkBaseFreq = sp.getDouble(_kSinkBaseFreq) ?? _sinkBaseFreq;
-      _climbWaveform = _waveformFromName(sp.getString(_kClimbWaveform)) ??
-          _climbWaveform;
+      _liftWaveform = _waveformFromName(sp.getString(_kLiftWaveform)) ??
+          _waveformFromName(sp.getString(_kLegacyClimbWaveform)) ??
+          _liftWaveform;
       _sinkWaveform =
           _waveformFromName(sp.getString(_kSinkWaveform)) ?? _sinkWaveform;
       _masterGain = sp.getDouble(_kMasterGain) ?? _masterGain;
+
+      await _migrateLegacyKeys(sp);
     } catch (_) {
       // Storage unavailable: keep defaults.
     }
@@ -90,10 +111,32 @@ class VarioSoundSettings extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// If any legacy `climb*` key is present, re-persist the (now resolved)
+  /// values under the new keys and delete the legacy ones. Best-effort.
+  Future<void> _migrateLegacyKeys(SharedPreferences sp) async {
+    final hasLegacy = sp.containsKey(_kLegacyClimbThreshold) ||
+        sp.containsKey(_kLegacyClimbBaseFreq) ||
+        sp.containsKey(_kLegacyClimbFreqSpan) ||
+        sp.containsKey(_kLegacyClimbWaveform);
+    if (!hasLegacy) return;
+    try {
+      await Future.wait([
+        sp.setDouble(_kLiftThreshold, _liftThreshold),
+        sp.setDouble(_kLiftBaseFreq, _liftBaseFreq),
+        sp.setDouble(_kLiftFreqSpan, _liftFreqSpan),
+        sp.setString(_kLiftWaveform, _liftWaveform.name),
+        sp.remove(_kLegacyClimbThreshold),
+        sp.remove(_kLegacyClimbBaseFreq),
+        sp.remove(_kLegacyClimbFreqSpan),
+        sp.remove(_kLegacyClimbWaveform),
+      ]);
+    } catch (_) {}
+  }
+
   // ── Mutators (each persists + applies live) ───────────────────────────────
-  void setClimbThreshold(double v) {
-    _climbThreshold = v.clamp(0.0, 5.0);
-    _persistDouble(_kClimbThreshold, _climbThreshold);
+  void setLiftThreshold(double v) {
+    _liftThreshold = v.clamp(0.0, 5.0);
+    _persistDouble(_kLiftThreshold, _liftThreshold);
     _applyAndNotify();
   }
 
@@ -104,15 +147,15 @@ class VarioSoundSettings extends ChangeNotifier {
     _applyAndNotify();
   }
 
-  void setClimbBaseFreq(double v) {
-    _climbBaseFreq = v.clamp(200.0, 1500.0);
-    _persistDouble(_kClimbBaseFreq, _climbBaseFreq);
+  void setLiftBaseFreq(double v) {
+    _liftBaseFreq = v.clamp(200.0, 1500.0);
+    _persistDouble(_kLiftBaseFreq, _liftBaseFreq);
     _applyAndNotify();
   }
 
-  void setClimbFreqSpan(double v) {
-    _climbFreqSpan = v.clamp(100.0, 2000.0);
-    _persistDouble(_kClimbFreqSpan, _climbFreqSpan);
+  void setLiftFreqSpan(double v) {
+    _liftFreqSpan = v.clamp(100.0, 2000.0);
+    _persistDouble(_kLiftFreqSpan, _liftFreqSpan);
     _applyAndNotify();
   }
 
@@ -122,9 +165,9 @@ class VarioSoundSettings extends ChangeNotifier {
     _applyAndNotify();
   }
 
-  void setClimbWaveform(VarioWaveform w) {
-    _climbWaveform = w;
-    _persistString(_kClimbWaveform, w.name);
+  void setLiftWaveform(VarioWaveform w) {
+    _liftWaveform = w;
+    _persistString(_kLiftWaveform, w.name);
     _applyAndNotify();
   }
 
@@ -142,25 +185,30 @@ class VarioSoundSettings extends ChangeNotifier {
 
   /// Restores all values to the XCTrack defaults and clears storage.
   Future<void> resetToDefaults() async {
-    _climbThreshold = _base.climbThreshold;
+    _liftThreshold = _base.liftThreshold;
     _sinkThreshold = _base.sinkThreshold;
-    _climbBaseFreq = _base.climbBaseFreq;
-    _climbFreqSpan = _base.climbFreqSpan;
+    _liftBaseFreq = _base.liftBaseFreq;
+    _liftFreqSpan = _base.liftFreqSpan;
     _sinkBaseFreq = _base.sinkBaseFreq;
-    _climbWaveform = _base.climbWaveform;
+    _liftWaveform = _base.liftWaveform;
     _sinkWaveform = _base.sinkWaveform;
     _masterGain = _base.masterGain;
     try {
       final sp = await SharedPreferences.getInstance();
       await Future.wait([
-        sp.remove(_kClimbThreshold),
+        sp.remove(_kLiftThreshold),
         sp.remove(_kSinkThreshold),
-        sp.remove(_kClimbBaseFreq),
-        sp.remove(_kClimbFreqSpan),
+        sp.remove(_kLiftBaseFreq),
+        sp.remove(_kLiftFreqSpan),
         sp.remove(_kSinkBaseFreq),
-        sp.remove(_kClimbWaveform),
+        sp.remove(_kLiftWaveform),
         sp.remove(_kSinkWaveform),
         sp.remove(_kMasterGain),
+        // Also clear any leftover legacy keys.
+        sp.remove(_kLegacyClimbThreshold),
+        sp.remove(_kLegacyClimbBaseFreq),
+        sp.remove(_kLegacyClimbFreqSpan),
+        sp.remove(_kLegacyClimbWaveform),
       ]);
     } catch (_) {}
     _applyAndNotify();

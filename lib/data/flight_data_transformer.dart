@@ -41,6 +41,11 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
   /// The latest transformed snapshot exposed to controls.
   FlightData _data = FlightData.empty;
 
+  /// The priority tier that supplied the vertical speed on the previous update.
+  /// Used to detect when the source switches (e.g. Bluetooth → debug override)
+  /// so stale samples from the old source do not pollute the new average.
+  FlightDataPriority? _lastVsSource;
+
   bool _attached = false;
 
   FlightDataTransformer({
@@ -67,10 +72,22 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
   /// every raw-layer notification so the output tracks the latest input.
   void _onRawData() {
     final raw = rawSource.data;
-    final avgVs = _averagedVerticalSpeed(
-      raw.verticalSpeed,
-      raw.timestamp ?? DateTime.now(),
-    );
+
+    // Detect a change of the vertical-speed source tier (e.g. Bluetooth sensor
+    // → debug override after a disconnect). When the source switches, the
+    // trailing window must not blend the old source's samples into the new
+    // one's average, so drop the buffered history and start fresh.
+    final vsSource = rawSource.verticalSpeedSource;
+    if (_lastVsSource != null && vsSource != _lastVsSource) {
+      _vsSamples.clear();
+    }
+    _lastVsSource = vsSource;
+
+    // Use a wall-clock "now" rather than the raw snapshot's timestamp: a frozen
+    // feed (e.g. Bluetooth just disconnected) keeps reporting its last, stale
+    // timestamp, which would corrupt trailing-window eviction and time weights.
+    // Debug-override input in particular is a live "now" user action.
+    final avgVs = _averagedVerticalSpeed(raw.verticalSpeed, DateTime.now());
     _data =
         raw.verticalSpeed == avgVs ? raw : raw.copyWith(verticalSpeed: avgVs);
     notifyListeners();

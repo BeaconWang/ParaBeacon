@@ -45,22 +45,51 @@ class DataValueControl extends StatelessWidget {
     final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Scale the value font to the available space.
-        final valueSize =
-            (constraints.maxHeight * 0.42).clamp(16.0, 48.0).toDouble();
+        // Scale every part of the readout to the tile size. The value is the
+        // hero, so it gets the largest share of the height; the title/unit
+        // labels scale in proportion so short tiles stay readable and large
+        // tiles use the space instead of leaving a huge margin.
+        //
+        // The value is scaled off the tile height so vertical space directly
+        // drives the readout size. Horizontal fit is handled by wrapping every
+        // text in a FittedBox(BoxFit.scaleDown) below, which shrinks any
+        // over-wide glyphs (e.g. long numbers like "+1234") on narrow tiles.
+        final h = constraints.maxHeight.isFinite ? constraints.maxHeight : 80.0;
+        final base = h;
+
+        // Big value font — grows freely with the tile; upper bound is just a
+        // sanity guard for absurdly large canvases.
+        final valueSize = (base * 0.5).clamp(14.0, 240.0).toDouble();
+        // Title & unit share a smaller share of the height so they stay
+        // secondary but still scale visibly on big tiles.
+        final labelSize = (base * 0.13).clamp(9.0, 48.0).toDouble();
+
+        final labelStyle = theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: labelSize,
+              letterSpacing: 0.5,
+              height: 1.1,
+            ) ??
+            TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: labelSize,
+              letterSpacing: 0.5,
+              height: 1.1,
+            );
+
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (showTitle)
-              Text(
-                title.toUpperCase(),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  letterSpacing: 0.5,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  title.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  style: labelStyle,
                 ),
               ),
             Flexible(
@@ -79,13 +108,14 @@ class DataValueControl extends StatelessWidget {
               ),
             ),
             if (unit.isNotEmpty)
-              Text(
-                unit,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  unit,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  style: labelStyle,
                 ),
               ),
           ],
@@ -183,8 +213,13 @@ class LocationControl extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final valueSize =
-            (constraints.maxHeight * 0.24).clamp(12.0, 26.0).toDouble();
+        // Scale both the title and the two coordinate rows to the tile size,
+        // mirroring how [DataValueControl] scales its value. Location shows
+        // two stacked lines instead of one big number, so we use a smaller
+        // per-line share of the height than a single-value readout.
+        final h = constraints.maxHeight.isFinite ? constraints.maxHeight : 80.0;
+        final valueSize = (h * 0.28).clamp(11.0, 120.0).toDouble();
+        final labelSize = (h * 0.13).clamp(9.0, 48.0).toDouble();
         final valueStyle = TextStyle(
           fontSize: valueSize,
           fontWeight: FontWeight.bold,
@@ -200,14 +235,19 @@ class LocationControl extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (showTitle)
-              Text(
-                'LOCATION',
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  letterSpacing: 0.5,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  'LOCATION',
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: labelSize,
+                    letterSpacing: 0.5,
+                    height: 1.1,
+                  ),
                 ),
               ),
             Flexible(

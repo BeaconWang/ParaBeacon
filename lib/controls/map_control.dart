@@ -11,6 +11,7 @@ import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../audio/vario_sound_settings.dart';
 import '../data/airspace_store.dart';
+import '../data/debug_settings.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
@@ -231,6 +232,10 @@ class _MapControlState extends State<MapControl> {
     FlightRecorder.instance.addListener(_onExternalChange);
     // Recolour the track/legend when the vario thresholds change.
     VarioSoundSettings.instance.addListener(_onThresholdsChanged);
+    // React to the debug simulator being toggled on/off: when it turns on the
+    // map should immediately switch to the simulated position (highest
+    // priority), and when it turns off fall back to real device GPS / BLE.
+    DebugSettings.instance.addListener(_onExternalChange);
   }
 
   @override
@@ -248,6 +253,7 @@ class _MapControlState extends State<MapControl> {
     OfflineTilesService.instance.revision.removeListener(_onExternalChange);
     FlightRecorder.instance.removeListener(_onExternalChange);
     VarioSoundSettings.instance.removeListener(_onThresholdsChanged);
+    DebugSettings.instance.removeListener(_onExternalChange);
     super.dispose();
   }
 
@@ -325,18 +331,36 @@ class _MapControlState extends State<MapControl> {
     final data = FlightDataProvider.of(context);
     final src = MapTileSources.byId(widget.tileSource);
 
-    // Prefer real device GPS; fall back to the flight-data feed.
+    // Position source priority (highest first):
+    //   1. Debug simulator: when the developer has turned on the simulated
+    //      flight data source (DebugSettings.simulatorEnabled), the map must
+    //      follow the fake flight — not the real device GPS. This keeps the
+    //      map coherent with every other control while testing, and stops the
+    //      user's actual location from silently overriding the simulation.
+    //   2. Real device GPS via geolocator.
+    //   3. Flight-data feed (BLE sensor, external feed, …), when it has a fix.
     LatLng? wgs;
     double climb = data.verticalSpeed;
-    if (_gps != null) {
+    double heading;
+    double altMsl;
+    final simActive = DebugSettings.instance.simulatorEnabled && data.hasFix;
+    if (simActive) {
+      wgs = LatLng(data.latitude, data.longitude);
+      heading = data.heading;
+      altMsl = data.altitude;
+    } else if (_gps != null) {
       wgs = LatLng(_gps!.latitude, _gps!.longitude);
+      heading = _gps!.heading;
+      altMsl = _gps!.altitude;
     } else if (data.hasFix) {
       wgs = LatLng(data.latitude, data.longitude);
+      heading = data.heading;
+      altMsl = data.altitude;
+    } else {
+      heading = data.heading;
+      altMsl = data.altitude;
     }
     final hasFix = wgs != null;
-
-    final heading = _gps?.heading ?? data.heading;
-    final altMsl = _gps?.altitude ?? data.altitude;
 
     if (hasFix) {
       _maybeFollow(wgs);

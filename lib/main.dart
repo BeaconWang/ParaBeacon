@@ -898,13 +898,48 @@ class _DashGridPageState extends State<DashGridPage>
   }
 
 
+  /// Whether pressing the system Back button (Android) / triggering the
+  /// root-route pop gesture (iOS) currently has an in-app dismissal to do
+  /// instead of leaving the app. Used by [PopScope] to decide whether to
+  /// intercept the back gesture.
+  bool get _hasBackDismissTarget =>
+      _menuOpen || _selectedControlId != null || _activeControlId != null;
+
+  /// Handles a back-button press that [PopScope] intercepted (i.e. one that
+  /// we chose to consume by setting `canPop: false`). Peels the interaction
+  /// layers off one at a time — menu first, then any unlocked/selected
+  /// control — so a repeated back press eventually falls through to the
+  /// default pop (which exits the app on Android's root route).
+  void _handleBackDismiss() {
+    if (_menuOpen) {
+      _closeMenu();
+      return;
+    }
+    if (_selectedControlId != null || _activeControlId != null) {
+      setState(() {
+        _selectedControlId = null;
+        _activeControlId = null;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Measure the real menu height after this frame so the slide offset
     // matches the content exactly (avoids blank space below the last item).
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureMenu());
 
-    return Scaffold(
+    return PopScope(
+      // Only intercept the back gesture when there is something on screen
+      // to dismiss (open menu, a selected control in edit mode, or an
+      // unlocked/"controlled" widget in view mode). Otherwise let the
+      // system perform the default pop so Android's Back exits the app.
+      canPop: !_hasBackDismissTarget,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _handleBackDismiss();
+      },
+      child: Scaffold(
       body: Stack(
         children: [
           // Pages (tabs). Swipe horizontally to switch pages in view mode;
@@ -960,6 +995,7 @@ class _DashGridPageState extends State<DashGridPage>
             child: _buildMenuPanel(),
           ),
         ],
+      ),
       ),
     );
   }

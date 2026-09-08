@@ -177,9 +177,11 @@ class _DashGridPageState extends State<DashGridPage>
     with SingleTickerProviderStateMixin {
   double _gridSize = 48.0;
   bool _menuOpen = false;
-  // Start in view mode on cold launch: pilots opening the app in flight
-  // should see their instrument dashboard, not the edit affordances. Edit
-  // mode is opt-in via the top menu.
+  // Start in view mode on cold launch when the dashboard already has content:
+  // pilots opening the app in flight should see their instrument dashboard,
+  // not the edit affordances. If the dashboard is empty (first launch or
+  // after "Clear all controls"), _loadLayout flips this to true so the user
+  // lands directly in edit mode and can add their first control.
   bool _isEditMode = false;
 
   // Vario audio settings (backed by the shared VarioAudioService singleton).
@@ -250,38 +252,51 @@ class _DashGridPageState extends State<DashGridPage>
   /// last-viewed page) if any.
   Future<void> _loadLayout() async {
     final saved = await LayoutStore.instance.load();
-    if (saved == null || !mounted) return;
-    setState(() {
-      _pages
-        ..clear()
-        ..addAll(saved.pages);
-      _gridSize = saved.gridSize;
-      // Restore the page the user was last viewing (already clamped by the
-      // store to a valid index).
-      _currentPage = saved.currentPage;
-      _selectedControlId = null;
+    if (!mounted) {
+      return;
+    }
+    if (saved != null) {
+      setState(() {
+        _pages
+          ..clear()
+          ..addAll(saved.pages);
+        _gridSize = saved.gridSize;
+        // Restore the page the user was last viewing (already clamped by the
+        // store to a valid index).
+        _currentPage = saved.currentPage;
+        _selectedControlId = null;
 
-      // Advance the id sequences past any restored ids so new pages/controls
-      // never collide with loaded ones.
-      _pageSeq = _pages.length;
-      _controlSeq = 0;
-      for (final page in _pages) {
-        for (final c in page.controls) {
-          final n = _seqFromId(c.instanceId, 'ctrl_');
-          if (n != null && n >= _controlSeq) _controlSeq = n + 1;
-        }
-        final pn = _seqFromId(page.id, 'page_');
-        if (pn != null && pn >= _pageSeq) _pageSeq = pn + 1;
-      }
-    });
-    // Sync the PageView to the restored page once it exists. Using jumpTo
-    // (not animateTo) so the initial navigation isn't visible to the user.
-    if (_currentPage != 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _pageController.hasClients) {
-          _pageController.jumpToPage(_currentPage);
+        // Advance the id sequences past any restored ids so new pages/controls
+        // never collide with loaded ones.
+        _pageSeq = _pages.length;
+        _controlSeq = 0;
+        for (final page in _pages) {
+          for (final c in page.controls) {
+            final n = _seqFromId(c.instanceId, 'ctrl_');
+            if (n != null && n >= _controlSeq) _controlSeq = n + 1;
+          }
+          final pn = _seqFromId(page.id, 'page_');
+          if (pn != null && pn >= _pageSeq) _pageSeq = pn + 1;
         }
       });
+      // Sync the PageView to the restored page once it exists. Using jumpTo
+      // (not animateTo) so the initial navigation isn't visible to the user.
+      if (_currentPage != 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _pageController.hasClients) {
+            _pageController.jumpToPage(_currentPage);
+          }
+        });
+      }
+    }
+
+    // Empty-dashboard bootstrap: if no page has any control (first launch, or
+    // the user cleared everything), drop straight into edit mode so the edit
+    // affordances and "Add Control" entry point are immediately discoverable
+    // instead of showing a blank screen.
+    final hasAnyControl = _pages.any((p) => p.controls.isNotEmpty);
+    if (!hasAnyControl && !_isEditMode) {
+      setState(() => _isEditMode = true);
     }
   }
 

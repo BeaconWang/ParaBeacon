@@ -13,10 +13,15 @@ import 'vario_control.dart';
 /// overlays — delete button, resize handle — are added by the host at the
 /// dashboard level so their hit area can extend beyond the control bounds).
 /// In view mode it renders as a plain control face.
+///
+/// [isControlled] marks a widget that the user has long-pressed to unlock in
+/// view mode: it is currently allowed to receive its own pointer events
+/// (map pan/zoom, buttons, etc.). Every other widget is locked / static.
 class ControlWidget extends StatelessWidget {
   final PlacedControl control;
   final bool isEditMode;
   final bool isSelected;
+  final bool isControlled;
   final VoidCallback? onTap;
 
   const ControlWidget({
@@ -24,6 +29,7 @@ class ControlWidget extends StatelessWidget {
     required this.control,
     required this.isEditMode,
     required this.isSelected,
+    this.isControlled = false,
     this.onTap,
   });
 
@@ -42,22 +48,25 @@ class ControlWidget extends StatelessWidget {
         : Color(customBorderArgb);
 
     // Selection highlight always wins over the user's color so it stays
-    // obvious which control is being edited.
+    // obvious which control is being edited. The "controlled" highlight
+    // (long-pressed to unlock in view mode) uses the same primary tint so
+    // the user can immediately see which widget is currently interactive.
+    final highlight = isSelected || isControlled;
     final borderColor =
-        isSelected ? theme.colorScheme.primary : baseBorderColor;
+        highlight ? theme.colorScheme.primary : baseBorderColor;
 
     // Keep a subtle border while editing (for hit feedback) even if the user
     // disabled it, but hide it in view mode when requested.
-    final effectiveBorderColor = (showBorder || isEditMode || isSelected)
+    final effectiveBorderColor = (showBorder || isEditMode || highlight)
         ? borderColor
         : Colors.transparent;
 
-    // User-picked width, clamped to a safe range. Selection state bumps it
-    // slightly so the highlight is visible regardless of the base width.
+    // User-picked width, clamped to a safe range. Highlight state bumps it
+    // slightly so it's visible regardless of the base width.
     final userWidth =
         control.doubleSetting('borderWidth', fallback: 1.0).clamp(0.5, 6.0);
     final effectiveBorderWidth =
-        isSelected ? (userWidth + 1.0) : userWidth.toDouble();
+        highlight ? (userWidth + 1.0) : userWidth.toDouble();
 
     // User-picked outer corner radius. The face-level clip radius shrinks
     // with it (min 0) so nested content like the map/vario preview keeps

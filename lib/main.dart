@@ -201,6 +201,14 @@ class _DashGridPageState extends State<DashGridPage>
   String? _selectedControlId;
   int _controlSeq = 0;
 
+  // The single control on the current page that is currently "unlocked" and
+  // therefore allowed to receive its own pointer events (map pan/zoom,
+  // buttons, list scroll, etc.). Every other control on the page is treated
+  // as a static, drawable-only display and swallows any pointer events except
+  // the long-press that unlocks it. Reset when switching pages, tapping
+  // empty background, or entering edit mode.
+  String? _activeControlId;
+
   // Accumulated pixel offset during a control drag (before grid snapping).
   Offset _dragAccum = Offset.zero;
   int _dragStartCol = 0;
@@ -410,6 +418,10 @@ class _DashGridPageState extends State<DashGridPage>
         setState(() {
           _isEditMode = !_isEditMode;
           if (!_isEditMode) _selectedControlId = null;
+          // Edit-mode transitions always re-lock controls: entering edit
+          // mode means the user is arranging widgets (not interacting with
+          // them); leaving it returns to a clean, fully-locked dashboard.
+          _activeControlId = null;
         });
         break;
       case 'preferences':
@@ -447,6 +459,7 @@ class _DashGridPageState extends State<DashGridPage>
         _currentPage = _pages.length - 1;
       }
       _selectedControlId = null;
+      _activeControlId = null;
     });
     _saveLayout();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -511,6 +524,7 @@ class _DashGridPageState extends State<DashGridPage>
                         setState(() {
                           _isEditMode = v;
                           if (!v) _selectedControlId = null;
+                          _activeControlId = null;
                         });
                         setSheetState(() {});
                       },
@@ -663,6 +677,7 @@ class _DashGridPageState extends State<DashGridPage>
                                 setState(() {
                                   _controls.clear();
                                   _selectedControlId = null;
+                                  _activeControlId = null;
                                 });
                                 _saveLayout();
                                 setSheetState(() {});
@@ -770,6 +785,7 @@ class _DashGridPageState extends State<DashGridPage>
     setState(() {
       _controls.removeWhere((c) => c.instanceId == instanceId);
       if (_selectedControlId == instanceId) _selectedControlId = null;
+      if (_activeControlId == instanceId) _activeControlId = null;
     });
     _saveLayout();
   }
@@ -904,6 +920,9 @@ class _DashGridPageState extends State<DashGridPage>
                 setState(() {
                   _currentPage = index;
                   _selectedControlId = null;
+                  // Leaving a page re-locks whichever control the user had
+                  // unlocked on it, so returning to it starts fresh.
+                  _activeControlId = null;
                 });
                 // Persist the last-viewed page so re-launching the app
                 // returns the user to where they left off.
@@ -957,8 +976,14 @@ class _DashGridPageState extends State<DashGridPage>
             onTap: () {
               if (_menuOpen) {
                 _closeMenu();
-              } else if (_selectedControlId != null) {
-                setState(() => _selectedControlId = null);
+              } else if (_selectedControlId != null ||
+                  _activeControlId != null) {
+                setState(() {
+                  _selectedControlId = null;
+                  // Tapping outside any control re-locks it, matching how
+                  // tapping outside deselects a control in edit mode.
+                  _activeControlId = null;
+                });
               }
             },
             onVerticalDragStart: _menuOpen ? null : _onDragStart,
@@ -1121,12 +1146,15 @@ class _DashGridPageState extends State<DashGridPage>
       final width = control.cols * cellW;
       final height = control.rows * cellH;
       final isSelected = _selectedControlId == control.instanceId;
+      final isControlled =
+          !_isEditMode && _activeControlId == control.instanceId;
       final showAffordances = _isEditMode && isSelected;
 
       final child = ControlWidget(
         control: control,
         isEditMode: _isEditMode,
         isSelected: isSelected,
+        isControlled: isControlled,
         // In edit mode taps are handled by the outer GestureDetector so we
         // can also ignore the control's internal interactions (e.g. map pan,
         // buttons). Passing null here disables the inner InkWell.
@@ -1215,11 +1243,30 @@ class _DashGridPageState extends State<DashGridPage>
                     ),
                 ],
               )
-            : GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onLongPress: () => _showControlMenu(control),
-                child: child,
-              ),
+            : (isControlled
+                // Unlocked ("controlled") widget on the current page: let its
+                // internal interactions (map pan/zoom, buttons, list scroll,
+                // etc.) receive pointer events normally. Tapping outside the
+                // control re-locks it (handled by the background gesture
+                // layer above).
+                ? child
+                // Default state: the widget is locked and fully static —
+                // acts as a drawable readout only. IgnorePointer swallows
+                // every internal pointer event so nothing inside the control
+                // reacts to taps or drags. A long-press on the widget flips
+                // it into the unlocked ("controlled") state.
+                : GestureDetector(
+                    // Translucent so vertical drags starting on a locked
+                    // control still reach the fullscreen background gesture
+                    // layer that opens the top menu.
+                    behavior: HitTestBehavior.translucent,
+                    onLongPress: () {
+                      setState(() {
+                        _activeControlId = control.instanceId;
+                      });
+                    },
+                    child: IgnorePointer(child: child),
+                  )),
       );
     }).toList();
   }

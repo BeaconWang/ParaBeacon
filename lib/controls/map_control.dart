@@ -581,10 +581,17 @@ class _MapControlState extends State<MapControl> {
           key: ValueKey('offline-${OfflineTilesService.instance.activeFileName}'),
           tileProvider: tp,
           maxNativeZoom: 19,
-          userAgentPackageName: 'com.parabeacon.app',
+          userAgentPackageName: 'com.beacon.parabeacon',
         );
       }
     }
+    // NOTE (Android blank-map fix): do NOT set a custom `User-Agent` via
+    // NetworkTileProvider(headers:). On Android, dart:io's HttpClient silently
+    // drops the header, so tiles go out with the default `Dart/x.y (dart:io)`
+    // UA — which OSM's tile usage policy rejects (403/418), leaving the map
+    // blank. flutter_map's own `userAgentPackageName` correctly formats an
+    // accepted UA (`<pkg>/flutter_map/<ver>`) on every platform, so we rely on
+    // that instead. Keep it in sync with the offline branch above.
     return TileLayer(
       key: ValueKey(src.id),
       urlTemplate: src.urlTemplate,
@@ -592,11 +599,7 @@ class _MapControlState extends State<MapControl> {
       evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
       keepBuffer: 3,
       panBuffer: 2,
-      tileProvider: NetworkTileProvider(
-        headers: {
-          'User-Agent': 'ParaBeacon/1.0 (flutter_map; com.parabeacon.app)',
-        },
-      ),
+      userAgentPackageName: 'com.beacon.parabeacon',
     );
   }
 

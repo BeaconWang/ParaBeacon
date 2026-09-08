@@ -144,6 +144,54 @@ class ControlWidget extends StatelessWidget {
           format:
               fmt == 'dms' ? LocationFormat.dms : LocationFormat.decimal,
         );
+      case 'altitude':
+        final src = control.setting('source');
+        AltitudeSource source;
+        switch (src) {
+          case 'gps':
+            source = AltitudeSource.gps;
+            break;
+          case 'baro':
+            source = AltitudeSource.baro;
+            break;
+          case 'auto':
+          default:
+            source = AltitudeSource.auto;
+        }
+        return AltitudeControl(showTitle: showTitle, source: source);
+      case 'max_altitude':
+        return MaxAltitudeControl(showTitle: showTitle);
+      case 'ground_speed':
+        return GroundSpeedControl(showTitle: showTitle);
+      case 'glide_ratio':
+        return GlideRatioControl(showTitle: showTitle);
+      case 'heading':
+        return HeadingControl(
+          showTitle: showTitle,
+          cardinal: control.setting('format') == 'cardinal',
+        );
+      case 'wind_speed':
+        return WindSpeedControl(showTitle: showTitle);
+      case 'wind_direction':
+        return WindDirectionControl(
+          showTitle: showTitle,
+          cardinal: control.setting('format') == 'cardinal',
+        );
+      case 'pressure':
+        return PressureControl(showTitle: showTitle);
+      case 'temperature':
+        return TemperatureControl(showTitle: showTitle);
+      case 'clock':
+        return ClockControl(
+          showTitle: showTitle,
+          showSeconds: control.boolSetting('showSeconds', fallback: false),
+        );
+      case 'flight_time':
+        return FlightTimeControl(showTitle: showTitle);
+      case 'sensor_battery':
+        return SensorBatteryControl(showTitle: showTitle);
+      case 'heart_rate':
+        return HeartRateControl(showTitle: showTitle);
       case 'debug_sensor':
         return const DebugSensorControl();
       case 'data_monitor':

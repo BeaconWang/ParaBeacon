@@ -204,6 +204,47 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       },
     ),
   ],
+  'altitude': [
+    ControlSetting.choice(
+      key: 'source',
+      label: 'Altitude source',
+      defaultValue: 'auto',
+      options: {
+        'auto': 'Auto (baro if available)',
+        'gps': 'GPS altitude',
+        'baro': 'Barometric altitude',
+      },
+    ),
+  ],
+  'heading': [
+    ControlSetting.choice(
+      key: 'format',
+      label: 'Format',
+      defaultValue: 'degrees',
+      options: {
+        'degrees': 'Degrees (0-360°)',
+        'cardinal': 'Cardinal (N, NE, …)',
+      },
+    ),
+  ],
+  'wind_direction': [
+    ControlSetting.choice(
+      key: 'format',
+      label: 'Format',
+      defaultValue: 'degrees',
+      options: {
+        'degrees': 'Degrees (0-360°)',
+        'cardinal': 'Cardinal (N, NE, …)',
+      },
+    ),
+  ],
+  'clock': [
+    ControlSetting.toggle(
+      key: 'showSeconds',
+      label: 'Show seconds',
+      defaultValue: false,
+    ),
+  ],
   'flight_button': [
     ControlSetting.toggle(
       key: 'showAutoDetect',

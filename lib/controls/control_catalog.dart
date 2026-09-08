@@ -87,6 +87,24 @@ class ControlCatalog {
     ControlDirectory(
       kind: ControlKind.data,
       controls: [
+        // ── Altitude family ────────────────────────────────────────────
+        ControlType(
+          id: 'altitude',
+          label: 'Altitude',
+          icon: Icons.terrain,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'max_altitude',
+          label: 'Max Altitude',
+          icon: Icons.landscape,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        // ── Motion ────────────────────────────────────────────────────
         ControlType(
           id: 'vertical_speed',
           label: 'Vertical Speed',
@@ -96,9 +114,101 @@ class ControlCatalog {
           defaultRows: 2,
         ),
         ControlType(
+          id: 'ground_speed',
+          label: 'Ground Speed',
+          icon: Icons.speed,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'glide_ratio',
+          label: 'Glide',
+          icon: Icons.trending_flat,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'heading',
+          label: 'Heading',
+          icon: Icons.explore_outlined,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        // ── Position ──────────────────────────────────────────────────
+        ControlType(
           id: 'location',
           label: 'Location',
           icon: Icons.my_location,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        // ── Air / weather ─────────────────────────────────────────────
+        ControlType(
+          id: 'wind_speed',
+          label: 'Wind Speed',
+          icon: Icons.air,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'wind_direction',
+          label: 'Wind Direction',
+          icon: Icons.navigation_outlined,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'pressure',
+          label: 'Pressure',
+          icon: Icons.compress,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'temperature',
+          label: 'Temperature',
+          icon: Icons.thermostat_outlined,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        // ── Time ──────────────────────────────────────────────────────
+        ControlType(
+          id: 'clock',
+          label: 'Clock',
+          icon: Icons.access_time,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'flight_time',
+          label: 'Flight Time',
+          icon: Icons.timer_outlined,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        // ── Sensors ───────────────────────────────────────────────────
+        ControlType(
+          id: 'sensor_battery',
+          label: 'Sensor Battery',
+          icon: Icons.battery_std,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'heart_rate',
+          label: 'Heart Rate',
+          icon: Icons.favorite_outline,
           kind: ControlKind.data,
           defaultCols: 3,
           defaultRows: 2,

@@ -91,6 +91,19 @@ dependencies:
   # instrument must stay visible); also helps keep work alive when backgrounded.
   wakelock_plus: ^1.2.8
 
+  # Flights feature — export / import / reporting.
+  # share_plus: share exported files (GPX / IGC / PDF / .pbflights) via the
+  #   platform share sheet. archive: zip the whole flight library into a single
+  #   .pbflights bundle (and read it back). pdf + printing: render a per-flight
+  #   PDF report. crypto: SHA-256 "G-record" signature appended to exported IGC
+  #   files. file_picker: pick a .pbflights bundle to import.
+  share_plus: ^10.1.2
+  archive: ^3.6.1
+  pdf: ^3.11.1
+  printing: ^5.13.3
+  crypto: ^3.0.5
+  file_picker: ^8.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

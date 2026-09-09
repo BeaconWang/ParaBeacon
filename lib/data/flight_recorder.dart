@@ -327,6 +327,18 @@ class FlightRecorder extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Merges externally-sourced [tracks] (e.g. imported from a `.pbflights`
+  /// bundle) into the log, then re-sorts newest-first, persists and notifies.
+  /// Callers are responsible for duplicate filtering.
+  void importTracks(List<FlightTrack> tracks) {
+    if (tracks.isEmpty) return;
+    _tracks.addAll(tracks);
+    _tracks.sort((a, b) => b.startTime.compareTo(a.startTime));
+    _lastCompleted = _tracks.isNotEmpty ? _tracks.first : null;
+    FlightStore.instance.save(_tracks);
+    notifyListeners();
+  }
+
   /// DEBUG ONLY — inserts a synthetic completed flight with a full, randomized
   /// per-sample track (real [FlightSample]s carrying GPS position, altitude and
   /// vertical speed) so the Flights screen *and* the replay screen can both be

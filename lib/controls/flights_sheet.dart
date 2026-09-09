@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/flight_recorder.dart';
@@ -61,6 +62,13 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                 Expanded(
                   child: Text('Flights', style: theme.textTheme.titleLarge),
                 ),
+                // DEBUG ONLY — inject a random flight record for testing.
+                if (kDebugMode)
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    tooltip: 'Add random flight (debug)',
+                    onPressed: () => _recorder.addRandomDebugTrack(),
+                  ),
                 if (tracks.isNotEmpty)
                   IconButton(
                     icon: const Icon(Icons.delete_sweep_outlined),

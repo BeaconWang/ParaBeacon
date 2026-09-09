@@ -233,6 +233,52 @@ class FlightRecorder extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// DEBUG ONLY — inserts a synthetic completed flight with randomized summary
+  /// statistics so the Flights screen can be exercised without a real flight.
+  /// No-op in release/profile builds.
+  void addRandomDebugTrack() {
+    if (!kDebugMode) return;
+    final rnd = math.Random();
+
+    // Random start within the last ~30 days and a random duration.
+    final now = DateTime.now();
+    final start = now.subtract(Duration(
+      days: rnd.nextInt(30),
+      hours: rnd.nextInt(24),
+      minutes: rnd.nextInt(60),
+    ));
+    final durationMin = 5 + rnd.nextInt(180); // 5 min .. 3 h
+    final end = start.add(Duration(minutes: durationMin));
+
+    // Plausible randomized stats.
+    final baseAlt = 300.0 + rnd.nextDouble() * 1500.0; // launch altitude
+    final gain = rnd.nextDouble() * 1200.0;
+    final maxAltitude = baseAlt + gain;
+    final minAltitude = baseAlt - rnd.nextDouble() * 200.0;
+    final distanceM = rnd.nextDouble() * 60000.0; // 0 .. 60 km
+    final maxClimb = rnd.nextDouble() * 6.0; // 0 .. 6 m/s
+    final maxSink = -rnd.nextDouble() * 6.0; // -6 .. 0 m/s
+    final pointCount = 10 + rnd.nextInt(2000);
+
+    final track = FlightTrack._fromSummary(
+      startTime: start,
+      endTime: end,
+      distanceM: distanceM,
+      maxAltitude: maxAltitude,
+      minAltitude: minAltitude < 0 ? 0 : minAltitude,
+      maxClimb: maxClimb,
+      maxSink: maxSink,
+      pointCount: pointCount,
+    );
+
+    // Keep the log newest-first (matches _finishRecording / loadPersisted).
+    _tracks.insert(0, track);
+    _tracks.sort((a, b) => b.startTime.compareTo(a.startTime));
+    _lastCompleted = _tracks.first;
+    FlightStore.instance.save(_tracks);
+    notifyListeners();
+  }
+
   /// Loads previously-persisted flight tracks from disk (best-effort).
   /// Idempotent — calling more than once merges nothing; the on-disk list
   /// replaces the in-memory one.

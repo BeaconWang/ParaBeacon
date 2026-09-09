@@ -102,6 +102,10 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  # Generates native app icons (Android/iOS/Web/Windows/macOS) from a single
+  # 1024x1024 source image. Run: dart run flutter_launcher_icons
+  flutter_launcher_icons: ^0.14.4
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -143,3 +147,25 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# App icon configuration for flutter_launcher_icons.
+# Source image: assets/icon/app_icon.png (1024x1024, full-bleed).
+flutter_launcher_icons:
+  android: true
+  adaptive_icon_background: "#030C26"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icon/app_icon.png"
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    background_color: "#0B1220"
+    theme_color: "#0B1220"
+  windows:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: "assets/icon/app_icon.png"

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'flight_data.dart';
 import 'flight_state.dart';
 import 'flight_store.dart';
+import 'recording_settings.dart';
 
 /// One recorded sample of the full flight-data snapshot at a moment in time.
 ///
@@ -18,10 +19,14 @@ class FlightSample {
   final DateTime time;
   final FlightData data;
 
-  /// Serializes the sample (its time plus the full [FlightData] snapshot).
+  /// Serializes the sample (its time plus the [FlightData] snapshot).
+  ///
+  /// The per-point field set honors [RecordingSettings.detail]: the full
+  /// snapshot by default, or the compact XCTrack/IGC-style field set when the
+  /// user selected [RecordingDetail.xctrack].
   Map<String, dynamic> toJson() => {
         't': time.toIso8601String(),
-        'd': data.toJson(),
+        'd': data.toJson(compact: RecordingSettings.instance.compactSamples),
       };
 
   /// Inverse of [toJson]. Returns null when the timestamp is missing/invalid.
@@ -508,10 +513,27 @@ class FlightRecorder extends ChangeNotifier {
   }
 
   /// Time + distance/altitude gate to avoid redundant points.
+  ///
+  /// Two modes are supported (see [RecordingSettings.intervalMode]):
+  ///  * [RecordingIntervalMode.smart] (default): store at most once per second
+  ///    AND only when the aircraft moved ≥ [minDistanceM] horizontally or the
+  ///    altitude changed ≥ [minAltitudeDeltaM]. Skips redundant points while
+  ///    stationary.
+  ///  * [RecordingIntervalMode.fixed1s]: store one point every second
+  ///    regardless of movement (fixed 1 Hz).
   bool _shouldStore(FlightData data, DateTime now) {
     final last = _lastStored;
     if (last == null) return true;
     if (now.difference(last.time) < minInterval) return false;
+
+    // Fixed 1 s mode: the 1-second gate above is the only condition.
+    if (RecordingSettings.instance.intervalMode ==
+        RecordingIntervalMode.fixed1s) {
+      return true;
+    }
+
+    // Smart mode: also require a minimum movement or altitude change so we
+    // don't pile up redundant points while stationary.
     if (data.hasFix && last.data.hasFix) {
       final moved = FlightTrack._haversineM(
         last.data.latitude,

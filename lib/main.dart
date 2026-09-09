@@ -27,6 +27,7 @@ import 'data/gps_flight_data_bridge.dart';
 import 'data/layout_store.dart';
 import 'data/offline_tiles_service.dart';
 import 'data/raw_flight_data_source.dart';
+import 'data/recording_settings.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
@@ -95,6 +96,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // default off). Loading notifies listeners, so if the simulator was
     // previously enabled the data source resumes it automatically.
     DebugSettings.instance.load();
+    // Load the persisted recording preferences (e.g. track-point interval
+    // mode, default = smart/current logic) so the recorder uses the user's
+    // choice from the first fix.
+    RecordingSettings.instance.load();
     // Load the persisted theme preset before the first frame paints. The
     // MaterialApp below listens to ThemeController so setTheme(...) at any
     // later time rebuilds the whole tree with the new palette.
@@ -683,6 +688,22 @@ class _DashGridPageState extends State<DashGridPage>
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () => showBluetoothSensorSheet(context),
                     ),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.timeline,
+                          color: theme.colorScheme.primary),
+                      title: const Text('Track recording'),
+                      subtitle: Text(
+                        '${RecordingSettings.instance.intervalMode == RecordingIntervalMode.fixed1s ? 'Every 1 s' : 'Smart'} · '
+                        '${RecordingSettings.instance.detail == RecordingDetail.full ? 'full data' : 'XCTrack style'}',
+                      ),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () async {
+                        await _showRecordingSettingsSheet(context);
+                        setSheetState(() {});
+                      },
+                    ),
                     // Debug tools are only compiled/shown in debug builds.
                     if (kDebugMode) ...[
                       const Divider(height: 1),
@@ -741,6 +762,101 @@ class _DashGridPageState extends State<DashGridPage>
                     ),
                   ),
                 ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Lets the user choose how flight track points are recorded: the smart
+  /// interval (current logic, default) or a fixed 1-second interval.
+  Future<void> _showRecordingSettingsSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final mode = RecordingSettings.instance.intervalMode;
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.timeline, color: theme.colorScheme.primary),
+                        const SizedBox(width: 10),
+                        Text('Track recording',
+                            style: theme.textTheme.titleLarge),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Choose how often a track point is stored during flight.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    RadioListTile<RecordingIntervalMode>(
+                      contentPadding: EdgeInsets.zero,
+                      value: RecordingIntervalMode.smart,
+                      groupValue: mode,
+                      title: const Text('Smart (default)'),
+                      subtitle: const Text(
+                          'At least 1 s apart, and only when moved ≥ 3 m or '
+                          'altitude changed ≥ 1 m'),
+                      onChanged: (v) {
+                        if (v == null) return;
+                        RecordingSettings.instance.setIntervalMode(v);
+                        setSheetState(() {});
+                      },
+                    ),
+                    RadioListTile<RecordingIntervalMode>(
+                      contentPadding: EdgeInsets.zero,
+                      value: RecordingIntervalMode.fixed1s,
+                      groupValue: mode,
+                      title: const Text('Every 1 second'),
+                      subtitle: const Text(
+                          'Store one point per second regardless of movement'),
+                      onChanged: (v) {
+                        if (v == null) return;
+                        RecordingSettings.instance.setIntervalMode(v);
+                        setSheetState(() {});
+                      },
+                    ),
+                    const Divider(height: 24),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      secondary: Icon(Icons.dataset_outlined,
+                          color: theme.colorScheme.primary),
+                      title: const Text('Record more information'),
+                      subtitle: Text(
+                        RecordingSettings.instance.detail ==
+                                RecordingDetail.full
+                            ? 'Full data per point: vario, wind, pressure, '
+                                'temperature, GPS accuracy, satellites, '
+                                'battery, heart rate'
+                            : 'XCTrack style: position, baro/GPS altitude, '
+                                'heading, speed and time only',
+                      ),
+                      value: RecordingSettings.instance.detail ==
+                          RecordingDetail.full,
+                      onChanged: (on) {
+                        RecordingSettings.instance.setDetail(on
+                            ? RecordingDetail.full
+                            : RecordingDetail.xctrack);
+                        setSheetState(() {});
+                      },
+                    ),
+                  ],
+                ),
               ),
             );
           },

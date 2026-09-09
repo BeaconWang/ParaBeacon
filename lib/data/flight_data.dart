@@ -172,7 +172,28 @@ class FlightData {
   /// Serializes this snapshot to a compact JSON map. Nullable fields are
   /// omitted when absent to keep the payload small; [fromJson] treats missing
   /// keys as their default/null. Used to persist per-sample flight tracks.
-  Map<String, dynamic> toJson() {
+  ///
+  /// When [compact] is true, only the core, XCTrack/IGC-style fields are
+  /// written per point (position, barometric + GPS altitude, heading, ground
+  /// speed, fix validity, timestamp). The auxiliary sensor data (vario, wind,
+  /// pressure, temperature, accuracy, satellites, battery, heart rate) is
+  /// dropped to produce smaller tracks. [fromJson] restores the omitted fields
+  /// to their defaults/null.
+  Map<String, dynamic> toJson({bool compact = false}) {
+    if (compact) {
+      final map = <String, dynamic>{
+        'gs': groundSpeed,
+        'alt': altitude,
+        'lat': latitude,
+        'lng': longitude,
+        'hdg': heading,
+        'fix': hasFix,
+      };
+      if (baroAltitude != null) map['balt'] = baroAltitude;
+      if (gpsAltitude != null) map['galt'] = gpsAltitude;
+      if (timestamp != null) map['ts'] = timestamp!.toIso8601String();
+      return map;
+    }
     final map = <String, dynamic>{
       've': verticalSpeed,
       'gs': groundSpeed,

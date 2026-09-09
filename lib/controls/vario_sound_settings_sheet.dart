@@ -42,6 +42,10 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
   /// Current audition vertical speed (m/s) driven by the preview slider.
   double _previewSpeed = 0.0;
 
+  /// When true the audition is muted: the slider still moves and shows a speed,
+  /// but silence (0 m/s) is fed to the engine. Toggled via the LIVE chip.
+  bool _previewMuted = false;
+
   @override
   void initState() {
     super.initState();
@@ -59,31 +63,21 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
     super.dispose();
   }
 
-  /// Briefly drives the vario with a fixed vertical speed so the user can hear
-  /// the current profile, then returns it to the slider's current value.
-  void _playTest(double verticalSpeed) {
-    _testTimer?.cancel();
-    setState(() => _previewSpeed = verticalSpeed);
-    _audio.setPreviewSpeed(verticalSpeed);
-    _testTimer = Timer(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() => _previewSpeed = 0.0);
-      _audio.setPreviewSpeed(0.0);
-    });
-  }
-
-  void _stopTest() {
-    _testTimer?.cancel();
-    _testTimer = null;
-    setState(() => _previewSpeed = 0.0);
-    _audio.setPreviewSpeed(0.0);
-  }
+  /// The speed actually pushed to the engine: the audition value, or 0 (silent)
+  /// while the preview is muted.
+  double get _effectivePreviewSpeed => _previewMuted ? 0.0 : _previewSpeed;
 
   void _setPreviewSpeed(double v) {
     _testTimer?.cancel();
     _testTimer = null;
     setState(() => _previewSpeed = v);
-    _audio.setPreviewSpeed(v);
+    _audio.setPreviewSpeed(_effectivePreviewSpeed);
+  }
+
+  /// Mutes/unmutes the audition without changing the slider position.
+  void _togglePreviewMuted() {
+    setState(() => _previewMuted = !_previewMuted);
+    _audio.setPreviewSpeed(_effectivePreviewSpeed);
   }
 
   @override
@@ -288,21 +282,12 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
             Expanded(
               child: Text('Preview sound', style: theme.textTheme.bodyMedium),
             ),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                'LIVE',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                ),
-              ),
+            // Tap to mute/unmute the audition. Shows "LIVE" while audible and
+            // "MUTED" while silenced; the slider position is preserved either
+            // way.
+            _PreviewToggleChip(
+              muted: _previewMuted,
+              onTap: _togglePreviewMuted,
             ),
           ],
         ),
@@ -335,30 +320,6 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
         divisions: 200,
         label: speedLabel,
         onChanged: _setPreviewSpeed,
-      ),
-      const Divider(height: 1),
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Wrap(
-          spacing: 8,
-          children: [
-            OutlinedButton.icon(
-              onPressed: () => _playTest(2.0),
-              icon: const Icon(Icons.trending_up, size: 18),
-              label: const Text('Lift'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => _playTest(-3.0),
-              icon: const Icon(Icons.trending_down, size: 18),
-              label: const Text('Sink'),
-            ),
-            TextButton.icon(
-              onPressed: _stopTest,
-              icon: const Icon(Icons.stop, size: 18),
-              label: const Text('Stop'),
-            ),
-          ],
-        ),
       ),
     ]);
   }
@@ -513,4 +474,57 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
         ),
         child: Column(children: children),
       );
+}
+
+/// Tappable chip that mutes/unmutes the audition. Reads "LIVE" (highlighted)
+/// while audible and "MUTED" (subdued) while silenced.
+class _PreviewToggleChip extends StatelessWidget {
+  const _PreviewToggleChip({required this.muted, required this.onTap});
+
+  final bool muted;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final Color bg = muted
+        ? theme.colorScheme.surfaceContainerHighest
+        : theme.colorScheme.primaryContainer;
+    final Color fg = muted
+        ? theme.colorScheme.onSurfaceVariant
+        : theme.colorScheme.onPrimaryContainer;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                muted ? Icons.volume_off : Icons.volume_up,
+                size: 14,
+                color: fg,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                muted ? 'MUTED' : 'LIVE',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

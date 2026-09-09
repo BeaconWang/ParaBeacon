@@ -29,6 +29,9 @@ import 'data/raw_flight_data_source.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
+import 'theme/app_themes.dart';
+import 'theme/theme_controller.dart';
+import 'theme/theme_settings_sheet.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -91,6 +94,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // default off). Loading notifies listeners, so if the simulator was
     // previously enabled the data source resumes it automatically.
     DebugSettings.instance.load();
+    // Load the persisted theme preset before the first frame paints. The
+    // MaterialApp below listens to ThemeController so setTheme(...) at any
+    // later time rebuilds the whole tree with the new palette.
+    ThemeController.instance.load();
 
     // Bluetooth-sensor tier is the raw feed; a debug override (installed via the
     // Debug Sensor control) always wins over it (Debug > Bluetooth sensor).
@@ -173,17 +180,19 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
   Widget build(BuildContext context) {
     return FlightDataProvider(
       transformer: _transformer,
-      child: MaterialApp(
-        title: 'ParaBeacon',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.indigo,
-            brightness: Brightness.dark,
-          ),
-          useMaterial3: true,
-        ),
-        home: const DashGridPage(),
+      // Rebuild the whole app when the user picks a different theme preset.
+      // ThemeController is a ChangeNotifier; AnimatedBuilder handles the
+      // subscribe/unsubscribe lifecycle and only rebuilds this subtree.
+      child: AnimatedBuilder(
+        animation: ThemeController.instance,
+        builder: (context, _) {
+          return MaterialApp(
+            title: 'ParaBeacon',
+            debugShowCheckedModeBanner: false,
+            theme: themeDataFor(ThemeController.instance.current),
+            home: const DashGridPage(),
+          );
+        },
       ),
     );
   }
@@ -581,6 +590,21 @@ class _DashGridPageState extends State<DashGridPage>
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                       children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.palette_outlined,
+                          color: theme.colorScheme.primary),
+                      title: const Text('Theme'),
+                      subtitle: Text(ThemeController.instance.current.label),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () async {
+                        await showThemeSettingsSheet(context);
+                        // Refresh the subtitle in the still-open Preferences
+                        // sheet so it reflects the newly-selected theme.
+                        setSheetState(() {});
+                      },
+                    ),
+                    const Divider(height: 1),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       secondary: Icon(_Icons.mode,

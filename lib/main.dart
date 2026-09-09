@@ -975,13 +975,17 @@ class _DashGridPageState extends State<DashGridPage>
   /// instead of leaving the app. Used by [PopScope] to decide whether to
   /// intercept the back gesture.
   bool get _hasBackDismissTarget =>
-      _menuOpen || _selectedControlId != null || _activeControlId != null;
+      _menuOpen ||
+      _selectedControlId != null ||
+      _activeControlId != null ||
+      _isEditMode;
 
   /// Handles a back-button press that [PopScope] intercepted (i.e. one that
   /// we chose to consume by setting `canPop: false`). Peels the interaction
   /// layers off one at a time — menu first, then any unlocked/selected
-  /// control — so a repeated back press eventually falls through to the
-  /// default pop (which exits the app on Android's root route).
+  /// control, then edit mode itself — so a repeated back press eventually
+  /// falls through to the default pop (which exits the app on Android's
+  /// root route).
   void _handleBackDismiss() {
     if (_menuOpen) {
       _closeMenu();
@@ -991,6 +995,19 @@ class _DashGridPageState extends State<DashGridPage>
       setState(() {
         _selectedControlId = null;
         _activeControlId = null;
+      });
+      return;
+    }
+    if (_isEditMode) {
+      // Mirror the top-menu / preferences edit-mode toggle: leaving edit
+      // mode clears any selection, re-locks controls, and hands the page
+      // indicator back to the swipe-driven auto-hide.
+      setState(() {
+        _isEditMode = false;
+        _selectedControlId = null;
+        _activeControlId = null;
+        _pageIndicatorHideTimer?.cancel();
+        _pageIndicatorVisible = false;
       });
     }
   }
@@ -1061,20 +1078,29 @@ class _DashGridPageState extends State<DashGridPage>
             ),
           ),
 
-          // Page indicator (hidden while the menu is open). Shown with more
-          // than one page, or in edit mode so a single page's icon can be
-          // customized. In view mode it auto-fades one second after the last
+          // Page indicator. Shown with more than one page, or in edit mode
+          // so a single page's icon can be customized. Visibility is driven
+          // entirely by AnimatedOpacity (rather than removing the widget
+          // from the tree) so opening/closing the top menu doesn't cause a
+          // fade-in "pop" every time the indicator reappears — it merely
+          // fades opacity while the menu is open and, if it was visible
+          // before, is already at full opacity the instant the menu closes.
+          //
+          // In view mode the indicator auto-fades one second after the last
           // page swipe; in edit mode it stays fully visible.
-          if ((_pages.length > 1 || _isEditMode) && !_menuOpen)
+          if (_pages.length > 1 || _isEditMode)
             Positioned(
               left: 0,
               right: 0,
               bottom: 16,
               child: IgnorePointer(
-                ignoring: !_isEditMode && !_pageIndicatorVisible,
+                ignoring: _menuOpen ||
+                    (!_isEditMode && !_pageIndicatorVisible),
                 child: AnimatedOpacity(
                   duration: _pageIndicatorFadeDuration,
-                  opacity: (_isEditMode || _pageIndicatorVisible) ? 1.0 : 0.0,
+                  opacity: _menuOpen
+                      ? 0.0
+                      : ((_isEditMode || _pageIndicatorVisible) ? 1.0 : 0.0),
                   child: _buildPageIndicator(),
                 ),
               ),

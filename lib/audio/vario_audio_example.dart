@@ -83,8 +83,10 @@ class VarioAudioBridge {
     _flightState.addListener(_onGateChanged);
     _settings.addListener(_onGateChanged);
     _attached = true;
-    // Push the current value immediately so the sound reflects vertical speed
-    // right away rather than waiting for the next data tick.
+    // Apply the initial gate and push the current value immediately so the
+    // sound reflects vertical speed right away rather than waiting for the
+    // next data tick.
+    _applyGate();
     _onData();
   }
 
@@ -95,18 +97,18 @@ class VarioAudioBridge {
   bool get _soundEnabled =>
       !_settings.soundOnlyWhenFlying || _flightState.isFlying;
 
-  void _onGateChanged() {
-    // Force the next _onData() to push through even if the raw speed is
-    // unchanged, so toggling the gate takes effect right away.
-    _lastSpeed = null;
-    _onData();
-  }
+  /// Pushes the current gate decision to the audio engine. The engine ramps to
+  /// silence when the gate is closed (this is what actually enforces "sound
+  /// only when flying" — merely feeding 0 m/s would still play the deadband
+  /// near-lift cue).
+  void _applyGate() => audio.setGateOpen(_soundEnabled);
+
+  void _onGateChanged() => _applyGate();
 
   void _onData() {
     // The source already applies debug overrides in `data`. The vario sound is
-    // strictly a function of this value, gated by the "only when flying"
-    // preference.
-    final vs = _soundEnabled ? source.data.verticalSpeed : 0.0;
+    // strictly a function of this value; audibility is handled by the gate.
+    final vs = source.data.verticalSpeed;
     // Skip redundant updates; identical speeds produce identical audio, so
     // there is no need to touch the engine.
     if (_lastSpeed != null && (vs - _lastSpeed!).abs() < 1e-4) return;

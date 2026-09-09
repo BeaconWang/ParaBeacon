@@ -42,8 +42,9 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
   /// Current audition vertical speed (m/s) driven by the preview slider.
   double _previewSpeed = 0.0;
 
-  /// When true the audition is muted: the slider still moves and shows a speed,
-  /// but silence (0 m/s) is fed to the engine. Toggled via the LIVE chip.
+  /// When true the audition is muted. The slider still moves and shows a speed,
+  /// but the engine follows the live vario feed instead (subject to the flight
+  /// gate), so preview-muted + not flying + "sound only when flying" is silent.
   bool _previewMuted = false;
 
   @override
@@ -63,21 +64,18 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
     super.dispose();
   }
 
-  /// The speed actually pushed to the engine: the audition value, or 0 (silent)
-  /// while the preview is muted.
-  double get _effectivePreviewSpeed => _previewMuted ? 0.0 : _previewSpeed;
-
   void _setPreviewSpeed(double v) {
     _testTimer?.cancel();
     _testTimer = null;
     setState(() => _previewSpeed = v);
-    _audio.setPreviewSpeed(_effectivePreviewSpeed);
+    _audio.setPreviewSpeed(v);
   }
 
-  /// Mutes/unmutes the audition without changing the slider position.
+  /// Mutes/unmutes the audition without changing the slider position. While
+  /// muted the engine follows the live feed (and the flight gate).
   void _togglePreviewMuted() {
     setState(() => _previewMuted = !_previewMuted);
-    _audio.setPreviewSpeed(_effectivePreviewSpeed);
+    _audio.setPreviewMuted(_previewMuted);
   }
 
   @override

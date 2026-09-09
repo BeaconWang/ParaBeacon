@@ -46,12 +46,26 @@ class VarioAudioService {
   bool _muted = false;
   double _volume = 1.0;
 
+  // Independent "gate" applied on top of mute/volume. When closed, the engine
+  // output is ramped to silence regardless of the driven speed. Used by the
+  // flight-data bridge to enforce "sound only when flying" — feeding 0 m/s is
+  // not enough because the deadband near-lift cue would still beep.
+  bool _gateOpen = true;
+
   // Preview takeover. When active, live vertical-speed updates (e.g. from the
   // flight-data bridge) are ignored and the engine is driven by the preview
   // speed instead. Used by the Vario Sound Settings panel so the user can
   // audition a chosen vertical speed without the live sensor feed fighting it.
+  //
+  // While previewing, [_previewMuted] decides whether the audition is heard.
+  // When the preview is muted the engine falls back to the *live* vario feed,
+  // still subject to the flight gate (so "sound only when flying" applies).
   bool _previewActive = false;
+  bool _previewMuted = false;
   double _previewSpeed = 0.0;
+  // The most recent live speed, retained so that muting the preview can hand
+  // control back to the live feed without waiting for the next sensor tick.
+  double _liveSpeed = 0.0;
 
   VarioAudioConfig get config => _synth.config;
 
@@ -59,12 +73,14 @@ class VarioAudioService {
   bool get isPreviewActive => _previewActive;
 
   /// Begins preview takeover: subsequent [updateSpeed] calls from live sources
-  /// are ignored and the engine plays [initialSpeed] until [setPreviewSpeed] is
-  /// called or [endPreview] releases control back to the live feed.
+  /// are ignored (but retained) and the engine plays [initialSpeed] until
+  /// [setPreviewSpeed]/[setPreviewMuted] change it or [endPreview] releases
+  /// control back to the live feed.
   void beginPreview([double initialSpeed = 0.0]) {
     _previewActive = true;
+    _previewMuted = false;
     _previewSpeed = initialSpeed;
-    _synth.setTargetSpeed(_previewSpeed);
+    _refreshDrive();
   }
 
   /// Updates the audition speed while preview takeover is engaged. No-op if
@@ -73,15 +89,27 @@ class VarioAudioService {
     if (!_previewActive) return;
     if (verticalSpeed.isNaN || verticalSpeed.isInfinite) return;
     _previewSpeed = verticalSpeed;
-    _synth.setTargetSpeed(_previewSpeed);
+    _refreshDrive();
   }
 
-  /// Ends preview takeover and hands control back to the live feed. The engine
-  /// is reset to silence until the next live [updateSpeed] arrives.
+  /// Mutes/unmutes the preview audition. While muted, the engine follows the
+  /// live vario feed instead (still subject to the flight gate), so the
+  /// combination of a muted preview + not flying + "sound only when flying"
+  /// results in silence.
+  void setPreviewMuted(bool muted) {
+    if (_previewMuted == muted) return;
+    _previewMuted = muted;
+    _refreshDrive();
+  }
+
+  bool get isPreviewMuted => _previewMuted;
+
+  /// Ends preview takeover and hands control back to the live feed.
   void endPreview() {
     if (!_previewActive) return;
     _previewActive = false;
-    _synth.setTargetSpeed(0.0);
+    _previewMuted = false;
+    _refreshDrive();
   }
 
   /// Replaces the active sound profile at runtime (e.g. from settings UI).
@@ -104,13 +132,14 @@ class VarioAudioService {
   /// Only stores the new target; the waveform is generated in small chunks by
   /// the sink, so this never blocks and never causes clicks.
   ///
-  /// While preview takeover is engaged (see [beginPreview]) live updates are
-  /// ignored so the settings panel's audition can't be overwritten by the
-  /// sensor feed.
+  /// The value is always retained as the live feed. It drives the engine unless
+  /// an *unmuted* preview takeover is engaged, in which case the audition takes
+  /// precedence (see [beginPreview] / [setPreviewMuted]).
   void updateSpeed(double verticalSpeed) {
-    if (_previewActive) return;
     if (verticalSpeed.isNaN || verticalSpeed.isInfinite) return;
-    _synth.setTargetSpeed(verticalSpeed);
+    _liveSpeed = verticalSpeed;
+    if (_previewActive && !_previewMuted) return; // preview owns the engine
+    _refreshDrive();
   }
 
   /// Mute/unmute (gain is ramped, so no click).
@@ -128,7 +157,37 @@ class VarioAudioService {
   bool get isMuted => _muted;
   double get volume => _volume;
 
-  void _applyOutputGain() => _synth.outputGain = _muted ? 0.0 : _volume;
+  /// Opens/closes the independent output gate (used to enforce "sound only when
+  /// flying"). When closed, the *live* feed is ramped to silence even if a
+  /// non-zero speed is driven. Does not affect an unmuted preview audition.
+  void setGateOpen(bool open) {
+    if (_gateOpen == open) return;
+    _gateOpen = open;
+    _refreshDrive();
+  }
+
+  bool get isGateOpen => _gateOpen;
+
+  /// Central decision point for what the engine plays and whether it is heard.
+  ///
+  /// Logic:
+  ///  * If a preview is active and NOT muted → play the audition speed,
+  ///    audible regardless of the flight gate.
+  ///  * Otherwise → follow the live feed, audible only when the gate is open.
+  /// The user mute always wins.
+  void _refreshDrive() {
+    final previewAudible = _previewActive && !_previewMuted;
+    _synth.setTargetSpeed(previewAudible ? _previewSpeed : _liveSpeed);
+    _applyOutputGain(previewAudible: previewAudible);
+  }
+
+  void _applyOutputGain({bool? previewAudible}) {
+    final pa = previewAudible ?? (_previewActive && !_previewMuted);
+    // Preview audition ignores the flight gate; the live feed obeys it.
+    final gateAllows = pa || _gateOpen;
+    final audible = gateAllows && !_muted;
+    _synth.outputGain = audible ? _volume : 0.0;
+  }
 
   /// Releases the native stream and all resources. Idempotent.
   void dispose() {

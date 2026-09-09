@@ -35,7 +35,9 @@ class VarioAudioService {
   VarioAudioConfig _config;
   bool _muted = false;
   double _volume = 1.0;
+  bool _gateOpen = true;
   bool _previewActive = false;
+  bool _previewMuted = false;
 
   VarioAudioConfig get config => _config;
 
@@ -43,14 +45,22 @@ class VarioAudioService {
 
   void beginPreview([double initialSpeed = 0.0]) {
     _previewActive = true;
+    _previewMuted = false;
   }
 
   void setPreviewSpeed(double verticalSpeed) {
     // No audio on web: ignore.
   }
 
+  void setPreviewMuted(bool muted) {
+    _previewMuted = muted;
+  }
+
+  bool get isPreviewMuted => _previewMuted;
+
   void endPreview() {
     _previewActive = false;
+    _previewMuted = false;
   }
 
   void setConfig(VarioAudioConfig config) {
@@ -76,6 +86,12 @@ class VarioAudioService {
   void setVolume(double volume) {
     _volume = volume.clamp(0.0, 1.0);
   }
+
+  void setGateOpen(bool open) {
+    _gateOpen = open;
+  }
+
+  bool get isGateOpen => _gateOpen;
 
   bool get isMuted => _muted;
   double get volume => _volume;

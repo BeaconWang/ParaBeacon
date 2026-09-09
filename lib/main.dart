@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -216,6 +218,17 @@ class _DashGridPageState extends State<DashGridPage>
   int _pageSeq = 1;
   late final PageController _pageController;
 
+  // Auto-hide state for the bottom page indicator in view mode. The indicator
+  // is revealed while the user is swiping between pages and then fades out
+  // one second after the swipe settles, so it doesn't linger over the
+  // dashboard content. In edit mode the indicator stays permanently visible
+  // (the pilot needs it to customize page icons and delete pages).
+  bool _pageIndicatorVisible = false;
+  Timer? _pageIndicatorHideTimer;
+  static const Duration _pageIndicatorHideDelay = Duration(seconds: 1);
+  static const Duration _pageIndicatorFadeDuration =
+      Duration(milliseconds: 200);
+
   /// Controls on the currently visible page.
   List<PlacedControl> get _controls => _pages[_currentPage].controls;
 
@@ -346,9 +359,35 @@ class _DashGridPageState extends State<DashGridPage>
 
   @override
   void dispose() {
+    _pageIndicatorHideTimer?.cancel();
     _pageController.dispose();
     _menuController.dispose();
     super.dispose();
+  }
+
+  /// Reveals the bottom page indicator and (re)arms the auto-hide timer so it
+  /// fades out [_pageIndicatorHideDelay] after the last page-swipe activity.
+  /// No-op in edit mode, where the indicator is always visible.
+  void _revealPageIndicator() {
+    if (_isEditMode) return;
+    _pageIndicatorHideTimer?.cancel();
+    if (!_pageIndicatorVisible) {
+      setState(() => _pageIndicatorVisible = true);
+    }
+  }
+
+  /// Starts (or restarts) the countdown that hides the page indicator after
+  /// a swipe finishes. Called on scroll-end so cross-page flings that emit
+  /// multiple end events collapse into a single 1s hide delay.
+  void _schedulePageIndicatorHide() {
+    if (_isEditMode) return;
+    _pageIndicatorHideTimer?.cancel();
+    _pageIndicatorHideTimer = Timer(_pageIndicatorHideDelay, () {
+      if (!mounted) return;
+      if (_isEditMode) return;
+      if (!_pageIndicatorVisible) return;
+      setState(() => _pageIndicatorVisible = false);
+    });
   }
 
   void _openMenu() {
@@ -443,6 +482,13 @@ class _DashGridPageState extends State<DashGridPage>
           // mode means the user is arranging widgets (not interacting with
           // them); leaving it returns to a clean, fully-locked dashboard.
           _activeControlId = null;
+          // Edit mode pins the page indicator on-screen (needed to reorder
+          // icons and delete pages); leaving edit mode hands control back
+          // to the swipe-driven auto-hide. Cancel any pending hide timer
+          // and reset the visible flag so view mode starts hidden until
+          // the user swipes again.
+          _pageIndicatorHideTimer?.cancel();
+          _pageIndicatorVisible = false;
         });
         break;
       case 'preferences':
@@ -546,6 +592,11 @@ class _DashGridPageState extends State<DashGridPage>
                           _isEditMode = v;
                           if (!v) _selectedControlId = null;
                           _activeControlId = null;
+                          // Mirror the top-menu toggle: reset the page
+                          // indicator's auto-hide state so view mode starts
+                          // hidden and edit mode keeps it pinned open.
+                          _pageIndicatorHideTimer?.cancel();
+                          _pageIndicatorVisible = false;
                         });
                         setSheetState(() {});
                       },
@@ -966,37 +1017,67 @@ class _DashGridPageState extends State<DashGridPage>
           // Pages (tabs). Swipe horizontally to switch pages in view mode;
           // in edit mode swiping is disabled so controls can be dragged.
           Positioned.fill(
-            child: PageView.builder(
-              controller: _pageController,
-              physics: _isEditMode
-                  ? const NeverScrollableScrollPhysics()
-                  : const PageScrollPhysics(),
-              itemCount: _pages.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
-                  _selectedControlId = null;
-                  // Leaving a page re-locks whichever control the user had
-                  // unlocked on it, so returning to it starts fresh.
-                  _activeControlId = null;
-                });
-                // Persist the last-viewed page so re-launching the app
-                // returns the user to where they left off.
-                _saveLayout();
+            child: NotificationListener<ScrollNotification>(
+              // Track the PageView's horizontal scroll so we can flash the
+              // bottom page indicator while the user is actively swiping
+              // and fade it back out one second after the swipe settles.
+              onNotification: (notification) {
+                if (_isEditMode) return false;
+                // Only react to horizontal (page) scroll — the PageView is
+                // horizontal, and nested controls (lists, maps) are vertical
+                // or don't emit ScrollNotifications, so this filter keeps
+                // stray inner-scroll events from re-arming the timer.
+                if (notification.metrics.axis != Axis.horizontal) {
+                  return false;
+                }
+                if (notification is ScrollStartNotification ||
+                    notification is ScrollUpdateNotification) {
+                  _revealPageIndicator();
+                } else if (notification is ScrollEndNotification) {
+                  _schedulePageIndicatorHide();
+                }
+                return false;
               },
-              itemBuilder: (context, index) => _buildPageContent(index),
+              child: PageView.builder(
+                controller: _pageController,
+                physics: _isEditMode
+                    ? const NeverScrollableScrollPhysics()
+                    : const PageScrollPhysics(),
+                itemCount: _pages.length,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                    _selectedControlId = null;
+                    // Leaving a page re-locks whichever control the user had
+                    // unlocked on it, so returning to it starts fresh.
+                    _activeControlId = null;
+                  });
+                  // Persist the last-viewed page so re-launching the app
+                  // returns the user to where they left off.
+                  _saveLayout();
+                },
+                itemBuilder: (context, index) => _buildPageContent(index),
+              ),
             ),
           ),
 
           // Page indicator (hidden while the menu is open). Shown with more
           // than one page, or in edit mode so a single page's icon can be
-          // customized.
+          // customized. In view mode it auto-fades one second after the last
+          // page swipe; in edit mode it stays fully visible.
           if ((_pages.length > 1 || _isEditMode) && !_menuOpen)
             Positioned(
               left: 0,
               right: 0,
               bottom: 16,
-              child: _buildPageIndicator(),
+              child: IgnorePointer(
+                ignoring: !_isEditMode && !_pageIndicatorVisible,
+                child: AnimatedOpacity(
+                  duration: _pageIndicatorFadeDuration,
+                  opacity: (_isEditMode || _pageIndicatorVisible) ? 1.0 : 0.0,
+                  child: _buildPageIndicator(),
+                ),
+              ),
             ),
 
           // Dim overlay when menu is open

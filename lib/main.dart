@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -732,31 +733,34 @@ class _DashGridPageState extends State<DashGridPage>
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () => showBluetoothSensorSheet(context),
                     ),
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12, bottom: 4),
-                      child: Row(
-                        children: [
-                          Icon(Icons.bug_report_outlined,
-                              color: theme.colorScheme.primary, size: 20),
-                          const SizedBox(width: 10),
-                          Text('Debug', style: theme.textTheme.titleMedium),
-                        ],
+                    // Debug tools are only compiled/shown in debug builds.
+                    if (kDebugMode) ...[
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.bug_report_outlined,
+                                color: theme.colorScheme.primary, size: 20),
+                            const SizedBox(width: 10),
+                            Text('Debug', style: theme.textTheme.titleMedium),
+                          ],
+                        ),
                       ),
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      secondary: Icon(Icons.sensors,
-                          color: theme.colorScheme.primary),
-                      title: const Text('Simulated flight data'),
-                      subtitle: const Text(
-                          'Feed fake sensor values when no BLE device is connected'),
-                      value: DebugSettings.instance.simulatorEnabled,
-                      onChanged: (on) {
-                        DebugSettings.instance.setSimulatorEnabled(on);
-                        setSheetState(() {});
-                      },
-                    ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        secondary: Icon(Icons.sensors,
+                            color: theme.colorScheme.primary),
+                        title: const Text('Simulated flight data'),
+                        subtitle: const Text(
+                            'Feed fake sensor values when no BLE device is connected'),
+                        value: DebugSettings.instance.simulatorEnabled,
+                        onChanged: (on) {
+                          DebugSettings.instance.setSimulatorEnabled(on);
+                          setSheetState(() {});
+                        },
+                      ),
+                    ],
                     const Divider(height: 1),
                     ListTile(
                       contentPadding: EdgeInsets.zero,

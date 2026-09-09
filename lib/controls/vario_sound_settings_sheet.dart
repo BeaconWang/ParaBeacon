@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
 import '../audio/vario_audio_service.dart';
@@ -232,17 +233,22 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                         onChanged:
                             _settings.muted ? null : _settings.setVolume,
                       ),
-                      _sliderCard(
-                        theme,
-                        icon: Icons.volume_up_outlined,
-                        label: 'Master gain',
-                        value: _settings.masterGain,
-                        min: 0.0,
-                        max: 1.0,
-                        divisions: 20,
-                        display: '${(_settings.masterGain * 100).round()}%',
-                        onChanged: _settings.setMasterGain,
-                      ),
+                      // Master gain is the profile's baseline headroom (a
+                      // tuning constant, distinct from the live "Vario volume").
+                      // It's only meaningful for advanced tuning, so it's shown
+                      // in debug builds and hidden from release builds.
+                      if (kDebugMode)
+                        _sliderCard(
+                          theme,
+                          icon: Icons.volume_up_outlined,
+                          label: 'Master gain',
+                          value: _settings.masterGain,
+                          min: 0.0,
+                          max: 1.0,
+                          divisions: 20,
+                          display: '${(_settings.masterGain * 100).round()}%',
+                          onChanged: _settings.setMasterGain,
+                        ),
                       const SizedBox(height: 20),
                       _sectionLabel(theme, 'Behavior'),
                       const SizedBox(height: 8),

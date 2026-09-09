@@ -16,7 +16,7 @@ Future<void> showVarioSoundSettingsSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+    // Background driven by the theme's bottomSheetTheme (see other sheets).
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),

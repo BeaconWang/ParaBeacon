@@ -9,7 +9,7 @@ Future<void> showFlightsSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+    // Background driven by the theme's bottomSheetTheme (see other sheets).
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
     builder: (context) => const _FlightsSheet(),

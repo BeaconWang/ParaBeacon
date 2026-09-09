@@ -21,7 +21,8 @@ Future<ControlAction?> showControlContextMenu(
   return showModalBottomSheet<ControlAction>(
     context: context,
     showDragHandle: true,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+    // See other sheets: omitted so the theme's bottomSheetTheme drives it
+    // live and runtime theme switches don't leave a stale caller color.
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),

@@ -24,7 +24,7 @@ Future<void> showFlightReplaySheet(BuildContext context, FlightTrack track) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+    // Background driven by the theme's bottomSheetTheme (see other sheets).
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
     builder: (context) => _FlightReplaySheet(track: track),

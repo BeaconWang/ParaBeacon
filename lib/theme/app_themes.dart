@@ -152,6 +152,18 @@ ThemeData themeDataFor(AppThemeId id) {
     // Match backgrounds so system chrome / scaffolds pick up the palette.
     scaffoldBackgroundColor: scheme.surface,
     canvasColor: scheme.surface,
+    // Bottom sheets across the app use `showModalBottomSheet(...)` without
+    // an explicit `backgroundColor`, so their `Material` background resolves
+    // to `bottomSheetTheme.modalBackgroundColor` at build time. Routing that
+    // through the current theme's `surfaceContainerHigh` keeps every sheet
+    // (Preferences, Theme picker, Bluetooth, Vario, control settings, …)
+    // in sync when the user switches themes at runtime — call sites that
+    // captured `Theme.of(context)` at open time would otherwise freeze on
+    // the old palette.
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: scheme.surfaceContainerHigh,
+      modalBackgroundColor: scheme.surfaceContainerHigh,
+    ),
   );
 }
 

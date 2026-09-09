@@ -551,7 +551,10 @@ class _DashGridPageState extends State<DashGridPage>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+      // Background driven by the theme's bottomSheetTheme so runtime theme
+      // switches (via the Theme picker inside this sheet) repaint every
+      // pixel live — capturing `Theme.of(context)…` here would freeze the
+      // sheet chrome on the old palette.
       // Full-screen: no rounded corners, occupies the entire available height.
       shape: const RoundedRectangleBorder(),
       constraints: const BoxConstraints.expand(),
@@ -1252,7 +1255,7 @@ class _DashGridPageState extends State<DashGridPage>
     final selected = await showModalBottomSheet<IconData>(
       context: context,
       showDragHandle: true,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+      // Background driven by the theme's bottomSheetTheme (see other sheets).
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

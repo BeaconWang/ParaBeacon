@@ -16,7 +16,10 @@ Future<void> showControlSettingsSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+    // Let the sheet's own Material resolve its color from
+    // `Theme.of(context).bottomSheetTheme.modalBackgroundColor` lazily, so
+    // theme switches propagate live. Capturing `Theme.of(context)…` here
+    // would bake the caller's palette into the route.
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),

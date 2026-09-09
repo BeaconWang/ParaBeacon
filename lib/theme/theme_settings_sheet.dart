@@ -14,7 +14,11 @@ Future<void> showThemeSettingsSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+    // `backgroundColor` intentionally omitted so the sheet's Material picks
+    // up `Theme.of(context).bottomSheetTheme.modalBackgroundColor` lazily.
+    // Passing `Theme.of(context).colorScheme.surfaceContainerHigh` here
+    // would capture the *caller's* palette at open time and freeze the
+    // sheet on the old colors when the user switches themes from inside it.
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),

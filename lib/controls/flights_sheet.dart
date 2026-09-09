@@ -166,51 +166,93 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       context: context,
       builder: (context) {
         final theme = Theme.of(context);
-        return AlertDialog(
-          title: const Text('Flight details'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _detailRow('Start', _fmtDateTime(track.startTime)),
-              _detailRow(
-                  'End',
-                  track.endTime != null
-                      ? _fmtDateTime(track.endTime!)
-                      : '—'),
-              _detailRow('Duration', _fmtDuration(track.duration)),
-              _detailRow('Distance',
-                  '${(track.distanceM / 1000).toStringAsFixed(2)} km'),
-              _detailRow('Max altitude',
-                  '${track.maxAltitude.toStringAsFixed(0)} m'),
-              _detailRow('Min altitude',
-                  '${track.minAltitude.toStringAsFixed(0)} m'),
-              _detailRow('Max climb',
-                  '${track.maxClimb.toStringAsFixed(1)} m/s'),
-              _detailRow('Max sink',
-                  '${track.maxSink.toStringAsFixed(1)} m/s'),
-              _detailRow('Samples', '${track.pointCount}'),
-            ],
-          ),
-          actions: [
-            if (track.samples.length >= 2)
-              TextButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _replay(track);
-                },
-                icon: const Icon(Icons.play_circle_outline),
-                label: Text('Replay',
-                    style: TextStyle(color: theme.colorScheme.primary)),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Flight details'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _detailRow('Start', _fmtDateTime(track.startTime)),
+                  _detailRow(
+                      'End',
+                      track.endTime != null
+                          ? _fmtDateTime(track.endTime!)
+                          : '—'),
+                  _detailRow('Duration', _fmtDuration(track.duration)),
+                  _detailRow('Distance',
+                      '${(track.distanceM / 1000).toStringAsFixed(2)} km'),
+                  _detailRow('Max altitude',
+                      '${track.maxAltitude.toStringAsFixed(0)} m'),
+                  _detailRow('Min altitude',
+                      '${track.minAltitude.toStringAsFixed(0)} m'),
+                  _detailRow('Max climb',
+                      '${track.maxClimb.toStringAsFixed(1)} m/s'),
+                  _detailRow('Max sink',
+                      '${track.maxSink.toStringAsFixed(1)} m/s'),
+                  _detailRow('Samples', '${track.pointCount}'),
+                ],
               ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Close',
-                  style: TextStyle(color: theme.colorScheme.primary)),
-            ),
-          ],
+              actions: [
+                if (track.hasSamples)
+                  TextButton.icon(
+                    onPressed: () async {
+                      final confirmed = await _confirmDeleteSamples();
+                      if (confirmed != true) return;
+                      _recorder.deleteTrackSamples(track);
+                      // Refresh the dialog so the button hides and the replay
+                      // action disappears.
+                      setDialogState(() {});
+                    },
+                    icon: const Icon(Icons.data_array),
+                    label: Text('Delete samples',
+                        style: TextStyle(color: theme.colorScheme.error)),
+                  ),
+                if (track.samples.length >= 2)
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _replay(track);
+                    },
+                    icon: const Icon(Icons.play_circle_outline),
+                    label: Text('Replay',
+                        style: TextStyle(color: theme.colorScheme.primary)),
+                  ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Close',
+                      style: TextStyle(color: theme.colorScheme.primary)),
+                ),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+
+  Future<bool?> _confirmDeleteSamples() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete sample data?'),
+        content: const Text(
+          'This removes the per-point track data (position/altitude/vario) '
+          'for this flight. The flight and its summary stay in the log, but it '
+          'can no longer be replayed. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 

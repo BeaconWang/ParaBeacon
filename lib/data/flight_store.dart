@@ -5,13 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'flight_recorder.dart';
 
-/// Persists and restores completed [FlightTrack] summaries via
-/// [SharedPreferences].
+/// Persists and restores completed [FlightTrack]s via [SharedPreferences].
 ///
-/// Only the summary (start/end, distance, altitude range, climb/sink extremes,
-/// point count) is stored — not the per-sample data — so the storage footprint
-/// stays small even for hundreds of flights. Writes are debounced so a burst of
-/// changes (bulk delete, etc.) results in a single write.
+/// The full track is stored — summary statistics *and* the per-sample data —
+/// so a completed flight can still be replayed after an app restart. Tracks
+/// whose samples have been deleted persist as summary-only (their `samples`
+/// array is simply omitted). Writes are debounced so a burst of changes (bulk
+/// delete, etc.) results in a single write.
 class FlightStore {
   FlightStore._();
   static final FlightStore instance = FlightStore._();
@@ -20,8 +20,10 @@ class FlightStore {
   // existing users' saved flights still load after the rename.
   static const _kTracksKey = 'pb.tracks.v1';
 
-  /// Bump when the serialized shape changes incompatibly.
-  static const _schemaVersion = 1;
+  /// Current serialized shape. v2 adds per-sample track data; v1 payloads
+  /// (summary-only) are still readable via [FlightTrack.fromJson], which
+  /// transparently falls back when no `samples` array is present.
+  static const _schemaVersion = 2;
 
   Timer? _debounce;
 
@@ -36,7 +38,11 @@ class FlightStore {
 
       final decoded = jsonDecode(raw);
       if (decoded is! Map<String, dynamic>) return const [];
-      if ((decoded['version'] as num?)?.toInt() != _schemaVersion) {
+      final version = (decoded['version'] as num?)?.toInt() ?? 0;
+      // Accept the current schema and any older, forward-compatible one. v1
+      // stored summaries only; v2 adds an optional per-sample `samples` array.
+      // [FlightTrack.fromJson] handles both shapes.
+      if (version < 1 || version > _schemaVersion) {
         return const [];
       }
 
@@ -46,7 +52,7 @@ class FlightStore {
       final tracks = <FlightTrack>[];
       for (final t in tracksJson) {
         if (t is Map<String, dynamic>) {
-          final track = FlightTrack.fromSummaryJson(t);
+          final track = FlightTrack.fromJson(t);
           if (track != null) tracks.add(track);
         }
       }
@@ -82,7 +88,7 @@ class FlightStore {
       final sp = await SharedPreferences.getInstance();
       final payload = jsonEncode({
         'version': _schemaVersion,
-        'tracks': tracks.map((t) => t.toSummaryJson()).toList(),
+        'tracks': tracks.map((t) => t.toJson()).toList(),
       });
       await sp.setString(_kTracksKey, payload);
     } catch (_) {

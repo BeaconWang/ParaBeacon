@@ -168,4 +168,59 @@ class FlightData {
       timestamp: timestamp ?? this.timestamp,
     );
   }
+
+  /// Serializes this snapshot to a compact JSON map. Nullable fields are
+  /// omitted when absent to keep the payload small; [fromJson] treats missing
+  /// keys as their default/null. Used to persist per-sample flight tracks.
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{
+      've': verticalSpeed,
+      'gs': groundSpeed,
+      'alt': altitude,
+      'lat': latitude,
+      'lng': longitude,
+      'hdg': heading,
+      'fix': hasFix,
+      'ws': windSpeed,
+      'wd': windDirection,
+    };
+    if (baroAltitude != null) map['balt'] = baroAltitude;
+    if (gpsAltitude != null) map['galt'] = gpsAltitude;
+    if (bearing != null) map['brg'] = bearing;
+    if (gpsAccuracy != null) map['acc'] = gpsAccuracy;
+    if (satellites != null) map['sat'] = satellites;
+    if (pressure != null) map['prs'] = pressure;
+    if (temperature != null) map['tmp'] = temperature;
+    if (battery != null) map['bat'] = battery;
+    if (heartRate != null) map['hr'] = heartRate;
+    if (timestamp != null) map['ts'] = timestamp!.toIso8601String();
+    return map;
+  }
+
+  /// Inverse of [toJson]. Missing keys fall back to constructor defaults.
+  static FlightData fromJson(Map<String, dynamic> json) {
+    double? d(String k) => (json[k] as num?)?.toDouble();
+    int? i(String k) => (json[k] as num?)?.toInt();
+    return FlightData(
+      verticalSpeed: d('ve') ?? 0.0,
+      groundSpeed: d('gs') ?? 0.0,
+      altitude: d('alt') ?? 0.0,
+      baroAltitude: d('balt'),
+      gpsAltitude: d('galt'),
+      latitude: d('lat') ?? 0.0,
+      longitude: d('lng') ?? 0.0,
+      heading: d('hdg') ?? 0.0,
+      bearing: d('brg'),
+      gpsAccuracy: d('acc'),
+      satellites: i('sat'),
+      hasFix: json['fix'] as bool? ?? false,
+      windSpeed: d('ws') ?? 0.0,
+      windDirection: d('wd') ?? 0.0,
+      pressure: d('prs'),
+      temperature: d('tmp'),
+      battery: i('bat'),
+      heartRate: i('hr'),
+      timestamp: DateTime.tryParse(json['ts'] as String? ?? ''),
+    );
+  }
 }

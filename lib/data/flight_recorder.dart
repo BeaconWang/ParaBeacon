@@ -17,6 +17,23 @@ class FlightSample {
 
   final DateTime time;
   final FlightData data;
+
+  /// Serializes the sample (its time plus the full [FlightData] snapshot).
+  Map<String, dynamic> toJson() => {
+        't': time.toIso8601String(),
+        'd': data.toJson(),
+      };
+
+  /// Inverse of [toJson]. Returns null when the timestamp is missing/invalid.
+  static FlightSample? fromJson(Map<String, dynamic> json) {
+    final t = DateTime.tryParse(json['t'] as String? ?? '');
+    if (t == null) return null;
+    final d = json['d'];
+    final data = d is Map<String, dynamic>
+        ? FlightData.fromJson(d)
+        : FlightData.empty;
+    return FlightSample(time: t, data: data);
+  }
 }
 
 /// A completed or in-progress flight track: the ordered samples plus rolling
@@ -79,6 +96,21 @@ class FlightTrack {
 
   int get pointCount => _persistedPointCount ?? samples.length;
 
+  /// Whether this track still carries per-sample data (and can be replayed).
+  bool get hasSamples => samples.isNotEmpty;
+
+  /// Drops the per-sample data while preserving the summary statistics
+  /// (distance, altitude/vario extremes and point count). After this the track
+  /// behaves like one restored from disk: it still shows in the Flights list
+  /// but can no longer be replayed. No-op if there are no samples.
+  void clearSamples() {
+    if (samples.isEmpty) return;
+    // Freeze the current point count so [pointCount] keeps reporting it once
+    // the live [samples] list is emptied.
+    _persistedPointCount = samples.length;
+    samples.clear();
+  }
+
   Duration get duration => (endTime ?? DateTime.now()).difference(startTime);
 
   /// Appends a sample and folds it into the running statistics.
@@ -138,6 +170,51 @@ class FlightTrack {
       maxSink: (json['maxSink'] as num?)?.toDouble() ?? 0.0,
       pointCount: (json['pointCount'] as num?)?.toInt() ?? 0,
     );
+  }
+
+  /// Serializes the full track — summary statistics *and* every per-sample
+  /// snapshot — so a completed flight can be replayed after an app restart.
+  /// The [samples] array is omitted when empty (e.g. a track whose samples
+  /// were deleted), in which case [fromJson] restores a summary-only track.
+  Map<String, dynamic> toJson() {
+    final map = toSummaryJson();
+    if (samples.isNotEmpty) {
+      map['samples'] = samples.map((s) => s.toJson()).toList();
+    }
+    return map;
+  }
+
+  /// Inverse of [toJson]. Restores the full track when a `samples` array is
+  /// present (statistics are re-derived from the samples), otherwise falls
+  /// back to a summary-only track via [fromSummaryJson]. Returns null on a
+  /// malformed payload.
+  static FlightTrack? fromJson(Map<String, dynamic> json) {
+    final samplesJson = json['samples'];
+    if (samplesJson is! List || samplesJson.isEmpty) {
+      // No per-sample data persisted — restore summary only.
+      return fromSummaryJson(json);
+    }
+
+    final start = DateTime.tryParse(json['startTime'] as String? ?? '');
+    if (start == null) return null;
+
+    final track = FlightTrack(startTime: start);
+    for (final s in samplesJson) {
+      if (s is Map<String, dynamic>) {
+        final sample = FlightSample.fromJson(s);
+        // Re-fold through [add] so distance/altitude/vario stats are rebuilt
+        // exactly as they were during recording.
+        if (sample != null) track.add(sample);
+      }
+    }
+
+    // If, after parsing, we somehow have no usable samples, degrade to the
+    // persisted summary rather than returning an empty track.
+    if (track.samples.isEmpty) return fromSummaryJson(json);
+
+    track.endTime = DateTime.tryParse(json['endTime'] as String? ?? '') ??
+        track.samples.last.time;
+    return track;
   }
 
   static double _haversineM(double lat1, double lon1, double lat2, double lon2) {
@@ -224,6 +301,18 @@ class FlightRecorder extends ChangeNotifier {
     }
   }
 
+  /// Drops the per-sample data of a logged track while keeping the flight in
+  /// the log (its summary statistics are preserved). The flight can no longer
+  /// be replayed afterwards. No-op if the track isn't logged or has no samples.
+  void deleteTrackSamples(FlightTrack track) {
+    if (!_tracks.contains(track)) return;
+    if (!track.hasSamples) return;
+    track.clearSamples();
+    // Samples are persisted, so re-save to make the deletion durable.
+    FlightStore.instance.save(_tracks);
+    notifyListeners();
+  }
+
   /// Clears the entire flight log.
   void clearTracks() {
     if (_tracks.isEmpty) return;
@@ -233,8 +322,11 @@ class FlightRecorder extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// DEBUG ONLY — inserts a synthetic completed flight with randomized summary
-  /// statistics so the Flights screen can be exercised without a real flight.
+  /// DEBUG ONLY — inserts a synthetic completed flight with a full, randomized
+  /// per-sample track (real [FlightSample]s carrying GPS position, altitude and
+  /// vertical speed) so the Flights screen *and* the replay screen can both be
+  /// exercised without a real flight. Statistics are derived from the samples
+  /// by [FlightTrack.add], exactly like a genuine recording.
   /// No-op in release/profile builds.
   void addRandomDebugTrack() {
     if (!kDebugMode) return;
@@ -247,29 +339,62 @@ class FlightRecorder extends ChangeNotifier {
       hours: rnd.nextInt(24),
       minutes: rnd.nextInt(60),
     ));
-    final durationMin = 5 + rnd.nextInt(180); // 5 min .. 3 h
-    final end = start.add(Duration(minutes: durationMin));
+    final durationMin = 5 + rnd.nextInt(55); // 5 .. 60 min
+    final sampleCount = math.max(2, durationMin * 6); // ~1 sample / 10 s
 
-    // Plausible randomized stats.
-    final baseAlt = 300.0 + rnd.nextDouble() * 1500.0; // launch altitude
-    final gain = rnd.nextDouble() * 1200.0;
-    final maxAltitude = baseAlt + gain;
-    final minAltitude = baseAlt - rnd.nextDouble() * 200.0;
-    final distanceM = rnd.nextDouble() * 60000.0; // 0 .. 60 km
-    final maxClimb = rnd.nextDouble() * 6.0; // 0 .. 6 m/s
-    final maxSink = -rnd.nextDouble() * 6.0; // -6 .. 0 m/s
-    final pointCount = 10 + rnd.nextInt(2000);
+    final track = FlightTrack(startTime: start);
 
-    final track = FlightTrack._fromSummary(
-      startTime: start,
-      endTime: end,
-      distanceM: distanceM,
-      maxAltitude: maxAltitude,
-      minAltitude: minAltitude < 0 ? 0 : minAltitude,
-      maxClimb: maxClimb,
-      maxSink: maxSink,
-      pointCount: pointCount,
-    );
+    // Random launch point (kept away from the poles for sane math) and a
+    // random initial heading; we then do a random-walk flight path.
+    var lat = -50.0 + rnd.nextDouble() * 100.0; // -50 .. 50
+    var lng = -180.0 + rnd.nextDouble() * 360.0;
+    var heading = rnd.nextDouble() * 360.0; // degrees
+    var altitude = 300.0 + rnd.nextDouble() * 1500.0; // launch altitude (m)
+
+    // Meters-per-degree conversions at this latitude for the step math.
+    const double mPerDegLat = 111320.0;
+    final double mPerDegLng =
+        mPerDegLat * math.cos(lat * math.pi / 180.0).abs().clamp(1e-6, 1.0);
+
+    final spanMs = durationMin * 60 * 1000;
+    final dtMs = spanMs ~/ (sampleCount - 1); // ms between samples
+
+    for (var i = 0; i < sampleCount; i++) {
+      final t = start.add(Duration(milliseconds: dtMs * i));
+
+      // Smooth-ish random walk: nudge heading and vertical speed each step.
+      heading = (heading + (rnd.nextDouble() - 0.5) * 40.0) % 360.0;
+      final groundSpeedKph = 25.0 + rnd.nextDouble() * 20.0; // 25 .. 45 km/h
+      final vSpeed = (rnd.nextDouble() - 0.45) * 4.0; // ~ -1.8 .. +2.2 m/s
+
+      // Integrate altitude over the step, clamped to a plausible band.
+      altitude = (altitude + vSpeed * (dtMs / 1000.0)).clamp(0.0, 4000.0);
+
+      // Advance position along the heading by (speed × dt).
+      final stepM = (groundSpeedKph / 3.6) * (dtMs / 1000.0);
+      final rad = heading * math.pi / 180.0;
+      lat += (stepM * math.cos(rad)) / mPerDegLat;
+      lng += (stepM * math.sin(rad)) / mPerDegLng;
+
+      track.add(FlightSample(
+        time: t,
+        data: FlightData(
+          verticalSpeed: vSpeed,
+          groundSpeed: groundSpeedKph,
+          altitude: altitude,
+          baroAltitude: altitude,
+          gpsAltitude: altitude,
+          latitude: lat,
+          longitude: lng,
+          heading: heading,
+          gpsAccuracy: 3.0 + rnd.nextDouble() * 5.0,
+          satellites: 6 + rnd.nextInt(8),
+          hasFix: true,
+          timestamp: t,
+        ),
+      ));
+    }
+    track.endTime = start.add(Duration(milliseconds: spanMs));
 
     // Keep the log newest-first (matches _finishRecording / loadPersisted).
     _tracks.insert(0, track);

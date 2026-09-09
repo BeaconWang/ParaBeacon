@@ -221,6 +221,19 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                         display: '${(_settings.masterGain * 100).round()}%',
                         onChanged: _settings.setMasterGain,
                       ),
+                      const SizedBox(height: 20),
+                      _sectionLabel(theme, 'Behavior'),
+                      const SizedBox(height: 8),
+                      _switchCard(
+                        theme,
+                        icon: Icons.flight_takeoff,
+                        label: 'Sound only when flying',
+                        description:
+                            'Stay silent until a flight is started, then '
+                            'beep normally.',
+                        value: _settings.soundOnlyWhenFlying,
+                        onChanged: _settings.setSoundOnlyWhenFlying,
+                      ),
                     ],
                   );
                 },
@@ -366,6 +379,46 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
             label: display,
             onChanged: onChanged,
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _switchCard(
+    ThemeData theme, {
+    required IconData icon,
+    required String label,
+    required String description,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(value: value, onChanged: onChanged),
         ],
       ),
     );

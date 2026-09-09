@@ -15,8 +15,10 @@
 import 'dart:async';
 
 import '../data/flight_data.dart';
+import '../data/flight_state.dart';
 import 'vario_audio_service.dart';
 import 'vario_config.dart';
+import 'vario_sound_settings.dart';
 
 // ---------------------------------------------------------------------------
 // Variant A — bridge a FlightDataView (ChangeNotifier) to audio.
@@ -51,6 +53,11 @@ class VarioAudioBridge {
   bool _attached = false;
   double? _lastSpeed;
 
+  /// Shared flight session + user preference used to decide whether the live
+  /// vario should be silenced until a flight has started.
+  final FlightState _flightState = FlightState.instance;
+  final VarioSoundSettings _settings = VarioSoundSettings.instance;
+
   /// Initializes audio and starts forwarding vertical speed.
   ///
   /// If audio initialization fails (e.g. no audio device / plugin missing on
@@ -70,16 +77,36 @@ class VarioAudioBridge {
       return;
     }
     source.addListener(_onData);
+    // Re-evaluate the gate when the flight starts/stops or the preference
+    // changes, so the sound switches on/off immediately rather than waiting
+    // for the next sensor tick.
+    _flightState.addListener(_onGateChanged);
+    _settings.addListener(_onGateChanged);
     _attached = true;
     // Push the current value immediately so the sound reflects vertical speed
     // right away rather than waiting for the next data tick.
     _onData();
   }
 
+  /// Whether the live vario should currently emit sound.
+  ///
+  /// When [VarioSoundSettings.soundOnlyWhenFlying] is enabled the beeper stays
+  /// silent until [FlightState.isFlying] becomes true.
+  bool get _soundEnabled =>
+      !_settings.soundOnlyWhenFlying || _flightState.isFlying;
+
+  void _onGateChanged() {
+    // Force the next _onData() to push through even if the raw speed is
+    // unchanged, so toggling the gate takes effect right away.
+    _lastSpeed = null;
+    _onData();
+  }
+
   void _onData() {
     // The source already applies debug overrides in `data`. The vario sound is
-    // strictly a function of this value.
-    final vs = source.data.verticalSpeed;
+    // strictly a function of this value, gated by the "only when flying"
+    // preference.
+    final vs = _soundEnabled ? source.data.verticalSpeed : 0.0;
     // Skip redundant updates; identical speeds produce identical audio, so
     // there is no need to touch the engine.
     if (_lastSpeed != null && (vs - _lastSpeed!).abs() < 1e-4) return;
@@ -98,6 +125,8 @@ class VarioAudioBridge {
     if (!_attached) return;
     _attached = false;
     source.removeListener(_onData);
+    _flightState.removeListener(_onGateChanged);
+    _settings.removeListener(_onGateChanged);
     audio.dispose();
   }
 }

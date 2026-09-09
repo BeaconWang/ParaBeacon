@@ -29,6 +29,7 @@ class VarioSoundSettings extends ChangeNotifier {
   static const _kLiftWaveform = 'pb.vario.liftWaveform';
   static const _kSinkWaveform = 'pb.vario.sinkWaveform';
   static const _kMasterGain = 'pb.vario.masterGain';
+  static const _kSoundOnlyWhenFlying = 'pb.vario.soundOnlyWhenFlying';
 
   // ── Legacy keys (pre-"climb → lift" rename) read once for migration ───────
   static const _kLegacyClimbThreshold = 'pb.vario.climbThreshold';
@@ -48,6 +49,12 @@ class VarioSoundSettings extends ChangeNotifier {
   VarioWaveform _sinkWaveform = _base.sinkWaveform;
   double _masterGain = _base.masterGain;
 
+  /// When true, the live vario beeper is silenced until a flight has started
+  /// (see [FlightState.isFlying]). Preview/audition and flight replay are not
+  /// affected — this only gates the live sensor feed. Defaults to true so the
+  /// vario stays quiet on the ground until the user starts a flight.
+  bool _soundOnlyWhenFlying = true;
+
   double get liftThreshold => _liftThreshold;
   double get sinkThreshold => _sinkThreshold;
   double get liftBaseFreq => _liftBaseFreq;
@@ -56,6 +63,7 @@ class VarioSoundSettings extends ChangeNotifier {
   VarioWaveform get liftWaveform => _liftWaveform;
   VarioWaveform get sinkWaveform => _sinkWaveform;
   double get masterGain => _masterGain;
+  bool get soundOnlyWhenFlying => _soundOnlyWhenFlying;
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -102,6 +110,8 @@ class VarioSoundSettings extends ChangeNotifier {
       _sinkWaveform =
           _waveformFromName(sp.getString(_kSinkWaveform)) ?? _sinkWaveform;
       _masterGain = sp.getDouble(_kMasterGain) ?? _masterGain;
+      _soundOnlyWhenFlying =
+          sp.getBool(_kSoundOnlyWhenFlying) ?? _soundOnlyWhenFlying;
 
       await _migrateLegacyKeys(sp);
     } catch (_) {
@@ -183,6 +193,16 @@ class VarioSoundSettings extends ChangeNotifier {
     _applyAndNotify();
   }
 
+  /// Enables/disables gating the live vario beeper on an in-progress flight.
+  /// Only affects the live sensor feed (see [VarioAudioBridge]); it does not
+  /// change the [VarioAudioConfig], so no need to re-apply the audio config.
+  void setSoundOnlyWhenFlying(bool v) {
+    if (_soundOnlyWhenFlying == v) return;
+    _soundOnlyWhenFlying = v;
+    _persistBool(_kSoundOnlyWhenFlying, v);
+    notifyListeners();
+  }
+
   /// Restores all values to the XCTrack defaults and clears storage.
   Future<void> resetToDefaults() async {
     _liftThreshold = _base.liftThreshold;
@@ -193,6 +213,7 @@ class VarioSoundSettings extends ChangeNotifier {
     _liftWaveform = _base.liftWaveform;
     _sinkWaveform = _base.sinkWaveform;
     _masterGain = _base.masterGain;
+    _soundOnlyWhenFlying = true;
     try {
       final sp = await SharedPreferences.getInstance();
       await Future.wait([
@@ -204,6 +225,7 @@ class VarioSoundSettings extends ChangeNotifier {
         sp.remove(_kLiftWaveform),
         sp.remove(_kSinkWaveform),
         sp.remove(_kMasterGain),
+        sp.remove(_kSoundOnlyWhenFlying),
         // Also clear any leftover legacy keys.
         sp.remove(_kLegacyClimbThreshold),
         sp.remove(_kLegacyClimbBaseFreq),
@@ -233,6 +255,13 @@ class VarioSoundSettings extends ChangeNotifier {
     try {
       final sp = await SharedPreferences.getInstance();
       await sp.setString(key, value);
+    } catch (_) {}
+  }
+
+  void _persistBool(String key, bool value) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setBool(key, value);
     } catch (_) {}
   }
 

@@ -275,13 +275,13 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                       TileLayer(
                         urlTemplate: _src.urlTemplate,
                         maxNativeZoom: _src.maxZoom.round(),
-                        userAgentPackageName: 'com.parabeacon.app',
-                        tileProvider: NetworkTileProvider(
-                          headers: const {
-                            'User-Agent':
-                                'ParaBeacon/1.0 (flutter_map; com.parabeacon.app)',
-                          },
-                        ),
+                        // Rely on flutter_map's own User-Agent (formatted from
+                        // this package name) rather than a custom
+                        // NetworkTileProvider(headers:). Passing a `const`
+                        // headers map threw "Cannot modify unmodifiable map"
+                        // (flutter_map merges into it), and a custom UA is also
+                        // silently dropped on Android — see MapControl's note.
+                        userAgentPackageName: 'com.beacon.parabeacon',
                       ),
                       PolylineLayer(polylines: _buildTrackPolylines()),
                       if (hasFix)

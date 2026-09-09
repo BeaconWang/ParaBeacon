@@ -113,6 +113,49 @@ const List<int> _borderColorPalette = [
   0xFF9C27B0, // purple
 ];
 
+/// Default palette for the text color picker.
+///
+/// The first entry (`0`) means "automatic" — the control face uses the
+/// theme's on-surface color (the historical behavior). Semantic colors
+/// (green for climb, red for sink) are *not* overridden by this setting so
+/// they keep conveying meaning regardless of the user's choice.
+const List<int> _textColorPalette = [
+  0x00000000, // automatic (theme onSurface)
+  0xFFFFFFFF, // white
+  0xFF000000, // black
+  0xFFE0E0E0, // light grey
+  0xFF9E9E9E, // grey
+  0xFFF44336, // red
+  0xFFFF9800, // orange
+  0xFFFFEB3B, // yellow
+  0xFF4CAF50, // green
+  0xFF00BCD4, // cyan
+  0xFF2196F3, // blue
+  0xFF9C27B0, // purple
+];
+
+/// Default palette for the background color picker.
+///
+/// The first entry (`0`) means "automatic" — the control widget falls back
+/// to the theme's surface color, which is the historical behavior. The
+/// remaining entries are opaque ARGB values; the widget re-applies the
+/// user's `backgroundOpacity` setting on top so alpha is controlled in a
+/// single place.
+const List<int> _backgroundColorPalette = [
+  0x00000000, // automatic (theme surface)
+  0xFFFFFFFF, // white
+  0xFF000000, // black
+  0xFF424242, // dark grey
+  0xFF9E9E9E, // grey
+  0xFFF44336, // red
+  0xFFFF9800, // orange
+  0xFFFFEB3B, // yellow
+  0xFF4CAF50, // green
+  0xFF00BCD4, // cyan
+  0xFF2196F3, // blue
+  0xFF9C27B0, // purple
+];
+
 /// Common settings that every control shares.
 const List<ControlSetting> _commonSettings = [
   ControlSetting.toggle(
@@ -158,6 +201,12 @@ const List<ControlSetting> _commonSettings = [
     divisions: 100,
     unit: '%',
   ),
+  ControlSetting.color(
+    key: 'backgroundColor',
+    label: 'Background color',
+    defaultValue: 0, // 0 == automatic (theme surface)
+    palette: _backgroundColorPalette,
+  ),
   ControlSetting.slider(
     key: 'backgroundOpacity',
     label: 'Background opacity',
@@ -166,6 +215,12 @@ const List<ControlSetting> _commonSettings = [
     max: 100.0,
     divisions: 100,
     unit: '%',
+  ),
+  ControlSetting.color(
+    key: 'textColor',
+    label: 'Text color',
+    defaultValue: 0, // 0 == automatic (theme onSurface)
+    palette: _textColorPalette,
   ),
 ];
 

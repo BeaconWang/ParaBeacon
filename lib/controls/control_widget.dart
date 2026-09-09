@@ -88,8 +88,17 @@ class ControlWidget extends StatelessWidget {
     const editModeMinOpacity = 0.35;
     final effectiveOpacity =
         isEditMode ? userOpacity.clamp(editModeMinOpacity, 1.0) : userOpacity;
-    final surfaceColor = theme.colorScheme.surface
-        .withAlpha((effectiveOpacity * 255).round().clamp(0, 255));
+    // User-picked background color, stored as ARGB int; 0 == "automatic"
+    // (fall back to the theme surface the app has always used). We strip
+    // the alpha channel from the user's swatch and let `backgroundOpacity`
+    // drive transparency uniformly, so both settings stay meaningful and
+    // don't fight each other.
+    final customBgArgb = control.intSetting('backgroundColor', fallback: 0);
+    final baseBgColor = customBgArgb == 0
+        ? theme.colorScheme.surface
+        : Color(customBgArgb);
+    final surfaceColor =
+        baseBgColor.withAlpha((effectiveOpacity * 255).round().clamp(0, 255));
 
     // User-picked whole-control opacity (percent 0..100). This fades the
     // entire control (background + border + face contents) together via a
@@ -101,6 +110,18 @@ class ControlWidget extends StatelessWidget {
     final effectiveControlOpacity = isEditMode
         ? userControlOpacity.clamp(editModeMinOpacity, 1.0)
         : userControlOpacity;
+
+    // User-picked text color, stored as ARGB int; 0 == "automatic" (fall
+    // back to the theme's on-surface color). We route this through a nested
+    // Theme override so every data control that reads
+    // `theme.colorScheme.onSurface` / `onSurfaceVariant` picks it up
+    // automatically without needing a per-widget parameter. Semantic colors
+    // (climb green, sink red) live in the widgets themselves and stay
+    // untouched so state coloring keeps its meaning.
+    final customTextArgb = control.intSetting('textColor', fallback: 0);
+    final faceThemeData = customTextArgb == 0
+        ? theme
+        : _applyTextColor(theme, Color(customTextArgb));
 
     return Material(
       color: Colors.transparent,
@@ -122,7 +143,13 @@ class ControlWidget extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(6),
-                child: _buildFace(context, theme, innerRadius),
+                child: Theme(
+                  data: faceThemeData,
+                  child: Builder(
+                    builder: (context) =>
+                        _buildFace(context, faceThemeData, innerRadius),
+                  ),
+                ),
               ),
             ),
           ),
@@ -254,5 +281,34 @@ class ControlWidget extends StatelessWidget {
           ],
         );
     }
+  }
+
+  /// Returns a copy of [base] whose color scheme uses [textColor] as the
+  /// on-surface color, with a slightly-muted variant for secondary labels.
+  ///
+  /// The Material color scheme also carries `onSurface` as its default text
+  /// style color, so we simultaneously rebuild `textTheme` / `primaryTextTheme`
+  /// with `apply(bodyColor:, displayColor:)` — otherwise `Text` widgets that
+  /// rely on the theme's default text style would keep the old tint.
+  ThemeData _applyTextColor(ThemeData base, Color textColor) {
+    // Muted variant for secondary labels (title, unit). Blend towards the
+    // background so both fully-white and fully-black user picks stay legible.
+    final muted = Color.alphaBlend(textColor.withAlpha(0xB3), Colors.transparent);
+    final scheme = base.colorScheme.copyWith(
+      onSurface: textColor,
+      onSurfaceVariant: muted,
+    );
+    return base.copyWith(
+      colorScheme: scheme,
+      textTheme: base.textTheme.apply(
+        bodyColor: textColor,
+        displayColor: textColor,
+      ),
+      primaryTextTheme: base.primaryTextTheme.apply(
+        bodyColor: textColor,
+        displayColor: textColor,
+      ),
+      iconTheme: base.iconTheme.copyWith(color: textColor),
+    );
   }
 }

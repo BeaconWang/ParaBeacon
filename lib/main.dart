@@ -147,9 +147,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // engine (no-op beyond defaults on first launch).
     VarioSoundSettings.instance.load();
 
-    // Use the shared VarioAudioService singleton so the Preferences panel can
-    // control the same engine (mute/volume) without threading it through the
-    // widget tree. Driven by the transformed vertical speed.
+    // Use the shared VarioAudioService singleton so the Vario Sound Settings
+    // sheet can control the same engine (sound/volume/profile) without
+    // threading it through the widget tree. Driven by the transformed vertical
+    // speed.
     _varioAudio = VarioAudioBridge(
         source: _transformer, audio: VarioAudioService.instance);
     // Initialize the audio stream and start forwarding vertical speed. Safe to
@@ -216,10 +217,6 @@ class _DashGridPageState extends State<DashGridPage>
   // after "Clear all controls"), _loadLayout flips this to true so the user
   // lands directly in edit mode and can add their first control.
   bool _isEditMode = false;
-
-  // Vario audio settings (backed by the shared VarioAudioService singleton).
-  bool _varioMuted = VarioAudioService.instance.isMuted;
-  double _varioVolume = VarioAudioService.instance.volume;
 
   // Dashboard pages (tabs). The user swipes horizontally to switch pages in
   // view mode and can add pages in edit mode.
@@ -630,60 +627,13 @@ class _DashGridPageState extends State<DashGridPage>
                       },
                     ),
                     const Divider(height: 1),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      secondary: Icon(
-                        _varioMuted
-                            ? Icons.volume_off_outlined
-                            : Icons.volume_up_outlined,
-                        color: theme.colorScheme.primary,
-                      ),
-                      title: const Text('Vario sound'),
-                      value: !_varioMuted,
-                      onChanged: (on) {
-                        setState(() => _varioMuted = !on);
-                        VarioAudioService.instance.setMuted(_varioMuted);
-                        setSheetState(() {});
-                      },
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Icon(Icons.graphic_eq,
-                              color: theme.colorScheme.primary, size: 20),
-                          const SizedBox(width: 10),
-                          const Expanded(child: Text('Vario volume')),
-                          Text(
-                            '${(_varioVolume * 100).round()}%',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Slider(
-                      value: _varioVolume,
-                      min: 0.0,
-                      max: 1.0,
-                      divisions: 20,
-                      label: '${(_varioVolume * 100).round()}%',
-                      onChanged: _varioMuted
-                          ? null
-                          : (v) {
-                              setState(() => _varioVolume = v);
-                              VarioAudioService.instance.setVolume(v);
-                              setSheetState(() {});
-                            },
-                    ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.graphic_eq,
                           color: theme.colorScheme.primary),
                       title: const Text('Vario sound settings'),
                       subtitle: const Text(
-                          'Thresholds, pitch, waveform and gain'),
+                          'Sound, volume, thresholds, pitch and waveform'),
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () => showVarioSoundSettingsSheet(context),
                     ),

@@ -210,6 +210,28 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                       const SizedBox(height: 20),
                       _sectionLabel(theme, 'Output'),
                       const SizedBox(height: 8),
+                      _switchCard(
+                        theme,
+                        icon: _settings.muted
+                            ? Icons.volume_off_outlined
+                            : Icons.volume_up_outlined,
+                        label: 'Vario sound',
+                        description: 'Master on/off for the vario beeper.',
+                        value: !_settings.muted,
+                        onChanged: (on) => _settings.setMuted(!on),
+                      ),
+                      _sliderCard(
+                        theme,
+                        icon: Icons.graphic_eq,
+                        label: 'Vario volume',
+                        value: _settings.volume,
+                        min: 0.0,
+                        max: 1.0,
+                        divisions: 20,
+                        display: '${(_settings.volume * 100).round()}%',
+                        onChanged:
+                            _settings.muted ? null : _settings.setVolume,
+                      ),
                       _sliderCard(
                         theme,
                         icon: Icons.volume_up_outlined,
@@ -345,7 +367,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
     required double max,
     required int divisions,
     required String display,
-    required ValueChanged<double> onChanged,
+    required ValueChanged<double>? onChanged,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),

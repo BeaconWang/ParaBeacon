@@ -30,6 +30,8 @@ class VarioSoundSettings extends ChangeNotifier {
   static const _kSinkWaveform = 'pb.vario.sinkWaveform';
   static const _kMasterGain = 'pb.vario.masterGain';
   static const _kSoundOnlyWhenFlying = 'pb.vario.soundOnlyWhenFlying';
+  static const _kMuted = 'pb.vario.muted';
+  static const _kVolume = 'pb.vario.volume';
 
   // ── Legacy keys (pre-"climb → lift" rename) read once for migration ───────
   static const _kLegacyClimbThreshold = 'pb.vario.climbThreshold';
@@ -55,6 +57,14 @@ class VarioSoundSettings extends ChangeNotifier {
   /// vario stays quiet on the ground until the user starts a flight.
   bool _soundOnlyWhenFlying = true;
 
+  /// Master on/off for the vario beeper (mute). Mirrors
+  /// [VarioAudioService.isMuted] but is persisted here so the choice survives
+  /// an app restart.
+  bool _muted = false;
+
+  /// Output volume, 0..1. Mirrors [VarioAudioService.volume] and is persisted.
+  double _volume = 1.0;
+
   double get liftThreshold => _liftThreshold;
   double get sinkThreshold => _sinkThreshold;
   double get liftBaseFreq => _liftBaseFreq;
@@ -64,6 +74,8 @@ class VarioSoundSettings extends ChangeNotifier {
   VarioWaveform get sinkWaveform => _sinkWaveform;
   double get masterGain => _masterGain;
   bool get soundOnlyWhenFlying => _soundOnlyWhenFlying;
+  bool get muted => _muted;
+  double get volume => _volume;
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -112,6 +124,8 @@ class VarioSoundSettings extends ChangeNotifier {
       _masterGain = sp.getDouble(_kMasterGain) ?? _masterGain;
       _soundOnlyWhenFlying =
           sp.getBool(_kSoundOnlyWhenFlying) ?? _soundOnlyWhenFlying;
+      _muted = sp.getBool(_kMuted) ?? _muted;
+      _volume = sp.getDouble(_kVolume) ?? _volume;
 
       await _migrateLegacyKeys(sp);
     } catch (_) {
@@ -203,6 +217,21 @@ class VarioSoundSettings extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Mutes/unmutes the vario beeper and applies it live.
+  void setMuted(bool v) {
+    if (_muted == v) return;
+    _muted = v;
+    _persistBool(_kMuted, v);
+    _applyAndNotify();
+  }
+
+  /// Sets the output volume (0..1) and applies it live.
+  void setVolume(double v) {
+    _volume = v.clamp(0.0, 1.0);
+    _persistDouble(_kVolume, _volume);
+    _applyAndNotify();
+  }
+
   /// Restores all values to the XCTrack defaults and clears storage.
   Future<void> resetToDefaults() async {
     _liftThreshold = _base.liftThreshold;
@@ -214,6 +243,8 @@ class VarioSoundSettings extends ChangeNotifier {
     _sinkWaveform = _base.sinkWaveform;
     _masterGain = _base.masterGain;
     _soundOnlyWhenFlying = true;
+    _muted = false;
+    _volume = 1.0;
     try {
       final sp = await SharedPreferences.getInstance();
       await Future.wait([
@@ -226,6 +257,8 @@ class VarioSoundSettings extends ChangeNotifier {
         sp.remove(_kSinkWaveform),
         sp.remove(_kMasterGain),
         sp.remove(_kSoundOnlyWhenFlying),
+        sp.remove(_kMuted),
+        sp.remove(_kVolume),
         // Also clear any leftover legacy keys.
         sp.remove(_kLegacyClimbThreshold),
         sp.remove(_kLegacyClimbBaseFreq),
@@ -237,7 +270,12 @@ class VarioSoundSettings extends ChangeNotifier {
   }
 
   // ── Internals ─────────────────────────────────────────────────────────────
-  void _apply() => VarioAudioService.instance.setConfig(config);
+  void _apply() {
+    final service = VarioAudioService.instance;
+    service.setConfig(config);
+    service.setVolume(_volume);
+    service.setMuted(_muted);
+  }
 
   void _applyAndNotify() {
     _apply();

@@ -1,5 +1,10 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'control_catalog.dart';
+
+/// Control ids that are only offered in the "Add Control" picker while running
+/// a debug build. In release/profile builds these are hidden from the chooser.
+const Set<String> _debugOnlyControlIds = {'debug_sensor'};
 
 /// A modal bottom sheet that lets the user pick a control to add to the
 /// dashboard, grouped by category (like XCTrack's "Add widget" chooser).
@@ -34,12 +39,15 @@ class _AddControlSheetState extends State<_AddControlSheet> {
     final theme = Theme.of(context);
     final query = _query.trim().toLowerCase();
 
-    // Filter directories/controls by the search query.
+    // Filter directories/controls by the search query. Debug-only controls
+    // (e.g. the Debug Sensor) are hidden entirely outside debug builds.
     final directories = ControlCatalog.directories
         .map((directory) {
+          final available = directory.controls
+              .where((c) => kDebugMode || !_debugOnlyControlIds.contains(c.id));
           final matches = query.isEmpty
-              ? directory.controls
-              : directory.controls
+              ? available.toList()
+              : available
                   .where((c) => c.label.toLowerCase().contains(query))
                   .toList();
           return (directory, matches);

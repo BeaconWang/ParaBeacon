@@ -20,6 +20,7 @@ import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_transformer.dart';
 import 'data/flight_recorder.dart';
+import 'data/gps_flight_data_bridge.dart';
 import 'data/layout_store.dart';
 import 'data/offline_tiles_service.dart';
 import 'data/raw_flight_data_source.dart';
@@ -69,6 +70,14 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
   // (and the vario audio) instead of the development simulator.
   late final BleFlightDataBridge _bleBridge;
 
+  // Forwards continuous device-GPS readings into [_dataSource] so every
+  // consumer (map, recorder, data-value controls, ...) sees the real
+  // latitude/longitude/heading/groundSpeed/gpsAltitude/hasFix without having
+  // to open its own geolocator stream. Sits at the "other" raw tier so BLE
+  // sensor readings always win on fields the BLE device owns (vertical speed,
+  // baro altitude, ...).
+  late final GpsFlightDataBridge _gpsBridge;
+
   @override
   void initState() {
     super.initState();
@@ -97,6 +106,17 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // its vertical speed takes over from the simulator.
     BleSensorService.instance.init();
     _bleBridge = BleFlightDataBridge(source: _dataSource)..attach();
+
+    // Start streaming the real device GPS into the unified data source. On
+    // mobile this requests the location permission on first launch and then
+    // continuously feeds position updates into the "other" raw tier — so the
+    // map, recorder and every other control read a live GPS position through
+    // the same FlightDataProvider they already use.
+    _gpsBridge = GpsFlightDataBridge(source: _dataSource);
+    // Fire-and-forget: permission + service checks are async but must not
+    // block startup, and any failure silently falls back to whatever other
+    // source (BLE sensor / simulator) is providing.
+    _gpsBridge.attach();
 
     // Continuously record the full flight-data feed while a flight is in
     // progress (driven by the shared FlightState; supports auto take-off /
@@ -130,6 +150,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _gpsBridge.dispose();
     _bleBridge.dispose();
     _varioAudio.dispose();
     _transformer.dispose();

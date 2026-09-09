@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../audio/vario_sound_settings.dart';
@@ -115,9 +112,12 @@ class MapTileSources {
 /// readouts. Offline `.mbtiles` basemaps are used automatically when the user
 /// has activated one via [OfflineTilesService].
 ///
-/// Position comes from the device GPS (via `geolocator`, requesting the
-/// location permission on Android/iOS) when available, otherwise it falls back
-/// to the unified [FlightDataProvider] feed (simulator / BLE sensor).
+/// Position comes from the unified [FlightDataProvider] feed. On mobile the
+/// real device GPS is streamed into that feed by a top-level bridge (see
+/// `GpsFlightDataBridge`), so both the map and every other control see the
+/// same live position without opening their own geolocator stream. On desktop
+/// (where GPS isn't available) the feed simply falls back to the BLE sensor
+/// or the debug simulator.
 class MapControl extends StatefulWidget {
   /// Initial zoom level (flutter_map zoom, ~1..19).
   final double initialZoom;
@@ -174,6 +174,26 @@ class MapControl extends StatefulWidget {
 class _MapControlState extends State<MapControl> {
   final MapController _map = MapController();
 
+  /// Broadcast stream used to force [TileLayer] to drop error tiles and
+  /// re-fetch them after a transient network failure. See [_onTileLoadError]
+  /// for why this exists and how the retry backoff works.
+  final StreamController<void> _tileResetCtrl =
+      StreamController<void>.broadcast();
+
+  /// Backoff timer for the tile-reload retry. Coalesces bursts of tile errors
+  /// (e.g. dozens of tiles failing at once on Wi-Fi drop) into a single reset.
+  Timer? _tileRetryTimer;
+
+  /// Growing backoff (seconds) between successive resets while errors persist,
+  /// so we don't hammer the network. Reset to the base on the first successful
+  /// build after a reset.
+  int _tileRetrySeconds = 2;
+
+  /// Timestamp of the last tile-load error, used to reset the retry backoff
+  /// once errors have stopped for a while (fresh transient blip should not
+  /// inherit an old exponential delay).
+  DateTime _lastTileError = DateTime.fromMillisecondsSinceEpoch(0);
+
   /// Whether the map is currently following the aircraft. Turned off when the
   /// user pans/zooms manually, restored by the re-center button.
   late bool _follow = widget.follow;
@@ -189,10 +209,6 @@ class _MapControlState extends State<MapControl> {
   /// Current zoom level, mirrored from the camera so the readout and zoom
   /// buttons stay in sync with pinch gestures.
   late double _zoom = widget.initialZoom;
-
-  /// Latest device GPS position (WGS-84), or null when unavailable/denied.
-  Position? _gps;
-  StreamSubscription<Position>? _gpsSub;
 
   /// Last WGS-84 position pushed to the map (for re-center / follow).
   LatLng? _lastWgs;
@@ -221,7 +237,6 @@ class _MapControlState extends State<MapControl> {
   @override
   void initState() {
     super.initState();
-    _initGps();
     _airspaceProximity = AirspaceStore.instance.lastProximity;
     _airspaceSub = AirspaceStore.instance.proximityStream.listen((l) {
       if (mounted) setState(() => _airspaceProximity = l);
@@ -248,13 +263,49 @@ class _MapControlState extends State<MapControl> {
 
   @override
   void dispose() {
-    _gpsSub?.cancel();
+    _tileRetryTimer?.cancel();
+    _tileResetCtrl.close();
     _airspaceSub?.cancel();
     OfflineTilesService.instance.revision.removeListener(_onExternalChange);
     FlightRecorder.instance.removeListener(_onExternalChange);
     VarioSoundSettings.instance.removeListener(_onThresholdsChanged);
     DebugSettings.instance.removeListener(_onExternalChange);
     super.dispose();
+  }
+
+  /// Called by [TileLayer.errorTileCallback] whenever a tile fails to load
+  /// (transient DNS failure, captive portal, cellular blip, HTTP 5xx …).
+  ///
+  /// Without this, flutter_map keeps the failed tile as a permanent hole:
+  /// the tile stays in the image cache tagged `loadError = true` and is only
+  /// re-fetched when the camera moves enough to evict it. That is the root
+  /// cause of the "map sometimes doesn't load" bug — a couple of tiles fail
+  /// during startup, the user isn't panning yet, and the holes never heal.
+  ///
+  /// The fix: coalesce error bursts into a single delayed reset broadcast
+  /// on [_tileResetCtrl], which [TileLayer] listens to and reacts to by
+  /// dropping all tiles (per its `evictErrorTileStrategy`) and re-requesting
+  /// the visible range. Backoff grows on repeated failures so we don't hammer
+  /// an offline network.
+  void _onTileLoadError(dynamic tile, Object error, StackTrace? _) {
+    if (!mounted) return;
+    final now = DateTime.now();
+    // If it's been quiet for > 15s since the last error, treat this as a
+    // fresh incident and start over from the base backoff — otherwise a long
+    // idle followed by one blip would inherit a 30s cooldown.
+    if (now.difference(_lastTileError) > const Duration(seconds: 15)) {
+      _tileRetrySeconds = 2;
+    }
+    _lastTileError = now;
+    if (_tileRetryTimer?.isActive ?? false) return;
+    final delay = Duration(seconds: _tileRetrySeconds);
+    _tileRetryTimer = Timer(delay, () {
+      if (!mounted || _tileResetCtrl.isClosed) return;
+      _tileResetCtrl.add(null);
+      // Exponential-ish backoff, capped at 30s so recovery stays snappy once
+      // connectivity comes back but idle retries don't spam the radio.
+      _tileRetrySeconds = math.min(_tileRetrySeconds * 2, 30);
+    });
   }
 
   void _onExternalChange() {
@@ -266,40 +317,9 @@ class _MapControlState extends State<MapControl> {
     setState(() => _varioScale = _buildVarioScale());
   }
 
-  /// Requests the location permission and starts streaming device GPS.
-  ///
-  /// Best-effort: on unsupported platforms (or when the user denies), the map
-  /// silently falls back to the flight-data position.
-  Future<void> _initGps() async {
-    // geolocator supports mobile + web + desktop, but GPS is really only
-    // meaningful on mobile; guard so a desktop denial dialog never blocks.
-    if (!kIsWeb && !(Platform.isAndroid || Platform.isIOS)) return;
-    try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
-
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return;
-      }
-
-      _gpsSub = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.bestForNavigation,
-          distanceFilter: 0,
-        ),
-      ).listen((pos) {
-        if (!mounted) return;
-        setState(() => _gps = pos);
-      }, onError: (_) {});
-    } catch (_) {
-      // Location unavailable: keep falling back to the flight-data position.
-    }
-  }
+  /// (Device GPS is streamed at app scope by `GpsFlightDataBridge` and merged
+  /// into the unified [FlightDataProvider] feed, so the map reads it through
+  /// the shared source with no per-widget subscription.)
 
   /// Re-centers the map on [pos] when following (and ready).
   void _maybeFollow(LatLng pos) {
@@ -331,34 +351,17 @@ class _MapControlState extends State<MapControl> {
     final data = FlightDataProvider.of(context);
     final src = MapTileSources.byId(widget.tileSource);
 
-    // Position source priority (highest first):
-    //   1. Debug simulator: when the developer has turned on the simulated
-    //      flight data source (DebugSettings.simulatorEnabled), the map must
-    //      follow the fake flight — not the real device GPS. This keeps the
-    //      map coherent with every other control while testing, and stops the
-    //      user's actual location from silently overriding the simulation.
-    //   2. Real device GPS via geolocator.
-    //   3. Flight-data feed (BLE sensor, external feed, …), when it has a fix.
+    // Position source: everything now flows through the unified flight-data
+    // feed. The GPS bridge (see `GpsFlightDataBridge`) pushes device GPS into
+    // that feed at app scope, the BLE sensor pushes barometric/vertical-speed
+    // fields, and the debug simulator (when enabled) supplies its synthetic
+    // position. Whatever won inside [FlightDataProvider] is what we render.
     LatLng? wgs;
-    double climb = data.verticalSpeed;
-    double heading;
-    double altMsl;
-    final simActive = DebugSettings.instance.simulatorEnabled && data.hasFix;
-    if (simActive) {
+    final double climb = data.verticalSpeed;
+    final double heading = data.heading;
+    final double altMsl = data.altitude;
+    if (data.hasFix) {
       wgs = LatLng(data.latitude, data.longitude);
-      heading = data.heading;
-      altMsl = data.altitude;
-    } else if (_gps != null) {
-      wgs = LatLng(_gps!.latitude, _gps!.longitude);
-      heading = _gps!.heading;
-      altMsl = _gps!.altitude;
-    } else if (data.hasFix) {
-      wgs = LatLng(data.latitude, data.longitude);
-      heading = data.heading;
-      altMsl = data.altitude;
-    } else {
-      heading = data.heading;
-      altMsl = data.altitude;
     }
     final hasFix = wgs != null;
 
@@ -582,6 +585,12 @@ class _MapControlState extends State<MapControl> {
           tileProvider: tp,
           maxNativeZoom: 19,
           userAgentPackageName: 'com.beacon.parabeacon',
+          // Even mbtiles reads can fail (file busy, corrupt tile); use the
+          // same retry path as online tiles so we recover instead of leaving
+          // permanent blanks.
+          errorTileCallback: _onTileLoadError,
+          evictErrorTileStrategy: EvictErrorTileStrategy.notVisibleRespectMargin,
+          reset: _tileResetCtrl.stream,
         );
       }
     }
@@ -592,14 +601,25 @@ class _MapControlState extends State<MapControl> {
     // blank. flutter_map's own `userAgentPackageName` correctly formats an
     // accepted UA (`<pkg>/flutter_map/<ver>`) on every platform, so we rely on
     // that instead. Keep it in sync with the offline branch above.
+    //
+    // Retry / recovery: transient network errors (cell handoff, Wi-Fi drop,
+    // captive portal) leave individual tiles in a permanent `loadError` state
+    // in flutter_map's cache, appearing as "the map won't load sometimes".
+    // We opt into `notVisibleRespectMargin` so the eviction actually kicks in
+    // when tiles leave the buffer, wire up `errorTileCallback` to schedule a
+    // reset, and pipe a broadcast [_tileResetCtrl] stream into `reset` so the
+    // layer drops failed tiles and re-requests the visible range without
+    // waiting for the user to pan.
     return TileLayer(
       key: ValueKey(src.id),
       urlTemplate: src.urlTemplate,
       maxNativeZoom: src.maxZoom.round(),
-      evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
+      evictErrorTileStrategy: EvictErrorTileStrategy.notVisibleRespectMargin,
       keepBuffer: 3,
       panBuffer: 2,
       userAgentPackageName: 'com.beacon.parabeacon',
+      errorTileCallback: _onTileLoadError,
+      reset: _tileResetCtrl.stream,
     );
   }
 

@@ -398,6 +398,66 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
     _connected = true;
   }
 
+  /// Feeds a device-GPS reading into the *other* (lowest) raw tier.
+  ///
+  /// Unlike [ingestSnapshot] this does **not** flip the real-sensor flag and
+  /// does **not** mark the source as connected — the GPS is not a BLE sensor,
+  /// it just contributes position/heading/ground-speed/GPS-altitude/fix state
+  /// that no BLE vario reports. Fields the BLE sensor owns (verticalSpeed,
+  /// baroAltitude, pressure, temperature, battery, heartRate) are deliberately
+  /// left untouched so BLE > GPS on those fields.
+  ///
+  /// The `altitude` convenience field is only updated from GPS when we have no
+  /// barometric altitude — preserving the "prefer baro" rule in [FlightData].
+  ///
+  /// When the built-in flight-data simulator is currently running (see
+  /// [connectSimulated]), GPS is suppressed so the simulated position isn't
+  /// fought over — matching the map's `sim > gps > flight-data` priority.
+  void ingestGpsSnapshot({
+    required double latitude,
+    required double longitude,
+    required double heading,
+    required double groundSpeedKmh,
+    double? gpsAltitude,
+    double? gpsAccuracy,
+    int? satellites,
+    DateTime? timestamp,
+  }) {
+    // Simulator wins on position while it's on: otherwise the fake flight
+    // would jitter between the sim's synthetic track and the real device GPS.
+    if (!_realSensorActive && _sim != null && _debug.simulatorEnabled) return;
+
+    final base = rawData;
+    // Only touch fields GPS legitimately provides; leave BLE-owned fields
+    // (verticalSpeed / baroAltitude / pressure / temperature / battery / HR)
+    // exactly as they were.
+    final next = base.copyWith(
+      latitude: latitude,
+      longitude: longitude,
+      heading: heading,
+      groundSpeed: groundSpeedKmh,
+      gpsAltitude: gpsAltitude,
+      // Prefer barometric altitude when we have it; only promote GPS altitude
+      // into the effective `altitude` field when no baro reading exists.
+      altitude: (base.baroAltitude == null && gpsAltitude != null)
+          ? gpsAltitude
+          : base.altitude,
+      gpsAccuracy: gpsAccuracy,
+      satellites: satellites,
+      hasFix: true,
+      timestamp: timestamp ?? DateTime.now(),
+    );
+    update(next);
+  }
+
+  /// Signals that the device GPS just lost its fix. Clears the fix flag so
+  /// consumers stop trusting the last position, but keeps the last-known
+  /// values (latitude/longitude/heading) intact for display.
+  void reportGpsFixLost() {
+    if (!rawData.hasFix) return;
+    update(rawData.copyWith(hasFix: false));
+  }
+
   /// Development helper: drive the sensor tier with the built-in simulator so
   /// the app runs without a physical device. Values still sit at the
   /// bluetooth-sensor priority, so debug overrides continue to win.

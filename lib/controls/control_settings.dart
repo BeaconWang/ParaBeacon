@@ -335,6 +335,55 @@ const Map<String, List<ControlSetting>> _typeSettings = {
         'amap-sat': '高德卫星',
       },
     ),
+    ControlSetting.choice(
+      key: 'rotation',
+      label: 'Rotation',
+      defaultValue: 'north',
+      options: {
+        'north': 'North at the top',
+        'track': 'Track up (heading)',
+      },
+    ),
+    ControlSetting.toggle(
+      key: 'showNorth',
+      label: 'Display North direction',
+      defaultValue: false,
+    ),
+    ControlSetting.slider(
+      key: 'pilotArrowCoef',
+      label: 'Pilot arrow size',
+      defaultValue: 100.0,
+      min: 50.0,
+      max: 200.0,
+      divisions: 15,
+      unit: '%',
+    ),
+    ControlSetting.slider(
+      key: 'lineThickness',
+      label: 'Thickness of lines',
+      defaultValue: 1.0,
+      min: 0.5,
+      max: 3.0,
+      divisions: 10,
+      unit: 'x',
+    ),
+    ControlSetting.slider(
+      key: 'tracklogMinutes',
+      label: 'Tracklog length (0 = all)',
+      defaultValue: 0.0,
+      min: 0.0,
+      max: 60.0,
+      divisions: 60,
+      unit: 'min',
+    ),
+    ControlSetting.slider(
+      key: 'latestThermals',
+      label: 'Show N latest thermals',
+      defaultValue: 8.0,
+      min: 0.0,
+      max: 12.0,
+      divisions: 12,
+    ),
     ControlSetting.toggle(
       key: 'useOffline',
       label: 'Prefer offline maps (.mbtiles)',
@@ -348,6 +397,36 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ControlSetting.toggle(
       key: 'showThermal',
       label: 'Show thermal assistant',
+      defaultValue: true,
+    ),
+    ControlSetting.choice(
+      key: 'windAlgorithm',
+      label: 'Include wind in computation',
+      defaultValue: 'classic',
+      options: {
+        'none': 'None',
+        'classic': 'Classic',
+        'particle': 'Particle drift',
+      },
+    ),
+    ControlSetting.toggle(
+      key: 'showWind',
+      label: 'Show wind',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showSun',
+      label: 'Show sun position',
+      defaultValue: false,
+    ),
+    ControlSetting.toggle(
+      key: 'showBearing',
+      label: 'Show bearing (course) line',
+      defaultValue: false,
+    ),
+    ControlSetting.toggle(
+      key: 'showScale',
+      label: 'Display map scale',
       defaultValue: true,
     ),
     ControlSetting.toggle(

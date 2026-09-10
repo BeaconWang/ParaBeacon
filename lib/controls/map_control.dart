@@ -13,8 +13,10 @@ import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
 import '../data/offline_tiles_service.dart';
+import '../data/solar_position.dart';
 import '../data/thermal_detector.dart';
 import '../data/vario_color_scale.dart';
+import '../data/wind_estimator.dart';
 
 /// A raster map tile source available to the [MapControl].
 @immutable
@@ -152,6 +154,47 @@ class MapControl extends StatefulWidget {
   /// Draw airspace polygons (only visible when airspace data is loaded).
   final bool showAirspace;
 
+  /// Rotate the map so the current heading points up ("track up"). When false
+  /// the map stays north-up. Ported from XCTrack's Thermal Assistant rotation
+  /// setting.
+  final bool trackUp;
+
+  /// Draw a small fixed North indicator (arrow + "N") in the top-right, which
+  /// is useful when the map is rotated (track-up).
+  final bool showNorth;
+
+  /// Multiplier for the pilot position arrow size (1.0 == default). Mirrors
+  /// XCTrack's "Pilot arrow size coefficient".
+  final double pilotArrowCoef;
+
+  /// Multiplier for the flight-track / bearing line stroke width (1.0 ==
+  /// default). Mirrors XCTrack's "Thickness of lines".
+  final double lineThickness;
+
+  /// Only draw the most recent N minutes of the flight track. 0 means draw the
+  /// whole track. Mirrors XCTrack's "Tracklog length".
+  final double tracklogMinutes;
+
+  /// Number of previously-worked thermal cores to mark on the map. 0 hides
+  /// them. Mirrors XCTrack's "Show N latest thermals".
+  final int latestThermals;
+
+  /// How wind is included in the thermal computation: 'none', 'classic' or
+  /// 'particle'. Mirrors XCTrack's "How to include wind into computation".
+  final String windAlgorithm;
+
+  /// Draw a wind indicator (arrow + speed) in the corner.
+  final bool showWind;
+
+  /// Draw a sun-position marker at the sun's azimuth on the map edge.
+  final bool showSun;
+
+  /// Draw a bearing (course) line from the aircraft along its ground track.
+  final bool showBearing;
+
+  /// Draw the ground-distance scale ruler (bottom-left).
+  final bool showScale;
+
   /// Prefer an activated offline `.mbtiles` basemap over online tiles.
   final bool useOffline;
 
@@ -181,6 +224,17 @@ class MapControl extends StatefulWidget {
     this.showTrack = true,
     this.showThermal = true,
     this.showAirspace = true,
+    this.trackUp = false,
+    this.showNorth = false,
+    this.pilotArrowCoef = 1.0,
+    this.lineThickness = 1.0,
+    this.tracklogMinutes = 0.0,
+    this.latestThermals = 8,
+    this.windAlgorithm = 'classic',
+    this.showWind = true,
+    this.showSun = false,
+    this.showBearing = false,
+    this.showScale = true,
     this.useOffline = true,
     this.showLegend = false,
     this.showZoomLevel = true,
@@ -235,9 +289,22 @@ class _MapControlState extends State<MapControl> {
   /// Last WGS-84 position pushed to the map (for re-center / follow).
   LatLng? _lastWgs;
 
+  /// Last heading (deg) seen from the feed, used for track-up rotation and the
+  /// bearing line.
+  double _lastHeading = 0.0;
+
   /// Self-contained thermal detector fed from the flight-data / GPS feed.
   final ThermalDetector _thermalDetector = ThermalDetector();
   ThermalHint? _thermal;
+
+  /// Self-contained wind estimator fed from GPS ground velocity while
+  /// circling. Used as a fallback when the sensor feed has no wind reading,
+  /// and to drift-compensate the thermal core.
+  final WindEstimator _windEstimator = WindEstimator();
+
+  /// Most recent wind estimate (sensor-provided when available, otherwise
+  /// derived from circling). Null until enough data / no wind.
+  WindEstimate? _wind;
 
   /// Latest airspace proximity list (drives boundary colouring).
   List<AirspaceProximity> _airspaceProximity = const [];
@@ -280,6 +347,17 @@ class _MapControlState extends State<MapControl> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.follow != widget.follow) {
       _follow = widget.follow;
+    }
+    // Switching rotation mode: snap back to north-up when leaving track-up, and
+    // re-apply the heading rotation when entering it.
+    if (oldWidget.trackUp != widget.trackUp) {
+      if (!widget.trackUp && _ready) {
+        _map.rotate(0);
+        _rotationDeg = 0;
+      } else if (widget.trackUp) {
+        final p = _lastWgs;
+        if (p != null) _maybeFollow(p);
+      }
     }
   }
 
@@ -343,13 +421,21 @@ class _MapControlState extends State<MapControl> {
   /// into the unified [FlightDataProvider] feed, so the map reads it through
   /// the shared source with no per-widget subscription.)
 
-  /// Re-centers the map on [pos] when following (and ready).
+  /// Re-centers the map on [pos] when following (and ready). In track-up mode
+  /// the camera is also rotated so the current heading points up.
   void _maybeFollow(LatLng pos) {
     _lastWgs = pos;
     if (!_follow || !_ready) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_ready || !_follow) return;
-      _map.move(_shift(pos, widget.tileSource), _map.camera.zoom);
+      final shifted = _shift(pos, widget.tileSource);
+      if (widget.trackUp) {
+        // flutter_map rotation is measured counter-clockwise, so to bring the
+        // heading (clockwise from north) to the top we rotate by -heading.
+        _map.moveAndRotate(shifted, _map.camera.zoom, -_lastHeading);
+      } else {
+        _map.move(shifted, _map.camera.zoom);
+      }
     });
   }
 
@@ -382,12 +468,14 @@ class _MapControlState extends State<MapControl> {
     final double climb = data.verticalSpeed;
     final double heading = data.heading;
     final double altMsl = data.altitude;
+    final double groundMps = data.groundSpeed / 3.6; // km/h -> m/s
     if (data.hasFix) {
       wgs = LatLng(data.latitude, data.longitude);
     }
     final hasFix = wgs != null;
 
     if (hasFix) {
+      _lastHeading = heading;
       _maybeFollow(wgs);
       // Feed the thermal detector + airspace proximity from the live fix.
       _thermal = _thermalDetector.add(
@@ -397,6 +485,21 @@ class _MapControlState extends State<MapControl> {
       );
       AirspaceStore.instance
           .updatePosition(wgs.latitude, wgs.longitude, altMsl);
+      // Wind: prefer a real sensor reading; otherwise fall back to the
+      // circling estimator so the map can still show/use wind.
+      final estimate = _windEstimator.add(
+        groundSpeedMps: groundMps,
+        headingDeg: heading,
+      );
+      if (data.windSpeed > 0.1) {
+        _wind = WindEstimate(
+          fromDirectionDeg: data.windDirection,
+          speedMps: data.windSpeed / 3.6,
+          confident: true,
+        );
+      } else {
+        _wind = estimate;
+      }
     }
 
     // Render position in the tile coordinate system (GCJ-shifted if needed).
@@ -454,11 +557,21 @@ class _MapControlState extends State<MapControl> {
                 if (widget.showAirspace)
                   PolygonLayer(polygons: _buildAirspacePolygons()),
 
+                // Bearing (course) line projected ahead along the ground track.
+                if (widget.showBearing && hasFix)
+                  PolylineLayer(
+                    polylines: [_buildBearingLine(renderPos, heading)],
+                  ),
+
                 // Recorded flight track coloured by vertical speed.
                 if (widget.showTrack)
                   PolylineLayer(polylines: _buildTrackPolylines()),
 
-                // Thermal / climb-assistant ring.
+                // Previously-worked thermal cores ("N latest thermals").
+                if (widget.showThermal && widget.latestThermals > 0)
+                  CircleLayer(circles: _buildHistoryThermalCircles()),
+
+                // Thermal / climb-assistant ring (current core).
                 if (widget.showThermal && _thermal != null)
                   CircleLayer(circles: [_buildThermalCircle(_thermal!)]),
 
@@ -467,14 +580,30 @@ class _MapControlState extends State<MapControl> {
                     markers: [
                       Marker(
                         point: renderPos,
-                        width: 40,
-                        height: 40,
+                        width: 40 * widget.pilotArrowCoef,
+                        height: 40 * widget.pilotArrowCoef,
                         child: _HeadingMarker(
-                          heading: heading,
+                          // In track-up mode the map itself is rotated so the
+                          // heading points up; the arrow then stays fixed
+                          // pointing up (relative to the rotated map).
+                          heading: widget.trackUp ? 0 : heading,
                           color: theme.colorScheme.primary,
                         ),
                       ),
                     ],
+                  ),
+
+                // Sun-position marker: a sun glyph placed along its azimuth
+                // bearing from the aircraft, so the pilot can read where the
+                // sun is relative to the terrain.
+                if (widget.showSun && hasFix)
+                  MarkerLayer(markers: _buildSunMarkers(wgs, renderPos)),
+
+                // Ground-distance scale ruler (bottom-left), screen-fixed.
+                if (widget.showScale)
+                  _ScaleBarLayer(
+                    color: theme.colorScheme.onSurface.withAlpha(200),
+                    background: theme.colorScheme.surface.withAlpha(150),
                   ),
               ],
             ),
@@ -497,6 +626,23 @@ class _MapControlState extends State<MapControl> {
                 theme,
                 label: 'HDG ${heading.round()}°  ·  ALT ${altMsl.round()}m',
                 small: true,
+              ),
+            ),
+
+          // Wind indicator (arrow pointing the way the wind blows *to*, plus
+          // the speed it comes *from*). Sits under the HDG/ALT chip when that
+          // is shown, otherwise at the top-left corner.
+          if (widget.showWind && hasFix && _wind != null)
+            Positioned(
+              left: 8,
+              top: (hasFix && widget.showStatus) ? 34 : 8,
+              child: _WindIndicator(
+                wind: _wind!,
+                // In track-up mode the arrow must be counter-rotated so it
+                // still points at the true wind direction on screen.
+                mapRotationDeg: _rotationDeg,
+                color: theme.colorScheme.onSurfaceVariant,
+                background: theme.colorScheme.surface.withAlpha(180),
               ),
             ),
 
@@ -538,6 +684,14 @@ class _MapControlState extends State<MapControl> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  if (widget.showNorth) ...[
+                    _NorthIndicator(
+                      rotationDeg: _rotationDeg,
+                      color: theme.colorScheme.onSurfaceVariant,
+                      background: theme.colorScheme.surface.withAlpha(180),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
                   if (widget.showZoomLevel)
                     _glassChip(theme, label: 'Z ${_zoom.toStringAsFixed(1)}',
                         small: true),
@@ -552,6 +706,20 @@ class _MapControlState extends State<MapControl> {
                       small: true,
                     ),
                 ],
+              ),
+            ),
+
+          // Standalone North indicator when both zoom + attribution are hidden
+          // (otherwise it lives in that top-right column above).
+          if (widget.showNorth &&
+              !(widget.showZoomLevel || widget.showAttribution))
+            Positioned(
+              right: 4,
+              top: 4,
+              child: _NorthIndicator(
+                rotationDeg: _rotationDeg,
+                color: theme.colorScheme.onSurfaceVariant,
+                background: theme.colorScheme.surface.withAlpha(180),
               ),
             ),
 
@@ -690,7 +858,20 @@ class _MapControlState extends State<MapControl> {
   /// identical colour are merged to keep the layer element count low.
   List<Polyline> _buildTrackPolylines() {
     final track = FlightRecorder.instance.currentTrack;
-    final samples = track?.samples ?? const [];
+    final all = track?.samples ?? const [];
+    if (all.length < 2) return const [];
+
+    // Tracklog length: keep only the most recent N minutes when configured
+    // (0 == draw the whole track). Mirrors XCTrack's "Tracklog length".
+    final List<dynamic> samples;
+    if (widget.tracklogMinutes > 0) {
+      final cutoff = DateTime.now()
+          .subtract(Duration(seconds: (widget.tracklogMinutes * 60).round()));
+      final start = all.indexWhere((s) => s.time.isAfter(cutoff));
+      samples = start <= 0 ? all : all.sublist(math.max(0, start - 1));
+    } else {
+      samples = all;
+    }
     if (samples.length < 2) return const [];
 
     // Lightly decimate very long tracks to keep rendering smooth.
@@ -713,6 +894,7 @@ class _MapControlState extends State<MapControl> {
 
     double vario(int i) => (pts[i].data.verticalSpeed as double);
 
+    final strokeWidth = 3.0 * widget.lineThickness;
     final out = <Polyline>[];
     int runStart = 0;
     // A segment's colour is derived from the vario at its *end* point via the
@@ -723,7 +905,7 @@ class _MapControlState extends State<MapControl> {
       if (endExclusive - runStart < 2) return;
       out.add(Polyline(
         points: [for (int i = runStart; i < endExclusive; i++) at(i)],
-        strokeWidth: 3,
+        strokeWidth: strokeWidth,
         color: runColor,
       ));
     }
@@ -740,10 +922,63 @@ class _MapControlState extends State<MapControl> {
     return out;
   }
 
+  /// Builds a bearing (course) line extending ahead of the aircraft along its
+  /// current ground track, so the pilot can see where the current heading
+  /// leads. Length scales inversely with zoom so it stays a sensible on-screen
+  /// size.
+  Polyline _buildBearingLine(LatLng from, double headingDeg) {
+    // Ground distance for the line: longer when zoomed out, shorter zoomed in.
+    final meters = (2000.0 * math.pow(2, 15 - _zoom)).clamp(150.0, 20000.0);
+    const mPerDegLat = 111320.0;
+    final mPerDegLon =
+        mPerDegLat * math.cos(from.latitude * math.pi / 180.0).abs();
+    final rad = headingDeg * math.pi / 180.0;
+    // In tile space we've already GCJ-shifted `from`; project the endpoint in
+    // the same (shifted) frame so the line stays anchored to the marker.
+    final dLat = (meters * math.cos(rad)) / mPerDegLat;
+    final dLon = (meters * math.sin(rad)) /
+        (mPerDegLon < 1e-6 ? 1e-6 : mPerDegLon);
+    final to = LatLng(from.latitude + dLat, from.longitude + dLon);
+    return Polyline(
+      points: [from, to],
+      strokeWidth: 2.5 * widget.lineThickness,
+      color: const Color(0xFF2196F3),
+    );
+  }
+
+  /// Builds faded rings for the most recent previously-worked thermal cores
+  /// (XCTrack's "Show N latest thermals"), oldest most faded.
+  List<CircleMarker> _buildHistoryThermalCircles() {
+    final history = _thermalDetector.history;
+    if (history.isEmpty) return const [];
+    final take =
+        history.length > widget.latestThermals ? widget.latestThermals : history.length;
+    final start = history.length - take;
+    final out = <CircleMarker>[];
+    for (int i = start; i < history.length; i++) {
+      final t = history[i];
+      // Newer entries are more opaque; older ones fade out.
+      final age = (i - start) / take; // 0 (oldest) .. ~1 (newest)
+      final alpha = (30 + 60 * age).round().clamp(20, 120);
+      final strong = t.avgClimbMps >= 2.0;
+      final color = strong ? const Color(0xFF13FF43) : const Color(0xFFD4FF6A);
+      final drifted = _applyWindDrift(t.centerLat, t.centerLon);
+      out.add(CircleMarker(
+        point: _shift(LatLng(drifted[0], drifted[1]), widget.tileSource),
+        radius: t.radiusM,
+        useRadiusInMeter: true,
+        color: color.withAlpha((alpha * 0.4).round()),
+        borderColor: color.withAlpha(alpha + 60),
+        borderStrokeWidth: 1.5,
+      ));
+    }
+    return out;
+  }
+
   /// Builds the thermal/climb-assistant ring at the detected core (feature 27).
   CircleMarker _buildThermalCircle(ThermalHint t) {
-    final pos =
-        _shift(LatLng(t.centerLat, t.centerLon), widget.tileSource);
+    final drifted = _applyWindDrift(t.centerLat, t.centerLon);
+    final pos = _shift(LatLng(drifted[0], drifted[1]), widget.tileSource);
     // Greener the stronger the climb.
     final strong = t.avgClimbMps >= 2.0;
     final color = strong ? const Color(0xFF13FF43) : const Color(0xFFD4FF6A);
@@ -755,6 +990,61 @@ class _MapControlState extends State<MapControl> {
       borderColor: color,
       borderStrokeWidth: 2,
     );
+  }
+
+  /// Applies wind-drift compensation to a thermal core position according to
+  /// [MapControl.windAlgorithm] and the current [_wind] estimate.
+  ///
+  /// A thermal drifts downwind as it rises, so the lift a climbing pilot is
+  /// actually working sits slightly *upwind* of the raw circling centroid.
+  /// Shifting the drawn core upwind keeps the ring centred on the useful lift.
+  /// Returns `[lat, lon]`.
+  List<double> _applyWindDrift(double lat, double lon) {
+    final w = _wind;
+    if (w == null || widget.windAlgorithm == 'none' || w.speedMps < 0.5) {
+      return [lat, lon];
+    }
+    // Shift distance: a few seconds of wind travel. Particle-drift uses a
+    // longer horizon than classic, matching XCTrack's stronger correction.
+    final seconds = widget.windAlgorithm == 'particle' ? 12.0 : 6.0;
+    final shiftM = w.speedMps * seconds;
+    // Move upwind: the wind comes *from* `fromDirectionDeg`, so upwind is
+    // towards that bearing.
+    final rad = w.fromDirectionDeg * math.pi / 180.0;
+    const mPerDegLat = 111320.0;
+    final mPerDegLon = mPerDegLat * math.cos(lat * math.pi / 180.0).abs();
+    final dLat = (shiftM * math.cos(rad)) / mPerDegLat;
+    final dLon =
+        (shiftM * math.sin(rad)) / (mPerDegLon < 1e-6 ? 1e-6 : mPerDegLon);
+    return [lat + dLat, lon + dLon];
+  }
+
+  /// Builds the sun-position marker(s): a sun glyph placed a fixed on-screen
+  /// distance from the aircraft along the sun's azimuth. Hidden when the sun
+  /// is below the horizon.
+  List<Marker> _buildSunMarkers(LatLng wgs, LatLng renderPos) {
+    final sun = SolarCalculator.at(wgs.latitude, wgs.longitude);
+    if (!sun.isUp) return const [];
+    // Place the glyph a distance ahead along the azimuth that scales with
+    // zoom, so it stays a comfortable distance from the pilot marker.
+    final meters = (600.0 * math.pow(2, 15 - _zoom)).clamp(80.0, 8000.0);
+    const mPerDegLat = 111320.0;
+    final mPerDegLon =
+        mPerDegLat * math.cos(renderPos.latitude * math.pi / 180.0).abs();
+    final rad = sun.azimuthDeg * math.pi / 180.0;
+    final dLat = (meters * math.cos(rad)) / mPerDegLat;
+    final dLon =
+        (meters * math.sin(rad)) / (mPerDegLon < 1e-6 ? 1e-6 : mPerDegLon);
+    final sunPos =
+        LatLng(renderPos.latitude + dLat, renderPos.longitude + dLon);
+    return [
+      Marker(
+        point: sunPos,
+        width: 34,
+        height: 34,
+        child: _SunMarker(elevationDeg: sun.elevationDeg),
+      ),
+    ];
   }
 
   /// Builds altitude-aware airspace polygons (feature 19).
@@ -1345,6 +1635,252 @@ class _CompassButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A small, non-interactive North indicator: an upward arrow labelled "N",
+/// counter-rotated by the current map rotation so it always points at true
+/// north. Useful when the map is track-up. Ported from XCTrack's "Display
+/// North direction" option.
+class _NorthIndicator extends StatelessWidget {
+  final double rotationDeg;
+  final Color color;
+  final Color background;
+
+  const _NorthIndicator({
+    required this.rotationDeg,
+    required this.color,
+    required this.background,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Camera rotation is counter-clockwise; counter-rotate to keep N up.
+    final angle = -rotationDeg * math.pi / 180.0;
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Transform.rotate(
+        angle: angle,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.navigation, size: 16, color: color),
+            Text(
+              'N',
+              style: TextStyle(
+                fontSize: 9,
+                height: 1.0,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A screen-fixed ground-distance scale ruler drawn in the bottom-left, sized
+/// to a "nice" 1-2-5 series distance for the current zoom. Ported from
+/// XCTrack's "Display map scale" option.
+class _ScaleBarLayer extends StatelessWidget {
+  const _ScaleBarLayer({required this.color, required this.background});
+
+  final Color color;
+  final Color background;
+
+  /// Picks a "nice" distance (metres) from a 1-2-5 series near [target].
+  static double _niceMeters(double target) {
+    if (target <= 0) return 0;
+    final mag = math.pow(10, (math.log(target) / math.ln10).floor()).toDouble();
+    final norm = target / mag; // 1..10
+    final double stepNorm;
+    if (norm < 1.5) {
+      stepNorm = 1;
+    } else if (norm < 3.5) {
+      stepNorm = 2;
+    } else if (norm < 7.5) {
+      stepNorm = 5;
+    } else {
+      stepNorm = 10;
+    }
+    return stepNorm * mag;
+  }
+
+  static String _fmt(double meters) {
+    if (meters >= 1000) {
+      final km = meters / 1000.0;
+      return '${km >= 10 ? km.toStringAsFixed(0) : km.toStringAsFixed(1)} km';
+    }
+    return '${meters.toStringAsFixed(0)} m';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final camera = MapCamera.of(context);
+    final center = camera.center;
+
+    // Metres per screen pixel at the view centre (Web-Mercator ground
+    // resolution): 156543.03 * cos(lat) / 2^zoom.
+    final metersPerPixel = 156543.03392 *
+        math.cos(center.latitude * math.pi / 180.0).abs() /
+        math.pow(2, camera.zoom);
+    if (!metersPerPixel.isFinite || metersPerPixel <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    // Aim for a bar around 80px wide, then snap the represented distance to a
+    // nice value and back-compute the exact pixel width.
+    const targetPx = 80.0;
+    final niceMeters = _niceMeters(targetPx * metersPerPixel);
+    if (niceMeters <= 0) return const SizedBox.shrink();
+    final barPx = (niceMeters / metersPerPixel).clamp(20.0, 200.0);
+
+    return Positioned(
+      left: 8,
+      bottom: 34,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _fmt(niceMeters),
+              style: TextStyle(
+                fontSize: 9,
+                height: 1.0,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            // The ruler itself: a horizontal bar with end ticks.
+            CustomPaint(
+              size: Size(barPx.toDouble(), 6),
+              painter: _ScaleBarPainter(color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScaleBarPainter extends CustomPainter {
+  _ScaleBarPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+    final y = size.height - 1;
+    // Baseline with end ticks pointing up.
+    canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    canvas.drawLine(const Offset(0, 0), Offset(0, y), paint);
+    canvas.drawLine(Offset(size.width, 0), Offset(size.width, y), paint);
+  }
+
+  @override
+  bool shouldRepaint(_ScaleBarPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// A compact wind indicator: an arrow showing the direction the wind blows
+/// *towards* plus the speed (km/h) it comes *from*. In track-up mode the arrow
+/// is counter-rotated by the map rotation so it keeps pointing at the true
+/// wind direction on screen. Low-confidence (estimated) winds render dimmed.
+class _WindIndicator extends StatelessWidget {
+  const _WindIndicator({
+    required this.wind,
+    required this.mapRotationDeg,
+    required this.color,
+    required this.background,
+  });
+
+  final WindEstimate wind;
+  final double mapRotationDeg;
+  final Color color;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) {
+    // The arrow should point the way the wind blows *to* (from + 180°). Then
+    // counter-rotate by the map rotation (CCW) so it stays true on a rotated
+    // (track-up) map.
+    final blowToDeg = (wind.fromDirectionDeg + 180.0) % 360.0;
+    final angleRad =
+        (blowToDeg - mapRotationDeg) * math.pi / 180.0;
+    final dim = wind.confident ? 1.0 : 0.55;
+    return Opacity(
+      opacity: dim,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Transform.rotate(
+              angle: angleRad,
+              child: Icon(Icons.navigation, size: 14, color: color),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '${wind.speedKmh.round()} km/h',
+              style: TextStyle(
+                fontSize: 10,
+                height: 1.0,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A sun glyph whose ray colour warms as the sun gets lower (a low sun paints
+/// the sky orange), used to mark the sun's azimuth on the map.
+class _SunMarker extends StatelessWidget {
+  const _SunMarker({required this.elevationDeg});
+
+  final double elevationDeg;
+
+  @override
+  Widget build(BuildContext context) {
+    // Higher sun = brighter yellow; low sun = warmer orange.
+    final warm = (1.0 - (elevationDeg / 45.0)).clamp(0.0, 1.0);
+    final color = Color.lerp(
+      const Color(0xFFFFD54F), // high, bright yellow
+      const Color(0xFFFF7043), // low, orange
+      warm,
+    )!;
+    return Icon(
+      Icons.wb_sunny,
+      size: 26,
+      color: color,
+      shadows: const [
+        Shadow(color: Colors.black45, blurRadius: 3),
+      ],
     );
   }
 }

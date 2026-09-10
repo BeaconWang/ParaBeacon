@@ -35,6 +35,7 @@ class ThermalDetector {
     this.window = const Duration(seconds: 20),
     this.minClimbMps = 0.5,
     this.minSamples = 8,
+    this.historyLimit = 8,
   });
 
   /// Trailing window over which climb is averaged.
@@ -46,7 +47,23 @@ class ThermalDetector {
   /// Minimum number of buffered fixes before a hint is produced.
   final int minSamples;
 
+  /// Maximum number of past thermal cores kept in [history] (mirrors XCTrack's
+  /// "Show N latest thermals" feature).
+  final int historyLimit;
+
   final List<_Fix> _fixes = [];
+
+  /// Recently completed thermal cores, most-recent last. A core is committed
+  /// to history when a sustained climb ends (the pilot glides away), so the
+  /// map can mark previously-worked thermals like XCTrack's Thermal Assistant.
+  final List<ThermalHint> _history = [];
+
+  /// Whether the previous [add] produced an active climb hint. Used to detect
+  /// the climb→glide transition that commits a core to [history].
+  ThermalHint? _lastActive;
+
+  /// Read-only view of the recent thermal cores (oldest first).
+  List<ThermalHint> get history => List.unmodifiable(_history);
 
   /// Feeds one fix. Returns the current [ThermalHint], or null when the pilot
   /// is not climbing / not enough data.
@@ -63,11 +80,53 @@ class ThermalDetector {
     while (_fixes.length > 1 && _fixes.first.time.isBefore(cutoff)) {
       _fixes.removeAt(0);
     }
-    return _evaluate();
+    final hint = _evaluate();
+    // Detect the climb→glide transition: when a previously-active core stops
+    // being reported, commit it to history so it can be marked on the map.
+    if (hint == null && _lastActive != null) {
+      _commitToHistory(_lastActive!);
+    }
+    _lastActive = hint;
+    return hint;
+  }
+
+  /// Adds [core] to [history], de-duplicating cores that sit almost on top of
+  /// an existing entry (the pilot re-centering the same thermal) and capping
+  /// the list at [historyLimit].
+  void _commitToHistory(ThermalHint core) {
+    const mergeMeters = 60.0;
+    const mPerDegLat = 111320.0;
+    final mPerDegLon =
+        111320.0 * math.cos(core.centerLat * math.pi / 180.0);
+    for (int i = 0; i < _history.length; i++) {
+      final h = _history[i];
+      final dx = (h.centerLon - core.centerLon) * mPerDegLon;
+      final dy = (h.centerLat - core.centerLat) * mPerDegLat;
+      if (math.sqrt(dx * dx + dy * dy) < mergeMeters) {
+        // Same thermal worked again: keep the stronger estimate, move to the
+        // end so it reads as most-recent.
+        _history.removeAt(i);
+        _history.add(core.avgClimbMps >= h.avgClimbMps ? core : h);
+        return;
+      }
+    }
+    _history.add(core);
+    while (_history.length > historyLimit) {
+      _history.removeAt(0);
+    }
   }
 
   /// Clears the buffer (e.g. on GPS loss).
-  void reset() => _fixes.clear();
+  void reset() {
+    _fixes.clear();
+    _lastActive = null;
+  }
+
+  /// Clears the buffer and the committed thermal history (e.g. new flight).
+  void resetAll() {
+    reset();
+    _history.clear();
+  }
 
   ThermalHint? _evaluate() {
     if (_fixes.length < minSamples) return null;

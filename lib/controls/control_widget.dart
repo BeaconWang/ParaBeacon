@@ -251,6 +251,8 @@ class ControlWidget extends StatelessWidget {
         );
       case 'map':
         final source = control.setting('tileSource');
+        final rot = control.setting('rotation');
+        final windAlg = control.setting('windAlgorithm');
         return ClipRRect(
           borderRadius: innerRadius,
           child: MapControl(
@@ -262,6 +264,22 @@ class ControlWidget extends StatelessWidget {
             follow: control.boolSetting('follow', fallback: true),
             initialZoom: control.doubleSetting('zoom', fallback: 17.0),
             tileSource: source is String ? source : 'osm',
+            trackUp: rot == 'track',
+            showNorth: control.boolSetting('showNorth', fallback: false),
+            pilotArrowCoef:
+                control.doubleSetting('pilotArrowCoef', fallback: 100.0) /
+                    100.0,
+            lineThickness:
+                control.doubleSetting('lineThickness', fallback: 1.0),
+            tracklogMinutes:
+                control.doubleSetting('tracklogMinutes', fallback: 0.0),
+            latestThermals:
+                control.doubleSetting('latestThermals', fallback: 8.0).round(),
+            windAlgorithm: windAlg is String ? windAlg : 'classic',
+            showWind: control.boolSetting('showWind', fallback: true),
+            showSun: control.boolSetting('showSun', fallback: false),
+            showBearing: control.boolSetting('showBearing', fallback: false),
+            showScale: control.boolSetting('showScale', fallback: true),
             useOffline: control.boolSetting('useOffline', fallback: true),
             showTrack: control.boolSetting('showTrack', fallback: true),
             showThermal: control.boolSetting('showThermal', fallback: true),

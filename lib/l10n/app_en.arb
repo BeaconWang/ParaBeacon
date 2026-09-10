@@ -1,0 +1,83 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "ParaBeacon",
+  "@appTitle": { "description": "Application name." },
+
+  "close": "Close",
+  "cancel": "Cancel",
+  "clear": "Clear",
+  "delete": "Delete",
+  "save": "Save",
+  "done": "Done",
+  "add": "Add",
+
+  "preferences": "Preferences",
+  "theme": "Theme",
+  "language": "Language",
+  "varioSoundSettings": "Vario sound settings",
+  "varioSoundSettingsSubtitle": "Sound, volume, thresholds, pitch and waveform",
+  "gridSize": "Grid size",
+  "bluetoothSensor": "Bluetooth Sensor",
+  "bluetoothSensorSubtitle": "Connect an external BLE sensor",
+  "trackRecording": "Track recording",
+  "trackRecordingSubtitle": "{interval} · {detail}",
+  "@trackRecordingSubtitle": {
+    "placeholders": {
+      "interval": { "type": "String" },
+      "detail": { "type": "String" }
+    }
+  },
+  "recordingIntervalEvery1s": "Every 1 s",
+  "recordingIntervalSmart": "Smart",
+  "recordingDetailFull": "full data",
+  "recordingDetailXcTrack": "XCTrack style",
+  "debug": "Debug",
+  "simulatedFlightData": "Simulated flight data",
+  "simulatedFlightDataSubtitle": "Feed fake sensor values when no BLE device is connected",
+  "fakeGpsInChina": "Fake GPS location in China",
+  "fakeGpsInChinaSubtitle": "Start the simulated flight over China (near Chengdu)",
+
+  "trackRecordingSmart": "Smart (default)",
+  "trackRecordingEverySecond": "Every 1 second",
+  "recordMoreInformation": "Record more information",
+
+  "clearAllControlsTitle": "Clear all controls?",
+  "clearAllControlsMessage": "This removes every control from the dashboard. This cannot be undone.",
+
+  "editMode": "Edit Mode",
+  "pageOfPages": "Page {current} of {total}",
+  "@pageOfPages": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "addControl": "Add Control",
+  "addPage": "Add Page",
+  "deletePage": "Delete Page",
+  "clearAllControls": "Clear all controls",
+  "controlsPlaced": "{count} placed",
+  "@controlsPlaced": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "flights": "Flights",
+  "flightsSubtitle": "Recorded flights",
+  "pageIcon": "Page icon",
+  "gridSizePx": "{value} px",
+  "@gridSizePx": {
+    "placeholders": {
+      "value": { "type": "int" }
+    }
+  },
+
+  "languageSystemDefault": "System default",
+  "languageEnglish": "English",
+  "languageChineseSimplified": "简体中文",
+  "languageSystemDescription": "Follow the device language",
+  "languageEnglishDescription": "English",
+  "languageChineseSimplifiedDescription": "Simplified Chinese",
+  "languageApplyNote": "Changes apply instantly, no restart needed. Your choice is saved on this device."
+}

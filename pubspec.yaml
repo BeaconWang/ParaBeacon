@@ -146,6 +146,11 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Enable Flutter's gen-l10n code generation from the ARB files under
+  # lib/l10n (see l10n.yaml). Produces the typed `AppLocalizations` class used
+  # for all user-facing strings so the whole UI follows the selected language.
+  generate: true
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

@@ -1,0 +1,12 @@
+# Flutter gen-l10n configuration.
+#
+# Reads the ARB translation files under lib/l10n and generates a typed
+# `AppLocalizations` class (accessed via `AppLocalizations.of(context)`).
+# The generated code lives under lib/l10n (checked in) so the app builds
+# without a separate codegen step in CI.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+output-dir: lib/l10n
+nullable-getter: false

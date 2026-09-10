@@ -3,9 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'dart:ui' as ui;
+
+import 'l10n/app_localizations.dart';
 
 import 'controls/add_control_sheet.dart';
 import 'controls/bluetooth_sensor_sheet.dart';
@@ -32,7 +33,6 @@ import 'data/recording_settings.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
-import 'theme/app_languages.dart';
 import 'theme/app_themes.dart';
 import 'theme/locale_controller.dart';
 import 'theme/theme_controller.dart';
@@ -218,12 +218,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
             // Chosen language (null = follow the device language, resolved
             // against supportedLocales by the framework).
             locale: LocaleController.instance.current.locale,
-            supportedLocales: AppLanguage.supportedLocales,
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: const DashGridPage(),
           );
         },
@@ -604,6 +600,7 @@ class _DashGridPageState extends State<DashGridPage>
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final theme = Theme.of(context);
+            final l10n = AppLocalizations.of(context);
             return SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -617,12 +614,12 @@ class _DashGridPageState extends State<DashGridPage>
                             color: theme.colorScheme.primary),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text('Preferences',
+                          child: Text(l10n.preferences,
                               style: theme.textTheme.titleLarge),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close),
-                          tooltip: 'Close',
+                          tooltip: l10n.close,
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                       ],
@@ -638,7 +635,7 @@ class _DashGridPageState extends State<DashGridPage>
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.palette_outlined,
                           color: theme.colorScheme.primary),
-                      title: const Text('Theme'),
+                      title: Text(l10n.theme),
                       subtitle: Text(ThemeController.instance.current.label),
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () async {
@@ -653,8 +650,9 @@ class _DashGridPageState extends State<DashGridPage>
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.language,
                           color: theme.colorScheme.primary),
-                      title: const Text('Language'),
-                      subtitle: Text(LocaleController.instance.current.label),
+                      title: Text(l10n.language),
+                      subtitle: Text(
+                          LocaleController.instance.current.labelOf(l10n)),
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () async {
                         await showLanguageSettingsSheet(context);
@@ -668,9 +666,8 @@ class _DashGridPageState extends State<DashGridPage>
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.graphic_eq,
                           color: theme.colorScheme.primary),
-                      title: const Text('Vario sound settings'),
-                      subtitle: const Text(
-                          'Sound, volume, thresholds, pitch and waveform'),
+                      title: Text(l10n.varioSoundSettings),
+                      subtitle: Text(l10n.varioSoundSettingsSubtitle),
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () => showVarioSoundSettingsSheet(context),
                     ),
@@ -685,9 +682,9 @@ class _DashGridPageState extends State<DashGridPage>
                               Icon(_Icons.grid,
                                   color: theme.colorScheme.primary, size: 20),
                               const SizedBox(width: 10),
-                              const Expanded(child: Text('Grid size')),
+                              Expanded(child: Text(l10n.gridSize)),
                               Text(
-                                '${_gridSize.round()} px',
+                                l10n.gridSizePx(_gridSize.round()),
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.primary,
                                 ),
@@ -699,7 +696,7 @@ class _DashGridPageState extends State<DashGridPage>
                             min: 16.0,
                             max: 120.0,
                             divisions: 26,
-                            label: '${_gridSize.round()} px',
+                            label: l10n.gridSizePx(_gridSize.round()),
                             onChanged: (v) {
                               setState(() => _gridSize = v);
                               setSheetState(() {});
@@ -714,9 +711,9 @@ class _DashGridPageState extends State<DashGridPage>
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.bluetooth,
                           color: theme.colorScheme.primary),
-                      title: const Text('Bluetooth Sensor'),
+                      title: Text(l10n.bluetoothSensor),
                       subtitle:
-                          const Text('Connect an external BLE sensor'),
+                          Text(l10n.bluetoothSensorSubtitle),
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () => showBluetoothSensorSheet(context),
                     ),

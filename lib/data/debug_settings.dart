@@ -18,9 +18,11 @@ class DebugSettings extends ChangeNotifier {
 
   // ── Persistence keys ──────────────────────────────────────────────────────
   static const _kSimulatorEnabled = 'pb.debug.simulatorEnabled';
+  static const _kFakeChinaLocation = 'pb.debug.fakeChinaLocation';
 
   // ── Current values (defaults) ─────────────────────────────────────────────
   bool _simulatorEnabled = false;
+  bool _fakeChinaLocation = false;
 
   /// Whether the simulated flight-data source may run as a fallback feed.
   /// Defaults to `false` (disabled).
@@ -29,6 +31,12 @@ class DebugSettings extends ChangeNotifier {
   /// flight data for real users, regardless of any persisted preference or
   /// runtime toggle. The simulator is a development-only feed.
   bool get simulatorEnabled => kReleaseMode ? false : _simulatorEnabled;
+
+  /// Whether the simulated flight data should originate from a location in
+  /// China (instead of the default European start point). Only meaningful
+  /// while [simulatorEnabled] is true; like the simulator it is a
+  /// development-only feed and is always `false` in release builds.
+  bool get fakeChinaLocation => kReleaseMode ? false : _fakeChinaLocation;
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -48,6 +56,8 @@ class DebugSettings extends ChangeNotifier {
     try {
       final sp = await SharedPreferences.getInstance();
       _simulatorEnabled = sp.getBool(_kSimulatorEnabled) ?? _simulatorEnabled;
+      _fakeChinaLocation =
+          sp.getBool(_kFakeChinaLocation) ?? _fakeChinaLocation;
     } catch (_) {
       // Storage unavailable: keep defaults.
     }
@@ -63,6 +73,19 @@ class DebugSettings extends ChangeNotifier {
     if (_simulatorEnabled == enabled) return;
     _simulatorEnabled = enabled;
     _persistBool(_kSimulatorEnabled, enabled);
+    notifyListeners();
+  }
+
+  /// Enables or disables the "fake China location" for the simulator and
+  /// persists it.
+  ///
+  /// No-op in release builds — like the simulator itself this is a
+  /// development-only feed.
+  void setFakeChinaLocation(bool enabled) {
+    if (kReleaseMode) return;
+    if (_fakeChinaLocation == enabled) return;
+    _fakeChinaLocation = enabled;
+    _persistBool(_kFakeChinaLocation, enabled);
     notifyListeners();
   }
 

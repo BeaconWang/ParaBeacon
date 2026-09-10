@@ -728,6 +728,23 @@ class _DashGridPageState extends State<DashGridPage>
                           setSheetState(() {});
                         },
                       ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        secondary: Icon(Icons.public,
+                            color: theme.colorScheme.primary),
+                        title: const Text('Fake GPS location in China'),
+                        subtitle: const Text(
+                            'Start the simulated flight over China (near Chengdu)'),
+                        value: DebugSettings.instance.fakeChinaLocation,
+                        // Only meaningful while the simulator is running.
+                        onChanged: DebugSettings.instance.simulatorEnabled
+                            ? (on) {
+                                DebugSettings.instance
+                                    .setFakeChinaLocation(on);
+                                setSheetState(() {});
+                              }
+                            : null,
+                      ),
                     ],
                       ],
                     ),

@@ -184,19 +184,54 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   final Duration tickInterval;
   final math.Random _rand = math.Random();
 
+  /// Debug preferences that decide where the synthetic track starts (Europe by
+  /// default, or a location in China when [DebugSettings.fakeChinaLocation]).
+  final DebugSettings _debug;
+
   Timer? _timer;
 
   // Internal simulation targets that values ease toward.
   double _vsTarget = 0.0;
   double _headingTarget = 90.0;
   double _windDirTarget = 270.0;
-  double _lat = 46.5197; // start somewhere plausible (Lausanne)
-  double _lon = 6.6323;
 
-  SimulatedFlightDataSource({this.tickInterval = const Duration(milliseconds: 100)});
+  // Default (European) start point — Lausanne, Switzerland.
+  static const double _defaultLat = 46.5197;
+  static const double _defaultLon = 6.6323;
+
+  // Fake China start point — near Chengdu, Sichuan. Used when the debug
+  // "fake China location" toggle is on so the synthetic flight sits over
+  // Chinese territory (and aligns with the AMap/GCJ-02 tile sources).
+  static const double _chinaLat = 30.6570;
+  static const double _chinaLon = 104.0657;
+
+  double _lat = _defaultLat;
+  double _lon = _defaultLon;
+
+  SimulatedFlightDataSource({
+    this.tickInterval = const Duration(milliseconds: 100),
+    DebugSettings? debugSettings,
+  }) : _debug = debugSettings ?? DebugSettings.instance {
+    _applyStartLocation();
+  }
+
+  /// Positions the initial synthetic coordinates according to the current
+  /// [DebugSettings.fakeChinaLocation] preference.
+  void _applyStartLocation() {
+    if (_debug.fakeChinaLocation) {
+      _lat = _chinaLat;
+      _lon = _chinaLon;
+    } else {
+      _lat = _defaultLat;
+      _lon = _defaultLon;
+    }
+  }
 
   @override
   void start() {
+    // Re-apply the start location each time the simulator (re)starts so
+    // toggling the China switch takes effect on the next run.
+    _applyStartLocation();
     _timer ??= Timer.periodic(tickInterval, (_) => _tick());
   }
 
@@ -316,8 +351,13 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   BluetoothSensorFlightDataSource({DebugSettings? debugSettings})
       : _debug = debugSettings ?? DebugSettings.instance {
     // React to the simulator toggle being flipped at runtime.
+    _lastFakeChinaLocation = _debug.fakeChinaLocation;
     _debug.addListener(_onDebugSettingsChanged);
   }
+
+  /// Last-seen value of [DebugSettings.fakeChinaLocation] so we can detect a
+  /// change and restart the simulator at the new start location.
+  bool _lastFakeChinaLocation = false;
 
   /// A bluetooth-tier feed is considered active while a sensor (real BLE or the
   /// development simulator) is connected and streaming; this makes the raw
@@ -327,7 +367,23 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   bool get _hasBluetoothFeed => _connected;
 
   void _onDebugSettingsChanged() {
-    if (_realSensorActive) return;
+    if (_realSensorActive) {
+      _lastFakeChinaLocation = _debug.fakeChinaLocation;
+      return;
+    }
+    // If the "fake China location" toggle changed while the simulator is
+    // running, recreate the simulator so it starts from the new location.
+    final chinaChanged = _debug.fakeChinaLocation != _lastFakeChinaLocation;
+    _lastFakeChinaLocation = _debug.fakeChinaLocation;
+    if (chinaChanged && _debug.simulatorEnabled) {
+      _sim?.removeListener(_onSim);
+      _sim?.stop();
+      _sim?.dispose();
+      _sim = null;
+      _connected = false;
+      connectSimulated();
+      return;
+    }
     if (_debug.simulatorEnabled) {
       // Turned on: start feeding simulated data if nothing else is.
       connectSimulated();

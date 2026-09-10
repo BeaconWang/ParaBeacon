@@ -441,6 +441,15 @@ class _MapControlState extends State<MapControl> {
               children: [
                 _buildTileLayer(src),
 
+                // "None" basemap: draw a dashed reference grid so the user
+                // still has a sense of scale and orientation on the blank
+                // background. Skipped when an offline basemap is active.
+                if (src.isNone && !_offlineActive)
+                  _DashedGridLayer(
+                    color: theme.colorScheme.onSurface.withAlpha(46),
+                    labelColor: theme.colorScheme.onSurfaceVariant,
+                  ),
+
                 // Airspace polygons (below track/markers so labels stay legible).
                 if (widget.showAirspace)
                   PolygonLayer(polygons: _buildAirspacePolygons()),
@@ -831,6 +840,210 @@ class _MapControlState extends State<MapControl> {
       ),
     );
   }
+}
+
+/// A map layer that paints a dashed reference grid, used as a stand-in for the
+/// basemap when the "None" tile source is selected.
+///
+/// The grid step is chosen as a "nice" ground distance (1-2-5 series in metres)
+/// from the visible span, then converted to latitude/longitude degree steps at
+/// the view centre so that each cell represents the *same ground distance*
+/// horizontally and vertically. Because Web-Mercator is locally conformal
+/// (isotropic scale), equal ground distance projects to equal screen pixels, so
+/// the cells render square. A scale label (bottom-left) states the distance one
+/// cell edge represents. Lines are projected through the live [MapCamera] via
+/// `getOffsetFromOrigin`, so the grid pans, zooms and rotates with the map.
+class _DashedGridLayer extends StatelessWidget {
+  const _DashedGridLayer({required this.color, required this.labelColor});
+
+  final Color color;
+  final Color labelColor;
+
+  /// Picks a "nice" ground distance (metres) from a 1-2-5 series such that the
+  /// visible span is divided into a comfortable number of cells.
+  static double _niceMeters(double spanMeters) {
+    const targetCells = 6;
+    final raw = spanMeters / targetCells;
+    if (raw <= 0) return 0;
+    final mag = math.pow(10, (math.log(raw) / math.ln10).floor()).toDouble();
+    final norm = raw / mag; // 1..10
+    final double stepNorm;
+    if (norm < 1.5) {
+      stepNorm = 1;
+    } else if (norm < 3.5) {
+      stepNorm = 2;
+    } else if (norm < 7.5) {
+      stepNorm = 5;
+    } else {
+      stepNorm = 10;
+    }
+    return stepNorm * mag;
+  }
+
+  /// Formats a metric [meters] distance for the scale label.
+  static String _formatDistance(double meters) {
+    if (meters >= 1000) {
+      final km = meters / 1000.0;
+      final s = km >= 10 ? km.toStringAsFixed(0) : km.toStringAsFixed(1);
+      return '$s km';
+    }
+    if (meters >= 1) {
+      return '${meters.toStringAsFixed(0)} m';
+    }
+    return '${(meters * 100).toStringAsFixed(0)} cm';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final camera = MapCamera.of(context);
+    final bounds = camera.visibleBounds;
+    final centerLat = camera.center.latitude;
+
+    // Ground metres spanned by the visible view (N-S), used to size the step.
+    const metersPerDegLat = 111320.0;
+    final latSpanM = (bounds.north - bounds.south).abs() * metersPerDegLat;
+    final stepMeters = _niceMeters(latSpanM);
+
+    // Degree steps that represent `stepMeters` of ground distance in each
+    // direction at the view centre (equal ground distance => square on screen).
+    final cosLat = math.cos(centerLat * math.pi / 180.0).abs();
+    final latStepDeg = stepMeters / metersPerDegLat;
+    final lonStepDeg =
+        stepMeters / (metersPerDegLat * (cosLat < 1e-6 ? 1e-6 : cosLat));
+
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          MobileLayerTransformer(
+            child: CustomPaint(
+              size: Size.infinite,
+              painter: _DashedGridPainter(
+                camera: camera,
+                color: color,
+                latStepDeg: latStepDeg,
+                lonStepDeg: lonStepDeg,
+              ),
+            ),
+          ),
+          // Scale label: rendered outside the transformer so it stays upright
+          // and screen-fixed regardless of map rotation.
+          Positioned(
+            left: 8,
+            bottom: 34,
+            child: _GridScaleLabel(
+              text: 'Grid ${_formatDistance(stepMeters)}',
+              color: labelColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small upright chip stating the grid cell size (see [_DashedGridLayer]).
+class _GridScaleLabel extends StatelessWidget {
+  const _GridScaleLabel({required this.text, required this.color});
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withAlpha(180),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.grid_4x4, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: theme.textTheme.labelSmall?.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashedGridPainter extends CustomPainter {
+  _DashedGridPainter({
+    required this.camera,
+    required this.color,
+    required this.latStepDeg,
+    required this.lonStepDeg,
+  });
+
+  final MapCamera camera;
+  final Color color;
+  final double latStepDeg;
+  final double lonStepDeg;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bounds = camera.visibleBounds;
+    final south = bounds.south;
+    final north = bounds.north;
+    final west = bounds.west;
+    final east = bounds.east;
+
+    if (latStepDeg <= 0 || lonStepDeg <= 0) return;
+    if ((north - south).abs() <= 0 || (east - west).abs() <= 0) return;
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    // Latitude lines (constant lat, spanning west→east). Projecting both
+    // endpoints and drawing a straight dashed segment keeps the grid correct
+    // even when the map is rotated.
+    final firstLat = (south / latStepDeg).ceil() * latStepDeg;
+    for (double lat = firstLat; lat <= north; lat += latStepDeg) {
+      final a = camera.getOffsetFromOrigin(LatLng(lat, west));
+      final b = camera.getOffsetFromOrigin(LatLng(lat, east));
+      _drawDashedLine(canvas, a, b, paint);
+    }
+
+    // Longitude lines (constant lon, spanning south→north).
+    final firstLon = (west / lonStepDeg).ceil() * lonStepDeg;
+    for (double lon = firstLon; lon <= east; lon += lonStepDeg) {
+      final a = camera.getOffsetFromOrigin(LatLng(south, lon));
+      final b = camera.getOffsetFromOrigin(LatLng(north, lon));
+      _drawDashedLine(canvas, a, b, paint);
+    }
+  }
+
+  /// Draws a dashed line from [a] to [b] using a fixed dash/gap pattern.
+  void _drawDashedLine(Canvas canvas, Offset a, Offset b, Paint paint) {
+    const dash = 6.0;
+    const gap = 5.0;
+    final total = (b - a).distance;
+    if (total <= 0) return;
+    final dir = (b - a) / total;
+    double drawn = 0.0;
+    while (drawn < total) {
+      final start = a + dir * drawn;
+      final end = a + dir * math.min(drawn + dash, total);
+      canvas.drawLine(start, end, paint);
+      drawn += dash + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedGridPainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.latStepDeg != latStepDeg ||
+      oldDelegate.lonStepDeg != lonStepDeg ||
+      oldDelegate.camera.center != camera.center ||
+      oldDelegate.camera.zoom != camera.zoom ||
+      oldDelegate.camera.rotation != camera.rotation;
 }
 
 /// Absorbs horizontal drag gestures so panning the map does not bubble up to a

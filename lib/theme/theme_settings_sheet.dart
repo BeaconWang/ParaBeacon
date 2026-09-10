@@ -65,7 +65,7 @@ class _ThemeSettingsSheetState extends State<_ThemeSettingsSheet> {
                 Icon(Icons.palette_outlined, color: theme.colorScheme.primary),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Theme / 主题',
+                  child: Text('Theme',
                       style: theme.textTheme.titleLarge),
                 ),
               ],
@@ -75,12 +75,12 @@ class _ThemeSettingsSheetState extends State<_ThemeSettingsSheet> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  _section('Dark themes / 暗色主题',
+                  _section('Dark themes',
                       grouped[AppThemeGroup.dark]!),
-                  _section('Light themes / 亮色主题',
+                  _section('Light themes',
                       grouped[AppThemeGroup.light]!),
                   _section(
-                      'High contrast / 高对比度（WCAG AAA）',
+                      'High contrast (WCAG AAA)',
                       grouped[AppThemeGroup.highContrast]!),
                   const SizedBox(height: 8),
                   Container(
@@ -92,9 +92,11 @@ class _ThemeSettingsSheetState extends State<_ThemeSettingsSheet> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '切换后立即生效，无需重启。配色会持久化到本地。\n'
-                      '高对比度主题：纯黑/纯白底 + 高饱和高亮，'
-                      '适合强阳光下飞行、视力疲劳、年长用户。',
+                      'Changes apply instantly, no restart needed. Your '
+                      'choice is saved on this device.\n'
+                      'High-contrast themes: pure black/white backgrounds with '
+                      'high-saturation accents — ideal for bright sunlight, '
+                      'eye strain, and older users.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         height: 1.4,

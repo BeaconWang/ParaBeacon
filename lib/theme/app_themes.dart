@@ -79,29 +79,29 @@ enum AppThemeId {
   String get description {
     switch (this) {
       case AppThemeId.darkCyan:
-        return '深底 + 青色高亮（经典默认）';
+        return 'Dark base + cyan accents (classic default)';
       case AppThemeId.darkSlate:
-        return '商务深灰 + 蓝紫高亮';
+        return 'Business dark grey + blue-violet accents';
       case AppThemeId.darkAmber:
-        return '驾驶舱琥珀色，长时间夜飞不刺眼';
+        return 'Cockpit amber, easy on the eyes for long night flights';
       case AppThemeId.darkForest:
-        return '墨绿森林 + 金黄日光';
+        return 'Deep forest green + golden sunlight';
       case AppThemeId.darkOcean:
-        return '深海蓝紫 + 青绿珊瑚色';
+        return 'Deep ocean blue-violet + teal coral';
       case AppThemeId.lightSky:
-        return '阳光下高对比，白天飞行首选';
+        return 'High contrast in sunlight, best for daytime flying';
       case AppThemeId.lightSand:
-        return '暖色米底，长时间使用不疲劳';
+        return 'Warm sand base, comfortable for extended use';
       case AppThemeId.lightMint:
-        return '清新薄荷绿，视觉舒适';
+        return 'Fresh mint green, easy on the eyes';
       case AppThemeId.lightPaper:
-        return '航图纸张风格，怀旧 VFR';
+        return 'Aeronautical chart paper style, nostalgic VFR';
       case AppThemeId.lightLavender:
-        return '淡薰衣草 + 深紫，柔和不刺眼';
+        return 'Soft lavender + deep purple, gentle on the eyes';
       case AppThemeId.darkContrast:
-        return '纯黑 + 高饱和黄（WCAG AAA）';
+        return 'Pure black + high-saturation yellow (WCAG AAA)';
       case AppThemeId.lightContrast:
-        return '纯白 + 纯黑 + 深蓝（WCAG AAA）';
+        return 'Pure white + black + deep blue (WCAG AAA)';
     }
   }
 

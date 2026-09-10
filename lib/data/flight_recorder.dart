@@ -71,9 +71,28 @@ class FlightTrack {
   final DateTime startTime;
   DateTime? endTime;
 
+  /// Optional post-flight metadata (set from the Flights sheet, persisted with
+  /// the track and included in exports / share cards).
+  ///
+  /// Equipment names used for this flight (free text). Any of these may be
+  /// null / empty when the pilot hasn't recorded them.
+  String? gliderName;
+  String? harnessName;
+  String? helmetName;
+
+  /// Reverse-geocoded place names for the launch and landing, when resolved.
+  String? takeoffSite;
+  String? landingSite;
+
   /// All recorded samples (full snapshots), in chronological order. Empty for
   /// tracks restored from a persisted summary.
   final List<FlightSample> samples = [];
+
+  /// Whether any equipment field has been recorded.
+  bool get hasEquipment =>
+      (gliderName?.isNotEmpty ?? false) ||
+      (harnessName?.isNotEmpty ?? false) ||
+      (helmetName?.isNotEmpty ?? false);
 
   // ── Incrementally-maintained statistics ────────────────────────────────────
   double _distanceM = 0.0;
@@ -155,7 +174,22 @@ class FlightTrack {
       'maxClimb': _maxClimb,
       'maxSink': _maxSink,
       'pointCount': pointCount,
+      // Optional post-flight metadata (omitted when unset to keep payloads lean).
+      if (gliderName?.isNotEmpty ?? false) 'gliderName': gliderName,
+      if (harnessName?.isNotEmpty ?? false) 'harnessName': harnessName,
+      if (helmetName?.isNotEmpty ?? false) 'helmetName': helmetName,
+      if (takeoffSite?.isNotEmpty ?? false) 'takeoffSite': takeoffSite,
+      if (landingSite?.isNotEmpty ?? false) 'landingSite': landingSite,
     };
+  }
+
+  /// Copies the optional metadata fields out of a persisted [json] map.
+  void _restoreMeta(Map<String, dynamic> json) {
+    gliderName = json['gliderName'] as String?;
+    harnessName = json['harnessName'] as String?;
+    helmetName = json['helmetName'] as String?;
+    takeoffSite = json['takeoffSite'] as String?;
+    landingSite = json['landingSite'] as String?;
   }
 
   /// Inverse of [toSummaryJson]. Returns null if the payload is malformed
@@ -174,7 +208,7 @@ class FlightTrack {
       maxClimb: (json['maxClimb'] as num?)?.toDouble() ?? 0.0,
       maxSink: (json['maxSink'] as num?)?.toDouble() ?? 0.0,
       pointCount: (json['pointCount'] as num?)?.toInt() ?? 0,
-    );
+    ).._restoreMeta(json);
   }
 
   /// Serializes the full track — summary statistics *and* every per-sample
@@ -219,6 +253,7 @@ class FlightTrack {
 
     track.endTime = DateTime.tryParse(json['endTime'] as String? ?? '') ??
         track.samples.last.time;
+    track._restoreMeta(json);
     return track;
   }
 
@@ -335,6 +370,15 @@ class FlightRecorder extends ChangeNotifier {
     _tracks.addAll(tracks);
     _tracks.sort((a, b) => b.startTime.compareTo(a.startTime));
     _lastCompleted = _tracks.isNotEmpty ? _tracks.first : null;
+    FlightStore.instance.save(_tracks);
+    notifyListeners();
+  }
+
+  /// Persists in-place edits to a logged [track]'s optional metadata (equipment
+  /// names, reverse-geocoded site names) and notifies listeners. No-op if the
+  /// track isn't in the log.
+  void persistTrackMeta(FlightTrack track) {
+    if (!_tracks.contains(track)) return;
     FlightStore.instance.save(_tracks);
     notifyListeners();
   }

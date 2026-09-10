@@ -2,11 +2,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../data/equipment_store.dart';
 import '../data/flight_derived_stats.dart';
 import '../data/flight_export_service.dart';
 import '../data/flight_library_io.dart';
 import '../data/flight_recorder.dart';
 import '../data/flight_report_service.dart';
+import '../data/flight_share_card_service.dart';
+import '../data/geo_name_settings.dart';
+import '../data/reverse_geocoder_service.dart';
 import 'flight_replay_sheet.dart';
 import 'track_3d_sheet.dart';
 
@@ -37,6 +41,9 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   void initState() {
     super.initState();
     _recorder.addListener(_onChanged);
+    // Prime the equipment defaults and geo settings for the editors/actions.
+    EquipmentStore.instance.load();
+    GeoNameSettings.instance.load();
   }
 
   @override
@@ -92,6 +99,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                     tooltip: 'Clear all',
                     onPressed: _confirmClearAll,
                   ),
+                IconButton(
+                  icon: const Icon(Icons.travel_explore),
+                  tooltip: 'Place-name lookup settings',
+                  onPressed: _openGeoSettings,
+                ),
                 IconButton(
                   icon: const Icon(Icons.close),
                   tooltip: 'Close',
@@ -185,6 +197,181 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
   void _replay3D(FlightTrack track) {
     showTrack3DSheet(context, track);
+  }
+
+  // ── Share card ─────────────────────────────────────────────────────────
+
+  Future<void> _saveShareCard(FlightTrack track) async {
+    try {
+      final saved =
+          await FlightShareCardService.instance.saveToGallery(track);
+      _snack(saved
+          ? 'Share card saved to gallery'
+          : 'Saved to a file and opened the share sheet');
+    } catch (e) {
+      _snack('Share card failed: $e');
+    }
+  }
+
+  // ── Reverse-geocoded site names ──────────────────────────────────────────
+
+  Future<void> _resolveSites(FlightTrack track) async {
+    await GeoNameSettings.instance.load();
+    if (!GeoNameSettings.instance.isConfigured) {
+      _snack('Set an AMap key in place-name settings first.');
+      return;
+    }
+    final fixes = track.samples.where((s) => s.data.hasFix).toList();
+    if (fixes.length < 2) {
+      _snack('This flight has no track points to locate.');
+      return;
+    }
+    _snack('Looking up site names…');
+    try {
+      final takeoff = await ReverseGeocoderService.instance
+          .tryLookup(fixes.first.data.latitude, fixes.first.data.longitude);
+      final landing = await ReverseGeocoderService.instance
+          .tryLookup(fixes.last.data.latitude, fixes.last.data.longitude);
+      if (takeoff != null) track.takeoffSite = takeoff;
+      if (landing != null) track.landingSite = landing;
+      _recorder.persistTrackMeta(track);
+      _snack(takeoff == null && landing == null
+          ? 'No place names found for these coordinates.'
+          : 'Site names updated.');
+    } catch (e) {
+      _snack('Lookup failed: $e');
+    }
+  }
+
+  // ── Equipment editor ─────────────────────────────────────────────────────
+
+  Future<void> _editEquipment(FlightTrack track) async {
+    await EquipmentStore.instance.load();
+    if (!mounted) return;
+    final glider = TextEditingController(
+        text: track.gliderName ?? EquipmentStore.instance.glider ?? '');
+    final harness = TextEditingController(
+        text: track.harnessName ?? EquipmentStore.instance.harness ?? '');
+    final helmet = TextEditingController(
+        text: track.helmetName ?? EquipmentStore.instance.helmet ?? '');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Equipment'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: glider,
+                decoration: const InputDecoration(labelText: 'Glider'),
+                textCapitalization: TextCapitalization.words,
+              ),
+              TextField(
+                controller: harness,
+                decoration: const InputDecoration(labelText: 'Harness'),
+                textCapitalization: TextCapitalization.words,
+              ),
+              TextField(
+                controller: helmet,
+                decoration: const InputDecoration(labelText: 'Helmet'),
+                textCapitalization: TextCapitalization.words,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved != true) return;
+    String? norm(TextEditingController c) {
+      final t = c.text.trim();
+      return t.isEmpty ? null : t;
+    }
+
+    track.gliderName = norm(glider);
+    track.harnessName = norm(harness);
+    track.helmetName = norm(helmet);
+    _recorder.persistTrackMeta(track);
+    // Remember as defaults for the next flight.
+    await EquipmentStore.instance.remember(
+      glider: track.gliderName,
+      harness: track.harnessName,
+      helmet: track.helmetName,
+    );
+  }
+
+  // ── Place-name (reverse geocoding) settings ──────────────────────────────
+
+  Future<void> _openGeoSettings() async {
+    await GeoNameSettings.instance.load();
+    if (!mounted) return;
+    final settings = GeoNameSettings.instance;
+    final keyCtrl = TextEditingController(text: settings.amapKey ?? '');
+    var auto = settings.autoLookup;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setInner) => AlertDialog(
+          title: const Text('Place-name lookup'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Reverse-geocode takeoff/landing coordinates to place names '
+                  'using the AMap (AutoNavi) web service. Requests only ever go '
+                  'to restapi.amap.com.',
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: keyCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'AMap web-service key',
+                  ),
+                  obscureText: true,
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Auto-lookup after each flight'),
+                  value: auto,
+                  onChanged: (v) => setInner(() => auto = v),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved != true) return;
+    final key = keyCtrl.text.trim();
+    await settings.setAmapKey(key.isEmpty ? null : key);
+    await settings.setAutoLookup(auto);
+    _snack('Place-name settings saved.');
   }
 
   // ── Per-flight export ──────────────────────────────────────────────────
@@ -289,11 +476,46 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                       _detailRow('Max sink',
                           '${track.maxSink.toStringAsFixed(1)} m/s'),
                       _detailRow('Samples', '${track.pointCount}'),
+                      if ((track.takeoffSite?.isNotEmpty ?? false) ||
+                          (track.landingSite?.isNotEmpty ?? false)) ...[
+                        _detailRow('Takeoff', track.takeoffSite ?? '—'),
+                        _detailRow('Landing', track.landingSite ?? '—'),
+                      ],
+                      if (track.hasEquipment) ...[
+                        const SizedBox(height: 8),
+                        _sectionLabel(theme, 'Equipment'),
+                        if (track.gliderName?.isNotEmpty ?? false)
+                          _detailRow('Glider', track.gliderName!),
+                        if (track.harnessName?.isNotEmpty ?? false)
+                          _detailRow('Harness', track.harnessName!),
+                        if (track.helmetName?.isNotEmpty ?? false)
+                          _detailRow('Helmet', track.helmetName!),
+                      ],
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () async {
+                            await _editEquipment(track);
+                            setDialogState(() {});
+                          },
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: Text(track.hasEquipment
+                              ? 'Edit equipment'
+                              : 'Add equipment'),
+                        ),
+                      ),
                       if (track.hasSamples) ...[
                         const SizedBox(height: 8),
                         _sectionLabel(theme, 'Performance'),
                         _detailRow('Straight distance',
                             '${(stats.straightDistanceM / 1000).toStringAsFixed(2)} km'),
+                        _detailRow('XC distance',
+                            '${(stats.xcDistanceM / 1000).toStringAsFixed(2)} km'),
+                        if (stats.faiTriangleM > 0)
+                          _detailRow(
+                              'FAI triangle',
+                              '${(stats.faiTriangleM / 1000).toStringAsFixed(2)} km'
+                              '${stats.faiClosed ? ' (closed)' : ''}'),
                         _detailRow('Max from start',
                             '${(stats.maxDistanceFromStartM / 1000).toStringAsFixed(2)} km'),
                         _detailRow('Avg ground speed',
@@ -355,6 +577,19 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                               },
                               icon: const Icon(Icons.threed_rotation, size: 18),
                               label: const Text('3D'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () => _saveShareCard(track),
+                              icon: const Icon(Icons.image_outlined, size: 18),
+                              label: const Text('Share card'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () async {
+                                await _resolveSites(track);
+                                setDialogState(() {});
+                              },
+                              icon: const Icon(Icons.place_outlined, size: 18),
+                              label: const Text('Site names'),
                             ),
                           ],
                         ),

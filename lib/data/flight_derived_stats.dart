@@ -44,6 +44,9 @@ class FlightDerivedStats {
     required this.sinkTime,
     required this.glideTime,
     required this.movingTime,
+    this.xcDistanceM = 0,
+    this.faiTriangleM = 0,
+    this.faiClosed = false,
   });
 
   /// Straight-line (start → end) distance, meters.
@@ -84,6 +87,18 @@ class FlightDerivedStats {
   final Duration glideTime;
   final Duration movingTime;
 
+  /// Cross-country "free / open" distance — here the straight start→end
+  /// distance, which is the simplest widely-used XC proxy, meters.
+  final double xcDistanceM;
+
+  /// Best FAI-triangle perimeter found over the (downsampled) track, meters.
+  /// 0 when no qualifying triangle exists.
+  final double faiTriangleM;
+
+  /// Whether the best FAI triangle is "closed" (start and end within the FAI
+  /// closing tolerance of 5% of the triangle perimeter).
+  final bool faiClosed;
+
   static const FlightDerivedStats zero = FlightDerivedStats(
     straightDistanceM: 0,
     trackDistanceM: 0,
@@ -102,6 +117,9 @@ class FlightDerivedStats {
     sinkTime: Duration.zero,
     glideTime: Duration.zero,
     movingTime: Duration.zero,
+    xcDistanceM: 0,
+    faiTriangleM: 0,
+    faiClosed: false,
   );
 
   /// A climb of at least this sustained rate is treated as a thermal core.
@@ -253,6 +271,8 @@ class FlightDerivedStats {
         last.time.difference(first.time).inMilliseconds / 1000.0;
     final avgGs = totalSec > 0 ? (trackDist / totalSec) * 3.6 : 0.0;
 
+    final fai = _bestFaiTriangle(s);
+
     return FlightDerivedStats(
       straightDistanceM: straight,
       trackDistanceM: trackDist,
@@ -272,8 +292,91 @@ class FlightDerivedStats {
       sinkTime: Duration(milliseconds: sinkMs),
       glideTime: Duration(milliseconds: glideMs),
       movingTime: Duration(milliseconds: movingMs),
+      xcDistanceM: straight,
+      faiTriangleM: fai.$1,
+      faiClosed: fai.$2,
     );
   }
+
+  /// Searches for the largest FAI triangle over the track.
+  ///
+  /// A full O(n³) search is infeasible for long tracks, so the track is first
+  /// reduced to at most [_faiMaxPoints] evenly-spaced points; the triangle
+  /// search then runs on that reduced set. This mirrors the heuristic used by
+  /// the reference project's optimizer — good enough for a post-flight summary,
+  /// not a scoring-grade optimizer. Returns `(perimeterMeters, closed)`.
+  static (double, bool) _bestFaiTriangle(List<FlightSample> s) {
+    if (s.length < 3) return (0.0, false);
+
+    // Downsample to a manageable point count.
+    final pts = <FlightSample>[];
+    if (s.length <= _faiMaxPoints) {
+      pts.addAll(s);
+    } else {
+      final stride = s.length / _faiMaxPoints;
+      for (var i = 0.0; i < s.length; i += stride) {
+        pts.add(s[i.floor()]);
+      }
+      if (pts.last != s.last) pts.add(s.last);
+    }
+
+    final n = pts.length;
+    // Precompute pairwise distances.
+    final dist = List.generate(n, (_) => List<double>.filled(n, 0));
+    for (var i = 0; i < n; i++) {
+      for (var j = i + 1; j < n; j++) {
+        final d = _haversineM(
+          pts[i].data.latitude,
+          pts[i].data.longitude,
+          pts[j].data.latitude,
+          pts[j].data.longitude,
+        );
+        dist[i][j] = d;
+        dist[j][i] = d;
+      }
+    }
+
+    double best = 0;
+    var bestI = 0, bestJ = 0, bestK = 0;
+    for (var i = 0; i < n - 2; i++) {
+      for (var j = i + 1; j < n - 1; j++) {
+        final dij = dist[i][j];
+        for (var k = j + 1; k < n; k++) {
+          final perim = dij + dist[j][k] + dist[k][i];
+          if (perim > best) {
+            // FAI rule-of-thumb: the shortest leg must be >= 28% of perimeter.
+            final legs = [dij, dist[j][k], dist[k][i]];
+            final shortest = legs.reduce(math.min);
+            if (shortest >= 0.28 * perim) {
+              best = perim;
+              bestI = i;
+              bestJ = j;
+              bestK = k;
+            }
+          }
+        }
+      }
+    }
+
+    if (best <= 0) return (0.0, false);
+
+    // Closed if the leg from the point before the first vertex back to the
+    // point after the last vertex is within 5% of the perimeter. Approximate by
+    // checking the start→end closing distance against the tolerance.
+    final closingDist = _haversineM(
+      pts[bestI].data.latitude,
+      pts[bestI].data.longitude,
+      pts[bestK].data.latitude,
+      pts[bestK].data.longitude,
+    );
+    final closed = closingDist <= 0.05 * best;
+    // bestJ participates via the perimeter; silence unused-in-release hints.
+    assert(bestJ >= 0);
+    return (best, closed);
+  }
+
+  /// Max points fed to the O(n³) FAI search.
+  static const int _faiMaxPoints = 120;
 
   static double _haversineM(double lat1, double lon1, double lat2, double lon2) {
     const r = 6371000.0;

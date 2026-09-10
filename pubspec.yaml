@@ -104,6 +104,14 @@ dependencies:
   crypto: ^3.0.5
   file_picker: ^8.1.4
 
+  # Save a rendered PNG "share card" to the device photo gallery.
+  gal: ^2.3.0
+
+  # Reverse-geocode takeoff/landing coordinates to place names via the AMap
+  # (AutoNavi) web service. Only ever calls the fixed external host
+  # `restapi.amap.com`; no internal-network requests are made.
+  http: ^1.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

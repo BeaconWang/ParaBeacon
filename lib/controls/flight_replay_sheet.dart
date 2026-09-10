@@ -31,6 +31,9 @@ Future<void> showFlightReplaySheet(BuildContext context, FlightTrack track) {
   );
 }
 
+/// How the replay track (and its profile chart) is colored.
+enum TrackColorMode { vario, speed, altitude }
+
 class _FlightReplaySheet extends StatefulWidget {
   const _FlightReplaySheet({required this.track});
 
@@ -65,6 +68,12 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   double _speed = 1.0;
   bool _audioSync = false;
 
+  /// Active track-coloring mode (affects the map polyline and profile chart).
+  TrackColorMode _colorMode = TrackColorMode.vario;
+
+  // Track-wide extrema for the speed/altitude color ramps (computed once).
+  double _minAlt = 0, _maxAlt = 0, _minSpd = 0, _maxSpd = 0;
+
   /// The samples we replay, captured once so the list can't change under us.
   late final List<FlightSample> _samples;
 
@@ -75,7 +84,28 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     final first = _samples.isNotEmpty ? _samples.first.time : DateTime.now();
     final last = _samples.isNotEmpty ? _samples.last.time : first;
     _spanMs = math.max(1.0, last.difference(first).inMilliseconds.toDouble());
+    _computeExtrema();
     _ticker = createTicker(_onTick);
+  }
+
+  void _computeExtrema() {
+    if (_samples.isEmpty) return;
+    _minAlt = double.infinity;
+    _maxAlt = double.negativeInfinity;
+    _minSpd = double.infinity;
+    _maxSpd = double.negativeInfinity;
+    for (final s in _samples) {
+      final a = s.data.altitude;
+      final sp = s.data.groundSpeed;
+      if (a < _minAlt) _minAlt = a;
+      if (a > _maxAlt) _maxAlt = a;
+      if (sp < _minSpd) _minSpd = sp;
+      if (sp > _maxSpd) _maxSpd = sp;
+    }
+    if (!_minAlt.isFinite) _minAlt = 0;
+    if (!_maxAlt.isFinite) _maxAlt = 0;
+    if (!_minSpd.isFinite) _minSpd = 0;
+    if (!_maxSpd.isFinite) _maxSpd = 0;
   }
 
   @override
@@ -246,6 +276,26 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                 Expanded(
                   child: Text('Replay', style: theme.textTheme.titleLarge),
                 ),
+                PopupMenuButton<TrackColorMode>(
+                  icon: const Icon(Icons.palette_outlined),
+                  tooltip: 'Color by',
+                  initialValue: _colorMode,
+                  onSelected: (m) => setState(() => _colorMode = m),
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: TrackColorMode.vario,
+                      child: Text('Color: Vario'),
+                    ),
+                    PopupMenuItem(
+                      value: TrackColorMode.speed,
+                      child: Text('Color: Speed'),
+                    ),
+                    PopupMenuItem(
+                      value: TrackColorMode.altitude,
+                      child: Text('Color: Altitude'),
+                    ),
+                  ],
+                ),
                 IconButton(
                   icon: const Icon(Icons.close),
                   tooltip: 'Close',
@@ -312,6 +362,21 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
             ),
           ),
           const Divider(height: 1),
+          if (_samples.length >= 2)
+            _AltitudeProfile(
+              samples: _samples,
+              cursorIndex: _currentIndex(),
+              minAlt: _minAlt,
+              maxAlt: _maxAlt,
+              lineColor: theme.colorScheme.primary,
+              fillColor: theme.colorScheme.primary.withAlpha(40),
+              cursorColor: theme.colorScheme.secondary,
+              gridColor: theme.colorScheme.onSurface.withAlpha(24),
+              onSeek: (fraction) {
+                if (_playing) _pause();
+                _setCursor(fraction * _spanMs);
+              },
+            ),
           _buildControls(theme),
         ],
       ),
@@ -438,11 +503,10 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
     LatLng at(int i) => _shift(
         LatLng(_samples[i].data.latitude, _samples[i].data.longitude));
-    double vario(int i) => _samples[i].data.verticalSpeed;
 
     final out = <Polyline>[];
     int runStart = 0;
-    Color runColor = _varioColor(vario(1), dimmed: 1 > curIdx);
+    Color runColor = _segmentColor(1, dimmed: 1 > curIdx);
 
     void flush(int endExclusive) {
       if (endExclusive - runStart < 2) return;
@@ -454,7 +518,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     }
 
     for (int i = 2; i < _samples.length; i++) {
-      final c = _varioColor(vario(i), dimmed: i > curIdx);
+      final c = _segmentColor(i, dimmed: i > curIdx);
       if (c != runColor) {
         flush(i);
         runStart = i - 1; // share the endpoint for visual continuity
@@ -463,6 +527,26 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     }
     flush(_samples.length);
     return out;
+  }
+
+  /// Color for track segment ending at sample [i] under the active color mode.
+  Color _segmentColor(int i, {required bool dimmed}) {
+    final d = _samples[i].data;
+    switch (_colorMode) {
+      case TrackColorMode.vario:
+        return _varioColor(d.verticalSpeed, dimmed: dimmed);
+      case TrackColorMode.speed:
+        return _rampColor(d.groundSpeed, _minSpd, _maxSpd, dimmed: dimmed);
+      case TrackColorMode.altitude:
+        return _rampColor(d.altitude, _minAlt, _maxAlt, dimmed: dimmed);
+    }
+  }
+
+  /// Blue→red ramp across [min]..[max]; used for the speed & altitude modes.
+  Color _rampColor(double v, double min, double max, {required bool dimmed}) {
+    final t = (max - min) > 1e-6 ? ((v - min) / (max - min)).clamp(0.0, 1.0) : 0.5;
+    final c = Color.lerp(const Color(0xFF3B82F6), const Color(0xFFFF3B30), t)!;
+    return dimmed ? c.withAlpha(60) : c;
   }
 
   /// 7-level vario colour ramp (matches [MapControl]); [dimmed] fades the
@@ -513,5 +597,171 @@ class _CursorMarker extends StatelessWidget {
         Shadow(color: Colors.black54, blurRadius: 3, offset: Offset(0, 1)),
       ]),
     );
+  }
+}
+
+/// A compact altitude-vs-time profile strip shown under the map. Tapping or
+/// dragging seeks the replay cursor to that point in the flight.
+class _AltitudeProfile extends StatelessWidget {
+  const _AltitudeProfile({
+    required this.samples,
+    required this.cursorIndex,
+    required this.minAlt,
+    required this.maxAlt,
+    required this.lineColor,
+    required this.fillColor,
+    required this.cursorColor,
+    required this.gridColor,
+    required this.onSeek,
+  });
+
+  final List<FlightSample> samples;
+  final int cursorIndex;
+  final double minAlt;
+  final double maxAlt;
+  final Color lineColor;
+  final Color fillColor;
+  final Color cursorColor;
+  final Color gridColor;
+
+  /// Called with a 0..1 fraction of the flight when the user taps/drags.
+  final void Function(double fraction) onSeek;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 72,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          void seek(Offset local) {
+            final f = (local.dx / constraints.maxWidth).clamp(0.0, 1.0);
+            onSeek(f);
+          }
+
+          return GestureDetector(
+            onTapDown: (d) => seek(d.localPosition),
+            onHorizontalDragUpdate: (d) => seek(d.localPosition),
+            child: CustomPaint(
+              size: Size.infinite,
+              painter: _AltitudeProfilePainter(
+                samples: samples,
+                cursorIndex: cursorIndex,
+                minAlt: minAlt,
+                maxAlt: maxAlt,
+                lineColor: lineColor,
+                fillColor: fillColor,
+                cursorColor: cursorColor,
+                gridColor: gridColor,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AltitudeProfilePainter extends CustomPainter {
+  _AltitudeProfilePainter({
+    required this.samples,
+    required this.cursorIndex,
+    required this.minAlt,
+    required this.maxAlt,
+    required this.lineColor,
+    required this.fillColor,
+    required this.cursorColor,
+    required this.gridColor,
+  });
+
+  final List<FlightSample> samples;
+  final int cursorIndex;
+  final double minAlt;
+  final double maxAlt;
+  final Color lineColor;
+  final Color fillColor;
+  final Color cursorColor;
+  final Color gridColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (samples.length < 2) return;
+    const padTop = 6.0;
+    const padBottom = 6.0;
+    final h = size.height - padTop - padBottom;
+    final span = (maxAlt - minAlt).abs() < 1e-6 ? 1.0 : (maxAlt - minAlt);
+
+    // Time span for the X axis.
+    final t0 = samples.first.time;
+    final totalMs = math
+        .max(1, samples.last.time.difference(t0).inMilliseconds)
+        .toDouble();
+
+    Offset pt(int i) {
+      final relMs =
+          samples[i].time.difference(t0).inMilliseconds.toDouble();
+      final x = (relMs / totalMs) * size.width;
+      final norm = (samples[i].data.altitude - minAlt) / span;
+      final y = padTop + h * (1.0 - norm.clamp(0.0, 1.0));
+      return Offset(x, y);
+    }
+
+    // Grid baseline.
+    final grid = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1;
+    canvas.drawLine(
+      Offset(0, padTop + h),
+      Offset(size.width, padTop + h),
+      grid,
+    );
+
+    // Filled area under the curve.
+    final area = Path()..moveTo(0, padTop + h);
+    for (var i = 0; i < samples.length; i++) {
+      final p = pt(i);
+      area.lineTo(p.dx, p.dy);
+    }
+    area.lineTo(size.width, padTop + h);
+    area.close();
+    canvas.drawPath(area, Paint()..color = fillColor);
+
+    // The altitude line.
+    final line = Path();
+    for (var i = 0; i < samples.length; i++) {
+      final p = pt(i);
+      if (i == 0) {
+        line.moveTo(p.dx, p.dy);
+      } else {
+        line.lineTo(p.dx, p.dy);
+      }
+    }
+    canvas.drawPath(
+      line,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = lineColor,
+    );
+
+    // Cursor.
+    final ci = cursorIndex.clamp(0, samples.length - 1);
+    final c = pt(ci);
+    canvas.drawLine(
+      Offset(c.dx, padTop),
+      Offset(c.dx, padTop + h),
+      Paint()
+        ..color = cursorColor
+        ..strokeWidth = 1.5,
+    );
+    canvas.drawCircle(c, 3.5, Paint()..color = cursorColor);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AltitudeProfilePainter old) {
+    return old.samples != samples ||
+        old.cursorIndex != cursorIndex ||
+        old.minAlt != minAlt ||
+        old.maxAlt != maxAlt ||
+        old.lineColor != lineColor;
   }
 }

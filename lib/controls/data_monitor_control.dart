@@ -39,6 +39,14 @@ class DataMonitorControl extends StatelessWidget {
       _Row('Heart rate', d.heartRate != null ? '${d.heartRate}' : '—',
           unit: 'bpm'),
       _Row('Timestamp', _fmtTime(d.timestamp)),
+
+      // ── Derived (computed from the fields above, no extra sensors) ────────
+      _Section('Derived'),
+      _Row('Glide ratio', _glideRatio(d)),
+      _Row('Heading', _cardinal8(d.heading)),
+      _Row('Wind dir', _cardinal8(d.windDirection)),
+      _Row('Baro−GPS Δ', _altitudeDelta(d), unit: 'm'),
+      _Row('Total energy', _totalEnergyAltitude(d), unit: 'm'),
     ];
 
     return Column(
@@ -91,6 +99,21 @@ class DataMonitorControl extends StatelessWidget {
   }
 
   Widget _buildRow(ThemeData theme, _Row row, int index) {
+    // Section headers render as a compact, emphasized label spanning the row.
+    if (row is _Section) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(4, 6, 4, 2),
+        child: Text(
+          row.label.toUpperCase(),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+            fontSize: 9,
+          ),
+        ),
+      );
+    }
     final bg = index.isEven
         ? Colors.transparent
         : theme.colorScheme.surfaceContainerHighest.withAlpha(80);
@@ -135,6 +158,48 @@ class DataMonitorControl extends StatelessWidget {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${two(t.hour)}:${two(t.minute)}:${two(t.second)}';
   }
+
+  /// Instantaneous glide ratio (L/D): horizontal speed / sink rate. Only
+  /// meaningful while sinking; climbs / near-level flight and no-fix render "—".
+  /// Matches the logic used by the standalone glide-ratio control.
+  static String _glideRatio(FlightData d) {
+    final vsMs = d.verticalSpeed; // m/s (+climb / -sink)
+    final gsMs = d.groundSpeed / 3.6; // km/h -> m/s
+    if (!d.hasFix || vsMs.isNaN || gsMs.isNaN || vsMs >= -0.1) return '—';
+    final ratio = gsMs / -vsMs;
+    if (!ratio.isFinite || ratio <= 0) return '—';
+    if (ratio >= 100) return '99+';
+    return ratio.toStringAsFixed(1);
+  }
+
+  /// Difference between the barometric and GPS altitudes, in meters. Requires
+  /// both to be present, otherwise "—".
+  static String _altitudeDelta(FlightData d) {
+    final baro = d.baroAltitude;
+    final gps = d.gpsAltitude;
+    if (baro == null || gps == null) return '—';
+    final delta = baro - gps;
+    final sign = delta >= 0 ? '+' : '';
+    return '$sign${delta.toStringAsFixed(1)}';
+  }
+
+  /// Total-energy altitude: the altitude plus the kinetic-energy equivalent
+  /// height (v² / 2g) from the ground speed. Gives a speed-compensated height
+  /// that is less sensitive to pull-ups/dives.
+  static String _totalEnergyAltitude(FlightData d) {
+    final vMs = d.groundSpeed / 3.6; // km/h -> m/s
+    const g = 9.80665;
+    final te = d.altitude + (vMs * vMs) / (2 * g);
+    return te.toStringAsFixed(1);
+  }
+
+  /// 8-point compass label for a bearing in degrees.
+  static String _cardinal8(double degrees) {
+    const labels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    final normalized = ((degrees % 360) + 360) % 360;
+    final index = ((normalized / 45.0).round()) % 8;
+    return labels[index];
+  }
 }
 
 /// One displayed key/value line.
@@ -145,4 +210,9 @@ class _Row {
   final bool highlight;
 
   _Row(this.label, this.value, {this.unit, this.highlight = false});
+}
+
+/// A full-width section header inside the monitor list (no value column).
+class _Section extends _Row {
+  _Section(String label) : super(label, '');
 }

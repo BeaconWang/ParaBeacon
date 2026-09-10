@@ -84,8 +84,8 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
 
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.8,
-      minChildSize: 0.5,
+      initialChildSize: 0.75,
+      minChildSize: 0.45,
       maxChildSize: 0.95,
       builder: (context, scrollController) {
         return Column(

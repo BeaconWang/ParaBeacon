@@ -41,16 +41,26 @@ class GpsFlightDataBridge {
   /// the map cursor and recorded track are as tight as possible.
   final LocationAccuracy accuracy;
 
+  /// Desired interval between GPS updates. The platform is asked to deliver
+  /// fixes at this cadence (Android), and an app-level time gate enforces it
+  /// uniformly across platforms so at most one snapshot is ingested per period.
+  final Duration updateInterval;
+
   StreamSubscription<Position>? _sub;
   StreamSubscription<ServiceStatus>? _serviceStatusSub;
 
   bool _attached = false;
   bool _hadFix = false;
 
+  /// Timestamp of the last position we forwarded downstream, used by the
+  /// app-level throttle to enforce [updateInterval] on every platform.
+  DateTime? _lastEmit;
+
   GpsFlightDataBridge({
     required this.source,
     this.distanceFilterMeters = 0,
     this.accuracy = LocationAccuracy.bestForNavigation,
+    this.updateInterval = const Duration(seconds: 1),
   });
 
   /// Starts requesting the location permission (once) and, on success, opens
@@ -120,11 +130,9 @@ class GpsFlightDataBridge {
 
   void _startStream() {
     _sub?.cancel();
+    _lastEmit = null;
     _sub = Geolocator.getPositionStream(
-      locationSettings: LocationSettings(
-        accuracy: accuracy,
-        distanceFilter: distanceFilterMeters,
-      ),
+      locationSettings: _buildLocationSettings(),
     ).listen(_onPosition, onError: (_) {
       // Transient stream error: cancel; the service-status watcher (or a
       // subsequent attach()) will restart it.
@@ -137,7 +145,42 @@ class GpsFlightDataBridge {
     });
   }
 
+  /// Builds platform-specific location settings so the OS delivers fixes at the
+  /// requested [updateInterval] where it can (Android's `intervalDuration`).
+  /// The app-level time gate in [_onPosition] enforces the same cadence on
+  /// platforms (e.g. iOS) whose native stream is distance-driven rather than
+  /// time-driven.
+  LocationSettings _buildLocationSettings() {
+    if (Platform.isAndroid) {
+      return AndroidSettings(
+        accuracy: accuracy,
+        distanceFilter: distanceFilterMeters,
+        intervalDuration: updateInterval,
+      );
+    }
+    if (Platform.isIOS) {
+      return AppleSettings(
+        accuracy: accuracy,
+        distanceFilter: distanceFilterMeters,
+      );
+    }
+    return LocationSettings(
+      accuracy: accuracy,
+      distanceFilter: distanceFilterMeters,
+    );
+  }
+
   void _onPosition(Position pos) {
+    // App-level throttle: forward at most one fix per [updateInterval] so the
+    // "once per second" cadence holds regardless of how fast the platform
+    // stream emits. Fix-lost transitions are unaffected (handled elsewhere).
+    final now = DateTime.now();
+    final last = _lastEmit;
+    if (last != null && now.difference(last) < updateInterval) {
+      return;
+    }
+    _lastEmit = now;
+
     _hadFix = true;
     source.ingestGpsSnapshot(
       latitude: pos.latitude,

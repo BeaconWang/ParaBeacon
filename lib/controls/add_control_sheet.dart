@@ -56,9 +56,9 @@ class _AddControlSheetState extends State<_AddControlSheet> {
 
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.92,
+      initialChildSize: 0.75,
+      minChildSize: 0.45,
+      maxChildSize: 0.95,
       builder: (context, scrollController) {
         return Column(
           children: [

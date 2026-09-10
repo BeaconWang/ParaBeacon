@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'dart:ui' as ui;
 
@@ -31,9 +32,12 @@ import 'data/recording_settings.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
+import 'theme/app_languages.dart';
 import 'theme/app_themes.dart';
+import 'theme/locale_controller.dart';
 import 'theme/theme_controller.dart';
 import 'theme/theme_settings_sheet.dart';
+import 'theme/language_settings_sheet.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -104,6 +108,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // MaterialApp below listens to ThemeController so setTheme(...) at any
     // later time rebuilds the whole tree with the new palette.
     ThemeController.instance.load();
+    // Load the persisted language selection before the first frame paints.
+    // The MaterialApp below listens to LocaleController so setLanguage(...) at
+    // any later time rebuilds the whole tree with the new locale.
+    LocaleController.instance.load();
 
     // Bluetooth-sensor tier is the raw feed; a debug override (installed via the
     // Debug Sensor control) always wins over it (Debug > Bluetooth sensor).
@@ -194,16 +202,28 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
   Widget build(BuildContext context) {
     return FlightDataProvider(
       transformer: _transformer,
-      // Rebuild the whole app when the user picks a different theme preset.
-      // ThemeController is a ChangeNotifier; AnimatedBuilder handles the
-      // subscribe/unsubscribe lifecycle and only rebuilds this subtree.
+      // Rebuild the whole app when the user picks a different theme preset or
+      // language. Both are ChangeNotifiers; Listenable.merge lets a single
+      // AnimatedBuilder subscribe to both and rebuild this subtree on either.
       child: AnimatedBuilder(
-        animation: ThemeController.instance,
+        animation: Listenable.merge([
+          ThemeController.instance,
+          LocaleController.instance,
+        ]),
         builder: (context, _) {
           return MaterialApp(
             title: 'ParaBeacon',
             debugShowCheckedModeBanner: false,
             theme: themeDataFor(ThemeController.instance.current),
+            // Chosen language (null = follow the device language, resolved
+            // against supportedLocales by the framework).
+            locale: LocaleController.instance.current.locale,
+            supportedLocales: AppLanguage.supportedLocales,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             home: const DashGridPage(),
           );
         },
@@ -625,6 +645,21 @@ class _DashGridPageState extends State<DashGridPage>
                         await showThemeSettingsSheet(context);
                         // Refresh the subtitle in the still-open Preferences
                         // sheet so it reflects the newly-selected theme.
+                        setSheetState(() {});
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.language,
+                          color: theme.colorScheme.primary),
+                      title: const Text('Language'),
+                      subtitle: Text(LocaleController.instance.current.label),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () async {
+                        await showLanguageSettingsSheet(context);
+                        // Refresh the subtitle in the still-open Preferences
+                        // sheet so it reflects the newly-selected language.
                         setSheetState(() {});
                       },
                     ),

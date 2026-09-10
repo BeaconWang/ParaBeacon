@@ -326,6 +326,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       label: 'Map source',
       defaultValue: 'osm',
       options: {
+        'none': 'None (no basemap)',
         'osm': 'OpenStreetMap',
         'osmfr': 'OSM France',
         'carto-dark': 'Carto Dark',

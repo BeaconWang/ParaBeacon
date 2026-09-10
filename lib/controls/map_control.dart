@@ -26,6 +26,7 @@ class MapTileSource {
     required this.attribution,
     this.requiresGcjShift = false,
     this.maxZoom = 18,
+    this.isNone = false,
   });
 
   final String id;
@@ -38,6 +39,10 @@ class MapTileSource {
   final bool requiresGcjShift;
 
   final double maxZoom;
+
+  /// When true, no basemap tiles are drawn at all: the map renders overlays
+  /// (track, thermal, airspace, position marker) on a plain background.
+  final bool isNone;
 }
 
 /// All map sources available to the Map control (ported from the reference
@@ -50,6 +55,13 @@ class MapTileSources {
   MapTileSources._();
 
   static const List<MapTileSource> all = [
+    MapTileSource(
+      id: 'none',
+      label: 'None (no basemap)',
+      urlTemplate: '',
+      attribution: 'No basemap',
+      isNone: true,
+    ),
     MapTileSource(
       id: 'osm',
       label: 'OpenStreetMap',
@@ -95,7 +107,10 @@ class MapTileSources {
 
   /// Looks up a source by id, defaulting to OSM.
   static MapTileSource byId(String id) {
-    return all.firstWhere((s) => s.id == id, orElse: () => all.first);
+    return all.firstWhere(
+      (s) => s.id == id,
+      orElse: () => all.firstWhere((s) => s.id == 'osm'),
+    );
   }
 }
 
@@ -603,6 +618,11 @@ class _MapControlState extends State<MapControl> {
           reset: _tileResetCtrl.stream,
         );
       }
+    }
+    // "None" basemap: draw no tiles at all, leaving only the overlays
+    // (track / thermal / airspace / position marker) on a plain background.
+    if (src.isNone) {
+      return const SizedBox.shrink();
     }
     // NOTE (Android blank-map fix): do NOT set a custom `User-Agent` via
     // NetworkTileProvider(headers:). On Android, dart:io's HttpClient silently

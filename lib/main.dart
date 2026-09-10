@@ -831,7 +831,7 @@ class _DashGridPageState extends State<DashGridPage>
                       contentPadding: EdgeInsets.zero,
                       value: RecordingIntervalMode.smart,
                       groupValue: mode,
-                      title: const Text('Smart (default)'),
+                      title: const Text('Smart'),
                       subtitle: const Text(
                           'At least 1 s apart, and only when moved ≥ 3 m or '
                           'altitude changed ≥ 1 m'),
@@ -845,7 +845,7 @@ class _DashGridPageState extends State<DashGridPage>
                       contentPadding: EdgeInsets.zero,
                       value: RecordingIntervalMode.fixed1s,
                       groupValue: mode,
-                      title: const Text('Every 1 second'),
+                      title: const Text('Every 1 second (default)'),
                       subtitle: const Text(
                           'Store one point per second regardless of movement'),
                       onChanged: (v) {

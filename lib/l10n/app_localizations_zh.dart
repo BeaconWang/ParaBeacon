@@ -400,4 +400,259 @@ class AppLocalizationsZh extends AppLocalizations {
   String flightRecordingReadout(int points, String km) {
     return '记录中 · $points 点 · $km km';
   }
+
+  @override
+  String get settingShowTitle => '显示标题';
+
+  @override
+  String get settingShowBorder => '显示边框';
+
+  @override
+  String get settingBorderColor => '边框颜色';
+
+  @override
+  String get settingBorderWidth => '边框宽度';
+
+  @override
+  String get settingCornerRadius => '圆角半径';
+
+  @override
+  String get settingControlOpacity => '控件不透明度';
+
+  @override
+  String get settingBackgroundColor => '背景颜色';
+
+  @override
+  String get settingBackgroundOpacity => '背景不透明度';
+
+  @override
+  String get settingTextColor => '文字颜色';
+
+  @override
+  String get settingScaleMax => '量程（最大值）';
+
+  @override
+  String get settingAveragingInterval => '平均时长';
+
+  @override
+  String get settingCoordinateFormat => '坐标格式';
+
+  @override
+  String get settingCoordinateDecimal => '十进制度';
+
+  @override
+  String get settingCoordinateDms => '度 / 分 / 秒';
+
+  @override
+  String get settingAltitudeSource => '高度来源';
+
+  @override
+  String get settingAltitudeSourceAuto => '自动（优先气压）';
+
+  @override
+  String get settingAltitudeSourceGps => 'GPS 高度';
+
+  @override
+  String get settingAltitudeSourceBaro => '气压高度';
+
+  @override
+  String get settingFormat => '格式';
+
+  @override
+  String get settingFormatDegrees => '度数（0-360°）';
+
+  @override
+  String get settingFormatCardinal => '方位（N、NE …）';
+
+  @override
+  String get settingShowSeconds => '显示秒';
+
+  @override
+  String get settingShowAutoDetect => '显示自动检测复选框';
+
+  @override
+  String get settingFollowPosition => '跟随位置';
+
+  @override
+  String get settingZoom => '缩放';
+
+  @override
+  String get settingMapSource => '地图源';
+
+  @override
+  String get settingMapSourceNone => '无（无底图）';
+
+  @override
+  String get settingMapSourceOsm => 'OpenStreetMap';
+
+  @override
+  String get settingMapSourceOsmFr => 'OSM 法国';
+
+  @override
+  String get settingMapSourceCartoDark => 'Carto 暗色';
+
+  @override
+  String get settingMapSourceCartoVoyager => 'Carto Voyager';
+
+  @override
+  String get settingMapSourceAmap => '高德地图';
+
+  @override
+  String get settingMapSourceAmapSat => '高德卫星';
+
+  @override
+  String get settingRotation => '旋转';
+
+  @override
+  String get settingRotationNorth => '上方为北';
+
+  @override
+  String get settingRotationTrack => '航向朝上';
+
+  @override
+  String get settingShowNorth => '显示北方向';
+
+  @override
+  String get settingPilotArrowSize => '飞行员箭头大小';
+
+  @override
+  String get settingLineThickness => '线条粗细';
+
+  @override
+  String get settingTracklogLength => '航迹长度（0 = 全部）';
+
+  @override
+  String get settingLatestThermals => '显示最近 N 个热气流';
+
+  @override
+  String get settingPreferOffline => '优先离线地图（.mbtiles）';
+
+  @override
+  String get settingShowTrack => '显示飞行航迹';
+
+  @override
+  String get settingShowThermal => '显示热气流助手';
+
+  @override
+  String get settingWindAlgorithm => '在计算中考虑风';
+
+  @override
+  String get settingWindAlgorithmNone => '无';
+
+  @override
+  String get settingWindAlgorithmClassic => '经典';
+
+  @override
+  String get settingWindAlgorithmParticle => '粒子漂移';
+
+  @override
+  String get settingShowWind => '显示风';
+
+  @override
+  String get settingShowSun => '显示太阳位置';
+
+  @override
+  String get settingShowBearing => '显示方位（航线）线';
+
+  @override
+  String get settingShowScale => '显示地图比例尺';
+
+  @override
+  String get settingShowAirspace => '显示空域';
+
+  @override
+  String get settingShowLegend => '显示升降音图例';
+
+  @override
+  String get settingShowZoomLevel => '显示缩放级别';
+
+  @override
+  String get settingShowAttribution => '显示地图来源标注';
+
+  @override
+  String get settingShowStatus => '显示航向/高度与 GPS 状态';
+
+  @override
+  String get dataMonitorTitle => '数据监视器';
+
+  @override
+  String get dataMonitorLive => '实时';
+
+  @override
+  String get dataMonitorFix => '定位';
+
+  @override
+  String get dataMonitorYes => '是';
+
+  @override
+  String get dataMonitorNo => '否';
+
+  @override
+  String get dataMonitorVerticalSpeed => '升降速率';
+
+  @override
+  String get dataMonitorGroundSpeed => '地速';
+
+  @override
+  String get dataMonitorAltitude => '海拔';
+
+  @override
+  String get dataMonitorBaroAltitude => '气压高度';
+
+  @override
+  String get dataMonitorGpsAltitude => 'GPS 高度';
+
+  @override
+  String get dataMonitorLatitude => '纬度';
+
+  @override
+  String get dataMonitorLongitude => '经度';
+
+  @override
+  String get dataMonitorHeading => '航向';
+
+  @override
+  String get dataMonitorBearing => '方位';
+
+  @override
+  String get dataMonitorGpsAccuracy => 'GPS 精度';
+
+  @override
+  String get dataMonitorSatellites => '卫星数';
+
+  @override
+  String get dataMonitorWindSpeed => '风速';
+
+  @override
+  String get dataMonitorWindDirection => '风向';
+
+  @override
+  String get dataMonitorPressure => '气压';
+
+  @override
+  String get dataMonitorTemperature => '温度';
+
+  @override
+  String get dataMonitorBattery => '电量';
+
+  @override
+  String get dataMonitorHeartRate => '心率';
+
+  @override
+  String get dataMonitorTimestamp => '时间戳';
+
+  @override
+  String get dataMonitorDerived => '衍生数据';
+
+  @override
+  String get dataMonitorGlideRatio => '滑翔比';
+
+  @override
+  String get dataMonitorWindDir => '风向';
+
+  @override
+  String get dataMonitorBaroGpsDelta => '气压−GPS Δ';
+
+  @override
+  String get dataMonitorTotalEnergy => '总能量';
 }

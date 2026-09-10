@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../l10n/app_localizations.dart';
+
 /// The kind of UI editor a setting uses.
 enum SettingKind {
   toggle,
@@ -93,6 +95,190 @@ class ControlSetting {
         divisions = null,
         unit = '',
         options = const {};
+
+  /// Localized label for this setting, resolved from the current [l10n] by the
+  /// stable [key]. Falls back to the hardcoded English [label] for any key not
+  /// (yet) present in the translations, so unmapped settings still render.
+  ///
+  /// Resolved at render time (not stored), so it follows a runtime language
+  /// switch immediately.
+  String labelOf(AppLocalizations l10n) {
+    // The `location` control stores its coordinate format under the same
+    // `format` key that heading/wind-direction use for their compass format,
+    // but its label differs ("Coordinate format" vs "Format"). Disambiguate by
+    // the option set: only the coordinate one offers `decimal`.
+    if (key == 'format' && options.containsKey('decimal')) {
+      return l10n.settingCoordinateFormat;
+    }
+    return _settingLabel(l10n, key) ?? label;
+  }
+
+  /// Localized label for one of this setting's [choice] [options], resolved by
+  /// the stable ([key], [optionKey]) pair. Falls back to the hardcoded English
+  /// option text so unmapped options still render.
+  String optionLabelOf(AppLocalizations l10n, Object optionKey) {
+    // Coordinate-format options live under the shared `format` key too; route
+    // them to their own translations.
+    if (key == 'format' && options.containsKey('decimal')) {
+      switch (optionKey) {
+        case 'decimal':
+          return l10n.settingCoordinateDecimal;
+        case 'dms':
+          return l10n.settingCoordinateDms;
+      }
+    }
+    return _settingOptionLabel(l10n, key, optionKey) ??
+        (options[optionKey] ?? optionKey.toString());
+  }
+}
+
+/// Resolves a setting [key] to its localized label, or `null` when the key has
+/// no translation (the caller then falls back to the English default).
+String? _settingLabel(AppLocalizations l10n, String key) {
+  switch (key) {
+    case 'showTitle':
+      return l10n.settingShowTitle;
+    case 'showBorder':
+      return l10n.settingShowBorder;
+    case 'borderColor':
+      return l10n.settingBorderColor;
+    case 'borderWidth':
+      return l10n.settingBorderWidth;
+    case 'borderRadius':
+      return l10n.settingCornerRadius;
+    case 'controlOpacity':
+      return l10n.settingControlOpacity;
+    case 'backgroundColor':
+      return l10n.settingBackgroundColor;
+    case 'backgroundOpacity':
+      return l10n.settingBackgroundOpacity;
+    case 'textColor':
+      return l10n.settingTextColor;
+    case 'maxScale':
+      return l10n.settingScaleMax;
+    case 'avgInterval':
+      return l10n.settingAveragingInterval;
+    case 'source':
+      return l10n.settingAltitudeSource;
+    case 'showSeconds':
+      return l10n.settingShowSeconds;
+    case 'showAutoDetect':
+      return l10n.settingShowAutoDetect;
+    case 'follow':
+      return l10n.settingFollowPosition;
+    case 'zoom':
+      return l10n.settingZoom;
+    case 'tileSource':
+      return l10n.settingMapSource;
+    case 'rotation':
+      return l10n.settingRotation;
+    case 'showNorth':
+      return l10n.settingShowNorth;
+    case 'pilotArrowCoef':
+      return l10n.settingPilotArrowSize;
+    case 'lineThickness':
+      return l10n.settingLineThickness;
+    case 'tracklogMinutes':
+      return l10n.settingTracklogLength;
+    case 'latestThermals':
+      return l10n.settingLatestThermals;
+    case 'useOffline':
+      return l10n.settingPreferOffline;
+    case 'showTrack':
+      return l10n.settingShowTrack;
+    case 'showThermal':
+      return l10n.settingShowThermal;
+    case 'windAlgorithm':
+      return l10n.settingWindAlgorithm;
+    case 'showWind':
+      return l10n.settingShowWind;
+    case 'showSun':
+      return l10n.settingShowSun;
+    case 'showBearing':
+      return l10n.settingShowBearing;
+    case 'showScale':
+      return l10n.settingShowScale;
+    case 'showAirspace':
+      return l10n.settingShowAirspace;
+    case 'showLegend':
+      return l10n.settingShowLegend;
+    case 'showZoomLevel':
+      return l10n.settingShowZoomLevel;
+    case 'showAttribution':
+      return l10n.settingShowAttribution;
+    case 'showStatus':
+      return l10n.settingShowStatus;
+    // `format` is shared by the heading and wind-direction controls; both use
+    // the same label and option set.
+    case 'format':
+      return l10n.settingFormat;
+    default:
+      return null;
+  }
+}
+
+/// Resolves a ([settingKey], [optionKey]) pair to its localized option label,
+/// or `null` when there is no translation.
+String? _settingOptionLabel(
+    AppLocalizations l10n, String settingKey, Object optionKey) {
+  switch (settingKey) {
+    case 'format': // heading / wind_direction
+      switch (optionKey) {
+        case 'degrees':
+          return l10n.settingFormatDegrees;
+        case 'cardinal':
+          return l10n.settingFormatCardinal;
+      }
+      return null;
+    case 'source': // altitude source
+      switch (optionKey) {
+        case 'auto':
+          return l10n.settingAltitudeSourceAuto;
+        case 'gps':
+          return l10n.settingAltitudeSourceGps;
+        case 'baro':
+          return l10n.settingAltitudeSourceBaro;
+      }
+      return null;
+    case 'tileSource': // map source
+      switch (optionKey) {
+        case 'none':
+          return l10n.settingMapSourceNone;
+        case 'osm':
+          return l10n.settingMapSourceOsm;
+        case 'osmfr':
+          return l10n.settingMapSourceOsmFr;
+        case 'carto-dark':
+          return l10n.settingMapSourceCartoDark;
+        case 'carto-voyager':
+          return l10n.settingMapSourceCartoVoyager;
+        case 'amap':
+          return l10n.settingMapSourceAmap;
+        case 'amap-sat':
+          return l10n.settingMapSourceAmapSat;
+      }
+      return null;
+    case 'rotation': // map rotation
+      switch (optionKey) {
+        case 'north':
+          return l10n.settingRotationNorth;
+        case 'track':
+          return l10n.settingRotationTrack;
+      }
+      return null;
+    case 'windAlgorithm':
+      switch (optionKey) {
+        case 'none':
+          return l10n.settingWindAlgorithmNone;
+        case 'classic':
+          return l10n.settingWindAlgorithmClassic;
+        case 'particle':
+          return l10n.settingWindAlgorithmParticle;
+      }
+      return null;
+    default:
+      return null;
+  }
 }
 
 /// Default palette for the border color picker.

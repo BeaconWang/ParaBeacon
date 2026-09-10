@@ -847,6 +847,516 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'REC · {points} pts · {km} km'**
   String flightRecordingReadout(int points, String km);
+
+  /// No description provided for @settingShowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show title'**
+  String get settingShowTitle;
+
+  /// No description provided for @settingShowBorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Show border'**
+  String get settingShowBorder;
+
+  /// No description provided for @settingBorderColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Border color'**
+  String get settingBorderColor;
+
+  /// No description provided for @settingBorderWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Border width'**
+  String get settingBorderWidth;
+
+  /// No description provided for @settingCornerRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Corner radius'**
+  String get settingCornerRadius;
+
+  /// No description provided for @settingControlOpacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Control opacity'**
+  String get settingControlOpacity;
+
+  /// No description provided for @settingBackgroundColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Background color'**
+  String get settingBackgroundColor;
+
+  /// No description provided for @settingBackgroundOpacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Background opacity'**
+  String get settingBackgroundOpacity;
+
+  /// No description provided for @settingTextColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Text color'**
+  String get settingTextColor;
+
+  /// No description provided for @settingScaleMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Scale (max)'**
+  String get settingScaleMax;
+
+  /// No description provided for @settingAveragingInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Averaging interval'**
+  String get settingAveragingInterval;
+
+  /// No description provided for @settingCoordinateFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinate format'**
+  String get settingCoordinateFormat;
+
+  /// No description provided for @settingCoordinateDecimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Decimal degrees'**
+  String get settingCoordinateDecimal;
+
+  /// No description provided for @settingCoordinateDms.
+  ///
+  /// In en, this message translates to:
+  /// **'Deg / min / sec'**
+  String get settingCoordinateDms;
+
+  /// No description provided for @settingAltitudeSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude source'**
+  String get settingAltitudeSource;
+
+  /// No description provided for @settingAltitudeSourceAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto (baro if available)'**
+  String get settingAltitudeSourceAuto;
+
+  /// No description provided for @settingAltitudeSourceGps.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS altitude'**
+  String get settingAltitudeSourceGps;
+
+  /// No description provided for @settingAltitudeSourceBaro.
+  ///
+  /// In en, this message translates to:
+  /// **'Barometric altitude'**
+  String get settingAltitudeSourceBaro;
+
+  /// No description provided for @settingFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get settingFormat;
+
+  /// No description provided for @settingFormatDegrees.
+  ///
+  /// In en, this message translates to:
+  /// **'Degrees (0-360°)'**
+  String get settingFormatDegrees;
+
+  /// No description provided for @settingFormatCardinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Cardinal (N, NE, …)'**
+  String get settingFormatCardinal;
+
+  /// No description provided for @settingShowSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Show seconds'**
+  String get settingShowSeconds;
+
+  /// No description provided for @settingShowAutoDetect.
+  ///
+  /// In en, this message translates to:
+  /// **'Show auto-detect checkbox'**
+  String get settingShowAutoDetect;
+
+  /// No description provided for @settingFollowPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow position'**
+  String get settingFollowPosition;
+
+  /// No description provided for @settingZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom'**
+  String get settingZoom;
+
+  /// No description provided for @settingMapSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Map source'**
+  String get settingMapSource;
+
+  /// No description provided for @settingMapSourceNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None (no basemap)'**
+  String get settingMapSourceNone;
+
+  /// No description provided for @settingMapSourceOsm.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenStreetMap'**
+  String get settingMapSourceOsm;
+
+  /// No description provided for @settingMapSourceOsmFr.
+  ///
+  /// In en, this message translates to:
+  /// **'OSM France'**
+  String get settingMapSourceOsmFr;
+
+  /// No description provided for @settingMapSourceCartoDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Carto Dark'**
+  String get settingMapSourceCartoDark;
+
+  /// No description provided for @settingMapSourceCartoVoyager.
+  ///
+  /// In en, this message translates to:
+  /// **'Carto Voyager'**
+  String get settingMapSourceCartoVoyager;
+
+  /// No description provided for @settingMapSourceAmap.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap (AutoNavi)'**
+  String get settingMapSourceAmap;
+
+  /// No description provided for @settingMapSourceAmapSat.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap Satellite'**
+  String get settingMapSourceAmapSat;
+
+  /// No description provided for @settingRotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotation'**
+  String get settingRotation;
+
+  /// No description provided for @settingRotationNorth.
+  ///
+  /// In en, this message translates to:
+  /// **'North at the top'**
+  String get settingRotationNorth;
+
+  /// No description provided for @settingRotationTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Track up (heading)'**
+  String get settingRotationTrack;
+
+  /// No description provided for @settingShowNorth.
+  ///
+  /// In en, this message translates to:
+  /// **'Display North direction'**
+  String get settingShowNorth;
+
+  /// No description provided for @settingPilotArrowSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Pilot arrow size'**
+  String get settingPilotArrowSize;
+
+  /// No description provided for @settingLineThickness.
+  ///
+  /// In en, this message translates to:
+  /// **'Thickness of lines'**
+  String get settingLineThickness;
+
+  /// No description provided for @settingTracklogLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracklog length (0 = all)'**
+  String get settingTracklogLength;
+
+  /// No description provided for @settingLatestThermals.
+  ///
+  /// In en, this message translates to:
+  /// **'Show N latest thermals'**
+  String get settingLatestThermals;
+
+  /// No description provided for @settingPreferOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer offline maps (.mbtiles)'**
+  String get settingPreferOffline;
+
+  /// No description provided for @settingShowTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Show flight track'**
+  String get settingShowTrack;
+
+  /// No description provided for @settingShowThermal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show thermal assistant'**
+  String get settingShowThermal;
+
+  /// No description provided for @settingWindAlgorithm.
+  ///
+  /// In en, this message translates to:
+  /// **'Include wind in computation'**
+  String get settingWindAlgorithm;
+
+  /// No description provided for @settingWindAlgorithmNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get settingWindAlgorithmNone;
+
+  /// No description provided for @settingWindAlgorithmClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get settingWindAlgorithmClassic;
+
+  /// No description provided for @settingWindAlgorithmParticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Particle drift'**
+  String get settingWindAlgorithmParticle;
+
+  /// No description provided for @settingShowWind.
+  ///
+  /// In en, this message translates to:
+  /// **'Show wind'**
+  String get settingShowWind;
+
+  /// No description provided for @settingShowSun.
+  ///
+  /// In en, this message translates to:
+  /// **'Show sun position'**
+  String get settingShowSun;
+
+  /// No description provided for @settingShowBearing.
+  ///
+  /// In en, this message translates to:
+  /// **'Show bearing (course) line'**
+  String get settingShowBearing;
+
+  /// No description provided for @settingShowScale.
+  ///
+  /// In en, this message translates to:
+  /// **'Display map scale'**
+  String get settingShowScale;
+
+  /// No description provided for @settingShowAirspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Show airspace'**
+  String get settingShowAirspace;
+
+  /// No description provided for @settingShowLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Show vario legend'**
+  String get settingShowLegend;
+
+  /// No description provided for @settingShowZoomLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show zoom level'**
+  String get settingShowZoomLevel;
+
+  /// No description provided for @settingShowAttribution.
+  ///
+  /// In en, this message translates to:
+  /// **'Show map attribution'**
+  String get settingShowAttribution;
+
+  /// No description provided for @settingShowStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Show HDG/ALT & GPS status'**
+  String get settingShowStatus;
+
+  /// No description provided for @dataMonitorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Monitor'**
+  String get dataMonitorTitle;
+
+  /// No description provided for @dataMonitorLive.
+  ///
+  /// In en, this message translates to:
+  /// **'LIVE'**
+  String get dataMonitorLive;
+
+  /// No description provided for @dataMonitorFix.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix'**
+  String get dataMonitorFix;
+
+  /// No description provided for @dataMonitorYes.
+  ///
+  /// In en, this message translates to:
+  /// **'YES'**
+  String get dataMonitorYes;
+
+  /// No description provided for @dataMonitorNo.
+  ///
+  /// In en, this message translates to:
+  /// **'NO'**
+  String get dataMonitorNo;
+
+  /// No description provided for @dataMonitorVerticalSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical speed'**
+  String get dataMonitorVerticalSpeed;
+
+  /// No description provided for @dataMonitorGroundSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground speed'**
+  String get dataMonitorGroundSpeed;
+
+  /// No description provided for @dataMonitorAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get dataMonitorAltitude;
+
+  /// No description provided for @dataMonitorBaroAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Baro altitude'**
+  String get dataMonitorBaroAltitude;
+
+  /// No description provided for @dataMonitorGpsAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS altitude'**
+  String get dataMonitorGpsAltitude;
+
+  /// No description provided for @dataMonitorLatitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get dataMonitorLatitude;
+
+  /// No description provided for @dataMonitorLongitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get dataMonitorLongitude;
+
+  /// No description provided for @dataMonitorHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get dataMonitorHeading;
+
+  /// No description provided for @dataMonitorBearing.
+  ///
+  /// In en, this message translates to:
+  /// **'Bearing'**
+  String get dataMonitorBearing;
+
+  /// No description provided for @dataMonitorGpsAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS accuracy'**
+  String get dataMonitorGpsAccuracy;
+
+  /// No description provided for @dataMonitorSatellites.
+  ///
+  /// In en, this message translates to:
+  /// **'Satellites'**
+  String get dataMonitorSatellites;
+
+  /// No description provided for @dataMonitorWindSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind speed'**
+  String get dataMonitorWindSpeed;
+
+  /// No description provided for @dataMonitorWindDirection.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind direction'**
+  String get dataMonitorWindDirection;
+
+  /// No description provided for @dataMonitorPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Pressure'**
+  String get dataMonitorPressure;
+
+  /// No description provided for @dataMonitorTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get dataMonitorTemperature;
+
+  /// No description provided for @dataMonitorBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery'**
+  String get dataMonitorBattery;
+
+  /// No description provided for @dataMonitorHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart rate'**
+  String get dataMonitorHeartRate;
+
+  /// No description provided for @dataMonitorTimestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Timestamp'**
+  String get dataMonitorTimestamp;
+
+  /// No description provided for @dataMonitorDerived.
+  ///
+  /// In en, this message translates to:
+  /// **'Derived'**
+  String get dataMonitorDerived;
+
+  /// No description provided for @dataMonitorGlideRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'Glide ratio'**
+  String get dataMonitorGlideRatio;
+
+  /// No description provided for @dataMonitorWindDir.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind dir'**
+  String get dataMonitorWindDir;
+
+  /// No description provided for @dataMonitorBaroGpsDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'Baro−GPS Δ'**
+  String get dataMonitorBaroGpsDelta;
+
+  /// No description provided for @dataMonitorTotalEnergy.
+  ///
+  /// In en, this message translates to:
+  /// **'Total energy'**
+  String get dataMonitorTotalEnergy;
 }
 
 class _AppLocalizationsDelegate

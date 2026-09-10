@@ -97,7 +97,7 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
                   itemCount: _schema.length,
                   separatorBuilder: (context, index) => const Divider(height: 1),
                   itemBuilder: (context, index) =>
-                      _buildSettingTile(context, _schema[index]),
+                      _buildSettingTile(context, l10n, _schema[index]),
                 ),
               ),
           ],
@@ -106,7 +106,8 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
     );
   }
 
-  Widget _buildSettingTile(BuildContext context, ControlSetting setting) {
+  Widget _buildSettingTile(
+      BuildContext context, AppLocalizations l10n, ControlSetting setting) {
     final control = widget.control;
 
     // Border color/width only take effect when `showBorder` is on. Grey out
@@ -116,14 +117,16 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
     final isBorderChild =
         setting.key == 'borderColor' || setting.key == 'borderWidth';
     final dimmed = isBorderChild && borderOff;
-    final tile = _buildSettingTileBody(context, setting);
+    final tile = _buildSettingTileBody(context, l10n, setting);
     if (!dimmed) return tile;
     return Opacity(opacity: 0.5, child: tile);
   }
 
-  Widget _buildSettingTileBody(BuildContext context, ControlSetting setting) {
+  Widget _buildSettingTileBody(
+      BuildContext context, AppLocalizations l10n, ControlSetting setting) {
     final theme = Theme.of(context);
     final control = widget.control;
+    final label = setting.labelOf(l10n);
 
     switch (setting.kind) {
       case SettingKind.toggle:
@@ -133,7 +136,7 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
         );
         return SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text(setting.label),
+          title: Text(label),
           value: value,
           onChanged: (v) => _set(setting.key, v),
         );
@@ -150,7 +153,7 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text(setting.label)),
+                  Expanded(child: Text(label)),
                   Text(
                     '${value.toStringAsFixed(setting.divisions != null && (setting.max - setting.min) <= setting.divisions! ? 0 : 1)}'
                     '${setting.unit.isNotEmpty ? ' ${setting.unit}' : ''}',
@@ -179,13 +182,13 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(setting.label),
+              Text(label),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 children: setting.options.entries.map((entry) {
                   return ChoiceChip(
-                    label: Text(entry.value),
+                    label: Text(setting.optionLabelOf(l10n, entry.key)),
                     selected: value == entry.key,
                     onSelected: (_) => _set(setting.key, entry.key),
                   );
@@ -205,7 +208,7 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(setting.label),
+              Text(label),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,

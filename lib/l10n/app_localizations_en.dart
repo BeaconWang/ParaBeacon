@@ -414,4 +414,259 @@ class AppLocalizationsEn extends AppLocalizations {
   String flightRecordingReadout(int points, String km) {
     return 'REC · $points pts · $km km';
   }
+
+  @override
+  String get settingShowTitle => 'Show title';
+
+  @override
+  String get settingShowBorder => 'Show border';
+
+  @override
+  String get settingBorderColor => 'Border color';
+
+  @override
+  String get settingBorderWidth => 'Border width';
+
+  @override
+  String get settingCornerRadius => 'Corner radius';
+
+  @override
+  String get settingControlOpacity => 'Control opacity';
+
+  @override
+  String get settingBackgroundColor => 'Background color';
+
+  @override
+  String get settingBackgroundOpacity => 'Background opacity';
+
+  @override
+  String get settingTextColor => 'Text color';
+
+  @override
+  String get settingScaleMax => 'Scale (max)';
+
+  @override
+  String get settingAveragingInterval => 'Averaging interval';
+
+  @override
+  String get settingCoordinateFormat => 'Coordinate format';
+
+  @override
+  String get settingCoordinateDecimal => 'Decimal degrees';
+
+  @override
+  String get settingCoordinateDms => 'Deg / min / sec';
+
+  @override
+  String get settingAltitudeSource => 'Altitude source';
+
+  @override
+  String get settingAltitudeSourceAuto => 'Auto (baro if available)';
+
+  @override
+  String get settingAltitudeSourceGps => 'GPS altitude';
+
+  @override
+  String get settingAltitudeSourceBaro => 'Barometric altitude';
+
+  @override
+  String get settingFormat => 'Format';
+
+  @override
+  String get settingFormatDegrees => 'Degrees (0-360°)';
+
+  @override
+  String get settingFormatCardinal => 'Cardinal (N, NE, …)';
+
+  @override
+  String get settingShowSeconds => 'Show seconds';
+
+  @override
+  String get settingShowAutoDetect => 'Show auto-detect checkbox';
+
+  @override
+  String get settingFollowPosition => 'Follow position';
+
+  @override
+  String get settingZoom => 'Zoom';
+
+  @override
+  String get settingMapSource => 'Map source';
+
+  @override
+  String get settingMapSourceNone => 'None (no basemap)';
+
+  @override
+  String get settingMapSourceOsm => 'OpenStreetMap';
+
+  @override
+  String get settingMapSourceOsmFr => 'OSM France';
+
+  @override
+  String get settingMapSourceCartoDark => 'Carto Dark';
+
+  @override
+  String get settingMapSourceCartoVoyager => 'Carto Voyager';
+
+  @override
+  String get settingMapSourceAmap => 'AMap (AutoNavi)';
+
+  @override
+  String get settingMapSourceAmapSat => 'AMap Satellite';
+
+  @override
+  String get settingRotation => 'Rotation';
+
+  @override
+  String get settingRotationNorth => 'North at the top';
+
+  @override
+  String get settingRotationTrack => 'Track up (heading)';
+
+  @override
+  String get settingShowNorth => 'Display North direction';
+
+  @override
+  String get settingPilotArrowSize => 'Pilot arrow size';
+
+  @override
+  String get settingLineThickness => 'Thickness of lines';
+
+  @override
+  String get settingTracklogLength => 'Tracklog length (0 = all)';
+
+  @override
+  String get settingLatestThermals => 'Show N latest thermals';
+
+  @override
+  String get settingPreferOffline => 'Prefer offline maps (.mbtiles)';
+
+  @override
+  String get settingShowTrack => 'Show flight track';
+
+  @override
+  String get settingShowThermal => 'Show thermal assistant';
+
+  @override
+  String get settingWindAlgorithm => 'Include wind in computation';
+
+  @override
+  String get settingWindAlgorithmNone => 'None';
+
+  @override
+  String get settingWindAlgorithmClassic => 'Classic';
+
+  @override
+  String get settingWindAlgorithmParticle => 'Particle drift';
+
+  @override
+  String get settingShowWind => 'Show wind';
+
+  @override
+  String get settingShowSun => 'Show sun position';
+
+  @override
+  String get settingShowBearing => 'Show bearing (course) line';
+
+  @override
+  String get settingShowScale => 'Display map scale';
+
+  @override
+  String get settingShowAirspace => 'Show airspace';
+
+  @override
+  String get settingShowLegend => 'Show vario legend';
+
+  @override
+  String get settingShowZoomLevel => 'Show zoom level';
+
+  @override
+  String get settingShowAttribution => 'Show map attribution';
+
+  @override
+  String get settingShowStatus => 'Show HDG/ALT & GPS status';
+
+  @override
+  String get dataMonitorTitle => 'Data Monitor';
+
+  @override
+  String get dataMonitorLive => 'LIVE';
+
+  @override
+  String get dataMonitorFix => 'Fix';
+
+  @override
+  String get dataMonitorYes => 'YES';
+
+  @override
+  String get dataMonitorNo => 'NO';
+
+  @override
+  String get dataMonitorVerticalSpeed => 'Vertical speed';
+
+  @override
+  String get dataMonitorGroundSpeed => 'Ground speed';
+
+  @override
+  String get dataMonitorAltitude => 'Altitude';
+
+  @override
+  String get dataMonitorBaroAltitude => 'Baro altitude';
+
+  @override
+  String get dataMonitorGpsAltitude => 'GPS altitude';
+
+  @override
+  String get dataMonitorLatitude => 'Latitude';
+
+  @override
+  String get dataMonitorLongitude => 'Longitude';
+
+  @override
+  String get dataMonitorHeading => 'Heading';
+
+  @override
+  String get dataMonitorBearing => 'Bearing';
+
+  @override
+  String get dataMonitorGpsAccuracy => 'GPS accuracy';
+
+  @override
+  String get dataMonitorSatellites => 'Satellites';
+
+  @override
+  String get dataMonitorWindSpeed => 'Wind speed';
+
+  @override
+  String get dataMonitorWindDirection => 'Wind direction';
+
+  @override
+  String get dataMonitorPressure => 'Pressure';
+
+  @override
+  String get dataMonitorTemperature => 'Temperature';
+
+  @override
+  String get dataMonitorBattery => 'Battery';
+
+  @override
+  String get dataMonitorHeartRate => 'Heart rate';
+
+  @override
+  String get dataMonitorTimestamp => 'Timestamp';
+
+  @override
+  String get dataMonitorDerived => 'Derived';
+
+  @override
+  String get dataMonitorGlideRatio => 'Glide ratio';
+
+  @override
+  String get dataMonitorWindDir => 'Wind dir';
+
+  @override
+  String get dataMonitorBaroGpsDelta => 'Baro−GPS Δ';
+
+  @override
+  String get dataMonitorTotalEnergy => 'Total energy';
 }

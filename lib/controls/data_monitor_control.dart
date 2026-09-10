@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
+import '../l10n/app_localizations.dart';
 
 /// A debug control that displays every field of the unified [FlightData]
 /// snapshot coming out of the data layer.
@@ -16,37 +17,43 @@ class DataMonitorControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final d = FlightDataProvider.of(context);
 
     final rows = <_Row>[
-      _Row('Fix', d.hasFix ? 'YES' : 'NO', highlight: d.hasFix),
-      _Row('Vertical speed', _fmt(d.verticalSpeed, 2), unit: 'm/s'),
-      _Row('Ground speed', _fmt(d.groundSpeed, 1), unit: 'km/h'),
-      _Row('Altitude', _fmt(d.altitude, 1), unit: 'm'),
-      _Row('Baro altitude', _fmtN(d.baroAltitude, 1), unit: 'm'),
-      _Row('GPS altitude', _fmtN(d.gpsAltitude, 1), unit: 'm'),
-      _Row('Latitude', _fmt(d.latitude, 6), unit: '°'),
-      _Row('Longitude', _fmt(d.longitude, 6), unit: '°'),
-      _Row('Heading', _fmt(d.heading, 0), unit: '°'),
-      _Row('Bearing', _fmtN(d.bearing, 0), unit: '°'),
-      _Row('GPS accuracy', _fmtN(d.gpsAccuracy, 1), unit: 'm'),
-      _Row('Satellites', d.satellites?.toString() ?? '—'),
-      _Row('Wind speed', _fmt(d.windSpeed, 1), unit: 'km/h'),
-      _Row('Wind direction', _fmt(d.windDirection, 0), unit: '°'),
-      _Row('Pressure', _fmtN(d.pressure, 1), unit: 'hPa'),
-      _Row('Temperature', _fmtN(d.temperature, 1), unit: '°C'),
-      _Row('Battery', d.battery != null ? '${d.battery}' : '—', unit: '%'),
-      _Row('Heart rate', d.heartRate != null ? '${d.heartRate}' : '—',
+      _Row(l10n.dataMonitorFix,
+          d.hasFix ? l10n.dataMonitorYes : l10n.dataMonitorNo,
+          highlight: d.hasFix),
+      _Row(l10n.dataMonitorVerticalSpeed, _fmt(d.verticalSpeed, 2),
+          unit: 'm/s'),
+      _Row(l10n.dataMonitorGroundSpeed, _fmt(d.groundSpeed, 1), unit: 'km/h'),
+      _Row(l10n.dataMonitorAltitude, _fmt(d.altitude, 1), unit: 'm'),
+      _Row(l10n.dataMonitorBaroAltitude, _fmtN(d.baroAltitude, 1), unit: 'm'),
+      _Row(l10n.dataMonitorGpsAltitude, _fmtN(d.gpsAltitude, 1), unit: 'm'),
+      _Row(l10n.dataMonitorLatitude, _fmt(d.latitude, 6), unit: '°'),
+      _Row(l10n.dataMonitorLongitude, _fmt(d.longitude, 6), unit: '°'),
+      _Row(l10n.dataMonitorHeading, _fmt(d.heading, 0), unit: '°'),
+      _Row(l10n.dataMonitorBearing, _fmtN(d.bearing, 0), unit: '°'),
+      _Row(l10n.dataMonitorGpsAccuracy, _fmtN(d.gpsAccuracy, 1), unit: 'm'),
+      _Row(l10n.dataMonitorSatellites, d.satellites?.toString() ?? '—'),
+      _Row(l10n.dataMonitorWindSpeed, _fmt(d.windSpeed, 1), unit: 'km/h'),
+      _Row(l10n.dataMonitorWindDirection, _fmt(d.windDirection, 0), unit: '°'),
+      _Row(l10n.dataMonitorPressure, _fmtN(d.pressure, 1), unit: 'hPa'),
+      _Row(l10n.dataMonitorTemperature, _fmtN(d.temperature, 1), unit: '°C'),
+      _Row(l10n.dataMonitorBattery, d.battery != null ? '${d.battery}' : '—',
+          unit: '%'),
+      _Row(l10n.dataMonitorHeartRate,
+          d.heartRate != null ? '${d.heartRate}' : '—',
           unit: 'bpm'),
-      _Row('Timestamp', _fmtTime(d.timestamp)),
+      _Row(l10n.dataMonitorTimestamp, _fmtTime(d.timestamp)),
 
       // ── Derived (computed from the fields above, no extra sensors) ────────
-      _Section('Derived'),
-      _Row('Glide ratio', _glideRatio(d)),
-      _Row('Heading', _cardinal8(d.heading)),
-      _Row('Wind dir', _cardinal8(d.windDirection)),
-      _Row('Baro−GPS Δ', _altitudeDelta(d), unit: 'm'),
-      _Row('Total energy', _totalEnergyAltitude(d), unit: 'm'),
+      _Section(l10n.dataMonitorDerived),
+      _Row(l10n.dataMonitorGlideRatio, _glideRatio(d)),
+      _Row(l10n.dataMonitorHeading, _cardinal8(d.heading)),
+      _Row(l10n.dataMonitorWindDir, _cardinal8(d.windDirection)),
+      _Row(l10n.dataMonitorBaroGpsDelta, _altitudeDelta(d), unit: 'm'),
+      _Row(l10n.dataMonitorTotalEnergy, _totalEnergyAltitude(d), unit: 'm'),
     ];
 
     return Column(
@@ -58,7 +65,7 @@ class DataMonitorControl extends StatelessWidget {
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                'Data Monitor',
+                l10n.dataMonitorTitle,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -74,7 +81,7 @@ class DataMonitorControl extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                'LIVE',
+                l10n.dataMonitorLive,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: d.hasFix
                       ? theme.colorScheme.onPrimaryContainer

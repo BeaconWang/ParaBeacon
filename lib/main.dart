@@ -1458,7 +1458,15 @@ class _DashGridPageState extends State<DashGridPage>
                     width: width,
                     height: height,
                     child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
+                      // When the control is selected it owns its drag-to-move
+                      // gesture, so swallow pointer events (opaque). While it
+                      // is *not* selected there is nothing to drag here, so be
+                      // translucent: a vertical swipe starting on the control
+                      // then falls through to the fullscreen background gesture
+                      // layer that opens the top menu.
+                      behavior: isSelected
+                          ? HitTestBehavior.opaque
+                          : HitTestBehavior.translucent,
                       onTap: () => setState(
                           () => _selectedControlId = control.instanceId),
                       onLongPress: () => _showControlMenu(control),

@@ -221,7 +221,7 @@ class DashGridPage extends StatefulWidget {
 
 class _DashGridPageState extends State<DashGridPage>
     with SingleTickerProviderStateMixin {
-  double _gridSize = 48.0;
+  double _gridSize = 32.0;
   bool _menuOpen = false;
   // Start in view mode on cold launch when the dashboard already has content:
   // pilots opening the app in flight should see their instrument dashboard,

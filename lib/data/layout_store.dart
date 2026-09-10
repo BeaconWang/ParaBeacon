@@ -63,7 +63,7 @@ class LayoutStore {
       }
       if (pages.isEmpty) return null;
 
-      final gridSize = (decoded['gridSize'] as num?)?.toDouble() ?? 40.0;
+      final gridSize = (decoded['gridSize'] as num?)?.toDouble() ?? 32.0;
       // Older payloads (before the current-page field) simply default to 0.
       final rawCurrent = (decoded['currentPage'] as num?)?.toInt() ?? 0;
       final currentPage = rawCurrent.clamp(0, pages.length - 1);

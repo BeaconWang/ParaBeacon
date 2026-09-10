@@ -673,41 +673,6 @@ class _DashGridPageState extends State<DashGridPage>
                       onTap: () => showVarioSoundSettingsSheet(context),
                     ),
                     const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(_Icons.grid,
-                                  color: theme.colorScheme.primary, size: 20),
-                              const SizedBox(width: 10),
-                              Expanded(child: Text(l10n.gridSize)),
-                              Text(
-                                l10n.gridSizePx(_gridSize.round()),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Slider(
-                            value: _gridSize,
-                            min: 16.0,
-                            max: 120.0,
-                            divisions: 26,
-                            label: l10n.gridSizePx(_gridSize.round()),
-                            onChanged: (v) {
-                              setState(() => _gridSize = v);
-                              setSheetState(() {});
-                              _saveLayout();
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.bluetooth,

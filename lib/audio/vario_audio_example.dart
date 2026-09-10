@@ -44,9 +44,16 @@ class VarioAudioBridge {
   final FlightDataView source;
   final VarioAudioService audio;
 
+  /// Predicate telling whether a Bluetooth (BLE) sensor feed is currently
+  /// connected. The vario is kept silent unless this returns true, so no sound
+  /// is produced while running on debug overrides / simulator only or with no
+  /// sensor at all.
+  final bool Function()? sensorConnected;
+
   VarioAudioBridge({
     required this.source,
     VarioAudioService? audio,
+    this.sensorConnected,
     VarioAudioConfig config = VarioAudioConfig.xcTrack,
   }) : audio = audio ?? VarioAudioService(config: config);
 
@@ -92,10 +99,18 @@ class VarioAudioBridge {
 
   /// Whether the live vario should currently emit sound.
   ///
-  /// When [VarioSoundSettings.soundOnlyWhenFlying] is enabled the beeper stays
-  /// silent until [FlightState.isFlying] becomes true.
-  bool get _soundEnabled =>
-      !_settings.soundOnlyWhenFlying || _flightState.isFlying;
+  /// Two gates must both be open:
+  ///  * a Bluetooth sensor must be connected ([sensorConnected]); and
+  ///  * when [VarioSoundSettings.soundOnlyWhenFlying] is enabled, a flight must
+  ///    have started ([FlightState.isFlying]).
+  ///
+  /// With no sensor connected the beeper stays silent regardless of the
+  /// vertical speed being fed in (e.g. debug/simulator values).
+  bool get _soundEnabled {
+    final sensorOk = sensorConnected?.call() ?? true;
+    if (!sensorOk) return false;
+    return !_settings.soundOnlyWhenFlying || _flightState.isFlying;
+  }
 
   /// Pushes the current gate decision to the audio engine. The engine ramps to
   /// silence when the gate is closed (this is what actually enforces "sound
@@ -106,6 +121,10 @@ class VarioAudioBridge {
   void _onGateChanged() => _applyGate();
 
   void _onData() {
+    // The source notifies on connect/disconnect as well as on new samples, so
+    // re-evaluate the sensor gate here to switch the sound on/off promptly when
+    // a Bluetooth sensor connects or drops.
+    _applyGate();
     // The source already applies debug overrides in `data`. The vario sound is
     // strictly a function of this value; audibility is handled by the gate.
     final vs = source.data.verticalSpeed;

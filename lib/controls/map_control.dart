@@ -152,6 +152,12 @@ class MapControl extends StatefulWidget {
   /// Show the HDG/ALT readout and the "No GPS fix" status chip (top-left).
   final bool showStatus;
 
+  /// Whether this map is the currently active/selected widget. The operation
+  /// buttons (zoom in/out, re-center, reset-north) are only shown while the
+  /// map is selected; when it isn't, the map is a static readout with no
+  /// controls, matching the rest of the dashboard.
+  final bool active;
+
   const MapControl({
     super.key,
     this.initialZoom = 17.0,
@@ -165,6 +171,7 @@ class MapControl extends StatefulWidget {
     this.showZoomLevel = true,
     this.showAttribution = true,
     this.showStatus = true,
+    this.active = false,
   });
 
   @override
@@ -525,50 +532,53 @@ class _MapControlState extends State<MapControl> {
             ),
 
           // Column of map affordances stacked in the bottom-right corner.
-          Positioned(
-            right: 8,
-            bottom: 8,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (_rotationDeg.abs() > 0.5) ...[
-                  _CompassButton(
-                    rotationDeg: _rotationDeg,
-                    onTap: _resetNorth,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                if (!_follow) ...[
+          // Only shown while the map widget is selected/active; otherwise the
+          // map is a static readout with no operation buttons.
+          if (widget.active)
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (_rotationDeg.abs() > 0.5) ...[
+                    _CompassButton(
+                      rotationDeg: _rotationDeg,
+                      onTap: _resetNorth,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (!_follow) ...[
+                    _MapButton(
+                      icon: Icons.my_location,
+                      tooltip: 'Re-center',
+                      onTap: () {
+                        setState(() => _follow = true);
+                        final p = _lastWgs;
+                        if (p != null && _ready) {
+                          _map.move(
+                              _shift(p, widget.tileSource), _map.camera.zoom);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  // Zoom in / out buttons (feature 15).
                   _MapButton(
-                    icon: Icons.my_location,
-                    tooltip: 'Re-center',
-                    onTap: () {
-                      setState(() => _follow = true);
-                      final p = _lastWgs;
-                      if (p != null && _ready) {
-                        _map.move(
-                            _shift(p, widget.tileSource), _map.camera.zoom);
-                      }
-                    },
+                    icon: Icons.add,
+                    tooltip: 'Zoom in',
+                    onTap: () => _zoomBy(1),
                   ),
                   const SizedBox(height: 8),
+                  _MapButton(
+                    icon: Icons.remove,
+                    tooltip: 'Zoom out',
+                    onTap: () => _zoomBy(-1),
+                  ),
                 ],
-                // Zoom in / out buttons (feature 15).
-                _MapButton(
-                  icon: Icons.add,
-                  tooltip: 'Zoom in',
-                  onTap: () => _zoomBy(1),
-                ),
-                const SizedBox(height: 8),
-                _MapButton(
-                  icon: Icons.remove,
-                  tooltip: 'Zoom out',
-                  onTap: () => _zoomBy(-1),
-                ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );

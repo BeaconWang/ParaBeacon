@@ -157,7 +157,14 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // threading it through the widget tree. Driven by the transformed vertical
     // speed.
     _varioAudio = VarioAudioBridge(
-        source: _transformer, audio: VarioAudioService.instance);
+      source: _transformer,
+      audio: VarioAudioService.instance,
+      // Only let the vario make sound while a Bluetooth-sensor feed is
+      // connected (real BLE device, or the debug simulator standing in for
+      // one). With nothing connected the beeper stays silent regardless of any
+      // vertical-speed values flowing through.
+      sensorConnected: () => _dataSource.isConnected,
+    );
     // Initialize the audio stream and start forwarding vertical speed. Safe to
     // fire-and-forget; forwarding begins as soon as init() completes.
     _varioAudio.attach();
@@ -246,6 +253,17 @@ class _DashGridPageState extends State<DashGridPage>
 
   String? _selectedControlId;
   int _controlSeq = 0;
+
+  // Stable per-control keys. Reusing the same GlobalKey for a given control
+  // instance keeps its State alive when the widget tree around it changes
+  // (e.g. selecting/deselecting swaps the edit-mode Stack for the view-mode
+  // branch, and toggles an IgnorePointer wrapper). Without this, stateful
+  // controls like the Map would be rebuilt from scratch on every
+  // select/deselect and lose their zoom/pan.
+  final Map<String, GlobalKey> _controlKeys = {};
+
+  GlobalKey _keyFor(String instanceId) =>
+      _controlKeys.putIfAbsent(instanceId, () => GlobalKey());
 
   // The single control on the current page that is currently "unlocked" and
   // therefore allowed to receive its own pointer events (map pan/zoom,
@@ -955,6 +973,7 @@ class _DashGridPageState extends State<DashGridPage>
       _controls.removeWhere((c) => c.instanceId == instanceId);
       if (_selectedControlId == instanceId) _selectedControlId = null;
       if (_activeControlId == instanceId) _activeControlId = null;
+      _controlKeys.remove(instanceId);
     });
     _saveLayout();
   }
@@ -1255,6 +1274,9 @@ class _DashGridPageState extends State<DashGridPage>
                     painter: DashGridPainter(
                       cellWidth: _cellWidth(MediaQuery.of(context).size),
                       cellHeight: _cellHeight(MediaQuery.of(context).size),
+                      // Use the theme's on-surface color so the grid is
+                      // visible on light backgrounds too, not just dark ones.
+                      lineColor: Theme.of(context).colorScheme.onSurface,
                     ),
                     size: Size.infinite,
                   )
@@ -1416,6 +1438,10 @@ class _DashGridPageState extends State<DashGridPage>
         isEditMode: _isEditMode,
         isSelected: isSelected,
         isControlled: isControlled,
+        // Stable key so the map (and any other stateful control) keeps its
+        // State — e.g. the current zoom level — when the widget is
+        // selected/deselected and its surrounding tree is rebuilt.
+        mapKey: _keyFor(control.instanceId),
         // In edit mode taps are handled by the outer GestureDetector so we
         // can also ignore the control's internal interactions (e.g. map pan,
         // buttons). Passing null here disables the inner InkWell.
@@ -1451,10 +1477,19 @@ class _DashGridPageState extends State<DashGridPage>
                       onTap: () => setState(
                           () => _selectedControlId = control.instanceId),
                       onLongPress: () => _showControlMenu(control),
-                      onPanStart: (_) => _onControlDragStart(control),
-                      onPanUpdate: (details) =>
-                          _onControlDragUpdate(control, details.delta),
-                      onPanEnd: (_) => _saveLayout(),
+                      // A widget must be selected before it can be moved.
+                      // While unselected the first tap only selects it (like
+                      // non-editing mode); drag/move gestures are ignored so
+                      // an accidental pan can't reposition an unselected
+                      // widget.
+                      onPanStart: isSelected
+                          ? (_) => _onControlDragStart(control)
+                          : null,
+                      onPanUpdate: isSelected
+                          ? (details) =>
+                              _onControlDragUpdate(control, details.delta)
+                          : null,
+                      onPanEnd: isSelected ? (_) => _saveLayout() : null,
                       // Swallow every pointer event before it reaches the
                       // control's own contents so its internal interactions
                       // (map pan/zoom, buttons, list scroll, etc.) are
@@ -1823,16 +1858,25 @@ class DashGridPainter extends CustomPainter {
   final double cellWidth;
   final double cellHeight;
 
-  DashGridPainter({required this.cellWidth, required this.cellHeight});
+  /// Base color for the grid lines. Derived from the current theme so the grid
+  /// is visible on both dark and light backgrounds (hardcoded white was
+  /// invisible in light mode).
+  final Color lineColor;
+
+  DashGridPainter({
+    required this.cellWidth,
+    required this.cellHeight,
+    required this.lineColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withAlpha(40)
+      ..color = lineColor.withAlpha(90)
       ..strokeWidth = 0.5;
 
     final dashPaint = Paint()
-      ..color = Colors.white.withAlpha(25)
+      ..color = lineColor.withAlpha(55)
       ..strokeWidth = 0.5;
 
     // Integer cell counts; the grid divides the canvas evenly by construction.
@@ -1891,6 +1935,7 @@ class DashGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(DashGridPainter oldDelegate) {
     return cellWidth != oldDelegate.cellWidth ||
-        cellHeight != oldDelegate.cellHeight;
+        cellHeight != oldDelegate.cellHeight ||
+        lineColor != oldDelegate.lineColor;
   }
 }

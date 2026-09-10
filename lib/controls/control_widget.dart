@@ -24,6 +24,11 @@ class ControlWidget extends StatelessWidget {
   final bool isControlled;
   final VoidCallback? onTap;
 
+  /// Stable key for the inner Map control, supplied by the dashboard host so
+  /// the map's State (zoom/pan) survives select/deselect reparenting. Only
+  /// used by the `map` control type.
+  final Key? mapKey;
+
   const ControlWidget({
     super.key,
     required this.control,
@@ -31,6 +36,7 @@ class ControlWidget extends StatelessWidget {
     required this.isSelected,
     this.isControlled = false,
     this.onTap,
+    this.mapKey,
   });
 
   @override
@@ -39,10 +45,16 @@ class ControlWidget extends StatelessWidget {
     final showBorder = control.boolSetting('showBorder', fallback: true);
 
     // User-picked border color, stored as ARGB int; 0 == "automatic" (fall
-    // back to the theme outline the app has always used).
+    // back to the theme outline the app has always used). Light themes need a
+    // stronger outline than dark ones for the widget edges to read clearly
+    // against a light background, so pick the alpha per brightness.
     final customBorderArgb = control.intSetting('borderColor', fallback: 0);
+    final isLight = theme.brightness == Brightness.light;
+    final autoBorderAlpha = isEditMode
+        ? 160
+        : (isLight ? 130 : 60);
     final autoBorderColor =
-        theme.colorScheme.outlineVariant.withAlpha(isEditMode ? 160 : 60);
+        theme.colorScheme.outlineVariant.withAlpha(autoBorderAlpha);
     final baseBorderColor = customBorderArgb == 0
         ? autoBorderColor
         : Color(customBorderArgb);
@@ -242,6 +254,11 @@ class ControlWidget extends StatelessWidget {
         return ClipRRect(
           borderRadius: innerRadius,
           child: MapControl(
+            key: mapKey,
+            // The map is "active" (shows its operation buttons and receives
+            // gestures) when it's the selected widget in edit mode or the
+            // long-press-unlocked widget in view mode.
+            active: isSelected || isControlled,
             follow: control.boolSetting('follow', fallback: true),
             initialZoom: control.doubleSetting('zoom', fallback: 17.0),
             tileSource: source is String ? source : 'osm',

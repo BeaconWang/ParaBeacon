@@ -99,16 +99,20 @@ class VarioAudioBridge {
 
   /// Whether the live vario should currently emit sound.
   ///
-  /// Two gates must both be open:
-  ///  * a Bluetooth sensor must be connected ([sensorConnected]); and
+  /// Two gates may apply:
+  ///  * when [VarioSoundSettings.soundOnlyWhenSensorConnected] is enabled a
+  ///    Bluetooth sensor must be connected ([sensorConnected]); and
   ///  * when [VarioSoundSettings.soundOnlyWhenFlying] is enabled, a flight must
   ///    have started ([FlightState.isFlying]).
   ///
-  /// With no sensor connected the beeper stays silent regardless of the
-  /// vertical speed being fed in (e.g. debug/simulator values).
+  /// With the sensor gate on and nothing connected the beeper stays silent
+  /// regardless of the vertical speed being fed in (e.g. debug/simulator
+  /// values).
   bool get _soundEnabled {
-    final sensorOk = sensorConnected?.call() ?? true;
-    if (!sensorOk) return false;
+    if (_settings.soundOnlyWhenSensorConnected) {
+      final sensorOk = sensorConnected?.call() ?? true;
+      if (!sensorOk) return false;
+    }
     return !_settings.soundOnlyWhenFlying || _flightState.isFlying;
   }
 

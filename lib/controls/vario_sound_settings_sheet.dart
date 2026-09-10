@@ -254,6 +254,17 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                         value: _settings.soundOnlyWhenFlying,
                         onChanged: _settings.setSoundOnlyWhenFlying,
                       ),
+                      const SizedBox(height: 8),
+                      _switchCard(
+                        theme,
+                        icon: Icons.bluetooth_connected,
+                        label: 'Sound only when sensor connected',
+                        description:
+                            'Stay silent unless a Bluetooth sensor is '
+                            'connected.',
+                        value: _settings.soundOnlyWhenSensorConnected,
+                        onChanged: _settings.setSoundOnlyWhenSensorConnected,
+                      ),
                     ],
                   );
                 },

@@ -30,6 +30,8 @@ class VarioSoundSettings extends ChangeNotifier {
   static const _kSinkWaveform = 'pb.vario.sinkWaveform';
   static const _kMasterGain = 'pb.vario.masterGain';
   static const _kSoundOnlyWhenFlying = 'pb.vario.soundOnlyWhenFlying';
+  static const _kSoundOnlyWhenSensorConnected =
+      'pb.vario.soundOnlyWhenSensorConnected';
   static const _kMuted = 'pb.vario.muted';
   static const _kVolume = 'pb.vario.volume';
 
@@ -57,6 +59,12 @@ class VarioSoundSettings extends ChangeNotifier {
   /// vario stays quiet on the ground until the user starts a flight.
   bool _soundOnlyWhenFlying = true;
 
+  /// When true, the live vario beeper is silenced unless a Bluetooth sensor
+  /// feed is connected. Preview/audition and flight replay are not affected —
+  /// this only gates the live sensor feed (see [VarioAudioBridge]). Defaults to
+  /// true so no sound is produced with no sensor attached.
+  bool _soundOnlyWhenSensorConnected = true;
+
   /// Master on/off for the vario beeper (mute). Mirrors
   /// [VarioAudioService.isMuted] but is persisted here so the choice survives
   /// an app restart.
@@ -74,6 +82,7 @@ class VarioSoundSettings extends ChangeNotifier {
   VarioWaveform get sinkWaveform => _sinkWaveform;
   double get masterGain => _masterGain;
   bool get soundOnlyWhenFlying => _soundOnlyWhenFlying;
+  bool get soundOnlyWhenSensorConnected => _soundOnlyWhenSensorConnected;
   bool get muted => _muted;
   double get volume => _volume;
 
@@ -124,6 +133,9 @@ class VarioSoundSettings extends ChangeNotifier {
       _masterGain = sp.getDouble(_kMasterGain) ?? _masterGain;
       _soundOnlyWhenFlying =
           sp.getBool(_kSoundOnlyWhenFlying) ?? _soundOnlyWhenFlying;
+      _soundOnlyWhenSensorConnected =
+          sp.getBool(_kSoundOnlyWhenSensorConnected) ??
+              _soundOnlyWhenSensorConnected;
       _muted = sp.getBool(_kMuted) ?? _muted;
       _volume = sp.getDouble(_kVolume) ?? _volume;
 
@@ -217,6 +229,16 @@ class VarioSoundSettings extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Enables/disables gating the live vario beeper on a connected Bluetooth
+  /// sensor. Only affects the live sensor feed (see [VarioAudioBridge]); it
+  /// does not change the [VarioAudioConfig], so no need to re-apply it.
+  void setSoundOnlyWhenSensorConnected(bool v) {
+    if (_soundOnlyWhenSensorConnected == v) return;
+    _soundOnlyWhenSensorConnected = v;
+    _persistBool(_kSoundOnlyWhenSensorConnected, v);
+    notifyListeners();
+  }
+
   /// Mutes/unmutes the vario beeper and applies it live.
   void setMuted(bool v) {
     if (_muted == v) return;
@@ -243,6 +265,7 @@ class VarioSoundSettings extends ChangeNotifier {
     _sinkWaveform = _base.sinkWaveform;
     _masterGain = _base.masterGain;
     _soundOnlyWhenFlying = true;
+    _soundOnlyWhenSensorConnected = true;
     _muted = false;
     _volume = 1.0;
     try {
@@ -257,6 +280,7 @@ class VarioSoundSettings extends ChangeNotifier {
         sp.remove(_kSinkWaveform),
         sp.remove(_kMasterGain),
         sp.remove(_kSoundOnlyWhenFlying),
+        sp.remove(_kSoundOnlyWhenSensorConnected),
         sp.remove(_kMuted),
         sp.remove(_kVolume),
         // Also clear any leftover legacy keys.

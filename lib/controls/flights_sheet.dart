@@ -449,15 +449,47 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             final stats = FlightDerivedStats.compute(track);
-            return AlertDialog(
-              title: const Text('Flight details'),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+            return Dialog.fullscreen(
+              child: Scaffold(
+                appBar: AppBar(
+                  title: const Text('Flight details'),
+                  leading: IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  actions: [
+                    if (track.hasSamples)
+                      IconButton(
+                        icon: const Icon(Icons.data_array),
+                        tooltip: 'Delete samples',
+                        color: theme.colorScheme.error,
+                        onPressed: () async {
+                          final confirmed = await _confirmDeleteSamples();
+                          if (confirmed != true) return;
+                          _recorder.deleteTrackSamples(track);
+                          setDialogState(() {});
+                        },
+                      ),
+                    if (track.samples.length >= 2)
+                      IconButton(
+                        icon: const Icon(Icons.play_circle_outline),
+                        tooltip: 'Replay',
+                        color: theme.colorScheme.primary,
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _replay(track);
+                        },
+                      ),
+                  ],
+                ),
+                body: SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                       _detailRow('Start', _fmtDateTime(track.startTime)),
                       _detailRow(
                           'End',
@@ -594,41 +626,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           ],
                         ),
                       ],
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-              actions: [
-                if (track.hasSamples)
-                  TextButton.icon(
-                    onPressed: () async {
-                      final confirmed = await _confirmDeleteSamples();
-                      if (confirmed != true) return;
-                      _recorder.deleteTrackSamples(track);
-                      // Refresh the dialog so the button hides and the replay
-                      // action disappears.
-                      setDialogState(() {});
-                    },
-                    icon: const Icon(Icons.data_array),
-                    label: Text('Delete samples',
-                        style: TextStyle(color: theme.colorScheme.error)),
-                  ),
-                if (track.samples.length >= 2)
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _replay(track);
-                    },
-                    icon: const Icon(Icons.play_circle_outline),
-                    label: Text('Replay',
-                        style: TextStyle(color: theme.colorScheme.primary)),
-                  ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Close',
-                      style: TextStyle(color: theme.colorScheme.primary)),
-                ),
-              ],
             );
           },
         );

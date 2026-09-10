@@ -45,33 +45,33 @@ enum AppThemeId {
   /// every user's theme back to the default on next launch.
   String get storageKey => name;
 
-  /// Bilingual display label used in the theme picker.
+  /// English display label used in the theme picker.
   String get label {
     switch (this) {
       case AppThemeId.darkCyan:
-        return 'Dark Cyan / 暗青（默认）';
+        return 'Dark Cyan (default)';
       case AppThemeId.darkSlate:
-        return 'Dark Slate / 暗石板';
+        return 'Dark Slate';
       case AppThemeId.darkAmber:
-        return 'Dark Amber / 暗琥珀（夜视）';
+        return 'Dark Amber (night vision)';
       case AppThemeId.darkForest:
-        return 'Dark Forest / 暗森林';
+        return 'Dark Forest';
       case AppThemeId.darkOcean:
-        return 'Dark Ocean / 暗海洋';
+        return 'Dark Ocean';
       case AppThemeId.lightSky:
-        return 'Light Sky / 亮天空';
+        return 'Light Sky';
       case AppThemeId.lightSand:
-        return 'Light Sand / 亮沙色';
+        return 'Light Sand';
       case AppThemeId.lightMint:
-        return 'Light Mint / 亮薄荷';
+        return 'Light Mint';
       case AppThemeId.lightPaper:
-        return 'Light Paper / 亮航图纸';
+        return 'Light Paper';
       case AppThemeId.lightLavender:
-        return 'Light Lavender / 亮薰衣草';
+        return 'Light Lavender';
       case AppThemeId.darkContrast:
-        return 'Dark High-Contrast / 暗高对比';
+        return 'Dark High-Contrast';
       case AppThemeId.lightContrast:
-        return 'Light High-Contrast / 亮高对比';
+        return 'Light High-Contrast';
     }
   }
 

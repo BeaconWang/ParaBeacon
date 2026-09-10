@@ -66,52 +66,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-            child: Row(
-              children: [
-                Icon(Icons.route, color: theme.colorScheme.primary),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text('Flights', style: theme.textTheme.titleLarge),
-                ),
-                // DEBUG ONLY — inject a random flight record for testing.
-                if (kDebugMode)
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    tooltip: 'Add random flight (debug)',
-                    onPressed: () => _recorder.addRandomDebugTrack(),
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.file_download_outlined),
-                  tooltip: 'Import library (.pbflights)',
-                  onPressed: _importLibrary,
-                ),
-                if (tracks.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.file_upload_outlined),
-                    tooltip: 'Export library (.pbflights)',
-                    onPressed: () => _exportLibrary(tracks),
-                  ),
-                if (tracks.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.delete_sweep_outlined),
-                    tooltip: 'Clear all',
-                    onPressed: _confirmClearAll,
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.travel_explore),
-                  tooltip: 'Place-name lookup settings',
-                  onPressed: _openGeoSettings,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  tooltip: 'Close',
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-          ),
+          _buildHeader(theme, tracks),
           const Divider(height: 1),
           Expanded(
             child: tracks.isEmpty
@@ -126,6 +81,96 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         ],
       ),
     );
+  }
+
+  /// Builds the header. When the action buttons don't fit next to the title
+  /// on a single row, they wrap onto a second row below the title.
+  Widget _buildHeader(ThemeData theme, List<FlightTrack> tracks) {
+    final actions = _headerActions(tracks);
+    // Approximate width of a single IconButton (48px default touch target).
+    const buttonWidth = 48.0;
+    // Minimum width we want to reserve for the title before wrapping.
+    const minTitleWidth = 120.0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final actionsWidth = actions.length * buttonWidth;
+          // Leading icon (24) + gap (10) + title + actions.
+          final needed = 24 + 10 + minTitleWidth + actionsWidth;
+          final fitsOnOneRow = needed <= constraints.maxWidth;
+
+          final titleRow = Row(
+            children: [
+              Icon(Icons.route, color: theme.colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('Flights', style: theme.textTheme.titleLarge),
+              ),
+              if (fitsOnOneRow) ...actions,
+            ],
+          );
+
+          if (fitsOnOneRow) return titleRow;
+
+          // Not enough room: title on the first row, buttons wrapped below.
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              titleRow,
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  children: actions,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// The set of header action buttons, in display order.
+  List<Widget> _headerActions(List<FlightTrack> tracks) {
+    return [
+      // DEBUG ONLY — inject a random flight record for testing.
+      if (kDebugMode)
+        IconButton(
+          icon: const Icon(Icons.add_circle_outline),
+          tooltip: 'Add random flight (debug)',
+          onPressed: () => _recorder.addRandomDebugTrack(),
+        ),
+      IconButton(
+        icon: const Icon(Icons.file_download_outlined),
+        tooltip: 'Import library (.pbflights)',
+        onPressed: _importLibrary,
+      ),
+      if (tracks.isNotEmpty)
+        IconButton(
+          icon: const Icon(Icons.file_upload_outlined),
+          tooltip: 'Export library (.pbflights)',
+          onPressed: () => _exportLibrary(tracks),
+        ),
+      if (tracks.isNotEmpty)
+        IconButton(
+          icon: const Icon(Icons.delete_sweep_outlined),
+          tooltip: 'Clear all',
+          onPressed: _confirmClearAll,
+        ),
+      IconButton(
+        icon: const Icon(Icons.travel_explore),
+        tooltip: 'Place-name lookup settings',
+        onPressed: _openGeoSettings,
+      ),
+      IconButton(
+        icon: const Icon(Icons.close),
+        tooltip: 'Close',
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+    ];
   }
 
   Widget _empty(ThemeData theme) {

@@ -629,27 +629,6 @@ class _DashGridPageState extends State<DashGridPage>
                       },
                     ),
                     const Divider(height: 1),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      secondary: Icon(_Icons.mode,
-                          color: theme.colorScheme.primary),
-                      title: const Text('Edit mode'),
-                      value: _isEditMode,
-                      onChanged: (v) {
-                        setState(() {
-                          _isEditMode = v;
-                          if (!v) _selectedControlId = null;
-                          _activeControlId = null;
-                          // Mirror the top-menu toggle: reset the page
-                          // indicator's auto-hide state so view mode starts
-                          // hidden and edit mode keeps it pinned open.
-                          _pageIndicatorHideTimer?.cancel();
-                          _pageIndicatorVisible = false;
-                        });
-                        setSheetState(() {});
-                      },
-                    ),
-                    const Divider(height: 1),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.graphic_eq,
@@ -750,32 +729,6 @@ class _DashGridPageState extends State<DashGridPage>
                         },
                       ),
                     ],
-                    const Divider(height: 1),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.delete_sweep_outlined,
-                          color: theme.colorScheme.error),
-                      title: Text(
-                        'Clear all controls',
-                        style: TextStyle(color: theme.colorScheme.error),
-                      ),
-                      subtitle: Text('${_controls.length} placed'),
-                      enabled: _controls.isNotEmpty,
-                      onTap: _controls.isEmpty
-                          ? null
-                          : () async {
-                              final confirmed = await _confirmClearAll(context);
-                              if (confirmed == true) {
-                                setState(() {
-                                  _controls.clear();
-                                  _selectedControlId = null;
-                                  _activeControlId = null;
-                                });
-                                _saveLayout();
-                                setSheetState(() {});
-                              }
-                            },
-                    ),
                       ],
                     ),
                   ),
@@ -881,6 +834,21 @@ class _DashGridPageState extends State<DashGridPage>
         );
       },
     );
+  }
+
+  /// Confirms with the user, then removes every control from the current
+  /// dashboard. Wired to the edit-mode "Clear all controls" menu item.
+  Future<void> _clearAllControls() async {
+    if (_controls.isEmpty) return;
+    final confirmed = await _confirmClearAll(context);
+    if (confirmed != true) return;
+    if (!mounted) return;
+    setState(() {
+      _controls.clear();
+      _selectedControlId = null;
+      _activeControlId = null;
+    });
+    _saveLayout();
   }
 
   Future<bool?> _confirmClearAll(BuildContext context) {
@@ -1623,6 +1591,7 @@ class _DashGridPageState extends State<DashGridPage>
                 pageIndex: _currentPage,
                 pageCount: _pages.length,
                 gridSize: _gridSize,
+                controlCount: _controls.length,
                 onGridSizeChanged: (value) {
                   setState(() => _gridSize = value);
                   _saveLayout();
@@ -1633,6 +1602,10 @@ class _DashGridPageState extends State<DashGridPage>
                 onDeletePage: () {
                   _closeMenu();
                   _deleteCurrentPage();
+                },
+                onClearAll: () {
+                  _closeMenu();
+                  _clearAllControls();
                 },
                 onOpenPreferences: () => _onMenuAction('preferences'),
               ),
@@ -1649,11 +1622,13 @@ class _MenuContent extends StatelessWidget {
   final int pageIndex;
   final int pageCount;
   final double gridSize;
+  final int controlCount;
   final ValueChanged<double> onGridSizeChanged;
   final VoidCallback onToggleEditMode;
   final VoidCallback onAddControl;
   final VoidCallback onAddPage;
   final VoidCallback onDeletePage;
+  final VoidCallback onClearAll;
   final VoidCallback onOpenPreferences;
 
   const _MenuContent({
@@ -1661,11 +1636,13 @@ class _MenuContent extends StatelessWidget {
     required this.pageIndex,
     required this.pageCount,
     required this.gridSize,
+    required this.controlCount,
     required this.onGridSizeChanged,
     required this.onToggleEditMode,
     required this.onAddControl,
     required this.onAddPage,
     required this.onDeletePage,
+    required this.onClearAll,
     required this.onOpenPreferences,
   });
 
@@ -1757,6 +1734,25 @@ class _MenuContent extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(
+              Icons.delete_sweep_outlined,
+              color:
+                  controlCount > 0 ? theme.colorScheme.error : theme.disabledColor,
+            ),
+            title: Text(
+              'Clear all controls',
+              style: TextStyle(
+                color: controlCount > 0
+                    ? theme.colorScheme.error
+                    : theme.disabledColor,
+              ),
+            ),
+            subtitle: Text('$controlCount placed'),
+            enabled: controlCount > 0,
+            onTap: controlCount > 0 ? onClearAll : null,
           ),
         ],
         const Divider(height: 1),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/flight_data_provider.dart';
 import '../data/flight_state.dart';
+import '../l10n/app_localizations.dart';
 
 /// Color state of a data value, mirroring XCTrack's value coloring.
 enum ValueState { neutral, good, bad }
@@ -158,7 +159,7 @@ class VerticalSpeedControl extends StatelessWidget {
       state = ValueState.neutral;
     }
     return DataValueControl(
-      title: 'Vertical Speed',
+      title: AppLocalizations.of(context).controlVerticalSpeed,
       value: '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)}',
       unit: 'm/s',
       state: state,
@@ -206,6 +207,7 @@ class LocationControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final data = FlightDataProvider.of(context);
     final lat = latitude ?? data.latitude;
     final lon = longitude ?? data.longitude;
@@ -239,7 +241,7 @@ class LocationControl extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.center,
                 child: Text(
-                  'LOCATION',
+                  l10n.controlLocation.toUpperCase(),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   style: theme.textTheme.labelSmall?.copyWith(
@@ -270,7 +272,7 @@ class LocationControl extends StatelessWidget {
                               size: valueSize,
                               color: theme.colorScheme.onSurfaceVariant),
                           const SizedBox(width: 6),
-                          Text('No GPS fix', style: valueStyle),
+                          Text(l10n.locationNoFix, style: valueStyle),
                         ],
                       ),
               ),
@@ -364,6 +366,7 @@ class AltitudeControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = FlightDataProvider.of(context);
+    final l10n = AppLocalizations.of(context);
     final double? raw;
     final String title;
     switch (source) {
@@ -371,15 +374,15 @@ class AltitudeControl extends StatelessWidget {
         // The "effective" altitude is always non-null (defaults to 0), but is
         // only meaningful once we have any positioning fix or baro reading.
         raw = data.hasFix || data.baroAltitude != null ? data.altitude : null;
-        title = 'Altitude';
+        title = l10n.controlAltitude;
         break;
       case AltitudeSource.gps:
         raw = data.gpsAltitude;
-        title = 'GPS Altitude';
+        title = l10n.controlGpsAltitude;
         break;
       case AltitudeSource.baro:
         raw = data.baroAltitude;
-        title = 'Baro Altitude';
+        title = l10n.controlBaroAltitude;
         break;
     }
     return DataValueControl(
@@ -422,7 +425,7 @@ class _MaxAltitudeControlState extends State<MaxAltitudeControl> {
     }
     final hasSample = _max.isFinite;
     return DataValueControl(
-      title: 'Max Altitude',
+      title: AppLocalizations.of(context).controlMaxAltitude,
       value: hasSample ? _max.toStringAsFixed(0) : '--',
       unit: 'm',
       state: ValueState.neutral,
@@ -444,7 +447,7 @@ class GroundSpeedControl extends StatelessWidget {
     // simulator-defaulted 0 would be misleading.
     final hasValue = data.hasFix;
     return DataValueControl(
-      title: 'Ground Speed',
+      title: AppLocalizations.of(context).controlGroundSpeed,
       value: hasValue ? data.groundSpeed.toStringAsFixed(0) : '--',
       unit: 'km/h',
       state: ValueState.neutral,
@@ -487,7 +490,7 @@ class GlideRatioControl extends StatelessWidget {
       }
     }
     return DataValueControl(
-      title: 'Glide',
+      title: AppLocalizations.of(context).controlGlide,
       value: value,
       unit: '',
       state: ValueState.neutral,
@@ -522,7 +525,7 @@ class HeadingControl extends StatelessWidget {
       value = data.heading.round().toString().padLeft(3, '0');
     }
     return DataValueControl(
-      title: 'Heading',
+      title: AppLocalizations.of(context).controlHeading,
       value: value,
       unit: cardinal ? '' : '°',
       state: ValueState.neutral,
@@ -541,7 +544,7 @@ class WindSpeedControl extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = FlightDataProvider.of(context);
     return DataValueControl(
-      title: 'Wind Speed',
+      title: AppLocalizations.of(context).controlWindSpeed,
       value: data.windSpeed.toStringAsFixed(0),
       unit: 'km/h',
       state: ValueState.neutral,
@@ -571,7 +574,7 @@ class WindDirectionControl extends StatelessWidget {
       value = data.windDirection.round().toString().padLeft(3, '0');
     }
     return DataValueControl(
-      title: 'Wind Dir',
+      title: AppLocalizations.of(context).controlWindDir,
       value: value,
       unit: cardinal ? '' : '°',
       state: ValueState.neutral,
@@ -590,7 +593,7 @@ class PressureControl extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = FlightDataProvider.of(context).pressure;
     return DataValueControl(
-      title: 'Pressure',
+      title: AppLocalizations.of(context).controlPressure,
       value: p == null ? '--' : p.toStringAsFixed(1),
       unit: 'hPa',
       state: ValueState.neutral,
@@ -609,7 +612,7 @@ class TemperatureControl extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = FlightDataProvider.of(context).temperature;
     return DataValueControl(
-      title: 'Temperature',
+      title: AppLocalizations.of(context).controlTemperature,
       value: t == null ? '--' : t.toStringAsFixed(1),
       unit: '°C',
       state: ValueState.neutral,
@@ -638,7 +641,7 @@ class SensorBatteryControl extends StatelessWidget {
       }
     }
     return DataValueControl(
-      title: 'Sensor Battery',
+      title: AppLocalizations.of(context).controlSensorBattery,
       value: b == null ? '--' : b.toString(),
       unit: '%',
       state: state,
@@ -657,7 +660,7 @@ class HeartRateControl extends StatelessWidget {
   Widget build(BuildContext context) {
     final hr = FlightDataProvider.of(context).heartRate;
     return DataValueControl(
-      title: 'Heart Rate',
+      title: AppLocalizations.of(context).controlHeartRate,
       value: hr == null ? '--' : hr.toString(),
       unit: 'bpm',
       state: ValueState.neutral,
@@ -709,7 +712,7 @@ class _ClockControlState extends State<ClockControl> {
     final mm = now.minute.toString().padLeft(2, '0');
     final ss = now.second.toString().padLeft(2, '0');
     return DataValueControl(
-      title: 'Clock',
+      title: AppLocalizations.of(context).controlClock,
       value: widget.showSeconds ? '$hh:$mm:$ss' : '$hh:$mm',
       unit: '',
       state: ValueState.neutral,
@@ -761,7 +764,7 @@ class _FlightTimeControlState extends State<FlightTimeControl> {
   Widget build(BuildContext context) {
     final state = FlightState.instance;
     return DataValueControl(
-      title: 'Flight Time',
+      title: AppLocalizations.of(context).controlFlightTime,
       value: state.isFlying ? _formatHms(state.elapsed) : '--:--:--',
       unit: '',
       state: ValueState.neutral,

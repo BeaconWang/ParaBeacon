@@ -371,4 +371,33 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get controlNoSettings => '此控件没有可设置项。';
+
+  @override
+  String get controlGpsAltitude => 'GPS 高度';
+
+  @override
+  String get controlBaroAltitude => '气压高度';
+
+  @override
+  String get controlWindDir => '风向';
+
+  @override
+  String get locationNoFix => '无 GPS 定位';
+
+  @override
+  String get flightButtonStart => '开始';
+
+  @override
+  String get flightButtonStop => '停止';
+
+  @override
+  String get flightButtonAuto => '自动';
+
+  @override
+  String get flightButtonAutoTooltip => '自动检测起飞 / 降落';
+
+  @override
+  String flightRecordingReadout(int points, String km) {
+    return '记录中 · $points 点 · $km km';
+  }
 }

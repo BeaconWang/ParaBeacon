@@ -385,4 +385,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get controlNoSettings => 'This control has no settings.';
+
+  @override
+  String get controlGpsAltitude => 'GPS Altitude';
+
+  @override
+  String get controlBaroAltitude => 'Baro Altitude';
+
+  @override
+  String get controlWindDir => 'Wind Dir';
+
+  @override
+  String get locationNoFix => 'No GPS fix';
+
+  @override
+  String get flightButtonStart => 'START';
+
+  @override
+  String get flightButtonStop => 'STOP';
+
+  @override
+  String get flightButtonAuto => 'AUTO';
+
+  @override
+  String get flightButtonAutoTooltip => 'Auto-detect take-off / landing';
+
+  @override
+  String flightRecordingReadout(int points, String km) {
+    return 'REC · $points pts · $km km';
+  }
 }

@@ -793,6 +793,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This control has no settings.'**
   String get controlNoSettings;
+
+  /// No description provided for @controlGpsAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS Altitude'**
+  String get controlGpsAltitude;
+
+  /// No description provided for @controlBaroAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Baro Altitude'**
+  String get controlBaroAltitude;
+
+  /// No description provided for @controlWindDir.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind Dir'**
+  String get controlWindDir;
+
+  /// No description provided for @locationNoFix.
+  ///
+  /// In en, this message translates to:
+  /// **'No GPS fix'**
+  String get locationNoFix;
+
+  /// No description provided for @flightButtonStart.
+  ///
+  /// In en, this message translates to:
+  /// **'START'**
+  String get flightButtonStart;
+
+  /// No description provided for @flightButtonStop.
+  ///
+  /// In en, this message translates to:
+  /// **'STOP'**
+  String get flightButtonStop;
+
+  /// No description provided for @flightButtonAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'AUTO'**
+  String get flightButtonAuto;
+
+  /// No description provided for @flightButtonAutoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-detect take-off / landing'**
+  String get flightButtonAutoTooltip;
+
+  /// No description provided for @flightRecordingReadout.
+  ///
+  /// In en, this message translates to:
+  /// **'REC · {points} pts · {km} km'**
+  String flightRecordingReadout(int points, String km);
 }
 
 class _AppLocalizationsDelegate

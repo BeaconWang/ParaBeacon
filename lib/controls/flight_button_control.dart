@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/flight_recorder.dart';
 import '../data/flight_state.dart';
+import '../l10n/app_localizations.dart';
 
 /// A widget control that starts/stops a flight.
 ///
@@ -76,6 +77,7 @@ class _FlightButtonControlState extends State<FlightButtonControl> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final flying = _flight.isFlying;
 
     // Single unified pill: strong colored background, "onColor" foreground.
@@ -122,7 +124,7 @@ class _FlightButtonControlState extends State<FlightButtonControl> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          flying ? 'STOP' : 'START',
+                          flying ? l10n.flightButtonStop : l10n.flightButtonStart,
                           style: TextStyle(
                             fontSize: labelSize,
                             fontWeight: FontWeight.w800,
@@ -182,11 +184,12 @@ class _AutoDetectBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final dim = fgColor.withAlpha(115);
     final labelColor = enabled ? fgColor : dim;
 
     return Tooltip(
-      message: 'Auto-detect take-off / landing',
+      message: l10n.flightButtonAutoTooltip,
       child: InkWell(
         onTap: () => onChanged(!enabled),
         child: Container(
@@ -211,7 +214,7 @@ class _AutoDetectBadge extends StatelessWidget {
                   ),
                   const SizedBox(width: 3),
                   Text(
-                    'AUTO',
+                    l10n.flightButtonAuto,
                     style: TextStyle(
                       color: labelColor,
                       fontSize: 9,
@@ -257,6 +260,7 @@ class _RecordingReadout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final recorder = FlightRecorder.instance;
     return AnimatedBuilder(
       animation: recorder,
@@ -273,7 +277,8 @@ class _RecordingReadout extends StatelessWidget {
                   size: fontSize + 2, color: fgColor),
               const SizedBox(width: 3),
               Text(
-                'REC · ${track.pointCount} pts · ${km.toStringAsFixed(1)} km',
+                l10n.flightRecordingReadout(
+                    track.pointCount, km.toStringAsFixed(1)),
                 style: TextStyle(
                   fontSize: fontSize,
                   color: fgColor.withAlpha(230),

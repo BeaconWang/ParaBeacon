@@ -163,5 +163,22 @@
   "duplicate": "Duplicate",
   "bringToFront": "Bring to Front",
   "sendToBack": "Send to Back",
-  "controlNoSettings": "This control has no settings."
+  "controlNoSettings": "This control has no settings.",
+
+  "controlGpsAltitude": "GPS Altitude",
+  "controlBaroAltitude": "Baro Altitude",
+  "controlWindDir": "Wind Dir",
+  "locationNoFix": "No GPS fix",
+
+  "flightButtonStart": "START",
+  "flightButtonStop": "STOP",
+  "flightButtonAuto": "AUTO",
+  "flightButtonAutoTooltip": "Auto-detect take-off / landing",
+  "flightRecordingReadout": "REC · {points} pts · {km} km",
+  "@flightRecordingReadout": {
+    "placeholders": {
+      "points": { "type": "int" },
+      "km": { "type": "String" }
+    }
+  }
 }

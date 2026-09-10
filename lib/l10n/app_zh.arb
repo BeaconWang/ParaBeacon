@@ -130,5 +130,16 @@
   "duplicate": "复制",
   "bringToFront": "移到顶层",
   "sendToBack": "移到底层",
-  "controlNoSettings": "此控件没有可设置项。"
+  "controlNoSettings": "此控件没有可设置项。",
+
+  "controlGpsAltitude": "GPS 高度",
+  "controlBaroAltitude": "气压高度",
+  "controlWindDir": "风向",
+  "locationNoFix": "无 GPS 定位",
+
+  "flightButtonStart": "开始",
+  "flightButtonStop": "停止",
+  "flightButtonAuto": "自动",
+  "flightButtonAutoTooltip": "自动检测起飞 / 降落",
+  "flightRecordingReadout": "记录中 · {points} 点 · {km} km"
 }

@@ -471,6 +471,16 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           setDialogState(() {});
                         },
                       ),
+                    if (track.hasSamples)
+                      IconButton(
+                        icon: const Icon(Icons.threed_rotation),
+                        tooltip: '3D Replay',
+                        color: theme.colorScheme.primary,
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _replay3D(track);
+                        },
+                      ),
                     if (track.samples.length >= 2)
                       IconButton(
                         icon: const Icon(Icons.play_circle_outline),
@@ -601,14 +611,6 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                               icon:
                                   const Icon(Icons.picture_as_pdf_outlined, size: 18),
                               label: const Text('PDF'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                _replay3D(track);
-                              },
-                              icon: const Icon(Icons.threed_rotation, size: 18),
-                              label: const Text('3D'),
                             ),
                             OutlinedButton.icon(
                               onPressed: () => _saveShareCard(track),

@@ -16,15 +16,26 @@
          by the Map control's device GPS (geolocator) across all SDK levels. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Background location (Android 10+): lets the flight recorder keep
+         receiving GPS fixes once the app is backgrounded / the screen is off.
+         Granted separately by the user ("Allow all the time"); the app still
+         works with only foreground ("while in use") permission, but the track
+         may pause when fully backgrounded without this. -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- Required to download online map tiles for the Map control. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Background execution: keep GPS/vario/BLE working with the screen off or
          the app backgrounded. WAKE_LOCK keeps the CPU alive (also used by the
-         keep-awake wakelock); the FOREGROUND_SERVICE_* permissions let a
-         location foreground service run on Android 10+/14+, and
-         POST_NOTIFICATIONS (Android 13+) is required to show its notification. -->
+         keep-awake wakelock). When a flight starts the geolocator stream is
+         (re)opened with a foreground-service configuration, which starts the
+         plugin's GeolocatorLocationService (declared with
+         foregroundServiceType="location" in the geolocator_android manifest and
+         merged in here) so location + recording survive the screen turning off.
+         FOREGROUND_SERVICE / FOREGROUND_SERVICE_LOCATION authorize that service
+         on Android 10+/14+, and POST_NOTIFICATIONS (Android 13+) is required to
+         show its persistent notification. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />

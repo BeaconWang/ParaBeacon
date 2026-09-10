@@ -17,14 +17,15 @@ enum RecordingDetail {
 
 /// How the [FlightRecorder] decides when to store a new track point.
 enum RecordingIntervalMode {
-  /// Historical behavior: store at most once per second AND only when the
-  /// aircraft moved ≥ [FlightRecorder.minDistanceM] horizontally or the
-  /// altitude changed ≥ [FlightRecorder.minAltitudeDeltaM]. Skips redundant
-  /// points while stationary. This is the default.
+  /// Store at most once per second AND only when the aircraft moved
+  /// ≥ [FlightRecorder.minDistanceM] horizontally or the altitude changed
+  /// ≥ [FlightRecorder.minAltitudeDeltaM]. Skips redundant points while
+  /// stationary.
   smart,
 
   /// Store one point every second regardless of movement (fixed 1 Hz), similar
   /// to the IGC-style continuous logging used by dedicated flight instruments.
+  /// This is the default.
   fixed1s,
 }
 
@@ -44,11 +45,11 @@ class RecordingSettings extends ChangeNotifier {
   static const _kDetail = 'pb.recording.detail';
 
   // ── Current values (defaults) ─────────────────────────────────────────────
-  RecordingIntervalMode _intervalMode = RecordingIntervalMode.smart;
+  RecordingIntervalMode _intervalMode = RecordingIntervalMode.fixed1s;
   RecordingDetail _detail = RecordingDetail.full;
 
   /// The active recording interval mode. Defaults to
-  /// [RecordingIntervalMode.smart] (the current logic).
+  /// [RecordingIntervalMode.fixed1s] (one point every second).
   RecordingIntervalMode get intervalMode => _intervalMode;
 
   /// How much information is stored per track point. Defaults to
@@ -101,11 +102,11 @@ class RecordingSettings extends ChangeNotifier {
 
   static RecordingIntervalMode _decode(String value) {
     switch (value) {
-      case 'fixed1s':
-        return RecordingIntervalMode.fixed1s;
       case 'smart':
-      default:
         return RecordingIntervalMode.smart;
+      case 'fixed1s':
+      default:
+        return RecordingIntervalMode.fixed1s;
     }
   }
 

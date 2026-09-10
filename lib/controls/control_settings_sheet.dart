@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import 'control_settings.dart';
 import 'placed_control.dart';
 
@@ -55,6 +56,7 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final control = widget.control;
 
     return SafeArea(
@@ -71,7 +73,7 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '${control.type.label} settings',
+                    l10n.controlSettingsTitle(control.type.labelOf(l10n)),
                     style: theme.textTheme.titleLarge,
                   ),
                 ),
@@ -83,7 +85,7 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
                   child: Text(
-                    'This control has no settings.',
+                    l10n.controlNoSettings,
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),

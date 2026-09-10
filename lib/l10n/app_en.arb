@@ -39,8 +39,13 @@
   "fakeGpsInChinaSubtitle": "Start the simulated flight over China (near Chengdu)",
 
   "trackRecordingSmart": "Smart (default)",
+  "trackRecordingSmartSubtitle": "At least 1 s apart, and only when moved ≥ 3 m or altitude changed ≥ 1 m",
   "trackRecordingEverySecond": "Every 1 second",
+  "trackRecordingEverySecondSubtitle": "Store one point per second regardless of movement",
+  "trackRecordingChooseHint": "Choose how often a track point is stored during flight.",
   "recordMoreInformation": "Record more information",
+  "recordMoreInformationFull": "Full data per point: vario, wind, pressure, temperature, GPS accuracy, satellites, battery, heart rate",
+  "recordMoreInformationXcTrack": "XCTrack style: position, baro/GPS altitude, heading, speed and time only",
 
   "clearAllControlsTitle": "Clear all controls?",
   "clearAllControlsMessage": "This removes every control from the dashboard. This cannot be undone.",
@@ -79,5 +84,84 @@
   "languageSystemDescription": "Follow the device language",
   "languageEnglishDescription": "English",
   "languageChineseSimplifiedDescription": "Simplified Chinese",
-  "languageApplyNote": "Changes apply instantly, no restart needed. Your choice is saved on this device."
+  "languageApplyNote": "Changes apply instantly, no restart needed. Your choice is saved on this device.",
+
+  "themeDarkThemes": "Dark themes",
+  "themeLightThemes": "Light themes",
+  "themeHighContrast": "High contrast (WCAG AAA)",
+  "themeApplyNote": "Changes apply instantly, no restart needed. Your choice is saved on this device.\nHigh-contrast themes: pure black/white backgrounds with high-saturation accents — ideal for bright sunlight, eye strain, and older users.",
+
+  "themeDarkCyan": "Dark Cyan (default)",
+  "themeDarkSlate": "Dark Slate",
+  "themeDarkAmber": "Dark Amber (night vision)",
+  "themeDarkForest": "Dark Forest",
+  "themeDarkOcean": "Dark Ocean",
+  "themeLightSky": "Light Sky",
+  "themeLightSand": "Light Sand",
+  "themeLightMint": "Light Mint",
+  "themeLightPaper": "Light Paper",
+  "themeLightLavender": "Light Lavender",
+  "themeDarkContrast": "Dark High-Contrast",
+  "themeLightContrast": "Light High-Contrast",
+
+  "themeDarkCyanDesc": "Dark base + cyan accents (classic default)",
+  "themeDarkSlateDesc": "Business dark grey + blue-violet accents",
+  "themeDarkAmberDesc": "Cockpit amber, easy on the eyes for long night flights",
+  "themeDarkForestDesc": "Deep forest green + golden sunlight",
+  "themeDarkOceanDesc": "Deep ocean blue-violet + teal coral",
+  "themeLightSkyDesc": "High contrast in sunlight, best for daytime flying",
+  "themeLightSandDesc": "Warm sand base, comfortable for extended use",
+  "themeLightMintDesc": "Fresh mint green, easy on the eyes",
+  "themeLightPaperDesc": "Aeronautical chart paper style, nostalgic VFR",
+  "themeLightLavenderDesc": "Soft lavender + deep purple, gentle on the eyes",
+  "themeDarkContrastDesc": "Pure black + high-saturation yellow (WCAG AAA)",
+  "themeLightContrastDesc": "Pure white + black + deep blue (WCAG AAA)",
+
+  "controlKindData": "Data Control",
+  "controlKindWidget": "Widget Control",
+
+  "controlAltitude": "Altitude",
+  "controlMaxAltitude": "Max Altitude",
+  "controlVerticalSpeed": "Vertical Speed",
+  "controlGroundSpeed": "Ground Speed",
+  "controlGlide": "Glide",
+  "controlHeading": "Heading",
+  "controlLocation": "Location",
+  "controlWindSpeed": "Wind Speed",
+  "controlWindDirection": "Wind Direction",
+  "controlPressure": "Pressure",
+  "controlTemperature": "Temperature",
+  "controlClock": "Clock",
+  "controlFlightTime": "Flight Time",
+  "controlSensorBattery": "Sensor Battery",
+  "controlHeartRate": "Heart Rate",
+  "controlVario": "Vario",
+  "controlDebugSensor": "Debug Sensor",
+  "controlDataMonitor": "Data Monitor",
+  "controlMap": "Map",
+  "controlFlightButton": "Flight Button",
+  "controlUnknown": "Unknown",
+
+  "controlSettingsTitle": "{control} settings",
+  "@controlSettingsTitle": {
+    "placeholders": {
+      "control": { "type": "String" }
+    }
+  },
+
+  "searchControls": "Search controls",
+  "noControlsAvailable": "No controls available yet",
+  "noControlsMatch": "No controls match \"{query}\"",
+  "@noControlsMatch": {
+    "placeholders": {
+      "query": { "type": "String" }
+    }
+  },
+  "noControlsInDirectory": "No controls in this directory yet",
+
+  "settings": "Settings",
+  "duplicate": "Duplicate",
+  "bringToFront": "Bring to Front",
+  "sendToBack": "Send to Back",
+  "controlNoSettings": "This control has no settings."
 }

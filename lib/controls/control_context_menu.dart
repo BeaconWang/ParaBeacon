@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import 'control_catalog.dart';
 import 'placed_control.dart';
 
@@ -28,6 +29,7 @@ Future<ControlAction?> showControlContextMenu(
     ),
     builder: (context) {
       final theme = Theme.of(context);
+      final l10n = AppLocalizations.of(context);
       return SafeArea(
         top: false,
         child: Column(
@@ -36,41 +38,41 @@ Future<ControlAction?> showControlContextMenu(
             ListTile(
               leading: Icon(control.type.icon, color: theme.colorScheme.primary),
               title: Text(
-                control.type.label,
+                control.type.labelOf(l10n),
                 style: theme.textTheme.titleMedium,
               ),
-              subtitle: Text(control.type.kind.title),
+              subtitle: Text(control.type.kind.titleOf(l10n)),
             ),
             const Divider(height: 1),
             _item(
               context,
               icon: Icons.tune,
-              label: 'Settings',
+              label: l10n.settings,
               action: ControlAction.settings,
             ),
             _item(
               context,
               icon: Icons.copy_all_outlined,
-              label: 'Duplicate',
+              label: l10n.duplicate,
               action: ControlAction.duplicate,
             ),
             _item(
               context,
               icon: Icons.flip_to_front,
-              label: 'Bring to front',
+              label: l10n.bringToFront,
               action: ControlAction.bringToFront,
             ),
             _item(
               context,
               icon: Icons.flip_to_back,
-              label: 'Send to back',
+              label: l10n.sendToBack,
               action: ControlAction.sendToBack,
             ),
             const Divider(height: 1),
             _item(
               context,
               icon: Icons.delete_outline,
-              label: 'Delete',
+              label: l10n.delete,
               action: ControlAction.delete,
               destructive: true,
             ),

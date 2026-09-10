@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 /// Catalog of built-in ParaBeacon theme presets.
 ///
 /// Each preset is a full Material 3 [ColorScheme] tuned for one flight
@@ -45,63 +47,63 @@ enum AppThemeId {
   /// every user's theme back to the default on next launch.
   String get storageKey => name;
 
-  /// English display label used in the theme picker.
-  String get label {
+  /// Localized display label used in the theme picker.
+  String labelOf(AppLocalizations l10n) {
     switch (this) {
       case AppThemeId.darkCyan:
-        return 'Dark Cyan (default)';
+        return l10n.themeDarkCyan;
       case AppThemeId.darkSlate:
-        return 'Dark Slate';
+        return l10n.themeDarkSlate;
       case AppThemeId.darkAmber:
-        return 'Dark Amber (night vision)';
+        return l10n.themeDarkAmber;
       case AppThemeId.darkForest:
-        return 'Dark Forest';
+        return l10n.themeDarkForest;
       case AppThemeId.darkOcean:
-        return 'Dark Ocean';
+        return l10n.themeDarkOcean;
       case AppThemeId.lightSky:
-        return 'Light Sky';
+        return l10n.themeLightSky;
       case AppThemeId.lightSand:
-        return 'Light Sand';
+        return l10n.themeLightSand;
       case AppThemeId.lightMint:
-        return 'Light Mint';
+        return l10n.themeLightMint;
       case AppThemeId.lightPaper:
-        return 'Light Paper';
+        return l10n.themeLightPaper;
       case AppThemeId.lightLavender:
-        return 'Light Lavender';
+        return l10n.themeLightLavender;
       case AppThemeId.darkContrast:
-        return 'Dark High-Contrast';
+        return l10n.themeDarkContrast;
       case AppThemeId.lightContrast:
-        return 'Light High-Contrast';
+        return l10n.themeLightContrast;
     }
   }
 
-  /// One-line recommendation shown under the label.
-  String get description {
+  /// Localized one-line recommendation shown under the label.
+  String descriptionOf(AppLocalizations l10n) {
     switch (this) {
       case AppThemeId.darkCyan:
-        return 'Dark base + cyan accents (classic default)';
+        return l10n.themeDarkCyanDesc;
       case AppThemeId.darkSlate:
-        return 'Business dark grey + blue-violet accents';
+        return l10n.themeDarkSlateDesc;
       case AppThemeId.darkAmber:
-        return 'Cockpit amber, easy on the eyes for long night flights';
+        return l10n.themeDarkAmberDesc;
       case AppThemeId.darkForest:
-        return 'Deep forest green + golden sunlight';
+        return l10n.themeDarkForestDesc;
       case AppThemeId.darkOcean:
-        return 'Deep ocean blue-violet + teal coral';
+        return l10n.themeDarkOceanDesc;
       case AppThemeId.lightSky:
-        return 'High contrast in sunlight, best for daytime flying';
+        return l10n.themeLightSkyDesc;
       case AppThemeId.lightSand:
-        return 'Warm sand base, comfortable for extended use';
+        return l10n.themeLightSandDesc;
       case AppThemeId.lightMint:
-        return 'Fresh mint green, easy on the eyes';
+        return l10n.themeLightMintDesc;
       case AppThemeId.lightPaper:
-        return 'Aeronautical chart paper style, nostalgic VFR';
+        return l10n.themeLightPaperDesc;
       case AppThemeId.lightLavender:
-        return 'Soft lavender + deep purple, gentle on the eyes';
+        return l10n.themeLightLavenderDesc;
       case AppThemeId.darkContrast:
-        return 'Pure black + high-saturation yellow (WCAG AAA)';
+        return l10n.themeDarkContrastDesc;
       case AppThemeId.lightContrast:
-        return 'Pure white + black + deep blue (WCAG AAA)';
+        return l10n.themeLightContrastDesc;
     }
   }
 

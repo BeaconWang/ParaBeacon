@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import 'app_themes.dart';
 import 'theme_controller.dart';
 
@@ -45,6 +46,7 @@ class _ThemeSettingsSheetState extends State<_ThemeSettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final grouped = <AppThemeGroup, List<AppThemeId>>{
       for (final id in AppThemeId.values) id.group: [],
     };
@@ -65,7 +67,7 @@ class _ThemeSettingsSheetState extends State<_ThemeSettingsSheet> {
                 Icon(Icons.palette_outlined, color: theme.colorScheme.primary),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Theme',
+                  child: Text(l10n.theme,
                       style: theme.textTheme.titleLarge),
                 ),
               ],
@@ -75,12 +77,12 @@ class _ThemeSettingsSheetState extends State<_ThemeSettingsSheet> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  _section('Dark themes',
+                  _section(l10n.themeDarkThemes,
                       grouped[AppThemeGroup.dark]!),
-                  _section('Light themes',
+                  _section(l10n.themeLightThemes,
                       grouped[AppThemeGroup.light]!),
                   _section(
-                      'High contrast (WCAG AAA)',
+                      l10n.themeHighContrast,
                       grouped[AppThemeGroup.highContrast]!),
                   const SizedBox(height: 8),
                   Container(
@@ -92,11 +94,7 @@ class _ThemeSettingsSheetState extends State<_ThemeSettingsSheet> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Changes apply instantly, no restart needed. Your '
-                      'choice is saved on this device.\n'
-                      'High-contrast themes: pure black/white backgrounds with '
-                      'high-saturation accents — ideal for bright sunlight, '
-                      'eye strain, and older users.',
+                      l10n.themeApplyNote,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         height: 1.4,
@@ -158,6 +156,7 @@ class _ThemeSettingsSheetState extends State<_ThemeSettingsSheet> {
 
   Widget _row(AppThemeId id) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final selected = _selected == id;
     // Render the swatch using the *target* theme's colors, not the
     // currently-active one, so the preview reflects what the user is about
@@ -176,14 +175,14 @@ class _ThemeSettingsSheetState extends State<_ThemeSettingsSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    id.label,
+                    id.labelOf(l10n),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    id.description,
+                    id.descriptionOf(l10n),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

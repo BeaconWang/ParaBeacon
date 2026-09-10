@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'placed_control.dart';
 import 'data_value_control.dart';
 import 'data_monitor_control.dart';
@@ -305,7 +306,7 @@ class ControlWidget extends StatelessWidget {
               const SizedBox(height: 4),
               Flexible(
                 child: Text(
-                  control.type.label,
+                  control.type.labelOf(AppLocalizations.of(context)),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

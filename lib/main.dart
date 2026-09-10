@@ -636,7 +636,8 @@ class _DashGridPageState extends State<DashGridPage>
                       leading: Icon(Icons.palette_outlined,
                           color: theme.colorScheme.primary),
                       title: Text(l10n.theme),
-                      subtitle: Text(ThemeController.instance.current.label),
+                      subtitle: Text(
+                          ThemeController.instance.current.labelOf(l10n)),
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () async {
                         await showThemeSettingsSheet(context);
@@ -722,10 +723,18 @@ class _DashGridPageState extends State<DashGridPage>
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.timeline,
                           color: theme.colorScheme.primary),
-                      title: const Text('Track recording'),
+                      title: Text(l10n.trackRecording),
                       subtitle: Text(
-                        '${RecordingSettings.instance.intervalMode == RecordingIntervalMode.fixed1s ? 'Every 1 s' : 'Smart'} · '
-                        '${RecordingSettings.instance.detail == RecordingDetail.full ? 'full data' : 'XCTrack style'}',
+                        l10n.trackRecordingSubtitle(
+                          RecordingSettings.instance.intervalMode ==
+                                  RecordingIntervalMode.fixed1s
+                              ? l10n.recordingIntervalEvery1s
+                              : l10n.recordingIntervalSmart,
+                          RecordingSettings.instance.detail ==
+                                  RecordingDetail.full
+                              ? l10n.recordingDetailFull
+                              : l10n.recordingDetailXcTrack,
+                        ),
                       ),
                       trailing: const Icon(Icons.chevron_right, size: 20),
                       onTap: () async {
@@ -743,7 +752,7 @@ class _DashGridPageState extends State<DashGridPage>
                             Icon(Icons.bug_report_outlined,
                                 color: theme.colorScheme.primary, size: 20),
                             const SizedBox(width: 10),
-                            Text('Debug', style: theme.textTheme.titleMedium),
+                            Text(l10n.debug, style: theme.textTheme.titleMedium),
                           ],
                         ),
                       ),
@@ -751,9 +760,9 @@ class _DashGridPageState extends State<DashGridPage>
                         contentPadding: EdgeInsets.zero,
                         secondary: Icon(Icons.sensors,
                             color: theme.colorScheme.primary),
-                        title: const Text('Simulated flight data'),
-                        subtitle: const Text(
-                            'Feed fake sensor values when no BLE device is connected'),
+                        title: Text(l10n.simulatedFlightData),
+                        subtitle: Text(
+                            l10n.simulatedFlightDataSubtitle),
                         value: DebugSettings.instance.simulatorEnabled,
                         onChanged: (on) {
                           DebugSettings.instance.setSimulatorEnabled(on);
@@ -764,9 +773,9 @@ class _DashGridPageState extends State<DashGridPage>
                         contentPadding: EdgeInsets.zero,
                         secondary: Icon(Icons.public,
                             color: theme.colorScheme.primary),
-                        title: const Text('Fake GPS location in China'),
-                        subtitle: const Text(
-                            'Start the simulated flight over China (near Chengdu)'),
+                        title: Text(l10n.fakeGpsInChina),
+                        subtitle: Text(
+                            l10n.fakeGpsInChinaSubtitle),
                         value: DebugSettings.instance.fakeChinaLocation,
                         // Only meaningful while the simulator is running.
                         onChanged: DebugSettings.instance.simulatorEnabled
@@ -794,6 +803,7 @@ class _DashGridPageState extends State<DashGridPage>
   /// interval (current logic, default) or a fixed 1-second interval.
   Future<void> _showRecordingSettingsSheet(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -812,13 +822,13 @@ class _DashGridPageState extends State<DashGridPage>
                       children: [
                         Icon(Icons.timeline, color: theme.colorScheme.primary),
                         const SizedBox(width: 10),
-                        Text('Track recording',
+                        Text(l10n.trackRecording,
                             style: theme.textTheme.titleLarge),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Choose how often a track point is stored during flight.',
+                      l10n.trackRecordingChooseHint,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -828,10 +838,8 @@ class _DashGridPageState extends State<DashGridPage>
                       contentPadding: EdgeInsets.zero,
                       value: RecordingIntervalMode.smart,
                       groupValue: mode,
-                      title: const Text('Smart (default)'),
-                      subtitle: const Text(
-                          'At least 1 s apart, and only when moved ≥ 3 m or '
-                          'altitude changed ≥ 1 m'),
+                      title: Text(l10n.trackRecordingSmart),
+                      subtitle: Text(l10n.trackRecordingSmartSubtitle),
                       onChanged: (v) {
                         if (v == null) return;
                         RecordingSettings.instance.setIntervalMode(v);
@@ -842,9 +850,8 @@ class _DashGridPageState extends State<DashGridPage>
                       contentPadding: EdgeInsets.zero,
                       value: RecordingIntervalMode.fixed1s,
                       groupValue: mode,
-                      title: const Text('Every 1 second'),
-                      subtitle: const Text(
-                          'Store one point per second regardless of movement'),
+                      title: Text(l10n.trackRecordingEverySecond),
+                      subtitle: Text(l10n.trackRecordingEverySecondSubtitle),
                       onChanged: (v) {
                         if (v == null) return;
                         RecordingSettings.instance.setIntervalMode(v);
@@ -856,15 +863,12 @@ class _DashGridPageState extends State<DashGridPage>
                       contentPadding: EdgeInsets.zero,
                       secondary: Icon(Icons.dataset_outlined,
                           color: theme.colorScheme.primary),
-                      title: const Text('Record more information'),
+                      title: Text(l10n.recordMoreInformation),
                       subtitle: Text(
                         RecordingSettings.instance.detail ==
                                 RecordingDetail.full
-                            ? 'Full data per point: vario, wind, pressure, '
-                                'temperature, GPS accuracy, satellites, '
-                                'battery, heart rate'
-                            : 'XCTrack style: position, baro/GPS altitude, '
-                                'heading, speed and time only',
+                            ? l10n.recordMoreInformationFull
+                            : l10n.recordMoreInformationXcTrack,
                       ),
                       value: RecordingSettings.instance.detail ==
                           RecordingDetail.full,
@@ -901,23 +905,23 @@ class _DashGridPageState extends State<DashGridPage>
   }
 
   Future<bool?> _confirmClearAll(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear all controls?'),
-        content: const Text(
-            'This removes every control from the dashboard. This cannot be undone.'),
+        title: Text(l10n.clearAllControlsTitle),
+        content: Text(l10n.clearAllControlsMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Clear'),
+            child: Text(l10n.clear),
           ),
         ],
       ),
@@ -1378,7 +1382,8 @@ class _DashGridPageState extends State<DashGridPage>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Page icon', style: theme.textTheme.titleLarge),
+                Text(AppLocalizations.of(context).pageIcon,
+                    style: theme.textTheme.titleLarge),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
@@ -1706,6 +1711,7 @@ class _MenuContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return ListView(
       // Wrap content height so the panel matches the items (no blank space);
       // scrolls only when the items exceed the panel's max height.
@@ -1719,8 +1725,8 @@ class _MenuContent extends StatelessWidget {
       children: [
         SwitchListTile(
           secondary: Icon(_Icons.mode, color: theme.colorScheme.primary),
-          title: const Text('Edit Mode'),
-          subtitle: Text('Page ${pageIndex + 1} of $pageCount'),
+          title: Text(l10n.editMode),
+          subtitle: Text(l10n.pageOfPages(pageIndex + 1, pageCount)),
           value: isEditMode,
           onChanged: (_) => onToggleEditMode(),
         ),
@@ -1729,14 +1735,14 @@ class _MenuContent extends StatelessWidget {
           const Divider(height: 1),
           ListTile(
             leading: Icon(Icons.add_box_outlined, color: theme.colorScheme.primary),
-            title: const Text('Add Control'),
+            title: Text(l10n.addControl),
             trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: onAddControl,
           ),
           const Divider(height: 1),
           ListTile(
             leading: Icon(Icons.note_add_outlined, color: theme.colorScheme.primary),
-            title: const Text('Add Page'),
+            title: Text(l10n.addPage),
             trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: onAddPage,
           ),
@@ -1749,7 +1755,7 @@ class _MenuContent extends StatelessWidget {
                   : theme.disabledColor,
             ),
             title: Text(
-              'Delete Page',
+              l10n.deletePage,
               style: TextStyle(
                 color: pageCount > 1
                     ? theme.colorScheme.error
@@ -1771,9 +1777,9 @@ class _MenuContent extends StatelessWidget {
                   children: [
                     Icon(_Icons.grid, color: theme.colorScheme.primary, size: 20),
                     const SizedBox(width: 10),
-                    const Expanded(child: Text('Grid size')),
+                    Expanded(child: Text(l10n.gridSize)),
                     Text(
-                      '${gridSize.round()} px',
+                      l10n.gridSizePx(gridSize.round()),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.primary,
                         fontFeatures: const [ui.FontFeature.tabularFigures()],
@@ -1786,7 +1792,7 @@ class _MenuContent extends StatelessWidget {
                   min: 16.0,
                   max: 120.0,
                   divisions: 26, // step = 4px
-                  label: '${gridSize.round()} px',
+                  label: l10n.gridSizePx(gridSize.round()),
                   onChanged: onGridSizeChanged,
                 ),
               ],
@@ -1800,14 +1806,14 @@ class _MenuContent extends StatelessWidget {
                   controlCount > 0 ? theme.colorScheme.error : theme.disabledColor,
             ),
             title: Text(
-              'Clear all controls',
+              l10n.clearAllControls,
               style: TextStyle(
                 color: controlCount > 0
                     ? theme.colorScheme.error
                     : theme.disabledColor,
               ),
             ),
-            subtitle: Text('$controlCount placed'),
+            subtitle: Text(l10n.controlsPlaced(controlCount)),
             enabled: controlCount > 0,
             onTap: controlCount > 0 ? onClearAll : null,
           ),
@@ -1815,15 +1821,15 @@ class _MenuContent extends StatelessWidget {
         const Divider(height: 1),
         ListTile(
           leading: Icon(Icons.route, color: theme.colorScheme.primary),
-          title: const Text('Flights'),
-          subtitle: const Text('Recorded flights'),
+          title: Text(l10n.flights),
+          subtitle: Text(l10n.flightsSubtitle),
           trailing: const Icon(Icons.chevron_right, size: 20),
           onTap: () => showFlightsSheet(context),
         ),
         const Divider(height: 1),
         ListTile(
           leading: Icon(_Icons.settings, color: theme.colorScheme.primary),
-          title: const Text('Preferences'),
+          title: Text(l10n.preferences),
           trailing: const Icon(Icons.chevron_right, size: 20),
           onTap: onOpenPreferences,
         ),

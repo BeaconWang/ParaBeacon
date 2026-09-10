@@ -1,5 +1,7 @@
 import 'dart:ui' show Locale;
 
+import '../l10n/app_localizations.dart';
+
 /// Catalog of the app's selectable UI languages.
 ///
 /// Mirrors the shape of [AppThemeId]: a small enum with a stable [storageKey]
@@ -33,27 +35,27 @@ enum AppLanguage {
     }
   }
 
-  /// Display label shown in the language picker.
-  String get label {
+  /// Localized display label shown in the language picker.
+  String labelOf(AppLocalizations l10n) {
     switch (this) {
       case AppLanguage.system:
-        return 'System default';
+        return l10n.languageSystemDefault;
       case AppLanguage.english:
-        return 'English';
+        return l10n.languageEnglish;
       case AppLanguage.chineseSimplified:
-        return '简体中文';
+        return l10n.languageChineseSimplified;
     }
   }
 
-  /// One-line description shown under the label.
-  String get description {
+  /// Localized one-line description shown under the label.
+  String descriptionOf(AppLocalizations l10n) {
     switch (this) {
       case AppLanguage.system:
-        return 'Follow the device language';
+        return l10n.languageSystemDescription;
       case AppLanguage.english:
-        return 'English';
+        return l10n.languageEnglishDescription;
       case AppLanguage.chineseSimplified:
-        return 'Simplified Chinese';
+        return l10n.languageChineseSimplifiedDescription;
     }
   }
 

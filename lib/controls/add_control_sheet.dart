@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'control_catalog.dart';
 
 /// Control ids that are only offered in the "Add Control" picker while running
@@ -37,6 +38,7 @@ class _AddControlSheetState extends State<_AddControlSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final query = _query.trim().toLowerCase();
 
     // Filter directories/controls by the search query. Debug-only controls
@@ -48,7 +50,7 @@ class _AddControlSheetState extends State<_AddControlSheet> {
           final matches = query.isEmpty
               ? available.toList()
               : available
-                  .where((c) => c.label.toLowerCase().contains(query))
+                  .where((c) => c.labelOf(l10n).toLowerCase().contains(query))
                   .toList();
           return (directory, matches);
         })
@@ -66,7 +68,7 @@ class _AddControlSheetState extends State<_AddControlSheet> {
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: Row(
                 children: [
-                  Text('Add Control', style: theme.textTheme.titleLarge),
+                  Text(l10n.addControl, style: theme.textTheme.titleLarge),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -81,7 +83,7 @@ class _AddControlSheetState extends State<_AddControlSheet> {
                 autofocus: false,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
-                  hintText: 'Search controls',
+                  hintText: l10n.searchControls,
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -98,8 +100,8 @@ class _AddControlSheetState extends State<_AddControlSheet> {
                   ? Center(
                       child: Text(
                         query.isEmpty
-                            ? 'No controls available yet'
-                            : 'No controls match "$_query"',
+                            ? l10n.noControlsAvailable
+                            : l10n.noControlsMatch(_query),
                         style: theme.textTheme.bodyMedium,
                       ),
                     )
@@ -139,6 +141,7 @@ class _DirectorySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -149,7 +152,7 @@ class _DirectorySection extends StatelessWidget {
               Icon(directory.icon, size: 18, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               Text(
-                directory.title.toUpperCase(),
+                directory.titleOf(l10n).toUpperCase(),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.primary,
                   letterSpacing: 1.2,
@@ -162,7 +165,7 @@ class _DirectorySection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
             child: Text(
-              'No controls in this directory yet',
+              l10n.noControlsInDirectory,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -202,6 +205,7 @@ class _ControlTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: theme.colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(12),
@@ -216,7 +220,7 @@ class _ControlTile extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  control.label,
+                  control.labelOf(l10n),
                   style: theme.textTheme.bodyMedium,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

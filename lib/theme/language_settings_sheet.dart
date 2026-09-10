@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import 'app_languages.dart';
 import 'locale_controller.dart';
 
@@ -39,6 +40,7 @@ class _LanguageSettingsSheetState extends State<_LanguageSettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Padding(
@@ -52,7 +54,7 @@ class _LanguageSettingsSheetState extends State<_LanguageSettingsSheet> {
                 Icon(Icons.language, color: theme.colorScheme.primary),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Language', style: theme.textTheme.titleLarge),
+                  child: Text(l10n.language, style: theme.textTheme.titleLarge),
                 ),
               ],
             ),
@@ -92,8 +94,7 @@ class _LanguageSettingsSheetState extends State<_LanguageSettingsSheet> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Changes apply instantly, no restart needed. Your '
-                      'choice is saved on this device.',
+                      l10n.languageApplyNote,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         height: 1.4,
@@ -111,6 +112,7 @@ class _LanguageSettingsSheetState extends State<_LanguageSettingsSheet> {
 
   Widget _row(AppLanguage language) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final selected = _selected == language;
     return InkWell(
       onTap: () => _select(language),
@@ -123,14 +125,14 @@ class _LanguageSettingsSheetState extends State<_LanguageSettingsSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    language.label,
+                    language.labelOf(l10n),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    language.description,
+                    language.descriptionOf(l10n),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

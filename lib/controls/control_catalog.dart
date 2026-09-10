@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 /// Top-level directory a control belongs to.
 ///
 /// The catalog is organized into two directories:
@@ -11,13 +13,13 @@ enum ControlKind {
 }
 
 extension ControlKindX on ControlKind {
-  /// Human readable directory title shown in the chooser.
-  String get title {
+  /// Localized directory title shown in the chooser.
+  String titleOf(AppLocalizations l10n) {
     switch (this) {
       case ControlKind.data:
-        return 'Data Control';
+        return l10n.controlKindData;
       case ControlKind.widget:
-        return 'Widget Control';
+        return l10n.controlKindWidget;
     }
   }
 
@@ -62,6 +64,59 @@ class ControlType {
     this.defaultCols = 3,
     this.defaultRows = 2,
   });
+
+  /// Localized display label, resolved from the stable [id]. Falls back to the
+  /// hardcoded English [label] for any id without a translation.
+  String labelOf(AppLocalizations l10n) => controlLabelForId(l10n, id) ?? label;
+}
+
+/// Maps a stable control [id] to its localized label. Returns `null` for an
+/// unknown id so callers can fall back to the catalog's English [label].
+String? controlLabelForId(AppLocalizations l10n, String id) {
+  switch (id) {
+    case 'altitude':
+      return l10n.controlAltitude;
+    case 'max_altitude':
+      return l10n.controlMaxAltitude;
+    case 'vertical_speed':
+      return l10n.controlVerticalSpeed;
+    case 'ground_speed':
+      return l10n.controlGroundSpeed;
+    case 'glide_ratio':
+      return l10n.controlGlide;
+    case 'heading':
+      return l10n.controlHeading;
+    case 'location':
+      return l10n.controlLocation;
+    case 'wind_speed':
+      return l10n.controlWindSpeed;
+    case 'wind_direction':
+      return l10n.controlWindDirection;
+    case 'pressure':
+      return l10n.controlPressure;
+    case 'temperature':
+      return l10n.controlTemperature;
+    case 'clock':
+      return l10n.controlClock;
+    case 'flight_time':
+      return l10n.controlFlightTime;
+    case 'sensor_battery':
+      return l10n.controlSensorBattery;
+    case 'heart_rate':
+      return l10n.controlHeartRate;
+    case 'vario':
+      return l10n.controlVario;
+    case 'debug_sensor':
+      return l10n.controlDebugSensor;
+    case 'data_monitor':
+      return l10n.controlDataMonitor;
+    case 'map':
+      return l10n.controlMap;
+    case 'flight_button':
+      return l10n.controlFlightButton;
+    default:
+      return null;
+  }
 }
 
 /// A directory grouping several [ControlType]s together in the chooser.
@@ -72,7 +127,7 @@ class ControlDirectory {
 
   const ControlDirectory({required this.kind, required this.controls});
 
-  String get title => kind.title;
+  String titleOf(AppLocalizations l10n) => kind.titleOf(l10n);
   IconData get icon => kind.icon;
 }
 

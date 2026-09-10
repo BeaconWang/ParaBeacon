@@ -669,4 +669,308 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dataMonitorTotalEnergy => 'Total energy';
+
+  @override
+  String get flightsAddRandomDebug => 'Add random flight (debug)';
+
+  @override
+  String get flightsImportLibrary => 'Import library (.pbflights)';
+
+  @override
+  String get flightsExportLibrary => 'Export library (.pbflights)';
+
+  @override
+  String get flightsClearAll => 'Clear all';
+
+  @override
+  String get flightsPlaceNameSettings => 'Place-name lookup settings';
+
+  @override
+  String get flightsNoneRecorded => 'No flights recorded yet';
+
+  @override
+  String get flightsStartToRecord => 'Start a flight to record a track.';
+
+  @override
+  String flightsListSubtitle(String duration, String km, int points) {
+    return '$duration · $km km · $points pts';
+  }
+
+  @override
+  String get flightsReplay => 'Replay';
+
+  @override
+  String get flightsNoPointsToReplay => 'No track points to replay';
+
+  @override
+  String get flights3dReplay => '3D replay';
+
+  @override
+  String get flightsShareCardSaved => 'Share card saved to gallery';
+
+  @override
+  String get flightsShareCardSharedFile =>
+      'Saved to a file and opened the share sheet';
+
+  @override
+  String flightsShareCardFailed(String error) {
+    return 'Share card failed: $error';
+  }
+
+  @override
+  String get flightsSetAmapKeyFirst =>
+      'Set an AMap key in place-name settings first.';
+
+  @override
+  String get flightsNoPointsToLocate =>
+      'This flight has no track points to locate.';
+
+  @override
+  String get flightsLookingUpSites => 'Looking up site names…';
+
+  @override
+  String get flightsNoPlaceNames =>
+      'No place names found for these coordinates.';
+
+  @override
+  String get flightsSiteNamesUpdated => 'Site names updated.';
+
+  @override
+  String flightsLookupFailed(String error) {
+    return 'Lookup failed: $error';
+  }
+
+  @override
+  String get equipment => 'Equipment';
+
+  @override
+  String get equipmentGlider => 'Glider';
+
+  @override
+  String get equipmentHarness => 'Harness';
+
+  @override
+  String get equipmentHelmet => 'Helmet';
+
+  @override
+  String get equipmentEdit => 'Edit equipment';
+
+  @override
+  String get equipmentAdd => 'Add equipment';
+
+  @override
+  String get placeNameLookup => 'Place-name lookup';
+
+  @override
+  String get placeNameLookupDescription =>
+      'Reverse-geocode takeoff/landing coordinates to place names using the AMap (AutoNavi) web service. Requests only ever go to restapi.amap.com.';
+
+  @override
+  String get placeNameAmapKeyLabel => 'AMap web-service key';
+
+  @override
+  String get placeNameAutoLookup => 'Auto-lookup after each flight';
+
+  @override
+  String get placeNameSettingsSaved => 'Place-name settings saved.';
+
+  @override
+  String flightsExportFailed(String label, String error) {
+    return '$label export failed: $error';
+  }
+
+  @override
+  String flightsLibraryExportFailed(String error) {
+    return 'Library export failed: $error';
+  }
+
+  @override
+  String flightsImportResult(int added, int skipped) {
+    return 'Imported $added · skipped $skipped';
+  }
+
+  @override
+  String flightsImportResultFailed(int added, int skipped, int failed) {
+    return 'Imported $added · skipped $skipped · failed $failed';
+  }
+
+  @override
+  String flightsImportFailed(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String get flightDetailsTitle => 'Flight details';
+
+  @override
+  String get flightDetailDeleteSamples => 'Delete samples';
+
+  @override
+  String get flightDetailStart => 'Start';
+
+  @override
+  String get flightDetailEnd => 'End';
+
+  @override
+  String get flightDetailDuration => 'Duration';
+
+  @override
+  String get flightDetailDistance => 'Distance';
+
+  @override
+  String get flightDetailMaxAltitude => 'Max altitude';
+
+  @override
+  String get flightDetailMinAltitude => 'Min altitude';
+
+  @override
+  String get flightDetailMaxClimb => 'Max climb';
+
+  @override
+  String get flightDetailMaxSink => 'Max sink';
+
+  @override
+  String get flightDetailSamples => 'Samples';
+
+  @override
+  String get flightDetailTakeoff => 'Takeoff';
+
+  @override
+  String get flightDetailLanding => 'Landing';
+
+  @override
+  String get flightDetailPerformance => 'Performance';
+
+  @override
+  String get flightDetailStraightDistance => 'Straight distance';
+
+  @override
+  String get flightDetailXcDistance => 'XC distance';
+
+  @override
+  String get flightDetailFaiTriangle => 'FAI triangle';
+
+  @override
+  String get flightDetailFaiClosed => 'closed';
+
+  @override
+  String get flightDetailMaxFromStart => 'Max from start';
+
+  @override
+  String get flightDetailAvgGroundSpeed => 'Avg ground speed';
+
+  @override
+  String get flightDetailAvgCruiseSpeed => 'Avg cruise speed';
+
+  @override
+  String get flightDetailMaxSpeed => 'Max speed';
+
+  @override
+  String get flightDetailAvgClimb => 'Avg climb';
+
+  @override
+  String get flightDetailAvgSink => 'Avg sink';
+
+  @override
+  String get flightDetailAvgGlideRatio => 'Avg glide ratio';
+
+  @override
+  String get flightDetailTrackEfficiency => 'Track efficiency';
+
+  @override
+  String get flightDetailThermals => 'Thermals';
+
+  @override
+  String get flightDetailAltGained => 'Alt gained';
+
+  @override
+  String get flightDetailAltLost => 'Alt lost';
+
+  @override
+  String get flightDetailClimbTime => 'Climb time';
+
+  @override
+  String get flightDetailGlideTime => 'Glide time';
+
+  @override
+  String get flightDetailSinkTime => 'Sink time';
+
+  @override
+  String get flightDetailMovingTime => 'Moving time';
+
+  @override
+  String get flightDetailExport => 'Export';
+
+  @override
+  String get flightDetailSiteNames => 'Site names';
+
+  @override
+  String get flightExportShareCard => 'Share card';
+
+  @override
+  String get flightsDeleteSamplesTitle => 'Delete sample data?';
+
+  @override
+  String get flightsDeleteSamplesMessage =>
+      'This removes the per-point track data (position/altitude/vario) for this flight. The flight and its summary stay in the log, but it can no longer be replayed. This cannot be undone.';
+
+  @override
+  String get flightsClearAllTitle => 'Clear all flights?';
+
+  @override
+  String get flightsClearAllMessage => 'This removes every recorded flight.';
+
+  @override
+  String get replayTitle => 'Replay';
+
+  @override
+  String get replayColorBy => 'Color by';
+
+  @override
+  String get replayColorVario => 'Color: Vario';
+
+  @override
+  String get replayColorSpeed => 'Color: Speed';
+
+  @override
+  String get replayColorAltitude => 'Color: Altitude';
+
+  @override
+  String get replayNoPointsMessage =>
+      'This flight has no recorded track points to replay.';
+
+  @override
+  String get replayRestart => 'Restart';
+
+  @override
+  String get replayPause => 'Pause';
+
+  @override
+  String get replayPlay => 'Play';
+
+  @override
+  String get replayVarioSoundOn => 'Vario sound on';
+
+  @override
+  String get replayVarioSoundOff => 'Vario sound off';
+
+  @override
+  String replayReadout(String heading, String altitude, String vario) {
+    return 'HDG $heading°  ·  ALT ${altitude}m  ·  $vario m/s';
+  }
+
+  @override
+  String get replay3dTitle => '3D Replay';
+
+  @override
+  String get replay3dResetView => 'Reset view';
+
+  @override
+  String get replay3dStatAlt => 'ALT';
+
+  @override
+  String get replay3dStatSpd => 'SPD';
+
+  @override
+  String get replay3dStatVario => 'VARIO';
 }

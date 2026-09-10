@@ -267,5 +267,152 @@
   "dataMonitorGlideRatio": "Glide ratio",
   "dataMonitorWindDir": "Wind dir",
   "dataMonitorBaroGpsDelta": "Baro−GPS Δ",
-  "dataMonitorTotalEnergy": "Total energy"
+  "dataMonitorTotalEnergy": "Total energy",
+
+  "flightsAddRandomDebug": "Add random flight (debug)",
+  "flightsImportLibrary": "Import library (.pbflights)",
+  "flightsExportLibrary": "Export library (.pbflights)",
+  "flightsClearAll": "Clear all",
+  "flightsPlaceNameSettings": "Place-name lookup settings",
+  "flightsNoneRecorded": "No flights recorded yet",
+  "flightsStartToRecord": "Start a flight to record a track.",
+  "flightsListSubtitle": "{duration} · {km} km · {points} pts",
+  "@flightsListSubtitle": {
+    "placeholders": {
+      "duration": { "type": "String" },
+      "km": { "type": "String" },
+      "points": { "type": "int" }
+    }
+  },
+  "flightsReplay": "Replay",
+  "flightsNoPointsToReplay": "No track points to replay",
+  "flights3dReplay": "3D replay",
+
+  "flightsShareCardSaved": "Share card saved to gallery",
+  "flightsShareCardSharedFile": "Saved to a file and opened the share sheet",
+  "flightsShareCardFailed": "Share card failed: {error}",
+  "@flightsShareCardFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "flightsSetAmapKeyFirst": "Set an AMap key in place-name settings first.",
+  "flightsNoPointsToLocate": "This flight has no track points to locate.",
+  "flightsLookingUpSites": "Looking up site names…",
+  "flightsNoPlaceNames": "No place names found for these coordinates.",
+  "flightsSiteNamesUpdated": "Site names updated.",
+  "flightsLookupFailed": "Lookup failed: {error}",
+  "@flightsLookupFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "equipment": "Equipment",
+  "equipmentGlider": "Glider",
+  "equipmentHarness": "Harness",
+  "equipmentHelmet": "Helmet",
+  "equipmentEdit": "Edit equipment",
+  "equipmentAdd": "Add equipment",
+
+  "placeNameLookup": "Place-name lookup",
+  "placeNameLookupDescription": "Reverse-geocode takeoff/landing coordinates to place names using the AMap (AutoNavi) web service. Requests only ever go to restapi.amap.com.",
+  "placeNameAmapKeyLabel": "AMap web-service key",
+  "placeNameAutoLookup": "Auto-lookup after each flight",
+  "placeNameSettingsSaved": "Place-name settings saved.",
+
+  "flightsExportFailed": "{label} export failed: {error}",
+  "@flightsExportFailed": {
+    "placeholders": {
+      "label": { "type": "String" },
+      "error": { "type": "String" }
+    }
+  },
+  "flightsLibraryExportFailed": "Library export failed: {error}",
+  "@flightsLibraryExportFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "flightsImportResult": "Imported {added} · skipped {skipped}",
+  "@flightsImportResult": {
+    "placeholders": {
+      "added": { "type": "int" },
+      "skipped": { "type": "int" }
+    }
+  },
+  "flightsImportResultFailed": "Imported {added} · skipped {skipped} · failed {failed}",
+  "@flightsImportResultFailed": {
+    "placeholders": {
+      "added": { "type": "int" },
+      "skipped": { "type": "int" },
+      "failed": { "type": "int" }
+    }
+  },
+  "flightsImportFailed": "Import failed: {error}",
+  "@flightsImportFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "flightDetailsTitle": "Flight details",
+  "flightDetailDeleteSamples": "Delete samples",
+  "flightDetailStart": "Start",
+  "flightDetailEnd": "End",
+  "flightDetailDuration": "Duration",
+  "flightDetailDistance": "Distance",
+  "flightDetailMaxAltitude": "Max altitude",
+  "flightDetailMinAltitude": "Min altitude",
+  "flightDetailMaxClimb": "Max climb",
+  "flightDetailMaxSink": "Max sink",
+  "flightDetailSamples": "Samples",
+  "flightDetailTakeoff": "Takeoff",
+  "flightDetailLanding": "Landing",
+  "flightDetailPerformance": "Performance",
+  "flightDetailStraightDistance": "Straight distance",
+  "flightDetailXcDistance": "XC distance",
+  "flightDetailFaiTriangle": "FAI triangle",
+  "flightDetailFaiClosed": "closed",
+  "flightDetailMaxFromStart": "Max from start",
+  "flightDetailAvgGroundSpeed": "Avg ground speed",
+  "flightDetailAvgCruiseSpeed": "Avg cruise speed",
+  "flightDetailMaxSpeed": "Max speed",
+  "flightDetailAvgClimb": "Avg climb",
+  "flightDetailAvgSink": "Avg sink",
+  "flightDetailAvgGlideRatio": "Avg glide ratio",
+  "flightDetailTrackEfficiency": "Track efficiency",
+  "flightDetailThermals": "Thermals",
+  "flightDetailAltGained": "Alt gained",
+  "flightDetailAltLost": "Alt lost",
+  "flightDetailClimbTime": "Climb time",
+  "flightDetailGlideTime": "Glide time",
+  "flightDetailSinkTime": "Sink time",
+  "flightDetailMovingTime": "Moving time",
+  "flightDetailExport": "Export",
+  "flightDetailSiteNames": "Site names",
+  "flightExportShareCard": "Share card",
+
+  "flightsDeleteSamplesTitle": "Delete sample data?",
+  "flightsDeleteSamplesMessage": "This removes the per-point track data (position/altitude/vario) for this flight. The flight and its summary stay in the log, but it can no longer be replayed. This cannot be undone.",
+  "flightsClearAllTitle": "Clear all flights?",
+  "flightsClearAllMessage": "This removes every recorded flight.",
+
+  "replayTitle": "Replay",
+  "replayColorBy": "Color by",
+  "replayColorVario": "Color: Vario",
+  "replayColorSpeed": "Color: Speed",
+  "replayColorAltitude": "Color: Altitude",
+  "replayNoPointsMessage": "This flight has no recorded track points to replay.",
+  "replayRestart": "Restart",
+  "replayPause": "Pause",
+  "replayPlay": "Play",
+  "replayVarioSoundOn": "Vario sound on",
+  "replayVarioSoundOff": "Vario sound off",
+  "replayReadout": "HDG {heading}°  ·  ALT {altitude}m  ·  {vario} m/s",
+  "@replayReadout": {
+    "placeholders": {
+      "heading": { "type": "String" },
+      "altitude": { "type": "String" },
+      "vario": { "type": "String" }
+    }
+  },
+
+  "replay3dTitle": "3D Replay",
+  "replay3dResetView": "Reset view",
+  "replay3dStatAlt": "ALT",
+  "replay3dStatSpd": "SPD",
+  "replay3dStatVario": "VARIO"
 }

@@ -11,6 +11,7 @@ import '../data/flight_report_service.dart';
 import '../data/flight_share_card_service.dart';
 import '../data/geo_name_settings.dart';
 import '../data/reverse_geocoder_service.dart';
+import '../l10n/app_localizations.dart';
 import 'flight_replay_sheet.dart';
 import 'track_3d_sheet.dart';
 
@@ -106,7 +107,8 @@ class _FlightsSheetState extends State<_FlightsSheet> {
               Icon(Icons.route, color: theme.colorScheme.primary),
               const SizedBox(width: 10),
               Expanded(
-                child: Text('Flights', style: theme.textTheme.titleLarge),
+                child: Text(AppLocalizations.of(context).flights,
+                    style: theme.textTheme.titleLarge),
               ),
               if (fitsOnOneRow) ...actions,
             ],
@@ -135,45 +137,47 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
   /// The set of header action buttons, in display order.
   List<Widget> _headerActions(List<FlightTrack> tracks) {
+    final l10n = AppLocalizations.of(context);
     return [
       // DEBUG ONLY — inject a random flight record for testing.
       if (kDebugMode)
         IconButton(
           icon: const Icon(Icons.add_circle_outline),
-          tooltip: 'Add random flight (debug)',
+          tooltip: l10n.flightsAddRandomDebug,
           onPressed: () => _recorder.addRandomDebugTrack(),
         ),
       IconButton(
         icon: const Icon(Icons.file_download_outlined),
-        tooltip: 'Import library (.pbflights)',
+        tooltip: l10n.flightsImportLibrary,
         onPressed: _importLibrary,
       ),
       if (tracks.isNotEmpty)
         IconButton(
           icon: const Icon(Icons.file_upload_outlined),
-          tooltip: 'Export library (.pbflights)',
+          tooltip: l10n.flightsExportLibrary,
           onPressed: () => _exportLibrary(tracks),
         ),
       if (tracks.isNotEmpty)
         IconButton(
           icon: const Icon(Icons.delete_sweep_outlined),
-          tooltip: 'Clear all',
+          tooltip: l10n.flightsClearAll,
           onPressed: _confirmClearAll,
         ),
       IconButton(
         icon: const Icon(Icons.travel_explore),
-        tooltip: 'Place-name lookup settings',
+        tooltip: l10n.flightsPlaceNameSettings,
         onPressed: _openGeoSettings,
       ),
       IconButton(
         icon: const Icon(Icons.close),
-        tooltip: 'Close',
+        tooltip: l10n.close,
         onPressed: () => Navigator.of(context).pop(),
       ),
     ];
   }
 
   Widget _empty(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -181,13 +185,13 @@ class _FlightsSheetState extends State<_FlightsSheet> {
           Icon(Icons.route_outlined,
               size: 48, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(height: 12),
-          Text('No flights recorded yet',
+          Text(l10n.flightsNoneRecorded,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               )),
           const SizedBox(height: 4),
           Text(
-            'Start a flight to record a track.',
+            l10n.flightsStartToRecord,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -198,6 +202,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   }
 
   Widget _trackTile(ThemeData theme, FlightTrack track) {
+    final l10n = AppLocalizations.of(context);
     final canReplay = track.samples.length >= 2;
     return ListTile(
       leading: CircleAvatar(
@@ -206,28 +211,30 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       ),
       title: Text(_fmtDateTime(track.startTime)),
       subtitle: Text(
-        '${_fmtDuration(track.duration)} · '
-        '${(track.distanceM / 1000).toStringAsFixed(2)} km · '
-        '${track.pointCount} pts',
+        l10n.flightsListSubtitle(
+          _fmtDuration(track.duration),
+          (track.distanceM / 1000).toStringAsFixed(2),
+          track.pointCount,
+        ),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             icon: const Icon(Icons.play_circle_outline),
-            tooltip: canReplay
-                ? 'Replay'
-                : 'No track points to replay',
+            tooltip:
+                canReplay ? l10n.flightsReplay : l10n.flightsNoPointsToReplay,
             onPressed: canReplay ? () => _replay(track) : null,
           ),
           IconButton(
             icon: const Icon(Icons.threed_rotation),
-            tooltip: canReplay ? '3D replay' : 'No track points to replay',
+            tooltip:
+                canReplay ? l10n.flights3dReplay : l10n.flightsNoPointsToReplay,
             onPressed: canReplay ? () => _replay3D(track) : null,
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
-            tooltip: 'Delete',
+            tooltip: l10n.delete,
             onPressed: () => _recorder.deleteTrack(track),
           ),
         ],
@@ -247,31 +254,33 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   // ── Share card ─────────────────────────────────────────────────────────
 
   Future<void> _saveShareCard(FlightTrack track) async {
+    final l10n = AppLocalizations.of(context);
     try {
       final saved =
           await FlightShareCardService.instance.saveToGallery(track);
       _snack(saved
-          ? 'Share card saved to gallery'
-          : 'Saved to a file and opened the share sheet');
+          ? l10n.flightsShareCardSaved
+          : l10n.flightsShareCardSharedFile);
     } catch (e) {
-      _snack('Share card failed: $e');
+      _snack(l10n.flightsShareCardFailed('$e'));
     }
   }
 
   // ── Reverse-geocoded site names ──────────────────────────────────────────
 
   Future<void> _resolveSites(FlightTrack track) async {
+    final l10n = AppLocalizations.of(context);
     await GeoNameSettings.instance.load();
     if (!GeoNameSettings.instance.isConfigured) {
-      _snack('Set an AMap key in place-name settings first.');
+      _snack(l10n.flightsSetAmapKeyFirst);
       return;
     }
     final fixes = track.samples.where((s) => s.data.hasFix).toList();
     if (fixes.length < 2) {
-      _snack('This flight has no track points to locate.');
+      _snack(l10n.flightsNoPointsToLocate);
       return;
     }
-    _snack('Looking up site names…');
+    _snack(l10n.flightsLookingUpSites);
     try {
       final takeoff = await ReverseGeocoderService.instance
           .tryLookup(fixes.first.data.latitude, fixes.first.data.longitude);
@@ -281,10 +290,10 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       if (landing != null) track.landingSite = landing;
       _recorder.persistTrackMeta(track);
       _snack(takeoff == null && landing == null
-          ? 'No place names found for these coordinates.'
-          : 'Site names updated.');
+          ? l10n.flightsNoPlaceNames
+          : l10n.flightsSiteNamesUpdated);
     } catch (e) {
-      _snack('Lookup failed: $e');
+      _snack(l10n.flightsLookupFailed('$e'));
     }
   }
 
@@ -293,6 +302,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<void> _editEquipment(FlightTrack track) async {
     await EquipmentStore.instance.load();
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     final glider = TextEditingController(
         text: track.gliderName ?? EquipmentStore.instance.glider ?? '');
     final harness = TextEditingController(
@@ -303,24 +313,24 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Equipment'),
+        title: Text(l10n.equipment),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: glider,
-                decoration: const InputDecoration(labelText: 'Glider'),
+                decoration: InputDecoration(labelText: l10n.equipmentGlider),
                 textCapitalization: TextCapitalization.words,
               ),
               TextField(
                 controller: harness,
-                decoration: const InputDecoration(labelText: 'Harness'),
+                decoration: InputDecoration(labelText: l10n.equipmentHarness),
                 textCapitalization: TextCapitalization.words,
               ),
               TextField(
                 controller: helmet,
-                decoration: const InputDecoration(labelText: 'Helmet'),
+                decoration: InputDecoration(labelText: l10n.equipmentHelmet),
                 textCapitalization: TextCapitalization.words,
               ),
             ],
@@ -329,11 +339,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Save'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -362,6 +372,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<void> _openGeoSettings() async {
     await GeoNameSettings.instance.load();
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     final settings = GeoNameSettings.instance;
     final keyCtrl = TextEditingController(text: settings.amapKey ?? '');
     var auto = settings.autoLookup;
@@ -370,28 +381,24 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setInner) => AlertDialog(
-          title: const Text('Place-name lookup'),
+          title: Text(l10n.placeNameLookup),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Reverse-geocode takeoff/landing coordinates to place names '
-                  'using the AMap (AutoNavi) web service. Requests only ever go '
-                  'to restapi.amap.com.',
-                ),
+                Text(l10n.placeNameLookupDescription),
                 const SizedBox(height: 12),
                 TextField(
                   controller: keyCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'AMap web-service key',
+                  decoration: InputDecoration(
+                    labelText: l10n.placeNameAmapKeyLabel,
                   ),
                   obscureText: true,
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Auto-lookup after each flight'),
+                  title: Text(l10n.placeNameAutoLookup),
                   value: auto,
                   onChanged: (v) => setInner(() => auto = v),
                 ),
@@ -401,11 +408,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Save'),
+              child: Text(l10n.save),
             ),
           ],
         ),
@@ -416,7 +423,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     final key = keyCtrl.text.trim();
     await settings.setAmapKey(key.isEmpty ? null : key);
     await settings.setAutoLookup(auto);
-    _snack('Place-name settings saved.');
+    _snack(l10n.placeNameSettingsSaved);
   }
 
   // ── Per-flight export ──────────────────────────────────────────────────
@@ -432,24 +439,27 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
   Future<void> _runExport(
       Future<String> Function() action, String label) async {
+    final l10n = AppLocalizations.of(context);
     try {
       await action();
     } catch (e) {
-      _snack('$label export failed: $e');
+      _snack(l10n.flightsExportFailed(label, '$e'));
     }
   }
 
   // ── Library import / export ────────────────────────────────────────────
 
   Future<void> _exportLibrary(List<FlightTrack> tracks) async {
+    final l10n = AppLocalizations.of(context);
     try {
       await FlightLibraryIO.instance.exportAndShare(tracks);
     } catch (e) {
-      _snack('Library export failed: $e');
+      _snack(l10n.flightsLibraryExportFailed('$e'));
     }
   }
 
   Future<void> _importLibrary() async {
+    final l10n = AppLocalizations.of(context);
     try {
       final picked = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -459,10 +469,12 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       final path = picked?.files.single.path;
       if (path == null) return;
       final result = await FlightLibraryIO.instance.importFile(path);
-      _snack('Imported ${result.added} · skipped ${result.skipped}'
-          '${result.failed > 0 ? ' · failed ${result.failed}' : ''}');
+      _snack(result.failed > 0
+          ? l10n.flightsImportResultFailed(
+              result.added, result.skipped, result.failed)
+          : l10n.flightsImportResult(result.added, result.skipped));
     } catch (e) {
-      _snack('Import failed: $e');
+      _snack(l10n.flightsImportFailed('$e'));
     }
   }
 
@@ -491,23 +503,24 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       context: context,
       builder: (context) {
         final theme = Theme.of(context);
+        final l10n = AppLocalizations.of(context);
         return StatefulBuilder(
           builder: (context, setDialogState) {
             final stats = FlightDerivedStats.compute(track);
             return Dialog.fullscreen(
               child: Scaffold(
                 appBar: AppBar(
-                  title: const Text('Flight details'),
+                  title: Text(l10n.flightDetailsTitle),
                   leading: IconButton(
                     icon: const Icon(Icons.close),
-                    tooltip: 'Close',
+                    tooltip: l10n.close,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   actions: [
                     if (track.hasSamples)
                       IconButton(
                         icon: const Icon(Icons.data_array),
-                        tooltip: 'Delete samples',
+                        tooltip: l10n.flightDetailDeleteSamples,
                         color: theme.colorScheme.error,
                         onPressed: () async {
                           final confirmed = await _confirmDeleteSamples();
@@ -519,7 +532,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                     if (track.hasSamples)
                       IconButton(
                         icon: const Icon(Icons.threed_rotation),
-                        tooltip: '3D Replay',
+                        tooltip: l10n.flights3dReplay,
                         color: theme.colorScheme.primary,
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -529,7 +542,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                     if (track.samples.length >= 2)
                       IconButton(
                         icon: const Icon(Icons.play_circle_outline),
-                        tooltip: 'Replay',
+                        tooltip: l10n.flightsReplay,
                         color: theme.colorScheme.primary,
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -545,38 +558,46 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                      _detailRow('Start', _fmtDateTime(track.startTime)),
+                      _detailRow(l10n.flightDetailStart,
+                          _fmtDateTime(track.startTime)),
                       _detailRow(
-                          'End',
+                          l10n.flightDetailEnd,
                           track.endTime != null
                               ? _fmtDateTime(track.endTime!)
                               : '—'),
-                      _detailRow('Duration', _fmtDuration(track.duration)),
-                      _detailRow('Distance',
+                      _detailRow(l10n.flightDetailDuration,
+                          _fmtDuration(track.duration)),
+                      _detailRow(l10n.flightDetailDistance,
                           '${(track.distanceM / 1000).toStringAsFixed(2)} km'),
-                      _detailRow('Max altitude',
+                      _detailRow(l10n.flightDetailMaxAltitude,
                           '${track.maxAltitude.toStringAsFixed(0)} m'),
-                      _detailRow('Min altitude',
+                      _detailRow(l10n.flightDetailMinAltitude,
                           '${track.minAltitude.toStringAsFixed(0)} m'),
-                      _detailRow('Max climb',
+                      _detailRow(l10n.flightDetailMaxClimb,
                           '${track.maxClimb.toStringAsFixed(1)} m/s'),
-                      _detailRow('Max sink',
+                      _detailRow(l10n.flightDetailMaxSink,
                           '${track.maxSink.toStringAsFixed(1)} m/s'),
-                      _detailRow('Samples', '${track.pointCount}'),
+                      _detailRow(l10n.flightDetailSamples,
+                          '${track.pointCount}'),
                       if ((track.takeoffSite?.isNotEmpty ?? false) ||
                           (track.landingSite?.isNotEmpty ?? false)) ...[
-                        _detailRow('Takeoff', track.takeoffSite ?? '—'),
-                        _detailRow('Landing', track.landingSite ?? '—'),
+                        _detailRow(l10n.flightDetailTakeoff,
+                            track.takeoffSite ?? '—'),
+                        _detailRow(l10n.flightDetailLanding,
+                            track.landingSite ?? '—'),
                       ],
                       if (track.hasEquipment) ...[
                         const SizedBox(height: 8),
-                        _sectionLabel(theme, 'Equipment'),
+                        _sectionLabel(theme, l10n.equipment),
                         if (track.gliderName?.isNotEmpty ?? false)
-                          _detailRow('Glider', track.gliderName!),
+                          _detailRow(
+                              l10n.equipmentGlider, track.gliderName!),
                         if (track.harnessName?.isNotEmpty ?? false)
-                          _detailRow('Harness', track.harnessName!),
+                          _detailRow(
+                              l10n.equipmentHarness, track.harnessName!),
                         if (track.helmetName?.isNotEmpty ?? false)
-                          _detailRow('Helmet', track.helmetName!),
+                          _detailRow(
+                              l10n.equipmentHelmet, track.helmetName!),
                       ],
                       Align(
                         alignment: Alignment.centerLeft,
@@ -587,55 +608,57 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           },
                           icon: const Icon(Icons.edit_outlined, size: 18),
                           label: Text(track.hasEquipment
-                              ? 'Edit equipment'
-                              : 'Add equipment'),
+                              ? l10n.equipmentEdit
+                              : l10n.equipmentAdd),
                         ),
                       ),
                       if (track.hasSamples) ...[
                         const SizedBox(height: 8),
-                        _sectionLabel(theme, 'Performance'),
-                        _detailRow('Straight distance',
+                        _sectionLabel(theme, l10n.flightDetailPerformance),
+                        _detailRow(l10n.flightDetailStraightDistance,
                             '${(stats.straightDistanceM / 1000).toStringAsFixed(2)} km'),
-                        _detailRow('XC distance',
+                        _detailRow(l10n.flightDetailXcDistance,
                             '${(stats.xcDistanceM / 1000).toStringAsFixed(2)} km'),
                         if (stats.faiTriangleM > 0)
                           _detailRow(
-                              'FAI triangle',
+                              l10n.flightDetailFaiTriangle,
                               '${(stats.faiTriangleM / 1000).toStringAsFixed(2)} km'
-                              '${stats.faiClosed ? ' (closed)' : ''}'),
-                        _detailRow('Max from start',
+                              '${stats.faiClosed ? ' (${l10n.flightDetailFaiClosed})' : ''}'),
+                        _detailRow(l10n.flightDetailMaxFromStart,
                             '${(stats.maxDistanceFromStartM / 1000).toStringAsFixed(2)} km'),
-                        _detailRow('Avg ground speed',
+                        _detailRow(l10n.flightDetailAvgGroundSpeed,
                             '${stats.avgGroundSpeedKph.toStringAsFixed(1)} km/h'),
-                        _detailRow('Avg cruise speed',
+                        _detailRow(l10n.flightDetailAvgCruiseSpeed,
                             '${stats.avgCruiseSpeedKph.toStringAsFixed(1)} km/h'),
-                        _detailRow('Max speed',
+                        _detailRow(l10n.flightDetailMaxSpeed,
                             '${stats.maxSpeedKph.toStringAsFixed(1)} km/h'),
-                        _detailRow('Avg climb',
+                        _detailRow(l10n.flightDetailAvgClimb,
                             '${stats.avgClimbMs.toStringAsFixed(1)} m/s'),
-                        _detailRow('Avg sink',
+                        _detailRow(l10n.flightDetailAvgSink,
                             '${stats.avgSinkMs.toStringAsFixed(1)} m/s'),
                         _detailRow(
-                            'Avg glide ratio',
+                            l10n.flightDetailAvgGlideRatio,
                             stats.avgGlideRatio > 0
                                 ? stats.avgGlideRatio.toStringAsFixed(1)
                                 : '—'),
-                        _detailRow('Track efficiency',
+                        _detailRow(l10n.flightDetailTrackEfficiency,
                             '${(stats.trackEfficiency * 100).toStringAsFixed(0)} %'),
-                        _detailRow('Thermals', '${stats.thermalCount}'),
-                        _detailRow('Alt gained',
+                        _detailRow(l10n.flightDetailThermals,
+                            '${stats.thermalCount}'),
+                        _detailRow(l10n.flightDetailAltGained,
                             '${stats.altitudeGainedM.toStringAsFixed(0)} m'),
-                        _detailRow('Alt lost',
+                        _detailRow(l10n.flightDetailAltLost,
                             '${stats.altitudeLostM.toStringAsFixed(0)} m'),
-                        _detailRow(
-                            'Climb time', _fmtDuration(stats.climbTime)),
-                        _detailRow(
-                            'Glide time', _fmtDuration(stats.glideTime)),
-                        _detailRow('Sink time', _fmtDuration(stats.sinkTime)),
-                        _detailRow(
-                            'Moving time', _fmtDuration(stats.movingTime)),
+                        _detailRow(l10n.flightDetailClimbTime,
+                            _fmtDuration(stats.climbTime)),
+                        _detailRow(l10n.flightDetailGlideTime,
+                            _fmtDuration(stats.glideTime)),
+                        _detailRow(l10n.flightDetailSinkTime,
+                            _fmtDuration(stats.sinkTime)),
+                        _detailRow(l10n.flightDetailMovingTime,
+                            _fmtDuration(stats.movingTime)),
                         const SizedBox(height: 8),
-                        _sectionLabel(theme, 'Export'),
+                        _sectionLabel(theme, l10n.flightDetailExport),
                         Wrap(
                           spacing: 8,
                           runSpacing: 4,
@@ -660,7 +683,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                             OutlinedButton.icon(
                               onPressed: () => _saveShareCard(track),
                               icon: const Icon(Icons.image_outlined, size: 18),
-                              label: const Text('Share card'),
+                              label: Text(l10n.flightExportShareCard),
                             ),
                             OutlinedButton.icon(
                               onPressed: () async {
@@ -668,7 +691,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                                 setDialogState(() {});
                               },
                               icon: const Icon(Icons.place_outlined, size: 18),
-                              label: const Text('Site names'),
+                              label: Text(l10n.flightDetailSiteNames),
                             ),
                           ],
                         ),
@@ -686,23 +709,20 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   }
 
   Future<bool?> _confirmDeleteSamples() {
+    final l10n = AppLocalizations.of(context);
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete sample data?'),
-        content: const Text(
-          'This removes the per-point track data (position/altitude/vario) '
-          'for this flight. The flight and its summary stay in the log, but it '
-          'can no longer be replayed. This cannot be undone.',
-        ),
+        title: Text(l10n.flightsDeleteSamplesTitle),
+        content: Text(l10n.flightsDeleteSamplesMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -724,19 +744,20 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   }
 
   Future<void> _confirmClearAll() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear all flights?'),
-        content: const Text('This removes every recorded flight.'),
+        title: Text(l10n.flightsClearAllTitle),
+        content: Text(l10n.flightsClearAllMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Clear all'),
+            child: Text(l10n.flightsClearAll),
           ),
         ],
       ),

@@ -655,4 +655,303 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dataMonitorTotalEnergy => '总能量';
+
+  @override
+  String get flightsAddRandomDebug => '添加随机飞行（调试）';
+
+  @override
+  String get flightsImportLibrary => '导入库（.pbflights）';
+
+  @override
+  String get flightsExportLibrary => '导出库（.pbflights）';
+
+  @override
+  String get flightsClearAll => '全部清除';
+
+  @override
+  String get flightsPlaceNameSettings => '地名查询设置';
+
+  @override
+  String get flightsNoneRecorded => '尚无飞行记录';
+
+  @override
+  String get flightsStartToRecord => '开始一次飞行以记录航迹。';
+
+  @override
+  String flightsListSubtitle(String duration, String km, int points) {
+    return '$duration · $km km · $points 点';
+  }
+
+  @override
+  String get flightsReplay => '回放';
+
+  @override
+  String get flightsNoPointsToReplay => '没有可回放的航迹点';
+
+  @override
+  String get flights3dReplay => '3D 回放';
+
+  @override
+  String get flightsShareCardSaved => '分享卡片已保存到相册';
+
+  @override
+  String get flightsShareCardSharedFile => '已保存为文件并打开分享面板';
+
+  @override
+  String flightsShareCardFailed(String error) {
+    return '分享卡片失败：$error';
+  }
+
+  @override
+  String get flightsSetAmapKeyFirst => '请先在地名设置中填入高德 Key。';
+
+  @override
+  String get flightsNoPointsToLocate => '此飞行没有可定位的航迹点。';
+
+  @override
+  String get flightsLookingUpSites => '正在查询地名……';
+
+  @override
+  String get flightsNoPlaceNames => '未找到这些坐标对应的地名。';
+
+  @override
+  String get flightsSiteNamesUpdated => '地名已更新。';
+
+  @override
+  String flightsLookupFailed(String error) {
+    return '查询失败：$error';
+  }
+
+  @override
+  String get equipment => '装备';
+
+  @override
+  String get equipmentGlider => '伞具';
+
+  @override
+  String get equipmentHarness => '座袋';
+
+  @override
+  String get equipmentHelmet => '头盔';
+
+  @override
+  String get equipmentEdit => '编辑装备';
+
+  @override
+  String get equipmentAdd => '添加装备';
+
+  @override
+  String get placeNameLookup => '地名查询';
+
+  @override
+  String get placeNameLookupDescription =>
+      '使用高德（AutoNavi）Web 服务将起飞/降落坐标反向地理编码为地名。请求仅发送到 restapi.amap.com。';
+
+  @override
+  String get placeNameAmapKeyLabel => '高德 Web 服务 Key';
+
+  @override
+  String get placeNameAutoLookup => '每次飞行后自动查询';
+
+  @override
+  String get placeNameSettingsSaved => '地名设置已保存。';
+
+  @override
+  String flightsExportFailed(String label, String error) {
+    return '$label 导出失败：$error';
+  }
+
+  @override
+  String flightsLibraryExportFailed(String error) {
+    return '库导出失败：$error';
+  }
+
+  @override
+  String flightsImportResult(int added, int skipped) {
+    return '已导入 $added · 跳过 $skipped';
+  }
+
+  @override
+  String flightsImportResultFailed(int added, int skipped, int failed) {
+    return '已导入 $added · 跳过 $skipped · 失败 $failed';
+  }
+
+  @override
+  String flightsImportFailed(String error) {
+    return '导入失败：$error';
+  }
+
+  @override
+  String get flightDetailsTitle => '飞行详情';
+
+  @override
+  String get flightDetailDeleteSamples => '删除采样数据';
+
+  @override
+  String get flightDetailStart => '开始';
+
+  @override
+  String get flightDetailEnd => '结束';
+
+  @override
+  String get flightDetailDuration => '时长';
+
+  @override
+  String get flightDetailDistance => '距离';
+
+  @override
+  String get flightDetailMaxAltitude => '最高海拔';
+
+  @override
+  String get flightDetailMinAltitude => '最低海拔';
+
+  @override
+  String get flightDetailMaxClimb => '最大爬升';
+
+  @override
+  String get flightDetailMaxSink => '最大下沉';
+
+  @override
+  String get flightDetailSamples => '采样点';
+
+  @override
+  String get flightDetailTakeoff => '起飞';
+
+  @override
+  String get flightDetailLanding => '降落';
+
+  @override
+  String get flightDetailPerformance => '性能';
+
+  @override
+  String get flightDetailStraightDistance => '直线距离';
+
+  @override
+  String get flightDetailXcDistance => '越野距离';
+
+  @override
+  String get flightDetailFaiTriangle => 'FAI 三角';
+
+  @override
+  String get flightDetailFaiClosed => '闭合';
+
+  @override
+  String get flightDetailMaxFromStart => '距起点最远';
+
+  @override
+  String get flightDetailAvgGroundSpeed => '平均地速';
+
+  @override
+  String get flightDetailAvgCruiseSpeed => '平均巡航速度';
+
+  @override
+  String get flightDetailMaxSpeed => '最大速度';
+
+  @override
+  String get flightDetailAvgClimb => '平均爬升';
+
+  @override
+  String get flightDetailAvgSink => '平均下沉';
+
+  @override
+  String get flightDetailAvgGlideRatio => '平均滑翔比';
+
+  @override
+  String get flightDetailTrackEfficiency => '航迹效率';
+
+  @override
+  String get flightDetailThermals => '热气流';
+
+  @override
+  String get flightDetailAltGained => '累计爬升';
+
+  @override
+  String get flightDetailAltLost => '累计下降';
+
+  @override
+  String get flightDetailClimbTime => '爬升时间';
+
+  @override
+  String get flightDetailGlideTime => '滑翔时间';
+
+  @override
+  String get flightDetailSinkTime => '下沉时间';
+
+  @override
+  String get flightDetailMovingTime => '移动时间';
+
+  @override
+  String get flightDetailExport => '导出';
+
+  @override
+  String get flightDetailSiteNames => '地名';
+
+  @override
+  String get flightExportShareCard => '分享卡片';
+
+  @override
+  String get flightsDeleteSamplesTitle => '删除采样数据？';
+
+  @override
+  String get flightsDeleteSamplesMessage =>
+      '这将删除此飞行的逐点航迹数据（位置/海拔/升降）。飞行及其摘要仍保留在记录中，但将无法再回放。此操作无法撤销。';
+
+  @override
+  String get flightsClearAllTitle => '清除所有飞行？';
+
+  @override
+  String get flightsClearAllMessage => '这将移除所有已记录的飞行。';
+
+  @override
+  String get replayTitle => '回放';
+
+  @override
+  String get replayColorBy => '着色依据';
+
+  @override
+  String get replayColorVario => '着色：升降';
+
+  @override
+  String get replayColorSpeed => '着色：速度';
+
+  @override
+  String get replayColorAltitude => '着色：海拔';
+
+  @override
+  String get replayNoPointsMessage => '此飞行没有可回放的航迹点。';
+
+  @override
+  String get replayRestart => '重新开始';
+
+  @override
+  String get replayPause => '暂停';
+
+  @override
+  String get replayPlay => '播放';
+
+  @override
+  String get replayVarioSoundOn => '升降音开';
+
+  @override
+  String get replayVarioSoundOff => '升降音关';
+
+  @override
+  String replayReadout(String heading, String altitude, String vario) {
+    return '航向 $heading°  ·  海拔 ${altitude}m  ·  $vario m/s';
+  }
+
+  @override
+  String get replay3dTitle => '3D 回放';
+
+  @override
+  String get replay3dResetView => '重置视角';
+
+  @override
+  String get replay3dStatAlt => '海拔';
+
+  @override
+  String get replay3dStatSpd => '速度';
+
+  @override
+  String get replay3dStatVario => '升降';
 }

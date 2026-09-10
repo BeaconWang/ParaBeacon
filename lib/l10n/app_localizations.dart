@@ -1357,6 +1357,564 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total energy'**
   String get dataMonitorTotalEnergy;
+
+  /// No description provided for @flightsAddRandomDebug.
+  ///
+  /// In en, this message translates to:
+  /// **'Add random flight (debug)'**
+  String get flightsAddRandomDebug;
+
+  /// No description provided for @flightsImportLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Import library (.pbflights)'**
+  String get flightsImportLibrary;
+
+  /// No description provided for @flightsExportLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Export library (.pbflights)'**
+  String get flightsExportLibrary;
+
+  /// No description provided for @flightsClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get flightsClearAll;
+
+  /// No description provided for @flightsPlaceNameSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Place-name lookup settings'**
+  String get flightsPlaceNameSettings;
+
+  /// No description provided for @flightsNoneRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'No flights recorded yet'**
+  String get flightsNoneRecorded;
+
+  /// No description provided for @flightsStartToRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a flight to record a track.'**
+  String get flightsStartToRecord;
+
+  /// No description provided for @flightsListSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} · {km} km · {points} pts'**
+  String flightsListSubtitle(String duration, String km, int points);
+
+  /// No description provided for @flightsReplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay'**
+  String get flightsReplay;
+
+  /// No description provided for @flightsNoPointsToReplay.
+  ///
+  /// In en, this message translates to:
+  /// **'No track points to replay'**
+  String get flightsNoPointsToReplay;
+
+  /// No description provided for @flights3dReplay.
+  ///
+  /// In en, this message translates to:
+  /// **'3D replay'**
+  String get flights3dReplay;
+
+  /// No description provided for @flightsShareCardSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Share card saved to gallery'**
+  String get flightsShareCardSaved;
+
+  /// No description provided for @flightsShareCardSharedFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to a file and opened the share sheet'**
+  String get flightsShareCardSharedFile;
+
+  /// No description provided for @flightsShareCardFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Share card failed: {error}'**
+  String flightsShareCardFailed(String error);
+
+  /// No description provided for @flightsSetAmapKeyFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Set an AMap key in place-name settings first.'**
+  String get flightsSetAmapKeyFirst;
+
+  /// No description provided for @flightsNoPointsToLocate.
+  ///
+  /// In en, this message translates to:
+  /// **'This flight has no track points to locate.'**
+  String get flightsNoPointsToLocate;
+
+  /// No description provided for @flightsLookingUpSites.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking up site names…'**
+  String get flightsLookingUpSites;
+
+  /// No description provided for @flightsNoPlaceNames.
+  ///
+  /// In en, this message translates to:
+  /// **'No place names found for these coordinates.'**
+  String get flightsNoPlaceNames;
+
+  /// No description provided for @flightsSiteNamesUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Site names updated.'**
+  String get flightsSiteNamesUpdated;
+
+  /// No description provided for @flightsLookupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Lookup failed: {error}'**
+  String flightsLookupFailed(String error);
+
+  /// No description provided for @equipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get equipment;
+
+  /// No description provided for @equipmentGlider.
+  ///
+  /// In en, this message translates to:
+  /// **'Glider'**
+  String get equipmentGlider;
+
+  /// No description provided for @equipmentHarness.
+  ///
+  /// In en, this message translates to:
+  /// **'Harness'**
+  String get equipmentHarness;
+
+  /// No description provided for @equipmentHelmet.
+  ///
+  /// In en, this message translates to:
+  /// **'Helmet'**
+  String get equipmentHelmet;
+
+  /// No description provided for @equipmentEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit equipment'**
+  String get equipmentEdit;
+
+  /// No description provided for @equipmentAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add equipment'**
+  String get equipmentAdd;
+
+  /// No description provided for @placeNameLookup.
+  ///
+  /// In en, this message translates to:
+  /// **'Place-name lookup'**
+  String get placeNameLookup;
+
+  /// No description provided for @placeNameLookupDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse-geocode takeoff/landing coordinates to place names using the AMap (AutoNavi) web service. Requests only ever go to restapi.amap.com.'**
+  String get placeNameLookupDescription;
+
+  /// No description provided for @placeNameAmapKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap web-service key'**
+  String get placeNameAmapKeyLabel;
+
+  /// No description provided for @placeNameAutoLookup.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-lookup after each flight'**
+  String get placeNameAutoLookup;
+
+  /// No description provided for @placeNameSettingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Place-name settings saved.'**
+  String get placeNameSettingsSaved;
+
+  /// No description provided for @flightsExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} export failed: {error}'**
+  String flightsExportFailed(String label, String error);
+
+  /// No description provided for @flightsLibraryExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Library export failed: {error}'**
+  String flightsLibraryExportFailed(String error);
+
+  /// No description provided for @flightsImportResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {added} · skipped {skipped}'**
+  String flightsImportResult(int added, int skipped);
+
+  /// No description provided for @flightsImportResultFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {added} · skipped {skipped} · failed {failed}'**
+  String flightsImportResultFailed(int added, int skipped, int failed);
+
+  /// No description provided for @flightsImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: {error}'**
+  String flightsImportFailed(String error);
+
+  /// No description provided for @flightDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight details'**
+  String get flightDetailsTitle;
+
+  /// No description provided for @flightDetailDeleteSamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete samples'**
+  String get flightDetailDeleteSamples;
+
+  /// No description provided for @flightDetailStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get flightDetailStart;
+
+  /// No description provided for @flightDetailEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get flightDetailEnd;
+
+  /// No description provided for @flightDetailDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get flightDetailDuration;
+
+  /// No description provided for @flightDetailDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get flightDetailDistance;
+
+  /// No description provided for @flightDetailMaxAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Max altitude'**
+  String get flightDetailMaxAltitude;
+
+  /// No description provided for @flightDetailMinAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Min altitude'**
+  String get flightDetailMinAltitude;
+
+  /// No description provided for @flightDetailMaxClimb.
+  ///
+  /// In en, this message translates to:
+  /// **'Max climb'**
+  String get flightDetailMaxClimb;
+
+  /// No description provided for @flightDetailMaxSink.
+  ///
+  /// In en, this message translates to:
+  /// **'Max sink'**
+  String get flightDetailMaxSink;
+
+  /// No description provided for @flightDetailSamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Samples'**
+  String get flightDetailSamples;
+
+  /// No description provided for @flightDetailTakeoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeoff'**
+  String get flightDetailTakeoff;
+
+  /// No description provided for @flightDetailLanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing'**
+  String get flightDetailLanding;
+
+  /// No description provided for @flightDetailPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get flightDetailPerformance;
+
+  /// No description provided for @flightDetailStraightDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Straight distance'**
+  String get flightDetailStraightDistance;
+
+  /// No description provided for @flightDetailXcDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'XC distance'**
+  String get flightDetailXcDistance;
+
+  /// No description provided for @flightDetailFaiTriangle.
+  ///
+  /// In en, this message translates to:
+  /// **'FAI triangle'**
+  String get flightDetailFaiTriangle;
+
+  /// No description provided for @flightDetailFaiClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'closed'**
+  String get flightDetailFaiClosed;
+
+  /// No description provided for @flightDetailMaxFromStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Max from start'**
+  String get flightDetailMaxFromStart;
+
+  /// No description provided for @flightDetailAvgGroundSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg ground speed'**
+  String get flightDetailAvgGroundSpeed;
+
+  /// No description provided for @flightDetailAvgCruiseSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg cruise speed'**
+  String get flightDetailAvgCruiseSpeed;
+
+  /// No description provided for @flightDetailMaxSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Max speed'**
+  String get flightDetailMaxSpeed;
+
+  /// No description provided for @flightDetailAvgClimb.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg climb'**
+  String get flightDetailAvgClimb;
+
+  /// No description provided for @flightDetailAvgSink.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg sink'**
+  String get flightDetailAvgSink;
+
+  /// No description provided for @flightDetailAvgGlideRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg glide ratio'**
+  String get flightDetailAvgGlideRatio;
+
+  /// No description provided for @flightDetailTrackEfficiency.
+  ///
+  /// In en, this message translates to:
+  /// **'Track efficiency'**
+  String get flightDetailTrackEfficiency;
+
+  /// No description provided for @flightDetailThermals.
+  ///
+  /// In en, this message translates to:
+  /// **'Thermals'**
+  String get flightDetailThermals;
+
+  /// No description provided for @flightDetailAltGained.
+  ///
+  /// In en, this message translates to:
+  /// **'Alt gained'**
+  String get flightDetailAltGained;
+
+  /// No description provided for @flightDetailAltLost.
+  ///
+  /// In en, this message translates to:
+  /// **'Alt lost'**
+  String get flightDetailAltLost;
+
+  /// No description provided for @flightDetailClimbTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Climb time'**
+  String get flightDetailClimbTime;
+
+  /// No description provided for @flightDetailGlideTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Glide time'**
+  String get flightDetailGlideTime;
+
+  /// No description provided for @flightDetailSinkTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Sink time'**
+  String get flightDetailSinkTime;
+
+  /// No description provided for @flightDetailMovingTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving time'**
+  String get flightDetailMovingTime;
+
+  /// No description provided for @flightDetailExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get flightDetailExport;
+
+  /// No description provided for @flightDetailSiteNames.
+  ///
+  /// In en, this message translates to:
+  /// **'Site names'**
+  String get flightDetailSiteNames;
+
+  /// No description provided for @flightExportShareCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Share card'**
+  String get flightExportShareCard;
+
+  /// No description provided for @flightsDeleteSamplesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete sample data?'**
+  String get flightsDeleteSamplesTitle;
+
+  /// No description provided for @flightsDeleteSamplesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the per-point track data (position/altitude/vario) for this flight. The flight and its summary stay in the log, but it can no longer be replayed. This cannot be undone.'**
+  String get flightsDeleteSamplesMessage;
+
+  /// No description provided for @flightsClearAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all flights?'**
+  String get flightsClearAllTitle;
+
+  /// No description provided for @flightsClearAllMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes every recorded flight.'**
+  String get flightsClearAllMessage;
+
+  /// No description provided for @replayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay'**
+  String get replayTitle;
+
+  /// No description provided for @replayColorBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Color by'**
+  String get replayColorBy;
+
+  /// No description provided for @replayColorVario.
+  ///
+  /// In en, this message translates to:
+  /// **'Color: Vario'**
+  String get replayColorVario;
+
+  /// No description provided for @replayColorSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Color: Speed'**
+  String get replayColorSpeed;
+
+  /// No description provided for @replayColorAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Color: Altitude'**
+  String get replayColorAltitude;
+
+  /// No description provided for @replayNoPointsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This flight has no recorded track points to replay.'**
+  String get replayNoPointsMessage;
+
+  /// No description provided for @replayRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get replayRestart;
+
+  /// No description provided for @replayPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get replayPause;
+
+  /// No description provided for @replayPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get replayPlay;
+
+  /// No description provided for @replayVarioSoundOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario sound on'**
+  String get replayVarioSoundOn;
+
+  /// No description provided for @replayVarioSoundOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario sound off'**
+  String get replayVarioSoundOff;
+
+  /// No description provided for @replayReadout.
+  ///
+  /// In en, this message translates to:
+  /// **'HDG {heading}°  ·  ALT {altitude}m  ·  {vario} m/s'**
+  String replayReadout(String heading, String altitude, String vario);
+
+  /// No description provided for @replay3dTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'3D Replay'**
+  String get replay3dTitle;
+
+  /// No description provided for @replay3dResetView.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset view'**
+  String get replay3dResetView;
+
+  /// No description provided for @replay3dStatAlt.
+  ///
+  /// In en, this message translates to:
+  /// **'ALT'**
+  String get replay3dStatAlt;
+
+  /// No description provided for @replay3dStatSpd.
+  ///
+  /// In en, this message translates to:
+  /// **'SPD'**
+  String get replay3dStatSpd;
+
+  /// No description provided for @replay3dStatVario.
+  ///
+  /// In en, this message translates to:
+  /// **'VARIO'**
+  String get replay3dStatVario;
 }
 
 class _AppLocalizationsDelegate

@@ -9,6 +9,7 @@ import '../audio/vario_audio_service.dart';
 import '../data/flight_data.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
+import '../l10n/app_localizations.dart';
 import 'map_control.dart' show MapTileSources, MapTileSource;
 
 /// Opens the flight replay screen for a completed [track] as a full-screen
@@ -258,6 +259,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final center = _firstFix() ?? _shift(const LatLng(46.5197, 6.6323));
     final cur = _currentSample();
     final hasFix = cur.data.hasFix;
@@ -274,31 +276,32 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                     color: theme.colorScheme.primary),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Replay', style: theme.textTheme.titleLarge),
+                  child: Text(l10n.replayTitle,
+                      style: theme.textTheme.titleLarge),
                 ),
                 PopupMenuButton<TrackColorMode>(
                   icon: const Icon(Icons.palette_outlined),
-                  tooltip: 'Color by',
+                  tooltip: l10n.replayColorBy,
                   initialValue: _colorMode,
                   onSelected: (m) => setState(() => _colorMode = m),
-                  itemBuilder: (context) => const [
+                  itemBuilder: (context) => [
                     PopupMenuItem(
                       value: TrackColorMode.vario,
-                      child: Text('Color: Vario'),
+                      child: Text(l10n.replayColorVario),
                     ),
                     PopupMenuItem(
                       value: TrackColorMode.speed,
-                      child: Text('Color: Speed'),
+                      child: Text(l10n.replayColorSpeed),
                     ),
                     PopupMenuItem(
                       value: TrackColorMode.altitude,
-                      child: Text('Color: Altitude'),
+                      child: Text(l10n.replayColorAltitude),
                     ),
                   ],
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
-                  tooltip: 'Close',
+                  tooltip: l10n.close,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -384,6 +387,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   }
 
   Widget _readoutChip(ThemeData theme, FlightSample s) {
+    final l10n = AppLocalizations.of(context);
     final d = s.data;
     final vario = d.verticalSpeed;
     return Container(
@@ -393,8 +397,11 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        'HDG ${d.heading.round()}°  ·  ALT ${d.altitude.round()}m  ·  '
-        '${vario >= 0 ? '+' : ''}${vario.toStringAsFixed(1)} m/s',
+        l10n.replayReadout(
+          '${d.heading.round()}',
+          '${d.altitude.round()}',
+          '${vario >= 0 ? '+' : ''}${vario.toStringAsFixed(1)}',
+        ),
         style: theme.textTheme.labelMedium
             ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
       ),
@@ -402,6 +409,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   }
 
   Widget _buildControls(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     final elapsed = Duration(milliseconds: _cursorMs.round());
     final total = Duration(milliseconds: _spanMs.round());
     final canReplay = _samples.length >= 2;
@@ -435,7 +443,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
             children: [
               IconButton(
                 icon: const Icon(Icons.replay),
-                tooltip: 'Restart',
+                tooltip: l10n.replayRestart,
                 onPressed: canReplay
                     ? () {
                         _pause();
@@ -446,7 +454,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
               IconButton.filled(
                 iconSize: 32,
                 icon: Icon(_playing ? Icons.pause : Icons.play_arrow),
-                tooltip: _playing ? 'Pause' : 'Play',
+                tooltip: _playing ? l10n.replayPause : l10n.replayPlay,
                 onPressed: canReplay ? _togglePlay : null,
               ),
               TextButton(
@@ -455,7 +463,8 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
               ),
               IconButton(
                 icon: Icon(_audioSync ? Icons.volume_up : Icons.volume_off),
-                tooltip: _audioSync ? 'Vario sound on' : 'Vario sound off',
+                tooltip:
+                    _audioSync ? l10n.replayVarioSoundOn : l10n.replayVarioSoundOff,
                 color: _audioSync ? theme.colorScheme.primary : null,
                 onPressed: canReplay ? _toggleAudioSync : null,
               ),
@@ -465,7 +474,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'This flight has no recorded track points to replay.',
+                l10n.replayNoPointsMessage,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 import '../audio/vario_audio_service.dart';
 import '../data/flight_data.dart';
 import '../data/flight_recorder.dart';
+import '../l10n/app_localizations.dart';
 import 'track_3d_painter.dart';
 
 /// Opens a 3D replay of a completed [track] as a full-screen sheet.
@@ -172,6 +173,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final canReplay = _samples.length >= 2;
     final cur = _currentSample();
 
@@ -185,11 +187,12 @@ class _Track3DSheetState extends State<_Track3DSheet>
                 Icon(Icons.threed_rotation, color: theme.colorScheme.primary),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('3D Replay', style: theme.textTheme.titleLarge),
+                  child: Text(l10n.replay3dTitle,
+                      style: theme.textTheme.titleLarge),
                 ),
                 IconButton(
                   icon: const Icon(Icons.center_focus_strong),
-                  tooltip: 'Reset view',
+                  tooltip: l10n.replay3dResetView,
                   onPressed: () => setState(() {
                     _yaw = -0.6;
                     _pitch = 0.9;
@@ -198,7 +201,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
-                  tooltip: 'Close',
+                  tooltip: l10n.close,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -230,6 +233,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
   }
 
   Widget _readout(ThemeData theme, FlightSample s) {
+    final l10n = AppLocalizations.of(context);
     final d = s.data;
     final v = d.verticalSpeed;
     return Padding(
@@ -237,9 +241,10 @@ class _Track3DSheetState extends State<_Track3DSheet>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _stat(theme, 'ALT', '${d.altitude.round()} m'),
-          _stat(theme, 'SPD', '${d.groundSpeed.toStringAsFixed(0)} km/h'),
-          _stat(theme, 'VARIO',
+          _stat(theme, l10n.replay3dStatAlt, '${d.altitude.round()} m'),
+          _stat(theme, l10n.replay3dStatSpd,
+              '${d.groundSpeed.toStringAsFixed(0)} km/h'),
+          _stat(theme, l10n.replay3dStatVario,
               '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)} m/s'),
         ],
       ),
@@ -259,6 +264,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
   }
 
   Widget _controls(ThemeData theme, bool canReplay) {
+    final l10n = AppLocalizations.of(context);
     final elapsed = Duration(milliseconds: _cursorMs.round());
     final total = Duration(milliseconds: _spanMs.round());
     return Padding(
@@ -289,7 +295,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
             children: [
               IconButton(
                 icon: const Icon(Icons.replay),
-                tooltip: 'Restart',
+                tooltip: l10n.replayRestart,
                 onPressed: canReplay
                     ? () {
                         _pause();
@@ -300,7 +306,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
               IconButton.filled(
                 iconSize: 32,
                 icon: Icon(_playing ? Icons.pause : Icons.play_arrow),
-                tooltip: _playing ? 'Pause' : 'Play',
+                tooltip: _playing ? l10n.replayPause : l10n.replayPlay,
                 onPressed: canReplay ? _togglePlay : null,
               ),
               TextButton(
@@ -310,7 +316,8 @@ class _Track3DSheetState extends State<_Track3DSheet>
               ),
               IconButton(
                 icon: Icon(_audioSync ? Icons.volume_up : Icons.volume_off),
-                tooltip: _audioSync ? 'Vario sound on' : 'Vario sound off',
+                tooltip:
+                    _audioSync ? l10n.replayVarioSoundOn : l10n.replayVarioSoundOff,
                 color: _audioSync ? theme.colorScheme.primary : null,
                 onPressed: canReplay ? _toggleAudioSync : null,
               ),

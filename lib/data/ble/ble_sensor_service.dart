@@ -25,7 +25,11 @@ import 'sensor_readings.dart';
 /// Design:
 /// - Single-device model (a flight typically uses one external vario).
 /// - The selected device's remoteId is persisted so it can auto-reconnect.
-/// - Exponential-backoff auto-reconnect on unexpected disconnects.
+/// - The persisted device uses the platform's native `autoConnect`, so it
+///   reconnects immediately the moment it becomes available again — even if it
+///   was out of range for a long time (no fixed retry cap).
+/// - Manual (user-tapped) connections use a fast, timed connect for a
+///   responsive UI, then fall back to `autoConnect` if the device drops.
 class BleSensorService extends ChangeNotifier {
   BleSensorService._();
   static final BleSensorService instance = BleSensorService._();
@@ -123,8 +127,10 @@ class BleSensorService extends ChangeNotifier {
     });
 
     if (_enabled && selectedId != null) {
-      // Don't block startup: best-effort background reconnect.
-      unawaited(connectToId(selectedId!));
+      // Don't block startup: best-effort background reconnect. Uses native
+      // autoConnect so it links up the instant the sensor is available, even
+      // if it isn't in range right now.
+      unawaited(connectToId(selectedId!, autoConnect: true));
     }
     notifyListeners();
   }
@@ -142,7 +148,8 @@ class BleSensorService extends ChangeNotifier {
     if (value) {
       if (selectedId != null && !isConnected) {
         _reconnectAttempts = 0;
-        await connectToId(selectedId!);
+        // Link up as soon as the saved sensor is available.
+        await connectToId(selectedId!, autoConnect: true);
       }
     } else {
       await disconnect();
@@ -207,7 +214,17 @@ class BleSensorService extends ChangeNotifier {
   }
 
   // ── Connect ─────────────────────────────────────────────────────────────
-  Future<void> connect(BluetoothDevice dev, {String? name}) async {
+  /// Connects to [dev].
+  ///
+  /// When [autoConnect] is true the platform keeps a pending connection and
+  /// links up the instant the device becomes available — ideal for the saved
+  /// "last connected" sensor, which may currently be out of range. When false
+  /// a fast, timed connect is used for a responsive UI (user-tapped devices).
+  Future<void> connect(
+    BluetoothDevice dev, {
+    String? name,
+    bool autoConnect = false,
+  }) async {
     if (!_guard()) return;
 
     await stopScan();
@@ -244,7 +261,13 @@ class BleSensorService extends ChangeNotifier {
     });
 
     try {
-      await dev.connect(timeout: const Duration(seconds: 15));
+      if (autoConnect) {
+        // Native persistent connect: no timeout — links up whenever the
+        // device shows up. `mtu` must be null when autoConnect is true.
+        await dev.connect(autoConnect: true, mtu: null);
+      } else {
+        await dev.connect(timeout: const Duration(seconds: 15));
+      }
     } catch (e) {
       error = 'Connection failed: $e';
       notifyListeners();
@@ -253,10 +276,10 @@ class BleSensorService extends ChangeNotifier {
   }
 
   /// Connect directly by remoteId (no scan needed; used for auto-reconnect).
-  Future<void> connectToId(String id) async {
+  Future<void> connectToId(String id, {bool autoConnect = false}) async {
     if (!_guard()) return;
     final dev = BluetoothDevice.fromId(id);
-    await connect(dev, name: selectedName);
+    await connect(dev, name: selectedName, autoConnect: autoConnect);
   }
 
   Future<void> _onConnected() async {
@@ -351,7 +374,14 @@ class BleSensorService extends ChangeNotifier {
   // ── Auto-reconnect ─────────────────────────────────────────────────────────
   void _maybeReconnect() {
     if (!_enabled || _device == null) return;
-    if (_reconnectAttempts >= _maxReconnectAttempts) return;
+
+    // After the quick timed retries are used up, hand off to the platform's
+    // persistent autoConnect so the sensor links up the moment it reappears —
+    // no matter how long it stays out of range.
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      _startAutoConnect();
+      return;
+    }
 
     _reconnectAttempts++;
     final delay = Duration(
@@ -363,6 +393,19 @@ class BleSensorService extends ChangeNotifier {
         await _device!.connect(timeout: const Duration(seconds: 15));
       } catch (_) {}
     });
+  }
+
+  /// Issues a native persistent connect that resolves whenever the device
+  /// becomes available. Safe to call repeatedly.
+  void _startAutoConnect() {
+    final dev = _device;
+    if (dev == null || !_enabled) return;
+    () async {
+      if (!_enabled || isConnected || _device == null) return;
+      try {
+        await dev.connect(autoConnect: true, mtu: null);
+      } catch (_) {}
+    }();
   }
 
   // ── Disconnect / forget ────────────────────────────────────────────────────

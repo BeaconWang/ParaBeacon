@@ -24,7 +24,11 @@ class DebugSettings extends ChangeNotifier {
 
   /// Whether the simulated flight-data source may run as a fallback feed.
   /// Defaults to `false` (disabled).
-  bool get simulatorEnabled => _simulatorEnabled;
+  ///
+  /// In release builds this is **always** `false`: the app must never fabricate
+  /// flight data for real users, regardless of any persisted preference or
+  /// runtime toggle. The simulator is a development-only feed.
+  bool get simulatorEnabled => kReleaseMode ? false : _simulatorEnabled;
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -34,6 +38,13 @@ class DebugSettings extends ChangeNotifier {
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
+    // In release builds the simulator is force-disabled, so there is nothing
+    // to restore — keep the default (off) and skip reading storage.
+    if (kReleaseMode) {
+      _simulatorEnabled = false;
+      notifyListeners();
+      return;
+    }
     try {
       final sp = await SharedPreferences.getInstance();
       _simulatorEnabled = sp.getBool(_kSimulatorEnabled) ?? _simulatorEnabled;
@@ -44,7 +55,11 @@ class DebugSettings extends ChangeNotifier {
   }
 
   /// Enables or disables the simulated flight-data source and persists it.
+  ///
+  /// No-op in release builds — the simulator can never be enabled for real
+  /// users.
   void setSimulatorEnabled(bool enabled) {
+    if (kReleaseMode) return;
     if (_simulatorEnabled == enabled) return;
     _simulatorEnabled = enabled;
     _persistBool(_kSimulatorEnabled, enabled);

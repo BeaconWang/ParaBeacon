@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../audio/vario_audio_service.dart';
 import '../audio/vario_config.dart';
 import '../audio/vario_sound_settings.dart';
+import 'vario_sound_customization_page.dart';
 
 /// Opens the Vario Sound Settings screen as a modal bottom sheet.
 ///
@@ -123,6 +124,36 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     children: [
                       _testCard(theme),
+                      const SizedBox(height: 20),
+                      _sectionLabel(theme, 'Sound customization'),
+                      const SizedBox(height: 8),
+                      _switchCard(
+                        theme,
+                        icon: Icons.tune,
+                        label: 'Enable sound customization',
+                        description:
+                            'Use custom Frequency/Cycle/Duty anchors instead '
+                            'of the default vario profile curve.',
+                        value: _settings.customSoundEnabled,
+                        onChanged: _settings.setCustomSoundEnabled,
+                      ),
+                      _actionCard(
+                        theme,
+                        icon: Icons.equalizer,
+                        label: 'Open Sound customization editor',
+                        description:
+                            'Adjust Frequency, Cycle and Duty by vertical '
+                            'speed, with live preview.',
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const VarioSoundCustomizationPage(),
+                            ),
+                          );
+                          if (mounted) setState(() {});
+                        },
+                      ),
                       const SizedBox(height: 20),
                       _sectionLabel(theme, 'Thresholds'),
                       const SizedBox(height: 8),
@@ -418,6 +449,57 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
           ),
           Switch(value: value, onChanged: onChanged),
         ],
+      ),
+    );
+  }
+
+  Widget _actionCard(
+    ThemeData theme, {
+    required IconData icon,
+    required String label,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: theme.textTheme.bodyMedium),
+                      const SizedBox(height: 2),
+                      Text(
+                        description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -30,6 +30,8 @@
 
 import 'dart:math' as math;
 
+import 'vario_sound_curve.dart';
+
 /// XCTrack waveform families (enum `b1` in the APK).
 enum VarioWaveform {
   /// TICK — rich additive blend (used by some weak-lift profiles).
@@ -166,6 +168,17 @@ class VarioAudioConfig {
   final VarioWaveform sinkWaveform;
 
   // ---------------------------------------------------------------------------
+  // Optional custom curve (XCTrack-style Sound customization)
+  // ---------------------------------------------------------------------------
+
+  /// Whether to use [customSoundCurve] for tone mapping instead of the legacy
+  /// fixed lift/sink formulas.
+  final bool customSoundEnabled;
+
+  /// Optional anchor-based sound curve used when [customSoundEnabled] is true.
+  final VarioSoundCurve? customSoundCurve;
+
+  // ---------------------------------------------------------------------------
   // Envelope / mix
   // ---------------------------------------------------------------------------
 
@@ -204,6 +217,8 @@ class VarioAudioConfig {
     this.sinkPeriodSeconds = 1.0,
     this.sinkToneSeconds = 0.5,
     this.sinkWaveform = VarioWaveform.long,
+    this.customSoundEnabled = false,
+    this.customSoundCurve,
     this.fadeFraction = 0.05,
     this.masterGain = 0.9,
   });
@@ -239,6 +254,8 @@ class VarioAudioConfig {
     double? sinkPeriodSeconds,
     double? sinkToneSeconds,
     VarioWaveform? sinkWaveform,
+    bool? customSoundEnabled,
+    VarioSoundCurve? customSoundCurve,
     double? fadeFraction,
     double? masterGain,
   }) {
@@ -273,10 +290,15 @@ class VarioAudioConfig {
       sinkPeriodSeconds: sinkPeriodSeconds ?? this.sinkPeriodSeconds,
       sinkToneSeconds: sinkToneSeconds ?? this.sinkToneSeconds,
       sinkWaveform: sinkWaveform ?? this.sinkWaveform,
+      customSoundEnabled: customSoundEnabled ?? this.customSoundEnabled,
+      customSoundCurve: customSoundCurve ?? this.customSoundCurve,
       fadeFraction: fadeFraction ?? this.fadeFraction,
       masterGain: masterGain ?? this.masterGain,
     );
   }
+
+  /// True when the custom anchor-based sound curve should drive the synth.
+  bool get usesCustomSoundCurve => customSoundEnabled && customSoundCurve != null;
 
   // ---------------------------------------------------------------------------
   // XCTrack pitch/cadence math (pure functions of the config, unit-testable).

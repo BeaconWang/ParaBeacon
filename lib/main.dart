@@ -240,8 +240,7 @@ class DashGridPage extends StatefulWidget {
   State<DashGridPage> createState() => _DashGridPageState();
 }
 
-class _DashGridPageState extends State<DashGridPage>
-    with SingleTickerProviderStateMixin {
+class _DashGridPageState extends State<DashGridPage> {
   double _gridSize = 32.0;
   bool _menuOpen = false;
   // Start in view mode on cold launch when the dashboard already has content:
@@ -301,16 +300,13 @@ class _DashGridPageState extends State<DashGridPage>
   int _dragStartCols = 0;
   int _dragStartRows = 0;
 
-  late final AnimationController _menuController;
-  late final Animation<double> _menuAnimation;
-
   // Drag state
   double _dragOffset = 0.0;
   double _menuHeight = 300.0; // measured from the menu panel after layout
   final GlobalKey _menuKey = GlobalKey();
 
   /// Measures the actual rendered menu-panel height and updates [_menuHeight]
-  /// so the slide-in offset matches the content (no blank space below items).
+  /// so the pull-down offset matches the content (no blank space below items).
   void _measureMenu() {
     final ctx = _menuKey.currentContext;
     if (ctx == null) return;
@@ -326,18 +322,6 @@ class _DashGridPageState extends State<DashGridPage>
   void initState() {
     super.initState();
     _pageController = PageController();
-    _menuController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _menuAnimation = CurvedAnimation(
-      parent: _menuController,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
-    _menuController.addListener(() {
-      setState(() {});
-    });
     _loadLayout();
   }
 
@@ -412,7 +396,6 @@ class _DashGridPageState extends State<DashGridPage>
   void dispose() {
     _pageIndicatorHideTimer?.cancel();
     _pageController.dispose();
-    _menuController.dispose();
     super.dispose();
   }
 
@@ -442,15 +425,17 @@ class _DashGridPageState extends State<DashGridPage>
   }
 
   void _openMenu() {
-    _menuOpen = true;
-    _menuController.value = (_dragOffset / _menuHeight).clamp(0.0, 1.0);
-    _menuController.forward();
+    setState(() {
+      _menuOpen = true;
+      _dragOffset = _menuHeight;
+    });
   }
 
   void _closeMenu() {
-    _menuOpen = false;
-    _menuController.value = (_dragOffset / _menuHeight).clamp(0.0, 1.0);
-    _menuController.reverse();
+    setState(() {
+      _menuOpen = false;
+      _dragOffset = 0.0;
+    });
   }
 
   void _onDragStart(DragStartDetails details) {
@@ -464,20 +449,13 @@ class _DashGridPageState extends State<DashGridPage>
   }
 
   void _onDragEnd(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
-    // Open on a clear downward fling, or after only a short drag. Previously
-    // this required dragging past 40% of the full menu height (~120px), which
-    // felt too long; a fixed ~64px threshold plus velocity makes the menu open
-    // with a quick flick.
-    const openDistance = 64.0;
-    if (velocity > 300 || _dragOffset > openDistance) {
-      // Snap open
+    // The menu only stays open after the panel has been pulled completely
+    // into view. A partial pull is dismissed immediately with no snap animation.
+    if (_dragOffset >= _menuHeight) {
       _openMenu();
     } else {
-      // Snap closed
       _closeMenu();
     }
-    _dragOffset = 0.0;
   }
 
   // --- Drag-to-close (dragging up on the open menu) ---
@@ -485,7 +463,6 @@ class _DashGridPageState extends State<DashGridPage>
   void _onCloseDragStart(DragStartDetails details) {
     // Start tracking from the fully-open position.
     _menuOpen = false;
-    _menuController.stop();
     _dragOffset = _menuHeight;
     setState(() {});
   }
@@ -504,15 +481,10 @@ class _DashGridPageState extends State<DashGridPage>
     } else {
       _openMenu();
     }
-    _dragOffset = 0.0;
   }
 
-  double get _effectiveMenuOffset {
-    if (_menuController.isAnimating || _menuOpen) {
-      return _menuHeight * _menuAnimation.value;
-    }
-    return _dragOffset;
-  }
+  double get _effectiveMenuOffset =>
+      _menuOpen ? _menuHeight : _dragOffset;
 
   /// Handles a tap on a menu item.
   Future<void> _onMenuAction(String action) async {
@@ -1121,7 +1093,7 @@ class _DashGridPageState extends State<DashGridPage>
 
   @override
   Widget build(BuildContext context) {
-    // Measure the real menu height after this frame so the slide offset
+    // Measure the real menu height after this frame so the pull-down offset
     // matches the content exactly (avoids blank space below the last item).
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureMenu());
 

@@ -12,15 +12,22 @@ void main() {
     expect(find.byType(CustomPaint), findsOneWidget);
   });
 
-  testWidgets('Menu contains Edit Mode toggle', (WidgetTester tester) async {
+  testWidgets('Menu opens only after being pulled fully down',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const ParaBeaconApp());
 
-    // Open the menu by dragging down
-    await tester.fling(find.byType(GestureDetector).first, const Offset(0, 200), 500);
-    await tester.pumpAndSettle();
+    // A partial pull is released without opening the menu.
+    final gestureTarget = find.byType(GestureDetector).first;
+    await tester.drag(gestureTarget, const Offset(0, 100));
+    await tester.pump();
+    expect(tester.getTopLeft(find.text('Edit Mode')).dy, lessThan(0));
 
-    // Edit Mode switch should be visible in the menu
-    expect(find.text('Edit Mode'), findsOneWidget);
+    // Pulling past the panel height clamps at the fully-open position and
+    // keeps the menu open without a snap animation.
+    await tester.drag(gestureTarget, const Offset(0, 600));
+    await tester.pump();
+
+    expect(tester.getTopLeft(find.text('Edit Mode')).dy, greaterThanOrEqualTo(0));
     expect(find.byType(SwitchListTile), findsOneWidget);
   });
 }

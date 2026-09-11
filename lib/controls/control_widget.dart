@@ -218,7 +218,7 @@ class ControlWidget extends StatelessWidget {
         return GlideRatioControl(
           showTitle: showTitle,
           avgSeconds:
-              int.tryParse(control.setting('glideAvg')?.toString() ?? '') ?? 0,
+              int.tryParse(control.setting('glideAvg')?.toString() ?? '') ?? 8,
           showLeadingOne:
               control.boolSetting('glideLeadingOne', fallback: false),
           showVarioInLift:

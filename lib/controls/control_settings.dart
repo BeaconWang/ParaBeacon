@@ -538,7 +538,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ControlSetting.choice(
       key: 'glideAvg',
       label: 'Glide averaging',
-      defaultValue: '0',
+      defaultValue: '8',
       options: {
         '0': 'Instant',
         '5': '5 s',

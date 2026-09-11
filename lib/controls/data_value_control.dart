@@ -457,48 +457,134 @@ class GroundSpeedControl extends StatelessWidget {
   }
 }
 
-/// Instantaneous glide ratio (L/D): horizontal speed divided by sink rate.
+/// Instantaneous or time-averaged glide ratio (L/D): horizontal speed divided
+/// by sink rate.
 ///
-/// Only defined while sinking (vertical speed < 0); climbs and level flight
-/// render `--`, matching XCTrack.
-class GlideRatioControl extends StatelessWidget {
+/// Enhancements mirroring XCTrack's "Glide Ratio" widget:
+///  * [avgSeconds] — averages the glide over a rolling time window instead of
+///    using the raw (noisy) instantaneous value. Components (horizontal and
+///    vertical speed) are averaged separately and the ratio is computed from
+///    the averages, which is far more stable than averaging the ratio itself.
+///    A value of 0 means instantaneous (no averaging).
+///  * [showLeadingOne] — render `1:8.5` (with the leading `1:`) versus a bare
+///    `8.5`.
+///  * [showVarioInLift] — while climbing (glide undefined) show the vario
+///    (climb rate, m/s) instead of `--`, coloured green, so the tile stays
+///    useful in lift.
+class GlideRatioControl extends StatefulWidget {
   final bool showTitle;
 
-  const GlideRatioControl({super.key, this.showTitle = true});
+  /// Rolling averaging window in seconds; 0 = instantaneous.
+  final int avgSeconds;
+
+  /// Whether to prefix the ratio with `1:`.
+  final bool showLeadingOne;
+
+  /// Whether to show the vario value while in lift instead of `--`.
+  final bool showVarioInLift;
+
+  const GlideRatioControl({
+    super.key,
+    this.showTitle = true,
+    this.avgSeconds = 0,
+    this.showLeadingOne = false,
+    this.showVarioInLift = false,
+  });
+
+  @override
+  State<GlideRatioControl> createState() => _GlideRatioControlState();
+}
+
+class _GlideRatioControlState extends State<GlideRatioControl> {
+  /// Rolling buffer of recent samples for time-averaging.
+  final List<_GlideSample> _samples = [];
+
+  void _pushSample(double gsMs, double vsMs) {
+    final now = DateTime.now();
+    _samples.add(_GlideSample(now, gsMs, vsMs));
+    // Drop samples older than the window (plus a small guard). When averaging
+    // is disabled we still keep a single sample so the buffer never grows.
+    final window = Duration(
+      milliseconds: (widget.avgSeconds.clamp(0, 60) * 1000) + 200,
+    );
+    final cutoff = now.subtract(window);
+    while (_samples.isNotEmpty && _samples.first.time.isBefore(cutoff)) {
+      _samples.removeAt(0);
+    }
+  }
+
+  /// Returns the (horizontal, vertical) speed to use: either the latest sample
+  /// (instantaneous) or the time-window average of all buffered samples.
+  (double gs, double vs) _resolveSpeeds(double gsMs, double vsMs) {
+    if (widget.avgSeconds <= 0 || _samples.isEmpty) return (gsMs, vsMs);
+    var sumGs = 0.0;
+    var sumVs = 0.0;
+    for (final s in _samples) {
+      sumGs += s.gsMs;
+      sumVs += s.vsMs;
+    }
+    final n = _samples.length;
+    return (sumGs / n, sumVs / n);
+  }
 
   @override
   Widget build(BuildContext context) {
     final data = FlightDataProvider.of(context);
     // Ground speed is km/h, vertical speed is m/s. Convert to identical
     // units (m/s) before dividing so the ratio is dimensionless.
-    final vsMs = data.verticalSpeed;
-    final gsMs = data.groundSpeed / 3.6;
-    final String value;
-    if (!data.hasFix || vsMs.isNaN || gsMs.isNaN) {
+    final rawVs = data.verticalSpeed;
+    final rawGs = data.groundSpeed / 3.6;
+
+    final valid = data.hasFix && !rawVs.isNaN && !rawGs.isNaN;
+    if (valid) _pushSample(rawGs, rawVs);
+
+    final (gsMs, vsMs) = _resolveSpeeds(rawGs, rawVs);
+
+    String value;
+    ValueState state = ValueState.neutral;
+
+    if (!valid) {
       value = '--';
     } else if (vsMs >= -0.1) {
       // Climb or near-level flight: glide ratio is undefined (or absurdly
-      // large). Show '--' rather than saturating the display.
-      value = '--';
+      // large). Optionally show the vario in lift, otherwise '--'.
+      if (widget.showVarioInLift && vsMs > 0.1) {
+        value = '+${vsMs.toStringAsFixed(1)}';
+        state = ValueState.good;
+      } else {
+        value = '--';
+      }
     } else {
       final ratio = gsMs / -vsMs;
       if (!ratio.isFinite || ratio <= 0) {
         value = '--';
       } else if (ratio >= 100) {
-        value = '99+';
+        value = widget.showLeadingOne ? '1:99+' : '99+';
       } else {
-        value = ratio.toStringAsFixed(1);
+        final r = ratio.toStringAsFixed(1);
+        value = widget.showLeadingOne ? '1:$r' : r;
       }
     }
+
     return DataValueControl(
       title: AppLocalizations.of(context).controlGlide,
       value: value,
       unit: '',
-      state: ValueState.neutral,
-      showTitle: showTitle,
+      state: state,
+      showTitle: widget.showTitle,
     );
   }
 }
+
+/// A single timestamped speed sample used by the glide-ratio averager.
+class _GlideSample {
+  final DateTime time;
+  final double gsMs;
+  final double vsMs;
+
+  const _GlideSample(this.time, this.gsMs, this.vsMs);
+}
+
 
 /// Direction-of-travel readout in degrees or cardinal points.
 class HeadingControl extends StatelessWidget {

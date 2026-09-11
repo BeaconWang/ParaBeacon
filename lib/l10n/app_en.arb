@@ -219,6 +219,14 @@
   "settingTimeFormat": "Time format",
   "settingTimeFormat24h": "24-hour",
   "settingTimeFormat12h": "12-hour (AM/PM)",
+  "settingGlideAvg": "Glide averaging",
+  "settingGlideAvgInstant": "Instant",
+  "settingGlideAvgSeconds": "{seconds} s",
+  "@settingGlideAvgSeconds": {
+    "placeholders": { "seconds": { "type": "String" } }
+  },
+  "settingGlideLeadingOne": "Show leading \"1:\"",
+  "settingGlideShowVario": "Show vario in lift",
   "settingFollowPosition": "Follow position",
   "settingZoom": "Zoom",
   "settingMapSource": "Map source",

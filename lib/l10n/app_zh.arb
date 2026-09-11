@@ -180,6 +180,14 @@
   "settingTimeFormat": "时间格式",
   "settingTimeFormat24h": "24 小时制",
   "settingTimeFormat12h": "12 小时制（上午/下午）",
+  "settingGlideAvg": "滑翔比平均",
+  "settingGlideAvgInstant": "瞬时",
+  "settingGlideAvgSeconds": "{seconds} 秒",
+  "@settingGlideAvgSeconds": {
+    "placeholders": { "seconds": { "type": "String" } }
+  },
+  "settingGlideLeadingOne": "显示前缀“1:”",
+  "settingGlideShowVario": "上升时显示升降率",
   "settingFollowPosition": "跟随位置",
   "settingZoom": "缩放",
   "settingMapSource": "地图源",

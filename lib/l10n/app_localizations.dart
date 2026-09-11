@@ -1070,6 +1070,36 @@ abstract class AppLocalizations {
   /// **'12-hour (AM/PM)'**
   String get settingTimeFormat12h;
 
+  /// No description provided for @settingGlideAvg.
+  ///
+  /// In en, this message translates to:
+  /// **'Glide averaging'**
+  String get settingGlideAvg;
+
+  /// No description provided for @settingGlideAvgInstant.
+  ///
+  /// In en, this message translates to:
+  /// **'Instant'**
+  String get settingGlideAvgInstant;
+
+  /// No description provided for @settingGlideAvgSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s'**
+  String settingGlideAvgSeconds(String seconds);
+
+  /// No description provided for @settingGlideLeadingOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Show leading \"1:\"'**
+  String get settingGlideLeadingOne;
+
+  /// No description provided for @settingGlideShowVario.
+  ///
+  /// In en, this message translates to:
+  /// **'Show vario in lift'**
+  String get settingGlideShowVario;
+
   /// No description provided for @settingFollowPosition.
   ///
   /// In en, this message translates to:

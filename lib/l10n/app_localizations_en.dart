@@ -527,6 +527,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingTimeFormat12h => '12-hour (AM/PM)';
 
   @override
+  String get settingGlideAvg => 'Glide averaging';
+
+  @override
+  String get settingGlideAvgInstant => 'Instant';
+
+  @override
+  String settingGlideAvgSeconds(String seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String get settingGlideLeadingOne => 'Show leading \"1:\"';
+
+  @override
+  String get settingGlideShowVario => 'Show vario in lift';
+
+  @override
   String get settingFollowPosition => 'Follow position';
 
   @override

@@ -215,7 +215,15 @@ class ControlWidget extends StatelessWidget {
       case 'ground_speed':
         return GroundSpeedControl(showTitle: showTitle);
       case 'glide_ratio':
-        return GlideRatioControl(showTitle: showTitle);
+        return GlideRatioControl(
+          showTitle: showTitle,
+          avgSeconds:
+              int.tryParse(control.setting('glideAvg')?.toString() ?? '') ?? 0,
+          showLeadingOne:
+              control.boolSetting('glideLeadingOne', fallback: false),
+          showVarioInLift:
+              control.boolSetting('glideShowVario', fallback: false),
+        );
       case 'heading':
         return HeadingControl(
           showTitle: showTitle,

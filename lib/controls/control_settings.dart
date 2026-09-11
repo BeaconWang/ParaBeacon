@@ -180,6 +180,12 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowClock;
     case 'timeFormat':
       return l10n.settingTimeFormat;
+    case 'glideAvg':
+      return l10n.settingGlideAvg;
+    case 'glideLeadingOne':
+      return l10n.settingGlideLeadingOne;
+    case 'glideShowVario':
+      return l10n.settingGlideShowVario;
     case 'follow':
       return l10n.settingFollowPosition;
     case 'zoom':
@@ -240,6 +246,13 @@ String? _settingLabel(AppLocalizations l10n, String key) {
 String? _settingOptionLabel(
     AppLocalizations l10n, String settingKey, Object optionKey) {
   switch (settingKey) {
+    case 'glideAvg':
+      switch (optionKey) {
+        case '0':
+          return l10n.settingGlideAvgInstant;
+        default:
+          return l10n.settingGlideAvgSeconds(optionKey.toString());
+      }
     case 'timeFormat':
       switch (optionKey) {
         case '24h':
@@ -519,6 +532,32 @@ const Map<String, List<ControlSetting>> _typeSettings = {
         '24h': '24-hour',
         '12h': '12-hour (AM/PM)',
       },
+    ),
+  ],
+  'glide_ratio': [
+    ControlSetting.choice(
+      key: 'glideAvg',
+      label: 'Glide averaging',
+      defaultValue: '0',
+      options: {
+        '0': 'Instant',
+        '5': '5 s',
+        '8': '8 s',
+        '10': '10 s',
+        '15': '15 s',
+        '20': '20 s',
+        '30': '30 s',
+      },
+    ),
+    ControlSetting.toggle(
+      key: 'glideLeadingOne',
+      label: 'Show leading "1:"',
+      defaultValue: false,
+    ),
+    ControlSetting.toggle(
+      key: 'glideShowVario',
+      label: 'Show vario in lift',
+      defaultValue: false,
     ),
   ],
   'flight_button': [

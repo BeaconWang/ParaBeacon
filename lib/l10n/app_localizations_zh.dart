@@ -513,6 +513,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingTimeFormat12h => '12 小时制（上午/下午）';
 
   @override
+  String get settingGlideAvg => '滑翔比平均';
+
+  @override
+  String get settingGlideAvgInstant => '瞬时';
+
+  @override
+  String settingGlideAvgSeconds(String seconds) {
+    return '$seconds 秒';
+  }
+
+  @override
+  String get settingGlideLeadingOne => '显示前缀“1:”';
+
+  @override
+  String get settingGlideShowVario => '上升时显示升降率';
+
+  @override
   String get settingFollowPosition => '跟随位置';
 
   @override

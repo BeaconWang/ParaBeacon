@@ -124,6 +124,9 @@ dependencies:
   # `restapi.amap.com`; no internal-network requests are made.
   http: ^1.2.2
 
+  # Motion sensors for auto-rotation behavior in Sound customization.
+  sensors_plus: ^6.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

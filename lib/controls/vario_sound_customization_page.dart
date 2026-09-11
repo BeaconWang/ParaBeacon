@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 import '../audio/vario_audio_service.dart';
 import '../audio/vario_sound_settings.dart';
@@ -25,6 +28,12 @@ class _VarioSoundCustomizationPageState
   bool _previewMuted = false;
   late final bool _wasCustomEnabled;
 
+  StreamSubscription<GyroscopeEvent>? _gyroSub;
+  StreamSubscription<AccelerometerEvent>? _accelSub;
+  double _gravityX = 0;
+  double _gravityY = 0;
+  bool _landscapeClockwise = true;
+
   @override
   void initState() {
     super.initState();
@@ -34,15 +43,53 @@ class _VarioSoundCustomizationPageState
     }
     _audio.beginPreview(_previewSpeed);
     _previewMuted = _audio.isPreviewMuted;
+    _startMotionAutoOrientation();
   }
 
   @override
   void dispose() {
+    _gyroSub?.cancel();
+    _accelSub?.cancel();
     _audio.endPreview();
     if (!_wasCustomEnabled) {
       _settings.setCustomSoundEnabled(false);
     }
     super.dispose();
+  }
+
+  bool get _supportsMotionSensors {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
+
+  void _startMotionAutoOrientation() {
+    if (!_supportsMotionSensors) return;
+
+    _accelSub = accelerometerEventStream().listen(
+      (event) {
+        _gravityX = event.x;
+        _gravityY = event.y;
+        _updateLandscapeDirection();
+      },
+      onError: (_) {},
+    );
+
+    _gyroSub = gyroscopeEventStream().listen(
+      (event) {
+        if (event.z.abs() > 0.2 || event.x.abs() + event.y.abs() > 0.35) {
+          _updateLandscapeDirection();
+        }
+      },
+      onError: (_) {},
+    );
+  }
+
+  void _updateLandscapeDirection() {
+    if (_gravityX.abs() < _gravityY.abs()) return;
+    final nextClockwise = _gravityX <= 0;
+    if (nextClockwise == _landscapeClockwise || !mounted) return;
+    setState(() => _landscapeClockwise = nextClockwise);
   }
 
   @override
@@ -56,15 +103,37 @@ class _VarioSoundCustomizationPageState
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < 760;
+            final shouldRotate = constraints.maxWidth < constraints.maxHeight;
             return AnimatedBuilder(
               animation: _settings,
               builder: (context, _) {
-                return Column(
-                  children: [
-                    Expanded(child: _mainEditor(theme, compact: compact)),
-                    _previewControls(theme, compact: constraints.maxWidth < 560),
-                  ],
+                if (!shouldRotate) {
+                  return _responsiveBody(
+                    theme,
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                  );
+                }
+
+                final rotated = SizedBox(
+                  width: constraints.maxHeight,
+                  height: constraints.maxWidth,
+                  child: _responsiveBody(
+                    theme,
+                    width: constraints.maxHeight,
+                    height: constraints.maxWidth,
+                  ),
+                );
+
+                return Center(
+                  child: ClipRect(
+                    child: AnimatedRotation(
+                      turns: _landscapeClockwise ? 0.25 : -0.25,
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      child: rotated,
+                    ),
+                  ),
                 );
               },
             );
@@ -74,9 +143,47 @@ class _VarioSoundCustomizationPageState
     );
   }
 
+  Widget _responsiveBody(
+    ThemeData theme, {
+    required double width,
+    required double height,
+  }) {
+    final compact = width < 760;
+    final compactPreview = width < 560 || height < 420;
+
+    return Column(
+      children: [
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: KeyedSubtree(
+              key: ValueKey<bool>(compact),
+              child: _mainEditor(theme, compact: compact),
+            ),
+          ),
+        ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: KeyedSubtree(
+            key: ValueKey<bool>(compactPreview),
+            child: _previewControls(
+              theme,
+              compact: compactPreview,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _mainEditor(ThemeData theme, {required bool compact}) {
     if (compact) {
       return Column(
+        key: const ValueKey<String>('compact-main-editor'),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
@@ -93,6 +200,7 @@ class _VarioSoundCustomizationPageState
     }
 
     return Row(
+      key: const ValueKey<String>('regular-main-editor'),
       children: [
         Container(
           width: 108,
@@ -122,6 +230,7 @@ class _VarioSoundCustomizationPageState
       viewportWidth - sideWidth - horizontalPadding * 2,
     );
     final cellWidth = (usable / speeds.length).clamp(30.0, 56.0);
+    final labelStep = cellWidth < 34 ? 3 : (cellWidth < 42 ? 2 : 1);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -146,9 +255,11 @@ class _VarioSoundCustomizationPageState
             ),
           ),
           ...List.generate(speeds.length, (i) {
+            final showValueLabel = i % labelStep == 0 || i == speeds.length - 1;
             return _BarEditorCell(
               cellWidth: cellWidth,
               compact: compact,
+              showValueLabel: showValueLabel,
               speedLabel: _speedLabel(speeds[i]),
               valueLabel: _valueLabel(_metric, values[i]).split(' ').first,
               value: values[i],
@@ -399,6 +510,7 @@ class _BarEditorCell extends StatelessWidget {
   const _BarEditorCell({
     required this.cellWidth,
     required this.compact,
+    required this.showValueLabel,
     required this.speedLabel,
     required this.valueLabel,
     required this.value,
@@ -409,6 +521,7 @@ class _BarEditorCell extends StatelessWidget {
 
   final double cellWidth;
   final bool compact;
+  final bool showValueLabel;
   final String speedLabel;
   final String valueLabel;
   final double value;
@@ -427,13 +540,20 @@ class _BarEditorCell extends StatelessWidget {
         width: cellWidth,
         child: Column(
           children: [
-            Text(
-              valueLabel,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontSize: compact ? 10 : null,
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 120),
+              opacity: showValueLabel ? 1 : 0,
+              child: Text(
+                showValueLabel ? valueLabel : ' ',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: compact ? 10 : null,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.fade,
+                softWrap: false,
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
             SizedBox(height: compact ? 2 : 4),
             Expanded(

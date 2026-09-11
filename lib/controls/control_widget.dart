@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'placed_control.dart';
 import 'data_value_control.dart';
+import 'compass_wind_control.dart';
+import 'status_line_control.dart';
 import 'data_monitor_control.dart';
 import 'debug_sensor_control.dart';
 import 'flight_button_control.dart';
@@ -237,6 +239,10 @@ class ControlWidget extends StatelessWidget {
         );
       case 'flight_time':
         return FlightTimeControl(showTitle: showTitle);
+      case 'air_time':
+        return AirTimeControl(showTitle: showTitle);
+      case 'distance_to_takeoff':
+        return DistanceToTakeoffControl(showTitle: showTitle);
       case 'sensor_battery':
         return SensorBatteryControl(showTitle: showTitle);
       case 'heart_rate':
@@ -249,6 +255,13 @@ class ControlWidget extends StatelessWidget {
         return FlightButtonControl(
           showAutoDetect:
               control.boolSetting('showAutoDetect', fallback: true),
+        );
+      case 'status_line':
+        return const StatusLineControl();
+      case 'compass_wind':
+        return ClipRRect(
+          borderRadius: innerRadius,
+          child: const CompassWindControl(),
         );
       case 'map':
         final source = control.setting('tileSource');

@@ -100,6 +100,10 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlClock;
     case 'flight_time':
       return l10n.controlFlightTime;
+    case 'air_time':
+      return l10n.controlAirTime;
+    case 'distance_to_takeoff':
+      return l10n.controlDistanceToTakeoff;
     case 'sensor_battery':
       return l10n.controlSensorBattery;
     case 'heart_rate':
@@ -114,6 +118,10 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlMap;
     case 'flight_button':
       return l10n.controlFlightButton;
+    case 'status_line':
+      return l10n.controlStatusLine;
+    case 'compass_wind':
+      return l10n.controlCompassWind;
     default:
       return null;
   }
@@ -251,6 +259,22 @@ class ControlCatalog {
           defaultCols: 3,
           defaultRows: 2,
         ),
+        ControlType(
+          id: 'air_time',
+          label: 'Air Time',
+          icon: Icons.flight_outlined,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'distance_to_takeoff',
+          label: 'Distance to Takeoff',
+          icon: Icons.straighten,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
         // ── Sensors ───────────────────────────────────────────────────
         ControlType(
           id: 'sensor_battery',
@@ -312,6 +336,22 @@ class ControlCatalog {
           kind: ControlKind.widget,
           defaultCols: 2,
           defaultRows: 2,
+        ),
+        ControlType(
+          id: 'status_line',
+          label: 'Status Line',
+          icon: Icons.horizontal_split,
+          kind: ControlKind.widget,
+          defaultCols: 6,
+          defaultRows: 1,
+        ),
+        ControlType(
+          id: 'compass_wind',
+          label: 'Compass and Wind',
+          icon: Icons.explore,
+          kind: ControlKind.widget,
+          defaultCols: 3,
+          defaultRows: 3,
         ),
       ],
     ),

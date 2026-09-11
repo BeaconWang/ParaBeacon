@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -771,5 +772,196 @@ class _FlightTimeControlState extends State<FlightTimeControl> {
       showTitle: widget.showTitle,
     );
   }
+}
+
+/// Air time — the total time the pilot has actually been airborne, as opposed
+/// to the wall-clock flight time. It accumulates only while moving through the
+/// air (ground speed above a small threshold), so time spent standing on
+/// launch after the Flight button was pressed doesn't inflate the reading.
+///
+/// Reads the running/stopped state from the shared [FlightState] singleton and
+/// the ground speed from the [FlightDataProvider]. Renders `--:--:--` while no
+/// flight is in progress. Inspired by XCTrack's "Air time" field.
+class AirTimeControl extends StatefulWidget {
+  final bool showTitle;
+
+  const AirTimeControl({super.key, this.showTitle = true});
+
+  @override
+  State<AirTimeControl> createState() => _AirTimeControlState();
+}
+
+class _AirTimeControlState extends State<AirTimeControl> {
+  Timer? _timer;
+
+  /// Accumulated airborne time for the current flight.
+  Duration _airborne = Duration.zero;
+
+  /// Wall-clock instant of the last accumulation tick, or null when not
+  /// currently counting.
+  DateTime? _lastTick;
+
+  /// Below this ground speed (km/h) the pilot is treated as stationary and air
+  /// time does not accrue.
+  static const double _movingSpeedKph = 3.0;
+
+  @override
+  void initState() {
+    super.initState();
+    FlightState.instance.addListener(_onFlightStateChanged);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _onFlightStateChanged() {
+    if (!mounted) return;
+    // Reset the accumulator whenever a new flight starts / the flight stops so
+    // each flight reports its own air time.
+    if (!FlightState.instance.isFlying) {
+      _airborne = Duration.zero;
+      _lastTick = null;
+    } else {
+      _lastTick = null;
+    }
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    FlightState.instance.removeListener(_onFlightStateChanged);
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final flying = FlightState.instance.isFlying;
+    final data = FlightDataProvider.of(context);
+
+    if (flying) {
+      final now = DateTime.now();
+      final moving = data.hasFix && data.groundSpeed > _movingSpeedKph;
+      if (moving) {
+        final last = _lastTick;
+        if (last != null) {
+          final delta = now.difference(last);
+          if (delta > Duration.zero) _airborne += delta;
+        }
+        _lastTick = now;
+      } else {
+        // Pause the accumulator while stationary.
+        _lastTick = null;
+      }
+    }
+
+    return DataValueControl(
+      title: AppLocalizations.of(context).controlAirTime,
+      value: flying ? _formatHms(_airborne) : '--:--:--',
+      unit: '',
+      state: ValueState.neutral,
+      showTitle: widget.showTitle,
+    );
+  }
+}
+
+/// Straight-line distance from the current position back to the take-off
+/// point, in kilometers (switching to meters when close). Inspired by
+/// XCTrack's "Distance to takeoff" field.
+///
+/// The take-off reference is captured locally: the first valid GPS fix seen
+/// after a flight starts is stored as the launch point, and reset when the
+/// flight stops. This keeps the control self-contained (no coupling to the
+/// recorder) while still giving a live "how far from launch" readout.
+class DistanceToTakeoffControl extends StatefulWidget {
+  final bool showTitle;
+
+  const DistanceToTakeoffControl({super.key, this.showTitle = true});
+
+  @override
+  State<DistanceToTakeoffControl> createState() =>
+      _DistanceToTakeoffControlState();
+}
+
+class _DistanceToTakeoffControlState extends State<DistanceToTakeoffControl> {
+  double? _takeoffLat;
+  double? _takeoffLon;
+
+  @override
+  void initState() {
+    super.initState();
+    FlightState.instance.addListener(_onFlightStateChanged);
+  }
+
+  void _onFlightStateChanged() {
+    if (!mounted) return;
+    // Clear the captured launch point when a flight ends so the next flight
+    // re-captures its own take-off.
+    if (!FlightState.instance.isFlying) {
+      _takeoffLat = null;
+      _takeoffLon = null;
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    FlightState.instance.removeListener(_onFlightStateChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final flying = FlightState.instance.isFlying;
+    final data = FlightDataProvider.of(context);
+
+    // Capture the launch point on the first fixed sample after take-off.
+    if (flying && data.hasFix && _takeoffLat == null) {
+      _takeoffLat = data.latitude;
+      _takeoffLon = data.longitude;
+    }
+
+    final lat0 = _takeoffLat;
+    final lon0 = _takeoffLon;
+    String value;
+    String unit;
+    if (!flying || lat0 == null || lon0 == null || !data.hasFix) {
+      value = '--';
+      unit = 'km';
+    } else {
+      final meters = _haversineM(lat0, lon0, data.latitude, data.longitude);
+      if (meters < 1000) {
+        value = meters.toStringAsFixed(0);
+        unit = 'm';
+      } else {
+        final km = meters / 1000.0;
+        value = km.toStringAsFixed(km >= 100 ? 0 : 1);
+        unit = 'km';
+      }
+    }
+
+    return DataValueControl(
+      title: AppLocalizations.of(context).controlDistanceToTakeoff,
+      value: value,
+      unit: unit,
+      state: ValueState.neutral,
+      showTitle: widget.showTitle,
+    );
+  }
+}
+
+/// Great-circle distance in meters between two lat/lon points.
+double _haversineM(double lat1, double lon1, double lat2, double lon2) {
+  const r = 6371000.0;
+  double rad(double d) => d * (math.pi / 180.0);
+  final dLat = rad(lat2 - lat1);
+  final dLon = rad(lon2 - lon1);
+  final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+      math.cos(rad(lat1)) *
+          math.cos(rad(lat2)) *
+          math.sin(dLon / 2) *
+          math.sin(dLon / 2);
+  final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  return r * c;
 }
 

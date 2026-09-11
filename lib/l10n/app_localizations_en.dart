@@ -329,6 +329,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlFlightTime => 'Flight Time';
 
   @override
+  String get controlAirTime => 'Air Time';
+
+  @override
+  String get controlDistanceToTakeoff => 'Distance to Takeoff';
+
+  @override
+  String get controlStatusLine => 'Status Line';
+
+  @override
+  String get controlCompassWind => 'Compass and Wind';
+
+  @override
   String get controlSensorBattery => 'Sensor Battery';
 
   @override

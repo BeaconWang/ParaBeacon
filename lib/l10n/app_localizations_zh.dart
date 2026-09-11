@@ -315,6 +315,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlFlightTime => '飞行时间';
 
   @override
+  String get controlAirTime => '空中时间';
+
+  @override
+  String get controlDistanceToTakeoff => '距起飞点距离';
+
+  @override
+  String get controlStatusLine => '状态栏';
+
+  @override
+  String get controlCompassWind => '罗盘与风向';
+
+  @override
   String get controlSensorBattery => '传感器电量';
 
   @override

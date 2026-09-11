@@ -686,6 +686,30 @@ abstract class AppLocalizations {
   /// **'Flight Time'**
   String get controlFlightTime;
 
+  /// No description provided for @controlAirTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Air Time'**
+  String get controlAirTime;
+
+  /// No description provided for @controlDistanceToTakeoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance to Takeoff'**
+  String get controlDistanceToTakeoff;
+
+  /// No description provided for @controlStatusLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Line'**
+  String get controlStatusLine;
+
+  /// No description provided for @controlCompassWind.
+  ///
+  /// In en, this message translates to:
+  /// **'Compass and Wind'**
+  String get controlCompassWind;
+
   /// No description provided for @controlSensorBattery.
   ///
   /// In en, this message translates to:

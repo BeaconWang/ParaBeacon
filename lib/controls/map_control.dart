@@ -270,6 +270,13 @@ class _MapControlState extends State<MapControl> {
   /// build after a reset.
   int _tileRetrySeconds = 2;
 
+  /// Monotonic retry generation. Folded into the [TileLayer] key so that each
+  /// retry recreates the layer and forces a full re-request of the visible
+  /// tiles. This is the reliable recovery path: flutter_map's `reset` stream
+  /// subscription is a `late final` that is effectively never activated during
+  /// normal operation, so a first-load failure would otherwise never heal.
+  int _tileRetryGen = 0;
+
   /// Timestamp of the last tile-load error, used to reset the retry backoff
   /// once errors have stopped for a while (fresh transient blip should not
   /// inherit an old exponential delay).
@@ -406,7 +413,13 @@ class _MapControlState extends State<MapControl> {
     final delay = Duration(seconds: _tileRetrySeconds);
     _tileRetryTimer = Timer(delay, () {
       if (!mounted || _tileResetCtrl.isClosed) return;
+      // Belt-and-suspenders: broadcast on the reset stream (in case a future
+      // flutter_map version wires it up reliably)...
       _tileResetCtrl.add(null);
+      // ...and, the part that actually recovers a first-load failure: bump the
+      // retry generation so the TileLayer key changes and the layer is rebuilt
+      // from scratch, re-requesting every visible tile.
+      setState(() => _tileRetryGen++);
       // Exponential-ish backoff, capped at 30s so recovery stays snappy once
       // connectivity comes back but idle retries don't spam the radio.
       _tileRetrySeconds = math.min(_tileRetrySeconds * 2, 30);
@@ -797,7 +810,8 @@ class _MapControlState extends State<MapControl> {
       final tp = OfflineTilesService.instance.tileProvider();
       if (tp != null) {
         return TileLayer(
-          key: ValueKey('offline-${OfflineTilesService.instance.activeFileName}'),
+          key: ValueKey(
+              'offline-${OfflineTilesService.instance.activeFileName}-r$_tileRetryGen'),
           tileProvider: tp,
           maxNativeZoom: 19,
           userAgentPackageName: 'com.beacon.parabeacon',
@@ -832,7 +846,7 @@ class _MapControlState extends State<MapControl> {
     // layer drops failed tiles and re-requests the visible range without
     // waiting for the user to pan.
     return TileLayer(
-      key: ValueKey(src.id),
+      key: ValueKey('${src.id}-r$_tileRetryGen'),
       urlTemplate: src.urlTemplate,
       maxNativeZoom: src.maxZoom.round(),
       evictErrorTileStrategy: EvictErrorTileStrategy.notVisibleRespectMargin,

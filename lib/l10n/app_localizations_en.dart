@@ -500,6 +500,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowGps => 'Show GPS status';
 
   @override
+  String get settingGpsDetailed => 'Detailed GPS status';
+
+  @override
   String get settingShowBluetooth => 'Show Bluetooth sensor';
 
   @override

@@ -171,6 +171,7 @@
   "settingShowSeconds": "显示秒",
   "settingShowAutoDetect": "显示自动检测复选框",
   "settingShowGps": "显示 GPS 状态",
+  "settingGpsDetailed": "详细 GPS 状态",
   "settingShowBluetooth": "显示蓝牙传感器",
   "settingShowSensorBattery": "显示传感器电量",
   "settingShowDeviceBattery": "显示设备电量",

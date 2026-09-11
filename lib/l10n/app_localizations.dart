@@ -1016,6 +1016,12 @@ abstract class AppLocalizations {
   /// **'Show GPS status'**
   String get settingShowGps;
 
+  /// No description provided for @settingGpsDetailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed GPS status'**
+  String get settingGpsDetailed;
+
   /// No description provided for @settingShowBluetooth.
   ///
   /// In en, this message translates to:

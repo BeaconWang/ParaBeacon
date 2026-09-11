@@ -166,6 +166,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowAutoDetect;
     case 'showGps':
       return l10n.settingShowGps;
+    case 'gpsDetailed':
+      return l10n.settingGpsDetailed;
     case 'showBluetooth':
       return l10n.settingShowBluetooth;
     case 'showSensorBattery':
@@ -529,6 +531,11 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'showGps',
       label: 'Show GPS status',
       defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'gpsDetailed',
+      label: 'Detailed GPS status',
+      defaultValue: false,
     ),
     ControlSetting.toggle(
       key: 'showBluetooth',

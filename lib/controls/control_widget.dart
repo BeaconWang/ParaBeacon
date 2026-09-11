@@ -268,6 +268,7 @@ class ControlWidget extends StatelessWidget {
           showFlightTimer:
               control.boolSetting('showFlightTimer', fallback: true),
           showClock: control.boolSetting('showClock', fallback: true),
+          gpsDetailed: control.boolSetting('gpsDetailed', fallback: false),
           use24Hour: control.setting('timeFormat') != '12h',
         );
       case 'compass_wind':

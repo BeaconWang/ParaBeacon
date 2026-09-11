@@ -486,6 +486,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowGps => '显示 GPS 状态';
 
   @override
+  String get settingGpsDetailed => '详细 GPS 状态';
+
+  @override
   String get settingShowBluetooth => '显示蓝牙传感器';
 
   @override

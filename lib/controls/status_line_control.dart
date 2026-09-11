@@ -36,6 +36,10 @@ class StatusLineControl extends StatefulWidget {
   final bool showFlightTimer;
   final bool showClock;
 
+  /// When true the GPS cell shows a detailed readout (satellite count and
+  /// horizontal accuracy) instead of the compact single-value form.
+  final bool gpsDetailed;
+
   /// When true the clock cell uses a 24-hour format, otherwise 12-hour AM/PM.
   final bool use24Hour;
 
@@ -47,6 +51,7 @@ class StatusLineControl extends StatefulWidget {
     this.showDeviceBattery = true,
     this.showFlightTimer = true,
     this.showClock = true,
+    this.gpsDetailed = false,
     this.use24Hour = true,
   });
 
@@ -92,21 +97,41 @@ class _StatusLineControlState extends State<StatusLineControl> {
     final data = FlightDataProvider.of(context);
     final flight = FlightState.instance;
 
-    // GPS cell.
-    final gpsIcon = data.hasFix ? Icons.gps_fixed : Icons.gps_off;
+    // GPS cell. In compact mode it shows a single value (satellites, else
+    // accuracy, else OK / --). In detailed mode it combines the satellite
+    // count and horizontal accuracy, and colors by fix quality.
+    final sats = data.satellites;
+    final acc = data.gpsAccuracy;
+    final IconData gpsIcon;
     final String gpsValue;
+    final Color gpsColor;
     if (!data.hasFix) {
-      gpsValue = '--';
-    } else if (data.satellites != null) {
-      gpsValue = '${data.satellites}';
-    } else if (data.gpsAccuracy != null) {
-      gpsValue = '${data.gpsAccuracy!.toStringAsFixed(0)}m';
+      gpsIcon = Icons.gps_off;
+      gpsValue = widget.gpsDetailed ? 'No fix' : '--';
+      gpsColor = theme.colorScheme.onSurfaceVariant;
     } else {
-      gpsValue = 'OK';
+      gpsIcon = Icons.gps_fixed;
+      if (widget.gpsDetailed) {
+        // e.g. "8 sat · 5m" — drop a part when its value is unknown.
+        final parts = <String>[];
+        if (sats != null) parts.add('$sats sat');
+        if (acc != null) parts.add('${acc.toStringAsFixed(0)}m');
+        gpsValue = parts.isEmpty ? 'Fix' : parts.join(' · ');
+      } else if (sats != null) {
+        gpsValue = '$sats';
+      } else if (acc != null) {
+        gpsValue = '${acc.toStringAsFixed(0)}m';
+      } else {
+        gpsValue = 'OK';
+      }
+      // Fix-quality tint: good (green) when accuracy is tight or many sats,
+      // marginal (orange) when loose, neutral green otherwise.
+      if ((acc != null && acc > 25) || (sats != null && sats < 4)) {
+        gpsColor = const Color(0xFFFFB84C); // marginal fix
+      } else {
+        gpsColor = const Color(0xFF4CD964); // good fix
+      }
     }
-    final gpsColor = data.hasFix
-        ? const Color(0xFF4CD964)
-        : theme.colorScheme.onSurfaceVariant;
 
     // Bluetooth sensor cell. Distinguishes: connected (green), enabled but
     // waiting/disconnected (muted "searching"), disabled/unsupported (off).

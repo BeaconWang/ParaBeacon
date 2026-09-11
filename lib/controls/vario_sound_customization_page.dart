@@ -1,9 +1,6 @@
-import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:sensors_plus/sensors_plus.dart';
 
 import '../audio/vario_audio_service.dart';
 import '../audio/vario_sound_settings.dart';
@@ -28,11 +25,6 @@ class _VarioSoundCustomizationPageState
   bool _previewMuted = false;
   late final bool _wasCustomEnabled;
 
-  StreamSubscription<GyroscopeEvent>? _gyroSub;
-  StreamSubscription<AccelerometerEvent>? _accelSub;
-  double _gravityX = 0;
-  double _gravityY = 0;
-  bool _landscapeClockwise = true;
 
   @override
   void initState() {
@@ -43,53 +35,15 @@ class _VarioSoundCustomizationPageState
     }
     _audio.beginPreview(_previewSpeed);
     _previewMuted = _audio.isPreviewMuted;
-    _startMotionAutoOrientation();
   }
 
   @override
   void dispose() {
-    _gyroSub?.cancel();
-    _accelSub?.cancel();
     _audio.endPreview();
     if (!_wasCustomEnabled) {
       _settings.setCustomSoundEnabled(false);
     }
     super.dispose();
-  }
-
-  bool get _supportsMotionSensors {
-    if (kIsWeb) return false;
-    return defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS;
-  }
-
-  void _startMotionAutoOrientation() {
-    if (!_supportsMotionSensors) return;
-
-    _accelSub = accelerometerEventStream().listen(
-      (event) {
-        _gravityX = event.x;
-        _gravityY = event.y;
-        _updateLandscapeDirection();
-      },
-      onError: (_) {},
-    );
-
-    _gyroSub = gyroscopeEventStream().listen(
-      (event) {
-        if (event.z.abs() > 0.2 || event.x.abs() + event.y.abs() > 0.35) {
-          _updateLandscapeDirection();
-        }
-      },
-      onError: (_) {},
-    );
-  }
-
-  void _updateLandscapeDirection() {
-    if (_gravityX.abs() < _gravityY.abs()) return;
-    final nextClockwise = _gravityX <= 0;
-    if (nextClockwise == _landscapeClockwise || !mounted) return;
-    setState(() => _landscapeClockwise = nextClockwise);
   }
 
   @override
@@ -108,77 +62,33 @@ class _VarioSoundCustomizationPageState
               animation: _settings,
               builder: (context, _) {
                 if (!shouldRotate) {
-                  return _fitToWindow(
-                    windowWidth: constraints.maxWidth,
-                    windowHeight: constraints.maxHeight,
-                    contentWidth: constraints.maxWidth,
-                    contentHeight: constraints.maxHeight,
-                    child: _responsiveBody(
-                      theme,
-                      width: constraints.maxWidth,
-                      height: constraints.maxHeight,
-                    ),
+                  return _responsiveBody(
+                    theme,
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
                   );
                 }
 
                 final contentWidth = constraints.maxHeight;
                 final contentHeight = constraints.maxWidth;
-                final rotated = AnimatedRotation(
-                  turns: _landscapeClockwise ? 0.25 : -0.25,
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOut,
-                  child: SizedBox(
-                    width: contentWidth,
-                    height: contentHeight,
-                    child: _responsiveBody(
-                      theme,
+
+                return SizedBox.expand(
+                  child: RotatedBox(
+                    quarterTurns: 1,
+                    child: SizedBox(
                       width: contentWidth,
                       height: contentHeight,
+                      child: _responsiveBody(
+                        theme,
+                        width: contentWidth,
+                        height: contentHeight,
+                      ),
                     ),
                   ),
-                );
-
-                return _fitToWindow(
-                  windowWidth: constraints.maxWidth,
-                  windowHeight: constraints.maxHeight,
-                  contentWidth: contentWidth,
-                  contentHeight: contentHeight,
-                  child: rotated,
                 );
               },
             );
           },
-        ),
-      ),
-    );
-  }
-
-  Widget _fitToWindow({
-    required double windowWidth,
-    required double windowHeight,
-    required double contentWidth,
-    required double contentHeight,
-    required Widget child,
-  }) {
-    final safeWindowWidth = math.max(1.0, windowWidth);
-    final safeWindowHeight = math.max(1.0, windowHeight);
-    final safeContentWidth = math.max(1.0, contentWidth);
-    final safeContentHeight = math.max(1.0, contentHeight);
-
-    final scaleX = safeWindowWidth / safeContentWidth;
-    final scaleY = safeWindowHeight / safeContentHeight;
-    final scale = math.min(scaleX, scaleY);
-
-    return SizedBox.expand(
-      child: Center(
-        child: Transform.scale(
-          scale: scale,
-          alignment: Alignment.center,
-          child: SizedBox(
-            width: safeContentWidth,
-            height: safeContentHeight,
-            child: child,
-          ),
         ),
       ),
     );

@@ -1,6 +1,6 @@
 # parabeacon
 
-A new Flutter project.
+A cross-platform paraglider flight assistant with live vario audio, BLE sensors, mapping, and flight logging.
 
 ## Getting Started
 

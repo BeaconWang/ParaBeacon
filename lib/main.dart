@@ -449,9 +449,17 @@ class _DashGridPageState extends State<DashGridPage> {
   }
 
   void _onDragEnd(DragEndDetails details) {
-    // The menu only stays open after the panel has been pulled completely
-    // into view. A partial pull is dismissed immediately with no snap animation.
-    if (_dragOffset >= _menuHeight) {
+    // Open the top menu when either:
+    // 1) pull-down distance exceeds 30% of the current window height, OR
+    // 2) the menu has been fully pulled into view.
+    //
+    // This keeps the gesture responsive on tall screens while still allowing
+    // short menus to open as soon as they are fully revealed.
+    final windowHeight = MediaQuery.of(context).size.height;
+    final byWindowThreshold = _dragOffset > windowHeight * 0.30;
+    final byFullMenuReveal = _dragOffset >= _menuHeight;
+
+    if (byWindowThreshold || byFullMenuReveal) {
       _openMenu();
     } else {
       _closeMenu();

@@ -20,6 +20,7 @@ import 'controls/placed_control.dart';
 import 'controls/vario_sound_settings_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
+import 'data/device_battery_service.dart';
 import 'data/airspace_store.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
@@ -129,6 +130,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // its vertical speed takes over from the simulator.
     BleSensorService.instance.init();
     _bleBridge = BleFlightDataBridge(source: _dataSource)..attach();
+
+    // Bring up the device battery monitor (best-effort). Powers the charging /
+    // level indicator on the Status Line widget.
+    DeviceBatteryService.instance.init();
 
     // Start streaming the real device GPS into the unified data source. On
     // mobile this requests the location permission on first launch and then

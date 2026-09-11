@@ -164,6 +164,20 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowSeconds;
     case 'showAutoDetect':
       return l10n.settingShowAutoDetect;
+    case 'showGps':
+      return l10n.settingShowGps;
+    case 'showBluetooth':
+      return l10n.settingShowBluetooth;
+    case 'showSensorBattery':
+      return l10n.settingShowSensorBattery;
+    case 'showDeviceBattery':
+      return l10n.settingShowDeviceBattery;
+    case 'showFlightTimer':
+      return l10n.settingShowFlightTimer;
+    case 'showClock':
+      return l10n.settingShowClock;
+    case 'timeFormat':
+      return l10n.settingTimeFormat;
     case 'follow':
       return l10n.settingFollowPosition;
     case 'zoom':
@@ -222,6 +236,14 @@ String? _settingLabel(AppLocalizations l10n, String key) {
 String? _settingOptionLabel(
     AppLocalizations l10n, String settingKey, Object optionKey) {
   switch (settingKey) {
+    case 'timeFormat':
+      switch (optionKey) {
+        case '24h':
+          return l10n.settingTimeFormat24h;
+        case '12h':
+          return l10n.settingTimeFormat12h;
+      }
+      return null;
     case 'format': // heading / wind_direction
       switch (optionKey) {
         case 'degrees':
@@ -485,12 +507,62 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       label: 'Show seconds',
       defaultValue: false,
     ),
+    ControlSetting.choice(
+      key: 'timeFormat',
+      label: 'Time format',
+      defaultValue: '24h',
+      options: {
+        '24h': '24-hour',
+        '12h': '12-hour (AM/PM)',
+      },
+    ),
   ],
   'flight_button': [
     ControlSetting.toggle(
       key: 'showAutoDetect',
       label: 'Show auto-detect checkbox',
       defaultValue: true,
+    ),
+  ],
+  'status_line': [
+    ControlSetting.toggle(
+      key: 'showGps',
+      label: 'Show GPS status',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showBluetooth',
+      label: 'Show Bluetooth sensor',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showSensorBattery',
+      label: 'Show sensor battery',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showDeviceBattery',
+      label: 'Show device battery',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showFlightTimer',
+      label: 'Show flight timer',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showClock',
+      label: 'Show clock',
+      defaultValue: true,
+    ),
+    ControlSetting.choice(
+      key: 'timeFormat',
+      label: 'Time format',
+      defaultValue: '24h',
+      options: {
+        '24h': '24-hour',
+        '12h': '12-hour (AM/PM)',
+      },
     ),
   ],
   'map': [
@@ -652,6 +724,8 @@ const Set<String> _controlsWithoutTitle = {
   'data_monitor',
   'flight_button',
   'map',
+  'status_line',
+  'compass_wind',
 };
 
 /// Returns the full ordered list of settings for a control type id

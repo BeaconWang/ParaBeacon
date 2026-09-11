@@ -497,6 +497,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowAutoDetect => 'Show auto-detect checkbox';
 
   @override
+  String get settingShowGps => 'Show GPS status';
+
+  @override
+  String get settingShowBluetooth => 'Show Bluetooth sensor';
+
+  @override
+  String get settingShowSensorBattery => 'Show sensor battery';
+
+  @override
+  String get settingShowDeviceBattery => 'Show device battery';
+
+  @override
+  String get settingShowFlightTimer => 'Show flight timer';
+
+  @override
+  String get settingShowClock => 'Show clock';
+
+  @override
+  String get settingTimeFormat => 'Time format';
+
+  @override
+  String get settingTimeFormat24h => '24-hour';
+
+  @override
+  String get settingTimeFormat12h => '12-hour (AM/PM)';
+
+  @override
   String get settingFollowPosition => 'Follow position';
 
   @override

@@ -1010,6 +1010,60 @@ abstract class AppLocalizations {
   /// **'Show auto-detect checkbox'**
   String get settingShowAutoDetect;
 
+  /// No description provided for @settingShowGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Show GPS status'**
+  String get settingShowGps;
+
+  /// No description provided for @settingShowBluetooth.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Bluetooth sensor'**
+  String get settingShowBluetooth;
+
+  /// No description provided for @settingShowSensorBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Show sensor battery'**
+  String get settingShowSensorBattery;
+
+  /// No description provided for @settingShowDeviceBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Show device battery'**
+  String get settingShowDeviceBattery;
+
+  /// No description provided for @settingShowFlightTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Show flight timer'**
+  String get settingShowFlightTimer;
+
+  /// No description provided for @settingShowClock.
+  ///
+  /// In en, this message translates to:
+  /// **'Show clock'**
+  String get settingShowClock;
+
+  /// No description provided for @settingTimeFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Time format'**
+  String get settingTimeFormat;
+
+  /// No description provided for @settingTimeFormat24h.
+  ///
+  /// In en, this message translates to:
+  /// **'24-hour'**
+  String get settingTimeFormat24h;
+
+  /// No description provided for @settingTimeFormat12h.
+  ///
+  /// In en, this message translates to:
+  /// **'12-hour (AM/PM)'**
+  String get settingTimeFormat12h;
+
   /// No description provided for @settingFollowPosition.
   ///
   /// In en, this message translates to:

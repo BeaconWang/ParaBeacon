@@ -99,6 +99,10 @@ dependencies:
   # instrument must stay visible); also helps keep work alive when backgrounded.
   wakelock_plus: ^1.2.8
 
+  # Device (phone/tablet) battery level and charging state, surfaced by the
+  # Status Line widget. Degrades gracefully on platforms without a battery.
+  battery_plus: ^6.0.1
+
   # Flights feature — export / import / reporting.
   # share_plus: share exported files (GPX / IGC / PDF / .pbflights) via the
   #   platform share sheet. archive: zip the whole flight library into a single

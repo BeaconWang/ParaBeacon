@@ -483,6 +483,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowAutoDetect => '显示自动检测复选框';
 
   @override
+  String get settingShowGps => '显示 GPS 状态';
+
+  @override
+  String get settingShowBluetooth => '显示蓝牙传感器';
+
+  @override
+  String get settingShowSensorBattery => '显示传感器电量';
+
+  @override
+  String get settingShowDeviceBattery => '显示设备电量';
+
+  @override
+  String get settingShowFlightTimer => '显示飞行计时';
+
+  @override
+  String get settingShowClock => '显示时钟';
+
+  @override
+  String get settingTimeFormat => '时间格式';
+
+  @override
+  String get settingTimeFormat24h => '24 小时制';
+
+  @override
+  String get settingTimeFormat12h => '12 小时制（上午/下午）';
+
+  @override
   String get settingFollowPosition => '跟随位置';
 
   @override

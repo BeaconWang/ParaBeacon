@@ -236,6 +236,7 @@ class ControlWidget extends StatelessWidget {
         return ClockControl(
           showTitle: showTitle,
           showSeconds: control.boolSetting('showSeconds', fallback: false),
+          use24Hour: control.setting('timeFormat') != '12h',
         );
       case 'flight_time':
         return FlightTimeControl(showTitle: showTitle);
@@ -257,7 +258,18 @@ class ControlWidget extends StatelessWidget {
               control.boolSetting('showAutoDetect', fallback: true),
         );
       case 'status_line':
-        return const StatusLineControl();
+        return StatusLineControl(
+          showGps: control.boolSetting('showGps', fallback: true),
+          showBluetooth: control.boolSetting('showBluetooth', fallback: true),
+          showSensorBattery:
+              control.boolSetting('showSensorBattery', fallback: true),
+          showDeviceBattery:
+              control.boolSetting('showDeviceBattery', fallback: true),
+          showFlightTimer:
+              control.boolSetting('showFlightTimer', fallback: true),
+          showClock: control.boolSetting('showClock', fallback: true),
+          use24Hour: control.setting('timeFormat') != '12h',
+        );
       case 'compass_wind':
         return ClipRRect(
           borderRadius: innerRadius,

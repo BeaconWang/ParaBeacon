@@ -679,10 +679,15 @@ class ClockControl extends StatefulWidget {
   final bool showTitle;
   final bool showSeconds;
 
+  /// When true render a 24-hour clock (`14:05`); when false a 12-hour clock
+  /// with an AM/PM suffix (`2:05 PM`).
+  final bool use24Hour;
+
   const ClockControl({
     super.key,
     this.showTitle = true,
     this.showSeconds = false,
+    this.use24Hour = true,
   });
 
   @override
@@ -708,18 +713,41 @@ class _ClockControlState extends State<ClockControl> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final hh = now.hour.toString().padLeft(2, '0');
-    final mm = now.minute.toString().padLeft(2, '0');
-    final ss = now.second.toString().padLeft(2, '0');
     return DataValueControl(
       title: AppLocalizations.of(context).controlClock,
-      value: widget.showSeconds ? '$hh:$mm:$ss' : '$hh:$mm',
+      value: formatWallClock(
+        DateTime.now(),
+        use24Hour: widget.use24Hour,
+        showSeconds: widget.showSeconds,
+      ),
       unit: '',
       state: ValueState.neutral,
       showTitle: widget.showTitle,
     );
   }
+}
+
+/// Formats [now] as a wall-clock string honoring the 12/24-hour preference.
+///
+/// * 24-hour: `HH:MM` (or `HH:MM:SS` when [showSeconds]).
+/// * 12-hour: `H:MM AM/PM` (or `H:MM:SS AM/PM`). The hour is not zero-padded
+///   in 12-hour mode, matching conventional clock displays.
+String formatWallClock(
+  DateTime now, {
+  required bool use24Hour,
+  bool showSeconds = false,
+}) {
+  final mm = now.minute.toString().padLeft(2, '0');
+  final ss = now.second.toString().padLeft(2, '0');
+  if (use24Hour) {
+    final hh = now.hour.toString().padLeft(2, '0');
+    return showSeconds ? '$hh:$mm:$ss' : '$hh:$mm';
+  }
+  final isPm = now.hour >= 12;
+  var h12 = now.hour % 12;
+  if (h12 == 0) h12 = 12;
+  final suffix = isPm ? 'PM' : 'AM';
+  return showSeconds ? '$h12:$mm:$ss $suffix' : '$h12:$mm $suffix';
 }
 
 /// Elapsed time since take-off. Reads from the shared [FlightState] singleton

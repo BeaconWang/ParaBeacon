@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/ble/ble_sensor_service.dart';
+import '../data/device_battery_service.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_state.dart';
+import 'data_value_control.dart' show formatWallClock;
 
 /// A compact horizontal status bar summarising the live system state, inspired
 /// by XCTrack's "Status line" widget.
@@ -11,15 +14,41 @@ import '../data/flight_state.dart';
 /// It renders a row of small icon + value cells covering the most useful
 /// at-a-glance indicators:
 ///   * GPS fix quality (satellite count / accuracy)
+///   * Bluetooth sensor connection state
 ///   * Sensor battery level
+///   * Device battery level + charging state
 ///   * Recording / flight state
 ///   * Wall clock
 ///
 /// Cells that have no meaningful value (no fix, no battery sensor, …) render a
 /// muted `--` rather than a misleading zero. The bar scales its icon/text size
 /// to the tile height and lays the cells out evenly across the width.
+///
+/// Each cell can be individually shown or hidden via the control's settings
+/// ([showGps], [showBluetooth], [showSensorBattery], [showDeviceBattery],
+/// [showFlightTimer], [showClock]). The clock cell honors the 12/24-hour
+/// preference ([use24Hour]).
 class StatusLineControl extends StatefulWidget {
-  const StatusLineControl({super.key});
+  final bool showGps;
+  final bool showBluetooth;
+  final bool showSensorBattery;
+  final bool showDeviceBattery;
+  final bool showFlightTimer;
+  final bool showClock;
+
+  /// When true the clock cell uses a 24-hour format, otherwise 12-hour AM/PM.
+  final bool use24Hour;
+
+  const StatusLineControl({
+    super.key,
+    this.showGps = true,
+    this.showBluetooth = true,
+    this.showSensorBattery = true,
+    this.showDeviceBattery = true,
+    this.showFlightTimer = true,
+    this.showClock = true,
+    this.use24Hour = true,
+  });
 
   @override
   State<StatusLineControl> createState() => _StatusLineControlState();
@@ -34,6 +63,11 @@ class _StatusLineControlState extends State<StatusLineControl> {
     // Tick once per second so the clock and flight timer stay live even when no
     // fresh sensor data arrives.
     FlightState.instance.addListener(_onChanged);
+    // Rebuild when the BLE connection state changes so the sensor icon updates
+    // immediately on connect / disconnect.
+    BleSensorService.instance.addListener(_onChanged);
+    // Rebuild when the device battery level / charging state changes.
+    DeviceBatteryService.instance.addListener(_onChanged);
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -46,6 +80,8 @@ class _StatusLineControlState extends State<StatusLineControl> {
   @override
   void dispose() {
     FlightState.instance.removeListener(_onChanged);
+    BleSensorService.instance.removeListener(_onChanged);
+    DeviceBatteryService.instance.removeListener(_onChanged);
     _timer?.cancel();
     super.dispose();
   }
@@ -72,7 +108,31 @@ class _StatusLineControlState extends State<StatusLineControl> {
         ? const Color(0xFF4CD964)
         : theme.colorScheme.onSurfaceVariant;
 
-    // Battery cell.
+    // Bluetooth sensor cell. Distinguishes: connected (green), enabled but
+    // waiting/disconnected (muted "searching"), disabled/unsupported (off).
+    final ble = BleSensorService.instance;
+    final IconData bleIcon;
+    final Color bleColor;
+    final String bleValue;
+    if (!ble.supported) {
+      bleIcon = Icons.bluetooth_disabled;
+      bleColor = theme.colorScheme.onSurfaceVariant;
+      bleValue = '--';
+    } else if (ble.isConnected) {
+      bleIcon = Icons.bluetooth_connected;
+      bleColor = const Color(0xFF4CD964);
+      bleValue = 'ON';
+    } else if (ble.enabled) {
+      bleIcon = Icons.bluetooth_searching;
+      bleColor = theme.colorScheme.onSurfaceVariant;
+      bleValue = '...';
+    } else {
+      bleIcon = Icons.bluetooth_disabled;
+      bleColor = theme.colorScheme.onSurfaceVariant;
+      bleValue = 'OFF';
+    }
+
+    // Sensor battery cell (from the connected BLE vario).
     final battery = data.battery;
     final IconData battIcon;
     final Color battColor;
@@ -90,6 +150,36 @@ class _StatusLineControlState extends State<StatusLineControl> {
       battColor = theme.colorScheme.onSurface;
     }
 
+    // Device (phone/tablet) battery cell — shows the charge level and whether
+    // the device is currently charging. When charging, a bolt icon is used and
+    // the cell is tinted green regardless of level.
+    final deviceBattery = DeviceBatteryService.instance;
+    final int? devLevel = deviceBattery.level;
+    final bool charging = deviceBattery.isCharging;
+    final IconData devIcon;
+    final Color devColor;
+    if (charging) {
+      devIcon = Icons.battery_charging_full;
+      devColor = const Color(0xFF4CD964);
+    } else if (devLevel == null) {
+      devIcon = Icons.battery_unknown;
+      devColor = theme.colorScheme.onSurfaceVariant;
+    } else if (devLevel <= 15) {
+      devIcon = Icons.battery_alert;
+      devColor = const Color(0xFFFF6B6B);
+    } else if (devLevel >= 80) {
+      devIcon = Icons.battery_full;
+      devColor = theme.colorScheme.onSurface;
+    } else {
+      devIcon = Icons.battery_5_bar;
+      devColor = theme.colorScheme.onSurface;
+    }
+    // Append a charging marker to the value so the state is unambiguous even in
+    // monochrome / high-contrast themes where the tint may be hard to read.
+    final devValue = devLevel == null
+        ? (charging ? '⚡' : '--')
+        : '$devLevel%${charging ? ' ⚡' : ''}';
+
     // Flight / recording cell.
     final flying = flight.isFlying;
     final flightIcon =
@@ -100,9 +190,8 @@ class _StatusLineControlState extends State<StatusLineControl> {
         : theme.colorScheme.onSurfaceVariant;
 
     // Clock cell.
-    final now = DateTime.now();
-    final clockValue =
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final clockValue = formatWallClock(DateTime.now(),
+        use24Hour: widget.use24Hour);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -134,15 +223,22 @@ class _StatusLineControlState extends State<StatusLineControl> {
           );
         }
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            cell(gpsIcon, gpsValue, gpsColor),
+        final cells = <Widget>[
+          if (widget.showGps) cell(gpsIcon, gpsValue, gpsColor),
+          if (widget.showBluetooth) cell(bleIcon, bleValue, bleColor),
+          if (widget.showSensorBattery)
             cell(battIcon, battery == null ? '--' : '$battery%', battColor),
+          if (widget.showDeviceBattery) cell(devIcon, devValue, devColor),
+          if (widget.showFlightTimer)
             cell(flightIcon, flightValue, flightColor),
+          if (widget.showClock)
             cell(Icons.access_time, clockValue,
                 theme.colorScheme.onSurfaceVariant),
-          ],
+        ];
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: cells,
         );
       },
     );

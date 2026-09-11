@@ -231,6 +231,8 @@ class _VarioSynth {
   double _toneEndFreq = 0.0;
   VarioWaveform _segWave = VarioWaveform.tack;
   bool _segForceFade = false;
+  // Per-segment amplitude multiplier (used for softened near-lift cue).
+  double _segGain = 1.0;
 
   int _sinkPhase = 0;
   int _nearLiftPhase = 0;
@@ -252,6 +254,11 @@ class _VarioSynth {
   _VarioState _stateFor(double speed) {
     if (speed >= _config.liftThreshold) return _VarioState.lift;
     if (speed <= _config.sinkThreshold) return _VarioState.sink;
+
+    // Custom deadband split:
+    //   * sinkThreshold < v < 0.0      -> silent
+    //   * 0.0 <= v < liftThreshold     -> near-lift cue (softened)
+    if (speed < 0.0) return _VarioState.deadband;
     if (_config.nearLiftEnabled) return _VarioState.nearLift;
     return _VarioState.deadband;
   }
@@ -275,7 +282,7 @@ class _VarioSynth {
 
       _appliedGain += (outputGain - _appliedGain) * _gainSmoothing;
 
-      final value = sample * _appliedGain * _config.masterGain;
+      final value = sample * _segGain * _appliedGain * _config.masterGain;
       final s16 = (value.clamp(-1.0, 1.0) * 32767.0).round();
       final base = i * channels;
       for (var c = 0; c < channels; c++) {
@@ -304,6 +311,7 @@ class _VarioSynth {
       case _VarioState.deadband:
         _inTone = false;
         _segForceFade = false;
+        _segGain = 1.0;
         _segDuration = 0.02;
         break;
 
@@ -322,18 +330,22 @@ class _VarioSynth {
           final f = _config.nearLiftFreq;
           _toneStartFreq = f;
           _toneEndFreq = f;
+          _segGain = 0.5;
         } else if (_nearLiftPhase == 1) {
           _inTone = false;
           _segForceFade = false;
+          _segGain = 1.0;
           _segDuration = math.max(0.001, _config.nearLiftBeepGapSeconds);
         } else {
           _inTone = false;
           _segForceFade = false;
+          _segGain = 1.0;
           _segDuration = math.max(0.001, _config.nearLiftPairPauseSeconds);
         }
         break;
 
       case _VarioState.lift:
+        _segGain = 1.0;
         if (_inTone) {
           _inTone = false;
           final period = _config.liftPeriodFor(speed);
@@ -350,6 +362,7 @@ class _VarioSynth {
         break;
 
       case _VarioState.sink:
+        _segGain = 1.0;
         final toneEach = math.min(
           _config.sinkToneSeconds * 0.5,
           _config.sinkPeriodSeconds * 0.5,

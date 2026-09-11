@@ -198,7 +198,7 @@ class VarioAudioConfig {
     this.liftThreshold = 0.2,
     this.sinkThreshold = -2.0,
     this.nearLiftEnabled = true,
-    this.nearLiftFreq = 400.0,
+    this.nearLiftFreq = 300,
     this.nearLiftToneSeconds = 0.2,
     this.nearLiftBeepGapSeconds = 0.08,
     this.nearLiftPairPauseSeconds = 0.5,

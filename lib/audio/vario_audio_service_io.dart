@@ -319,7 +319,7 @@ class _VarioSynth {
           _segForceFade = true;
           _segWave = _config.nearLiftWaveform;
           _segDuration = math.max(0.001, _config.nearLiftToneSeconds);
-          final f = _config.nearLiftFreq * (2.0 / 3.0);
+          final f = _config.nearLiftFreq;
           _toneStartFreq = f;
           _toneEndFreq = f;
           _segGain = 0.5;

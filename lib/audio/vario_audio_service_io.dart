@@ -289,14 +289,17 @@ class _VarioSynth {
     _segElapsed += _dt;
     if (_segElapsed < _segDuration) return;
 
+    final speed = _smoothedSpeed;
+    _segElapsed = 0.0;
+
     if (_config.usesCustomSoundCurve) {
-      _tickCustomCurve();
+      _tickCustomCurve(speed);
+      _prevState = speed < 0 ? _VarioState.sink : _VarioState.lift;
       return;
     }
 
-    final speed = _smoothedSpeed;
     final state = _stateFor(speed);
-    _segElapsed = 0.0;
+
     switch (state) {
       case _VarioState.deadband:
         _inTone = false;
@@ -334,8 +337,7 @@ class _VarioSynth {
         if (_inTone) {
           _inTone = false;
           final period = _config.liftPeriodFor(speed);
-          _segDuration =
-              math.max(0.001, period - _config.liftToneSeconds);
+          _segDuration = math.max(0.001, period - _config.liftToneSeconds);
         } else {
           _inTone = true;
           _segForceFade = false;
@@ -387,28 +389,25 @@ class _VarioSynth {
     _prevState = state;
   }
 
-  void _tickCustomCurve() {
+  void _tickCustomCurve(double speed) {
     final curve = _config.customSoundCurve;
     if (curve == null) {
       _inTone = false;
       _segForceFade = false;
-      _segElapsed = 0.0;
       _segDuration = 0.02;
       return;
     }
 
-    final point = curve.sampleAt(_smoothedSpeed);
+    final point = curve.sampleAt(speed);
     final cycle = point.cycleSeconds.clamp(0.05, 2.0);
     final duty = point.duty.clamp(0.0, 1.0);
-    final wave = _smoothedSpeed < 0 ? _config.sinkWaveform : _config.liftWaveform;
-
-    _segElapsed = 0.0;
+    final wave = speed < 0 ? _config.sinkWaveform : _config.liftWaveform;
 
     if (duty >= 0.999) {
       _inTone = true;
       _segForceFade = false;
       _segWave = wave;
-      _segDuration = 0.2;
+      _segDuration = cycle;
       _toneStartFreq = point.freqHz;
       _toneEndFreq = point.freqHz;
       return;

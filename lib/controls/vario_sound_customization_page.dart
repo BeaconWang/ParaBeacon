@@ -23,12 +23,26 @@ class _VarioSoundCustomizationPageState
   _CustomMetric _metric = _CustomMetric.frequency;
   double _previewSpeed = 1.0;
   bool _previewMuted = false;
+  late final bool _wasCustomEnabled;
 
   @override
   void initState() {
     super.initState();
+    _wasCustomEnabled = _settings.customSoundEnabled;
+    if (!_wasCustomEnabled) {
+      _settings.setCustomSoundEnabled(true);
+    }
+    _audio.beginPreview(_previewSpeed);
     _previewMuted = _audio.isPreviewMuted;
-    _audio.setPreviewSpeed(_previewSpeed);
+  }
+
+  @override
+  void dispose() {
+    _audio.endPreview();
+    if (!_wasCustomEnabled) {
+      _settings.setCustomSoundEnabled(false);
+    }
+    super.dispose();
   }
 
   @override

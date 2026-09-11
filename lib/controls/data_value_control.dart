@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../data/flight_data_provider.dart';
 import '../data/flight_state.dart';
+import '../data/sun_times.dart';
 import '../l10n/app_localizations.dart';
 
 /// Color state of a data value, mirroring XCTrack's value coloring.
@@ -1078,4 +1079,81 @@ double _haversineM(double lat1, double lon1, double lat2, double lon2) {
   final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   return r * c;
 }
+
+/// Whether a sun-times control shows sunrise or sunset.
+enum SunEvent { sunrise, sunset }
+
+/// Sunrise / sunset time for the current position and date.
+///
+/// Requires a GPS fix to know the position; renders `--:--` until one is
+/// available. During polar day/night (no sunrise or no sunset on the date) it
+/// renders `--:--` as well. Honors the 12/24-hour [use24Hour] preference,
+/// reusing [formatWallClock] so the format matches the Clock control.
+class SunTimeControl extends StatefulWidget {
+  final bool showTitle;
+  final bool use24Hour;
+  final SunEvent event;
+
+  const SunTimeControl({
+    super.key,
+    required this.event,
+    this.showTitle = true,
+    this.use24Hour = true,
+  });
+
+  @override
+  State<SunTimeControl> createState() => _SunTimeControlState();
+}
+
+class _SunTimeControlState extends State<SunTimeControl> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Sun times only change slowly (with date/position); a 1-minute refresh is
+    // plenty and keeps the tile correct across midnight without busy work.
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = FlightDataProvider.of(context);
+    final l10n = AppLocalizations.of(context);
+    final title = widget.event == SunEvent.sunrise
+        ? l10n.controlSunrise
+        : l10n.controlSunset;
+
+    String value = '--:--';
+    if (data.hasFix &&
+        !data.latitude.isNaN &&
+        !data.longitude.isNaN) {
+      final times =
+          SunTimes.forDate(DateTime.now(), data.latitude, data.longitude);
+      final event = widget.event == SunEvent.sunrise
+          ? times.sunrise
+          : times.sunset;
+      if (event != null) {
+        value = formatWallClock(event, use24Hour: widget.use24Hour);
+      }
+    }
+
+    return DataValueControl(
+      title: title,
+      value: value,
+      unit: '',
+      state: ValueState.neutral,
+      showTitle: widget.showTitle,
+    );
+  }
+}
+
 

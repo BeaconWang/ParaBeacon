@@ -104,6 +104,10 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlAirTime;
     case 'distance_to_takeoff':
       return l10n.controlDistanceToTakeoff;
+    case 'sunrise':
+      return l10n.controlSunrise;
+    case 'sunset':
+      return l10n.controlSunset;
     case 'sensor_battery':
       return l10n.controlSensorBattery;
     case 'heart_rate':
@@ -271,6 +275,22 @@ class ControlCatalog {
           id: 'distance_to_takeoff',
           label: 'Distance to Takeoff',
           icon: Icons.straighten,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'sunrise',
+          label: 'Sunrise',
+          icon: Icons.wb_twilight,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'sunset',
+          label: 'Sunset',
+          icon: Icons.nights_stay_outlined,
           kind: ControlKind.data,
           defaultCols: 3,
           defaultRows: 2,

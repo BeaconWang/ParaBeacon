@@ -698,6 +698,18 @@ abstract class AppLocalizations {
   /// **'Distance to Takeoff'**
   String get controlDistanceToTakeoff;
 
+  /// No description provided for @controlSunrise.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunrise'**
+  String get controlSunrise;
+
+  /// No description provided for @controlSunset.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunset'**
+  String get controlSunset;
+
   /// No description provided for @controlStatusLine.
   ///
   /// In en, this message translates to:

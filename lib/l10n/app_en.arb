@@ -135,6 +135,8 @@
   "controlFlightTime": "Flight Time",
   "controlAirTime": "Air Time",
   "controlDistanceToTakeoff": "Distance to Takeoff",
+  "controlSunrise": "Sunrise",
+  "controlSunset": "Sunset",
   "controlStatusLine": "Status Line",
   "controlCompassWind": "Compass and Wind",
   "controlSensorBattery": "Sensor Battery",

@@ -335,6 +335,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlDistanceToTakeoff => 'Distance to Takeoff';
 
   @override
+  String get controlSunrise => 'Sunrise';
+
+  @override
+  String get controlSunset => 'Sunset';
+
+  @override
   String get controlStatusLine => 'Status Line';
 
   @override

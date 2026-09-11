@@ -112,6 +112,8 @@
   "controlFlightTime": "飞行时间",
   "controlAirTime": "空中时间",
   "controlDistanceToTakeoff": "距起飞点距离",
+  "controlSunrise": "日出",
+  "controlSunset": "日落",
   "controlStatusLine": "状态栏",
   "controlCompassWind": "罗盘与风向",
   "controlSensorBattery": "传感器电量",

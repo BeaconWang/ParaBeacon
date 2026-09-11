@@ -560,6 +560,28 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       defaultValue: false,
     ),
   ],
+  'sunrise': [
+    ControlSetting.choice(
+      key: 'timeFormat',
+      label: 'Time format',
+      defaultValue: '24h',
+      options: {
+        '24h': '24-hour',
+        '12h': '12-hour (AM/PM)',
+      },
+    ),
+  ],
+  'sunset': [
+    ControlSetting.choice(
+      key: 'timeFormat',
+      label: 'Time format',
+      defaultValue: '24h',
+      options: {
+        '24h': '24-hour',
+        '12h': '12-hour (AM/PM)',
+      },
+    ),
+  ],
   'flight_button': [
     ControlSetting.toggle(
       key: 'showAutoDetect',

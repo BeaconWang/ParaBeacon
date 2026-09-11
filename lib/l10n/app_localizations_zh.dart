@@ -321,6 +321,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlDistanceToTakeoff => '距起飞点距离';
 
   @override
+  String get controlSunrise => '日出';
+
+  @override
+  String get controlSunset => '日落';
+
+  @override
   String get controlStatusLine => '状态栏';
 
   @override

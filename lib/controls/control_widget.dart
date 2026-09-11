@@ -252,6 +252,18 @@ class ControlWidget extends StatelessWidget {
         return AirTimeControl(showTitle: showTitle);
       case 'distance_to_takeoff':
         return DistanceToTakeoffControl(showTitle: showTitle);
+      case 'sunrise':
+        return SunTimeControl(
+          event: SunEvent.sunrise,
+          showTitle: showTitle,
+          use24Hour: control.setting('timeFormat') != '12h',
+        );
+      case 'sunset':
+        return SunTimeControl(
+          event: SunEvent.sunset,
+          showTitle: showTitle,
+          use24Hour: control.setting('timeFormat') != '12h',
+        );
       case 'sensor_battery':
         return SensorBatteryControl(showTitle: showTitle);
       case 'heart_rate':

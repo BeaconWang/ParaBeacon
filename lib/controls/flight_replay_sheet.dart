@@ -46,9 +46,8 @@ class _FlightReplaySheet extends StatefulWidget {
 
 class _FlightReplaySheetState extends State<_FlightReplaySheet>
     with SingleTickerProviderStateMixin {
-  /// Tile source used for the replay basemap. A neutral online source keeps the
-  /// screen self-contained without depending on the live Map control's config.
-  static const String _tileSourceId = 'osm';
+  /// Tile source used for the replay basemap. Users can switch it in replay.
+  String _tileSourceId = 'osm';
 
   final MapController _map = MapController();
 
@@ -231,6 +230,27 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   MapTileSource get _src => MapTileSources.byId(_tileSourceId);
 
+  String _mapSourceLabel(AppLocalizations l10n, String id) {
+    switch (id) {
+      case 'none':
+        return l10n.settingMapSourceNone;
+      case 'osm':
+        return l10n.settingMapSourceOsm;
+      case 'osmfr':
+        return l10n.settingMapSourceOsmFr;
+      case 'carto-dark':
+        return l10n.settingMapSourceCartoDark;
+      case 'carto-voyager':
+        return l10n.settingMapSourceCartoVoyager;
+      case 'amap':
+        return l10n.settingMapSourceAmap;
+      case 'amap-sat':
+        return l10n.settingMapSourceAmapSat;
+      default:
+        return MapTileSources.byId(id).label;
+    }
+  }
+
   LatLng _shift(LatLng wgs) {
     if (!_src.requiresGcjShift) return wgs;
     final p = Gcj02.wgsToGcj(wgs.latitude, wgs.longitude);
@@ -279,6 +299,24 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                   child: Text(l10n.replayTitle,
                       style: theme.textTheme.titleLarge),
                 ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.layers_outlined),
+                  tooltip: l10n.settingMapSource,
+                  initialValue: _tileSourceId,
+                  onSelected: (id) {
+                    if (id == _tileSourceId) return;
+                    setState(() => _tileSourceId = id);
+                    _fitTrack();
+                    _followCursor();
+                  },
+                  itemBuilder: (context) => [
+                    for (final src in MapTileSources.all)
+                      PopupMenuItem(
+                        value: src.id,
+                        child: Text(_mapSourceLabel(l10n, src.id)),
+                      ),
+                  ],
+                ),
                 PopupMenuButton<TrackColorMode>(
                   icon: const Icon(Icons.palette_outlined),
                   tooltip: l10n.replayColorBy,
@@ -325,17 +363,19 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                       },
                     ),
                     children: [
-                      TileLayer(
-                        urlTemplate: _src.urlTemplate,
-                        maxNativeZoom: _src.maxZoom.round(),
-                        // Rely on flutter_map's own User-Agent (formatted from
-                        // this package name) rather than a custom
-                        // NetworkTileProvider(headers:). Passing a `const`
-                        // headers map threw "Cannot modify unmodifiable map"
-                        // (flutter_map merges into it), and a custom UA is also
-                        // silently dropped on Android — see MapControl's note.
-                        userAgentPackageName: 'com.beacon.parabeacon',
-                      ),
+                      if (!_src.isNone)
+                        TileLayer(
+                          key: ValueKey<String>('replay-tile-${_tileSourceId}'),
+                          urlTemplate: _src.urlTemplate,
+                          maxNativeZoom: _src.maxZoom.round(),
+                          // Rely on flutter_map's own User-Agent (formatted from
+                          // this package name) rather than a custom
+                          // NetworkTileProvider(headers:). Passing a `const`
+                          // headers map threw "Cannot modify unmodifiable map"
+                          // (flutter_map merges into it), and a custom UA is also
+                          // silently dropped on Android — see MapControl's note.
+                          userAgentPackageName: 'com.beacon.parabeacon',
+                        ),
                       PolylineLayer(polylines: _buildTrackPolylines()),
                       if (hasFix)
                         MarkerLayer(

@@ -97,9 +97,14 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                 children: [
                   Icon(Icons.graphic_eq, color: theme.colorScheme.primary),
                   const SizedBox(width: 10),
-                  Text('Vario Sound Settings',
-                      style: theme.textTheme.titleLarge),
-                  const Spacer(),
+                  Expanded(
+                    child: Text(
+                      'Vario Sound Settings',
+                      style: theme.textTheme.titleLarge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   IconButton(
                     tooltip: 'Reset to defaults',
                     icon: const Icon(Icons.restart_alt),

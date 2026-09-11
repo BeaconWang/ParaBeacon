@@ -108,36 +108,77 @@ class _VarioSoundCustomizationPageState
               animation: _settings,
               builder: (context, _) {
                 if (!shouldRotate) {
-                  return _responsiveBody(
-                    theme,
-                    width: constraints.maxWidth,
-                    height: constraints.maxHeight,
+                  return _fitToWindow(
+                    windowWidth: constraints.maxWidth,
+                    windowHeight: constraints.maxHeight,
+                    contentWidth: constraints.maxWidth,
+                    contentHeight: constraints.maxHeight,
+                    child: _responsiveBody(
+                      theme,
+                      width: constraints.maxWidth,
+                      height: constraints.maxHeight,
+                    ),
                   );
                 }
 
-                final rotated = SizedBox(
-                  width: constraints.maxHeight,
-                  height: constraints.maxWidth,
-                  child: _responsiveBody(
-                    theme,
-                    width: constraints.maxHeight,
-                    height: constraints.maxWidth,
+                final contentWidth = constraints.maxHeight;
+                final contentHeight = constraints.maxWidth;
+                final rotated = AnimatedRotation(
+                  turns: _landscapeClockwise ? 0.25 : -0.25,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  child: SizedBox(
+                    width: contentWidth,
+                    height: contentHeight,
+                    child: _responsiveBody(
+                      theme,
+                      width: contentWidth,
+                      height: contentHeight,
+                    ),
                   ),
                 );
 
-                return Center(
-                  child: ClipRect(
-                    child: AnimatedRotation(
-                      turns: _landscapeClockwise ? 0.25 : -0.25,
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                      child: rotated,
-                    ),
-                  ),
+                return _fitToWindow(
+                  windowWidth: constraints.maxWidth,
+                  windowHeight: constraints.maxHeight,
+                  contentWidth: contentWidth,
+                  contentHeight: contentHeight,
+                  child: rotated,
                 );
               },
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _fitToWindow({
+    required double windowWidth,
+    required double windowHeight,
+    required double contentWidth,
+    required double contentHeight,
+    required Widget child,
+  }) {
+    final safeWindowWidth = math.max(1.0, windowWidth);
+    final safeWindowHeight = math.max(1.0, windowHeight);
+    final safeContentWidth = math.max(1.0, contentWidth);
+    final safeContentHeight = math.max(1.0, contentHeight);
+
+    final scaleX = safeWindowWidth / safeContentWidth;
+    final scaleY = safeWindowHeight / safeContentHeight;
+    final scale = math.min(scaleX, scaleY);
+
+    return SizedBox.expand(
+      child: Center(
+        child: Transform.scale(
+          scale: scale,
+          alignment: Alignment.center,
+          child: SizedBox(
+            width: safeContentWidth,
+            height: safeContentHeight,
+            child: child,
+          ),
         ),
       ),
     );
@@ -191,8 +232,11 @@ class _VarioSoundCustomizationPageState
           ),
           Expanded(
             child: LayoutBuilder(
-              builder: (context, constraints) =>
-                  _barEditor(theme, viewportWidth: constraints.maxWidth),
+              builder: (context, constraints) => _barEditor(
+                theme,
+                viewportWidth: constraints.maxWidth,
+                viewportHeight: constraints.maxHeight,
+              ),
             ),
           ),
         ],
@@ -202,43 +246,60 @@ class _VarioSoundCustomizationPageState
     return Row(
       key: const ValueKey<String>('regular-main-editor'),
       children: [
-        Container(
-          width: 108,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: _metricSelectorRail(theme),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final railWidth = constraints.maxWidth < 900 ? 92.0 : 108.0;
+            return SizedBox(
+              width: railWidth,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: _metricSelectorRail(theme)),
+              ),
+            );
+          },
         ),
         Expanded(
           child: LayoutBuilder(
-            builder: (context, constraints) =>
-                _barEditor(theme, viewportWidth: constraints.maxWidth),
+            builder: (context, constraints) => _barEditor(
+              theme,
+              viewportWidth: constraints.maxWidth,
+              viewportHeight: constraints.maxHeight,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _barEditor(ThemeData theme, {required double viewportWidth}) {
+  Widget _barEditor(
+    ThemeData theme, {
+    required double viewportWidth,
+    required double viewportHeight,
+  }) {
     final speeds = VarioSoundSettings.customSoundSpeeds;
     final values = _valuesForMetric(_metric);
     final range = _rangeForMetric(_metric);
     final unit = _unitForMetric(_metric);
-    final compact = viewportWidth < 560;
-    const sideWidth = 30.0;
-    const horizontalPadding = 8.0;
+    final compact = viewportWidth < 560 || viewportHeight < 340;
+    const sideWidth = 24.0;
+    final horizontalPadding = compact ? 4.0 : 8.0;
     final usable = math.max(
-      160.0,
+      80.0,
       viewportWidth - sideWidth - horizontalPadding * 2,
     );
-    final cellWidth = (usable / speeds.length).clamp(30.0, 56.0);
-    final labelStep = cellWidth < 34 ? 3 : (cellWidth < 42 ? 2 : 1);
+    final slotWidth = math.max(12.0, usable / speeds.length);
+    final barWidth = (slotWidth * (compact ? 0.72 : 0.78)).clamp(8.0, 38.0);
+    final labelStep = slotWidth < 16
+        ? 4
+        : (slotWidth < 24 ? 3 : (slotWidth < 34 ? 2 : 1));
+    final verticalPadding = viewportHeight < 260 ? 4.0 : 12.0;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.only(right: 8),
+    return Padding(
+      padding: EdgeInsets.only(top: verticalPadding, bottom: verticalPadding),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const SizedBox(width: horizontalPadding),
+          SizedBox(width: horizontalPadding),
           SizedBox(
             width: sideWidth,
             child: Align(
@@ -249,6 +310,7 @@ class _VarioSoundCustomizationPageState
                   unit,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: compact ? 10 : null,
                   ),
                 ),
               ),
@@ -257,7 +319,8 @@ class _VarioSoundCustomizationPageState
           ...List.generate(speeds.length, (i) {
             final showValueLabel = i % labelStep == 0 || i == speeds.length - 1;
             return _BarEditorCell(
-              cellWidth: cellWidth,
+              slotWidth: slotWidth,
+              barWidth: barWidth,
               compact: compact,
               showValueLabel: showValueLabel,
               speedLabel: _speedLabel(speeds[i]),
@@ -268,13 +331,14 @@ class _VarioSoundCustomizationPageState
               onChanged: (v) => _setValueAt(_metric, i, v),
             );
           }),
-          const SizedBox(width: horizontalPadding),
+          SizedBox(width: horizontalPadding),
         ],
       ),
     );
   }
 
   Widget _previewControls(ThemeData theme, {required bool compact}) {
+    final dense = compact;
     final label = '${_previewSpeed.toStringAsFixed(2)} m/s';
     final title = Text(
       'Preview vertical speed',
@@ -289,7 +353,7 @@ class _VarioSoundCustomizationPageState
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+      padding: EdgeInsets.fromLTRB(12, dense ? 4 : 8, 12, dense ? 8 : 16),
       child: compact
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,15 +375,23 @@ class _VarioSoundCustomizationPageState
                     value,
                   ],
                 ),
-                Slider(
-                  value: _previewSpeed,
-                  min: -7,
-                  max: 7,
-                  divisions: 56,
-                  onChanged: (v) {
-                    setState(() => _previewSpeed = v);
-                    _audio.setPreviewSpeed(v);
-                  },
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: dense ? 2.5 : null,
+                    thumbShape: dense
+                        ? const RoundSliderThumbShape(enabledThumbRadius: 7)
+                        : null,
+                  ),
+                  child: Slider(
+                    value: _previewSpeed,
+                    min: -7,
+                    max: 7,
+                    divisions: 56,
+                    onChanged: (v) {
+                      setState(() => _previewSpeed = v);
+                      _audio.setPreviewSpeed(v);
+                    },
+                  ),
                 ),
               ],
             )
@@ -343,15 +415,25 @@ class _VarioSoundCustomizationPageState
                       Row(
                         children: [title, const Spacer(), value],
                       ),
-                      Slider(
-                        value: _previewSpeed,
-                        min: -7,
-                        max: 7,
-                        divisions: 56,
-                        onChanged: (v) {
-                          setState(() => _previewSpeed = v);
-                          _audio.setPreviewSpeed(v);
-                        },
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: dense ? 2.5 : null,
+                          thumbShape: dense
+                              ? const RoundSliderThumbShape(
+                                  enabledThumbRadius: 7,
+                                )
+                              : null,
+                        ),
+                        child: Slider(
+                          value: _previewSpeed,
+                          min: -7,
+                          max: 7,
+                          divisions: 56,
+                          onChanged: (v) {
+                            setState(() => _previewSpeed = v);
+                            _audio.setPreviewSpeed(v);
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -362,26 +444,31 @@ class _VarioSoundCustomizationPageState
   }
 
   Widget _metricSelectorRail(ThemeData theme) {
-    return Column(
-      children: [
-        const SizedBox(height: 4),
-        _metricItem(theme, icon: Icons.graphic_eq, label: 'Frequency', metric: _CustomMetric.frequency),
-        _metricItem(theme, icon: Icons.data_thresholding, label: 'Cycle', metric: _CustomMetric.cycle),
-        _metricItem(theme, icon: Icons.tune, label: 'Duty', metric: _CustomMetric.duty),
-        const Spacer(),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 4),
+          _metricItem(theme, icon: Icons.graphic_eq, label: 'Frequency', metric: _CustomMetric.frequency),
+          _metricItem(theme, icon: Icons.data_thresholding, label: 'Cycle', metric: _CustomMetric.cycle),
+          _metricItem(theme, icon: Icons.tune, label: 'Duty', metric: _CustomMetric.duty),
+        ],
+      ),
     );
   }
 
   Widget _metricSelectorCompact(ThemeData theme) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        _metricChip(theme, icon: Icons.graphic_eq, label: 'Frequency', metric: _CustomMetric.frequency),
-        _metricChip(theme, icon: Icons.data_thresholding, label: 'Cycle', metric: _CustomMetric.cycle),
-        _metricChip(theme, icon: Icons.tune, label: 'Duty', metric: _CustomMetric.duty),
-      ],
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          _metricChip(theme, icon: Icons.graphic_eq, label: 'Frequency', metric: _CustomMetric.frequency),
+          _metricChip(theme, icon: Icons.data_thresholding, label: 'Cycle', metric: _CustomMetric.cycle),
+          _metricChip(theme, icon: Icons.tune, label: 'Duty', metric: _CustomMetric.duty),
+        ],
+      ),
     );
   }
 
@@ -508,7 +595,8 @@ class _VarioSoundCustomizationPageState
 
 class _BarEditorCell extends StatelessWidget {
   const _BarEditorCell({
-    required this.cellWidth,
+    required this.slotWidth,
+    required this.barWidth,
     required this.compact,
     required this.showValueLabel,
     required this.speedLabel,
@@ -519,7 +607,8 @@ class _BarEditorCell extends StatelessWidget {
     required this.onChanged,
   });
 
-  final double cellWidth;
+  final double slotWidth;
+  final double barWidth;
   final bool compact;
   final bool showValueLabel;
   final String speedLabel;
@@ -533,74 +622,92 @@ class _BarEditorCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ratio = ((value - min) / (max - min)).clamp(0.0, 1.0);
+    final labelFontSize = (slotWidth * 0.26).clamp(8.0, 13.0);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 6),
-      child: SizedBox(
-        width: cellWidth,
-        child: Column(
-          children: [
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 120),
-              opacity: showValueLabel ? 1 : 0,
+    return SizedBox(
+      width: slotWidth,
+      child: Column(
+        children: [
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 120),
+            opacity: showValueLabel ? 1 : 0,
+            child: SizedBox(
+              width: slotWidth,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  showValueLabel ? valueLabel : ' ',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: labelFontSize,
+                  ),
+                  maxLines: 1,
+                  softWrap: false,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: compact ? 2 : 4),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final barHeight = math.max(2.0, c.maxHeight * ratio);
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragUpdate: (d) {
+                    final deltaRatio = -d.delta.dy / c.maxHeight;
+                    final next = value + deltaRatio * (max - min);
+                    onChanged(next.clamp(min, max));
+                  },
+                  child: Center(
+                    child: SizedBox(
+                      width: barWidth,
+                      child: Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.35),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 80),
+                            curve: Curves.linear,
+                            height: barHeight,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          SizedBox(height: compact ? 4 : 6),
+          SizedBox(
+            width: slotWidth,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
               child: Text(
-                showValueLabel ? valueLabel : ' ',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: compact ? 10 : null,
+                speedLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: (slotWidth * 0.28).clamp(9.0, 14.0),
                 ),
                 maxLines: 1,
-                overflow: TextOverflow.fade,
                 softWrap: false,
-                textAlign: TextAlign.center,
               ),
             ),
-            SizedBox(height: compact ? 2 : 4),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, c) {
-                  final barHeight = math.max(2.0, c.maxHeight * ratio);
-                  return GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onVerticalDragUpdate: (d) {
-                      final deltaRatio = -d.delta.dy / c.maxHeight;
-                      final next = value + deltaRatio * (max - min);
-                      onChanged(next.clamp(min, max));
-                    },
-                    child: Stack(
-                      alignment: Alignment.bottomCenter,
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest
-                                .withValues(alpha: 0.35),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 80),
-                          curve: Curves.linear,
-                          height: barHeight,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            SizedBox(height: compact ? 4 : 6),
-            Text(
-              speedLabel,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: compact ? 11 : null,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -208,6 +208,7 @@
   "settingShowWind": "显示风",
   "settingShowSun": "显示太阳位置",
   "settingShowBearing": "显示方位（航线）线",
+  "settingShowTakeoffLine": "显示到起飞点的连线",
   "settingShowScale": "显示地图比例尺",
   "settingShowAirspace": "显示空域",
   "settingShowLegend": "显示升降音图例",

@@ -212,6 +212,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowSun;
     case 'showBearing':
       return l10n.settingShowBearing;
+    case 'showTakeoffLine':
+      return l10n.settingShowTakeoffLine;
     case 'showScale':
       return l10n.settingShowScale;
     case 'showAirspace':
@@ -687,6 +689,11 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ControlSetting.toggle(
       key: 'showBearing',
       label: 'Show bearing (course) line',
+      defaultValue: false,
+    ),
+    ControlSetting.toggle(
+      key: 'showTakeoffLine',
+      label: 'Show line to take-off',
       defaultValue: false,
     ),
     ControlSetting.toggle(

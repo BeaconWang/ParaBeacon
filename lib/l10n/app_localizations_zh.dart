@@ -597,6 +597,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowBearing => '显示方位（航线）线';
 
   @override
+  String get settingShowTakeoffLine => '显示到起飞点的连线';
+
+  @override
   String get settingShowScale => '显示地图比例尺';
 
   @override

@@ -192,6 +192,10 @@ class MapControl extends StatefulWidget {
   /// Draw a bearing (course) line from the aircraft along its ground track.
   final bool showBearing;
 
+  /// Draw a straight line from the current position back to the take-off
+  /// point (the first fixed sample of the in-progress flight).
+  final bool showTakeoffLine;
+
   /// Draw the ground-distance scale ruler (bottom-left).
   final bool showScale;
 
@@ -234,6 +238,7 @@ class MapControl extends StatefulWidget {
     this.showWind = true,
     this.showSun = false,
     this.showBearing = false,
+    this.showTakeoffLine = false,
     this.showScale = true,
     this.useOffline = true,
     this.showLegend = false,
@@ -562,6 +567,15 @@ class _MapControlState extends State<MapControl> {
                   PolylineLayer(
                     polylines: [_buildBearingLine(renderPos, heading)],
                   ),
+
+                // Straight line from the current position back to take-off.
+                if (widget.showTakeoffLine && hasFix)
+                  Builder(builder: (context) {
+                    final line = _buildTakeoffLine(renderPos);
+                    return line == null
+                        ? const SizedBox.shrink()
+                        : PolylineLayer(polylines: [line]);
+                  }),
 
                 // Recorded flight track coloured by vertical speed.
                 if (widget.showTrack)
@@ -943,6 +957,43 @@ class _MapControlState extends State<MapControl> {
       points: [from, to],
       strokeWidth: 2.5 * widget.lineThickness,
       color: const Color(0xFF2196F3),
+    );
+  }
+
+  /// Builds a straight line from the current position [to] back to the
+  /// take-off point of the in-progress flight, or null when there is no
+  /// take-off reference yet (no recording, or no fixed sample recorded).
+  ///
+  /// The take-off point is the first recorded sample that carries a GPS fix.
+  /// Its coordinates are GCJ-shifted the same way as the live position so the
+  /// line stays anchored to the tiles on AMap sources.
+  Polyline? _buildTakeoffLine(LatLng to) {
+    final track = FlightRecorder.instance.currentTrack;
+    final samples = track?.samples ?? const [];
+    if (samples.isEmpty) return null;
+
+    dynamic takeoff;
+    for (final s in samples) {
+      if (s.data.hasFix == true) {
+        takeoff = s;
+        break;
+      }
+    }
+    // Fall back to the very first sample if none is flagged as fixed.
+    takeoff ??= samples.first;
+
+    final d = takeoff.data;
+    final from = _shift(
+      LatLng(d.latitude as double, d.longitude as double),
+      widget.tileSource,
+    );
+    return Polyline(
+      points: [from, to],
+      strokeWidth: 2.0 * widget.lineThickness,
+      // Dashed magenta so it reads distinctly from the blue bearing line and
+      // the vario-coloured track.
+      color: const Color(0xFFE040FB),
+      pattern: StrokePattern.dashed(segments: const [8, 6]),
     );
   }
 

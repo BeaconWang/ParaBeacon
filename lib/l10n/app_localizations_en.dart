@@ -611,6 +611,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowBearing => 'Show bearing (course) line';
 
   @override
+  String get settingShowTakeoffLine => 'Show line to take-off';
+
+  @override
   String get settingShowScale => 'Display map scale';
 
   @override

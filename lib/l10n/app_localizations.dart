@@ -1238,6 +1238,12 @@ abstract class AppLocalizations {
   /// **'Show bearing (course) line'**
   String get settingShowBearing;
 
+  /// No description provided for @settingShowTakeoffLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Show line to take-off'**
+  String get settingShowTakeoffLine;
+
   /// No description provided for @settingShowScale.
   ///
   /// In en, this message translates to:

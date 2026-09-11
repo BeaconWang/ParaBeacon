@@ -306,6 +306,8 @@ class ControlWidget extends StatelessWidget {
             showWind: control.boolSetting('showWind', fallback: true),
             showSun: control.boolSetting('showSun', fallback: false),
             showBearing: control.boolSetting('showBearing', fallback: false),
+            showTakeoffLine:
+                control.boolSetting('showTakeoffLine', fallback: false),
             showScale: control.boolSetting('showScale', fallback: true),
             useOffline: control.boolSetting('useOffline', fallback: true),
             showTrack: control.boolSetting('showTrack', fallback: true),

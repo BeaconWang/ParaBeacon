@@ -596,41 +596,47 @@ abstract class AppLocalizations {
   /// **'No matching places'**
   String get weatherNoResults;
 
-  /// No description provided for @weatherTabMeteogram.
-  ///
-  /// In en, this message translates to:
-  /// **'Meteogram'**
-  String get weatherTabMeteogram;
-
   /// No description provided for @weatherTabDaily.
   ///
   /// In en, this message translates to:
   /// **'Daily'**
   String get weatherTabDaily;
 
-  /// No description provided for @weatherAxisTemp.
+  /// No description provided for @weatherRowHours.
   ///
   /// In en, this message translates to:
-  /// **'Temp'**
-  String get weatherAxisTemp;
+  /// **'Hours'**
+  String get weatherRowHours;
 
-  /// No description provided for @weatherAxisPrecip.
+  /// No description provided for @weatherRowTemperature.
   ///
   /// In en, this message translates to:
-  /// **'Precip'**
-  String get weatherAxisPrecip;
+  /// **'Temperature'**
+  String get weatherRowTemperature;
 
-  /// No description provided for @weatherAxisWind.
+  /// No description provided for @weatherRowRain.
+  ///
+  /// In en, this message translates to:
+  /// **'Rain'**
+  String get weatherRowRain;
+
+  /// No description provided for @weatherRowWind.
   ///
   /// In en, this message translates to:
   /// **'Wind'**
-  String get weatherAxisWind;
+  String get weatherRowWind;
 
-  /// No description provided for @weatherAxisCloud.
+  /// No description provided for @weatherRowGusts.
   ///
   /// In en, this message translates to:
-  /// **'Cloud'**
-  String get weatherAxisCloud;
+  /// **'Wind gusts'**
+  String get weatherRowGusts;
+
+  /// No description provided for @weatherRowWindDir.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind dir.'**
+  String get weatherRowWindDir;
 
   /// No description provided for @weatherModel.
   ///

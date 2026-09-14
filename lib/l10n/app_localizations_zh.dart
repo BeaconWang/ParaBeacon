@@ -277,22 +277,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherNoResults => '没有匹配的地点';
 
   @override
-  String get weatherTabMeteogram => '气象图';
-
-  @override
   String get weatherTabDaily => '每日';
 
   @override
-  String get weatherAxisTemp => '气温';
+  String get weatherRowHours => '时间';
 
   @override
-  String get weatherAxisPrecip => '降水';
+  String get weatherRowTemperature => '温度';
 
   @override
-  String get weatherAxisWind => '风';
+  String get weatherRowRain => '雨量';
 
   @override
-  String get weatherAxisCloud => '云量';
+  String get weatherRowWind => '风速';
+
+  @override
+  String get weatherRowGusts => '阵风';
+
+  @override
+  String get weatherRowWindDir => '风向';
 
   @override
   String get weatherModel => '预报模式';

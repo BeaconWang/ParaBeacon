@@ -12,11 +12,10 @@ import '../data/weather_service_manager.dart';
 import '../data/weather_providers.dart' show WeatherModel;
 import '../data/weather_units.dart';
 import '../l10n/app_localizations.dart';
-import 'meteogram.dart';
 
 /// Opens the Weather screen as a full-screen sheet: a nowcast panel, a
-/// synchronized meteogram, a 16-day glance strip and a location search bar
-/// (OpenStreetMap Nominatim).
+/// synchronized hourly detail table, a 16-day glance strip and a location
+/// search bar (OpenStreetMap Nominatim).
 ///
 /// All forecast state comes from the unified weather data layer
 /// (weather_service_manager.dart): a single Open-Meteo request pulls the
@@ -38,7 +37,7 @@ enum _Phase { loading, ready, error }
 
 enum _ErrorKind { noFix, network }
 
-enum _BottomTab { meteogram, daily }
+enum _BottomTab { hourly, daily }
 
 class _WeatherSheet extends StatefulWidget {
   const _WeatherSheet();
@@ -57,7 +56,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
 
   // View / interaction state.
   int? _selectedHour; // null = "now" (current conditions)
-  _BottomTab _bottomTab = _BottomTab.meteogram;
+  _BottomTab _bottomTab = _BottomTab.hourly;
   WeatherModel _model = WeatherModel.bestMatch;
   int _pastDays = 0;
 
@@ -580,12 +579,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     );
   }
 
-  // ── Bottom overlay panel (meteogram / daily glance) ──────────────────────
+  // ── Bottom overlay panel (hourly detail / daily glance) ──────────────────
 
   Widget _buildBottomPanel(AppLocalizations l10n) {
     final data = _data;
-    final screenH = MediaQuery.of(context).size.height;
-    final chartH = (screenH * 0.22).clamp(170.0, 240.0);
 
     return Container(
       decoration: BoxDecoration(
@@ -602,9 +599,9 @@ class _WeatherSheetState extends State<_WeatherSheet> {
           Row(
             children: [
               _pillToggle(
-                l10n.weatherTabMeteogram,
-                selected: _bottomTab == _BottomTab.meteogram,
-                onTap: () => setState(() => _bottomTab = _BottomTab.meteogram),
+                l10n.weatherHourlyDetail,
+                selected: _bottomTab == _BottomTab.hourly,
+                onTap: () => setState(() => _bottomTab = _BottomTab.hourly),
               ),
               const SizedBox(width: 6),
               _pillToggle(
@@ -630,18 +627,15 @@ class _WeatherSheetState extends State<_WeatherSheet> {
           if (data != null) ...[
             const SizedBox(height: 4),
             SizedBox(
-              height: _bottomTab == _BottomTab.meteogram ? chartH : 118,
-              child: _bottomTab == _BottomTab.meteogram
-                  ? Meteogram(
+              height: _bottomTab == _BottomTab.hourly
+                  ? _HourlyDetailTable.tableHeight
+                  : 118,
+              child: _bottomTab == _BottomTab.hourly
+                  ? _HourlyDetailTable(
                       hours: data.hourly,
                       currentTime: data.currentTime,
-                      selectedIndex: _meteogramSelection,
+                      selectedIndex: _hourlySelection,
                       onSelect: (i) => setState(() => _selectedHour = i),
-                      labelTemp: l10n.weatherAxisTemp,
-                      labelPrecip: l10n.weatherAxisPrecip,
-                      labelWind: l10n.weatherAxisWind,
-                      labelCloud: l10n.weatherAxisCloud,
-                      dark: true,
                     )
                   : _buildDailyGlance(data, l10n),
             ),
@@ -663,8 +657,8 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     );
   }
 
-  /// Index the meteogram cursor points at: the scrubbed hour, or "now".
-  int get _meteogramSelection {
+  /// Index the hourly detail selection points at: the scrubbed hour, or "now".
+  int get _hourlySelection {
     final idx = _selectedHour;
     if (idx != null) return idx;
     final data = _data;
@@ -1217,6 +1211,464 @@ class _NowcastPanel extends StatelessWidget {
   String _fmtAmount(double v) =>
       '${v.toStringAsFixed(units.precipitation == PrecipitationUnit.inch ? 2 : 1)} '
       '${units.precipitation.symbol}';
+}
+
+// ── Hourly detail table ──────────────────────────────────────────────────────
+
+/// Windy-style hourly detail table for the bottom panel: a fixed label
+/// gutter plus one scrollable column per hour (hourly interval). Rows are
+/// the day header, hour + condition icon, temperature (tinted by the
+/// temperature palette), rain amount, wind speed, wind gusts (tinted by a
+/// Beaufort-like heat scale) and wind-direction arrows. Tapping a column
+/// selects that hour; the selected column gets the rounded selection box.
+class _HourlyDetailTable extends StatefulWidget {
+  const _HourlyDetailTable({
+    required this.hours,
+    required this.selectedIndex,
+    required this.onSelect,
+    this.currentTime,
+  });
+
+  /// The full hourly series (may include `past_days` history, rendered
+  /// dimmed before [currentTime]).
+  final List<WeatherHour> hours;
+
+  /// The provider's current time (location-local): the table auto-scrolls
+  /// here and dims earlier hours.
+  final DateTime? currentTime;
+
+  /// Selected hour index.
+  final int selectedIndex;
+
+  /// Reports the tapped hour index.
+  final ValueChanged<int> onSelect;
+
+  // Row heights (mirrored by the gutter).
+  static const double _headerH = 20;
+  static const double _hourH = 18;
+  static const double _iconH = 32;
+  static const double _tempH = 30;
+  static const double _rainH = 26;
+  static const double _windH = 26;
+  static const double _gustH = 26;
+  static const double _dirH = 26;
+
+  /// Total table height (gutter and columns share the same rows).
+  static const double tableHeight =
+      _headerH + _hourH + _iconH + _tempH + _rainH + _windH + _gustH + _dirH;
+
+  static const double _colWidth = 56;
+
+  @override
+  State<_HourlyDetailTable> createState() => _HourlyDetailTableState();
+}
+
+class _HourlyDetailTableState extends State<_HourlyDetailTable> {
+  final ScrollController _scroll = ScrollController();
+  bool _autoScrolled = false;
+
+  /// Index of the first hour at-or-after the provider's current time.
+  int get _nowIndex {
+    final t = widget.currentTime;
+    if (t == null) return -1;
+    return widget.hours.indexWhere((h) => !h.time.isBefore(t));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleAutoScroll();
+  }
+
+  @override
+  void didUpdateWidget(_HourlyDetailTable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.hours != widget.hours) {
+      _autoScrolled = false;
+      _scheduleAutoScroll();
+    }
+  }
+
+  /// Centers "now" in the viewport on first layout (and after a reload).
+  void _scheduleAutoScroll() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _autoScrolled || !_scroll.hasClients) return;
+      final now = _nowIndex;
+      if (now < 0) return;
+      final target =
+          (now * _HourlyDetailTable._colWidth - _scroll.position.viewportDimension / 2)
+              .clamp(0.0, math.max(0, _scroll.position.maxScrollExtent).toDouble());
+      _scroll.jumpTo(target);
+      _autoScrolled = true;
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.hours.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
+    final units = WeatherUnitSettings.instance.units;
+    final now = _nowIndex;
+
+    return SizedBox(
+      height: _HourlyDetailTable.tableHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildGutter(l10n, units),
+          Expanded(
+            child: ListView.builder(
+              controller: _scroll,
+              scrollDirection: Axis.horizontal,
+              itemExtent: _HourlyDetailTable._colWidth,
+              itemCount: widget.hours.length,
+              itemBuilder: (context, i) => _buildColumn(i, locale, units, now),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Gutter (fixed row labels) ─────────────────────────────────────────────
+
+  Widget _gutterLabel(double height, String label, String? unit) {
+    return SizedBox(
+      height: height,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 8, right: 4),
+        child: Row(
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white54, fontSize: 11),
+              ),
+            ),
+            if (unit != null) ...[
+              const SizedBox(width: 3),
+              Text(unit,
+                  style: const TextStyle(color: Colors.white38, fontSize: 9)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGutter(AppLocalizations l10n, WeatherUnits units) {
+    return SizedBox(
+      width: 96,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: _HourlyDetailTable._headerH),
+          // "Hours" spans the hour-label + icon rows.
+          SizedBox(
+            height: _HourlyDetailTable._hourH + _HourlyDetailTable._iconH,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8, right: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.schedule, size: 13, color: Colors.white54),
+                  const SizedBox(width: 5),
+                  Flexible(
+                    child: Text(
+                      l10n.weatherRowHours,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _gutterLabel(_HourlyDetailTable._tempH, l10n.weatherRowTemperature,
+              units.temperature.symbol),
+          _gutterLabel(_HourlyDetailTable._rainH, l10n.weatherRowRain,
+              units.precipitation.symbol),
+          _gutterLabel(
+              _HourlyDetailTable._windH, l10n.weatherRowWind, units.wind.symbol),
+          _gutterLabel(
+              _HourlyDetailTable._gustH, l10n.weatherRowGusts, units.wind.symbol),
+          _gutterLabel(_HourlyDetailTable._dirH, l10n.weatherRowWindDir, null),
+        ],
+      ),
+    );
+  }
+
+  // ── Hour columns ──────────────────────────────────────────────────────────
+
+  Widget _buildColumn(int i, String locale, WeatherUnits units, int now) {
+    final h = widget.hours[i];
+    final sel = i == widget.selectedIndex;
+    final dayStart = i == 0 || widget.hours[i - 1].time.day != h.time.day;
+    final past = now >= 0 && i < now;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => widget.onSelect(i),
+      child: SizedBox(
+        width: _HourlyDetailTable._colWidth,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Column(
+              children: [
+                _headerCell(i, dayStart, locale),
+                _cell(
+                  _HourlyDetailTable._hourH,
+                  dayStart: dayStart,
+                  past: past,
+                  child: Text(
+                    DateFormat('HH:mm', locale).format(h.time),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
+                      color: sel ? Colors.orangeAccent : Colors.white70,
+                    ),
+                  ),
+                ),
+                _cell(
+                  _HourlyDetailTable._iconH,
+                  dayStart: dayStart,
+                  past: past,
+                  child: Icon(
+                    kindIcon(h.kind, isDay: h.isDay ?? true),
+                    size: 18,
+                    color: Colors.orangeAccent,
+                  ),
+                ),
+                _cell(
+                  _HourlyDetailTable._tempH,
+                  dayStart: dayStart,
+                  past: past,
+                  band: _tempPaletteColor(WeatherUnits.temperatureToCelsius(
+                          h.temperature, units.temperature))
+                      .withAlpha(44),
+                  child: Text(
+                    '${h.temperature.round()}°',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                _buildRainCell(h, units, dayStart, past),
+                _cell(
+                  _HourlyDetailTable._windH,
+                  dayStart: dayStart,
+                  past: past,
+                  child: Text(
+                    '${h.windSpeed.round()}',
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+                _cell(
+                  _HourlyDetailTable._gustH,
+                  dayStart: dayStart,
+                  past: past,
+                  band: _gustHeatColor(
+                          WeatherUnits.windToKmh(h.windGusts, units.wind))
+                      .withAlpha(190),
+                  child: Text(
+                    '${h.windGusts.round()}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                _cell(
+                  _HourlyDetailTable._dirH,
+                  dayStart: dayStart,
+                  past: past,
+                  child: _WindArrow(direction: h.windDirection, size: 13),
+                ),
+              ],
+            ),
+            // Rounded selection box around the column body (below the day
+            // header), like Windy's hour cursor.
+            if (sel)
+              Positioned(
+                top: _HourlyDetailTable._headerH,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: ShapeDecoration(
+                      color: Colors.white.withAlpha(22),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9),
+                        side: BorderSide(
+                          color: Colors.orangeAccent.withAlpha(180),
+                          width: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRainCell(WeatherHour h, WeatherUnits units, bool dayStart,
+      bool past) {
+    final v = h.precipitation;
+    final hasRain = v >= 0.05;
+    return _cell(
+      _HourlyDetailTable._rainH,
+      dayStart: dayStart,
+      past: past,
+      child: hasRain
+          ? Text(
+              v.toStringAsFixed(
+                  units.precipitation == PrecipitationUnit.inch ? 2 : 1),
+              style: const TextStyle(
+                  color: Colors.lightBlueAccent,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600),
+            )
+          : null,
+      rainBar: hasRain
+          ? Colors.lightBlueAccent
+              .withAlpha(((v / 4).clamp(0.12, 1.0) * 255).round())
+          : null,
+    );
+  }
+
+  Widget _headerCell(int i, bool dayStart, String locale) {
+    if (!dayStart) return const SizedBox(height: _HourlyDetailTable._headerH);
+    final t = widget.hours[i].time;
+    return SizedBox(
+      height: _HourlyDetailTable._headerH,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 1,
+            child: ColoredBox(color: Color(0x2EFFFFFF)),
+          ),
+          Positioned(
+            left: 5,
+            top: 0,
+            bottom: 0,
+            // Clip.none lets the label span the whole day's columns.
+            child: Center(
+              child: Text(
+                DateFormat('EEEE d', locale).format(t).toUpperCase(),
+                style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cell(
+    double height, {
+    Widget? child,
+    Color? band,
+    Color? rainBar,
+    required bool dayStart,
+    required bool past,
+  }) {
+    return SizedBox(
+      height: height,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          if (band != null) Positioned.fill(child: ColoredBox(color: band)),
+          if (rainBar != null)
+            Positioned(
+              left: 5,
+              right: 5,
+              bottom: 2,
+              child: Container(
+                height: 3,
+                decoration: BoxDecoration(
+                  color: rainBar,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          if (dayStart)
+            const Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 1,
+              child: ColoredBox(color: Color(0x2EFFFFFF)),
+            ),
+          if (child != null)
+            Center(
+              child: Opacity(opacity: past ? 0.45 : 1, child: child),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Maps a °C value onto the classic weather-map temperature ramp; tints the
+/// temperature row of the hourly detail table.
+Color _tempPaletteColor(double celsius) {
+  // Non-const: double map keys have no primitive equality.
+  final stops = <double, Color>{
+    -25: const Color(0xFF6A3DE8),
+    -12: const Color(0xFF3D5AFE),
+    -2: const Color(0xFF00BCD4),
+    6: const Color(0xFF4CAF50),
+    14: const Color(0xFFFFC107),
+    22: const Color(0xFFFF9800),
+    30: const Color(0xFFF4511E),
+    40: const Color(0xFFD50000),
+  };
+  if (celsius <= stops.keys.first) return stops.values.first;
+  double? prevT;
+  Color? prevC;
+  for (final entry in stops.entries) {
+    if (celsius <= entry.key) {
+      final t = (celsius - prevT!) / (entry.key - prevT);
+      return Color.lerp(prevC, entry.value, t.clamp(0.0, 1.0))!;
+    }
+    prevT = entry.key;
+    prevC = entry.value;
+  }
+  return stops.values.last;
+}
+
+/// Beaufort-like heat scale for the gust row (green → cyan → yellow →
+/// orange → red as gusts strengthen). Values are in canonical km/h.
+Color _gustHeatColor(double kmh) {
+  if (kmh < 15) return const Color(0xFF43A047);
+  if (kmh < 30) return const Color(0xFF26C6DA);
+  if (kmh < 45) return const Color(0xFFFFCA28);
+  if (kmh < 60) return const Color(0xFFFF9800);
+  return const Color(0xFFEF5350);
 }
 
 // ── Small widgets ────────────────────────────────────────────────────────────

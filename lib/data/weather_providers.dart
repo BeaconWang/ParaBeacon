@@ -284,7 +284,7 @@ class OpenMeteoProvider extends WeatherProvider {
   /// metric fields are parsed when present and stay null otherwise (some
   /// forecast models do not carry every variable). Hourly rows are NOT
   /// capped: with `past_days` the series legitimately spans history plus
-  /// the 16-day horizon and the meteogram scrolls through it.
+  /// the 16-day horizon and the hourly detail table scrolls through it.
   static WeatherData parse(Map<String, dynamic> j) {
     final cur = WxParse.mapOf(j, 'current');
     final current = WeatherCurrent(

@@ -285,22 +285,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherNoResults => 'No matching places';
 
   @override
-  String get weatherTabMeteogram => 'Meteogram';
-
-  @override
   String get weatherTabDaily => 'Daily';
 
   @override
-  String get weatherAxisTemp => 'Temp';
+  String get weatherRowHours => 'Hours';
 
   @override
-  String get weatherAxisPrecip => 'Precip';
+  String get weatherRowTemperature => 'Temperature';
 
   @override
-  String get weatherAxisWind => 'Wind';
+  String get weatherRowRain => 'Rain';
 
   @override
-  String get weatherAxisCloud => 'Cloud';
+  String get weatherRowWind => 'Wind';
+
+  @override
+  String get weatherRowGusts => 'Wind gusts';
+
+  @override
+  String get weatherRowWindDir => 'Wind dir.';
 
   @override
   String get weatherModel => 'Model';

@@ -1778,17 +1778,6 @@ class _MenuContent extends StatelessWidget {
           onTap: () => showFlightsSheet(context),
         ),
         const Divider(height: 1),
-        // Tools section: utilities that complement the dashboard.
-        Padding(
-          padding: const EdgeInsets.only(top: 12, bottom: 4),
-          child: Row(
-            children: [
-              Icon(Icons.construction, color: theme.colorScheme.primary, size: 20),
-              const SizedBox(width: 10),
-              Text(l10n.tools, style: theme.textTheme.titleMedium),
-            ],
-          ),
-        ),
         ListTile(
           leading: Icon(Icons.air, color: theme.colorScheme.primary),
           title: Text(l10n.weather),

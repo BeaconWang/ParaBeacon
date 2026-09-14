@@ -162,6 +162,120 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsSubtitle => 'Recorded flights';
 
   @override
+  String get tools => 'Tools';
+
+  @override
+  String get weather => 'Weather';
+
+  @override
+  String get weatherSubtitle => 'Forecast at your location';
+
+  @override
+  String get weatherRefresh => 'Refresh';
+
+  @override
+  String get weatherNow => 'Now';
+
+  @override
+  String get weatherToday => 'Today';
+
+  @override
+  String get weatherHourly => 'Next 24 hours';
+
+  @override
+  String get weatherDaily => '5-day outlook';
+
+  @override
+  String weatherFeelsLike(int temp) {
+    return 'Feels like $temp°';
+  }
+
+  @override
+  String get weatherWind => 'Wind';
+
+  @override
+  String weatherSpeedKmh(int speed) {
+    return '$speed km/h';
+  }
+
+  @override
+  String weatherGustsKmh(int speed) {
+    return 'Gusts $speed km/h';
+  }
+
+  @override
+  String weatherGustsShort(int speed) {
+    return 'G $speed';
+  }
+
+  @override
+  String weatherPrecipProbability(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get weatherHumidity => 'Humidity';
+
+  @override
+  String get weatherCloudCover => 'Cloud cover';
+
+  @override
+  String get weatherPrecipitation => 'Precipitation';
+
+  @override
+  String get weatherPressure => 'Pressure';
+
+  @override
+  String get weatherNoGps =>
+      'No GPS fix yet. Enable location services and try again.';
+
+  @override
+  String get weatherLoadFailed =>
+      'Couldn\'t load the forecast. Check your connection and try again.';
+
+  @override
+  String get weatherRetry => 'Retry';
+
+  @override
+  String get weatherDataBy => 'Data by Open-Meteo';
+
+  @override
+  String get weatherConditionClear => 'Clear';
+
+  @override
+  String get weatherConditionMainlyClear => 'Mainly clear';
+
+  @override
+  String get weatherConditionPartlyCloudy => 'Partly cloudy';
+
+  @override
+  String get weatherConditionOvercast => 'Overcast';
+
+  @override
+  String get weatherConditionFog => 'Fog';
+
+  @override
+  String get weatherConditionDrizzle => 'Drizzle';
+
+  @override
+  String get weatherConditionRain => 'Rain';
+
+  @override
+  String get weatherConditionFreezing => 'Freezing rain';
+
+  @override
+  String get weatherConditionSnow => 'Snow';
+
+  @override
+  String get weatherConditionShowers => 'Showers';
+
+  @override
+  String get weatherConditionThunder => 'Thunderstorm';
+
+  @override
+  String get weatherConditionUnknown => 'Unknown';
+
+  @override
   String get pageIcon => 'Page icon';
 
   @override

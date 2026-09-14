@@ -374,6 +374,210 @@ abstract class AppLocalizations {
   /// **'Recorded flights'**
   String get flightsSubtitle;
 
+  /// No description provided for @tools.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get tools;
+
+  /// No description provided for @weather.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather'**
+  String get weather;
+
+  /// No description provided for @weatherSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forecast at your location'**
+  String get weatherSubtitle;
+
+  /// No description provided for @weatherRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get weatherRefresh;
+
+  /// No description provided for @weatherNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get weatherNow;
+
+  /// No description provided for @weatherToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get weatherToday;
+
+  /// No description provided for @weatherHourly.
+  ///
+  /// In en, this message translates to:
+  /// **'Next 24 hours'**
+  String get weatherHourly;
+
+  /// No description provided for @weatherDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'5-day outlook'**
+  String get weatherDaily;
+
+  /// No description provided for @weatherFeelsLike.
+  ///
+  /// In en, this message translates to:
+  /// **'Feels like {temp}°'**
+  String weatherFeelsLike(int temp);
+
+  /// No description provided for @weatherWind.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind'**
+  String get weatherWind;
+
+  /// No description provided for @weatherSpeedKmh.
+  ///
+  /// In en, this message translates to:
+  /// **'{speed} km/h'**
+  String weatherSpeedKmh(int speed);
+
+  /// No description provided for @weatherGustsKmh.
+  ///
+  /// In en, this message translates to:
+  /// **'Gusts {speed} km/h'**
+  String weatherGustsKmh(int speed);
+
+  /// No description provided for @weatherGustsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'G {speed}'**
+  String weatherGustsShort(int speed);
+
+  /// No description provided for @weatherPrecipProbability.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String weatherPrecipProbability(int percent);
+
+  /// No description provided for @weatherHumidity.
+  ///
+  /// In en, this message translates to:
+  /// **'Humidity'**
+  String get weatherHumidity;
+
+  /// No description provided for @weatherCloudCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud cover'**
+  String get weatherCloudCover;
+
+  /// No description provided for @weatherPrecipitation.
+  ///
+  /// In en, this message translates to:
+  /// **'Precipitation'**
+  String get weatherPrecipitation;
+
+  /// No description provided for @weatherPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Pressure'**
+  String get weatherPressure;
+
+  /// No description provided for @weatherNoGps.
+  ///
+  /// In en, this message translates to:
+  /// **'No GPS fix yet. Enable location services and try again.'**
+  String get weatherNoGps;
+
+  /// No description provided for @weatherLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the forecast. Check your connection and try again.'**
+  String get weatherLoadFailed;
+
+  /// No description provided for @weatherRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get weatherRetry;
+
+  /// No description provided for @weatherDataBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Data by Open-Meteo'**
+  String get weatherDataBy;
+
+  /// No description provided for @weatherConditionClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get weatherConditionClear;
+
+  /// No description provided for @weatherConditionMainlyClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Mainly clear'**
+  String get weatherConditionMainlyClear;
+
+  /// No description provided for @weatherConditionPartlyCloudy.
+  ///
+  /// In en, this message translates to:
+  /// **'Partly cloudy'**
+  String get weatherConditionPartlyCloudy;
+
+  /// No description provided for @weatherConditionOvercast.
+  ///
+  /// In en, this message translates to:
+  /// **'Overcast'**
+  String get weatherConditionOvercast;
+
+  /// No description provided for @weatherConditionFog.
+  ///
+  /// In en, this message translates to:
+  /// **'Fog'**
+  String get weatherConditionFog;
+
+  /// No description provided for @weatherConditionDrizzle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drizzle'**
+  String get weatherConditionDrizzle;
+
+  /// No description provided for @weatherConditionRain.
+  ///
+  /// In en, this message translates to:
+  /// **'Rain'**
+  String get weatherConditionRain;
+
+  /// No description provided for @weatherConditionFreezing.
+  ///
+  /// In en, this message translates to:
+  /// **'Freezing rain'**
+  String get weatherConditionFreezing;
+
+  /// No description provided for @weatherConditionSnow.
+  ///
+  /// In en, this message translates to:
+  /// **'Snow'**
+  String get weatherConditionSnow;
+
+  /// No description provided for @weatherConditionShowers.
+  ///
+  /// In en, this message translates to:
+  /// **'Showers'**
+  String get weatherConditionShowers;
+
+  /// No description provided for @weatherConditionThunder.
+  ///
+  /// In en, this message translates to:
+  /// **'Thunderstorm'**
+  String get weatherConditionThunder;
+
+  /// No description provided for @weatherConditionUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get weatherConditionUnknown;
+
   /// No description provided for @pageIcon.
   ///
   /// In en, this message translates to:

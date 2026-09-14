@@ -70,6 +70,66 @@
   },
   "flights": "Flights",
   "flightsSubtitle": "Recorded flights",
+
+  "tools": "Tools",
+  "weather": "Weather",
+  "weatherSubtitle": "Forecast at your location",
+  "weatherRefresh": "Refresh",
+  "weatherNow": "Now",
+  "weatherToday": "Today",
+  "weatherHourly": "Next 24 hours",
+  "weatherDaily": "5-day outlook",
+  "weatherFeelsLike": "Feels like {temp}°",
+  "@weatherFeelsLike": {
+    "placeholders": {
+      "temp": { "type": "int" }
+    }
+  },
+  "weatherWind": "Wind",
+  "weatherSpeedKmh": "{speed} km/h",
+  "@weatherSpeedKmh": {
+    "placeholders": {
+      "speed": { "type": "int" }
+    }
+  },
+  "weatherGustsKmh": "Gusts {speed} km/h",
+  "@weatherGustsKmh": {
+    "placeholders": {
+      "speed": { "type": "int" }
+    }
+  },
+  "weatherGustsShort": "G {speed}",
+  "@weatherGustsShort": {
+    "placeholders": {
+      "speed": { "type": "int" }
+    }
+  },
+  "weatherPrecipProbability": "{percent}%",
+  "@weatherPrecipProbability": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
+  "weatherHumidity": "Humidity",
+  "weatherCloudCover": "Cloud cover",
+  "weatherPrecipitation": "Precipitation",
+  "weatherPressure": "Pressure",
+  "weatherNoGps": "No GPS fix yet. Enable location services and try again.",
+  "weatherLoadFailed": "Couldn't load the forecast. Check your connection and try again.",
+  "weatherRetry": "Retry",
+  "weatherDataBy": "Data by Open-Meteo",
+  "weatherConditionClear": "Clear",
+  "weatherConditionMainlyClear": "Mainly clear",
+  "weatherConditionPartlyCloudy": "Partly cloudy",
+  "weatherConditionOvercast": "Overcast",
+  "weatherConditionFog": "Fog",
+  "weatherConditionDrizzle": "Drizzle",
+  "weatherConditionRain": "Rain",
+  "weatherConditionFreezing": "Freezing rain",
+  "weatherConditionSnow": "Snow",
+  "weatherConditionShowers": "Showers",
+  "weatherConditionThunder": "Thunderstorm",
+  "weatherConditionUnknown": "Unknown",
   "pageIcon": "Page icon",
   "gridSizePx": "{value} px",
   "@gridSizePx": {

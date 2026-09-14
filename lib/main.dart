@@ -18,6 +18,7 @@ import 'controls/control_widget.dart';
 import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
 import 'controls/vario_sound_settings_sheet.dart';
+import 'controls/weather_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
 import 'data/device_battery_service.dart';
@@ -1775,6 +1776,25 @@ class _MenuContent extends StatelessWidget {
           subtitle: Text(l10n.flightsSubtitle),
           trailing: const Icon(Icons.chevron_right, size: 20),
           onTap: () => showFlightsSheet(context),
+        ),
+        const Divider(height: 1),
+        // Tools section: utilities that complement the dashboard.
+        Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 4),
+          child: Row(
+            children: [
+              Icon(Icons.construction, color: theme.colorScheme.primary, size: 20),
+              const SizedBox(width: 10),
+              Text(l10n.tools, style: theme.textTheme.titleMedium),
+            ],
+          ),
+        ),
+        ListTile(
+          leading: Icon(Icons.air, color: theme.colorScheme.primary),
+          title: Text(l10n.weather),
+          subtitle: Text(l10n.weatherSubtitle),
+          trailing: const Icon(Icons.chevron_right, size: 20),
+          onTap: () => showWeatherSheet(context),
         ),
         const Divider(height: 1),
         ListTile(

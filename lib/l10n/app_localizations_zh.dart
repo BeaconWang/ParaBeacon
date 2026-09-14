@@ -156,6 +156,118 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsSubtitle => '已记录的飞行';
 
   @override
+  String get tools => '工具';
+
+  @override
+  String get weather => '天气';
+
+  @override
+  String get weatherSubtitle => '所在位置的天气预报';
+
+  @override
+  String get weatherRefresh => '刷新';
+
+  @override
+  String get weatherNow => '现在';
+
+  @override
+  String get weatherToday => '今天';
+
+  @override
+  String get weatherHourly => '未来 24 小时';
+
+  @override
+  String get weatherDaily => '5 日预报';
+
+  @override
+  String weatherFeelsLike(int temp) {
+    return '体感 $temp°';
+  }
+
+  @override
+  String get weatherWind => '风';
+
+  @override
+  String weatherSpeedKmh(int speed) {
+    return '$speed 公里/小时';
+  }
+
+  @override
+  String weatherGustsKmh(int speed) {
+    return '阵风 $speed 公里/小时';
+  }
+
+  @override
+  String weatherGustsShort(int speed) {
+    return '阵 $speed';
+  }
+
+  @override
+  String weatherPrecipProbability(int percent) {
+    return '降水概率 $percent%';
+  }
+
+  @override
+  String get weatherHumidity => '湿度';
+
+  @override
+  String get weatherCloudCover => '云量';
+
+  @override
+  String get weatherPrecipitation => '降水';
+
+  @override
+  String get weatherPressure => '气压';
+
+  @override
+  String get weatherNoGps => '尚未获得 GPS 定位。请开启定位服务后重试。';
+
+  @override
+  String get weatherLoadFailed => '天气预报加载失败。请检查网络连接后重试。';
+
+  @override
+  String get weatherRetry => '重试';
+
+  @override
+  String get weatherDataBy => '数据来源 Open-Meteo';
+
+  @override
+  String get weatherConditionClear => '晴';
+
+  @override
+  String get weatherConditionMainlyClear => '基本晴朗';
+
+  @override
+  String get weatherConditionPartlyCloudy => '多云';
+
+  @override
+  String get weatherConditionOvercast => '阴';
+
+  @override
+  String get weatherConditionFog => '雾';
+
+  @override
+  String get weatherConditionDrizzle => '毛毛雨';
+
+  @override
+  String get weatherConditionRain => '雨';
+
+  @override
+  String get weatherConditionFreezing => '冻雨';
+
+  @override
+  String get weatherConditionSnow => '雪';
+
+  @override
+  String get weatherConditionShowers => '阵雨';
+
+  @override
+  String get weatherConditionThunder => '雷暴';
+
+  @override
+  String get weatherConditionUnknown => '未知';
+
+  @override
   String get pageIcon => '页面图标';
 
   @override

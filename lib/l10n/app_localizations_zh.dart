@@ -360,18 +360,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherCloudHigh => '高云';
 
   @override
-  String get weatherLayerWind => '风场';
-
-  @override
-  String get weatherLayerTemperature => '气温';
-
-  @override
-  String get weatherLayerPrecipitation => '降水';
-
-  @override
-  String get weatherLayerClouds => '云';
-
-  @override
   String get weatherHourlyDetail => '逐小时详情';
 
   @override

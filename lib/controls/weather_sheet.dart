@@ -13,12 +13,10 @@ import '../data/weather_providers.dart' show WeatherModel;
 import '../data/weather_units.dart';
 import '../l10n/app_localizations.dart';
 import 'meteogram.dart';
-import 'windy_background.dart';
 
-/// Opens the Weather screen as a full-screen sheet: a Windy-style overlay
-/// layout with an animated full-screen background (wind flow / temperature /
-/// rain / clouds), a nowcast panel, a synchronized meteogram, a 16-day
-/// glance strip and a location search bar (OpenStreetMap Nominatim).
+/// Opens the Weather screen as a full-screen sheet: a nowcast panel, a
+/// synchronized meteogram, a 16-day glance strip and a location search bar
+/// (OpenStreetMap Nominatim).
 ///
 /// All forecast state comes from the unified weather data layer
 /// (weather_service_manager.dart): a single Open-Meteo request pulls the
@@ -59,7 +57,6 @@ class _WeatherSheetState extends State<_WeatherSheet> {
 
   // View / interaction state.
   int? _selectedHour; // null = "now" (current conditions)
-  WindyLayer _layer = WindyLayer.wind;
   _BottomTab _bottomTab = _BottomTab.meteogram;
   WeatherModel _model = WeatherModel.bestMatch;
   int _pastDays = 0;
@@ -290,27 +287,6 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     return data.hourly[idx];
   }
 
-  /// Layer-ready background values (canonical units) from the selected slot
-  /// or the current conditions.
-  WindyBackgroundData get _backgroundData {
-    final data = _data;
-    if (data == null) return WindyBackgroundData.idle;
-    final slot = _selectedSlot;
-    final cur = data.current;
-    final windValue = slot?.windSpeed ?? cur.windSpeed;
-    final tempValue = slot?.temperature ?? cur.temperature;
-    return WindyBackgroundData(
-      windKmh: WeatherUnits.windToKmh(windValue, _units.wind),
-      windDirection: slot?.windDirection ?? cur.windDirection,
-      temperatureC:
-          WeatherUnits.temperatureToCelsius(tempValue, _units.temperature),
-      precipProbability: slot != null
-          ? slot.precipProbability
-          : (cur.precipitation > 0 ? 100.0 : 0.0),
-      cloudCover: slot?.cloudCover ?? cur.cloudCover,
-    );
-  }
-
   // ── Formatting ───────────────────────────────────────────────────────────
 
   String _fmtWind(double v) => '${v.round()} ${_units.wind.symbol}';
@@ -340,43 +316,33 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     return AnimatedBuilder(
       animation: WeatherUnitSettings.instance,
       builder: (context, _) {
-        return ClipRect(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Full-screen animated weather layer.
-              WindyBackground(layer: _layer, data: _backgroundData),
-
-              // Foreground chrome.
-              SafeArea(
-                child: Stack(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTopBar(l10n),
-                        if (_searchResults.isNotEmpty || _searchFailed)
-                          _buildSearchResults(l10n),
-                        Expanded(
-                          child: switch (_phase) {
-                            _Phase.loading => _buildLoading(l10n),
-                            _Phase.error => _buildError(l10n),
-                            _Phase.ready => _buildReady(l10n),
-                          },
-                        ),
-                        _buildBottomPanel(l10n),
-                      ],
-                    ),
-                    // Floating layer switcher on the right edge.
-                    Positioned(
-                      right: 8,
-                      top: MediaQuery.of(context).size.height * 0.24,
-                      child: _buildLayerToggle(l10n),
-                    ),
-                  ],
+        // Static deep-sky backdrop (replaces the old animated background);
+        // keeps the white foreground chrome readable.
+        return DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF0C1B3A), Color(0xFF040917)],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTopBar(l10n),
+                if (_searchResults.isNotEmpty || _searchFailed)
+                  _buildSearchResults(l10n),
+                Expanded(
+                  child: switch (_phase) {
+                    _Phase.loading => _buildLoading(l10n),
+                    _Phase.error => _buildError(l10n),
+                    _Phase.ready => _buildReady(l10n),
+                  },
                 ),
-              ),
-            ],
+                _buildBottomPanel(l10n),
+              ],
+            ),
           ),
         );
       },
@@ -609,37 +575,6 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                 ? () => setState(() => _selectedHour = null)
                 : null,
           ),
-        ],
-      ),
-    );
-  }
-
-  // ── Layer toggle ─────────────────────────────────────────────────────────
-
-  Widget _buildLayerToggle(AppLocalizations l10n) {
-    final layers = [
-      (WindyLayer.wind, Icons.air, l10n.weatherLayerWind),
-      (WindyLayer.temperature, Icons.device_thermostat, l10n.weatherLayerTemperature),
-      (WindyLayer.precipitation, Icons.umbrella_outlined, l10n.weatherLayerPrecipitation),
-      (WindyLayer.clouds, Icons.cloud_outlined, l10n.weatherLayerClouds),
-    ];
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black.withAlpha(90),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final (layer, icon, tooltip) in layers)
-            _LayerButton(
-              icon: icon,
-              tooltip: tooltip,
-              selected: _layer == layer,
-              onTap: () => setState(() => _layer = layer),
-            ),
         ],
       ),
     );
@@ -1375,45 +1310,6 @@ class _MetricChip extends StatelessWidget {
                 fontWeight: FontWeight.w600),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _LayerButton extends StatelessWidget {
-  const _LayerButton({
-    required this.icon,
-    required this.tooltip,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Container(
-          width: 40,
-          height: 40,
-          margin: const EdgeInsets.symmetric(vertical: 1),
-          decoration: BoxDecoration(
-            color: selected ? Colors.orangeAccent.withAlpha(70) : Colors.transparent,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: selected ? Colors.white : Colors.white.withAlpha(160),
-          ),
-        ),
       ),
     );
   }

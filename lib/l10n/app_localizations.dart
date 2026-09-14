@@ -758,30 +758,6 @@ abstract class AppLocalizations {
   /// **'High clouds'**
   String get weatherCloudHigh;
 
-  /// No description provided for @weatherLayerWind.
-  ///
-  /// In en, this message translates to:
-  /// **'Wind flow'**
-  String get weatherLayerWind;
-
-  /// No description provided for @weatherLayerTemperature.
-  ///
-  /// In en, this message translates to:
-  /// **'Temperature'**
-  String get weatherLayerTemperature;
-
-  /// No description provided for @weatherLayerPrecipitation.
-  ///
-  /// In en, this message translates to:
-  /// **'Precipitation'**
-  String get weatherLayerPrecipitation;
-
-  /// No description provided for @weatherLayerClouds.
-  ///
-  /// In en, this message translates to:
-  /// **'Clouds'**
-  String get weatherLayerClouds;
-
   /// No description provided for @weatherHourlyDetail.
   ///
   /// In en, this message translates to:

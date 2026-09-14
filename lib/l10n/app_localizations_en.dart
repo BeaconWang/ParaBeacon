@@ -276,6 +276,132 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherConditionUnknown => 'Unknown';
 
   @override
+  String get weatherSearchHint => 'Search city or place…';
+
+  @override
+  String get weatherSearchFailed => 'Search failed. Check your connection.';
+
+  @override
+  String get weatherNoResults => 'No matching places';
+
+  @override
+  String get weatherTabMeteogram => 'Meteogram';
+
+  @override
+  String get weatherTabDaily => 'Daily';
+
+  @override
+  String get weatherAxisTemp => 'Temp';
+
+  @override
+  String get weatherAxisPrecip => 'Precip';
+
+  @override
+  String get weatherAxisWind => 'Wind';
+
+  @override
+  String get weatherAxisCloud => 'Cloud';
+
+  @override
+  String get weatherModel => 'Model';
+
+  @override
+  String get weatherPastDays => 'Past days';
+
+  @override
+  String get weatherPastDaysOff => 'Off';
+
+  @override
+  String weatherPastDaysShort(int days) {
+    return '$days d';
+  }
+
+  @override
+  String get weatherUnits => 'Units';
+
+  @override
+  String get weatherUnitTemperature => 'Temperature';
+
+  @override
+  String get weatherUnitWindSpeed => 'Wind speed';
+
+  @override
+  String get weatherUnitPrecipitation => 'Precipitation';
+
+  @override
+  String get weatherSunrise => 'Sunrise';
+
+  @override
+  String get weatherSunset => 'Sunset';
+
+  @override
+  String get weatherVisibility => 'Visibility';
+
+  @override
+  String get weatherSoilTemp => 'Soil temp';
+
+  @override
+  String get weatherSoilMoisture => 'Soil moisture';
+
+  @override
+  String get weatherRadiation => 'Radiation';
+
+  @override
+  String get weatherEt0 => 'ET₀ evapotranspiration';
+
+  @override
+  String get weatherCape => 'CAPE';
+
+  @override
+  String get weatherSnowfall => 'Snowfall';
+
+  @override
+  String get weatherRain => 'Rain';
+
+  @override
+  String get weatherCloudLow => 'Low clouds';
+
+  @override
+  String get weatherCloudMid => 'Mid clouds';
+
+  @override
+  String get weatherCloudHigh => 'High clouds';
+
+  @override
+  String get weatherLayerWind => 'Wind flow';
+
+  @override
+  String get weatherLayerTemperature => 'Temperature';
+
+  @override
+  String get weatherLayerPrecipitation => 'Precipitation';
+
+  @override
+  String get weatherLayerClouds => 'Clouds';
+
+  @override
+  String get weatherHourlyDetail => 'Hourly detail';
+
+  @override
+  String get weatherUpperWinds => 'Upper winds';
+
+  @override
+  String get weatherWind80m => '80 m wind';
+
+  @override
+  String get weatherWind120m => '120 m wind';
+
+  @override
+  String weatherSourceBy(String source) {
+    return 'Source: $source';
+  }
+
+  @override
+  String weatherFallbackNotice(String source) {
+    return '$source unavailable — served by fallback';
+  }
+
+  @override
   String get pageIcon => 'Page icon';
 
   @override

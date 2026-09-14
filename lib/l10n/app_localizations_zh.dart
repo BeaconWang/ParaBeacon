@@ -268,6 +268,132 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherConditionUnknown => '未知';
 
   @override
+  String get weatherSearchHint => '搜索城市或地点…';
+
+  @override
+  String get weatherSearchFailed => '搜索失败，请检查网络连接。';
+
+  @override
+  String get weatherNoResults => '没有匹配的地点';
+
+  @override
+  String get weatherTabMeteogram => '气象图';
+
+  @override
+  String get weatherTabDaily => '每日';
+
+  @override
+  String get weatherAxisTemp => '气温';
+
+  @override
+  String get weatherAxisPrecip => '降水';
+
+  @override
+  String get weatherAxisWind => '风';
+
+  @override
+  String get weatherAxisCloud => '云量';
+
+  @override
+  String get weatherModel => '预报模式';
+
+  @override
+  String get weatherPastDays => '历史天数';
+
+  @override
+  String get weatherPastDaysOff => '关闭';
+
+  @override
+  String weatherPastDaysShort(int days) {
+    return '$days 天';
+  }
+
+  @override
+  String get weatherUnits => '单位';
+
+  @override
+  String get weatherUnitTemperature => '温度';
+
+  @override
+  String get weatherUnitWindSpeed => '风速';
+
+  @override
+  String get weatherUnitPrecipitation => '降水量';
+
+  @override
+  String get weatherSunrise => '日出';
+
+  @override
+  String get weatherSunset => '日落';
+
+  @override
+  String get weatherVisibility => '能见度';
+
+  @override
+  String get weatherSoilTemp => '土壤温度';
+
+  @override
+  String get weatherSoilMoisture => '土壤湿度';
+
+  @override
+  String get weatherRadiation => '辐射';
+
+  @override
+  String get weatherEt0 => 'ET₀ 参考蒸散量';
+
+  @override
+  String get weatherCape => 'CAPE 对流能量';
+
+  @override
+  String get weatherSnowfall => '降雪';
+
+  @override
+  String get weatherRain => '降雨';
+
+  @override
+  String get weatherCloudLow => '低云';
+
+  @override
+  String get weatherCloudMid => '中云';
+
+  @override
+  String get weatherCloudHigh => '高云';
+
+  @override
+  String get weatherLayerWind => '风场';
+
+  @override
+  String get weatherLayerTemperature => '气温';
+
+  @override
+  String get weatherLayerPrecipitation => '降水';
+
+  @override
+  String get weatherLayerClouds => '云';
+
+  @override
+  String get weatherHourlyDetail => '逐小时详情';
+
+  @override
+  String get weatherUpperWinds => '高空风';
+
+  @override
+  String get weatherWind80m => '80 米风';
+
+  @override
+  String get weatherWind120m => '120 米风';
+
+  @override
+  String weatherSourceBy(String source) {
+    return '数据来源：$source';
+  }
+
+  @override
+  String weatherFallbackNotice(String source) {
+    return '$source 不可用 — 已由备用数据源提供';
+  }
+
+  @override
   String get pageIcon => '页面图标';
 
   @override

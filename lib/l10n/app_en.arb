@@ -130,6 +130,62 @@
   "weatherConditionShowers": "Showers",
   "weatherConditionThunder": "Thunderstorm",
   "weatherConditionUnknown": "Unknown",
+
+  "weatherSearchHint": "Search city or place…",
+  "weatherSearchFailed": "Search failed. Check your connection.",
+  "weatherNoResults": "No matching places",
+  "weatherTabMeteogram": "Meteogram",
+  "weatherTabDaily": "Daily",
+  "weatherAxisTemp": "Temp",
+  "weatherAxisPrecip": "Precip",
+  "weatherAxisWind": "Wind",
+  "weatherAxisCloud": "Cloud",
+  "weatherModel": "Model",
+  "weatherPastDays": "Past days",
+  "weatherPastDaysOff": "Off",
+  "weatherPastDaysShort": "{days} d",
+  "@weatherPastDaysShort": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "weatherUnits": "Units",
+  "weatherUnitTemperature": "Temperature",
+  "weatherUnitWindSpeed": "Wind speed",
+  "weatherUnitPrecipitation": "Precipitation",
+  "weatherSunrise": "Sunrise",
+  "weatherSunset": "Sunset",
+  "weatherVisibility": "Visibility",
+  "weatherSoilTemp": "Soil temp",
+  "weatherSoilMoisture": "Soil moisture",
+  "weatherRadiation": "Radiation",
+  "weatherEt0": "ET₀ evapotranspiration",
+  "weatherCape": "CAPE",
+  "weatherSnowfall": "Snowfall",
+  "weatherRain": "Rain",
+  "weatherCloudLow": "Low clouds",
+  "weatherCloudMid": "Mid clouds",
+  "weatherCloudHigh": "High clouds",
+  "weatherLayerWind": "Wind flow",
+  "weatherLayerTemperature": "Temperature",
+  "weatherLayerPrecipitation": "Precipitation",
+  "weatherLayerClouds": "Clouds",
+  "weatherHourlyDetail": "Hourly detail",
+  "weatherUpperWinds": "Upper winds",
+  "weatherWind80m": "80 m wind",
+  "weatherWind120m": "120 m wind",
+  "weatherSourceBy": "Source: {source}",
+  "@weatherSourceBy": {
+    "placeholders": {
+      "source": { "type": "String" }
+    }
+  },
+  "weatherFallbackNotice": "{source} unavailable — served by fallback",
+  "@weatherFallbackNotice": {
+    "placeholders": {
+      "source": { "type": "String" }
+    }
+  },
   "pageIcon": "Page icon",
   "gridSizePx": "{value} px",
   "@gridSizePx": {

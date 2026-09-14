@@ -578,6 +578,246 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get weatherConditionUnknown;
 
+  /// No description provided for @weatherSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search city or place…'**
+  String get weatherSearchHint;
+
+  /// No description provided for @weatherSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed. Check your connection.'**
+  String get weatherSearchFailed;
+
+  /// No description provided for @weatherNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching places'**
+  String get weatherNoResults;
+
+  /// No description provided for @weatherTabMeteogram.
+  ///
+  /// In en, this message translates to:
+  /// **'Meteogram'**
+  String get weatherTabMeteogram;
+
+  /// No description provided for @weatherTabDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get weatherTabDaily;
+
+  /// No description provided for @weatherAxisTemp.
+  ///
+  /// In en, this message translates to:
+  /// **'Temp'**
+  String get weatherAxisTemp;
+
+  /// No description provided for @weatherAxisPrecip.
+  ///
+  /// In en, this message translates to:
+  /// **'Precip'**
+  String get weatherAxisPrecip;
+
+  /// No description provided for @weatherAxisWind.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind'**
+  String get weatherAxisWind;
+
+  /// No description provided for @weatherAxisCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud'**
+  String get weatherAxisCloud;
+
+  /// No description provided for @weatherModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get weatherModel;
+
+  /// No description provided for @weatherPastDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Past days'**
+  String get weatherPastDays;
+
+  /// No description provided for @weatherPastDaysOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get weatherPastDaysOff;
+
+  /// No description provided for @weatherPastDaysShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} d'**
+  String weatherPastDaysShort(int days);
+
+  /// No description provided for @weatherUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get weatherUnits;
+
+  /// No description provided for @weatherUnitTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get weatherUnitTemperature;
+
+  /// No description provided for @weatherUnitWindSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind speed'**
+  String get weatherUnitWindSpeed;
+
+  /// No description provided for @weatherUnitPrecipitation.
+  ///
+  /// In en, this message translates to:
+  /// **'Precipitation'**
+  String get weatherUnitPrecipitation;
+
+  /// No description provided for @weatherSunrise.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunrise'**
+  String get weatherSunrise;
+
+  /// No description provided for @weatherSunset.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunset'**
+  String get weatherSunset;
+
+  /// No description provided for @weatherVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get weatherVisibility;
+
+  /// No description provided for @weatherSoilTemp.
+  ///
+  /// In en, this message translates to:
+  /// **'Soil temp'**
+  String get weatherSoilTemp;
+
+  /// No description provided for @weatherSoilMoisture.
+  ///
+  /// In en, this message translates to:
+  /// **'Soil moisture'**
+  String get weatherSoilMoisture;
+
+  /// No description provided for @weatherRadiation.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiation'**
+  String get weatherRadiation;
+
+  /// No description provided for @weatherEt0.
+  ///
+  /// In en, this message translates to:
+  /// **'ET₀ evapotranspiration'**
+  String get weatherEt0;
+
+  /// No description provided for @weatherCape.
+  ///
+  /// In en, this message translates to:
+  /// **'CAPE'**
+  String get weatherCape;
+
+  /// No description provided for @weatherSnowfall.
+  ///
+  /// In en, this message translates to:
+  /// **'Snowfall'**
+  String get weatherSnowfall;
+
+  /// No description provided for @weatherRain.
+  ///
+  /// In en, this message translates to:
+  /// **'Rain'**
+  String get weatherRain;
+
+  /// No description provided for @weatherCloudLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low clouds'**
+  String get weatherCloudLow;
+
+  /// No description provided for @weatherCloudMid.
+  ///
+  /// In en, this message translates to:
+  /// **'Mid clouds'**
+  String get weatherCloudMid;
+
+  /// No description provided for @weatherCloudHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High clouds'**
+  String get weatherCloudHigh;
+
+  /// No description provided for @weatherLayerWind.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind flow'**
+  String get weatherLayerWind;
+
+  /// No description provided for @weatherLayerTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get weatherLayerTemperature;
+
+  /// No description provided for @weatherLayerPrecipitation.
+  ///
+  /// In en, this message translates to:
+  /// **'Precipitation'**
+  String get weatherLayerPrecipitation;
+
+  /// No description provided for @weatherLayerClouds.
+  ///
+  /// In en, this message translates to:
+  /// **'Clouds'**
+  String get weatherLayerClouds;
+
+  /// No description provided for @weatherHourlyDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly detail'**
+  String get weatherHourlyDetail;
+
+  /// No description provided for @weatherUpperWinds.
+  ///
+  /// In en, this message translates to:
+  /// **'Upper winds'**
+  String get weatherUpperWinds;
+
+  /// No description provided for @weatherWind80m.
+  ///
+  /// In en, this message translates to:
+  /// **'80 m wind'**
+  String get weatherWind80m;
+
+  /// No description provided for @weatherWind120m.
+  ///
+  /// In en, this message translates to:
+  /// **'120 m wind'**
+  String get weatherWind120m;
+
+  /// No description provided for @weatherSourceBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Source: {source}'**
+  String weatherSourceBy(String source);
+
+  /// No description provided for @weatherFallbackNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'{source} unavailable — served by fallback'**
+  String weatherFallbackNotice(String source);
+
   /// No description provided for @pageIcon.
   ///
   /// In en, this message translates to:

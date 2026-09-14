@@ -87,6 +87,62 @@
   "weatherConditionShowers": "阵雨",
   "weatherConditionThunder": "雷暴",
   "weatherConditionUnknown": "未知",
+
+  "weatherSearchHint": "搜索城市或地点…",
+  "weatherSearchFailed": "搜索失败，请检查网络连接。",
+  "weatherNoResults": "没有匹配的地点",
+  "weatherTabMeteogram": "气象图",
+  "weatherTabDaily": "每日",
+  "weatherAxisTemp": "气温",
+  "weatherAxisPrecip": "降水",
+  "weatherAxisWind": "风",
+  "weatherAxisCloud": "云量",
+  "weatherModel": "预报模式",
+  "weatherPastDays": "历史天数",
+  "weatherPastDaysOff": "关闭",
+  "weatherPastDaysShort": "{days} 天",
+  "@weatherPastDaysShort": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "weatherUnits": "单位",
+  "weatherUnitTemperature": "温度",
+  "weatherUnitWindSpeed": "风速",
+  "weatherUnitPrecipitation": "降水量",
+  "weatherSunrise": "日出",
+  "weatherSunset": "日落",
+  "weatherVisibility": "能见度",
+  "weatherSoilTemp": "土壤温度",
+  "weatherSoilMoisture": "土壤湿度",
+  "weatherRadiation": "辐射",
+  "weatherEt0": "ET₀ 参考蒸散量",
+  "weatherCape": "CAPE 对流能量",
+  "weatherSnowfall": "降雪",
+  "weatherRain": "降雨",
+  "weatherCloudLow": "低云",
+  "weatherCloudMid": "中云",
+  "weatherCloudHigh": "高云",
+  "weatherLayerWind": "风场",
+  "weatherLayerTemperature": "气温",
+  "weatherLayerPrecipitation": "降水",
+  "weatherLayerClouds": "云",
+  "weatherHourlyDetail": "逐小时详情",
+  "weatherUpperWinds": "高空风",
+  "weatherWind80m": "80 米风",
+  "weatherWind120m": "120 米风",
+  "weatherSourceBy": "数据来源：{source}",
+  "@weatherSourceBy": {
+    "placeholders": {
+      "source": { "type": "String" }
+    }
+  },
+  "weatherFallbackNotice": "{source} 不可用 — 已由备用数据源提供",
+  "@weatherFallbackNotice": {
+    "placeholders": {
+      "source": { "type": "String" }
+    }
+  },
   "pageIcon": "页面图标",
   "gridSizePx": "{value} 像素",
 

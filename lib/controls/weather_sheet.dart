@@ -555,27 +555,49 @@ class _WeatherSheetState extends State<_WeatherSheet> {
 
   Widget _buildReady(AppLocalizations l10n) {
     final data = _data!;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _NowcastPanel(
-            data: data,
-            slot: _selectedSlot,
-            units: _units,
-            placeName: _placeName ?? _coordsLabel(),
-            timezone: data.timezone,
-            fmtWind: _fmtWind,
-            fmtGust: _fmtGust,
-            fmtTemp: _fmtTemp,
-            fmtHour: (t) => _fmtHour(context, t),
-            onBackToNow: _selectedHour != null
-                ? () => setState(() => _selectedHour = null)
-                : null,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The daily forecast is a bonus: it only appears when the panel is
+        // tall enough to keep the nowcast card fully visible without
+        // scrolling (short screens / large text scaling keep the compact
+        // layout and rely on the "Daily" tab of the bottom panel).
+        final room = constraints.maxHeight -
+            _DailyForecastSection.reservedForNowcast;
+        final dayCount =
+            _DailyForecastSection.visibleDayCount(room, data.daily.length);
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _NowcastPanel(
+                data: data,
+                slot: _selectedSlot,
+                units: _units,
+                placeName: _placeName ?? _coordsLabel(),
+                timezone: data.timezone,
+                fmtWind: _fmtWind,
+                fmtGust: _fmtGust,
+                fmtTemp: _fmtTemp,
+                fmtHour: (t) => _fmtHour(context, t),
+                onBackToNow: _selectedHour != null
+                    ? () => setState(() => _selectedHour = null)
+                    : null,
+              ),
+              if (dayCount > 0) ...[
+                const SizedBox(height: 10),
+                _DailyForecastSection(
+                  days: data.daily.take(dayCount).toList(growable: false),
+                  units: _units,
+                  locale: Localizations.localeOf(context).toString(),
+                  fmtTemp: _fmtTemp,
+                  fmtWind: _fmtWind,
+                ),
+              ],
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1211,6 +1233,228 @@ class _NowcastPanel extends StatelessWidget {
   String _fmtAmount(double v) =>
       '${v.toStringAsFixed(units.precipitation == PrecipitationUnit.inch ? 2 : 1)} '
       '${units.precipitation.symbol}';
+}
+
+// ── Daily forecast ───────────────────────────────────────────────────────────
+
+/// Vertical daily forecast list rendered below the nowcast card.
+///
+/// One row per day: condition icon, temperature range drawn as a bar
+/// positioned inside the range covered by the visible days, precipitation
+/// probability and maximum wind.
+///
+/// The list is deliberately *not* independently scrollable — it shows as
+/// many days as the available height allows, so the whole panel keeps a
+/// single scroll physics. When there is not enough room for
+/// [_minRows] rows the caller simply omits the section.
+class _DailyForecastSection extends StatelessWidget {
+  const _DailyForecastSection({
+    required this.days,
+    required this.units,
+    required this.locale,
+    required this.fmtTemp,
+    required this.fmtWind,
+  });
+
+  /// Height kept for the nowcast card (and its gap) before the forecast
+  /// section may use the remaining space.
+  static const double reservedForNowcast = 250;
+
+  static const double _sectionPadding = 16;
+  static const double _headerHeight = 22;
+  static const double _rowHeight = 32;
+  static const int _minRows = 3;
+
+  /// How many of the [total] days fit in [availableHeight]; `0` when the
+  /// section should not be shown at all.
+  static int visibleDayCount(double availableHeight, int total) {
+    if (total <= 0) return 0;
+    final usable = availableHeight - _sectionPadding - _headerHeight;
+    if (usable < _rowHeight * _minRows) return 0;
+    return math.min(usable ~/ _rowHeight, total);
+  }
+
+  final List<WeatherDay> days;
+  final WeatherUnits units;
+  final String locale;
+  final String Function(double) fmtTemp;
+  final String Function(double) fmtWind;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final coldest = days.map((d) => d.tMin).reduce(math.min);
+    final hottest = days.map((d) => d.tMax).reduce(math.max);
+    final span = (hottest - coldest).abs() < 0.5 ? 1.0 : hottest - coldest;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(100),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: _headerHeight,
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_month_outlined,
+                    size: 13, color: Colors.white54),
+                const SizedBox(width: 6),
+                Text(
+                  l10n.weatherTabDaily,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const Spacer(),
+                const Icon(Icons.water_drop, size: 10, color: Colors.white38),
+                const SizedBox(width: 2),
+                Text(
+                  '%',
+                  style:
+                      TextStyle(color: Colors.white.withAlpha(100), fontSize: 10),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.air, size: 11, color: Colors.white38),
+              ],
+            ),
+          ),
+          for (var i = 0; i < days.length; i++)
+            _buildRow(
+              label: i == 0
+                  ? l10n.weatherToday
+                  : DateFormat.E(locale).format(days[i].date),
+              day: days[i],
+              coldest: coldest,
+              span: span,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRow({
+    required String label,
+    required WeatherDay day,
+    required double coldest,
+    required double span,
+  }) {
+    final cold = _tempPaletteColor(
+        WeatherUnits.temperatureToCelsius(day.tMin, units.temperature));
+    final warm = _tempPaletteColor(
+        WeatherUnits.temperatureToCelsius(day.tMax, units.temperature));
+
+    return SizedBox(
+      height: _rowHeight,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 44,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Icon(kindIcon(day.kind), size: 18, color: Colors.orangeAccent),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 32,
+            child: Text(
+              fmtTemp(day.tMin),
+              textAlign: TextAlign.right,
+              style: TextStyle(color: Colors.white.withAlpha(140), fontSize: 11),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final w = constraints.maxWidth;
+                final left = ((day.tMin - coldest) / span) * w;
+                final width =
+                    (((day.tMax - day.tMin) / span) * w).clamp(6.0, w);
+                return Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    Container(
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(20),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    Positioned(
+                      left: left.clamp(0.0, w - width),
+                      width: width,
+                      child: Container(
+                        height: 6,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(3),
+                          gradient: LinearGradient(
+                              colors: [cold.withAlpha(200), warm.withAlpha(230)]),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 32,
+            child: Text(
+              fmtTemp(day.tMax),
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 26,
+            child: day.precipProbability > 0
+                ? Text(
+                    '${day.precipProbability.round()}%',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        color: Colors.lightBlueAccent, fontSize: 10),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 46,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.air, size: 10, color: _gustHeatColor(day.windMax)),
+                const SizedBox(width: 2),
+                Flexible(
+                  child: Text(
+                    fmtWind(day.windMax),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: Colors.white.withAlpha(140), fontSize: 10),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Hourly detail table ──────────────────────────────────────────────────────

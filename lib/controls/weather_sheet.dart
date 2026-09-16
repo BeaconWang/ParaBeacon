@@ -1272,19 +1272,20 @@ class _NowcastPanel extends StatelessWidget {
       '${units.precipitation.symbol}';
 }
 
-// ── Forecast (daily list + wind profile) ───────────────────────────────────
+// ── Forecast panels (daily forecast / wind speed) ──────────────────────────
 
-/// The forecast blocks of the weather panel, top to bottom:
+/// The two swipeable forecast panels of the weather sheet:
 ///
-/// 1. *Forecast daily* — one row per forecast day (day1 … dayN). Tapping a day
-///    moves the panel to that date while keeping the hour of day in view, so
-///    the wind profile below stays comparable from one day to the next.
-/// 2. *Wind speed (time)* — one row per altitude, every row read at the very
-///    same instant: the scrubbed hour, or "now" when nothing is scrubbed.
+/// * *Forecast daily* — one row per forecast day (day1 … dayN), each with its
+///   condition, precipitation, gusts, wind direction and sun times. Tapping a
+///   day moves the panel to that date while keeping the hour of day in view.
+/// * *Wind speed (time)* — one row per altitude, every row read at the very
+///   same instant: the scrubbed hour, or "now" when nothing is scrubbed.
 ///
-/// Both blocks are plain columns: the panel itself is the only scrollable,
-/// which keeps vertical scrolling inside the sheet predictable.
-class _ForecastSection extends StatelessWidget {
+/// Swipe left/right — or tap either title — to switch panel. Both pages live
+/// in a fixed-height [PageView], so the sheet keeps a stable layout and the
+/// panel itself stays the only vertical scrollable.
+class _ForecastSection extends StatefulWidget {
   const _ForecastSection({
     required this.days,
     required this.profileHour,
@@ -1333,16 +1334,16 @@ class _ForecastSection extends StatelessWidget {
   /// Jumps the panel to that date, at the hour of day currently in view.
   final ValueChanged<DateTime> onSelectDay;
 
+  @override
+  State<_ForecastSection> createState() => _ForecastSectionState();
+}
+
+class _ForecastSectionState extends State<_ForecastSection> {
   static const double _dayRowHeight = 40;
   static const double _levelRowHeight = 26;
-  static const double _titleHeight = 16;
+  static const double _tabHeight = 26;
+  static const double _indicatorHeight = 12;
 
-  static const TextStyle _titleStyle = TextStyle(
-    color: Colors.white70,
-    fontSize: 11,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.4,
-  );
   static const TextStyle _dimStyle =
       TextStyle(color: Colors.white54, fontSize: 11);
   static const TextStyle _brightStyle = TextStyle(
@@ -1353,49 +1354,137 @@ class _ForecastSection extends StatelessWidget {
   static const TextStyle _detailStyle =
       TextStyle(color: Colors.white54, fontSize: 10);
 
+  final PageController _controller = PageController();
+  int _page = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final hour = profileHour;
-    final levels = windAloftLevels(elevationMeters: elevation);
+    final hour = widget.profileHour;
+    final levels = windAloftLevels(elevationMeters: widget.elevation);
     final scaleMax = _scaleMax(levels, hour);
+    final titles = <String>[
+      l10n.weatherForecastDaily,
+      l10n.weatherWindSpeedAt(widget.timeLabel),
+    ];
+    // Height of the tallest page: the sheet then keeps the same layout
+    // whichever panel is on screen.
+    final height = math.max(
+      widget.days.length * _dayRowHeight,
+      levels.length * _levelRowHeight,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: _titleHeight,
-          child: Text(l10n.weatherForecastDaily, style: _titleStyle),
-        ),
-        for (var i = 0; i < days.length; i++) _buildDayRow(context, i),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: _titleHeight,
-          child: Text(
-            l10n.weatherWindSpeedAt(timeLabel),
-            style: _titleStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          height: _tabHeight,
+          child: Row(
+            children: [
+              for (var i = 0; i < titles.length; i++)
+                Expanded(child: _buildTab(titles[i], i)),
+            ],
           ),
         ),
-        for (final level in levels) _buildLevelRow(level, hour, scaleMax),
+        _buildIndicator(),
+        SizedBox(
+          height: height,
+          child: PageView(
+            controller: _controller,
+            onPageChanged: (i) => setState(() => _page = i),
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < widget.days.length; i++)
+                    _buildDayRow(context, i),
+                ],
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final level in levels)
+                    _buildLevelRow(level, hour, scaleMax),
+                ],
+              ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  /// Title of one panel; tapping it slides the [PageView] to that panel.
+  Widget _buildTab(String title, int index) {
+    final selected = _page == index;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _controller.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        ),
+        child: Align(
+          alignment: index == 0 ? Alignment.centerLeft : Alignment.centerRight,
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: selected ? Colors.white : Colors.white54,
+              fontSize: 11,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Two-dot pager under the titles.
+  Widget _buildIndicator() {
+    return SizedBox(
+      height: _indicatorHeight,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (var i = 0; i < 2; i++)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: _page == i ? 14 : 6,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _page == i ? Colors.orangeAccent : Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
   Widget _buildDayRow(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context);
-    final day = days[index];
-    final selected = _sameDay(day.date, selectedDate);
+    final day = widget.days[index];
+    final selected = _sameDay(day.date, widget.selectedDate);
     final label = _isToday(index, day)
         ? l10n.weatherToday
-        : DateFormat('EEE d', locale).format(day.date);
+        : DateFormat('EEE d', widget.locale).format(day.date);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => onSelectDay(day.date),
+        onTap: () => widget.onSelectDay(day.date),
         borderRadius: BorderRadius.circular(8),
         child: Container(
           height: _dayRowHeight,
@@ -1425,9 +1514,9 @@ class _ForecastSection extends StatelessWidget {
                   ),
                   Icon(kindIcon(day.kind), size: 14, color: Colors.orangeAccent),
                   const SizedBox(width: 8),
-                  Text(fmtTemp(day.tMin), style: _dimStyle),
+                  Text(widget.fmtTemp(day.tMin), style: _dimStyle),
                   const Text(' / ', style: _dimStyle),
-                  Text(fmtTemp(day.tMax), style: _brightStyle),
+                  Text(widget.fmtTemp(day.tMax), style: _brightStyle),
                   const Spacer(),
                   if (day.precipProbability > 0)
                     Text(
@@ -1440,13 +1529,13 @@ class _ForecastSection extends StatelessWidget {
                   SizedBox(
                     width: 58,
                     child: Text(
-                      fmtWind(day.windMax),
+                      widget.fmtWind(day.windMax),
                       textAlign: TextAlign.right,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: _gustHeatColor(
-                            WeatherUnits.windToKmh(day.windMax, units.wind)),
+                        color: _gustHeatColor(WeatherUnits.windToKmh(
+                            day.windMax, widget.units.wind)),
                         fontSize: 11,
                       ),
                     ),
@@ -1467,12 +1556,12 @@ class _ForecastSection extends StatelessWidget {
   Widget _buildDetailLine(AppLocalizations l10n, WeatherDay day) {
     final parts = <String>[
       kindLabel(l10n, day.kind),
-      fmtAmount(day.precipSum),
+      widget.fmtAmount(day.precipSum),
       l10n.weatherGustsShort(day.windGustsMax.round()),
     ];
     final snowfall = day.snowfallSum;
     if (snowfall != null && snowfall > 0) {
-      parts.add('${l10n.weatherSnowfall} ${fmtAmount(snowfall)}');
+      parts.add('${l10n.weatherSnowfall} ${widget.fmtAmount(snowfall)}');
     }
     return Row(
       children: [
@@ -1503,8 +1592,6 @@ class _ForecastSection extends StatelessWidget {
     );
   }
 
-  DateFormat get _sunTime => DateFormat('HH:mm', locale);
-
   Widget _buildLevelRow(
     WindAloftLevel level,
     WeatherHour? hour,
@@ -1513,7 +1600,7 @@ class _ForecastSection extends StatelessWidget {
     final value = hour == null ? null : level.read(hour);
     final heat = value == null
         ? Colors.white24
-        : _gustHeatColor(WeatherUnits.windToKmh(value, units.wind));
+        : _gustHeatColor(WeatherUnits.windToKmh(value, widget.units.wind));
     final frac = value == null || scaleMax == null || scaleMax <= 0
         ? 0.0
         : (value / scaleMax).clamp(0.0, 1.0);
@@ -1550,7 +1637,7 @@ class _ForecastSection extends StatelessWidget {
           SizedBox(
             width: 58,
             child: Text(
-              value == null ? '–' : fmtWind(value),
+              value == null ? '–' : widget.fmtWind(value),
               textAlign: TextAlign.right,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1565,8 +1652,10 @@ class _ForecastSection extends StatelessWidget {
     );
   }
 
+  DateFormat get _sunTime => DateFormat('HH:mm', widget.locale);
+
   bool _isToday(int index, WeatherDay day) {
-    final now = currentTime;
+    final now = widget.currentTime;
     if (now == null) return index == 0;
     return _sameDay(day.date, now);
   }

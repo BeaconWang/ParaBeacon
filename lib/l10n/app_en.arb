@@ -171,6 +171,12 @@
   "weatherUpperWinds": "Upper winds",
   "weatherWind80m": "80 m wind",
   "weatherWind120m": "120 m wind",
+  "weatherAltitudeMeters": "{meters} m",
+  "@weatherAltitudeMeters": {
+    "placeholders": {
+      "meters": { "type": "int" }
+    }
+  },
   "weatherSourceBy": "Source: {source}",
   "@weatherSourceBy": {
     "placeholders": {

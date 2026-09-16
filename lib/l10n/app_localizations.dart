@@ -788,6 +788,12 @@ abstract class AppLocalizations {
   /// **'120 m wind'**
   String get weatherWind120m;
 
+  /// No description provided for @weatherAltitudeMeters.
+  ///
+  /// In en, this message translates to:
+  /// **'{meters} m'**
+  String weatherAltitudeMeters(int meters);
+
   /// No description provided for @weatherSourceBy.
   ///
   /// In en, this message translates to:

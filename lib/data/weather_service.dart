@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 
@@ -321,6 +322,12 @@ class WeatherHour {
   final double? visibility; // meters
   final double? windSpeed80m;
   final double? windSpeed120m;
+
+  /// Upper-air wind speed, keyed by pressure level (hPa).
+  ///
+  /// Supplied by Open-Meteo's pressure-level variables; null for providers
+  /// that do not expose them. See [kWindAloftPressureLevels].
+  final Map<int, double>? windSpeedByLevel;
   final double? soilTemperature;
   final double? shortwaveRadiation;
   final double? soilMoisture; // m³/m³
@@ -348,6 +355,7 @@ class WeatherHour {
     this.visibility,
     this.windSpeed80m,
     this.windSpeed120m,
+    this.windSpeedByLevel,
     this.soilTemperature,
     this.shortwaveRadiation,
     this.soilMoisture,
@@ -369,6 +377,7 @@ class WeatherHour {
     double? windGusts,
     double? windSpeed80m,
     double? windSpeed120m,
+    Map<int, double>? windSpeedByLevel,
     double? soilTemperature,
     double? et0,
   }) {
@@ -392,6 +401,7 @@ class WeatherHour {
       visibility: visibility,
       windSpeed80m: windSpeed80m ?? this.windSpeed80m,
       windSpeed120m: windSpeed120m ?? this.windSpeed120m,
+      windSpeedByLevel: windSpeedByLevel ?? this.windSpeedByLevel,
       soilTemperature: soilTemperature ?? this.soilTemperature,
       shortwaveRadiation: shortwaveRadiation,
       soilMoisture: soilMoisture,
@@ -463,6 +473,102 @@ class WeatherDay {
   }
 }
 
+// ── Wind aloft (upper-air profile) ──────────────────────────────────────────
+
+/// Pressure levels (hPa) whose wind speed is requested as upper-air data,
+/// in ascending altitude order.
+///
+/// Chosen to cover the band a paraglider actually flies through: roughly
+/// 550 m … 5.5 km above sea level at sea level locations, thinning out
+/// automatically when the site itself sits high (see [windAloftLevels]).
+const List<int> kWindAloftPressureLevels = [950, 900, 850, 700, 500];
+
+/// Above-ground levels (metres AGL) Open-Meteo exposes directly. 10 m is the
+/// standard "surface" wind that every provider reports.
+const List<int> kWindAloftGroundLevels = [10, 80, 120];
+
+/// Standard-atmosphere altitude (metres AMSL) of the pressure level [hPa].
+///
+/// Inverse of the barometric formula the app already uses to turn a pressure
+/// reading into an altitude (`1013.25 · (1 − h/44330)^5.255`).
+int pressureAltitudeMeters(int hPa) =>
+    (44330 * (1 - math.pow(hPa / 1013.25, 1 / 5.255))).round();
+
+/// One selectable altitude of the upper-air wind profile.
+///
+/// The weather panel renders one swipeable page per level; every page plots
+/// the forecast wind speed at that altitude above the *current* location and
+/// for the *current* time window.
+class WindAloftLevel {
+  const WindAloftLevel({
+    required this.metersAgl,
+    required this.read,
+    this.pressureHPa,
+  });
+
+  /// Altitude above ground level, in metres.
+  final int metersAgl;
+
+  /// The pressure level this altitude was derived from; null for the
+  /// above-ground levels (10/80/120 m) that Open-Meteo reports directly.
+  final int? pressureHPa;
+
+  /// Reads this level's wind speed out of an hourly sample, in the requested
+  /// wind unit. Null when the sample carries no value for the level.
+  final double? Function(WeatherHour hour) read;
+
+  /// Reads [hour] and rounds to an integer, or null when unavailable.
+  int? readInt(WeatherHour hour) => read(hour)?.round();
+
+  @override
+  bool operator ==(Object other) =>
+      other is WindAloftLevel &&
+      other.metersAgl == metersAgl &&
+      other.pressureHPa == pressureHPa;
+
+  @override
+  int get hashCode => Object.hash(metersAgl, pressureHPa);
+}
+
+/// Builds the wind-aloft levels that make sense at a site [elevationMeters]
+/// above sea level (Open-Meteo's grid elevation), lowest altitude first.
+///
+/// The three above-ground levels always lead the list; a pressure level is
+/// only kept when its standard-atmosphere altitude clears the terrain by at
+/// least [minClearanceMeters], so pages never show wind "inside the hill".
+/// Altitudes are rounded to 50 m for display.
+List<WindAloftLevel> windAloftLevels({
+  double? elevationMeters,
+  int minClearanceMeters = 100,
+}) {
+  final ground = (elevationMeters ?? 0).round();
+
+  double? Function(WeatherHour) groundReader(int meters) => switch (meters) {
+        10 => (WeatherHour h) => h.windSpeed,
+        80 => (WeatherHour h) => h.windSpeed80m,
+        _ => (WeatherHour h) => h.windSpeed120m,
+      };
+
+  final levels = <WindAloftLevel>[
+    for (final meters in kWindAloftGroundLevels)
+      WindAloftLevel(metersAgl: meters, read: groundReader(meters)),
+  ];
+
+  for (final hPa in kWindAloftPressureLevels) {
+    final agl = pressureAltitudeMeters(hPa) - ground;
+    if (agl < minClearanceMeters) continue;
+    levels.add(
+      WindAloftLevel(
+        metersAgl: (agl / 50).round() * 50,
+        pressureHPa: hPa,
+        read: (WeatherHour h) => h.windSpeedByLevel?[hPa],
+      ),
+    );
+  }
+
+  return levels;
+}
+
 /// The complete unified forecast response for one location, regardless of
 /// which vendor adapter produced it.
 class WeatherData {
@@ -489,6 +595,10 @@ class WeatherData {
   /// (location-local wall clock). Used to place the "now" marker on charts.
   final DateTime? currentTime;
 
+  /// Terrain elevation of the forecast location in metres, as reported by
+  /// Open-Meteo. Used to turn pressure levels into altitudes above ground.
+  final double? elevation;
+
   const WeatherData({
     required this.current,
     required this.hourly,
@@ -498,6 +608,7 @@ class WeatherData {
     this.timezone,
     this.utcOffsetSeconds,
     this.currentTime,
+    this.elevation,
   });
 }
 

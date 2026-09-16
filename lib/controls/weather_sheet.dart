@@ -557,14 +557,14 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     final data = _data!;
     return LayoutBuilder(
       builder: (context, constraints) {
-        // The daily forecast is a bonus: it only appears when the panel is
+        // The altitude pages are a bonus: they only appear when the panel is
         // tall enough to keep the nowcast card fully visible without
         // scrolling (short screens / large text scaling keep the compact
         // layout and rely on the "Daily" tab of the bottom panel).
-        final room = constraints.maxHeight -
-            _DailyForecastSection.reservedForNowcast;
+        final room =
+            constraints.maxHeight - _WindAloftSection.reservedForNowcast;
         final dayCount =
-            _DailyForecastSection.visibleDayCount(room, data.daily.length);
+            _WindAloftSection.visibleDayCount(room, data.daily.length);
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
           child: Column(
@@ -586,12 +586,14 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               ),
               if (dayCount > 0) ...[
                 const SizedBox(height: 10),
-                _DailyForecastSection(
+                _WindAloftSection(
                   days: data.daily.take(dayCount).toList(growable: false),
+                  hours: data.hourly,
                   units: _units,
                   locale: Localizations.localeOf(context).toString(),
-                  fmtTemp: _fmtTemp,
                   fmtWind: _fmtWind,
+                  elevation: data.elevation,
+                  currentTime: data.currentTime,
                 ),
               ],
             ],
@@ -1235,25 +1237,65 @@ class _NowcastPanel extends StatelessWidget {
       '${units.precipitation.symbol}';
 }
 
-// ── Daily forecast ───────────────────────────────────────────────────────────
+// ── Wind aloft (swipeable altitude pages) ───────────────────────────────────
 
-/// Vertical daily forecast list rendered below the nowcast card.
+/// One swipeable page: the wind forecast at a single altitude.
 ///
-/// One row per day: condition icon, temperature range drawn as a bar
-/// positioned inside the range covered by the visible days, precipitation
-/// probability and maximum wind.
+/// Holds the daily wind-speed envelope (min → max) at [level] above the
+/// current location. The row of the current day additionally carries the
+/// value forecast for the current hour, drawn as a marker on its bar.
+class _WindAloftPageData {
+  const _WindAloftPageData({required this.level, required this.days});
+
+  final WindAloftLevel level;
+  final List<_WindAloftDay> days;
+}
+
+/// Daily wind-speed envelope at one altitude, in the requested wind unit.
+class _WindAloftDay {
+  const _WindAloftDay({
+    required this.date,
+    required this.precipProbability,
+    this.min,
+    this.max,
+    this.now,
+  });
+
+  final DateTime date;
+  final double precipProbability;
+  final double? min;
+  final double? max;
+
+  /// Value of the sample at (or right after) the location's current time.
+  /// Only set for the day that contains it.
+  final double? now;
+}
+
+/// Vertical daily wind forecast rendered below the nowcast card.
+///
+/// The section is a horizontal [PageView]: every page shows the same days,
+/// but for a different altitude above the current location — the three
+/// above-ground levels (10/80/120 m) followed by every pressure level that
+/// clears the terrain. Swiping left/right (or the chevrons and dots in the
+/// header) walks the wind profile up the column of air, so a pilot can see
+/// how the forecast wind builds with height without leaving the panel.
+///
+/// One row per day: the wind-speed envelope drawn as a bar on a scale shared
+/// by all pages, the current-hour marker, and the precipitation probability.
 ///
 /// The list is deliberately *not* independently scrollable — it shows as
 /// many days as the available height allows, so the whole panel keeps a
 /// single scroll physics. When there is not enough room for
 /// [_minRows] rows the caller simply omits the section.
-class _DailyForecastSection extends StatelessWidget {
-  const _DailyForecastSection({
+class _WindAloftSection extends StatefulWidget {
+  const _WindAloftSection({
     required this.days,
+    required this.hours,
     required this.units,
     required this.locale,
-    required this.fmtTemp,
     required this.fmtWind,
+    this.elevation,
+    this.currentTime,
   });
 
   /// Height kept for the nowcast card (and its gap) before the forecast
@@ -1274,18 +1316,69 @@ class _DailyForecastSection extends StatelessWidget {
     return math.min(usable ~/ _rowHeight, total);
   }
 
+  /// Days to render, one row each, oldest first.
   final List<WeatherDay> days;
+
+  /// Hourly series the per-altitude daily envelopes are derived from.
+  final List<WeatherHour> hours;
   final WeatherUnits units;
   final String locale;
-  final String Function(double) fmtTemp;
   final String Function(double) fmtWind;
+
+  /// Terrain elevation of the location: turns pressure levels into altitudes
+  /// above ground.
+  final double? elevation;
+
+  /// Location-local "now", used for the marker on the current day's bar.
+  final DateTime? currentTime;
+
+  @override
+  State<_WindAloftSection> createState() => _WindAloftSectionState();
+}
+
+class _WindAloftSectionState extends State<_WindAloftSection> {
+  late final PageController _controller;
+  late List<_WindAloftPageData> _pages;
+  int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+    _pages = _buildPages();
+  }
+
+  @override
+  void didUpdateWidget(covariant _WindAloftSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final changed = oldWidget.hours != widget.hours ||
+        oldWidget.elevation != widget.elevation ||
+        oldWidget.units != widget.units ||
+        oldWidget.days.length != widget.days.length;
+    if (!changed) return;
+
+    _pages = _buildPages();
+    if (_index > _pages.length - 1) {
+      _index = 0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _controller.hasClients) _controller.jumpToPage(0);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final coldest = days.map((d) => d.tMin).reduce(math.min);
-    final hottest = days.map((d) => d.tMax).reduce(math.max);
-    final span = (hottest - coldest).abs() < 0.5 ? 1.0 : hottest - coldest;
+    if (_pages.isEmpty) return const SizedBox.shrink();
+
+    final index = math.min(_index, _pages.length - 1);
+    final scale = _scaleMax;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
@@ -1297,62 +1390,193 @@ class _DailyForecastSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildHeader(l10n, _pages[index]),
           SizedBox(
-            height: _headerHeight,
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_month_outlined,
-                    size: 13, color: Colors.white54),
-                const SizedBox(width: 6),
-                Text(
-                  l10n.weatherTabDaily,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const Spacer(),
-                const Icon(Icons.water_drop, size: 10, color: Colors.white38),
-                const SizedBox(width: 2),
-                Text(
-                  '%',
-                  style:
-                      TextStyle(color: Colors.white.withAlpha(100), fontSize: 10),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.air, size: 11, color: Colors.white38),
-              ],
+            height: widget.days.length * _WindAloftSection._rowHeight,
+            child: PageView.builder(
+              controller: _controller,
+              itemCount: _pages.length,
+              onPageChanged: (i) => setState(() => _index = i),
+              itemBuilder: (context, i) => _buildPage(l10n, _pages[i], scale),
             ),
           ),
-          for (var i = 0; i < days.length; i++)
-            _buildRow(
-              label: i == 0
-                  ? l10n.weatherToday
-                  : DateFormat.E(locale).format(days[i].date),
-              day: days[i],
-              coldest: coldest,
-              span: span,
-            ),
         ],
       ),
     );
   }
 
+  /// Groups the hourly series per altitude and per calendar day.
+  List<_WindAloftPageData> _buildPages() {
+    final hoursByDay = <DateTime, List<WeatherHour>>{};
+    for (final hour in widget.hours) {
+      hoursByDay
+          .putIfAbsent(
+              DateTime(hour.time.year, hour.time.month, hour.time.day),
+              () => <WeatherHour>[])
+          .add(hour);
+    }
+
+    final now = widget.currentTime;
+    final today = now == null ? null : DateTime(now.year, now.month, now.day);
+
+    final pages = <_WindAloftPageData>[];
+    for (final level in windAloftLevels(elevationMeters: widget.elevation)) {
+      final rows = <_WindAloftDay>[];
+      for (final day in widget.days) {
+        final key = DateTime(day.date.year, day.date.month, day.date.day);
+        final samples = hoursByDay[key];
+        double? lo;
+        double? hi;
+        double? at;
+        for (final sample in samples ?? const <WeatherHour>[]) {
+          final value = level.read(sample);
+          if (value == null) continue;
+          if (lo == null || value < lo) lo = value;
+          if (hi == null || value > hi) hi = value;
+          if (now != null && at == null && !sample.time.isBefore(now)) {
+            at = value;
+          }
+        }
+        rows.add(
+          _WindAloftDay(
+            date: day.date,
+            precipProbability: day.precipProbability,
+            min: lo,
+            max: hi,
+            now: key == today ? at : null,
+          ),
+        );
+      }
+      // Levels the provider or model does not carry would be empty pages.
+      if (rows.every((r) => r.max == null)) continue;
+      pages.add(_WindAloftPageData(level: level, days: rows));
+    }
+    return pages;
+  }
+
+  /// Upper bound shared by every page, so bars stay comparable across
+  /// altitudes. Rounded up to a tidy step (in km/h, the scale's reference
+  /// unit) and converted back to the requested wind unit.
+  double get _scaleMax {
+    var highest = 0.0;
+    for (final page in _pages) {
+      for (final day in page.days) {
+        final max = day.max;
+        if (max != null && max > highest) highest = max;
+      }
+    }
+    if (highest <= 0) return 1;
+    final kmh = WeatherUnits.windToKmh(highest, widget.units.wind);
+    final step = kmh > 90 ? 20.0 : (kmh > 45 ? 10.0 : 5.0);
+    final nice = (kmh / step).ceil() * step;
+    return math.max(
+        WeatherUnits.convertWindFromKmh(nice, widget.units.wind), highest);
+  }
+
+  /// Altitude of the current page plus the swipe affordances: chevrons for
+  /// pointer-driven platforms and a dot per altitude.
+  Widget _buildHeader(AppLocalizations l10n, _WindAloftPageData page) {
+    final index = math.min(_index, _pages.length - 1);
+    return SizedBox(
+      height: _WindAloftSection._headerHeight,
+      child: Row(
+        children: [
+          const Icon(Icons.air, size: 13, color: Colors.white54),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '${l10n.weatherUpperWinds} · '
+              '${l10n.weatherAltitudeMeters(page.level.metersAgl)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          _buildArrow(back: true, index: index),
+          _buildDots(index),
+          _buildArrow(back: false, index: index),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDots(int index) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < _pages.length; i++)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOutCubic,
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            width: i == index ? 12 : 5,
+            height: 5,
+            decoration: BoxDecoration(
+              color: i == index ? Colors.white : Colors.white.withAlpha(70),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildArrow({required bool back, required int index}) {
+    final enabled = back ? index > 0 : index < _pages.length - 1;
+    return InkWell(
+      onTap: enabled
+          ? () => _controller.animateToPage(
+                index + (back ? -1 : 1),
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+              )
+          : null,
+      borderRadius: BorderRadius.circular(6),
+      child: SizedBox(
+        width: 18,
+        height: _WindAloftSection._headerHeight,
+        child: Icon(
+          back ? Icons.chevron_left : Icons.chevron_right,
+          size: 16,
+          color: enabled ? Colors.white70 : Colors.white.withAlpha(40),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPage(
+      AppLocalizations l10n, _WindAloftPageData page, double scale) {
+    return Column(
+      children: [
+        for (var i = 0; i < page.days.length; i++)
+          _buildRow(
+            label: i == 0
+                ? l10n.weatherToday
+                : DateFormat.E(widget.locale).format(page.days[i].date),
+            day: page.days[i],
+            scale: scale,
+          ),
+      ],
+    );
+  }
+
   Widget _buildRow({
     required String label,
-    required WeatherDay day,
-    required double coldest,
-    required double span,
+    required _WindAloftDay day,
+    required double scale,
   }) {
-    final cold = _tempPaletteColor(
-        WeatherUnits.temperatureToCelsius(day.tMin, units.temperature));
-    final warm = _tempPaletteColor(
-        WeatherUnits.temperatureToCelsius(day.tMax, units.temperature));
+    final max = day.max;
+    final min = day.min;
+    final heat = max == null
+        ? Colors.white24
+        : _gustHeatColor(WeatherUnits.windToKmh(max, widget.units.wind));
 
     return SizedBox(
-      height: _rowHeight,
+      height: _WindAloftSection._rowHeight,
       child: Row(
         children: [
           SizedBox(
@@ -1365,12 +1589,12 @@ class _DailyForecastSection extends StatelessWidget {
                   color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),
-          Icon(kindIcon(day.kind), size: 18, color: Colors.orangeAccent),
+          Icon(Icons.air, size: 14, color: heat),
           const SizedBox(width: 6),
           SizedBox(
             width: 32,
             child: Text(
-              fmtTemp(day.tMin),
+              min == null ? '–' : widget.fmtWind(min),
               textAlign: TextAlign.right,
               style: TextStyle(color: Colors.white.withAlpha(140), fontSize: 11),
             ),
@@ -1380,9 +1604,6 @@ class _DailyForecastSection extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final w = constraints.maxWidth;
-                final left = ((day.tMin - coldest) / span) * w;
-                final width =
-                    (((day.tMax - day.tMin) / span) * w).clamp(6.0, w);
                 return Stack(
                   alignment: Alignment.centerLeft,
                   children: [
@@ -1393,18 +1614,38 @@ class _DailyForecastSection extends StatelessWidget {
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
-                    Positioned(
-                      left: left.clamp(0.0, w - width),
-                      width: width,
-                      child: Container(
-                        height: 6,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(3),
-                          gradient: LinearGradient(
-                              colors: [cold.withAlpha(200), warm.withAlpha(230)]),
+                    if (max != null)
+                      Positioned(
+                        left: ((min ?? 0) / scale * w)
+                            .clamp(0.0, math.max(0.0, w - 6)),
+                        width: (((max - (min ?? 0)) / scale) * w).clamp(6.0, w),
+                        child: Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(3),
+                            gradient: LinearGradient(
+                                colors: [heat.withAlpha(170), heat]),
+                          ),
                         ),
                       ),
-                    ),
+                    if (day.now != null)
+                      Positioned(
+                        left: (day.now! / scale * w - 2.5)
+                            .clamp(0.0, math.max(0.0, w - 5)),
+                        child: Container(
+                          width: 5,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(2.5),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black.withAlpha(140),
+                                  blurRadius: 2),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 );
               },
@@ -1414,7 +1655,7 @@ class _DailyForecastSection extends StatelessWidget {
           SizedBox(
             width: 32,
             child: Text(
-              fmtTemp(day.tMax),
+              max == null ? '–' : widget.fmtWind(max),
               style: const TextStyle(
                   color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
             ),
@@ -1430,26 +1671,6 @@ class _DailyForecastSection extends StatelessWidget {
                         color: Colors.lightBlueAccent, fontSize: 10),
                   )
                 : null,
-          ),
-          const SizedBox(width: 6),
-          SizedBox(
-            width: 46,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.air, size: 10, color: _gustHeatColor(day.windMax)),
-                const SizedBox(width: 2),
-                Flexible(
-                  child: Text(
-                    fmtWind(day.windMax),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: Colors.white.withAlpha(140), fontSize: 10),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

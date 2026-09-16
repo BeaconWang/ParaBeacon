@@ -420,7 +420,11 @@ void main() {
       expect(uri.queryParameters['precipitation_unit'], 'mm');
 
       final hourly = uri.queryParameters['hourly']!;
-      for (final p in [
+      // Exact match on purpose: a missing separator would glue two variables
+      // together ("wind_speed_500hPasoil_temperature_0cm") while still
+      // passing a `contains` check — and Open-Meteo answers HTTP 400, i.e.
+      // "always load failed", for the whole request.
+      expect(hourly.split(','), [
         'temperature_2m',
         'apparent_temperature',
         'relative_humidity_2m',
@@ -428,25 +432,26 @@ void main() {
         'precipitation',
         'rain',
         'snowfall',
+        'weather_code',
         'cloud_cover',
         'cloud_cover_low',
         'cloud_cover_mid',
         'cloud_cover_high',
         'visibility',
         'wind_speed_10m',
-        'wind_speed_80m',
-        'wind_speed_120m',
         'wind_direction_10m',
         'wind_gusts_10m',
+        'wind_speed_80m',
+        'wind_speed_120m',
+        // One swipeable altitude page per pressure level.
+        for (final hPa in kWindAloftPressureLevels) 'wind_speed_${hPa}hPa',
         'soil_temperature_0cm',
         'shortwave_radiation',
         'soil_moisture_0_to_1cm',
         'et0_fao_evapotranspiration',
         'cape',
         'is_day',
-      ]) {
-        expect(hourly.contains(p), isTrue, reason: 'missing hourly param: $p');
-      }
+      ]);
       final daily = uri.queryParameters['daily']!;
       for (final p in ['sunrise', 'sunset', 'temperature_2m_max',
         'wind_gusts_10m_max', 'precipitation_probability_max']) {
@@ -770,6 +775,8 @@ void main() {
       expect(GeocodedPlace.tryParse('nope'), isNull); // not a map
     });
   });
+
+  windAloftTests();
 }
 
 /// Minimal in-memory provider used to exercise manager failover without
@@ -815,4 +822,115 @@ class _FakeProvider extends WeatherProvider {
       daily: [],
     );
   }
+}
+
+// ── Wind aloft (upper-air profile) ──────────────────────────────────────────
+
+/// Coverage for the upper-air wind levels behind the swipeable altitude
+/// pages of the weather panel. Called from [main].
+void windAloftTests() {
+  group('wind aloft', () {
+  test('pressure levels are turned into altitudes above ground', () {
+    // Sea level: every requested level is available.
+    final seaLevel = windAloftLevels(elevationMeters: 0);
+    expect(seaLevel.first.metersAgl, 10);
+    expect(seaLevel.map((l) => l.metersAgl).take(3), [10, 80, 120]);
+    expect(seaLevel.length, 3 + kWindAloftPressureLevels.length);
+
+    // A high site drops the levels that would sit inside the terrain. The
+    // three above-ground levels always stay, whatever the elevation.
+    final highSite = windAloftLevels(elevationMeters: 1800);
+    expect(highSite.map((l) => l.metersAgl).take(3), [10, 80, 120]);
+    expect(
+      highSite
+          .where((l) => l.pressureHPa != null)
+          .every((l) => l.metersAgl >= 100),
+      isTrue,
+    );
+    expect(highSite.length, lessThan(seaLevel.length));
+    // 950 hPa (~540 m AMSL) is underground here, 500 hPa is not.
+    expect(
+      highSite.any((l) => l.pressureHPa == 950),
+      isFalse,
+    );
+    expect(highSite.any((l) => l.pressureHPa == 500), isTrue);
+  });
+
+  test('wind speeds are read per level from an hourly sample', () {
+    final hour = WeatherHour(
+      time: DateTime(2026, 9, 14, 10),
+      temperature: 20,
+      precipitation: 0,
+      precipProbability: 0,
+      windSpeed: 12,
+      windDirection: 270,
+      windGusts: 16,
+      windSpeed80m: 18,
+      windSpeed120m: 21,
+      windSpeedByLevel: const {950: 25, 700: 40},
+      kind: WeatherKind.clear,
+    );
+    final levels = windAloftLevels(elevationMeters: 0);
+    final at10 = levels.firstWhere((l) => l.metersAgl == 10);
+    final at120 = levels.firstWhere((l) => l.metersAgl == 120);
+    final at850 =
+        levels.firstWhere((l) => l.pressureHPa == 850, orElse: () => at10);
+    expect(at10.read(hour), 12);
+    expect(at120.read(hour), 21);
+    expect(at850.read(hour), isNull);
+    expect(levels.firstWhere((l) => l.pressureHPa == 700).read(hour), 40);
+  });
+
+  test('Open-Meteo payload carries the levels and the grid elevation', () {
+    final data = OpenMeteoProvider.parse({
+      'elevation': 1500.0,
+      'current': {'time': '2026-09-14T10:00'},
+      'hourly': {
+        'time': ['2026-09-14T10:00', '2026-09-14T11:00'],
+        'wind_speed_10m': [10.0, 12.0],
+        'wind_speed_950hPa': [20.0, 22.0],
+        'wind_speed_500hPa': [60.0, 62.0],
+      },
+      'daily': {
+        'time': ['2026-09-14'],
+        'temperature_2m_max': [20.0],
+        'temperature_2m_min': [10.0],
+      },
+    });
+
+    expect(data.elevation, 1500);
+    expect(data.hourly.first.windSpeedByLevel, {950: 20, 500: 60});
+    expect(data.hourly.last.windSpeedByLevel, {950: 22, 500: 62});
+  });
+
+  test('levels are converted together with the rest of the wind', () {
+    final metric = OpenMeteoProvider.parse({
+      'elevation': 0,
+      'current': {'time': '2026-09-14T10:00'},
+      'hourly': {
+        'time': ['2026-09-14T10:00'],
+        'wind_speed_10m': [10.0],
+        'wind_speed_500hPa': [40.0],
+      },
+      'daily': {
+        'time': ['2026-09-14'],
+        'temperature_2m_max': [20.0],
+        'temperature_2m_min': [10.0],
+      },
+    });
+    expect(metric.hourly.first.windSpeedByLevel, {500: 40});
+
+    final imperial = toRequestedUnits(
+      metric,
+      const WeatherUnits(
+        temperature: TemperatureUnit.fahrenheit,
+        wind: WindSpeedUnit.mph,
+        precipitation: PrecipitationUnit.inch,
+      ),
+    );
+    expect(imperial.elevation, 0);
+    expect(imperial.hourly.first.windSpeedByLevel![500],
+        closeTo(40 / 1.609344, 0.001));
+  });
+});
 }

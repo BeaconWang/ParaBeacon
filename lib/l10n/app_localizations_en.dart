@@ -383,6 +383,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherWind120m => '120 m wind';
 
   @override
+  String weatherAltitudeMeters(int meters) {
+    return '$meters m';
+  }
+
+  @override
   String weatherSourceBy(String source) {
     return 'Source: $source';
   }

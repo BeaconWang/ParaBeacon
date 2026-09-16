@@ -128,6 +128,12 @@
   "weatherUpperWinds": "高空风",
   "weatherWind80m": "80 米风",
   "weatherWind120m": "120 米风",
+  "weatherAltitudeMeters": "{meters} 米",
+  "@weatherAltitudeMeters": {
+    "placeholders": {
+      "meters": { "type": "int" }
+    }
+  },
   "weatherSourceBy": "数据来源：{source}",
   "@weatherSourceBy": {
     "placeholders": {

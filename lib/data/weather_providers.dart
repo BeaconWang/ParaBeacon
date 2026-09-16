@@ -143,6 +143,9 @@ WeatherData toRequestedUnits(WeatherData data, WeatherUnits units) {
   double? wn(double? kmh) => kmh == null ? null : w(kmh);
   double p(double mm) => WeatherUnits.convertPrecipFromMm(mm, precip);
   double? pn(double? mm) => mm == null ? null : p(mm);
+  Map<int, double>? wm(Map<int, double>? levels) => levels == null
+      ? null
+      : {for (final e in levels.entries) e.key: w(e.value)};
 
   return WeatherData(
     current: data.current.copyWith(
@@ -164,6 +167,7 @@ WeatherData toRequestedUnits(WeatherData data, WeatherUnits units) {
           windGusts: w(h.windGusts),
           windSpeed80m: wn(h.windSpeed80m),
           windSpeed120m: wn(h.windSpeed120m),
+          windSpeedByLevel: wm(h.windSpeedByLevel),
           soilTemperature: tn(h.soilTemperature),
           et0: pn(h.et0),
         ),
@@ -184,6 +188,7 @@ WeatherData toRequestedUnits(WeatherData data, WeatherUnits units) {
     timezone: data.timezone,
     utcOffsetSeconds: data.utcOffsetSeconds,
     currentTime: data.currentTime,
+    elevation: data.elevation,
   );
 }
 
@@ -192,7 +197,8 @@ WeatherData toRequestedUnits(WeatherData data, WeatherUnits units) {
 /// Forecast from api.open-meteo.com/v1/forecast. This is the full-featured
 /// adapter: one request pulls the complete parameter set (temperature,
 /// apparent temp, humidity, precipitation probability/rain/snowfall, cloud
-/// layers, visibility, winds at 10/80/120 m, gusts, soil temperature,
+/// layers, visibility, winds at 10/80/120 m plus the upper-air pressure
+/// levels, gusts, soil temperature,
 /// shortwave radiation, soil moisture, ET0, CAPE), the daily summary with
 /// sunrise/sunset, up to 92 days of history (`past_days`), a model
 /// selection (`models`) and the user's unit preferences
@@ -212,15 +218,39 @@ class OpenMeteoProvider extends WeatherProvider {
 
   /// Full hourly parameter list — the "single, complex request" that feeds
   /// every panel of the weather screen.
-  static const String _hourlyParams =
-      'temperature_2m,apparent_temperature,relative_humidity_2m,'
-      'precipitation_probability,precipitation,rain,snowfall,weather_code,'
-      'cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,'
-      'visibility,'
-      'wind_speed_10m,wind_direction_10m,wind_gusts_10m,'
-      'wind_speed_80m,wind_speed_120m,'
-      'soil_temperature_0cm,shortwave_radiation,soil_moisture_0_to_1cm,'
-      'et0_fao_evapotranspiration,cape,is_day';
+  static final String _hourlyParams = [
+    'temperature_2m',
+    'apparent_temperature',
+    'relative_humidity_2m',
+    'precipitation_probability',
+    'precipitation',
+    'rain',
+    'snowfall',
+    'weather_code',
+    'cloud_cover',
+    'cloud_cover_low',
+    'cloud_cover_mid',
+    'cloud_cover_high',
+    'visibility',
+    'wind_speed_10m',
+    'wind_direction_10m',
+    'wind_gusts_10m',
+    'wind_speed_80m',
+    'wind_speed_120m',
+    // Upper-air wind on pressure levels: one swipeable altitude page per
+    // level in the weather panel (see kWindAloftPressureLevels).
+    ..._pressureLevelParams,
+    'soil_temperature_0cm',
+    'shortwave_radiation',
+    'soil_moisture_0_to_1cm',
+    'et0_fao_evapotranspiration',
+    'cape',
+    'is_day',
+  ].join(',');
+
+  /// `wind_speed_<hPa>hPa` columns for every requested pressure level.
+  static List<String> get _pressureLevelParams =>
+      kWindAloftPressureLevels.map((hPa) => 'wind_speed_${hPa}hPa').toList();
 
   static const String _dailyParams =
       'weather_code,temperature_2m_max,temperature_2m_min,'
@@ -331,6 +361,7 @@ class OpenMeteoProvider extends WeatherProvider {
         visibility: WxParse.dOrNull(s['visibility']),
         windSpeed80m: WxParse.dOrNull(s['wind_speed_80m']),
         windSpeed120m: WxParse.dOrNull(s['wind_speed_120m']),
+        windSpeedByLevel: _parsePressureLevels(s),
         soilTemperature: WxParse.dOrNull(s['soil_temperature_0cm']),
         shortwaveRadiation: WxParse.dOrNull(s['shortwave_radiation']),
         soilMoisture: WxParse.dOrNull(s['soil_moisture_0_to_1cm']),
@@ -372,7 +403,22 @@ class OpenMeteoProvider extends WeatherProvider {
       timezone: '${j['timezone']}'.isEmpty ? null : '${j['timezone']}',
       utcOffsetSeconds: WxParse.i(j['utc_offset_seconds']),
       currentTime: DateTime.tryParse('${cur['time']}'),
+      // Grid elevation of the location: turns pressure levels into
+      // altitudes above ground for the wind-aloft pages.
+      elevation: WxParse.dOrNull(j['elevation']),
     );
+  }
+
+  /// Reads the `wind_speed_<hPa>hPa` columns of one hourly row, skipping the
+  /// levels the (model-specific) payload does not carry.
+  static Map<int, double>? _parsePressureLevels(Map<String, dynamic> hour) {
+    Map<int, double>? levels;
+    for (final hPa in kWindAloftPressureLevels) {
+      final value = WxParse.dOrNull(hour['wind_speed_${hPa}hPa']);
+      if (value == null) continue;
+      (levels ??= <int, double>{})[hPa] = value;
+    }
+    return levels;
   }
 }
 

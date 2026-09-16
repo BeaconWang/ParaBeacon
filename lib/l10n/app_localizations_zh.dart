@@ -375,6 +375,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherWind120m => '120 米风';
 
   @override
+  String weatherAltitudeMeters(int meters) {
+    return '$meters 米';
+  }
+
+  @override
   String weatherSourceBy(String source) {
     return '数据来源：$source';
   }

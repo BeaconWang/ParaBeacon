@@ -589,7 +589,9 @@ class _WeatherSheetState extends State<_WeatherSheet> {
             const SizedBox(height: 10),
             _ForecastSection(
               days: data.daily,
-              profileHour: slot,
+              hours: data.hourly,
+              anchorIndex: _hourlySelection,
+              nowIndex: _nowIndex,
               timeLabel: _selectedSlot == null
                   ? l10n.weatherNow
                   : _fmtHour(context, _selectedSlot!.time),
@@ -602,6 +604,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               currentTime: data.currentTime,
               selectedDate: slot?.time ?? data.daily.first.date,
               onSelectDay: _selectDay,
+              onSelectHour: (i) => setState(() => _selectedHour = i),
             ),
           ],
         ],
@@ -619,6 +622,15 @@ class _WeatherSheetState extends State<_WeatherSheet> {
       if (!hour.time.isBefore(now)) return hour;
     }
     return data.hourly.isEmpty ? null : data.hourly.last;
+  }
+
+  /// Index of [_nowSlot] in the hourly series, or -1 when unknown (the wind
+  /// grid dims the columns before it).
+  int get _nowIndex {
+    final data = _data;
+    final now = data?.currentTime;
+    if (data == null || now == null) return -1;
+    return data.hourly.indexWhere((h) => !h.time.isBefore(now));
   }
 
   /// Points the panel at [day], keeping the hour of day currently in view so
@@ -1292,8 +1304,10 @@ class _NowcastPanel extends StatelessWidget {
 /// * *Forecast daily* — one row per forecast day (day1 … dayN), each with its
 ///   condition, precipitation, gusts, wind direction and sun times. Tapping a
 ///   day moves the panel to that date while keeping the hour of day in view.
-/// * *Wind speed (time)* — one row per altitude, every row read at the very
-///   same instant: the scrubbed hour, or "now" when nothing is scrubbed.
+/// * *Wind speed (time)* — a wind-aloft grid: one row per altitude (highest
+///   on top, surface gusts and wind direction at the bottom) and one column
+///   per hour, starting at the hour the sheet points at ("now", or the
+///   scrubbed hour). Tapping a column scrubs the whole sheet to that hour.
 ///
 /// Swipe left/right — or tap either title — to switch panel. Both pages live
 /// in a fixed-height [PageView], so the sheet keeps a stable layout and the
@@ -1301,7 +1315,8 @@ class _NowcastPanel extends StatelessWidget {
 class _ForecastSection extends StatefulWidget {
   const _ForecastSection({
     required this.days,
-    required this.profileHour,
+    required this.hours,
+    required this.anchorIndex,
     required this.timeLabel,
     required this.units,
     required this.locale,
@@ -1310,6 +1325,8 @@ class _ForecastSection extends StatefulWidget {
     required this.fmtAmount,
     required this.selectedDate,
     required this.onSelectDay,
+    required this.onSelectHour,
+    this.nowIndex = -1,
     this.elevation,
     this.currentTime,
   });
@@ -1317,11 +1334,19 @@ class _ForecastSection extends StatefulWidget {
   /// The forecast horizon, oldest first (day1 … dayN).
   final List<WeatherDay> days;
 
-  /// The single hourly sample every altitude row is read from; null while the
-  /// panel has no hourly series.
-  final WeatherHour? profileHour;
+  /// The full hourly series the wind grid reads its columns from (may include
+  /// `past_days` history).
+  final List<WeatherHour> hours;
 
-  /// "Now", or the time of [profileHour] when the panel is scrubbed.
+  /// Index in [hours] of the leftmost wind-grid column: the scrubbed hour, or
+  /// the hour covering "now". Also the highlighted column.
+  final int anchorIndex;
+
+  /// Index in [hours] of the hour covering "now", or -1 when unknown; earlier
+  /// columns are dimmed.
+  final int nowIndex;
+
+  /// "Now", or the time of the anchor hour when the panel is scrubbed.
   final String timeLabel;
 
   final WeatherUnits units;
@@ -1347,13 +1372,15 @@ class _ForecastSection extends StatefulWidget {
   /// Jumps the panel to that date, at the hour of day currently in view.
   final ValueChanged<DateTime> onSelectDay;
 
+  /// Scrubs the sheet to the hour of the tapped wind-grid column.
+  final ValueChanged<int> onSelectHour;
+
   @override
   State<_ForecastSection> createState() => _ForecastSectionState();
 }
 
 class _ForecastSectionState extends State<_ForecastSection> {
   static const double _dayRowHeight = 40;
-  static const double _levelRowHeight = 26;
   static const double _tabHeight = 26;
   static const double _indicatorHeight = 12;
 
@@ -1379,9 +1406,7 @@ class _ForecastSectionState extends State<_ForecastSection> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final hour = widget.profileHour;
     final levels = windAloftLevels(elevationMeters: widget.elevation);
-    final scaleMax = _scaleMax(levels, hour);
     final titles = <String>[
       l10n.weatherForecastDaily,
       l10n.weatherWindSpeedAt(widget.timeLabel),
@@ -1390,7 +1415,7 @@ class _ForecastSectionState extends State<_ForecastSection> {
     // whichever panel is on screen.
     final height = math.max(
       widget.days.length * _dayRowHeight,
-      levels.length * _levelRowHeight,
+      _WindAloftGrid.heightFor(levels.length),
     );
 
     return Column(
@@ -1425,12 +1450,17 @@ class _ForecastSectionState extends State<_ForecastSection> {
                       _buildDayRow(context, i),
                   ],
                 ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final level in levels)
-                      _buildLevelRow(level, hour, scaleMax),
-                  ],
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: _WindAloftGrid(
+                    levels: levels,
+                    hours: widget.hours,
+                    anchorIndex: widget.anchorIndex,
+                    nowIndex: widget.nowIndex,
+                    units: widget.units,
+                    locale: widget.locale,
+                    onSelectHour: widget.onSelectHour,
+                  ),
                 ),
               ],
             ),
@@ -1611,66 +1641,6 @@ class _ForecastSectionState extends State<_ForecastSection> {
     );
   }
 
-  Widget _buildLevelRow(
-    WindAloftLevel level,
-    WeatherHour? hour,
-    double? scaleMax,
-  ) {
-    final value = hour == null ? null : level.read(hour);
-    final heat = value == null
-        ? Colors.white24
-        : _gustHeatColor(WeatherUnits.windToKmh(value, widget.units.wind));
-    final frac = value == null || scaleMax == null || scaleMax <= 0
-        ? 0.0
-        : (value / scaleMax).clamp(0.0, 1.0);
-
-    return SizedBox(
-      height: _levelRowHeight,
-      child: Row(
-        children: [
-          SizedBox(
-            width: 58,
-            child: Text(
-              '${level.metersAgl} m',
-              textAlign: TextAlign.right,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white70, fontSize: 11),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: frac == 0 ? 0.0001 : frac,
-              child: Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: heat,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 58,
-            child: Text(
-              value == null ? '–' : widget.fmtWind(value),
-              textAlign: TextAlign.right,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: value == null ? Colors.white38 : Colors.white,
-                fontSize: 11,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   DateFormat get _sunTime => DateFormat('HH:mm', widget.locale);
 
   bool _isToday(int index, WeatherDay day) {
@@ -1681,19 +1651,314 @@ class _ForecastSectionState extends State<_ForecastSection> {
 
   static bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+}
 
-  /// Bar scale for the altitude rows: the fastest level at [hour], rounded
-  /// up to a whole 5 units so the longest bar is never flush to the edge.
-  double? _scaleMax(List<WindAloftLevel> levels, WeatherHour? hour) {
-    if (hour == null) return null;
-    double? max;
-    for (final level in levels) {
-      final value = level.read(hour);
-      if (value == null) continue;
-      if (max == null || value > max) max = value;
+// ── Wind-aloft grid (centre panel) ───────────────────────────────────────────
+
+/// The detailed wind-speed panel: a compact wind-aloft grid reading the next
+/// few hours of the forecast, starting at the hour the sheet points at.
+///
+/// Layout — a fixed altitude gutter plus one column per hour:
+///
+/// ```
+///  km/h   14  15  16  17  18  19  20   ← hours from the anchor
+///  5600m   35  36  38  41  43  44  45
+///  3000m   22  23  25  28  30  31  30  ← one row per wind-aloft level,
+///  1450m   14  15  17  19  21  20  18    highest on top
+///   120m    9  10  11  13  14  13  12
+///    80m    8   9  10  12  13  12  11
+///    10m    5   6   7   8   9   8   7  ← surface
+///  Gusts   11  13  15  18  21  19  16
+///  Dir      ↗   ↗   →   →   →   ↘   ↘
+/// ```
+///
+/// Every cell is tinted by the same Beaufort-like heat scale used elsewhere in
+/// the sheet, with the tint strength scaled against the fastest value on
+/// screen, so a glance shows both *how strong* and *when* the wind builds.
+/// Tapping a column scrubs the whole sheet to that hour.
+class _WindAloftGrid extends StatelessWidget {
+  const _WindAloftGrid({
+    required this.levels,
+    required this.hours,
+    required this.anchorIndex,
+    required this.units,
+    required this.locale,
+    required this.onSelectHour,
+    this.nowIndex = -1,
+  });
+
+  /// Wind-aloft levels, lowest first (as [windAloftLevels] returns them); the
+  /// grid renders them top-down highest-first.
+  final List<WindAloftLevel> levels;
+
+  /// The full hourly series.
+  final List<WeatherHour> hours;
+
+  /// Index in [hours] of the leftmost column; also the highlighted column.
+  final int anchorIndex;
+
+  /// Index in [hours] of "now" (-1 when unknown); earlier columns are dimmed.
+  final int nowIndex;
+
+  final WeatherUnits units;
+  final String locale;
+
+  /// Reports the hour index of the tapped column.
+  final ValueChanged<int> onSelectHour;
+
+  static const double _headerHeight = 18;
+  static const double _rowHeight = 22;
+  static const double _gutterWidth = 62;
+
+  /// Narrowest a readable hour column gets; the count of visible hours is
+  /// derived from the available width.
+  static const double _minColumnWidth = 34;
+  static const int _maxColumns = 12;
+
+  /// Rows below the altitudes: surface gusts and surface wind direction.
+  static const int _surfaceRows = 2;
+
+  /// Fixed height of the panel for [levelCount] altitude rows.
+  static double heightFor(int levelCount) =>
+      _headerHeight + (levelCount + _surfaceRows) * _rowHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    if (hours.isEmpty || levels.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
+    // Highest altitude on top, surface at the bottom, right above the
+    // surface gust/direction rows.
+    final rows = levels.reversed.toList(growable: false);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = math.max(0.0, constraints.maxWidth - _gutterWidth);
+        final fits = (available / _minColumnWidth).floor();
+        final columns =
+            math.min(math.min(math.max(1, fits), _maxColumns), hours.length);
+        // Keep the anchor hour leftmost, unless that would run past the end
+        // of the series (then show the last full window).
+        final start =
+            math.min(math.max(0, anchorIndex), hours.length - columns);
+        final columnWidth = available / columns;
+        final scaleMax = _scaleMax(start, columns, rows);
+
+        return SizedBox(
+          height: heightFor(rows.length),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildGutter(l10n, rows),
+              for (var i = start; i < start + columns; i++)
+                SizedBox(
+                  width: columnWidth,
+                  child: _buildColumn(i, rows, scaleMax),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Gutter (altitude labels) ───────────────────────────────────────────────
+
+  Widget _buildGutter(AppLocalizations l10n, List<WindAloftLevel> rows) {
+    return SizedBox(
+      width: _gutterWidth,
+      child: Column(
+        children: [
+          SizedBox(
+            height: _headerHeight,
+            child: Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 6, bottom: 2),
+                child: Text(
+                  units.wind.symbol,
+                  style: const TextStyle(color: Colors.white38, fontSize: 9),
+                ),
+              ),
+            ),
+          ),
+          for (final level in rows)
+            _gutterLabel(
+              '${level.metersAgl} m',
+              // The three levels Open-Meteo reports directly (10/80/120 m) are
+              // the ones a pilot launches into: keep them brighter.
+              bright: level.pressureHPa == null,
+            ),
+          _gutterLabel(l10n.weatherRowGusts, small: true),
+          _gutterLabel(l10n.weatherRowWindDir, small: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _gutterLabel(String label, {bool bright = false, bool small = false}) {
+    return SizedBox(
+      height: _rowHeight,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            label,
+            textAlign: TextAlign.right,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: bright ? Colors.white70 : Colors.white38,
+              fontSize: small ? 9 : 10,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Hour columns ───────────────────────────────────────────────────────────
+
+  Widget _buildColumn(
+    int index,
+    List<WindAloftLevel> rows,
+    double? scaleMax,
+  ) {
+    final hour = hours[index];
+    final selected = index == anchorIndex;
+    final past = nowIndex >= 0 && index < nowIndex;
+    final dayStart =
+        index > 0 && hours[index - 1].time.day != hour.time.day;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onSelectHour(index),
+      child: Opacity(
+        opacity: past ? 0.45 : 1,
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                SizedBox(
+                  height: _headerHeight,
+                  child: Center(
+                    child: Text(
+                      DateFormat('HH', locale).format(hour.time),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                        color: selected
+                            ? Colors.orangeAccent
+                            : (dayStart ? Colors.white : Colors.white54),
+                      ),
+                    ),
+                  ),
+                ),
+                for (final level in rows)
+                  _valueCell(level.read(hour), scaleMax),
+                _valueCell(hour.windGusts, scaleMax, gust: true),
+                SizedBox(
+                  height: _rowHeight,
+                  child: Center(
+                    child: _WindArrow(direction: hour.windDirection, size: 12),
+                  ),
+                ),
+              ],
+            ),
+            // Day boundary, so a column reading "01" is not mistaken for the
+            // same afternoon.
+            if (dayStart)
+              const Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 1,
+                child: ColoredBox(color: Color(0x2EFFFFFF)),
+              ),
+            if (selected)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: ShapeDecoration(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(7),
+                        side: BorderSide(
+                          color: Colors.orangeAccent.withAlpha(170),
+                          width: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// One wind cell: the rounded value, tinted by the heat scale and shaded in
+  /// proportion to the fastest value currently on screen.
+  Widget _valueCell(double? value, double? scaleMax, {bool gust = false}) {
+    if (value == null) {
+      return const SizedBox(
+        height: _rowHeight,
+        child: Center(
+          child: Text('–', style: TextStyle(color: Colors.white24, fontSize: 10)),
+        ),
+      );
     }
-    if (max == null) return null;
-    return math.max(5.0, ((max / 5).ceil() * 5).toDouble());
+    final frac = scaleMax == null || scaleMax <= 0
+        ? 0.0
+        : (value / scaleMax).clamp(0.0, 1.0);
+    final heat = _gustHeatColor(WeatherUnits.windToKmh(value, units.wind));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1.5, vertical: 1),
+      child: Container(
+        height: _rowHeight - 2,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: heat.withAlpha((55 + frac * 165).round()),
+          borderRadius: BorderRadius.circular(4),
+          border: gust
+              ? Border.all(color: heat.withAlpha(190), width: 0.8)
+              : null,
+        ),
+        child: Text(
+          '${value.round()}',
+          maxLines: 1,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: gust ? FontWeight.w700 : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Tint scale of the visible window: the fastest value across the shown
+  /// hours (all altitudes plus gusts), rounded up to a whole 5 units. Using
+  /// the window — not the whole series — keeps a calm evening readable.
+  double? _scaleMax(int start, int columns, List<WindAloftLevel> rows) {
+    double? max;
+    void consider(double? value) {
+      if (value == null) return;
+      if (max == null || value > max!) max = value;
+    }
+
+    for (var i = start; i < start + columns; i++) {
+      final hour = hours[i];
+      for (final level in rows) {
+        consider(level.read(hour));
+      }
+      consider(hour.windGusts);
+    }
+    final peak = max;
+    if (peak == null) return null;
+    return math.max(5.0, ((peak / 5).ceil() * 5).toDouble());
   }
 }
 

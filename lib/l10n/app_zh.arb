@@ -125,6 +125,14 @@
   "weatherCloudMid": "中云",
   "weatherCloudHigh": "高云",
   "weatherHourlyDetail": "逐小时详情",
+  "weatherForecastDaily": "每日预报",
+  "weatherWindSpeedAt": "风速 · {time}",
+  "@weatherWindSpeedAt": {
+    "description": "Title of the wind-vs-altitude list; {time} is the hour every row is read at.",
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
   "weatherUpperWinds": "高空风",
   "weatherWind80m": "80 米风",
   "weatherWind120m": "120 米风",

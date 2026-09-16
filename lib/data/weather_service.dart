@@ -494,11 +494,11 @@ const List<int> kWindAloftGroundLevels = [10, 80, 120];
 int pressureAltitudeMeters(int hPa) =>
     (44330 * (1 - math.pow(hPa / 1013.25, 1 / 5.255))).round();
 
-/// One selectable altitude of the upper-air wind profile.
+/// One altitude row of the upper-air wind profile.
 ///
-/// The weather panel renders one swipeable page per level; every page plots
-/// the forecast wind speed at that altitude above the *current* location and
-/// for the *current* time window.
+/// The weather panel renders one row per level; every row reads the forecast
+/// wind speed at that altitude above the *current* location and for the
+/// *current* time.
 class WindAloftLevel {
   const WindAloftLevel({
     required this.metersAgl,
@@ -535,8 +535,11 @@ class WindAloftLevel {
 ///
 /// The three above-ground levels always lead the list; a pressure level is
 /// only kept when its standard-atmosphere altitude clears the terrain by at
-/// least [minClearanceMeters], so pages never show wind "inside the hill".
-/// Altitudes are rounded to 50 m for display.
+/// least [minClearanceMeters], so rows never show wind "inside the hill".
+///
+/// Altitudes are rounded to 50 m below 2 km and to 100 m above, which keeps
+/// the labels readable (550 m, 1 000 m, 1 450 m, 3 000 m, 5 600 m at a sea
+/// level site) without pretending to a precision the model does not have.
 List<WindAloftLevel> windAloftLevels({
   double? elevationMeters,
   int minClearanceMeters = 100,
@@ -557,9 +560,10 @@ List<WindAloftLevel> windAloftLevels({
   for (final hPa in kWindAloftPressureLevels) {
     final agl = pressureAltitudeMeters(hPa) - ground;
     if (agl < minClearanceMeters) continue;
+    final step = agl > 2000 ? 100 : 50;
     levels.add(
       WindAloftLevel(
-        metersAgl: (agl / 50).round() * 50,
+        metersAgl: (agl / step).round() * step,
         pressureHPa: hPa,
         read: (WeatherHour h) => h.windSpeedByLevel?[hPa],
       ),

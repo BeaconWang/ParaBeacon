@@ -826,8 +826,8 @@ class _FakeProvider extends WeatherProvider {
 
 // ── Wind aloft (upper-air profile) ──────────────────────────────────────────
 
-/// Coverage for the upper-air wind levels behind the swipeable altitude
-/// pages of the weather panel. Called from [main].
+/// Coverage for the upper-air wind levels behind the altitude rows of the
+/// weather panel. Called from [main].
 void windAloftTests() {
   group('wind aloft', () {
   test('pressure levels are turned into altitudes above ground', () {
@@ -836,6 +836,12 @@ void windAloftTests() {
     expect(seaLevel.first.metersAgl, 10);
     expect(seaLevel.map((l) => l.metersAgl).take(3), [10, 80, 120]);
     expect(seaLevel.length, 3 + kWindAloftPressureLevels.length);
+    // Labels round to 50 m below 2 km and to 100 m above, which is what the
+    // altitude rows show at a sea level site.
+    expect(
+      seaLevel.where((l) => l.pressureHPa != null).map((l) => l.metersAgl),
+      [550, 1000, 1450, 3000, 5600],
+    );
 
     // A high site drops the levels that would sit inside the terrain. The
     // three above-ground levels always stay, whatever the elevation.

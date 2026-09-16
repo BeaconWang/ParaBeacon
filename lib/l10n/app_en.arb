@@ -168,6 +168,14 @@
   "weatherCloudMid": "Mid clouds",
   "weatherCloudHigh": "High clouds",
   "weatherHourlyDetail": "Hourly detail",
+  "weatherForecastDaily": "Forecast daily",
+  "weatherWindSpeedAt": "Wind speed · {time}",
+  "@weatherWindSpeedAt": {
+    "description": "Title of the wind-vs-altitude list; {time} is the hour every row is read at.",
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
   "weatherUpperWinds": "Upper winds",
   "weatherWind80m": "80 m wind",
   "weatherWind120m": "120 m wind",

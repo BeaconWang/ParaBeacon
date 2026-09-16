@@ -366,6 +366,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherHourlyDetail => '逐小时详情';
 
   @override
+  String get weatherForecastDaily => '每日预报';
+
+  @override
+  String weatherWindSpeedAt(String time) {
+    return '风速 · $time';
+  }
+
+  @override
   String get weatherUpperWinds => '高空风';
 
   @override

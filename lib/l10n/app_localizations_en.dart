@@ -374,6 +374,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherHourlyDetail => 'Hourly detail';
 
   @override
+  String get weatherForecastDaily => 'Forecast daily';
+
+  @override
+  String weatherWindSpeedAt(String time) {
+    return 'Wind speed · $time';
+  }
+
+  @override
   String get weatherUpperWinds => 'Upper winds';
 
   @override

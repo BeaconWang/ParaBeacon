@@ -770,6 +770,18 @@ abstract class AppLocalizations {
   /// **'Hourly detail'**
   String get weatherHourlyDetail;
 
+  /// No description provided for @weatherForecastDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Forecast daily'**
+  String get weatherForecastDaily;
+
+  /// Title of the wind-vs-altitude list; {time} is the hour every row is read at.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind speed · {time}'**
+  String weatherWindSpeedAt(String time);
+
   /// No description provided for @weatherUpperWinds.
   ///
   /// In en, this message translates to:

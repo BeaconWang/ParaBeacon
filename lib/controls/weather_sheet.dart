@@ -12,6 +12,7 @@ import '../data/weather_service_manager.dart';
 import '../data/weather_providers.dart' show WeatherModel;
 import '../data/weather_units.dart';
 import '../l10n/app_localizations.dart';
+import 'desktop_scrolling.dart';
 
 /// Opens the Weather screen as a full-screen sheet: a nowcast panel, a
 /// synchronized hourly detail table, a 16-day glance strip and a location
@@ -60,6 +61,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
   WeatherModel _model = WeatherModel.bestMatch;
   int _pastDays = 0;
 
+  // Controller of the daily-glance strip, exposed to the mouse-wheel
+  // horizontal scrolling helper (see MouseWheelHScroll).
+  final ScrollController _dailyGlanceScroll = ScrollController();
+
   // Search state.
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
@@ -83,6 +88,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     _searchDebounce?.cancel();
     _searchController.dispose();
     _searchFocus.dispose();
+    _dailyGlanceScroll.dispose();
     super.dispose();
   }
 
@@ -696,7 +702,13 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                       selectedIndex: _hourlySelection,
                       onSelect: (i) => setState(() => _selectedHour = i),
                     )
-                  : _buildDailyGlance(data, l10n),
+                  : MouseWheelHScroll(
+                      controller: _dailyGlanceScroll,
+                      child: ScrollConfiguration(
+                        behavior: const MouseDragScrollBehavior(),
+                        child: _buildDailyGlance(data, l10n),
+                      ),
+                    ),
             ),
           ] else ...[
             const SizedBox(height: 12),
@@ -849,6 +861,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
   Widget _buildDailyGlance(WeatherData data, AppLocalizations l10n) {
     final locale = Localizations.localeOf(context).toString();
     return ListView.separated(
+      controller: _dailyGlanceScroll,
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 4),
       itemCount: data.daily.length,
@@ -1396,25 +1409,31 @@ class _ForecastSectionState extends State<_ForecastSection> {
         _buildIndicator(),
         SizedBox(
           height: height,
-          child: PageView(
-            controller: _controller,
-            onPageChanged: (i) => setState(() => _page = i),
-            children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (var i = 0; i < widget.days.length; i++)
-                    _buildDayRow(context, i),
-                ],
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final level in levels)
-                    _buildLevelRow(level, hour, scaleMax),
-                ],
-              ),
-            ],
+          // Mouse drag swipes the panels on desktop too (touch always could);
+          // wrapped via ScrollConfiguration so the PageView's own scrollbar
+          // suppression keeps applying.
+          child: ScrollConfiguration(
+            behavior: const MouseDragScrollBehavior(),
+            child: PageView(
+              controller: _controller,
+              onPageChanged: (i) => setState(() => _page = i),
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < widget.days.length; i++)
+                      _buildDayRow(context, i),
+                  ],
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final level in levels)
+                      _buildLevelRow(level, hour, scaleMax),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -1782,22 +1801,28 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
     final units = WeatherUnitSettings.instance.units;
     final now = _nowIndex;
 
-    return SizedBox(
-      height: _HourlyDetailTable.tableHeight,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildGutter(l10n, units),
-          Expanded(
-            child: ListView.builder(
-              controller: _scroll,
-              scrollDirection: Axis.horizontal,
-              itemExtent: _HourlyDetailTable._colWidth,
-              itemCount: widget.hours.length,
-              itemBuilder: (context, i) => _buildColumn(i, locale, units, now),
-            ),
+    return MouseWheelHScroll(
+      controller: _scroll,
+      child: ScrollConfiguration(
+        behavior: const MouseDragScrollBehavior(),
+        child: SizedBox(
+          height: _HourlyDetailTable.tableHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildGutter(l10n, units),
+              Expanded(
+                child: ListView.builder(
+                  controller: _scroll,
+                  scrollDirection: Axis.horizontal,
+                  itemExtent: _HourlyDetailTable._colWidth,
+                  itemCount: widget.hours.length,
+                  itemBuilder: (context, i) => _buildColumn(i, locale, units, now),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

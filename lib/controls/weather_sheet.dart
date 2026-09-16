@@ -1658,23 +1658,25 @@ class _ForecastSectionState extends State<_ForecastSection> {
 /// The detailed wind-speed panel: a compact wind-aloft grid reading the next
 /// few hours of the forecast, starting at the hour the sheet points at.
 ///
-/// Layout — a fixed altitude gutter plus one column per hour:
+/// Layout — a fixed altitude gutter plus one column per hour, every altitude
+/// cell carrying an arrow that points where the wind at that level blows TO:
 ///
 /// ```
-///  km/h   14  15  16  17  18  19  20   ← hours from the anchor
-///  5600m   35  36  38  41  43  44  45
-///  3000m   22  23  25  28  30  31  30  ← one row per wind-aloft level,
-///  1450m   14  15  17  19  21  20  18    highest on top
-///   120m    9  10  11  13  14  13  12
-///    80m    8   9  10  12  13  12  11
-///    10m    5   6   7   8   9   8   7  ← surface
-///  Gusts   11  13  15  18  21  19  16
-///  Dir      ↗   ↗   →   →   →   ↘   ↘
+///  km/h   14   15   16   17   18   19   20   ← hours from the anchor
+///  5600m ↗35  ↗36  →38  →41  →43  ↘44  ↘45
+///  3000m ↗22  ↗23  →25  →28  →30  →31  ↘30  ← one row per wind-aloft level,
+///  1450m ↑14  ↗15  ↗17  →19  →21  →20  →18    highest on top
+///   120m  ↑9  ↑10  ↗11  ↗13  ↗14  →13  →12
+///    80m  ↑8   ↑9  ↑10  ↗12  ↗13  ↗12  →11
+///    10m  ↑5   ↑6   ↑7   ↑8   ↑9   ↑8   ↗7  ← surface
+///  Gusts  11   13   15   18   21   19   16
 /// ```
 ///
 /// Every cell is tinted by the same Beaufort-like heat scale used elsewhere in
 /// the sheet, with the tint strength scaled against the fastest value on
-/// screen, so a glance shows both *how strong* and *when* the wind builds.
+/// screen, so a glance shows both *how strong* and *when* the wind builds —
+/// and the arrow column shows how the wind veers with height and with time
+/// (a strong shear between two rows is what a pilot is looking for).
 /// Tapping a column scrubs the whole sheet to that hour.
 class _WindAloftGrid extends StatelessWidget {
   const _WindAloftGrid({
@@ -1710,13 +1712,13 @@ class _WindAloftGrid extends StatelessWidget {
   static const double _rowHeight = 22;
   static const double _gutterWidth = 62;
 
-  /// Narrowest a readable hour column gets; the count of visible hours is
-  /// derived from the available width.
-  static const double _minColumnWidth = 34;
-  static const int _maxColumns = 12;
+  /// Narrowest a readable hour column gets (arrow + value); the count of
+  /// visible hours is derived from the available width.
+  static const double _minColumnWidth = 42;
+  static const int _maxColumns = 10;
 
-  /// Rows below the altitudes: surface gusts and surface wind direction.
-  static const int _surfaceRows = 2;
+  /// Rows below the altitudes: the surface gust row.
+  static const int _surfaceRows = 1;
 
   /// Fixed height of the panel for [levelCount] altitude rows.
   static double heightFor(int levelCount) =>
@@ -1727,7 +1729,7 @@ class _WindAloftGrid extends StatelessWidget {
     if (hours.isEmpty || levels.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
     // Highest altitude on top, surface at the bottom, right above the
-    // surface gust/direction rows.
+    // surface gust row.
     final rows = levels.reversed.toList(growable: false);
 
     return LayoutBuilder(
@@ -1789,7 +1791,6 @@ class _WindAloftGrid extends StatelessWidget {
               bright: level.pressureHPa == null,
             ),
           _gutterLabel(l10n.weatherRowGusts, small: true),
-          _gutterLabel(l10n.weatherRowWindDir, small: true),
         ],
       ),
     );
@@ -1856,14 +1857,12 @@ class _WindAloftGrid extends StatelessWidget {
                   ),
                 ),
                 for (final level in rows)
-                  _valueCell(level.read(hour), scaleMax),
-                _valueCell(hour.windGusts, scaleMax, gust: true),
-                SizedBox(
-                  height: _rowHeight,
-                  child: Center(
-                    child: _WindArrow(direction: hour.windDirection, size: 12),
+                  _valueCell(
+                    level.read(hour),
+                    scaleMax,
+                    direction: level.readDirection(hour),
                   ),
-                ),
+                _valueCell(hour.windGusts, scaleMax, gust: true),
               ],
             ),
             // Day boundary, so a column reading "01" is not mistaken for the
@@ -1898,9 +1897,20 @@ class _WindAloftGrid extends StatelessWidget {
     );
   }
 
-  /// One wind cell: the rounded value, tinted by the heat scale and shaded in
-  /// proportion to the fastest value currently on screen.
-  Widget _valueCell(double? value, double? scaleMax, {bool gust = false}) {
+  /// One wind cell: an arrow pointing where the wind blows TO, followed by the
+  /// rounded speed; tinted by the heat scale and shaded in proportion to the
+  /// fastest value currently on screen.
+  ///
+  /// [direction] is the degrees the wind comes FROM (null when the level or
+  /// the model carries no direction — the value is then shown on its own).
+  /// The gust row has no direction of its own and reuses the surface arrow's
+  /// absence, standing out through its outline instead.
+  Widget _valueCell(
+    double? value,
+    double? scaleMax, {
+    double? direction,
+    bool gust = false,
+  }) {
     if (value == null) {
       return const SizedBox(
         height: _rowHeight,
@@ -1926,14 +1936,25 @@ class _WindAloftGrid extends StatelessWidget {
               ? Border.all(color: heat.withAlpha(190), width: 0.8)
               : null,
         ),
-        child: Text(
-          '${value.round()}',
-          maxLines: 1,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: gust ? FontWeight.w700 : FontWeight.w600,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (direction != null) ...[
+              // White, not the usual accent: the cell tint underneath already
+              // carries the colour information.
+              _WindArrow(direction: direction, size: 11, color: Colors.white),
+              const SizedBox(width: 1),
+            ],
+            Text(
+              '${value.round()}',
+              maxLines: 1,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: gust ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -2468,10 +2489,18 @@ class _WindBadge extends StatelessWidget {
 /// An arrow pointing where the wind is blowing TO (Open-Meteo's direction is
 /// the direction the wind comes FROM, so we rotate by 180°).
 class _WindArrow extends StatelessWidget {
-  const _WindArrow({required this.direction, required this.size});
+  const _WindArrow({
+    required this.direction,
+    required this.size,
+    this.color = Colors.orangeAccent,
+  });
 
   final double direction;
   final double size;
+
+  /// Arrow colour; the wind-aloft grid overrides it to white because its
+  /// cells already carry a coloured tint.
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -2480,7 +2509,7 @@ class _WindArrow extends StatelessWidget {
       child: Icon(
         Icons.arrow_upward,
         size: size,
-        color: Colors.orangeAccent,
+        color: color,
       ),
     );
   }

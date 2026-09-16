@@ -323,11 +323,19 @@ class WeatherHour {
   final double? windSpeed80m;
   final double? windSpeed120m;
 
+  /// Wind direction (degrees the wind comes FROM) at the above-ground levels
+  /// Open-Meteo reports directly; null for providers without upper winds.
+  final double? windDirection80m;
+  final double? windDirection120m;
+
   /// Upper-air wind speed, keyed by pressure level (hPa).
   ///
   /// Supplied by Open-Meteo's pressure-level variables; null for providers
   /// that do not expose them. See [kWindAloftPressureLevels].
   final Map<int, double>? windSpeedByLevel;
+
+  /// Upper-air wind direction (degrees FROM), keyed by pressure level (hPa).
+  final Map<int, double>? windDirectionByLevel;
   final double? soilTemperature;
   final double? shortwaveRadiation;
   final double? soilMoisture; // m³/m³
@@ -355,7 +363,10 @@ class WeatherHour {
     this.visibility,
     this.windSpeed80m,
     this.windSpeed120m,
+    this.windDirection80m,
+    this.windDirection120m,
     this.windSpeedByLevel,
+    this.windDirectionByLevel,
     this.soilTemperature,
     this.shortwaveRadiation,
     this.soilMoisture,
@@ -401,7 +412,10 @@ class WeatherHour {
       visibility: visibility,
       windSpeed80m: windSpeed80m ?? this.windSpeed80m,
       windSpeed120m: windSpeed120m ?? this.windSpeed120m,
+      windDirection80m: windDirection80m,
+      windDirection120m: windDirection120m,
       windSpeedByLevel: windSpeedByLevel ?? this.windSpeedByLevel,
+      windDirectionByLevel: windDirectionByLevel,
       soilTemperature: soilTemperature ?? this.soilTemperature,
       shortwaveRadiation: shortwaveRadiation,
       soilMoisture: soilMoisture,
@@ -503,6 +517,7 @@ class WindAloftLevel {
   const WindAloftLevel({
     required this.metersAgl,
     required this.read,
+    required this.readDirection,
     this.pressureHPa,
   });
 
@@ -516,6 +531,10 @@ class WindAloftLevel {
   /// Reads this level's wind speed out of an hourly sample, in the requested
   /// wind unit. Null when the sample carries no value for the level.
   final double? Function(WeatherHour hour) read;
+
+  /// Reads this level's wind direction (degrees the wind comes FROM) out of
+  /// an hourly sample. Null when the level carries no direction.
+  final double? Function(WeatherHour hour) readDirection;
 
   /// Reads [hour] and rounds to an integer, or null when unavailable.
   int? readInt(WeatherHour hour) => read(hour)?.round();
@@ -552,9 +571,19 @@ List<WindAloftLevel> windAloftLevels({
         _ => (WeatherHour h) => h.windSpeed120m,
       };
 
+  double? Function(WeatherHour) groundDirection(int meters) => switch (meters) {
+        10 => (WeatherHour h) => h.windDirection,
+        80 => (WeatherHour h) => h.windDirection80m,
+        _ => (WeatherHour h) => h.windDirection120m,
+      };
+
   final levels = <WindAloftLevel>[
     for (final meters in kWindAloftGroundLevels)
-      WindAloftLevel(metersAgl: meters, read: groundReader(meters)),
+      WindAloftLevel(
+        metersAgl: meters,
+        read: groundReader(meters),
+        readDirection: groundDirection(meters),
+      ),
   ];
 
   for (final hPa in kWindAloftPressureLevels) {
@@ -566,6 +595,7 @@ List<WindAloftLevel> windAloftLevels({
         metersAgl: (agl / step).round() * step,
         pressureHPa: hPa,
         read: (WeatherHour h) => h.windSpeedByLevel?[hPa],
+        readDirection: (WeatherHour h) => h.windDirectionByLevel?[hPa],
       ),
     );
   }

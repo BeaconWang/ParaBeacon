@@ -237,6 +237,8 @@ class OpenMeteoProvider extends WeatherProvider {
     'wind_gusts_10m',
     'wind_speed_80m',
     'wind_speed_120m',
+    'wind_direction_80m',
+    'wind_direction_120m',
     // Upper-air wind on pressure levels: one swipeable altitude page per
     // level in the weather panel (see kWindAloftPressureLevels).
     ..._pressureLevelParams,
@@ -248,9 +250,12 @@ class OpenMeteoProvider extends WeatherProvider {
     'is_day',
   ].join(',');
 
-  /// `wind_speed_<hPa>hPa` columns for every requested pressure level.
-  static List<String> get _pressureLevelParams =>
-      kWindAloftPressureLevels.map((hPa) => 'wind_speed_${hPa}hPa').toList();
+  /// `wind_speed_<hPa>hPa` / `wind_direction_<hPa>hPa` columns for every
+  /// requested pressure level.
+  static List<String> get _pressureLevelParams => [
+        for (final hPa in kWindAloftPressureLevels) 'wind_speed_${hPa}hPa',
+        for (final hPa in kWindAloftPressureLevels) 'wind_direction_${hPa}hPa',
+      ];
 
   static const String _dailyParams =
       'weather_code,temperature_2m_max,temperature_2m_min,'
@@ -361,7 +366,10 @@ class OpenMeteoProvider extends WeatherProvider {
         visibility: WxParse.dOrNull(s['visibility']),
         windSpeed80m: WxParse.dOrNull(s['wind_speed_80m']),
         windSpeed120m: WxParse.dOrNull(s['wind_speed_120m']),
-        windSpeedByLevel: _parsePressureLevels(s),
+        windDirection80m: WxParse.dOrNull(s['wind_direction_80m']),
+        windDirection120m: WxParse.dOrNull(s['wind_direction_120m']),
+        windSpeedByLevel: _parsePressureLevels(s, 'wind_speed'),
+        windDirectionByLevel: _parsePressureLevels(s, 'wind_direction'),
         soilTemperature: WxParse.dOrNull(s['soil_temperature_0cm']),
         shortwaveRadiation: WxParse.dOrNull(s['shortwave_radiation']),
         soilMoisture: WxParse.dOrNull(s['soil_moisture_0_to_1cm']),
@@ -409,12 +417,16 @@ class OpenMeteoProvider extends WeatherProvider {
     );
   }
 
-  /// Reads the `wind_speed_<hPa>hPa` columns of one hourly row, skipping the
-  /// levels the (model-specific) payload does not carry.
-  static Map<int, double>? _parsePressureLevels(Map<String, dynamic> hour) {
+  /// Reads the `<prefix>_<hPa>hPa` columns of one hourly row, skipping the
+  /// levels the (model-specific) payload does not carry. [prefix] is
+  /// `wind_speed` or `wind_direction`.
+  static Map<int, double>? _parsePressureLevels(
+    Map<String, dynamic> hour,
+    String prefix,
+  ) {
     Map<int, double>? levels;
     for (final hPa in kWindAloftPressureLevels) {
-      final value = WxParse.dOrNull(hour['wind_speed_${hPa}hPa']);
+      final value = WxParse.dOrNull(hour['${prefix}_${hPa}hPa']);
       if (value == null) continue;
       (levels ??= <int, double>{})[hPa] = value;
     }

@@ -443,8 +443,11 @@ void main() {
         'wind_gusts_10m',
         'wind_speed_80m',
         'wind_speed_120m',
-        // One swipeable altitude page per pressure level.
+        'wind_direction_80m',
+        'wind_direction_120m',
+        // Speed and direction of every pressure level: one grid row each.
         for (final hPa in kWindAloftPressureLevels) 'wind_speed_${hPa}hPa',
+        for (final hPa in kWindAloftPressureLevels) 'wind_direction_${hPa}hPa',
         'soil_temperature_0cm',
         'shortwave_radiation',
         'soil_moisture_0_to_1cm',
@@ -887,6 +890,41 @@ void windAloftTests() {
     expect(levels.firstWhere((l) => l.pressureHPa == 700).read(hour), 40);
   });
 
+  test('wind directions are read per level for the grid arrows', () {
+    final hour = WeatherHour(
+      time: DateTime(2026, 9, 14, 10),
+      temperature: 20,
+      precipitation: 0,
+      precipProbability: 0,
+      windSpeed: 12,
+      windDirection: 270,
+      windGusts: 16,
+      windSpeed80m: 18,
+      windSpeed120m: 21,
+      windDirection80m: 280,
+      windDirectionByLevel: const {700: 310},
+      kind: WeatherKind.clear,
+    );
+    final levels = windAloftLevels(elevationMeters: 0);
+    double? directionAt(int meters) => levels
+        .firstWhere((l) => l.metersAgl == meters)
+        .readDirection(hour);
+
+    expect(directionAt(10), 270);
+    expect(directionAt(80), 280);
+    // Levels the payload does not carry keep a null direction, so the grid
+    // simply omits the arrow instead of pointing north.
+    expect(directionAt(120), isNull);
+    expect(
+      levels.firstWhere((l) => l.pressureHPa == 700).readDirection(hour),
+      310,
+    );
+    expect(
+      levels.firstWhere((l) => l.pressureHPa == 500).readDirection(hour),
+      isNull,
+    );
+  });
+
   test('Open-Meteo payload carries the levels and the grid elevation', () {
     final data = OpenMeteoProvider.parse({
       'elevation': 1500.0,
@@ -896,6 +934,9 @@ void windAloftTests() {
         'wind_speed_10m': [10.0, 12.0],
         'wind_speed_950hPa': [20.0, 22.0],
         'wind_speed_500hPa': [60.0, 62.0],
+        'wind_direction_950hPa': [200.0, 210.0],
+        'wind_direction_500hPa': [250.0, 260.0],
+        'wind_direction_80m': [190.0, 195.0],
       },
       'daily': {
         'time': ['2026-09-14'],
@@ -907,6 +948,10 @@ void windAloftTests() {
     expect(data.elevation, 1500);
     expect(data.hourly.first.windSpeedByLevel, {950: 20, 500: 60});
     expect(data.hourly.last.windSpeedByLevel, {950: 22, 500: 62});
+    expect(data.hourly.first.windDirectionByLevel, {950: 200, 500: 250});
+    expect(data.hourly.last.windDirectionByLevel, {950: 210, 500: 260});
+    expect(data.hourly.first.windDirection80m, 190);
+    expect(data.hourly.first.windDirection120m, isNull);
   });
 
   test('levels are converted together with the rest of the wind', () {
@@ -917,6 +962,7 @@ void windAloftTests() {
         'time': ['2026-09-14T10:00'],
         'wind_speed_10m': [10.0],
         'wind_speed_500hPa': [40.0],
+        'wind_direction_500hPa': [240.0],
       },
       'daily': {
         'time': ['2026-09-14'],
@@ -937,6 +983,8 @@ void windAloftTests() {
     expect(imperial.elevation, 0);
     expect(imperial.hourly.first.windSpeedByLevel![500],
         closeTo(40 / 1.609344, 0.001));
+    // Directions are angles: they survive a unit change untouched.
+    expect(imperial.hourly.first.windDirectionByLevel, {500: 240});
   });
 });
 }

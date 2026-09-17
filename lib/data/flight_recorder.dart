@@ -405,10 +405,15 @@ class FlightRecorder extends ChangeNotifier {
 
     final track = FlightTrack(startTime: start);
 
-    // Random launch point (kept away from the poles for sane math) and a
-    // random initial heading; we then do a random-walk flight path.
-    var lat = -50.0 + rnd.nextDouble() * 100.0; // -50 .. 50
-    var lng = -180.0 + rnd.nextDouble() * 360.0;
+    // Keep the generated replay in an interior-China region. The bounds are
+    // deliberately conservative so the random walk cannot enter a neighboring
+    // country or drift into the sea during the longest generated flight.
+    const minChinaLat = 28.5;
+    const maxChinaLat = 33.5;
+    const minChinaLng = 100.0;
+    const maxChinaLng = 108.0;
+    var lat = 30.25 + rnd.nextDouble() * 0.8; // Chengdu / Sichuan vicinity
+    var lng = 103.6 + rnd.nextDouble() * 1.0;
     var heading = rnd.nextDouble() * 360.0; // degrees
     var altitude = 300.0 + rnd.nextDouble() * 1500.0; // launch altitude (m)
 
@@ -436,6 +441,9 @@ class FlightRecorder extends ChangeNotifier {
       final rad = heading * math.pi / 180.0;
       lat += (stepM * math.cos(rad)) / mPerDegLat;
       lng += (stepM * math.sin(rad)) / mPerDegLng;
+      // Enforce the regional guarantee for every generated sample.
+      lat = lat.clamp(minChinaLat, maxChinaLat);
+      lng = lng.clamp(minChinaLng, maxChinaLng);
 
       track.add(FlightSample(
         time: t,

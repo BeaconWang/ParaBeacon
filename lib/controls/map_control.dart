@@ -56,9 +56,6 @@ class MapTileSource {
 class MapTileSources {
   MapTileSources._();
 
-  /// Default basemap for live and replay maps.
-  static const String defaultId = 'amap-sat';
-
   static const List<MapTileSource> all = [
     MapTileSource(
       id: 'none',
@@ -110,11 +107,11 @@ class MapTileSources {
     ),
   ];
 
-  /// Looks up a source by id, defaulting to the configured default basemap.
+  /// Looks up a source by id, defaulting to OSM.
   static MapTileSource byId(String id) {
     return all.firstWhere(
       (s) => s.id == id,
-      orElse: () => all.firstWhere((s) => s.id == defaultId),
+      orElse: () => all.firstWhere((s) => s.id == 'osm'),
     );
   }
 }
@@ -227,7 +224,7 @@ class MapControl extends StatefulWidget {
     super.key,
     this.initialZoom = 17.0,
     this.follow = true,
-    this.tileSource = MapTileSources.defaultId,
+    this.tileSource = 'osm',
     this.showTrack = true,
     this.showThermal = true,
     this.showAirspace = true,

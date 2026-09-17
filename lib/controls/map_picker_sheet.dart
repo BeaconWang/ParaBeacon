@@ -52,8 +52,9 @@ Future<(double, double)?> showMapPickerSheet(
 class MapPickerDefaults {
   MapPickerDefaults._();
 
-  /// Use the same AMap satellite default as the live and replay maps.
-  static const String tileSourceId = MapTileSources.defaultId;
+  /// AMap (AutoNavi) is the default basemap: its tiles are the ones that load
+  /// reliably (and with local labels) in the region this app is used most.
+  static const String tileSourceId = 'amap';
 }
 
 class _MapPickerSheet extends StatefulWidget {

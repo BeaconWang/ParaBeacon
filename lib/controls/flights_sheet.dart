@@ -13,6 +13,7 @@ import '../data/geo_name_settings.dart';
 import '../data/reverse_geocoder_service.dart';
 import '../l10n/app_localizations.dart';
 import 'flight_replay_sheet.dart';
+import 'track_3d_sheet.dart';
 
 /// Opens the Flights screen (all recorded flights) as a full-screen sheet.
 Future<void> showFlightsSheet(BuildContext context) {
@@ -247,7 +248,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   }
 
   void _replay3D(FlightTrack track) {
-    showFlightReplaySheet(context, track, initial3D: true);
+    showTrack3DSheet(context, track);
   }
 
   // ── Share card ─────────────────────────────────────────────────────────

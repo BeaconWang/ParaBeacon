@@ -109,9 +109,18 @@
   },
   "weatherPickOnMap": "地图选点",
 
+  "weatherFavorites": "收藏地点",
+  "weatherFavoriteAdd": "收藏该位置",
+  "weatherFavoriteRemove": "取消收藏",
+  "weatherFavoriteSaved": "已收藏“{name}”",
+  "weatherFavoriteRemoved": "已从收藏中移除",
+  "weatherFavoritesEmpty": "还没有收藏的地点",
+  "weatherFavoritesManage": "管理收藏地点",
+
   "mapPickerTitle": "选择位置",
   "mapPickerHint": "拖动地图将十字准心对准目标位置，然后确认。",
   "mapPickerConfirm": "使用该位置",
+  "mapPickerMyLocation": "我的位置",
 
   "weatherUnits": "单位",
   "weatherUnitTemperature": "温度",

@@ -1,10 +1,17 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../data/gcj02.dart';
+import '../data/geocoding_service.dart';
+import '../data/weather_favorites.dart';
 import '../l10n/app_localizations.dart';
 import 'map_control.dart' show MapTileSource, MapTileSources;
+
+/// Resolves the device's current position, or null when unavailable.
+typedef CurrentLocationResolver = Future<(double, double)?> Function();
 
 /// Opens a full-screen map so the user can pick a location by dragging the
 /// map under a fixed centre crosshair.
@@ -12,11 +19,15 @@ import 'map_control.dart' show MapTileSource, MapTileSources;
 /// Returns the picked position as **WGS-84** `(latitude, longitude)`, or null
 /// when the user cancels. GCJ-02 tile sources (AMap) are un-shifted on the way
 /// out, so the caller always receives true GPS coordinates.
+///
+/// [resolveCurrentLocation] backs the "my location" button; when omitted the
+/// button is hidden.
 Future<(double, double)?> showMapPickerSheet(
   BuildContext context, {
   double? initialLat,
   double? initialLon,
-  String initialTileSourceId = 'osm',
+  String initialTileSourceId = MapPickerDefaults.tileSourceId,
+  CurrentLocationResolver? resolveCurrentLocation,
 }) {
   return showModalBottomSheet<(double, double)>(
     context: context,
@@ -28,8 +39,18 @@ Future<(double, double)?> showMapPickerSheet(
       initialLat: initialLat,
       initialLon: initialLon,
       initialTileSourceId: initialTileSourceId,
+      resolveCurrentLocation: resolveCurrentLocation,
     ),
   );
+}
+
+/// Defaults for the map picker.
+class MapPickerDefaults {
+  MapPickerDefaults._();
+
+  /// AMap (AutoNavi) is the default basemap: its tiles are the ones that load
+  /// reliably (and with local labels) in the region this app is used most.
+  static const String tileSourceId = 'amap';
 }
 
 class _MapPickerSheet extends StatefulWidget {
@@ -37,11 +58,13 @@ class _MapPickerSheet extends StatefulWidget {
     required this.initialLat,
     required this.initialLon,
     required this.initialTileSourceId,
+    required this.resolveCurrentLocation,
   });
 
   final double? initialLat;
   final double? initialLon;
   final String initialTileSourceId;
+  final CurrentLocationResolver? resolveCurrentLocation;
 
   @override
   State<_MapPickerSheet> createState() => _MapPickerSheetState();
@@ -53,6 +76,7 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
   static const LatLng _fallback = LatLng(46.5197, 6.6323);
 
   final MapController _map = MapController();
+  final WeatherFavoritesStore _favorites = WeatherFavoritesStore.instance;
 
   late String _tileSourceId;
 
@@ -67,6 +91,12 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
   /// the new (possibly shifted) coordinate system.
   bool _syncing = false;
 
+  /// True while the "my location" button waits for a device fix.
+  bool _locating = false;
+
+  /// True while a favorite is being saved (reverse geocode in flight).
+  bool _savingFavorite = false;
+
   @override
   void initState() {
     super.initState();
@@ -76,12 +106,27 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
     _wgs = (lat != null && lon != null && _validLat(lat) && _validLon(lon))
         ? LatLng(lat, lon)
         : _fallback;
+    _favorites.addListener(_onFavoritesChanged);
+    _favorites.load();
+  }
+
+  @override
+  void dispose() {
+    _favorites.removeListener(_onFavoritesChanged);
+    super.dispose();
+  }
+
+  void _onFavoritesChanged() {
+    if (mounted) setState(() {});
   }
 
   static bool _validLat(double v) => v >= -90 && v <= 90 && !v.isNaN;
   static bool _validLon(double v) => v >= -180 && v <= 180 && !v.isNaN;
 
   MapTileSource get _src => MapTileSources.byId(_tileSourceId);
+
+  bool get _isFavorite =>
+      _favorites.contains(_wgs.latitude, _wgs.longitude);
 
   /// WGS-84 -> tile coordinate system (GCJ-02 for the Chinese providers).
   LatLng _toDisplay(LatLng wgs) {
@@ -119,11 +164,76 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
     setState(() => _zoom = next);
   }
 
-  String _coordsLabel() {
-    final latHemi = _wgs.latitude >= 0 ? 'N' : 'S';
-    final lonHemi = _wgs.longitude >= 0 ? 'E' : 'W';
-    return '${_wgs.latitude.abs().toStringAsFixed(4)}°$latHemi  '
-        '${_wgs.longitude.abs().toStringAsFixed(4)}°$lonHemi';
+  /// Moves the crosshair to [wgs] (keeping the zoom, or [zoom] when given).
+  void _moveTo(LatLng wgs, {double? zoom}) {
+    final target = (zoom ?? _zoom).clamp(2.0, _src.maxZoom);
+    setState(() {
+      _wgs = wgs;
+      _zoom = target;
+    });
+    if (_ready) _map.move(_toDisplay(wgs), target);
+  }
+
+  /// Re-centres on the device's current position.
+  Future<void> _goToCurrentLocation() async {
+    final resolve = widget.resolveCurrentLocation;
+    if (resolve == null || _locating) return;
+    setState(() => _locating = true);
+    final fix = await resolve();
+    if (!mounted) return;
+    setState(() => _locating = false);
+    if (fix == null || !_validLat(fix.$1) || !_validLon(fix.$2)) {
+      _snack(AppLocalizations.of(context).weatherNoGps);
+      return;
+    }
+    _moveTo(LatLng(fix.$1, fix.$2), zoom: math.max(_zoom, 12));
+  }
+
+  /// Saves (or un-saves) the crosshair position as a favorite. The name comes
+  /// from a best-effort reverse geocode, falling back to the coordinates.
+  Future<void> _toggleFavorite() async {
+    if (_savingFavorite) return;
+    final l10n = AppLocalizations.of(context);
+    final wgs = _wgs;
+    if (_favorites.contains(wgs.latitude, wgs.longitude)) {
+      await _favorites.removeSpot(wgs.latitude, wgs.longitude);
+      if (mounted) _snack(l10n.weatherFavoriteRemoved);
+      return;
+    }
+    setState(() => _savingFavorite = true);
+    final language = Localizations.localeOf(context).languageCode;
+    final name = await GeocodingService.instance.reverseName(
+      lat: wgs.latitude,
+      lon: wgs.longitude,
+      language: language,
+    );
+    if (!mounted) return;
+    setState(() => _savingFavorite = false);
+    final place = FavoritePlace.create(
+      name: (name == null || name.trim().isEmpty)
+          ? _coordsLabel(wgs)
+          : name.trim(),
+      lat: wgs.latitude,
+      lon: wgs.longitude,
+    );
+    if (place == null) return;
+    await _favorites.add(place);
+    if (mounted) _snack(l10n.weatherFavoriteSaved(place.name));
+  }
+
+  void _snack(String message) {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _coordsLabel([LatLng? at]) {
+    final p = at ?? _wgs;
+    final latHemi = p.latitude >= 0 ? 'N' : 'S';
+    final lonHemi = p.longitude >= 0 ? 'E' : 'W';
+    return '${p.latitude.abs().toStringAsFixed(4)}°$latHemi  '
+        '${p.longitude.abs().toStringAsFixed(4)}°$lonHemi';
   }
 
   String _sourceLabel(AppLocalizations l10n, String id) => switch (id) {
@@ -200,6 +310,15 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                     bottom: 12,
                     child: Column(
                       children: [
+                        if (widget.resolveCurrentLocation != null)
+                          _MapRoundButton(
+                            icon: Icons.my_location,
+                            busy: _locating,
+                            tooltip: l10n.mapPickerMyLocation,
+                            onPressed: _goToCurrentLocation,
+                          ),
+                        if (widget.resolveCurrentLocation != null)
+                          const SizedBox(height: 8),
                         _MapRoundButton(
                           icon: Icons.add,
                           onPressed: () => _zoomBy(1),
@@ -241,6 +360,7 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
   }
 
   Widget _buildTopBar(AppLocalizations l10n) {
+    final favorites = _favorites.places;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
       child: Row(
@@ -257,6 +377,27 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
               ),
             ),
           ),
+          if (favorites.isNotEmpty)
+            PopupMenuButton<int>(
+              icon: const Icon(Icons.bookmarks_outlined, color: Colors.white70),
+              tooltip: l10n.weatherFavorites,
+              onSelected: (i) {
+                if (i < 0 || i >= favorites.length) return;
+                final p = favorites[i];
+                _moveTo(LatLng(p.lat, p.lon), zoom: math.max(_zoom, 11));
+              },
+              itemBuilder: (context) => [
+                for (var i = 0; i < favorites.length; i++)
+                  PopupMenuItem(
+                    value: i,
+                    child: Text(
+                      favorites[i].name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+            ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.layers_outlined, color: Colors.white70),
             tooltip: l10n.settingMapSource,
@@ -281,6 +422,7 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
   }
 
   Widget _buildBottomBar(AppLocalizations l10n) {
+    final saved = _isFavorite;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Column(
@@ -303,7 +445,24 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              IconButton(
+                icon: _savingFavorite
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white70),
+                      )
+                    : Icon(
+                        saved ? Icons.star : Icons.star_border,
+                        color: saved ? Colors.amberAccent : Colors.white70,
+                      ),
+                tooltip: saved
+                    ? l10n.weatherFavoriteRemove
+                    : l10n.weatherFavoriteAdd,
+                onPressed: _toggleFavorite,
+              ),
+              const SizedBox(width: 4),
               FilledButton.icon(
                 icon: const Icon(Icons.check, size: 18),
                 label: Text(l10n.mapPickerConfirm),
@@ -360,25 +519,43 @@ class _CrosshairPainter extends CustomPainter {
 }
 
 class _MapRoundButton extends StatelessWidget {
-  const _MapRoundButton({required this.icon, required this.onPressed});
+  const _MapRoundButton({
+    required this.icon,
+    required this.onPressed,
+    this.busy = false,
+    this.tooltip,
+  });
 
   final IconData icon;
   final VoidCallback onPressed;
+  final bool busy;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final button = Material(
       color: Colors.black.withAlpha(140),
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onPressed,
+        onTap: busy ? null : onPressed,
         child: SizedBox(
           width: 38,
           height: 38,
-          child: Icon(icon, size: 20, color: Colors.white70),
+          child: busy
+              ? const Center(
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white70),
+                  ),
+                )
+              : Icon(icon, size: 20, color: Colors.white70),
         ),
       ),
     );
+    final label = tooltip;
+    return label == null ? button : Tooltip(message: label, child: button);
   }
 }

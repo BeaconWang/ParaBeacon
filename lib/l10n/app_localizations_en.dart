@@ -323,6 +323,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherPickOnMap => 'Pick on map';
 
   @override
+  String get weatherFavorites => 'Saved locations';
+
+  @override
+  String get weatherFavoriteAdd => 'Save this location';
+
+  @override
+  String get weatherFavoriteRemove => 'Remove from saved';
+
+  @override
+  String weatherFavoriteSaved(String name) {
+    return 'Saved “$name”';
+  }
+
+  @override
+  String get weatherFavoriteRemoved => 'Removed from saved locations';
+
+  @override
+  String get weatherFavoritesEmpty => 'No saved locations yet';
+
+  @override
+  String get weatherFavoritesManage => 'Manage saved locations';
+
+  @override
   String get mapPickerTitle => 'Pick a location';
 
   @override
@@ -331,6 +354,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapPickerConfirm => 'Use this location';
+
+  @override
+  String get mapPickerMyLocation => 'My location';
 
   @override
   String get weatherUnits => 'Units';

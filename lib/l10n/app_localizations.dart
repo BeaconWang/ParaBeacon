@@ -668,6 +668,48 @@ abstract class AppLocalizations {
   /// **'Pick on map'**
   String get weatherPickOnMap;
 
+  /// No description provided for @weatherFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved locations'**
+  String get weatherFavorites;
+
+  /// No description provided for @weatherFavoriteAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Save this location'**
+  String get weatherFavoriteAdd;
+
+  /// No description provided for @weatherFavoriteRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from saved'**
+  String get weatherFavoriteRemove;
+
+  /// No description provided for @weatherFavoriteSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved “{name}”'**
+  String weatherFavoriteSaved(String name);
+
+  /// No description provided for @weatherFavoriteRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from saved locations'**
+  String get weatherFavoriteRemoved;
+
+  /// No description provided for @weatherFavoritesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved locations yet'**
+  String get weatherFavoritesEmpty;
+
+  /// No description provided for @weatherFavoritesManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage saved locations'**
+  String get weatherFavoritesManage;
+
   /// No description provided for @mapPickerTitle.
   ///
   /// In en, this message translates to:
@@ -685,6 +727,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use this location'**
   String get mapPickerConfirm;
+
+  /// No description provided for @mapPickerMyLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'My location'**
+  String get mapPickerMyLocation;
 
   /// No description provided for @weatherUnits.
   ///

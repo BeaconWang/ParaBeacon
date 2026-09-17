@@ -9,6 +9,7 @@ import '../data/flight_data_provider.dart';
 import '../data/geocoding_service.dart';
 import '../data/weather_service.dart';
 import '../data/weather_service_manager.dart';
+import '../data/weather_favorites.dart';
 import '../data/weather_providers.dart' show WeatherModel;
 import '../data/weather_units.dart';
 import '../l10n/app_localizations.dart';
@@ -40,6 +41,11 @@ enum _Phase { loading, ready, error }
 enum _ErrorKind { noFix, network }
 
 enum _BottomTab { hourly, daily }
+
+/// Sentinel values for the favorites popup menu (the other entries carry a
+/// [FavoritePlace]).
+const String _kToggleFavorite = 'toggle-favorite';
+const String _kManageFavorites = 'manage-favorites';
 
 class _WeatherSheet extends StatefulWidget {
   const _WeatherSheet();
@@ -78,9 +84,18 @@ class _WeatherSheetState extends State<_WeatherSheet> {
   // updates the data — the previous forecast stays visible underneath.
   bool _refetching = false;
 
+  // Saved locations (persisted across launches).
+  final WeatherFavoritesStore _favorites = WeatherFavoritesStore.instance;
+
+  // True while a device fix is being resolved for the "current location"
+  // action.
+  bool _locating = false;
+
   @override
   void initState() {
     super.initState();
+    _favorites.addListener(_onFavoritesChanged);
+    _favorites.load();
     _load();
   }
 
@@ -90,7 +105,12 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     _searchController.dispose();
     _searchFocus.dispose();
     _dailyGlanceScroll.dispose();
+    _favorites.removeListener(_onFavoritesChanged);
     super.dispose();
+  }
+
+  void _onFavoritesChanged() {
+    if (mounted) setState(() {});
   }
 
   // ── Data loading ─────────────────────────────────────────────────────────
@@ -107,20 +127,9 @@ class _WeatherSheetState extends State<_WeatherSheet> {
 
       // Read the live flight-data snapshot synchronously, before any await,
       // so the (possibly stale) context is only used while mounted.
-      final data = FlightDataProvider.transformerOf(context).data;
-      final hasLiveFix = data.hasFix &&
-          (data.latitude != 0.0 || data.longitude != 0.0);
-
-      double? lat;
-      double? lon;
-      if (hasLiveFix) {
-        lat = data.latitude;
-        lon = data.longitude;
-      } else {
-        final fix = await _oneShotFix();
-        lat = fix?.$1;
-        lon = fix?.$2;
-      }
+      final fix = await _resolveCurrentFix();
+      final lat = fix?.$1;
+      final lon = fix?.$2;
 
       if (!mounted) return;
       if (lat == null || lon == null) {
@@ -197,6 +206,19 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     );
     if (!mounted || name == null || _placeName != null) return;
     setState(() => _placeName = name);
+  }
+
+  /// The device's current position: the live flight-data fix when it has one,
+  /// otherwise a one-shot device fix. Null when neither is available.
+  ///
+  /// The flight-data snapshot is read synchronously (before any await) so the
+  /// possibly-stale context is only touched while mounted.
+  Future<(double, double)?> _resolveCurrentFix() async {
+    final data = FlightDataProvider.transformerOf(context).data;
+    final hasLiveFix =
+        data.hasFix && (data.latitude != 0.0 || data.longitude != 0.0);
+    if (hasLiveFix) return (data.latitude, data.longitude);
+    return _oneShotFix();
   }
 
   /// One-shot device position fix; null when permissions/services are off or
@@ -286,19 +308,140 @@ class _WeatherSheetState extends State<_WeatherSheet> {
       context,
       initialLat: _lat,
       initialLon: _lon,
+      resolveCurrentLocation: _resolveCurrentFix,
     );
     if (!mounted || picked == null) return;
+    _applyLocation(picked.$1, picked.$2);
+    await _load(keepLocation: true);
+  }
+
+  /// Points the forecast at [lat]/[lon] with [name] as the header label; when
+  /// no name is given the coordinates show until a reverse geocode resolves.
+  void _applyLocation(double lat, double lon, {String? name}) {
     setState(() {
       _searchResults = const [];
       _searchFailed = false;
       _searchController.clear();
-      _lat = picked.$1;
-      _lon = picked.$2;
-      // Show the coordinates until the reverse geocode resolves a name.
-      _placeName = null;
+      _lat = lat;
+      _lon = lon;
+      _placeName = name;
     });
-    _reverseName(picked.$1, picked.$2);
+    if (name == null) _reverseName(lat, lon);
+  }
+
+  /// Resets the forecast to the device's current position.
+  Future<void> _useCurrentLocation() async {
+    _searchFocus.unfocus();
+    if (_locating) return;
+    setState(() => _locating = true);
+    final fix = await _resolveCurrentFix();
+    if (!mounted) return;
+    setState(() => _locating = false);
+    final l10n = AppLocalizations.of(context);
+    if (fix == null) {
+      _snack(l10n.weatherNoGps);
+      return;
+    }
+    _applyLocation(fix.$1, fix.$2);
     await _load(keepLocation: true);
+  }
+
+  // ── Favorites ────────────────────────────────────────────────────────────
+
+  /// Saves the current location, or removes it when already saved.
+  Future<void> _toggleFavorite() async {
+    final lat = _lat;
+    final lon = _lon;
+    if (lat == null || lon == null) return;
+    final l10n = AppLocalizations.of(context);
+    if (_favorites.contains(lat, lon)) {
+      await _favorites.removeSpot(lat, lon);
+      if (mounted) _snack(l10n.weatherFavoriteRemoved);
+      return;
+    }
+    final place = FavoritePlace.create(
+      name: _placeName ?? _coordsLabel(),
+      lat: lat,
+      lon: lon,
+    );
+    if (place == null) return;
+    await _favorites.add(place);
+    if (mounted) _snack(l10n.weatherFavoriteSaved(place.name));
+  }
+
+  /// Opens the saved-locations list and loads the chosen entry.
+  Future<void> _showFavoritesSheet() async {
+    _searchFocus.unfocus();
+    final picked = await showModalBottomSheet<FavoritePlace>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        final l10n = AppLocalizations.of(sheetContext);
+        return SafeArea(
+          child: AnimatedBuilder(
+            animation: _favorites,
+            builder: (context, _) {
+              final places = _favorites.places;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                    child: Text(l10n.weatherFavorites,
+                        style: Theme.of(context).textTheme.titleLarge),
+                  ),
+                  if (places.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: Text(l10n.weatherFavoritesEmpty),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: places.length,
+                        itemBuilder: (context, i) {
+                          final p = places[i];
+                          return ListTile(
+                            leading: const Icon(Icons.star, size: 20),
+                            title: Text(
+                              p.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(_formatCoords(p.lat, p.lon)),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 20),
+                              tooltip: l10n.delete,
+                              onPressed: () =>
+                                  _favorites.removeSpot(p.lat, p.lon),
+                            ),
+                            onTap: () => Navigator.of(context).pop(p),
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+    if (!mounted || picked == null) return;
+    _applyLocation(picked.lat, picked.lon, name: picked.name);
+    await _load(keepLocation: true);
+  }
+
+  void _snack(String message) {
+    ScaffoldMessenger.maybeOf(context)
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _languageCode() => Localizations.localeOf(context).languageCode;
@@ -335,6 +478,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     final lat = _lat;
     final lon = _lon;
     if (lat == null || lon == null) return '';
+    return _formatCoords(lat, lon);
+  }
+
+  static String _formatCoords(double lat, double lon) {
     final latHemi = lat >= 0 ? 'N' : 'S';
     final lonHemi = lon >= 0 ? 'E' : 'W';
     return '${lat.abs().toStringAsFixed(3)}°$latHemi '
@@ -392,31 +539,135 @@ class _WeatherSheetState extends State<_WeatherSheet> {
           Expanded(
             child: _buildSearchField(l10n),
           ),
-          IconButton(
-            icon: const Icon(Icons.pin_drop_outlined, color: Colors.white70),
+          _actionButton(
+            icon: _locating ? null : Icons.my_location,
+            busy: _locating,
+            tooltip: l10n.mapPickerMyLocation,
+            onPressed: _locating ? null : _useCurrentLocation,
+          ),
+          _actionButton(
+            icon: Icons.pin_drop_outlined,
             tooltip: l10n.weatherPickOnMap,
             onPressed: _pickOnMap,
           ),
-          IconButton(
-            icon: Icon(
-              Icons.straighten,
-              color: _refetching ? Colors.orangeAccent : Colors.white70,
-            ),
+          _buildFavoritesButton(l10n),
+          _actionButton(
+            icon: Icons.straighten,
+            color: _refetching ? Colors.orangeAccent : Colors.white70,
             tooltip: l10n.weatherUnits,
             onPressed: _showUnitsSheet,
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70),
+          _actionButton(
+            icon: Icons.refresh,
             tooltip: l10n.weatherRefresh,
-            onPressed: _phase == _Phase.loading ? null : () => _load(keepLocation: true),
+            onPressed:
+                _phase == _Phase.loading ? null : () => _load(keepLocation: true),
           ),
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.white70),
+          _actionButton(
+            icon: Icons.close,
             tooltip: l10n.close,
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
       ),
+    );
+  }
+
+  /// Compact top-bar action: the bar carries six actions next to the search
+  /// field, so the default IconButton padding would overflow narrow screens.
+  Widget _actionButton({
+    required IconData? icon,
+    required String tooltip,
+    required VoidCallback? onPressed,
+    Color color = Colors.white70,
+    bool busy = false,
+  }) {
+    return IconButton(
+      icon: busy
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white70),
+            )
+          : Icon(icon, color: color),
+      iconSize: 22,
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+      tooltip: tooltip,
+      onPressed: onPressed,
+    );
+  }
+
+  /// Favorites menu: save/un-save the active location, plus the saved list
+  /// (tap an entry to load its forecast).
+  Widget _buildFavoritesButton(AppLocalizations l10n) {
+    final lat = _lat;
+    final lon = _lon;
+    final hasLocation = lat != null && lon != null;
+    final saved = hasLocation && _favorites.contains(lat, lon);
+    final places = _favorites.places;
+    return PopupMenuButton<Object>(
+      icon: Icon(
+        saved ? Icons.star : Icons.star_border,
+        size: 22,
+        color: saved ? Colors.amberAccent : Colors.white70,
+      ),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 180, maxWidth: 320),
+      tooltip: l10n.weatherFavorites,
+      onSelected: (value) {
+        if (value is FavoritePlace) {
+          _applyLocation(value.lat, value.lon, name: value.name);
+          _load(keepLocation: true);
+        } else if (value == _kToggleFavorite) {
+          _toggleFavorite();
+        } else if (value == _kManageFavorites) {
+          _showFavoritesSheet();
+        }
+      },
+      itemBuilder: (context) => [
+        if (hasLocation)
+          PopupMenuItem<Object>(
+            value: _kToggleFavorite,
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(saved ? Icons.star_outline : Icons.star, size: 20),
+              title: Text(saved
+                  ? l10n.weatherFavoriteRemove
+                  : l10n.weatherFavoriteAdd),
+            ),
+          ),
+        if (places.isEmpty)
+          PopupMenuItem<Object>(
+            enabled: false,
+            child: Text(l10n.weatherFavoritesEmpty),
+          )
+        else ...[
+          const PopupMenuDivider(),
+          for (final p in places)
+            PopupMenuItem<Object>(
+              value: p,
+              child: Text(
+                p.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          const PopupMenuDivider(),
+          PopupMenuItem<Object>(
+            value: _kManageFavorites,
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.edit_outlined, size: 20),
+              title: Text(l10n.weatherFavoritesManage),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

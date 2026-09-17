@@ -152,9 +152,23 @@
   },
   "weatherPickOnMap": "Pick on map",
 
+  "weatherFavorites": "Saved locations",
+  "weatherFavoriteAdd": "Save this location",
+  "weatherFavoriteRemove": "Remove from saved",
+  "weatherFavoriteSaved": "Saved “{name}”",
+  "@weatherFavoriteSaved": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "weatherFavoriteRemoved": "Removed from saved locations",
+  "weatherFavoritesEmpty": "No saved locations yet",
+  "weatherFavoritesManage": "Manage saved locations",
+
   "mapPickerTitle": "Pick a location",
   "mapPickerHint": "Drag the map to place the crosshair, then confirm.",
   "mapPickerConfirm": "Use this location",
+  "mapPickerMyLocation": "My location",
 
   "weatherUnits": "Units",
   "weatherUnitTemperature": "Temperature",

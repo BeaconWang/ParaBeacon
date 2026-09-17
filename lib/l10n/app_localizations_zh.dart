@@ -315,6 +315,29 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherPickOnMap => '地图选点';
 
   @override
+  String get weatherFavorites => '收藏地点';
+
+  @override
+  String get weatherFavoriteAdd => '收藏该位置';
+
+  @override
+  String get weatherFavoriteRemove => '取消收藏';
+
+  @override
+  String weatherFavoriteSaved(String name) {
+    return '已收藏“$name”';
+  }
+
+  @override
+  String get weatherFavoriteRemoved => '已从收藏中移除';
+
+  @override
+  String get weatherFavoritesEmpty => '还没有收藏的地点';
+
+  @override
+  String get weatherFavoritesManage => '管理收藏地点';
+
+  @override
   String get mapPickerTitle => '选择位置';
 
   @override
@@ -322,6 +345,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mapPickerConfirm => '使用该位置';
+
+  @override
+  String get mapPickerMyLocation => '我的位置';
 
   @override
   String get weatherUnits => '单位';

@@ -352,6 +352,8 @@
   "settingControlOpacity": "Control opacity",
   "settingBackgroundColor": "Background color",
   "settingBackgroundOpacity": "Background opacity",
+  "settingShowVerticalAcceleration": "Show vertical acceleration",
+  "settingVerticalAccelerationFillOpacity": "Acceleration fill opacity",
   "settingTextColor": "Text color",
   "settingScaleMax": "Scale (max)",
   "settingAveragingInterval": "Averaging interval",

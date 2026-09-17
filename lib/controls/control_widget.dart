@@ -193,6 +193,14 @@ class ControlWidget extends StatelessWidget {
             intervalSeconds: control.doubleSetting('interval', fallback: 60.0),
             verticalStep: control.doubleSetting('verticalStep', fallback: 50.0),
             dotSize: control.doubleSetting('dotSize', fallback: 3.0),
+            showVerticalAcceleration: control.boolSetting(
+              'showVerticalAcceleration',
+              fallback: true,
+            ),
+            verticalAccelerationFillOpacity: control.doubleSetting(
+              'verticalAccelerationFillOpacity',
+              fallback: 30.0,
+            ),
           ),
         );
       case 'vario':

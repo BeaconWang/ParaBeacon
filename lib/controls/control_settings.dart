@@ -227,6 +227,10 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowAttribution;
     case 'showStatus':
       return l10n.settingShowStatus;
+    case 'showVerticalAcceleration':
+      return l10n.settingShowVerticalAcceleration;
+    case 'verticalAccelerationFillOpacity':
+      return l10n.settingVerticalAccelerationFillOpacity;
     // `format` is shared by the heading and wind-direction controls; both use
     // the same label and option set.
     case 'format':
@@ -476,6 +480,20 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       max: 8.0,
       divisions: 14,
       unit: 'px',
+    ),
+    ControlSetting.toggle(
+      key: 'showVerticalAcceleration',
+      label: 'Show vertical acceleration',
+      defaultValue: true,
+    ),
+    ControlSetting.slider(
+      key: 'verticalAccelerationFillOpacity',
+      label: 'Acceleration fill opacity',
+      defaultValue: 30.0,
+      min: 0.0,
+      max: 100.0,
+      divisions: 100,
+      unit: '%',
     ),
   ],
   'vario': [

@@ -1490,6 +1490,18 @@ abstract class AppLocalizations {
   /// **'Background opacity'**
   String get settingBackgroundOpacity;
 
+  /// No description provided for @settingShowVerticalAcceleration.
+  ///
+  /// In en, this message translates to:
+  /// **'Show vertical acceleration'**
+  String get settingShowVerticalAcceleration;
+
+  /// No description provided for @settingVerticalAccelerationFillOpacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceleration fill opacity'**
+  String get settingVerticalAccelerationFillOpacity;
+
   /// No description provided for @settingTextColor.
   ///
   /// In en, this message translates to:

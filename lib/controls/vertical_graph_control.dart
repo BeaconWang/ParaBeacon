@@ -19,12 +19,16 @@ class VerticalGraphControl extends StatelessWidget {
   final double intervalSeconds;
   final double verticalStep;
   final double dotSize;
+  final bool showVerticalAcceleration;
+  final double verticalAccelerationFillOpacity;
 
   const VerticalGraphControl({
     super.key,
     this.intervalSeconds = 60.0,
     this.verticalStep = 50.0,
     this.dotSize = 3.0,
+    this.showVerticalAcceleration = true,
+    this.verticalAccelerationFillOpacity = 30.0,
   });
 
   @override
@@ -50,6 +54,8 @@ class VerticalGraphControl extends StatelessWidget {
             intervalSeconds: intervalSeconds,
             verticalStep: verticalStep,
             dotSize: dotSize,
+            showVerticalAcceleration: showVerticalAcceleration,
+            verticalAccelerationFillOpacity: verticalAccelerationFillOpacity,
             theme: Theme.of(context),
           ),
           child: const SizedBox.expand(),
@@ -100,6 +106,8 @@ class _VerticalGraphPainter extends CustomPainter {
   final double intervalSeconds;
   final double verticalStep;
   final double dotSize;
+  final bool showVerticalAcceleration;
+  final double verticalAccelerationFillOpacity;
   final ThemeData theme;
 
   _VerticalGraphPainter({
@@ -107,6 +115,8 @@ class _VerticalGraphPainter extends CustomPainter {
     required this.intervalSeconds,
     required this.verticalStep,
     required this.dotSize,
+    required this.showVerticalAcceleration,
+    required this.verticalAccelerationFillOpacity,
     required this.theme,
   });
 
@@ -115,8 +125,8 @@ class _VerticalGraphPainter extends CustomPainter {
     FlightSample previous,
     FlightSample beforePrevious,
   ) {
-    final currentDt = current.time.difference(previous.time).inMilliseconds /
-        1000.0;
+    final currentDt =
+        current.time.difference(previous.time).inMilliseconds / 1000.0;
     final previousDt =
         previous.time.difference(beforePrevious.time).inMilliseconds / 1000.0;
     if (currentDt <= 0 || previousDt <= 0) return 0.0;
@@ -164,11 +174,14 @@ class _VerticalGraphPainter extends CustomPainter {
     final graphMax = ((center + range / 2) / step).ceil() * step;
     final altitudeSpan = math.max(step, graphMax - graphMin);
 
-    final accelerationValues = <double>[0.0, 0.0];
-    for (var i = 2; i < samples.length; i++) {
-      accelerationValues.add(
-        _verticalAccelerationFor(samples[i], samples[i - 1], samples[i - 2]),
-      );
+    final accelerationValues = <double>[];
+    if (showVerticalAcceleration) {
+      accelerationValues.addAll(const <double>[0.0, 0.0]);
+      for (var i = 2; i < samples.length; i++) {
+        accelerationValues.add(
+          _verticalAccelerationFor(samples[i], samples[i - 1], samples[i - 2]),
+        );
+      }
     }
     final accelerationAbsMax = accelerationValues
         .map((value) => value.abs())
@@ -210,42 +223,44 @@ class _VerticalGraphPainter extends CustomPainter {
       );
     }
 
-    final accelerationMaxLabel = TextPainter(
-      text: TextSpan(
-        text: '+${accelerationScale.toStringAsFixed(1)}',
-        style: accelerationLabelStyle,
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final accelerationZeroLabel = TextPainter(
-      text: TextSpan(text: '0', style: accelerationLabelStyle),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final accelerationMinLabel = TextPainter(
-      text: TextSpan(
-        text: '-${accelerationScale.toStringAsFixed(1)}',
-        style: accelerationLabelStyle,
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    accelerationMaxLabel.paint(
-      canvas,
-      Offset(graph.right - accelerationMaxLabel.width, graph.top),
-    );
-    accelerationZeroLabel.paint(
-      canvas,
-      Offset(
-        graph.right - accelerationZeroLabel.width,
-        graph.center.dy - accelerationZeroLabel.height / 2,
-      ),
-    );
-    accelerationMinLabel.paint(
-      canvas,
-      Offset(
-        graph.right - accelerationMinLabel.width,
-        graph.bottom - accelerationMinLabel.height,
-      ),
-    );
+    if (showVerticalAcceleration) {
+      final accelerationMaxLabel = TextPainter(
+        text: TextSpan(
+          text: '+${accelerationScale.toStringAsFixed(1)}',
+          style: accelerationLabelStyle,
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      final accelerationZeroLabel = TextPainter(
+        text: TextSpan(text: '0', style: accelerationLabelStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      final accelerationMinLabel = TextPainter(
+        text: TextSpan(
+          text: '-${accelerationScale.toStringAsFixed(1)}',
+          style: accelerationLabelStyle,
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      accelerationMaxLabel.paint(
+        canvas,
+        Offset(graph.right - accelerationMaxLabel.width, graph.top),
+      );
+      accelerationZeroLabel.paint(
+        canvas,
+        Offset(
+          graph.right - accelerationZeroLabel.width,
+          graph.center.dy - accelerationZeroLabel.height / 2,
+        ),
+      );
+      accelerationMinLabel.paint(
+        canvas,
+        Offset(
+          graph.right - accelerationMinLabel.width,
+          graph.bottom - accelerationMinLabel.height,
+        ),
+      );
+    }
 
     final intervalLabel = TextPainter(
       text: TextSpan(text: '${intervalSeconds.round()}s', style: labelStyle),
@@ -286,10 +301,87 @@ class _VerticalGraphPainter extends CustomPainter {
       final x =
           graph.left + (1.0 - (ageMs / windowMs).clamp(0.0, 1.0)) * graph.width;
       final acceleration = accelerationValues[index];
-      final y = graph.center.dy -
+      final y =
+          graph.center.dy -
           (acceleration / accelerationScale).clamp(-1.0, 1.0) *
-              graph.height / 2.0;
+              graph.height /
+              2.0;
       return Offset(x, y);
+    }
+
+    if (showVerticalAcceleration) {
+      final baseline = graph.center.dy;
+      final fillAlpha =
+          (verticalAccelerationFillOpacity.clamp(0.0, 100.0) * 2.55).round();
+      final positiveFill = Paint()
+        ..color = Colors.green.withAlpha(fillAlpha)
+        ..style = PaintingStyle.fill;
+      final negativeFill = Paint()
+        ..color = Colors.red.withAlpha(fillAlpha)
+        ..style = PaintingStyle.fill;
+
+      Offset baselinePoint(double x) => Offset(x, baseline);
+      for (var i = 1; i < accelerationValues.length; i++) {
+        final previousValue = accelerationValues[i - 1];
+        final currentValue = accelerationValues[i];
+        final previousPoint = accelerationPoint(i - 1);
+        final currentPoint = accelerationPoint(i);
+        final previousBaseline = baselinePoint(previousPoint.dx);
+        final currentBaseline = baselinePoint(currentPoint.dx);
+
+        if (previousValue == 0.0 ||
+            currentValue == 0.0 ||
+            previousValue.sign == currentValue.sign) {
+          final fill = (previousValue + currentValue) >= 0
+              ? positiveFill
+              : negativeFill;
+          final area = Path()
+            ..moveTo(previousPoint.dx, baseline)
+            ..lineTo(previousPoint.dx, previousPoint.dy)
+            ..lineTo(currentPoint.dx, currentPoint.dy)
+            ..lineTo(currentPoint.dx, baseline)
+            ..close();
+          canvas.drawPath(area, fill);
+          continue;
+        }
+
+        final fraction = previousValue / (previousValue - currentValue);
+        final crossingX =
+            previousPoint.dx + (currentPoint.dx - previousPoint.dx) * fraction;
+        final crossing = baselinePoint(crossingX);
+        final previousFill = previousValue > 0 ? positiveFill : negativeFill;
+        final currentFill = currentValue > 0 ? positiveFill : negativeFill;
+        final previousArea = Path()
+          ..moveTo(previousBaseline.dx, previousBaseline.dy)
+          ..lineTo(previousPoint.dx, previousPoint.dy)
+          ..lineTo(crossing.dx, crossing.dy)
+          ..close();
+        final currentArea = Path()
+          ..moveTo(crossing.dx, crossing.dy)
+          ..lineTo(currentPoint.dx, currentPoint.dy)
+          ..lineTo(currentBaseline.dx, currentBaseline.dy)
+          ..close();
+        canvas.drawPath(previousArea, previousFill);
+        canvas.drawPath(currentArea, currentFill);
+      }
+
+      final accelerationLine = Path();
+      for (var i = 0; i < accelerationValues.length; i++) {
+        final p = accelerationPoint(i);
+        if (i == 0) {
+          accelerationLine.moveTo(p.dx, p.dy);
+        } else {
+          accelerationLine.lineTo(p.dx, p.dy);
+        }
+      }
+      canvas.drawPath(
+        accelerationLine,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.25
+          ..strokeJoin = StrokeJoin.round
+          ..color = theme.colorScheme.tertiary,
+      );
     }
 
     final line = Path();
@@ -308,24 +400,6 @@ class _VerticalGraphPainter extends CustomPainter {
         ..strokeWidth = 1.5
         ..strokeJoin = StrokeJoin.round
         ..color = theme.colorScheme.primary,
-    );
-
-    final accelerationLine = Path();
-    for (var i = 0; i < accelerationValues.length; i++) {
-      final p = accelerationPoint(i);
-      if (i == 0) {
-        accelerationLine.moveTo(p.dx, p.dy);
-      } else {
-        accelerationLine.lineTo(p.dx, p.dy);
-      }
-    }
-    canvas.drawPath(
-      accelerationLine,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.25
-        ..strokeJoin = StrokeJoin.round
-        ..color = theme.colorScheme.tertiary,
     );
 
     final dotPaint = Paint()..color = theme.colorScheme.secondary;
@@ -357,6 +431,9 @@ class _VerticalGraphPainter extends CustomPainter {
         oldDelegate.intervalSeconds != intervalSeconds ||
         oldDelegate.verticalStep != verticalStep ||
         oldDelegate.dotSize != dotSize ||
+        oldDelegate.showVerticalAcceleration != showVerticalAcceleration ||
+        oldDelegate.verticalAccelerationFillOpacity !=
+            verticalAccelerationFillOpacity ||
         oldDelegate.theme != theme;
   }
 }

@@ -283,6 +283,8 @@
   "settingControlOpacity": "控件不透明度",
   "settingBackgroundColor": "背景颜色",
   "settingBackgroundOpacity": "背景不透明度",
+  "settingShowVerticalAcceleration": "显示垂直加速度",
+  "settingVerticalAccelerationFillOpacity": "加速度填充不透明度",
   "settingTextColor": "文字颜色",
   "settingScaleMax": "量程（最大值）",
   "settingAveragingInterval": "平均时长",

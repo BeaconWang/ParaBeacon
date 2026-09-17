@@ -745,6 +745,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingBackgroundOpacity => '背景不透明度';
 
   @override
+  String get settingShowVerticalAcceleration => '显示垂直加速度';
+
+  @override
+  String get settingVerticalAccelerationFillOpacity => '加速度填充不透明度';
+
+  @override
   String get settingTextColor => '文字颜色';
 
   @override

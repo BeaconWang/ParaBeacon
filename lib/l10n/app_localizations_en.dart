@@ -762,6 +762,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingBackgroundOpacity => 'Background opacity';
 
   @override
+  String get settingShowVerticalAcceleration => 'Show vertical acceleration';
+
+  @override
+  String get settingVerticalAccelerationFillOpacity =>
+      'Acceleration fill opacity';
+
+  @override
   String get settingTextColor => 'Text color';
 
   @override

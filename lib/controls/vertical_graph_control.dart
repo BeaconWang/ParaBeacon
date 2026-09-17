@@ -2,13 +2,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../data/flight_data.dart';
+import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
 
 /// A live altitude history graph inspired by XCTrack's Vertical graph widget.
 ///
 /// It shows the most recent [intervalSeconds] of recorded altitude samples.
-/// While a flight is active it follows the current track; after landing it keeps
-/// showing the last completed track until another flight starts.
+/// While a flight is active it follows the current track and appends the latest
+/// live data snapshot, so the right edge updates even between recorder samples.
+/// After landing it keeps showing the last completed track until another flight
+/// starts.
 class VerticalGraphControl extends StatelessWidget {
   final double intervalSeconds;
   final double verticalStep;
@@ -26,12 +30,22 @@ class VerticalGraphControl extends StatelessWidget {
     return ListenableBuilder(
       listenable: FlightRecorder.instance,
       builder: (context, _) {
+        // Depend on the transformer as well as the recorder. The recorder is
+        // deliberately throttled, while the transformed data stream updates on
+        // every sensor tick; using both keeps the graph genuinely live without
+        // changing recording/storage cadence.
+        final liveData = FlightDataProvider.of(context);
         final recorder = FlightRecorder.instance;
-        final track = recorder.currentTrack ?? recorder.lastCompletedTrack;
-        final samples = track?.samples ?? const <FlightSample>[];
+        final currentTrack = recorder.currentTrack;
+        final track = currentTrack ?? recorder.lastCompletedTrack;
+        final samples = _samplesWithLiveData(
+          track,
+          currentTrack == null ? null : liveData,
+        );
         return CustomPaint(
           painter: _VerticalGraphPainter(
             samples: _recentSamples(samples, intervalSeconds),
+            intervalSeconds: intervalSeconds,
             verticalStep: verticalStep,
             dotSize: dotSize,
             theme: Theme.of(context),
@@ -40,6 +54,25 @@ class VerticalGraphControl extends StatelessWidget {
         );
       },
     );
+  }
+
+  static List<FlightSample> _samplesWithLiveData(
+    FlightTrack? track,
+    FlightData? liveData,
+  ) {
+    final samples = List<FlightSample>.of(
+      track?.samples ?? const <FlightSample>[],
+    );
+    if (liveData == null) return samples;
+
+    final liveSample = FlightSample(
+      time: liveData.timestamp ?? DateTime.now(),
+      data: liveData,
+    );
+    if (samples.isEmpty || liveSample.time.isAfter(samples.last.time)) {
+      samples.add(liveSample);
+    }
+    return samples;
   }
 
   static List<FlightSample> _recentSamples(
@@ -62,12 +95,14 @@ class VerticalGraphControl extends StatelessWidget {
 
 class _VerticalGraphPainter extends CustomPainter {
   final List<FlightSample> samples;
+  final double intervalSeconds;
   final double verticalStep;
   final double dotSize;
   final ThemeData theme;
 
   _VerticalGraphPainter({
     required this.samples,
+    required this.intervalSeconds,
     required this.verticalStep,
     required this.dotSize,
     required this.theme,
@@ -138,14 +173,32 @@ class _VerticalGraphPainter extends CustomPainter {
       );
     }
 
-    final t0 = samples.first.time;
-    final totalMs = math
-        .max(1, samples.last.time.difference(t0).inMilliseconds)
+    final intervalLabel = TextPainter(
+      text: TextSpan(text: '${intervalSeconds.round()}s', style: labelStyle),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final zeroLabel = TextPainter(
+      text: TextSpan(text: '0s', style: labelStyle),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    intervalLabel.paint(canvas, Offset(graph.left, graph.bottom + 2));
+    zeroLabel.paint(
+      canvas,
+      Offset(graph.right - zeroLabel.width, graph.bottom + 2),
+    );
+
+    // Keep the horizontal axis fixed: the right edge is always 0 seconds and
+    // the left edge is always the configured interval (60s by default). Older
+    // samples therefore occupy only the visible portion instead of stretching
+    // to fill the graph.
+    final windowMs = (intervalSeconds.clamp(1.0, 3600.0) * 1000.0)
+        .round()
         .toDouble();
+    final windowEnd = samples.last.time;
     Offset point(FlightSample sample) {
+      final ageMs = windowEnd.difference(sample.time).inMilliseconds;
       final x =
-          graph.left +
-          (sample.time.difference(t0).inMilliseconds / totalMs) * graph.width;
+          graph.left + (1.0 - (ageMs / windowMs).clamp(0.0, 1.0)) * graph.width;
       final y =
           graph.bottom -
           ((sample.data.altitude - graphMin) / altitudeSpan).clamp(0.0, 1.0) *
@@ -176,16 +229,6 @@ class _VerticalGraphPainter extends CustomPainter {
     for (final sample in samples) {
       canvas.drawCircle(point(sample), radius, dotPaint);
     }
-
-    final duration = samples.last.time.difference(samples.first.time);
-    final footer = TextPainter(
-      text: TextSpan(text: _formatDuration(duration), style: labelStyle),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    footer.paint(
-      canvas,
-      Offset(graph.right - footer.width, size.height - footer.height - 2),
-    );
   }
 
   void _drawEmpty(Canvas canvas, Size size) {
@@ -204,16 +247,10 @@ class _VerticalGraphPainter extends CustomPainter {
     );
   }
 
-  static String _formatDuration(Duration duration) {
-    final seconds = duration.inSeconds;
-    final minutes = seconds ~/ 60;
-    final remainder = (seconds % 60).toString().padLeft(2, '0');
-    return '$minutes:$remainder';
-  }
-
   @override
   bool shouldRepaint(covariant _VerticalGraphPainter oldDelegate) {
     return oldDelegate.samples != samples ||
+        oldDelegate.intervalSeconds != intervalSeconds ||
         oldDelegate.verticalStep != verticalStep ||
         oldDelegate.dotSize != dotSize ||
         oldDelegate.theme != theme;

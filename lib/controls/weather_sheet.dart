@@ -667,7 +667,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(top: BorderSide(color: Colors.white.withAlpha(40))),
       ),
-      padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 2),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -702,7 +702,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               ),
             ),
           if (data != null) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             SizedBox(
               height: _bottomTab == _BottomTab.hourly
                   ? _HourlyDetailTable.tableHeight
@@ -757,7 +757,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
         decoration: BoxDecoration(
           color: selected ? Colors.white.withAlpha(50) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
@@ -959,7 +959,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     if (coords.isNotEmpty) parts.add(coords);
     if (data?.timezone != null) parts.add(data!.timezone!);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(6, 2, 6, 4),
+      padding: const EdgeInsets.fromLTRB(6, 1, 6, 1),
       child: Row(
         children: [
           if (data?.servedByFallback == true) ...[
@@ -2013,21 +2013,25 @@ class _HourlyDetailTable extends StatefulWidget {
   /// Reports the tapped hour index.
   final ValueChanged<int> onSelect;
 
-  // Row heights (mirrored by the gutter).
-  static const double _headerH = 20;
-  static const double _hourH = 18;
-  static const double _iconH = 32;
-  static const double _tempH = 30;
-  static const double _rainH = 26;
-  static const double _windH = 26;
-  static const double _gustH = 26;
-  static const double _dirH = 26;
+  // Row heights (mirrored by the gutter). Kept tight so the panel steals as
+  // little map as possible while still showing every row.
+  static const double _headerH = 15;
+  static const double _hourH = 14;
+  static const double _iconH = 20;
+  static const double _tempH = 20;
+  static const double _rainH = 19;
+  static const double _windH = 18;
+  static const double _gustH = 18;
+  static const double _dirH = 18;
 
   /// Total table height (gutter and columns share the same rows).
   static const double tableHeight =
       _headerH + _hourH + _iconH + _tempH + _rainH + _windH + _gustH + _dirH;
 
-  static const double _colWidth = 56;
+  /// Fixed label gutter width.
+  static const double _gutterWidth = 80;
+
+  static const double _colWidth = 42;
 
   @override
   State<_HourlyDetailTable> createState() => _HourlyDetailTableState();
@@ -2119,7 +2123,7 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
     return SizedBox(
       height: height,
       child: Padding(
-        padding: const EdgeInsets.only(left: 8, right: 4),
+        padding: const EdgeInsets.only(left: 6, right: 3),
         child: Row(
           children: [
             Flexible(
@@ -2127,13 +2131,13 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                style: const TextStyle(color: Colors.white54, fontSize: 10),
               ),
             ),
             if (unit != null) ...[
-              const SizedBox(width: 3),
+              const SizedBox(width: 2),
               Text(unit,
-                  style: const TextStyle(color: Colors.white38, fontSize: 9)),
+                  style: const TextStyle(color: Colors.white38, fontSize: 8)),
             ],
           ],
         ),
@@ -2143,7 +2147,7 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
 
   Widget _buildGutter(AppLocalizations l10n, WeatherUnits units) {
     return SizedBox(
-      width: 96,
+      width: _HourlyDetailTable._gutterWidth,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2152,18 +2156,18 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
           SizedBox(
             height: _HourlyDetailTable._hourH + _HourlyDetailTable._iconH,
             child: Padding(
-              padding: const EdgeInsets.only(left: 8, right: 4),
+              padding: const EdgeInsets.only(left: 6, right: 3),
               child: Row(
                 children: [
-                  const Icon(Icons.schedule, size: 13, color: Colors.white54),
-                  const SizedBox(width: 5),
+                  const Icon(Icons.schedule, size: 11, color: Colors.white54),
+                  const SizedBox(width: 4),
                   Flexible(
                     child: Text(
                       l10n.weatherRowHours,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style:
-                          const TextStyle(color: Colors.white54, fontSize: 11),
+                          const TextStyle(color: Colors.white54, fontSize: 10),
                     ),
                   ),
                 ],
@@ -2208,7 +2212,7 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                   dayStart: dayStart,
                   past: past,
                   child: Text(
-                    DateFormat('HH:mm', locale).format(h.time),
+                    DateFormat('HH', locale).format(h.time),
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
@@ -2222,7 +2226,7 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                   past: past,
                   child: Icon(
                     kindIcon(h.kind, isDay: h.isDay ?? true),
-                    size: 18,
+                    size: 15,
                     color: Colors.orangeAccent,
                   ),
                 ),
@@ -2237,7 +2241,7 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                     '${h.temperature.round()}°',
                     style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 13,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -2248,7 +2252,7 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                   past: past,
                   child: Text(
                     '${h.windSpeed.round()}',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
                   ),
                 ),
                 _cell(
@@ -2262,7 +2266,7 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                     '${h.windGusts.round()}',
                     style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -2270,7 +2274,7 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                   _HourlyDetailTable._dirH,
                   dayStart: dayStart,
                   past: past,
-                  child: _WindArrow(direction: h.windDirection, size: 13),
+                  child: _WindArrow(direction: h.windDirection, size: 11),
                 ),
               ],
             ),
@@ -2317,7 +2321,7 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                   units.precipitation == PrecipitationUnit.inch ? 2 : 1),
               style: const TextStyle(
                   color: Colors.lightBlueAccent,
-                  fontSize: 11.5,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.w600),
             )
           : null,
@@ -2344,18 +2348,18 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
             child: ColoredBox(color: Color(0x2EFFFFFF)),
           ),
           Positioned(
-            left: 5,
+            left: 4,
             top: 0,
             bottom: 0,
             // Clip.none lets the label span the whole day's columns.
             child: Center(
               child: Text(
-                DateFormat('EEEE d', locale).format(t).toUpperCase(),
+                DateFormat('EEE d', locale).format(t).toUpperCase(),
                 style: const TextStyle(
                     color: Colors.white70,
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3),
+                    letterSpacing: 0.2),
               ),
             ),
           ),
@@ -2380,11 +2384,11 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
           if (band != null) Positioned.fill(child: ColoredBox(color: band)),
           if (rainBar != null)
             Positioned(
-              left: 5,
-              right: 5,
-              bottom: 2,
+              left: 3,
+              right: 3,
+              bottom: 1,
               child: Container(
-                height: 3,
+                height: 2.5,
                 decoration: BoxDecoration(
                   color: rainBar,
                   borderRadius: BorderRadius.circular(2),

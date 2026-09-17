@@ -74,8 +74,8 @@ dependencies:
   shared_preferences: ^2.3.2
 
   # Interactive slippy-map for the Map control (lib/controls/map_control.dart).
-  # flutter_map renders raster tiles (OSM by default) with pan/zoom; latlong2
-  # provides the LatLng type it consumes.
+  # flutter_map renders raster tiles (AMap satellite by default) with pan/zoom;
+  # latlong2 provides the LatLng type it consumes.
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
 

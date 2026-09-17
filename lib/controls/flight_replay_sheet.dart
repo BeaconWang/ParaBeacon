@@ -11,6 +11,7 @@ import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
 import '../l10n/app_localizations.dart';
 import 'map_control.dart' show MapTileSources, MapTileSource;
+import 'track_3d_painter.dart';
 
 /// Opens the flight replay screen for a completed [track] as a full-screen
 /// sheet (feature 6: replay — animated playback on the map with optional
@@ -20,7 +21,11 @@ import 'map_control.dart' show MapTileSources, MapTileSource;
 /// restored from disk store just the summary (see [FlightTrack]) and therefore
 /// cannot be replayed; the caller should gate the entry point on
 /// [FlightTrack.samples] being non-empty.
-Future<void> showFlightReplaySheet(BuildContext context, FlightTrack track) {
+Future<void> showFlightReplaySheet(
+  BuildContext context,
+  FlightTrack track, {
+  bool initial3D = false,
+}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -28,7 +33,10 @@ Future<void> showFlightReplaySheet(BuildContext context, FlightTrack track) {
     // Background driven by the theme's bottomSheetTheme (see other sheets).
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (context) => _FlightReplaySheet(track: track),
+    builder: (context) => _FlightReplaySheet(
+      track: track,
+      initial3D: initial3D,
+    ),
   );
 }
 
@@ -36,9 +44,10 @@ Future<void> showFlightReplaySheet(BuildContext context, FlightTrack track) {
 enum TrackColorMode { vario, speed, altitude }
 
 class _FlightReplaySheet extends StatefulWidget {
-  const _FlightReplaySheet({required this.track});
+  const _FlightReplaySheet({required this.track, this.initial3D = false});
 
   final FlightTrack track;
+  final bool initial3D;
 
   @override
   State<_FlightReplaySheet> createState() => _FlightReplaySheetState();
@@ -47,7 +56,7 @@ class _FlightReplaySheet extends StatefulWidget {
 class _FlightReplaySheetState extends State<_FlightReplaySheet>
     with SingleTickerProviderStateMixin {
   /// Tile source used for the replay basemap. Users can switch it in replay.
-  String _tileSourceId = 'osm';
+  String _tileSourceId = MapTileSources.defaultId;
 
   final MapController _map = MapController();
 
@@ -67,6 +76,12 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   bool _playing = false;
   double _speed = 1.0;
   bool _audioSync = false;
+
+  /// Draw the altitude-aware track directly on top of the replay map.
+  late bool _show3D = widget.initial3D;
+  double _yaw3D = -0.6;
+  double _pitch3D = 0.9;
+  double _zScale3D = 1.0;
 
   /// Active track-coloring mode (affects the map polyline and profile chart).
   TrackColorMode _colorMode = TrackColorMode.vario;
@@ -299,6 +314,19 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                   child: Text(l10n.replayTitle,
                       style: theme.textTheme.titleLarge),
                 ),
+                if (_show3D)
+                  IconButton(
+                    icon: const Icon(Icons.center_focus_strong),
+                    tooltip: l10n.replay3dResetView,
+                    onPressed: _reset3DView,
+                  ),
+                IconButton(
+                  icon: Icon(_show3D
+                      ? Icons.map_outlined
+                      : Icons.threed_rotation),
+                  tooltip: l10n.replay3dTitle,
+                  onPressed: () => setState(() => _show3D = !_show3D),
+                ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.layers_outlined),
                   tooltip: l10n.settingMapSource,
@@ -365,7 +393,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                     children: [
                       if (!_src.isNone)
                         TileLayer(
-                          key: ValueKey<String>('replay-tile-${_tileSourceId}'),
+                          key: ValueKey<String>('replay-tile-$_tileSourceId'),
                           urlTemplate: _src.urlTemplate,
                           maxNativeZoom: _src.maxZoom.round(),
                           // Rely on flutter_map's own User-Agent (formatted from
@@ -376,7 +404,18 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                           // silently dropped on Android — see MapControl's note.
                           userAgentPackageName: 'com.beacon.parabeacon',
                         ),
-                      PolylineLayer(polylines: _buildTrackPolylines()),
+                      if (_show3D)
+                        Track3DMapLayer(
+                          points: _build3DPoints(),
+                          cursorIndex: _currentIndex(),
+                          yaw: _yaw3D,
+                          pitch: _pitch3D,
+                          zScale: _zScale3D,
+                          gridColor: theme.colorScheme.onSurface.withAlpha(90),
+                          colorFor: _map3DColor,
+                        )
+                      else
+                        PolylineLayer(polylines: _buildTrackPolylines()),
                       if (hasFix)
                         MarkerLayer(
                           markers: [
@@ -401,6 +440,12 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                   top: 8,
                   child: _readoutChip(theme, cur),
                 ),
+                if (_show3D)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: _zScaleControl(theme),
+                  ),
               ],
             ),
           ),
@@ -422,6 +467,111 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
             ),
           _buildControls(theme),
         ],
+      ),
+    );
+  }
+
+  void _reset3DView() {
+    setState(() {
+      _yaw3D = -0.6;
+      _pitch3D = 0.9;
+      _zScale3D = 1.0;
+    });
+  }
+
+  void _rotate3D(double delta) {
+    setState(() {
+      _yaw3D = (_yaw3D + delta) % (2 * math.pi);
+    });
+  }
+
+  List<Track3DMapPoint> _build3DPoints() {
+    return [
+      for (var i = 0; i < _samples.length; i++)
+        if (_samples[i].data.hasFix)
+          Track3DMapPoint(
+            point: _shift(LatLng(
+              _samples[i].data.latitude,
+              _samples[i].data.longitude,
+            )),
+            altitude: _samples[i].data.altitude,
+            verticalSpeed: _samples[i].data.verticalSpeed,
+            sampleIndex: i,
+          ),
+    ];
+  }
+
+  Color _map3DColor(Track3DMapPoint point, bool dimmed) {
+    final index = point.sampleIndex.clamp(1, _samples.length - 1).toInt();
+    return _segmentColor(index, dimmed: dimmed);
+  }
+
+  Widget _zScaleControl(ThemeData theme) {
+    return Material(
+      color: theme.colorScheme.surface.withAlpha(210),
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: 142,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '3D · perspective ${(_pitch3D * 180 / math.pi).round()}°',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.rotate_left, size: 18),
+                    tooltip: 'Rotate 3D view left',
+                    onPressed: () => _rotate3D(-math.pi / 12),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: _pitch3D,
+                      min: 0.35,
+                      max: 1.35,
+                      divisions: 20,
+                      label: '${(_pitch3D * 180 / math.pi).round()}°',
+                      onChanged: (value) => setState(() => _pitch3D = value),
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.rotate_right, size: 18),
+                    tooltip: 'Rotate 3D view right',
+                    onPressed: () => _rotate3D(math.pi / 12),
+                  ),
+                ],
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Vertical scale ${_zScale3D.toStringAsFixed(1)}×',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Slider(
+                value: _zScale3D,
+                min: 0.2,
+                max: 3.0,
+                divisions: 14,
+                label: '${_zScale3D.toStringAsFixed(1)}×',
+                onChanged: (value) => setState(() => _zScale3D = value),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

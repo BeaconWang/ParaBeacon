@@ -320,6 +320,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get weatherPickOnMap => 'Pick on map';
+
+  @override
+  String get mapPickerTitle => 'Pick a location';
+
+  @override
+  String get mapPickerHint =>
+      'Drag the map to place the crosshair, then confirm.';
+
+  @override
+  String get mapPickerConfirm => 'Use this location';
+
+  @override
   String get weatherUnits => 'Units';
 
   @override

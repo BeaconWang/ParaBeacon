@@ -312,6 +312,18 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get weatherPickOnMap => '地图选点';
+
+  @override
+  String get mapPickerTitle => '选择位置';
+
+  @override
+  String get mapPickerHint => '拖动地图将十字准心对准目标位置，然后确认。';
+
+  @override
+  String get mapPickerConfirm => '使用该位置';
+
+  @override
   String get weatherUnits => '单位';
 
   @override

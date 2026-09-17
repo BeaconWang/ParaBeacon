@@ -13,6 +13,7 @@ import '../data/weather_providers.dart' show WeatherModel;
 import '../data/weather_units.dart';
 import '../l10n/app_localizations.dart';
 import 'desktop_scrolling.dart';
+import 'map_picker_sheet.dart';
 
 /// Opens the Weather screen as a full-screen sheet: a nowcast panel, a
 /// synchronized hourly detail table, a 16-day glance strip and a location
@@ -277,6 +278,29 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     _load(keepLocation: true);
   }
 
+  /// Opens the map picker and, when the user confirms a spot, re-fetches the
+  /// forecast for it. The picker hands back WGS-84 coordinates.
+  Future<void> _pickOnMap() async {
+    _searchFocus.unfocus();
+    final picked = await showMapPickerSheet(
+      context,
+      initialLat: _lat,
+      initialLon: _lon,
+    );
+    if (!mounted || picked == null) return;
+    setState(() {
+      _searchResults = const [];
+      _searchFailed = false;
+      _searchController.clear();
+      _lat = picked.$1;
+      _lon = picked.$2;
+      // Show the coordinates until the reverse geocode resolves a name.
+      _placeName = null;
+    });
+    _reverseName(picked.$1, picked.$2);
+    await _load(keepLocation: true);
+  }
+
   String _languageCode() => Localizations.localeOf(context).languageCode;
 
   // ── Derived state ────────────────────────────────────────────────────────
@@ -367,6 +391,11 @@ class _WeatherSheetState extends State<_WeatherSheet> {
         children: [
           Expanded(
             child: _buildSearchField(l10n),
+          ),
+          IconButton(
+            icon: const Icon(Icons.pin_drop_outlined, color: Colors.white70),
+            tooltip: l10n.weatherPickOnMap,
+            onPressed: _pickOnMap,
           ),
           IconButton(
             icon: Icon(

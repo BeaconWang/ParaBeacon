@@ -150,6 +150,12 @@
       "days": { "type": "int" }
     }
   },
+  "weatherPickOnMap": "Pick on map",
+
+  "mapPickerTitle": "Pick a location",
+  "mapPickerHint": "Drag the map to place the crosshair, then confirm.",
+  "mapPickerConfirm": "Use this location",
+
   "weatherUnits": "Units",
   "weatherUnitTemperature": "Temperature",
   "weatherUnitWindSpeed": "Wind speed",

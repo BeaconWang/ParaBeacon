@@ -662,6 +662,30 @@ abstract class AppLocalizations {
   /// **'{days} d'**
   String weatherPastDaysShort(int days);
 
+  /// No description provided for @weatherPickOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on map'**
+  String get weatherPickOnMap;
+
+  /// No description provided for @mapPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a location'**
+  String get mapPickerTitle;
+
+  /// No description provided for @mapPickerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag the map to place the crosshair, then confirm.'**
+  String get mapPickerHint;
+
+  /// No description provided for @mapPickerConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this location'**
+  String get mapPickerConfirm;
+
   /// No description provided for @weatherUnits.
   ///
   /// In en, this message translates to:

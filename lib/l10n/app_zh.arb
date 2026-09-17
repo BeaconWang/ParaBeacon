@@ -107,6 +107,12 @@
       "days": { "type": "int" }
     }
   },
+  "weatherPickOnMap": "地图选点",
+
+  "mapPickerTitle": "选择位置",
+  "mapPickerHint": "拖动地图将十字准心对准目标位置，然后确认。",
+  "mapPickerConfirm": "使用该位置",
+
   "weatherUnits": "单位",
   "weatherUnitTemperature": "温度",
   "weatherUnitWindSpeed": "风速",

@@ -1,0 +1,384 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' show LatLng;
+
+import '../data/gcj02.dart';
+import '../l10n/app_localizations.dart';
+import 'map_control.dart' show MapTileSource, MapTileSources;
+
+/// Opens a full-screen map so the user can pick a location by dragging the
+/// map under a fixed centre crosshair.
+///
+/// Returns the picked position as **WGS-84** `(latitude, longitude)`, or null
+/// when the user cancels. GCJ-02 tile sources (AMap) are un-shifted on the way
+/// out, so the caller always receives true GPS coordinates.
+Future<(double, double)?> showMapPickerSheet(
+  BuildContext context, {
+  double? initialLat,
+  double? initialLon,
+  String initialTileSourceId = 'osm',
+}) {
+  return showModalBottomSheet<(double, double)>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    shape: const RoundedRectangleBorder(),
+    constraints: const BoxConstraints.expand(),
+    builder: (context) => _MapPickerSheet(
+      initialLat: initialLat,
+      initialLon: initialLon,
+      initialTileSourceId: initialTileSourceId,
+    ),
+  );
+}
+
+class _MapPickerSheet extends StatefulWidget {
+  const _MapPickerSheet({
+    required this.initialLat,
+    required this.initialLon,
+    required this.initialTileSourceId,
+  });
+
+  final double? initialLat;
+  final double? initialLon;
+  final String initialTileSourceId;
+
+  @override
+  State<_MapPickerSheet> createState() => _MapPickerSheetState();
+}
+
+class _MapPickerSheetState extends State<_MapPickerSheet> {
+  /// Fallback centre when the caller has no position yet (Lausanne, as used
+  /// elsewhere in the app).
+  static const LatLng _fallback = LatLng(46.5197, 6.6323);
+
+  final MapController _map = MapController();
+
+  late String _tileSourceId;
+
+  /// Current crosshair position in WGS-84 (the value handed back).
+  late LatLng _wgs;
+
+  double _zoom = 11;
+  bool _ready = false;
+
+  /// Set while we programmatically re-centre after a tile-source change, so
+  /// the position callback does not re-interpret a stale camera centre with
+  /// the new (possibly shifted) coordinate system.
+  bool _syncing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tileSourceId = MapTileSources.byId(widget.initialTileSourceId).id;
+    final lat = widget.initialLat;
+    final lon = widget.initialLon;
+    _wgs = (lat != null && lon != null && _validLat(lat) && _validLon(lon))
+        ? LatLng(lat, lon)
+        : _fallback;
+  }
+
+  static bool _validLat(double v) => v >= -90 && v <= 90 && !v.isNaN;
+  static bool _validLon(double v) => v >= -180 && v <= 180 && !v.isNaN;
+
+  MapTileSource get _src => MapTileSources.byId(_tileSourceId);
+
+  /// WGS-84 -> tile coordinate system (GCJ-02 for the Chinese providers).
+  LatLng _toDisplay(LatLng wgs) {
+    if (!_src.requiresGcjShift) return wgs;
+    final p = Gcj02.wgsToGcj(wgs.latitude, wgs.longitude);
+    return LatLng(p[0], p[1]);
+  }
+
+  /// Tile coordinate system -> WGS-84.
+  LatLng _toWgs(LatLng display) {
+    if (!_src.requiresGcjShift) return display;
+    final p = Gcj02.gcjToWgs(display.latitude, display.longitude);
+    return LatLng(p[0], p[1]);
+  }
+
+  void _onTileSourceChanged(String id) {
+    if (id == _tileSourceId) return;
+    final wgs = _wgs; // captured under the *old* projection
+    setState(() {
+      _syncing = true;
+      _tileSourceId = id;
+      _zoom = _zoom.clamp(2.0, MapTileSources.byId(id).maxZoom);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_ready) _map.move(_toDisplay(wgs), _zoom);
+      setState(() => _syncing = false);
+    });
+  }
+
+  void _zoomBy(double delta) {
+    if (!_ready) return;
+    final next = (_map.camera.zoom + delta).clamp(2.0, _src.maxZoom);
+    _map.move(_map.camera.center, next);
+    setState(() => _zoom = next);
+  }
+
+  String _coordsLabel() {
+    final latHemi = _wgs.latitude >= 0 ? 'N' : 'S';
+    final lonHemi = _wgs.longitude >= 0 ? 'E' : 'W';
+    return '${_wgs.latitude.abs().toStringAsFixed(4)}°$latHemi  '
+        '${_wgs.longitude.abs().toStringAsFixed(4)}°$lonHemi';
+  }
+
+  String _sourceLabel(AppLocalizations l10n, String id) => switch (id) {
+        'none' => l10n.settingMapSourceNone,
+        'osm' => l10n.settingMapSourceOsm,
+        'osmfr' => l10n.settingMapSourceOsmFr,
+        'carto-dark' => l10n.settingMapSourceCartoDark,
+        'carto-voyager' => l10n.settingMapSourceCartoVoyager,
+        'amap' => l10n.settingMapSourceAmap,
+        'amap-sat' => l10n.settingMapSourceAmapSat,
+        _ => MapTileSources.byId(id).label,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final src = _src;
+
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF0C1B3A), Color(0xFF040917)],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            _buildTopBar(l10n),
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: FlutterMap(
+                      mapController: _map,
+                      options: MapOptions(
+                        initialCenter: _toDisplay(_wgs),
+                        initialZoom: _zoom,
+                        minZoom: 2,
+                        maxZoom: src.maxZoom,
+                        onMapReady: () => _ready = true,
+                        onPositionChanged: (camera, _) {
+                          if (_syncing) return;
+                          final wgs = _toWgs(camera.center);
+                          setState(() {
+                            _wgs = wgs;
+                            _zoom = camera.zoom;
+                          });
+                        },
+                        onTap: (_, point) {
+                          _map.move(point, _map.camera.zoom);
+                        },
+                      ),
+                      children: [
+                        if (!src.isNone)
+                          TileLayer(
+                            key: ValueKey<String>('picker-tile-$_tileSourceId'),
+                            urlTemplate: src.urlTemplate,
+                            maxNativeZoom: src.maxZoom.round(),
+                            // Rely on flutter_map's own User-Agent (see the
+                            // note in MapControl): a custom header is dropped
+                            // on Android and breaks OSM's usage policy check.
+                            userAgentPackageName: 'com.beacon.parabeacon',
+                          ),
+                      ],
+                    ),
+                  ),
+                  const Positioned.fill(
+                    child: IgnorePointer(child: Center(child: _Crosshair())),
+                  ),
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: Column(
+                      children: [
+                        _MapRoundButton(
+                          icon: Icons.add,
+                          onPressed: () => _zoomBy(1),
+                        ),
+                        const SizedBox(height: 8),
+                        _MapRoundButton(
+                          icon: Icons.remove,
+                          onPressed: () => _zoomBy(-1),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!src.isNone)
+                    Positioned(
+                      left: 8,
+                      bottom: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha(120),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          src.attribution,
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 10),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            _buildBottomBar(l10n),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopBar(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
+      child: Row(
+        children: [
+          const Icon(Icons.pin_drop_outlined, color: Colors.white70),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              l10n.mapPickerTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.layers_outlined, color: Colors.white70),
+            tooltip: l10n.settingMapSource,
+            initialValue: _tileSourceId,
+            onSelected: _onTileSourceChanged,
+            itemBuilder: (context) => [
+              for (final s in MapTileSources.all)
+                PopupMenuItem(
+                  value: s.id,
+                  child: Text(_sourceLabel(l10n, s.id)),
+                ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white70),
+            tooltip: l10n.cancel,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.mapPickerHint,
+            style: TextStyle(color: Colors.white.withAlpha(140), fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _coordsLabel(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                icon: const Icon(Icons.check, size: 18),
+                label: Text(l10n.mapPickerConfirm),
+                onPressed: () => Navigator.of(context)
+                    .pop((_wgs.latitude, _wgs.longitude)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Fixed centre marker: the map moves under it, the crosshair stays put.
+class _Crosshair extends StatelessWidget {
+  const _Crosshair();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: CustomPaint(painter: _CrosshairPainter()),
+    );
+  }
+}
+
+class _CrosshairPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final halo = Paint()
+      ..color = Colors.black.withAlpha(120)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4;
+    final line = Paint()
+      ..color = Colors.orangeAccent
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (final p in [halo, line]) {
+      canvas.drawCircle(c, 9, p);
+      canvas.drawLine(Offset(c.dx, 0), Offset(c.dx, c.dy - 13), p);
+      canvas.drawLine(Offset(c.dx, c.dy + 13), Offset(c.dx, size.height), p);
+      canvas.drawLine(Offset(0, c.dy), Offset(c.dx - 13, c.dy), p);
+      canvas.drawLine(Offset(c.dx + 13, c.dy), Offset(size.width, c.dy), p);
+    }
+    canvas.drawCircle(c, 1.6, Paint()..color = Colors.orangeAccent);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CrosshairPainter oldDelegate) => false;
+}
+
+class _MapRoundButton extends StatelessWidget {
+  const _MapRoundButton({required this.icon, required this.onPressed});
+
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withAlpha(140),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(icon, size: 20, color: Colors.white70),
+        ),
+      ),
+    );
+  }
+}

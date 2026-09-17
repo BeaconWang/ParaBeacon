@@ -3,12 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../l10n/app_localizations.dart';
 
 /// The kind of UI editor a setting uses.
-enum SettingKind {
-  toggle,
-  slider,
-  choice,
-  color,
-}
+enum SettingKind { toggle, slider, choice, color }
 
 /// Definition of a single configurable setting for a control.
 ///
@@ -49,13 +44,13 @@ class ControlSetting {
     required this.key,
     required this.label,
     required bool this.defaultValue,
-  })  : kind = SettingKind.toggle,
-        min = 0,
-        max = 1,
-        divisions = null,
-        unit = '',
-        options = const {},
-        palette = const [];
+  }) : kind = SettingKind.toggle,
+       min = 0,
+       max = 1,
+       divisions = null,
+       unit = '',
+       options = const {},
+       palette = const [];
 
   const ControlSetting.slider({
     required this.key,
@@ -65,21 +60,21 @@ class ControlSetting {
     required this.max,
     this.divisions,
     this.unit = '',
-  })  : kind = SettingKind.slider,
-        options = const {},
-        palette = const [];
+  }) : kind = SettingKind.slider,
+       options = const {},
+       palette = const [];
 
   const ControlSetting.choice({
     required this.key,
     required this.label,
     required this.defaultValue,
     required this.options,
-  })  : kind = SettingKind.choice,
-        min = 0,
-        max = 1,
-        divisions = null,
-        unit = '',
-        palette = const [];
+  }) : kind = SettingKind.choice,
+       min = 0,
+       max = 1,
+       divisions = null,
+       unit = '',
+       palette = const [];
 
   /// A color setting. [defaultValue] and every entry in [palette] must be an
   /// ARGB int (e.g. `0xFF2196F3`). A value of `0` in the palette means
@@ -89,12 +84,12 @@ class ControlSetting {
     required this.label,
     required int this.defaultValue,
     required this.palette,
-  })  : kind = SettingKind.color,
-        min = 0,
-        max = 1,
-        divisions = null,
-        unit = '',
-        options = const {};
+  }) : kind = SettingKind.color,
+       min = 0,
+       max = 1,
+       divisions = null,
+       unit = '',
+       options = const {};
 
   /// Localized label for this setting, resolved from the current [l10n] by the
   /// stable [key]. Falls back to the hardcoded English [label] for any key not
@@ -244,7 +239,10 @@ String? _settingLabel(AppLocalizations l10n, String key) {
 /// Resolves a ([settingKey], [optionKey]) pair to its localized option label,
 /// or `null` when there is no translation.
 String? _settingOptionLabel(
-    AppLocalizations l10n, String settingKey, Object optionKey) {
+  AppLocalizations l10n,
+  String settingKey,
+  Object optionKey,
+) {
   switch (settingKey) {
     case 'glideAvg':
       switch (optionKey) {
@@ -478,10 +476,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'format',
       label: 'Coordinate format',
       defaultValue: 'decimal',
-      options: {
-        'decimal': 'Decimal degrees',
-        'dms': 'Deg / min / sec',
-      },
+      options: {'decimal': 'Decimal degrees', 'dms': 'Deg / min / sec'},
     ),
   ],
   'altitude': [
@@ -497,6 +492,17 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ),
   ],
   'heading': [
+    ControlSetting.choice(
+      key: 'format',
+      label: 'Format',
+      defaultValue: 'degrees',
+      options: {
+        'degrees': 'Degrees (0-360°)',
+        'cardinal': 'Cardinal (N, NE, …)',
+      },
+    ),
+  ],
+  'bearing': [
     ControlSetting.choice(
       key: 'format',
       label: 'Format',
@@ -528,10 +534,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'timeFormat',
       label: 'Time format',
       defaultValue: '24h',
-      options: {
-        '24h': '24-hour',
-        '12h': '12-hour (AM/PM)',
-      },
+      options: {'24h': '24-hour', '12h': '12-hour (AM/PM)'},
     ),
   ],
   'glide_ratio': [
@@ -565,10 +568,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'timeFormat',
       label: 'Time format',
       defaultValue: '24h',
-      options: {
-        '24h': '24-hour',
-        '12h': '12-hour (AM/PM)',
-      },
+      options: {'24h': '24-hour', '12h': '12-hour (AM/PM)'},
     ),
   ],
   'sunset': [
@@ -576,10 +576,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'timeFormat',
       label: 'Time format',
       defaultValue: '24h',
-      options: {
-        '24h': '24-hour',
-        '12h': '12-hour (AM/PM)',
-      },
+      options: {'24h': '24-hour', '12h': '12-hour (AM/PM)'},
     ),
   ],
   'flight_button': [
@@ -629,10 +626,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'timeFormat',
       label: 'Time format',
       defaultValue: '24h',
-      options: {
-        '24h': '24-hour',
-        '12h': '12-hour (AM/PM)',
-      },
+      options: {'24h': '24-hour', '12h': '12-hour (AM/PM)'},
     ),
   ],
   'map': [
@@ -667,10 +661,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'rotation',
       label: 'Rotation',
       defaultValue: 'north',
-      options: {
-        'north': 'North at the top',
-        'track': 'Track up (heading)',
-      },
+      options: {'north': 'North at the top', 'track': 'Track up (heading)'},
     ),
     ControlSetting.toggle(
       key: 'showNorth',

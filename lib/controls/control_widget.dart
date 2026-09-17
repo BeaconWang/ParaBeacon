@@ -53,11 +53,10 @@ class ControlWidget extends StatelessWidget {
     // against a light background, so pick the alpha per brightness.
     final customBorderArgb = control.intSetting('borderColor', fallback: 0);
     final isLight = theme.brightness == Brightness.light;
-    final autoBorderAlpha = isEditMode
-        ? 160
-        : (isLight ? 130 : 60);
-    final autoBorderColor =
-        theme.colorScheme.outlineVariant.withAlpha(autoBorderAlpha);
+    final autoBorderAlpha = isEditMode ? 160 : (isLight ? 130 : 60);
+    final autoBorderColor = theme.colorScheme.outlineVariant.withAlpha(
+      autoBorderAlpha,
+    );
     final baseBorderColor = customBorderArgb == 0
         ? autoBorderColor
         : Color(customBorderArgb);
@@ -67,8 +66,7 @@ class ControlWidget extends StatelessWidget {
     // (long-pressed to unlock in view mode) uses the same primary tint so
     // the user can immediately see which widget is currently interactive.
     final highlight = isSelected || isControlled;
-    final borderColor =
-        highlight ? theme.colorScheme.primary : baseBorderColor;
+    final borderColor = highlight ? theme.colorScheme.primary : baseBorderColor;
 
     // Keep a subtle border while editing (for hit feedback) even if the user
     // disabled it, but hide it in view mode when requested.
@@ -78,16 +76,19 @@ class ControlWidget extends StatelessWidget {
 
     // User-picked width, clamped to a safe range. Highlight state bumps it
     // slightly so it's visible regardless of the base width.
-    final userWidth =
-        control.doubleSetting('borderWidth', fallback: 1.0).clamp(0.5, 6.0);
-    final effectiveBorderWidth =
-        highlight ? (userWidth + 1.0) : userWidth.toDouble();
+    final userWidth = control
+        .doubleSetting('borderWidth', fallback: 1.0)
+        .clamp(0.5, 6.0);
+    final effectiveBorderWidth = highlight
+        ? (userWidth + 1.0)
+        : userWidth.toDouble();
 
     // User-picked outer corner radius. The face-level clip radius shrinks
     // with it (min 0) so nested content like the map/vario preview keeps
     // sitting just inside the border like before.
-    final outerRadiusValue =
-        control.doubleSetting('borderRadius', fallback: 8.0).clamp(0.0, 64.0);
+    final outerRadiusValue = control
+        .doubleSetting('borderRadius', fallback: 8.0)
+        .clamp(0.0, 64.0);
     final outerRadius = BorderRadius.circular(outerRadiusValue.toDouble());
     final innerRadius = BorderRadius.circular(
       (outerRadiusValue - 4).clamp(0.0, 64.0).toDouble(),
@@ -101,8 +102,9 @@ class ControlWidget extends StatelessWidget {
         (control.doubleSetting('backgroundOpacity', fallback: 92.0) / 100.0)
             .clamp(0.0, 1.0);
     const editModeMinOpacity = 0.35;
-    final effectiveOpacity =
-        isEditMode ? userOpacity.clamp(editModeMinOpacity, 1.0) : userOpacity;
+    final effectiveOpacity = isEditMode
+        ? userOpacity.clamp(editModeMinOpacity, 1.0)
+        : userOpacity;
     // User-picked background color, stored as ARGB int; 0 == "automatic"
     // (fall back to the theme surface the app has always used). We strip
     // the alpha channel from the user's swatch and let `backgroundOpacity`
@@ -112,8 +114,9 @@ class ControlWidget extends StatelessWidget {
     final baseBgColor = customBgArgb == 0
         ? theme.colorScheme.surface
         : Color(customBgArgb);
-    final surfaceColor =
-        baseBgColor.withAlpha((effectiveOpacity * 255).round().clamp(0, 255));
+    final surfaceColor = baseBgColor.withAlpha(
+      (effectiveOpacity * 255).round().clamp(0, 255),
+    );
 
     // User-picked whole-control opacity (percent 0..100). This fades the
     // entire control (background + border + face contents) together via a
@@ -176,7 +179,10 @@ class ControlWidget extends StatelessWidget {
   /// Builds the actual control face. Specific control types get a custom
   /// renderer; everything else falls back to a generic icon + label face.
   Widget _buildFace(
-      BuildContext context, ThemeData theme, BorderRadius innerRadius) {
+    BuildContext context,
+    ThemeData theme,
+    BorderRadius innerRadius,
+  ) {
     final showTitle = control.boolSetting('showTitle', fallback: true);
     switch (control.type.id) {
       case 'vario':
@@ -192,9 +198,14 @@ class ControlWidget extends StatelessWidget {
         final fmt = control.setting('format');
         return LocationControl(
           showTitle: showTitle,
-          format:
-              fmt == 'dms' ? LocationFormat.dms : LocationFormat.decimal,
+          format: fmt == 'dms' ? LocationFormat.dms : LocationFormat.decimal,
         );
+      case 'gps_altitude':
+        return GpsAltitudeControl(showTitle: showTitle);
+      case 'baro_altitude':
+        return BaroAltitudeControl(showTitle: showTitle);
+      case 'altitude_above_takeoff':
+        return AltitudeAboveTakeoffControl(showTitle: showTitle);
       case 'altitude':
         final src = control.setting('source');
         AltitudeSource source;
@@ -219,16 +230,27 @@ class ControlWidget extends StatelessWidget {
           showTitle: showTitle,
           avgSeconds:
               int.tryParse(control.setting('glideAvg')?.toString() ?? '') ?? 8,
-          showLeadingOne:
-              control.boolSetting('glideLeadingOne', fallback: false),
-          showVarioInLift:
-              control.boolSetting('glideShowVario', fallback: false),
+          showLeadingOne: control.boolSetting(
+            'glideLeadingOne',
+            fallback: false,
+          ),
+          showVarioInLift: control.boolSetting(
+            'glideShowVario',
+            fallback: false,
+          ),
         );
       case 'heading':
         return HeadingControl(
           showTitle: showTitle,
           cardinal: control.setting('format') == 'cardinal',
         );
+      case 'bearing':
+        return BearingControl(
+          showTitle: showTitle,
+          cardinal: control.setting('format') == 'cardinal',
+        );
+      case 'gps_accuracy':
+        return GpsAccuracyControl(showTitle: showTitle);
       case 'wind_speed':
         return WindSpeedControl(showTitle: showTitle);
       case 'wind_direction':
@@ -268,25 +290,32 @@ class ControlWidget extends StatelessWidget {
         return SensorBatteryControl(showTitle: showTitle);
       case 'heart_rate':
         return HeartRateControl(showTitle: showTitle);
+      case 'phone_battery':
+        return PhoneBatteryControl(showTitle: showTitle);
       case 'debug_sensor':
         return const DebugSensorControl();
       case 'data_monitor':
         return const DataMonitorControl();
       case 'flight_button':
         return FlightButtonControl(
-          showAutoDetect:
-              control.boolSetting('showAutoDetect', fallback: true),
+          showAutoDetect: control.boolSetting('showAutoDetect', fallback: true),
         );
       case 'status_line':
         return StatusLineControl(
           showGps: control.boolSetting('showGps', fallback: true),
           showBluetooth: control.boolSetting('showBluetooth', fallback: true),
-          showSensorBattery:
-              control.boolSetting('showSensorBattery', fallback: true),
-          showDeviceBattery:
-              control.boolSetting('showDeviceBattery', fallback: true),
-          showFlightTimer:
-              control.boolSetting('showFlightTimer', fallback: true),
+          showSensorBattery: control.boolSetting(
+            'showSensorBattery',
+            fallback: true,
+          ),
+          showDeviceBattery: control.boolSetting(
+            'showDeviceBattery',
+            fallback: true,
+          ),
+          showFlightTimer: control.boolSetting(
+            'showFlightTimer',
+            fallback: true,
+          ),
           showClock: control.boolSetting('showClock', fallback: true),
           gpsDetailed: control.boolSetting('gpsDetailed', fallback: false),
           use24Hour: control.setting('timeFormat') != '12h',
@@ -315,29 +344,37 @@ class ControlWidget extends StatelessWidget {
             showNorth: control.boolSetting('showNorth', fallback: false),
             pilotArrowCoef:
                 control.doubleSetting('pilotArrowCoef', fallback: 100.0) /
-                    100.0,
-            lineThickness:
-                control.doubleSetting('lineThickness', fallback: 1.0),
-            tracklogMinutes:
-                control.doubleSetting('tracklogMinutes', fallback: 0.0),
-            latestThermals:
-                control.doubleSetting('latestThermals', fallback: 8.0).round(),
+                100.0,
+            lineThickness: control.doubleSetting(
+              'lineThickness',
+              fallback: 1.0,
+            ),
+            tracklogMinutes: control.doubleSetting(
+              'tracklogMinutes',
+              fallback: 0.0,
+            ),
+            latestThermals: control
+                .doubleSetting('latestThermals', fallback: 8.0)
+                .round(),
             windAlgorithm: windAlg is String ? windAlg : 'classic',
             showWind: control.boolSetting('showWind', fallback: true),
             showSun: control.boolSetting('showSun', fallback: false),
             showBearing: control.boolSetting('showBearing', fallback: false),
-            showTakeoffLine:
-                control.boolSetting('showTakeoffLine', fallback: false),
+            showTakeoffLine: control.boolSetting(
+              'showTakeoffLine',
+              fallback: false,
+            ),
             showScale: control.boolSetting('showScale', fallback: true),
             useOffline: control.boolSetting('useOffline', fallback: true),
             showTrack: control.boolSetting('showTrack', fallback: true),
             showThermal: control.boolSetting('showThermal', fallback: true),
             showAirspace: control.boolSetting('showAirspace', fallback: true),
             showLegend: control.boolSetting('showLegend', fallback: false),
-            showZoomLevel:
-                control.boolSetting('showZoomLevel', fallback: true),
-            showAttribution:
-                control.boolSetting('showAttribution', fallback: true),
+            showZoomLevel: control.boolSetting('showZoomLevel', fallback: true),
+            showAttribution: control.boolSetting(
+              'showAttribution',
+              fallback: true,
+            ),
             showStatus: control.boolSetting('showStatus', fallback: true),
           ),
         );
@@ -345,11 +382,7 @@ class ControlWidget extends StatelessWidget {
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              control.type.icon,
-              size: 22,
-              color: theme.colorScheme.primary,
-            ),
+            Icon(control.type.icon, size: 22, color: theme.colorScheme.primary),
             if (showTitle) ...[
               const SizedBox(height: 4),
               Flexible(
@@ -377,7 +410,10 @@ class ControlWidget extends StatelessWidget {
   ThemeData _applyTextColor(ThemeData base, Color textColor) {
     // Muted variant for secondary labels (title, unit). Blend towards the
     // background so both fully-white and fully-black user picks stay legible.
-    final muted = Color.alphaBlend(textColor.withAlpha(0xB3), Colors.transparent);
+    final muted = Color.alphaBlend(
+      textColor.withAlpha(0xB3),
+      Colors.transparent,
+    );
     final scheme = base.colorScheme.copyWith(
       onSurface: textColor,
       onSurfaceVariant: muted,

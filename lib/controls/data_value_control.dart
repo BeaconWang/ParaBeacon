@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../data/device_battery_service.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_state.dart';
 import '../data/sun_times.dart';
@@ -67,7 +68,8 @@ class DataValueControl extends StatelessWidget {
         // secondary but still scale visibly on big tiles.
         final labelSize = (base * 0.13).clamp(9.0, 48.0).toDouble();
 
-        final labelStyle = theme.textTheme.labelSmall?.copyWith(
+        final labelStyle =
+            theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               fontSize: labelSize,
               letterSpacing: 0.5,
@@ -270,9 +272,11 @@ class LocationControl extends StatelessWidget {
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.gps_off,
-                              size: valueSize,
-                              color: theme.colorScheme.onSurfaceVariant),
+                          Icon(
+                            Icons.gps_off,
+                            size: valueSize,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 6),
                           Text(l10n.locationNoFix, style: valueStyle),
                         ],
@@ -585,7 +589,6 @@ class _GlideSample {
 
   const _GlideSample(this.time, this.gsMs, this.vsMs);
 }
-
 
 /// Direction-of-travel readout in degrees or cardinal points.
 class HeadingControl extends StatelessWidget {
@@ -1071,7 +1074,8 @@ double _haversineM(double lat1, double lon1, double lat2, double lon2) {
   double rad(double d) => d * (math.pi / 180.0);
   final dLat = rad(lat2 - lat1);
   final dLon = rad(lon2 - lon1);
-  final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+  final a =
+      math.sin(dLat / 2) * math.sin(dLat / 2) +
       math.cos(rad(lat1)) *
           math.cos(rad(lat2)) *
           math.sin(dLon / 2) *
@@ -1133,11 +1137,12 @@ class _SunTimeControlState extends State<SunTimeControl> {
         : l10n.controlSunset;
 
     String value = '--:--';
-    if (data.hasFix &&
-        !data.latitude.isNaN &&
-        !data.longitude.isNaN) {
-      final times =
-          SunTimes.forDate(DateTime.now(), data.latitude, data.longitude);
+    if (data.hasFix && !data.latitude.isNaN && !data.longitude.isNaN) {
+      final times = SunTimes.forDate(
+        DateTime.now(),
+        data.latitude,
+        data.longitude,
+      );
       final event = widget.event == SunEvent.sunrise
           ? times.sunrise
           : times.sunset;
@@ -1156,4 +1161,180 @@ class _SunTimeControlState extends State<SunTimeControl> {
   }
 }
 
+/// GPS altitude in meters above mean sea level.
+class GpsAltitudeControl extends StatelessWidget {
+  final bool showTitle;
 
+  const GpsAltitudeControl({super.key, this.showTitle = true});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = FlightDataProvider.of(context);
+    return DataValueControl(
+      title: AppLocalizations.of(context).controlGpsAltitude,
+      value: data.gpsAltitude == null
+          ? '--'
+          : data.gpsAltitude!.toStringAsFixed(0),
+      unit: 'm',
+      showTitle: showTitle,
+    );
+  }
+}
+
+/// Barometric altitude in meters above mean sea level.
+class BaroAltitudeControl extends StatelessWidget {
+  final bool showTitle;
+
+  const BaroAltitudeControl({super.key, this.showTitle = true});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = FlightDataProvider.of(context);
+    return DataValueControl(
+      title: AppLocalizations.of(context).controlBaroAltitude,
+      value: data.baroAltitude == null
+          ? '--'
+          : data.baroAltitude!.toStringAsFixed(0),
+      unit: 'm',
+      showTitle: showTitle,
+    );
+  }
+}
+
+/// Bearing to the current navigation target, when one is available.
+class BearingControl extends StatelessWidget {
+  final bool showTitle;
+  final bool cardinal;
+
+  const BearingControl({
+    super.key,
+    this.showTitle = true,
+    this.cardinal = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final data = FlightDataProvider.of(context);
+    final bearing = data.bearing;
+    final value = bearing == null
+        ? '--'
+        : cardinal
+        ? _cardinal8(bearing)
+        : bearing.round().toString().padLeft(3, '0');
+    return DataValueControl(
+      title: AppLocalizations.of(context).controlBearing,
+      value: value,
+      unit: cardinal ? '' : '°',
+      showTitle: showTitle,
+    );
+  }
+}
+
+/// Horizontal GPS accuracy in meters.
+class GpsAccuracyControl extends StatelessWidget {
+  final bool showTitle;
+
+  const GpsAccuracyControl({super.key, this.showTitle = true});
+
+  @override
+  Widget build(BuildContext context) {
+    final accuracy = FlightDataProvider.of(context).gpsAccuracy;
+    return DataValueControl(
+      title: AppLocalizations.of(context).controlGpsAccuracy,
+      value: accuracy == null ? '--' : accuracy.toStringAsFixed(1),
+      unit: 'm',
+      showTitle: showTitle,
+    );
+  }
+}
+
+/// Phone/tablet battery level in percent.
+class PhoneBatteryControl extends StatelessWidget {
+  final bool showTitle;
+
+  const PhoneBatteryControl({super.key, this.showTitle = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: DeviceBatteryService.instance,
+      builder: (context, _) {
+        final battery = DeviceBatteryService.instance.level;
+        ValueState state = ValueState.neutral;
+        if (battery != null) {
+          if (battery <= 15) {
+            state = ValueState.bad;
+          } else if (battery >= 60) {
+            state = ValueState.good;
+          }
+        }
+        return DataValueControl(
+          title: AppLocalizations.of(context).controlPhoneBattery,
+          value: battery == null ? '--' : battery.toString(),
+          unit: '%',
+          state: state,
+          showTitle: showTitle,
+        );
+      },
+    );
+  }
+}
+
+/// Height above the take-off reference captured at the start of a flight.
+class AltitudeAboveTakeoffControl extends StatefulWidget {
+  final bool showTitle;
+
+  const AltitudeAboveTakeoffControl({super.key, this.showTitle = true});
+
+  @override
+  State<AltitudeAboveTakeoffControl> createState() =>
+      _AltitudeAboveTakeoffControlState();
+}
+
+class _AltitudeAboveTakeoffControlState
+    extends State<AltitudeAboveTakeoffControl> {
+  double? _takeoffAltitude;
+
+  @override
+  void initState() {
+    super.initState();
+    FlightState.instance.addListener(_onFlightStateChanged);
+  }
+
+  void _onFlightStateChanged() {
+    if (!mounted) return;
+    if (!FlightState.instance.isFlying) {
+      _takeoffAltitude = null;
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    FlightState.instance.removeListener(_onFlightStateChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = FlightDataProvider.of(context);
+    final flying = FlightState.instance.isFlying;
+    if (flying &&
+        _takeoffAltitude == null &&
+        (data.hasFix || data.baroAltitude != null)) {
+      _takeoffAltitude = data.altitude;
+    }
+    final value = !flying || _takeoffAltitude == null
+        ? '--'
+        : (data.altitude - _takeoffAltitude!).toStringAsFixed(0);
+    return DataValueControl(
+      title: AppLocalizations.of(context).controlAltitudeAboveTakeoff,
+      value: value,
+      unit: 'm',
+      state: value != '--' && value.startsWith('-')
+          ? ValueState.bad
+          : ValueState.neutral,
+      showTitle: widget.showTitle,
+    );
+  }
+}

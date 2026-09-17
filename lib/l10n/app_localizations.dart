@@ -1142,6 +1142,24 @@ abstract class AppLocalizations {
   /// **'Altitude'**
   String get controlAltitude;
 
+  /// No description provided for @controlGpsAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS Altitude'**
+  String get controlGpsAltitude;
+
+  /// No description provided for @controlBaroAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Baro Altitude'**
+  String get controlBaroAltitude;
+
+  /// No description provided for @controlAltitudeAboveTakeoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude Above Takeoff'**
+  String get controlAltitudeAboveTakeoff;
+
   /// No description provided for @controlMaxAltitude.
   ///
   /// In en, this message translates to:
@@ -1171,6 +1189,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Heading'**
   String get controlHeading;
+
+  /// No description provided for @controlBearing.
+  ///
+  /// In en, this message translates to:
+  /// **'Bearing'**
+  String get controlBearing;
+
+  /// No description provided for @controlGpsAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS Accuracy'**
+  String get controlGpsAccuracy;
 
   /// No description provided for @controlLocation.
   ///
@@ -1255,6 +1285,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sensor Battery'**
   String get controlSensorBattery;
+
+  /// No description provided for @controlPhoneBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Battery'**
+  String get controlPhoneBattery;
 
   /// No description provided for @controlHeartRate.
   ///
@@ -1357,18 +1393,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This control has no settings.'**
   String get controlNoSettings;
-
-  /// No description provided for @controlGpsAltitude.
-  ///
-  /// In en, this message translates to:
-  /// **'GPS Altitude'**
-  String get controlGpsAltitude;
-
-  /// No description provided for @controlBaroAltitude.
-  ///
-  /// In en, this message translates to:
-  /// **'Baro Altitude'**
-  String get controlBaroAltitude;
 
   /// No description provided for @controlWindDir.
   ///

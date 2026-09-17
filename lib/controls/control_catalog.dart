@@ -7,10 +7,7 @@ import '../l10n/app_localizations.dart';
 /// The catalog is organized into two directories:
 /// - [ControlKind.data]: data controls (values/readouts).
 /// - [ControlKind.widget]: widget controls (interactive/visual widgets).
-enum ControlKind {
-  data,
-  widget,
-}
+enum ControlKind { data, widget }
 
 extension ControlKindX on ControlKind {
   /// Localized directory title shown in the chooser.
@@ -76,6 +73,12 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
   switch (id) {
     case 'altitude':
       return l10n.controlAltitude;
+    case 'gps_altitude':
+      return l10n.controlGpsAltitude;
+    case 'baro_altitude':
+      return l10n.controlBaroAltitude;
+    case 'altitude_above_takeoff':
+      return l10n.controlAltitudeAboveTakeoff;
     case 'max_altitude':
       return l10n.controlMaxAltitude;
     case 'vertical_speed':
@@ -86,6 +89,10 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlGlide;
     case 'heading':
       return l10n.controlHeading;
+    case 'bearing':
+      return l10n.controlBearing;
+    case 'gps_accuracy':
+      return l10n.controlGpsAccuracy;
     case 'location':
       return l10n.controlLocation;
     case 'wind_speed':
@@ -112,6 +119,8 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlSensorBattery;
     case 'heart_rate':
       return l10n.controlHeartRate;
+    case 'phone_battery':
+      return l10n.controlPhoneBattery;
     case 'vario':
       return l10n.controlVario;
     case 'debug_sensor':
@@ -164,6 +173,30 @@ class ControlCatalog {
           defaultRows: 2,
         ),
         ControlType(
+          id: 'gps_altitude',
+          label: 'GPS Altitude',
+          icon: Icons.gps_fixed,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'baro_altitude',
+          label: 'Baro Altitude',
+          icon: Icons.height,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'altitude_above_takeoff',
+          label: 'Altitude Above Takeoff',
+          icon: Icons.flight_takeoff,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
           id: 'max_altitude',
           label: 'Max Altitude',
           icon: Icons.landscape,
@@ -200,6 +233,22 @@ class ControlCatalog {
           id: 'heading',
           label: 'Heading',
           icon: Icons.explore_outlined,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'bearing',
+          label: 'Bearing',
+          icon: Icons.near_me,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'gps_accuracy',
+          label: 'GPS Accuracy',
+          icon: Icons.gps_not_fixed,
           kind: ControlKind.data,
           defaultCols: 3,
           defaultRows: 2,
@@ -308,6 +357,14 @@ class ControlCatalog {
           id: 'heart_rate',
           label: 'Heart Rate',
           icon: Icons.favorite_outline,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'phone_battery',
+          label: 'Phone Battery',
+          icon: Icons.battery_full,
           kind: ControlKind.data,
           defaultCols: 3,
           defaultRows: 2,

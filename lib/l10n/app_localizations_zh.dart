@@ -565,6 +565,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlAltitude => '海拔';
 
   @override
+  String get controlGpsAltitude => 'GPS 高度';
+
+  @override
+  String get controlBaroAltitude => '气压高度';
+
+  @override
+  String get controlAltitudeAboveTakeoff => '相对起飞点高度';
+
+  @override
   String get controlMaxAltitude => '最高海拔';
 
   @override
@@ -578,6 +587,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get controlHeading => '航向';
+
+  @override
+  String get controlBearing => '目标方位';
+
+  @override
+  String get controlGpsAccuracy => 'GPS 精度';
 
   @override
   String get controlLocation => '位置';
@@ -620,6 +635,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get controlSensorBattery => '传感器电量';
+
+  @override
+  String get controlPhoneBattery => '手机电量';
 
   @override
   String get controlHeartRate => '心率';
@@ -675,12 +693,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get controlNoSettings => '此控件没有可设置项。';
-
-  @override
-  String get controlGpsAltitude => 'GPS 高度';
-
-  @override
-  String get controlBaroAltitude => '气压高度';
 
   @override
   String get controlWindDir => '风向';

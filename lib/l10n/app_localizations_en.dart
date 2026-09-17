@@ -582,6 +582,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlAltitude => 'Altitude';
 
   @override
+  String get controlGpsAltitude => 'GPS Altitude';
+
+  @override
+  String get controlBaroAltitude => 'Baro Altitude';
+
+  @override
+  String get controlAltitudeAboveTakeoff => 'Altitude Above Takeoff';
+
+  @override
   String get controlMaxAltitude => 'Max Altitude';
 
   @override
@@ -595,6 +604,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get controlHeading => 'Heading';
+
+  @override
+  String get controlBearing => 'Bearing';
+
+  @override
+  String get controlGpsAccuracy => 'GPS Accuracy';
 
   @override
   String get controlLocation => 'Location';
@@ -637,6 +652,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get controlSensorBattery => 'Sensor Battery';
+
+  @override
+  String get controlPhoneBattery => 'Phone Battery';
 
   @override
   String get controlHeartRate => 'Heart Rate';
@@ -692,12 +710,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get controlNoSettings => 'This control has no settings.';
-
-  @override
-  String get controlGpsAltitude => 'GPS Altitude';
-
-  @override
-  String get controlBaroAltitude => 'Baro Altitude';
 
   @override
   String get controlWindDir => 'Wind Dir';

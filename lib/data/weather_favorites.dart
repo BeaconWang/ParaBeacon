@@ -146,6 +146,28 @@ class WeatherFavoritesStore extends ChangeNotifier {
     await _persist();
   }
 
+  /// Renames the favorite at [lat]/[lon], keeping its position in the list.
+  ///
+  /// Returns false when there is no such favorite or [newName] is empty after
+  /// sanitizing (control characters stripped, trimmed, length-capped) — the
+  /// stored name is never replaced by a blank one.
+  Future<bool> rename(double lat, double lon, String newName) async {
+    final index = indexOfSpot(lat, lon);
+    if (index < 0) return false;
+    final current = _places[index];
+    final renamed = FavoritePlace.create(
+      name: newName,
+      lat: current.lat,
+      lon: current.lon,
+    );
+    if (renamed == null) return false;
+    if (renamed.name == current.name) return true;
+    _places[index] = renamed;
+    notifyListeners();
+    await _persist();
+    return true;
+  }
+
   Future<void> _persist() async {
     try {
       final sp = await SharedPreferences.getInstance();

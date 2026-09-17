@@ -112,6 +112,8 @@
   "weatherFavorites": "收藏地点",
   "weatherFavoriteAdd": "收藏该位置",
   "weatherFavoriteRemove": "取消收藏",
+  "weatherFavoriteRename": "重命名",
+  "weatherFavoriteName": "名称",
   "weatherFavoriteSaved": "已收藏“{name}”",
   "weatherFavoriteRemoved": "已从收藏中移除",
   "weatherFavoritesEmpty": "还没有收藏的地点",

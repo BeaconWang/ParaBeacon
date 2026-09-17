@@ -686,6 +686,18 @@ abstract class AppLocalizations {
   /// **'Remove from saved'**
   String get weatherFavoriteRemove;
 
+  /// No description provided for @weatherFavoriteRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get weatherFavoriteRename;
+
+  /// No description provided for @weatherFavoriteName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get weatherFavoriteName;
+
   /// No description provided for @weatherFavoriteSaved.
   ///
   /// In en, this message translates to:

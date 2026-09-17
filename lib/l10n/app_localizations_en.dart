@@ -332,6 +332,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherFavoriteRemove => 'Remove from saved';
 
   @override
+  String get weatherFavoriteRename => 'Rename';
+
+  @override
+  String get weatherFavoriteName => 'Name';
+
+  @override
   String weatherFavoriteSaved(String name) {
     return 'Saved “$name”';
   }

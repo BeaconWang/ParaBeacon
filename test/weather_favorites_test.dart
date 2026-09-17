@@ -70,5 +70,50 @@ void main() {
 
       await store.removeSpot(46.5197, 6.6323);
     });
+
+    test('rename keeps the entry in place and updates the name', () async {
+      final store = WeatherFavoritesStore.instance;
+      await store.load();
+      await store.add(FavoritePlace(name: 'Second', lat: 10.0, lon: 20.0));
+      await store.add(FavoritePlace(name: 'First', lat: 11.0, lon: 21.0));
+
+      final indexBefore = store.indexOfSpot(10.0, 20.0);
+      expect(await store.rename(10.0, 20.0, '  Renamed  '), isTrue);
+
+      expect(store.indexOfSpot(10.0, 20.0), indexBefore,
+          reason: 'renaming must not reorder the list');
+      expect(store.places[indexBefore].name, 'Renamed');
+      expect(store.places[indexBefore].lat, 10.0);
+
+      await store.removeSpot(10.0, 20.0);
+      await store.removeSpot(11.0, 21.0);
+    });
+
+    test('rename refuses a blank name and an unknown spot', () async {
+      final store = WeatherFavoritesStore.instance;
+      await store.load();
+      await store.add(FavoritePlace(name: 'Keep', lat: 1.0, lon: 2.0));
+
+      expect(await store.rename(1.0, 2.0, '   '), isFalse);
+      expect(store.places[store.indexOfSpot(1.0, 2.0)].name, 'Keep');
+      expect(await store.rename(80.0, 120.0, 'Nope'), isFalse);
+
+      await store.removeSpot(1.0, 2.0);
+    });
+
+    test('a rename survives a reload from storage', () async {
+      final store = WeatherFavoritesStore.instance;
+      await store.load();
+      await store.add(FavoritePlace(name: 'Before', lat: 5.0, lon: 6.0));
+      await store.rename(5.0, 6.0, 'After');
+
+      // Read back what was actually persisted.
+      final sp = await SharedPreferences.getInstance();
+      final raw = sp.getString('pb.weather.favorites');
+      expect(raw, contains('After'));
+      expect(raw, isNot(contains('Before')));
+
+      await store.removeSpot(5.0, 6.0);
+    });
   });
 }

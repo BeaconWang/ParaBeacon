@@ -14,6 +14,7 @@ import '../data/weather_providers.dart' show WeatherModel;
 import '../data/weather_units.dart';
 import '../l10n/app_localizations.dart';
 import 'desktop_scrolling.dart';
+import 'favorite_rename_dialog.dart';
 import 'map_picker_sheet.dart';
 
 /// Opens the Weather screen as a full-screen sheet: a nowcast panel, a
@@ -45,6 +46,7 @@ enum _BottomTab { hourly, daily }
 /// Sentinel values for the favorites popup menu (the other entries carry a
 /// [FavoritePlace]).
 const String _kToggleFavorite = 'toggle-favorite';
+const String _kRenameFavorite = 'rename-favorite';
 const String _kManageFavorites = 'manage-favorites';
 
 class _WeatherSheet extends StatefulWidget {
@@ -414,11 +416,23 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             subtitle: Text(_formatCoords(p.lat, p.lon)),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 20),
-                              tooltip: l10n.delete,
-                              onPressed: () =>
-                                  _favorites.removeSpot(p.lat, p.lon),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.drive_file_rename_outline,
+                                      size: 20),
+                                  tooltip: l10n.weatherFavoriteRename,
+                                  onPressed: () => _renameFavorite(p),
+                                ),
+                                IconButton(
+                                  icon:
+                                      const Icon(Icons.delete_outline, size: 20),
+                                  tooltip: l10n.delete,
+                                  onPressed: () =>
+                                      _favorites.removeSpot(p.lat, p.lon),
+                                ),
+                              ],
                             ),
                             onTap: () => Navigator.of(context).pop(p),
                           );
@@ -436,6 +450,26 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     if (!mounted || picked == null) return;
     _applyLocation(picked.lat, picked.lon, name: picked.name);
     await _load(keepLocation: true);
+  }
+
+  /// Prompts for a new name for [place] and applies it. The header label
+  /// follows along when the renamed favorite is the location on screen.
+  Future<void> _renameFavorite(FavoritePlace place) async {
+    final newName = await showFavoriteRenameDialog(
+      context,
+      place,
+      coordsLabel: _formatCoords(place.lat, place.lon),
+    );
+    if (!mounted || newName == null) return;
+    // Keep the header in sync when the renamed entry is the active spot.
+    final lat = _lat;
+    final lon = _lon;
+    if (lat == null || lon == null) return;
+    final activeIndex = _favorites.indexOfSpot(lat, lon);
+    if (activeIndex >= 0 &&
+        activeIndex == _favorites.indexOfSpot(place.lat, place.lon)) {
+      setState(() => _placeName = newName);
+    }
   }
 
   void _snack(String message) {
@@ -623,6 +657,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
           _load(keepLocation: true);
         } else if (value == _kToggleFavorite) {
           _toggleFavorite();
+        } else if (value == _kRenameFavorite) {
+          if (lat == null || lon == null) return;
+          final index = _favorites.indexOfSpot(lat, lon);
+          if (index >= 0) _renameFavorite(_favorites.places[index]);
         } else if (value == _kManageFavorites) {
           _showFavoritesSheet();
         }
@@ -638,6 +676,17 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               title: Text(saved
                   ? l10n.weatherFavoriteRemove
                   : l10n.weatherFavoriteAdd),
+            ),
+          ),
+        if (saved)
+          PopupMenuItem<Object>(
+            value: _kRenameFavorite,
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading:
+                  const Icon(Icons.drive_file_rename_outline, size: 20),
+              title: Text(l10n.weatherFavoriteRename),
             ),
           ),
         if (places.isEmpty)

@@ -8,6 +8,7 @@ import '../data/gcj02.dart';
 import '../data/geocoding_service.dart';
 import '../data/weather_favorites.dart';
 import '../l10n/app_localizations.dart';
+import 'favorite_rename_dialog.dart';
 import 'map_control.dart' show MapTileSource, MapTileSources;
 
 /// Resolves the device's current position, or null when unavailable.
@@ -221,6 +222,15 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
     if (mounted) _snack(l10n.weatherFavoriteSaved(place.name));
   }
 
+  /// Prompts for a new name for a saved location.
+  Future<void> _renameFavorite(FavoritePlace place) async {
+    await showFavoriteRenameDialog(
+      context,
+      place,
+      coordsLabel: _coordsLabel(LatLng(place.lat, place.lon)),
+    );
+  }
+
   void _snack(String message) {
     final messenger = ScaffoldMessenger.maybeOf(context);
     messenger
@@ -381,6 +391,7 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
             PopupMenuButton<int>(
               icon: const Icon(Icons.bookmarks_outlined, color: Colors.white70),
               tooltip: l10n.weatherFavorites,
+              constraints: const BoxConstraints(minWidth: 200, maxWidth: 340),
               onSelected: (i) {
                 if (i < 0 || i >= favorites.length) return;
                 final p = favorites[i];
@@ -390,10 +401,30 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                 for (var i = 0; i < favorites.length; i++)
                   PopupMenuItem(
                     value: i,
-                    child: Text(
-                      favorites[i].name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            favorites[i].name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                              Icons.drive_file_rename_outline,
+                              size: 18),
+                          tooltip: l10n.weatherFavoriteRename,
+                          visualDensity: VisualDensity.compact,
+                          // Close the menu first: the dialog must not be
+                          // torn down with the popup route.
+                          onPressed: () {
+                            final place = favorites[i];
+                            Navigator.of(context).pop();
+                            _renameFavorite(place);
+                          },
+                        ),
+                      ],
                     ),
                   ),
               ],

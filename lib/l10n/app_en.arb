@@ -155,6 +155,8 @@
   "weatherFavorites": "Saved locations",
   "weatherFavoriteAdd": "Save this location",
   "weatherFavoriteRemove": "Remove from saved",
+  "weatherFavoriteRename": "Rename",
+  "weatherFavoriteName": "Name",
   "weatherFavoriteSaved": "Saved “{name}”",
   "@weatherFavoriteSaved": {
     "placeholders": {

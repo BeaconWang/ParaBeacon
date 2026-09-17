@@ -324,6 +324,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get weatherFavoriteRemove => '取消收藏';
 
   @override
+  String get weatherFavoriteRename => '重命名';
+
+  @override
+  String get weatherFavoriteName => '名称';
+
+  @override
   String weatherFavoriteSaved(String name) {
     return '已收藏“$name”';
   }

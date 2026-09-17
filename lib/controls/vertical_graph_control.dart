@@ -6,9 +6,11 @@ import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
 
-/// A live altitude history graph inspired by XCTrack's Vertical graph widget.
+/// A live altitude and vertical-acceleration history graph inspired by
+/// XCTrack's Vertical graph widget.
 ///
-/// It shows the most recent [intervalSeconds] of recorded altitude samples.
+/// It shows the most recent [intervalSeconds] of recorded altitude samples and
+/// overlays vertical acceleration derived from the change in vertical speed.
 /// While a flight is active it follows the current track and appends the latest
 /// live data snapshot, so the right edge updates even between recorder samples.
 /// After landing it keeps showing the last completed track until another flight
@@ -108,6 +110,25 @@ class _VerticalGraphPainter extends CustomPainter {
     required this.theme,
   });
 
+  double _verticalAccelerationFor(
+    FlightSample current,
+    FlightSample previous,
+    FlightSample beforePrevious,
+  ) {
+    final currentDt = current.time.difference(previous.time).inMilliseconds /
+        1000.0;
+    final previousDt =
+        previous.time.difference(beforePrevious.time).inMilliseconds / 1000.0;
+    if (currentDt <= 0 || previousDt <= 0) return 0.0;
+
+    final currentVerticalSpeed =
+        (current.data.verticalSpeed + previous.data.verticalSpeed) / 2.0;
+    final previousVerticalSpeed =
+        (previous.data.verticalSpeed + beforePrevious.data.verticalSpeed) / 2.0;
+    return (currentVerticalSpeed - previousVerticalSpeed) /
+        ((currentDt + previousDt) / 2.0);
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final background = Paint()
@@ -143,6 +164,19 @@ class _VerticalGraphPainter extends CustomPainter {
     final graphMax = ((center + range / 2) / step).ceil() * step;
     final altitudeSpan = math.max(step, graphMax - graphMin);
 
+    final accelerationValues = <double>[0.0, 0.0];
+    for (var i = 2; i < samples.length; i++) {
+      accelerationValues.add(
+        _verticalAccelerationFor(samples[i], samples[i - 1], samples[i - 2]),
+      );
+    }
+    final accelerationAbsMax = accelerationValues
+        .map((value) => value.abs())
+        .fold<double>(0.0, math.max);
+    // Keep the acceleration trace readable even when the current flight is
+    // smooth, while allowing stronger manoeuvres to expand the right axis.
+    final accelerationScale = math.max(1.0, accelerationAbsMax * 1.15);
+
     final gridPaint = Paint()
       ..color = theme.colorScheme.onSurface.withAlpha(35)
       ..strokeWidth = 1;
@@ -152,6 +186,9 @@ class _VerticalGraphPainter extends CustomPainter {
           fontSize: 10,
         ) ??
         TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 10);
+    final accelerationLabelStyle = labelStyle.copyWith(
+      color: theme.colorScheme.tertiary,
+    );
     final labelPaint = TextPainter(textDirection: TextDirection.ltr);
 
     for (
@@ -172,6 +209,43 @@ class _VerticalGraphPainter extends CustomPainter {
         Offset(left - labelPaint.width - 4, y - labelPaint.height / 2),
       );
     }
+
+    final accelerationMaxLabel = TextPainter(
+      text: TextSpan(
+        text: '+${accelerationScale.toStringAsFixed(1)}',
+        style: accelerationLabelStyle,
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final accelerationZeroLabel = TextPainter(
+      text: TextSpan(text: '0', style: accelerationLabelStyle),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final accelerationMinLabel = TextPainter(
+      text: TextSpan(
+        text: '-${accelerationScale.toStringAsFixed(1)}',
+        style: accelerationLabelStyle,
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    accelerationMaxLabel.paint(
+      canvas,
+      Offset(graph.right - accelerationMaxLabel.width, graph.top),
+    );
+    accelerationZeroLabel.paint(
+      canvas,
+      Offset(
+        graph.right - accelerationZeroLabel.width,
+        graph.center.dy - accelerationZeroLabel.height / 2,
+      ),
+    );
+    accelerationMinLabel.paint(
+      canvas,
+      Offset(
+        graph.right - accelerationMinLabel.width,
+        graph.bottom - accelerationMinLabel.height,
+      ),
+    );
 
     final intervalLabel = TextPainter(
       text: TextSpan(text: '${intervalSeconds.round()}s', style: labelStyle),
@@ -206,6 +280,18 @@ class _VerticalGraphPainter extends CustomPainter {
       return Offset(x, y);
     }
 
+    Offset accelerationPoint(int index) {
+      final sample = samples[index];
+      final ageMs = windowEnd.difference(sample.time).inMilliseconds;
+      final x =
+          graph.left + (1.0 - (ageMs / windowMs).clamp(0.0, 1.0)) * graph.width;
+      final acceleration = accelerationValues[index];
+      final y = graph.center.dy -
+          (acceleration / accelerationScale).clamp(-1.0, 1.0) *
+              graph.height / 2.0;
+      return Offset(x, y);
+    }
+
     final line = Path();
     for (var i = 0; i < samples.length; i++) {
       final p = point(samples[i]);
@@ -222,6 +308,24 @@ class _VerticalGraphPainter extends CustomPainter {
         ..strokeWidth = 1.5
         ..strokeJoin = StrokeJoin.round
         ..color = theme.colorScheme.primary,
+    );
+
+    final accelerationLine = Path();
+    for (var i = 0; i < accelerationValues.length; i++) {
+      final p = accelerationPoint(i);
+      if (i == 0) {
+        accelerationLine.moveTo(p.dx, p.dy);
+      } else {
+        accelerationLine.lineTo(p.dx, p.dy);
+      }
+    }
+    canvas.drawPath(
+      accelerationLine,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.25
+        ..strokeJoin = StrokeJoin.round
+        ..color = theme.colorScheme.tertiary,
     );
 
     final dotPaint = Paint()..color = theme.colorScheme.secondary;

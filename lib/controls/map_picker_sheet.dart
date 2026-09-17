@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -7,9 +8,11 @@ import 'package:latlong2/latlong.dart' show LatLng;
 import '../data/gcj02.dart';
 import '../data/geocoding_service.dart';
 import '../data/weather_favorites.dart';
+import '../data/weather_service.dart' show WeatherException;
 import '../l10n/app_localizations.dart';
 import 'favorite_rename_dialog.dart';
 import 'map_control.dart' show MapTileSource, MapTileSources;
+import 'search_query_policy.dart';
 
 /// Resolves the device's current position, or null when unavailable.
 typedef CurrentLocationResolver = Future<(double, double)?> Function();
@@ -98,6 +101,18 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
   /// True while a favorite is being saved (reverse geocode in flight).
   bool _savingFavorite = false;
 
+  // ── Search state (place name -> coordinates, via Nominatim) ──────────────
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+  Timer? _searchDebounce;
+  bool _searching = false;
+  bool _searchFailed = false;
+  List<GeocodedPlace> _searchResults = const [];
+
+  /// Incremented per issued request so a late response from an older query
+  /// cannot overwrite newer results.
+  int _searchSeq = 0;
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +128,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    _searchFocus.dispose();
     _favorites.removeListener(_onFavoritesChanged);
     super.dispose();
   }
@@ -222,6 +240,92 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
     if (mounted) _snack(l10n.weatherFavoriteSaved(place.name));
   }
 
+  // ── Search ───────────────────────────────────────────────────────────────
+
+  /// Schedules a geocode for the field's current contents.
+  ///
+  /// The delay comes from [SearchQueryPolicy], which gives text the IME still
+  /// marks provisional a longer quiet period — a pinyin session collapses to
+  /// one request instead of geocoding every romanization fragment.
+  void _onSearchChanged() {
+    _searchDebounce?.cancel();
+    final value = _searchController.value;
+    if (value.text.trim().isEmpty) {
+      setState(() {
+        _searchResults = const [];
+        _searchFailed = false;
+        _searching = false;
+      });
+      return;
+    }
+    final delay = SearchQueryPolicy.debounceFor(value);
+    if (delay == null) return;
+    // Re-read the field when the timer fires: during a long composing wait
+    // the IME may have committed something quite different.
+    _searchDebounce = Timer(delay, () => _runSearch(_searchController.text));
+  }
+
+  void _onSearchSubmitted(String text) {
+    _searchDebounce?.cancel();
+    if (!SearchQueryPolicy.canSubmit(text)) return;
+    _runSearch(text);
+  }
+
+  Future<void> _runSearch(String query) async {
+    if (query.trim().isEmpty) return;
+    // Requests can complete out of order (or after the field was cleared);
+    // only the newest one is allowed to publish its outcome.
+    final seq = ++_searchSeq;
+    final language = Localizations.localeOf(context).languageCode;
+    setState(() {
+      _searching = true;
+      _searchFailed = false;
+    });
+    try {
+      final results = await GeocodingService.instance.search(
+        query,
+        language: language,
+      );
+      if (!mounted || seq != _searchSeq) return;
+      setState(() {
+        _searching = false;
+        _searchResults = results;
+      });
+    } on WeatherException {
+      if (!mounted || seq != _searchSeq) return;
+      setState(() {
+        _searching = false;
+        _searchFailed = true;
+        _searchResults = const [];
+      });
+    }
+  }
+
+  /// Centres the crosshair on a search hit and dismisses the result list.
+  void _selectSearchResult(GeocodedPlace place) {
+    _searchDebounce?.cancel();
+    _searchSeq++; // drop anything still in flight
+    _searchFocus.unfocus();
+    setState(() {
+      _searchResults = const [];
+      _searchFailed = false;
+      _searching = false;
+      _searchController.text = place.name;
+    });
+    _moveTo(LatLng(place.lat, place.lon), zoom: math.max(_zoom, 12));
+  }
+
+  void _clearSearch() {
+    _searchDebounce?.cancel();
+    _searchSeq++; // drop anything still in flight
+    _searchController.clear();
+    setState(() {
+      _searchResults = const [];
+      _searchFailed = false;
+      _searching = false;
+    });
+  }
+
   /// Prompts for a new name for a saved location.
   Future<void> _renameFavorite(FavoritePlace place) async {
     await showFavoriteRenameDialog(
@@ -295,6 +399,15 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                           });
                         },
                         onTap: (_, point) {
+                          // A tap on the map is also a way out of the search
+                          // overlay (dismiss the list and the keyboard).
+                          if (_searchFocus.hasFocus) _searchFocus.unfocus();
+                          if (_searchResults.isNotEmpty || _searchFailed) {
+                            setState(() {
+                              _searchResults = const [];
+                              _searchFailed = false;
+                            });
+                          }
                           _map.move(point, _map.camera.zoom);
                         },
                       ),
@@ -314,6 +427,21 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                   ),
                   const Positioned.fill(
                     child: IgnorePointer(child: Center(child: _Crosshair())),
+                  ),
+                  // Search overlays the map rather than taking a row of its
+                  // own, so the pickable area stays as large as possible.
+                  Positioned(
+                    left: 12,
+                    right: 12,
+                    top: 8,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildSearchField(l10n),
+                        if (_searchResults.isNotEmpty || _searchFailed)
+                          _buildSearchResults(l10n),
+                      ],
+                    ),
                   ),
                   Positioned(
                     right: 12,
@@ -366,6 +494,110 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSearchField(AppLocalizations l10n) {
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xE6101B33),
+        borderRadius: BorderRadius.circular(21),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.search, size: 20, color: Colors.white70),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              focusNode: _searchFocus,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              textInputAction: TextInputAction.search,
+              onSubmitted: _onSearchSubmitted,
+              // Read the controller (not the raw string) so the composing
+              // region is available to SearchQueryPolicy.
+              onChanged: (_) => _onSearchChanged(),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: l10n.weatherSearchHint,
+                hintStyle: TextStyle(color: Colors.white.withAlpha(110)),
+              ),
+            ),
+          ),
+          if (_searching)
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white70),
+            )
+          else if (_searchController.text.isNotEmpty)
+            GestureDetector(
+              onTap: _clearSearch,
+              child: const Icon(Icons.close, size: 16, color: Colors.white54),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResults(AppLocalizations l10n) {
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      constraints: const BoxConstraints(maxHeight: 240),
+      decoration: BoxDecoration(
+        color: const Color(0xF2101B33),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: _searchFailed
+          ? Padding(
+              padding: const EdgeInsets.all(14),
+              child: Text(
+                l10n.weatherSearchFailed,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            )
+          : _searchResults.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Text(
+                    l10n.weatherNoResults,
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  itemCount: _searchResults.length,
+                  itemBuilder: (context, i) {
+                    final place = _searchResults[i];
+                    return ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.place_outlined,
+                          size: 18, color: Colors.white54),
+                      title: Text(
+                        place.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                      subtitle: Text(
+                        place.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: Colors.white.withAlpha(130), fontSize: 11),
+                      ),
+                      onTap: () => _selectSearchResult(place),
+                    );
+                  },
+                ),
     );
   }
 

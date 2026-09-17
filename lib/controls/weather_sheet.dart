@@ -1301,9 +1301,10 @@ class _NowcastPanel extends StatelessWidget {
 
 /// The two swipeable forecast panels of the weather sheet:
 ///
-/// * *Forecast daily* — one row per forecast day (day1 … dayN), each with its
-///   condition, precipitation, gusts, wind direction and sun times. Tapping a
-///   day moves the panel to that date while keeping the hour of day in view.
+/// * *Forecast daily* — one row per forecast day (up to [_ForecastSection
+///   .maxDays] days), each with its condition, precipitation, gusts, wind
+///   direction and sun times. Tapping a day moves the panel to that date
+///   while keeping the hour of day in view.
 /// * *Wind speed (time)* — a wind-aloft grid: one row per altitude (highest
 ///   on top, surface gusts and wind direction at the bottom) and one column
 ///   per hour, starting at the hour the sheet points at ("now", or the
@@ -1331,8 +1332,14 @@ class _ForecastSection extends StatefulWidget {
     this.currentTime,
   });
 
-  /// The forecast horizon, oldest first (day1 … dayN).
+  /// The forecast horizon, oldest first (day1 … dayN). Only the first
+  /// [maxDays] entries are rendered; the daily glance in the bottom panel
+  /// still offers the full outlook.
   final List<WeatherDay> days;
+
+  /// Upper bound on the rows of the daily panel: a week is enough to plan
+  /// with and keeps the sheet from growing past the screen.
+  static const int maxDays = 7;
 
   /// The full hourly series the wind grid reads its columns from (may include
   /// `past_days` history).
@@ -1397,6 +1404,10 @@ class _ForecastSectionState extends State<_ForecastSection> {
   final PageController _controller = PageController();
   int _page = 0;
 
+  /// Days actually rendered: the horizon capped at [_ForecastSection.maxDays].
+  int get _dayCount =>
+      math.min(widget.days.length, _ForecastSection.maxDays);
+
   @override
   void dispose() {
     _controller.dispose();
@@ -1414,7 +1425,7 @@ class _ForecastSectionState extends State<_ForecastSection> {
     // Height of the tallest page: the sheet then keeps the same layout
     // whichever panel is on screen.
     final height = math.max(
-      widget.days.length * _dayRowHeight,
+      _dayCount * _dayRowHeight,
       _WindAloftGrid.heightFor(levels.length),
     );
 
@@ -1446,7 +1457,7 @@ class _ForecastSectionState extends State<_ForecastSection> {
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    for (var i = 0; i < widget.days.length; i++)
+                    for (var i = 0; i < _dayCount; i++)
                       _buildDayRow(context, i),
                   ],
                 ),

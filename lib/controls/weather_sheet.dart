@@ -2031,7 +2031,9 @@ class _HourlyDetailTable extends StatefulWidget {
   /// Fixed label gutter width.
   static const double _gutterWidth = 80;
 
-  static const double _colWidth = 42;
+  /// Per-hour column width. Narrow enough that a 3-digit wind value and a
+  /// negative temperature still fit on one line (see the cell text styles).
+  static const double _colWidth = 32;
 
   @override
   State<_HourlyDetailTable> createState() => _HourlyDetailTableState();
@@ -2291,10 +2293,10 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                     decoration: ShapeDecoration(
                       color: Colors.white.withAlpha(22),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9),
+                        borderRadius: BorderRadius.circular(6),
                         side: BorderSide(
                           color: Colors.orangeAccent.withAlpha(180),
-                          width: 1.2,
+                          width: 1,
                         ),
                       ),
                     ),
@@ -2405,7 +2407,15 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
             ),
           if (child != null)
             Center(
-              child: Opacity(opacity: past ? 0.45 : 1, child: child),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1),
+                // Narrow columns: scale rare wide values (3-digit gusts,
+                // negative temperatures) down instead of overflowing.
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Opacity(opacity: past ? 0.45 : 1, child: child),
+                ),
+              ),
             ),
         ],
       ),

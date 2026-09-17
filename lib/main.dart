@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -293,6 +294,14 @@ class _DashGridPageState extends State<DashGridPage> {
   // the long-press that unlocks it. Reset when switching pages, tapping
   // empty background, or entering edit mode.
   String? _activeControlId;
+
+  // Raw pointer tracking for the selected Vertical Graph. Pointer signals cover
+  // mouse wheels and trackpads; the pointer map adds two-finger touch scrolling
+  // without enabling interactions on any unselected control.
+  final Map<int, Offset> _verticalGraphPointers = {};
+  String? _verticalGraphGestureControlId;
+  Offset? _verticalGraphTwoFingerCenter;
+  double _verticalGraphTwoFingerRemainder = 0.0;
 
   // Accumulated pixel offset during a control drag (before grid snapping).
   Offset _dragAccum = Offset.zero;
@@ -1005,6 +1014,142 @@ class _DashGridPageState extends State<DashGridPage> {
     _saveLayout();
   }
 
+  void _changeVerticalGraphInterval(PlacedControl control, int steps) {
+    if (control.type.id != 'vertical_graph' || steps == 0) return;
+
+    final current = control
+        .doubleSetting('interval', fallback: 60.0)
+        .clamp(10.0, 600.0)
+        .roundToDouble();
+    final next = (current + steps * 2.0).clamp(10.0, 600.0).toDouble();
+    if (next == current) return;
+
+    setState(() => control.settings['interval'] = next);
+    _saveLayout();
+  }
+
+  void _onVerticalGraphPointerSignal(
+    PlacedControl control,
+    PointerSignalEvent event,
+  ) {
+    if (event is! PointerScrollEvent ||
+        control.type.id != 'vertical_graph' ||
+        _selectedControlId != control.instanceId &&
+            _activeControlId != control.instanceId) {
+      return;
+    }
+
+    final delta = event.scrollDelta.dy;
+    if (delta == 0) return;
+    final steps = (delta.abs() / 20.0).ceil().clamp(1, 10);
+    // Follow the usual wheel convention: scrolling up increases the range.
+    _changeVerticalGraphInterval(control, -delta.sign.toInt() * steps);
+  }
+
+  void _onVerticalGraphPointerDown(
+    PlacedControl control,
+    PointerDownEvent event,
+  ) {
+    if (control.type.id != 'vertical_graph' ||
+        _selectedControlId != control.instanceId &&
+            _activeControlId != control.instanceId) {
+      return;
+    }
+    if (_verticalGraphGestureControlId != control.instanceId) {
+      _verticalGraphPointers.clear();
+      _verticalGraphTwoFingerCenter = null;
+      _verticalGraphTwoFingerRemainder = 0.0;
+      _verticalGraphGestureControlId = control.instanceId;
+    }
+    _verticalGraphPointers[event.pointer] = event.position;
+    if (_verticalGraphPointers.length >= 2) {
+      _verticalGraphTwoFingerCenter = _verticalGraphCenter();
+      _verticalGraphTwoFingerRemainder = 0.0;
+    }
+  }
+
+  void _onVerticalGraphPointerMove(
+    PlacedControl control,
+    PointerMoveEvent event,
+  ) {
+    if (_verticalGraphGestureControlId != control.instanceId) return;
+    final previousCenter = _verticalGraphTwoFingerCenter;
+    _verticalGraphPointers[event.pointer] = event.position;
+    if (_verticalGraphPointers.length < 2) return;
+
+    final currentCenter = _verticalGraphCenter();
+    if (previousCenter == null || currentCenter == null) {
+      _verticalGraphTwoFingerCenter = currentCenter;
+      return;
+    }
+
+    _verticalGraphTwoFingerRemainder +=
+        currentCenter.dy - previousCenter.dy;
+    _verticalGraphTwoFingerCenter = currentCenter;
+
+    var steps = 0;
+    while (_verticalGraphTwoFingerRemainder >= 16.0) {
+      steps++;
+      _verticalGraphTwoFingerRemainder -= 16.0;
+    }
+    while (_verticalGraphTwoFingerRemainder <= -16.0) {
+      steps--;
+      _verticalGraphTwoFingerRemainder += 16.0;
+    }
+    // A two-finger swipe up also increases the visible time range.
+    if (steps != 0) _changeVerticalGraphInterval(control, -steps);
+  }
+
+  Offset? _verticalGraphCenter() {
+    if (_verticalGraphPointers.length < 2) return null;
+    var x = 0.0;
+    var y = 0.0;
+    for (final position in _verticalGraphPointers.values) {
+      x += position.dx;
+      y += position.dy;
+    }
+    return Offset(
+      x / _verticalGraphPointers.length,
+      y / _verticalGraphPointers.length,
+    );
+  }
+
+  void _onVerticalGraphPointerEnd(
+    PlacedControl control,
+    int pointer,
+  ) {
+    if (_verticalGraphGestureControlId != control.instanceId) return;
+    _verticalGraphPointers.remove(pointer);
+    if (_verticalGraphPointers.length < 2) {
+      _verticalGraphTwoFingerCenter = null;
+      _verticalGraphTwoFingerRemainder = 0.0;
+    }
+    if (_verticalGraphPointers.isEmpty) {
+      _verticalGraphGestureControlId = null;
+    }
+  }
+
+  Widget _verticalGraphPointerLayer(
+    PlacedControl control,
+    Widget child,
+  ) {
+    final active = _selectedControlId == control.instanceId ||
+        _activeControlId == control.instanceId;
+    if (!active || control.type.id != 'vertical_graph') return child;
+
+    return Listener(
+      onPointerSignal: (event) =>
+          _onVerticalGraphPointerSignal(control, event),
+      onPointerDown: (event) => _onVerticalGraphPointerDown(control, event),
+      onPointerMove: (event) => _onVerticalGraphPointerMove(control, event),
+      onPointerUp: (event) =>
+          _onVerticalGraphPointerEnd(control, event.pointer),
+      onPointerCancel: (event) =>
+          _onVerticalGraphPointerEnd(control, event.pointer),
+      child: child,
+    );
+  }
+
   void _onControlDragStart(PlacedControl control) {
     _dragAccum = Offset.zero;
     _dragStartCol = control.col;
@@ -1013,6 +1158,12 @@ class _DashGridPageState extends State<DashGridPage> {
   }
 
   void _onControlDragUpdate(PlacedControl control, Offset delta) {
+    // A two-finger gesture on a selected Vertical Graph changes its time
+    // window; it must not also move the widget on the edit grid.
+    if (control.type.id == 'vertical_graph' &&
+        _verticalGraphPointers.length >= 2) {
+      return;
+    }
     _dragAccum += delta;
     setState(() {
       final size = MediaQuery.of(context).size;
@@ -1445,7 +1596,9 @@ class _DashGridPageState extends State<DashGridPage> {
                     top: showAffordances ? overhang : 0,
                     width: width,
                     height: height,
-                    child: GestureDetector(
+                    child: _verticalGraphPointerLayer(
+                      control,
+                      GestureDetector(
                       // When the control is selected it owns its drag-to-move
                       // gesture, so swallow pointer events (opaque). While it
                       // is *not* selected there is nothing to drag here, so be
@@ -1476,6 +1629,7 @@ class _DashGridPageState extends State<DashGridPage> {
                       // (map pan/zoom, buttons, list scroll, etc.) are
                       // disabled while the user is arranging the dashboard.
                       child: IgnorePointer(child: child),
+                      ),
                     ),
                   ),
                   // Delete button — centered on the top-right corner of the
@@ -1526,7 +1680,7 @@ class _DashGridPageState extends State<DashGridPage> {
                 // etc.) receive pointer events normally. Tapping outside the
                 // control re-locks it (handled by the background gesture
                 // layer above).
-                ? child
+                ? _verticalGraphPointerLayer(control, child)
                 // Default state: the widget is locked and fully static —
                 // acts as a drawable readout only. IgnorePointer swallows
                 // every internal pointer event so nothing inside the control

@@ -9,6 +9,7 @@ import 'debug_sensor_control.dart';
 import 'flight_button_control.dart';
 import 'map_control.dart';
 import 'vario_control.dart';
+import 'vertical_graph_control.dart';
 
 /// Visual representation of a [PlacedControl] on the dashboard.
 ///
@@ -185,6 +186,15 @@ class ControlWidget extends StatelessWidget {
   ) {
     final showTitle = control.boolSetting('showTitle', fallback: true);
     switch (control.type.id) {
+      case 'vertical_graph':
+        return ClipRRect(
+          borderRadius: innerRadius,
+          child: VerticalGraphControl(
+            intervalSeconds: control.doubleSetting('interval', fallback: 60.0),
+            verticalStep: control.doubleSetting('verticalStep', fallback: 50.0),
+            dotSize: control.doubleSetting('dotSize', fallback: 3.0),
+          ),
+        );
       case 'vario':
         return ClipRRect(
           borderRadius: innerRadius,

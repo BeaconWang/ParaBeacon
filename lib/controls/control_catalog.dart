@@ -121,6 +121,8 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlHeartRate;
     case 'phone_battery':
       return l10n.controlPhoneBattery;
+    case 'vertical_graph':
+      return l10n.controlVerticalGraph;
     case 'vario':
       return l10n.controlVario;
     case 'debug_sensor':
@@ -374,6 +376,14 @@ class ControlCatalog {
     ControlDirectory(
       kind: ControlKind.widget,
       controls: [
+        ControlType(
+          id: 'vertical_graph',
+          label: 'Vertical Graph',
+          icon: Icons.show_chart,
+          kind: ControlKind.widget,
+          defaultCols: 6,
+          defaultRows: 5,
+        ),
         ControlType(
           id: 'vario',
           label: 'Vario',

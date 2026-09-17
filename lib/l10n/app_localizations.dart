@@ -1136,6 +1136,12 @@ abstract class AppLocalizations {
   /// **'Widget Control'**
   String get controlKindWidget;
 
+  /// No description provided for @controlVerticalGraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical Graph'**
+  String get controlVerticalGraph;
+
   /// No description provided for @controlAltitude.
   ///
   /// In en, this message translates to:

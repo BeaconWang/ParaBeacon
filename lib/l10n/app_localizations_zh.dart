@@ -562,6 +562,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlKindWidget => '组件控件';
 
   @override
+  String get controlVerticalGraph => '垂直图表';
+
+  @override
   String get controlAltitude => '海拔';
 
   @override

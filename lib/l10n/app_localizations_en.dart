@@ -579,6 +579,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlKindWidget => 'Widget Control';
 
   @override
+  String get controlVerticalGraph => 'Vertical Graph';
+
+  @override
   String get controlAltitude => 'Altitude';
 
   @override

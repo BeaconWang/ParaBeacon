@@ -449,6 +449,35 @@ const List<ControlSetting> _commonSettings = [
 
 /// Type-specific settings, keyed by control type id.
 const Map<String, List<ControlSetting>> _typeSettings = {
+  'vertical_graph': [
+    ControlSetting.slider(
+      key: 'interval',
+      label: 'Shown interval',
+      defaultValue: 60.0,
+      min: 10.0,
+      max: 600.0,
+      divisions: 59,
+      unit: 's',
+    ),
+    ControlSetting.slider(
+      key: 'verticalStep',
+      label: 'Vertical step',
+      defaultValue: 50.0,
+      min: 5.0,
+      max: 500.0,
+      divisions: 99,
+      unit: 'm',
+    ),
+    ControlSetting.slider(
+      key: 'dotSize',
+      label: 'Dot size',
+      defaultValue: 3.0,
+      min: 1.0,
+      max: 8.0,
+      divisions: 14,
+      unit: 'px',
+    ),
+  ],
   'vario': [
     ControlSetting.slider(
       key: 'maxScale',

@@ -268,6 +268,7 @@
 
   "controlKindData": "Data Control",
   "controlKindWidget": "Widget Control",
+  "controlVerticalGraph": "Vertical Graph",
 
   "controlAltitude": "Altitude",
   "controlGpsAltitude": "GPS Altitude",

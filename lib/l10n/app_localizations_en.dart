@@ -63,6 +63,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get xcontestUserId => 'User ID';
 
   @override
+  String get xcontestFullName => 'Full name';
+
+  @override
+  String get xcontestProfileInformation => 'Account information';
+
+  @override
   String get xcontestSignedIn => 'Signed in to XContest';
 
   @override

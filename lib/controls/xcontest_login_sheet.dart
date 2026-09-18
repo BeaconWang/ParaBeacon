@@ -21,6 +21,13 @@ class _XContestLoginSheet extends StatefulWidget {
   State<_XContestLoginSheet> createState() => _XContestLoginSheetState();
 }
 
+class _XContestProfileField {
+  const _XContestProfileField(this.label, this.value);
+
+  final String label;
+  final String value;
+}
+
 class _XContestLoginSheetState extends State<_XContestLoginSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _usernameController;
@@ -54,6 +61,21 @@ class _XContestLoginSheetState extends State<_XContestLoginSheet> {
     if (!success && mounted) setState(() {});
   }
 
+  List<_XContestProfileField> _profileFields(
+    AppLocalizations l10n,
+    XContestAuthService auth,
+  ) {
+    final information = auth.accountInformation;
+    return [
+      if (information['full_name'] != null)
+        _XContestProfileField(l10n.xcontestFullName, information['full_name']!),
+      if (information['username'] != null)
+        _XContestProfileField(l10n.xcontestUsername, information['username']!),
+      if (information['uid'] != null)
+        _XContestProfileField(l10n.xcontestUserId, information['uid']!),
+    ];
+  }
+
   String _errorText(AppLocalizations l10n, XContestAuthService auth) {
     if (auth.errorMessage != null) return auth.errorMessage!;
     switch (auth.errorCode) {
@@ -77,6 +99,7 @@ class _XContestLoginSheetState extends State<_XContestLoginSheet> {
       builder: (context, _) {
         final auth = XContestAuthService.instance;
         final displayName = auth.fullName ?? auth.username ?? 'XContest';
+        final profileFields = _profileFields(l10n, auth);
         return Material(
           color: theme.colorScheme.surface,
           child: SafeArea(
@@ -126,49 +149,92 @@ class _XContestLoginSheetState extends State<_XContestLoginSheet> {
                       ),
                       const SizedBox(height: 28),
                       if (auth.isSignedIn)
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  displayName,
-                                  style: theme.textTheme.titleLarge,
-                                ),
-                                const SizedBox(height: 6),
-                                Text(auth.username ?? ''),
-                                if (auth.uid != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${l10n.xcontestUserId}: ${auth.uid}',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 28,
+                                      backgroundColor:
+                                          theme.colorScheme.primaryContainer,
+                                      child: Text(
+                                        displayName.trim().isEmpty
+                                            ? 'X'
+                                            : displayName
+                                                  .trim()
+                                                  .substring(0, 1)
+                                                  .toUpperCase(),
+                                        style: TextStyle(
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                                const SizedBox(height: 12),
-                                Text(
-                                  l10n.xcontestSignedIn,
-                                  style: TextStyle(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            displayName,
+                                            style: theme.textTheme.titleLarge,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            l10n.xcontestSignedIn,
+                                            style: TextStyle(
+                                              color: theme.colorScheme.primary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 16),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton.icon(
-                                    onPressed: auth.isLoading
-                                        ? null
-                                        : auth.logout,
-                                    icon: const Icon(Icons.logout),
-                                    label: Text(l10n.logout),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 20),
+                            Text(
+                              l10n.xcontestProfileInformation,
+                              style: theme.textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            Card(
+                              child: Column(
+                                children: [
+                                  for (
+                                    var index = 0;
+                                    index < profileFields.length;
+                                    index++
+                                  ) ...[
+                                    ListTile(
+                                      dense: true,
+                                      title: Text(profileFields[index].label),
+                                      subtitle: Text(
+                                        profileFields[index].value,
+                                      ),
+                                    ),
+                                    if (index < profileFields.length - 1)
+                                      const Divider(height: 1),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            OutlinedButton.icon(
+                              onPressed: auth.isLoading ? null : auth.logout,
+                              icon: const Icon(Icons.logout),
+                              label: Text(l10n.logout),
+                            ),
+                          ],
                         )
                       else ...[
                         if (auth.errorCode != null) ...[

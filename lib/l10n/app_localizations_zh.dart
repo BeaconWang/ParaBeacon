@@ -63,6 +63,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get xcontestUserId => '用户 ID';
 
   @override
+  String get xcontestFullName => '姓名';
+
+  @override
+  String get xcontestProfileInformation => '账户信息';
+
+  @override
   String get xcontestSignedIn => '已登录 XContest';
 
   @override

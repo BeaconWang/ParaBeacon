@@ -206,6 +206,18 @@ abstract class AppLocalizations {
   /// **'User ID'**
   String get xcontestUserId;
 
+  /// No description provided for @xcontestFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get xcontestFullName;
+
+  /// No description provided for @xcontestProfileInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Account information'**
+  String get xcontestProfileInformation;
+
   /// No description provided for @xcontestSignedIn.
   ///
   /// In en, this message translates to:

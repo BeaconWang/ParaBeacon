@@ -642,6 +642,21 @@ class _DashGridPageState extends State<DashGridPage> {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(
+                            Icons.account_circle_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.accounts),
+                          subtitle: Text(l10n.accountsSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showAccountsSheet(context);
+                            setSheetState(() {});
+                          },
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
                             Icons.palette_outlined,
                             color: theme.colorScheme.primary,
                           ),
@@ -673,21 +688,6 @@ class _DashGridPageState extends State<DashGridPage> {
                             await showLanguageSettingsSheet(context);
                             // Refresh the subtitle in the still-open Preferences
                             // sheet so it reflects the newly-selected language.
-                            setSheetState(() {});
-                          },
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.account_circle_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.accounts),
-                          subtitle: Text(l10n.accountsSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await showAccountsSheet(context);
                             setSheetState(() {});
                           },
                         ),

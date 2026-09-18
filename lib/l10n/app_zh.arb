@@ -21,6 +21,8 @@
   "xcontestUsername": "用户名",
   "xcontestPassword": "密码",
   "xcontestUserId": "用户 ID",
+  "xcontestFullName": "姓名",
+  "xcontestProfileInformation": "账户信息",
   "xcontestSignedIn": "已登录 XContest",
   "xcontestCredentialsRequired": "请输入 XContest 用户名和密码。",
   "xcontestInvalidCredentials": "XContest 用户名或密码不正确。",

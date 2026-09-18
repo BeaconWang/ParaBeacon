@@ -22,6 +22,8 @@
   "xcontestUsername": "Username",
   "xcontestPassword": "Password",
   "xcontestUserId": "User ID",
+  "xcontestFullName": "Full name",
+  "xcontestProfileInformation": "Account information",
   "xcontestSignedIn": "Signed in to XContest",
   "xcontestCredentialsRequired": "Enter your XContest username and password.",
   "xcontestInvalidCredentials": "The XContest username or password is incorrect.",

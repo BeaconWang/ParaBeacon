@@ -39,6 +39,13 @@ class XContestAuthService extends ChangeNotifier {
   String? get username => _username;
   String? get uid => _uid;
   String? get fullName => _fullName;
+
+  /// Safe account fields for display. The access token is intentionally excluded.
+  Map<String, String> get accountInformation => {
+    if (_fullName != null && _fullName!.isNotEmpty) 'full_name': _fullName!,
+    if (_username != null && _username!.isNotEmpty) 'username': _username!,
+    if (_uid != null && _uid!.isNotEmpty) 'uid': _uid!,
+  };
   String? get errorCode => _errorCode;
   String? get errorMessage => _errorMessage;
 

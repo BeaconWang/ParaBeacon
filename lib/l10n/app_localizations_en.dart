@@ -366,6 +366,115 @@ class AppLocalizationsEn extends AppLocalizations {
   String get asfcInformationAvailable => 'Available';
 
   @override
+  String get applyForCertificate => 'Apply for certificate';
+
+  @override
+  String get certificateApplication => 'ASFC certificate application';
+
+  @override
+  String get certificateApplicationSubtitle =>
+      'Submit a paragliding license application through your ASFC account.';
+
+  @override
+  String get certificateFullName => 'Full name';
+
+  @override
+  String get certificateGender => 'Gender';
+
+  @override
+  String get certificateMale => 'Male';
+
+  @override
+  String get certificateFemale => 'Female';
+
+  @override
+  String get certificateBirthday => 'Date of birth';
+
+  @override
+  String get certificateCountry => 'Nationality';
+
+  @override
+  String get certificateEthnicity => 'Ethnicity';
+
+  @override
+  String get certificateIdNumber => 'ID card number';
+
+  @override
+  String get certificateMobile => 'Mobile number';
+
+  @override
+  String get certificateEmail => 'Email';
+
+  @override
+  String get certificateAddress => 'Address';
+
+  @override
+  String get certificateArea => 'Permanent residence';
+
+  @override
+  String get certificateAgency => 'Training agency';
+
+  @override
+  String get certificateCoachId => 'Coach ID (optional)';
+
+  @override
+  String get certificateDocuments => 'Documents';
+
+  @override
+  String get licensePhoto => 'Upload license photo';
+
+  @override
+  String get groupPhoto => 'Upload training group photo';
+
+  @override
+  String get licensePhotoUploaded => 'License photo uploaded';
+
+  @override
+  String get groupPhotoUploaded => 'Group photo uploaded';
+
+  @override
+  String get certificateEmergencyContact => 'Emergency contact';
+
+  @override
+  String get certificateContactName => 'Contact name';
+
+  @override
+  String get certificateContactPhone => 'Contact phone';
+
+  @override
+  String get certificateBloodType => 'Blood type';
+
+  @override
+  String get certificateRequired => 'This field is required.';
+
+  @override
+  String get certificatePhotoRequired =>
+      'Upload both certificate photos before submitting.';
+
+  @override
+  String get certificateNotSignedIn => 'Sign in to your ASFC account first.';
+
+  @override
+  String get certificateImageInvalid => 'Choose an image smaller than 10 MB.';
+
+  @override
+  String get certificateImageUploadFailed => 'Unable to upload the image.';
+
+  @override
+  String get certificateApplicationFailed =>
+      'The certificate application failed.';
+
+  @override
+  String get certificateApplicationSuccess =>
+      'Certificate application submitted.';
+
+  @override
+  String get submitApplication => 'Submit application';
+
+  @override
+  String get submitting => 'Submitting…';
+
+  @override
   String get asfcLoginFailed => 'Login failed. Check your account details.';
 
   @override

@@ -6,6 +6,7 @@ import '../data/asfc_auth_service.dart';
 import '../data/xcontest_auth_service.dart';
 import '../l10n/app_localizations.dart';
 import 'xcontest_login_sheet.dart';
+import 'certificate_application_sheet.dart';
 
 Future<void> showAccountsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -590,6 +591,14 @@ class _AsfcLoginSheetState extends State<_AsfcLoginSheet> {
                                       : AsfcAuthService.instance.logout,
                                   icon: const Icon(Icons.logout),
                                   label: Text(l10n.logout),
+                                ),
+                                const SizedBox(height: 12),
+                                FilledButton.icon(
+                                  onPressed: auth.isLoading
+                                      ? null
+                                      : () => showCertificateApplicationSheet(context),
+                                  icon: const Icon(Icons.workspace_premium_outlined),
+                                  label: Text(l10n.applyForCertificate),
                                 ),
                               ],
                             );

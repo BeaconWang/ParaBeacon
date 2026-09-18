@@ -782,6 +782,216 @@ abstract class AppLocalizations {
   /// **'Available'**
   String get asfcInformationAvailable;
 
+  /// No description provided for @applyForCertificate.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply for certificate'**
+  String get applyForCertificate;
+
+  /// No description provided for @certificateApplication.
+  ///
+  /// In en, this message translates to:
+  /// **'ASFC certificate application'**
+  String get certificateApplication;
+
+  /// No description provided for @certificateApplicationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit a paragliding license application through your ASFC account.'**
+  String get certificateApplicationSubtitle;
+
+  /// No description provided for @certificateFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get certificateFullName;
+
+  /// No description provided for @certificateGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get certificateGender;
+
+  /// No description provided for @certificateMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get certificateMale;
+
+  /// No description provided for @certificateFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get certificateFemale;
+
+  /// No description provided for @certificateBirthday.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of birth'**
+  String get certificateBirthday;
+
+  /// No description provided for @certificateCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Nationality'**
+  String get certificateCountry;
+
+  /// No description provided for @certificateEthnicity.
+  ///
+  /// In en, this message translates to:
+  /// **'Ethnicity'**
+  String get certificateEthnicity;
+
+  /// No description provided for @certificateIdNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'ID card number'**
+  String get certificateIdNumber;
+
+  /// No description provided for @certificateMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number'**
+  String get certificateMobile;
+
+  /// No description provided for @certificateEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get certificateEmail;
+
+  /// No description provided for @certificateAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get certificateAddress;
+
+  /// No description provided for @certificateArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent residence'**
+  String get certificateArea;
+
+  /// No description provided for @certificateAgency.
+  ///
+  /// In en, this message translates to:
+  /// **'Training agency'**
+  String get certificateAgency;
+
+  /// No description provided for @certificateCoachId.
+  ///
+  /// In en, this message translates to:
+  /// **'Coach ID (optional)'**
+  String get certificateCoachId;
+
+  /// No description provided for @certificateDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get certificateDocuments;
+
+  /// No description provided for @licensePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload license photo'**
+  String get licensePhoto;
+
+  /// No description provided for @groupPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload training group photo'**
+  String get groupPhoto;
+
+  /// No description provided for @licensePhotoUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'License photo uploaded'**
+  String get licensePhotoUploaded;
+
+  /// No description provided for @groupPhotoUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Group photo uploaded'**
+  String get groupPhotoUploaded;
+
+  /// No description provided for @certificateEmergencyContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency contact'**
+  String get certificateEmergencyContact;
+
+  /// No description provided for @certificateContactName.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact name'**
+  String get certificateContactName;
+
+  /// No description provided for @certificateContactPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact phone'**
+  String get certificateContactPhone;
+
+  /// No description provided for @certificateBloodType.
+  ///
+  /// In en, this message translates to:
+  /// **'Blood type'**
+  String get certificateBloodType;
+
+  /// No description provided for @certificateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get certificateRequired;
+
+  /// No description provided for @certificatePhotoRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload both certificate photos before submitting.'**
+  String get certificatePhotoRequired;
+
+  /// No description provided for @certificateNotSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to your ASFC account first.'**
+  String get certificateNotSignedIn;
+
+  /// No description provided for @certificateImageInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an image smaller than 10 MB.'**
+  String get certificateImageInvalid;
+
+  /// No description provided for @certificateImageUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to upload the image.'**
+  String get certificateImageUploadFailed;
+
+  /// No description provided for @certificateApplicationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The certificate application failed.'**
+  String get certificateApplicationFailed;
+
+  /// No description provided for @certificateApplicationSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate application submitted.'**
+  String get certificateApplicationSuccess;
+
+  /// No description provided for @submitApplication.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit application'**
+  String get submitApplication;
+
+  /// No description provided for @submitting.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting…'**
+  String get submitting;
+
   /// No description provided for @asfcLoginFailed.
   ///
   /// In en, this message translates to:

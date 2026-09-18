@@ -353,6 +353,111 @@ class AppLocalizationsZh extends AppLocalizations {
   String get asfcInformationAvailable => '已提供';
 
   @override
+  String get applyForCertificate => '申请证书';
+
+  @override
+  String get certificateApplication => 'ASFC 证书申请';
+
+  @override
+  String get certificateApplicationSubtitle => '通过 ASFC 账户提交伞翼执照申请。';
+
+  @override
+  String get certificateFullName => '姓名';
+
+  @override
+  String get certificateGender => '性别';
+
+  @override
+  String get certificateMale => '男';
+
+  @override
+  String get certificateFemale => '女';
+
+  @override
+  String get certificateBirthday => '出生日期';
+
+  @override
+  String get certificateCountry => '国籍';
+
+  @override
+  String get certificateEthnicity => '民族';
+
+  @override
+  String get certificateIdNumber => '身份证号';
+
+  @override
+  String get certificateMobile => '手机号';
+
+  @override
+  String get certificateEmail => '邮箱';
+
+  @override
+  String get certificateAddress => '地址';
+
+  @override
+  String get certificateArea => '常住地';
+
+  @override
+  String get certificateAgency => '培训机构';
+
+  @override
+  String get certificateCoachId => '教练 ID（可选）';
+
+  @override
+  String get certificateDocuments => '证明材料';
+
+  @override
+  String get licensePhoto => '上传执照照片';
+
+  @override
+  String get groupPhoto => '上传培训合照';
+
+  @override
+  String get licensePhotoUploaded => '执照照片已上传';
+
+  @override
+  String get groupPhotoUploaded => '培训合照已上传';
+
+  @override
+  String get certificateEmergencyContact => '紧急联系人';
+
+  @override
+  String get certificateContactName => '联系人姓名';
+
+  @override
+  String get certificateContactPhone => '联系人电话';
+
+  @override
+  String get certificateBloodType => '血型';
+
+  @override
+  String get certificateRequired => '此项为必填项。';
+
+  @override
+  String get certificatePhotoRequired => '请先上传两张证件照片。';
+
+  @override
+  String get certificateNotSignedIn => '请先登录 ASFC 账户。';
+
+  @override
+  String get certificateImageInvalid => '请选择小于 10 MB 的图片。';
+
+  @override
+  String get certificateImageUploadFailed => '图片上传失败。';
+
+  @override
+  String get certificateApplicationFailed => '证书申请失败。';
+
+  @override
+  String get certificateApplicationSuccess => '证书申请已提交。';
+
+  @override
+  String get submitApplication => '提交申请';
+
+  @override
+  String get submitting => '提交中…';
+
+  @override
   String get asfcLoginFailed => '登录失败，请检查账户信息。';
 
   @override

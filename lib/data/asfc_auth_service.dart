@@ -20,6 +20,12 @@ class AsfcAuthService extends ChangeNotifier {
   static final Uri _profileUri = Uri.parse(
     'https://www.57fly.com/api/user/customeUser/onloadInfo',
   );
+  static final Uri _certificateApplicationUri = Uri.parse(
+    'https://www.57fly.com/api/train/parasailLicense/customerApply',
+  );
+  static final Uri _certificateImageUploadUri = Uri.parse(
+    'https://upload.57fly.com/api/imageUpload/0/upload',
+  );
   static const _tokenKey = 'asfc_access_token';
   static const _circleTokenKey = 'asfc_circle_token';
   static const _usernameKey = 'asfc_username';
@@ -334,6 +340,190 @@ class AsfcAuthService extends ChangeNotifier {
       _loading = false;
       _loaded = true;
       notifyListeners();
+    }
+  }
+
+  Future<String?> uploadCertificateImage({
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    if (!isSignedIn) {
+      _errorCode = 'certificateNotSignedIn';
+      _errorMessage = null;
+      notifyListeners();
+      return null;
+    }
+    if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
+      _errorCode = 'certificateImageInvalid';
+      _errorMessage = null;
+      notifyListeners();
+      return null;
+    }
+
+    try {
+      final request = http.MultipartRequest('POST', _certificateImageUploadUri)
+        ..files.add(
+          http.MultipartFile.fromBytes(
+            'filedata',
+            bytes,
+            filename: filename,
+          ),
+        );
+      final response = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
+      final body = await response.stream.bytesToString();
+      final decoded = _decodeMap(body);
+      final status = decoded?['status']?.toString().toLowerCase();
+      final success =
+          response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          (status == null || status == 'success' || status == '200');
+      final url = decoded?['url'] ??
+          (decoded?['data'] is Map<String, dynamic>
+              ? (decoded!['data'] as Map<String, dynamic>)['url']
+              : null);
+      final normalizedUrl = url is String ? url.trim() : '';
+      final parsedUrl = Uri.tryParse(normalizedUrl);
+      final allowedUrl = normalizedUrl.startsWith('/') ||
+          (parsedUrl != null &&
+              parsedUrl.scheme == 'https' &&
+              parsedUrl.host == 'upload.57fly.com');
+      if (!success || normalizedUrl.isEmpty || !allowedUrl) {
+        _errorCode = 'certificateImageUploadFailed';
+        _errorMessage = decoded == null
+            ? 'HTTP ${response.statusCode}'
+            : _extractResponseReason(decoded);
+        notifyListeners();
+        return null;
+      }
+      return normalizedUrl;
+    } on Exception {
+      _errorCode = 'connectionFailed';
+      _errorMessage = null;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<bool> applyParagliderCertificate({
+    required String licensePhoto,
+    required String fullName,
+    required String sex,
+    required String birthday,
+    required String country,
+    required String ethnicityCode,
+    required String credentialsNumber,
+    required String mobile,
+    required String email,
+    required String address,
+    required String area,
+    required String agencyName,
+    required String groupPhoto,
+    required String urgentContactName,
+    required String urgentContactPhone,
+    required String urgentBloodType,
+    String licenseNo = '',
+    String auditTime = '',
+    String licenseValidStart = '',
+    String licenseValidEnd = '',
+    String areaCode = '',
+    String credentialsType = 'ID_CARD',
+    int parasailLicenseId = 0,
+    int coachId = 0,
+  }) async {
+    if (!isSignedIn) {
+      _errorCode = 'certificateNotSignedIn';
+      _errorMessage = null;
+      notifyListeners();
+      return false;
+    }
+
+    final requiredValues = <String>[
+      licensePhoto,
+      fullName,
+      sex,
+      birthday,
+      country,
+      ethnicityCode,
+      credentialsNumber,
+      mobile,
+      email,
+      address,
+      area,
+      groupPhoto,
+      urgentContactName,
+      urgentContactPhone,
+      urgentBloodType,
+    ];
+    if (requiredValues.any((value) => value.trim().isEmpty)) {
+      _errorCode = 'certificateFieldsRequired';
+      _errorMessage = null;
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      final response = await http
+          .post(
+            _certificateApplicationUri,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json; charset=utf-8',
+              'token': _token!,
+            },
+            body: jsonEncode({
+              'parasailLicenseId': parasailLicenseId,
+              'licensePhoto': licensePhoto.trim(),
+              'fullName': fullName.trim(),
+              'sex': sex.trim(),
+              'birthday': birthday.trim(),
+              'country': country.trim(),
+              'ethnicityCode': ethnicityCode.trim(),
+              'licenseNo': licenseNo.trim(),
+              'auditTime': auditTime.trim(),
+              'licenseValidStart': licenseValidStart.trim(),
+              'licenseValidEnd': licenseValidEnd.trim(),
+              'credentialsType': credentialsType.trim(),
+              'credentialsNumber': credentialsNumber.trim(),
+              'mobile': mobile.trim(),
+              'email': email.trim(),
+              'address': address.trim(),
+              'areaCode': areaCode.trim(),
+              'area': area.trim(),
+              'agencyName': agencyName.trim(),
+              'coachId': coachId,
+              'groupPhoto': groupPhoto.trim(),
+              'urgentContactName': urgentContactName.trim(),
+              'urgentContactPhone': urgentContactPhone.trim(),
+              'urgentBloodType': urgentBloodType.trim(),
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
+      final decoded = _decodeMap(response.body);
+      final status = decoded?['status']?.toString().toLowerCase();
+      final code = decoded?['code']?.toString();
+      final success =
+          response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          (status == 'success' || status == '200' || code == '200');
+      if (!success) {
+        _errorCode = 'certificateApplicationFailed';
+        _errorMessage = decoded == null
+            ? 'HTTP ${response.statusCode}'
+            : _extractResponseReason(decoded);
+        notifyListeners();
+        return false;
+      }
+      _errorCode = null;
+      _errorMessage = null;
+      notifyListeners();
+      return true;
+    } on Exception {
+      _errorCode = 'connectionFailed';
+      _errorMessage = null;
+      notifyListeners();
+      return false;
     }
   }
 

@@ -91,6 +91,10 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlHeading;
     case 'bearing':
       return l10n.controlBearing;
+    case 'navigation_task':
+      return l10n.controlNavigationTask;
+    case 'airspace_alert':
+      return l10n.controlAirspaceAlert;
     case 'gps_accuracy':
       return l10n.controlGpsAccuracy;
     case 'location':
@@ -253,6 +257,22 @@ class ControlCatalog {
           icon: Icons.gps_not_fixed,
           kind: ControlKind.data,
           defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'navigation_task',
+          label: 'Navigation Task',
+          icon: Icons.near_me,
+          kind: ControlKind.data,
+          defaultCols: 4,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'airspace_alert',
+          label: 'Airspace Alert',
+          icon: Icons.warning_amber_outlined,
+          kind: ControlKind.data,
+          defaultCols: 4,
           defaultRows: 2,
         ),
         // ── Position ──────────────────────────────────────────────────

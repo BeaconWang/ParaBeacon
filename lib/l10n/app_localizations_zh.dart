@@ -932,6 +932,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlBearing => '目标方位';
 
   @override
+  String get controlNavigationTask => '任务导航';
+
+  @override
+  String get controlAirspaceAlert => '空域告警';
+
+  @override
   String get controlGpsAccuracy => 'GPS 精度';
 
   @override
@@ -1265,6 +1271,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingShowTakeoffLine => '显示到起飞点的连线';
+
+  @override
+  String get airspaceAlertClear => '安全';
+
+  @override
+  String get airspaceAlertNear => '接近';
+
+  @override
+  String get airspaceAlertInside => '已进入';
 
   @override
   String get settingShowScale => '显示地图比例尺';

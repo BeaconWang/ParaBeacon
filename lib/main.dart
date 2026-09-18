@@ -23,11 +23,14 @@ import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
 import 'controls/vario_sound_settings_sheet.dart';
 import 'controls/weather_sheet.dart';
+import 'controls/navigation_task_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
 import 'data/device_battery_service.dart';
 import 'data/aircraft_settings.dart';
 import 'data/airspace_store.dart';
+import 'data/airspace_alert_service.dart';
+import 'data/navigation_store.dart';
 import 'data/asfc_auth_service.dart';
 import 'data/xcontest_auth_service.dart';
 import 'data/live_tracking_settings.dart';
@@ -142,6 +145,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // (controls, recorder, vario audio) reads the transformed feed so they all
     // see the same derived values (e.g. the averaged vertical speed).
     _transformer = FlightDataTransformer(rawSource: _dataSource);
+    _transformer.addListener(_onFlightDataChanged);
+    NavigationStore.instance.load();
 
     // Bring up the BLE sensor service (best-effort; no-op on desktop/web) and
     // bridge its readings into the unified data source. When a sensor connects,
@@ -178,6 +183,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // best-effort and leave the map on online tiles / no airspace on failure.
     OfflineTilesService.instance.warmup();
     AirspaceStore.instance.warmup();
+    AirspaceAlertService.instance.attach();
 
     // Load the user's persisted Vario sound profile and apply it to the audio
     // engine (no-op beyond defaults on first launch).
@@ -201,9 +207,22 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _varioAudio.attach();
   }
 
+  void _onFlightDataChanged() {
+    final data = _transformer.data;
+    NavigationStore.instance.update(data);
+    if (data.hasFix) {
+      AirspaceStore.instance.updatePosition(
+        data.latitude,
+        data.longitude,
+        data.altitude,
+      );
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _transformer.removeListener(_onFlightDataChanged);
     _gpsBridge.dispose();
     _bleBridge.dispose();
     _varioAudio.dispose();
@@ -684,6 +703,24 @@ class _DashGridPageState extends State<DashGridPage> {
                           trailing: const Icon(Icons.chevron_right, size: 20),
                           onTap: () async {
                             await showAircraftSettingsSheet(context);
+                            setSheetState(() {});
+                          },
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.near_me,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: const Text('Navigation task'),
+                          subtitle: Text(
+                            NavigationStore.instance.task?.name ??
+                                'Create a waypoint task',
+                          ),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showNavigationTaskSheet(context);
                             setSheetState(() {});
                           },
                         ),

@@ -1868,6 +1868,18 @@ abstract class AppLocalizations {
   /// **'Bearing'**
   String get controlBearing;
 
+  /// No description provided for @controlNavigationTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get controlNavigationTask;
+
+  /// No description provided for @controlAirspaceAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Airspace'**
+  String get controlAirspaceAlert;
+
   /// No description provided for @controlGpsAccuracy.
   ///
   /// In en, this message translates to:
@@ -2521,6 +2533,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show line to take-off'**
   String get settingShowTakeoffLine;
+
+  /// No description provided for @airspaceAlertClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get airspaceAlertClear;
+
+  /// No description provided for @airspaceAlertNear.
+  ///
+  /// In en, this message translates to:
+  /// **'Near'**
+  String get airspaceAlertNear;
+
+  /// No description provided for @airspaceAlertInside.
+  ///
+  /// In en, this message translates to:
+  /// **'Inside'**
+  String get airspaceAlertInside;
 
   /// No description provided for @settingShowScale.
   ///

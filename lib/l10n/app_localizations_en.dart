@@ -963,6 +963,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlBearing => 'Bearing';
 
   @override
+  String get controlNavigationTask => 'Navigation';
+
+  @override
+  String get controlAirspaceAlert => 'Airspace';
+
+  @override
   String get controlGpsAccuracy => 'GPS Accuracy';
 
   @override
@@ -1297,6 +1303,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingShowTakeoffLine => 'Show line to take-off';
+
+  @override
+  String get airspaceAlertClear => 'Clear';
+
+  @override
+  String get airspaceAlertNear => 'Near';
+
+  @override
+  String get airspaceAlertInside => 'Inside';
 
   @override
   String get settingShowScale => 'Display map scale';

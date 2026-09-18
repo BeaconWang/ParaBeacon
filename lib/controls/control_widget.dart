@@ -10,6 +10,7 @@ import 'flight_button_control.dart';
 import 'map_control.dart';
 import 'vario_control.dart';
 import 'vertical_graph_control.dart';
+import 'navigation_controls.dart';
 
 /// Visual representation of a [PlacedControl] on the dashboard.
 ///
@@ -267,6 +268,10 @@ class ControlWidget extends StatelessWidget {
           showTitle: showTitle,
           cardinal: control.setting('format') == 'cardinal',
         );
+      case 'navigation_task':
+        return NavigationTaskControl(showTitle: showTitle);
+      case 'airspace_alert':
+        return AirspaceAlertControl(showTitle: showTitle);
       case 'gps_accuracy':
         return GpsAccuracyControl(showTitle: showTitle);
       case 'wind_speed':

@@ -17,6 +17,9 @@ class AsfcAuthService extends ChangeNotifier {
   static final Uri _sendSmsCodeUri = Uri.parse(
     'https://www.57fly.com/api/user/smsvcode/sendSmsCode',
   );
+  static final Uri _profileUri = Uri.parse(
+    'https://www.57fly.com/api/user/customeUser/onloadInfo',
+  );
   static const _tokenKey = 'asfc_access_token';
   static const _circleTokenKey = 'asfc_circle_token';
   static const _usernameKey = 'asfc_username';
@@ -26,7 +29,11 @@ class AsfcAuthService extends ChangeNotifier {
   bool _loading = false;
   bool _captchaLoading = false;
   bool _smsCodeLoading = false;
+  bool _profileLoading = false;
   Uint8List? _captchaImageBytes;
+  Map<String, dynamic>? _profile;
+  String? _profileErrorCode;
+  String? _profileErrorMessage;
   String? _token;
   String? _circleToken;
   String? _username;
@@ -37,11 +44,30 @@ class AsfcAuthService extends ChangeNotifier {
   bool get isLoading => _loading;
   bool get isCaptchaLoading => _captchaLoading;
   bool get isSmsCodeLoading => _smsCodeLoading;
+  bool get isProfileLoading => _profileLoading;
   Uint8List? get captchaImageBytes => _captchaImageBytes;
   bool get isSignedIn => _token != null && _token!.isNotEmpty;
   String? get username => _username;
   String? get errorCode => _errorCode;
   String? get errorMessage => _errorMessage;
+  Map<String, dynamic>? get profile =>
+      _profile == null ? null : Map.unmodifiable(_profile!);
+  String? get profileErrorCode => _profileErrorCode;
+  String? get profileErrorMessage => _profileErrorMessage;
+  String? get avatarUrl {
+    final user = _profile?['user'];
+    final raw = user is Map<String, dynamic> ? user['headPortrait'] : null;
+    if (raw is! String || raw.trim().isEmpty) return null;
+    final value = raw.trim();
+    final uri = Uri.tryParse(value);
+    if (uri != null && uri.hasScheme) {
+      return uri.host == 'upload.57fly.com' ? uri.toString() : null;
+    }
+    if (value.startsWith('/')) {
+      return Uri.parse('https://upload.57fly.com$value').toString();
+    }
+    return null;
+  }
 
   Future<void> load() async {
     if (_loaded) return;
@@ -50,6 +76,54 @@ class AsfcAuthService extends ChangeNotifier {
     _username = await _storage.read(key: _usernameKey);
     _loaded = true;
     notifyListeners();
+  }
+
+  Future<bool> loadProfile({bool force = false}) async {
+    if (!isSignedIn) {
+      _profileErrorCode = 'profileNotSignedIn';
+      _profileErrorMessage = null;
+      notifyListeners();
+      return false;
+    }
+    if (_profileLoading || (!force && _profile != null)) return true;
+
+    _profileLoading = true;
+    _profileErrorCode = null;
+    _profileErrorMessage = null;
+    notifyListeners();
+    try {
+      final response = await http
+          .get(
+            _profileUri,
+            headers: {'Accept': 'application/json', 'token': _token!},
+          )
+          .timeout(const Duration(seconds: 15));
+      final decoded = _decodeMap(response.body);
+      final status = decoded?['status']?.toString().toLowerCase();
+      final code = decoded?['code']?.toString();
+      final data = decoded?['data'];
+      final success =
+          response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          (status == 'success' || status == '200' || code == '200');
+      if (!success || data is! Map<String, dynamic>) {
+        _profileErrorCode = 'profileLoadFailed';
+        _profileErrorMessage = decoded == null
+            ? _responseFallbackReason(response)
+            : _extractResponseReason(decoded) ??
+                  _responseFallbackReason(response, status: status, code: code);
+        return false;
+      }
+      _profile = data;
+      return true;
+    } on Exception {
+      _profileErrorCode = 'profileConnectionFailed';
+      _profileErrorMessage = null;
+      return false;
+    } finally {
+      _profileLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<bool> loadCaptcha({required String mobile}) async {
@@ -216,7 +290,10 @@ class AsfcAuthService extends ChangeNotifier {
       final isSuccess =
           response.statusCode >= 200 &&
           response.statusCode < 300 &&
-          (status == '200' || status == 'SUCCESS' || code == '200');
+          (status == 'success' ||
+              status == '200' ||
+              status == 'SUCCESS' ||
+              code == '200');
       final data = decoded['data'];
       final token = data is Map<String, dynamic> ? data['token'] : null;
       final circleToken = data is Map<String, dynamic>
@@ -234,6 +311,9 @@ class AsfcAuthService extends ChangeNotifier {
       _token = token;
       _circleToken = circleToken is String ? circleToken : null;
       _username = normalizedUsername;
+      _profile = null;
+      _profileErrorCode = null;
+      _profileErrorMessage = null;
       await _storage.write(key: _tokenKey, value: _token);
       if (_circleToken == null || _circleToken!.isEmpty) {
         await _storage.delete(key: _circleTokenKey);
@@ -310,6 +390,9 @@ class AsfcAuthService extends ChangeNotifier {
     _token = null;
     _circleToken = null;
     _username = null;
+    _profile = null;
+    _profileErrorCode = null;
+    _profileErrorMessage = null;
     _errorCode = null;
     _errorMessage = null;
     await _storage.delete(key: _tokenKey);

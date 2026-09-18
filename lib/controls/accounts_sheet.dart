@@ -23,6 +23,33 @@ class _AccountsSheet extends StatefulWidget {
   State<_AccountsSheet> createState() => _AccountsSheetState();
 }
 
+class _ProfileField {
+  const _ProfileField(this.label, this.value);
+
+  final String label;
+  final String value;
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({required this.imageUrl, required this.fallback});
+
+  final String? imageUrl;
+  final String fallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = fallback.trim().isEmpty
+        ? 'A'
+        : fallback.trim().substring(0, 1).toUpperCase();
+    return CircleAvatar(
+      radius: 30,
+      backgroundImage: imageUrl == null ? null : NetworkImage(imageUrl!),
+      onBackgroundImageError: imageUrl == null ? null : (_, _) {},
+      child: imageUrl == null ? Text(initial) : null,
+    );
+  }
+}
+
 class _AccountsSheetState extends State<_AccountsSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _usernameController;
@@ -42,6 +69,10 @@ class _AccountsSheetState extends State<_AccountsSheet> {
     _passwordController = TextEditingController();
     _smsCodeController = TextEditingController();
     _captchaController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await auth.load();
+      if (auth.isSignedIn) await auth.loadProfile();
+    });
   }
 
   @override
@@ -61,7 +92,9 @@ class _AccountsSheetState extends State<_AccountsSheet> {
       password: _passwordController.text,
       smsCode: _smsMode ? _smsCodeController.text : null,
     );
-    if (mounted && success) Navigator.of(context).pop();
+    if (success) {
+      await AsfcAuthService.instance.loadProfile(force: true);
+    }
   }
 
   Future<void> _refreshCaptcha() async {
@@ -117,6 +150,97 @@ class _AccountsSheetState extends State<_AccountsSheet> {
       default:
         return l10n.asfcLoginFailed;
     }
+  }
+
+  String _profileTitle(Map<String, dynamic>? profile, AsfcAuthService auth) {
+    final circle = profile?['circleInfo'];
+    final user = profile?['user'];
+    final nickname = circle is Map<String, dynamic>
+        ? circle['userNickname']
+        : null;
+    final username = user is Map<String, dynamic> ? user['username'] : null;
+    return _nonEmptyString(nickname) ??
+        _nonEmptyString(username) ??
+        auth.username ??
+        'ASFC';
+  }
+
+  String? _profileDescription(Map<String, dynamic>? profile) {
+    final circle = profile?['circleInfo'];
+    if (circle is Map<String, dynamic>) {
+      return _nonEmptyString(circle['description']);
+    }
+    return null;
+  }
+
+  String? _nonEmptyString(Object? value) {
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    return null;
+  }
+
+  List<_ProfileField> _profileFields(
+    Map<String, dynamic> profile,
+    AppLocalizations l10n,
+  ) {
+    final fields = <_ProfileField>[];
+    void flatten(String path, Object? value) {
+      if (value is Map<String, dynamic>) {
+        for (final entry in value.entries) {
+          flatten(path.isEmpty ? entry.key : '$path.${entry.key}', entry.value);
+        }
+        return;
+      }
+      if (value is List) {
+        for (var index = 0; index < value.length; index++) {
+          flatten('$path.${index + 1}', value[index]);
+        }
+        return;
+      }
+      if (value == null) return;
+      final key = path.split('.').last.toLowerCase();
+      if (key.contains('token') || key.contains('password')) return;
+      if (key == 'headportrait' || key.contains('credentialsphoto')) {
+        fields.add(
+          _ProfileField(_humanize(path), l10n.asfcInformationAvailable),
+        );
+        return;
+      }
+      fields.add(_ProfileField(_humanize(path), _safeProfileValue(key, value)));
+    }
+
+    flatten('', profile);
+    return fields;
+  }
+
+  String _safeProfileValue(String key, Object value) {
+    final text = value.toString();
+    if (key == 'credentialsnumber') return _maskValue(text, 4);
+    if (key == 'mobile' || key.contains('phone')) return _maskValue(text, 3);
+    return text;
+  }
+
+  String _maskValue(String value, int visibleSuffix) {
+    if (value.length <= visibleSuffix) return '••••';
+    final hidden = List.filled(value.length - visibleSuffix, '•').join();
+    return '$hidden${value.substring(value.length - visibleSuffix)}';
+  }
+
+  String _humanize(String value) {
+    final parts = value.split('.');
+    return parts
+        .map(
+          (part) => part
+              .replaceAllMapped(
+                RegExp(r'([a-z0-9])([A-Z])'),
+                (match) => '${match.group(1)} ${match.group(2)}',
+              )
+              .replaceAll('_', ' ')
+              .replaceFirstMapped(
+                RegExp(r'^[a-z]'),
+                (match) => match.group(0)!.toUpperCase(),
+              ),
+        )
+        .join(' · ');
   }
 
   @override
@@ -176,26 +300,161 @@ class _AccountsSheetState extends State<_AccountsSheet> {
                       ),
                       const SizedBox(height: 28),
                       if (auth.isSignedIn) ...[
-                        Card(
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              child: Text(
-                                (auth.username ?? 'A')
-                                    .substring(0, 1)
-                                    .toUpperCase(),
-                              ),
-                            ),
-                            title: Text(auth.username ?? l10n.asfcSignedIn),
-                            subtitle: Text(l10n.asfcSignedIn),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        OutlinedButton.icon(
-                          onPressed: auth.isLoading
-                              ? null
-                              : AsfcAuthService.instance.logout,
-                          icon: const Icon(Icons.logout),
-                          label: Text(l10n.logout),
+                        Builder(
+                          builder: (context) {
+                            final profile = auth.profile;
+                            final title = _profileTitle(profile, auth);
+                            final description = _profileDescription(profile);
+                            final fields = profile == null
+                                ? const <_ProfileField>[]
+                                : _profileFields(profile, l10n);
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Card(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _ProfileAvatar(
+                                          imageUrl: auth.avatarUrl,
+                                          fallback: title,
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                title,
+                                                style:
+                                                    theme.textTheme.titleLarge,
+                                              ),
+                                              if (description != null) ...[
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  description,
+                                                  style: theme
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.copyWith(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                ),
+                                              ],
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                l10n.asfcSignedIn,
+                                                style: TextStyle(
+                                                  color:
+                                                      theme.colorScheme.primary,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        IconButton(
+                                          tooltip: l10n.asfcRefreshProfile,
+                                          onPressed: auth.isProfileLoading
+                                              ? null
+                                              : () => auth.loadProfile(
+                                                  force: true,
+                                                ),
+                                          icon: const Icon(Icons.refresh),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (auth.isProfileLoading) ...[
+                                  const SizedBox(height: 12),
+                                  const LinearProgressIndicator(),
+                                ],
+                                if (auth.profileErrorCode != null) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.errorContainer,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(
+                                          Icons.error_outline,
+                                          color: theme
+                                              .colorScheme
+                                              .onErrorContainer,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            auth.profileErrorMessage ??
+                                                l10n.asfcProfileLoadFailed,
+                                            style: TextStyle(
+                                              color: theme
+                                                  .colorScheme
+                                                  .onErrorContainer,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                if (fields.isNotEmpty) ...[
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    l10n.asfcProfileInformation,
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Card(
+                                    child: Column(
+                                      children: [
+                                        for (
+                                          var index = 0;
+                                          index < fields.length;
+                                          index++
+                                        ) ...[
+                                          ListTile(
+                                            dense: true,
+                                            title: Text(fields[index].label),
+                                            subtitle: Text(fields[index].value),
+                                          ),
+                                          if (index < fields.length - 1)
+                                            const Divider(height: 1),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ] else if (!auth.isProfileLoading &&
+                                    auth.profileErrorCode == null) ...[
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    l10n.asfcNoProfileInformation,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                                const SizedBox(height: 20),
+                                OutlinedButton.icon(
+                                  onPressed: auth.isLoading
+                                      ? null
+                                      : AsfcAuthService.instance.logout,
+                                  icon: const Icon(Icons.logout),
+                                  label: Text(l10n.logout),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ] else ...[
                         SegmentedButton<String>(

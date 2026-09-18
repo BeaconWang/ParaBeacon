@@ -41,6 +41,11 @@
   "loggingIn": "Logging in…",
   "logout": "Log out",
   "asfcSignedIn": "Signed in",
+  "asfcProfileInformation": "Account information",
+  "asfcRefreshProfile": "Refresh account information",
+  "asfcProfileLoadFailed": "Unable to load account information.",
+  "asfcNoProfileInformation": "No account information is available.",
+  "asfcInformationAvailable": "Available",
   "asfcLoginFailed": "Login failed. Check your account details.",
   "asfcLoginFailedWithReason": "Login failed: {reason}",
   "@asfcLoginFailedWithReason": {

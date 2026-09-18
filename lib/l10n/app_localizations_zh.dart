@@ -107,6 +107,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get asfcSignedIn => '已登录';
 
   @override
+  String get asfcProfileInformation => '账户信息';
+
+  @override
+  String get asfcRefreshProfile => '刷新账户信息';
+
+  @override
+  String get asfcProfileLoadFailed => '账户信息加载失败。';
+
+  @override
+  String get asfcNoProfileInformation => '暂无账户信息。';
+
+  @override
+  String get asfcInformationAvailable => '已提供';
+
+  @override
   String get asfcLoginFailed => '登录失败，请检查账户信息。';
 
   @override

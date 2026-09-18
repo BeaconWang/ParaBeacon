@@ -108,6 +108,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get asfcSignedIn => 'Signed in';
 
   @override
+  String get asfcProfileInformation => 'Account information';
+
+  @override
+  String get asfcRefreshProfile => 'Refresh account information';
+
+  @override
+  String get asfcProfileLoadFailed => 'Unable to load account information.';
+
+  @override
+  String get asfcNoProfileInformation => 'No account information is available.';
+
+  @override
+  String get asfcInformationAvailable => 'Available';
+
+  @override
   String get asfcLoginFailed => 'Login failed. Check your account details.';
 
   @override

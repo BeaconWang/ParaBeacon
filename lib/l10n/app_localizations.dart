@@ -290,6 +290,36 @@ abstract class AppLocalizations {
   /// **'Signed in'**
   String get asfcSignedIn;
 
+  /// No description provided for @asfcProfileInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Account information'**
+  String get asfcProfileInformation;
+
+  /// No description provided for @asfcRefreshProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh account information'**
+  String get asfcRefreshProfile;
+
+  /// No description provided for @asfcProfileLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load account information.'**
+  String get asfcProfileLoadFailed;
+
+  /// No description provided for @asfcNoProfileInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'No account information is available.'**
+  String get asfcNoProfileInformation;
+
+  /// No description provided for @asfcInformationAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get asfcInformationAvailable;
+
   /// No description provided for @asfcLoginFailed.
   ///
   /// In en, this message translates to:

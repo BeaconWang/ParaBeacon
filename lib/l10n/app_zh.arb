@@ -40,6 +40,11 @@
   "loggingIn": "正在登录…",
   "logout": "退出登录",
   "asfcSignedIn": "已登录",
+  "asfcProfileInformation": "账户信息",
+  "asfcRefreshProfile": "刷新账户信息",
+  "asfcProfileLoadFailed": "账户信息加载失败。",
+  "asfcNoProfileInformation": "暂无账户信息。",
+  "asfcInformationAvailable": "已提供",
   "asfcLoginFailed": "登录失败，请检查账户信息。",
   "asfcLoginFailedWithReason": "登录失败：{reason}",
   "@asfcLoginFailedWithReason": {

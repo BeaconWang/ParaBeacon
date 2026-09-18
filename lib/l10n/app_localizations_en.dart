@@ -51,6 +51,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get asfcPassword => 'Password';
 
   @override
+  String get asfcPasswordLogin => 'Password';
+
+  @override
+  String get asfcSmsLogin => 'SMS code';
+
+  @override
+  String get asfcMobile => 'Mobile number';
+
+  @override
+  String get asfcSmsCode => 'SMS code';
+
+  @override
+  String get asfcCaptcha => 'Image code';
+
+  @override
+  String get asfcRefreshCaptcha => 'Refresh image code';
+
+  @override
+  String get asfcSendSmsCode => 'Send code';
+
+  @override
+  String asfcSmsCountdown(int seconds) {
+    return 'Retry ${seconds}s';
+  }
+
+  @override
+  String get asfcMobileRequired => 'Enter your mobile number.';
+
+  @override
+  String get asfcCaptchaRequired => 'Enter the image code.';
+
+  @override
+  String get asfcSmsCodeRequired => 'Enter the SMS code.';
+
+  @override
+  String get asfcSmsCredentialsRequired =>
+      'Enter your mobile number and SMS code.';
+
+  @override
+  String get asfcCaptchaLoadFailed => 'Unable to load the image code.';
+
+  @override
+  String get asfcSmsCodeSendFailed => 'Unable to send the SMS code.';
+
+  @override
   String get login => 'Log in';
 
   @override

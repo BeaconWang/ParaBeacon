@@ -51,6 +51,50 @@ class AppLocalizationsZh extends AppLocalizations {
   String get asfcPassword => '密码';
 
   @override
+  String get asfcPasswordLogin => '密码登录';
+
+  @override
+  String get asfcSmsLogin => '验证码登录';
+
+  @override
+  String get asfcMobile => '手机号';
+
+  @override
+  String get asfcSmsCode => '短信验证码';
+
+  @override
+  String get asfcCaptcha => '图形验证码';
+
+  @override
+  String get asfcRefreshCaptcha => '刷新图形验证码';
+
+  @override
+  String get asfcSendSmsCode => '发送验证码';
+
+  @override
+  String asfcSmsCountdown(int seconds) {
+    return '$seconds 秒后重试';
+  }
+
+  @override
+  String get asfcMobileRequired => '请输入手机号。';
+
+  @override
+  String get asfcCaptchaRequired => '请输入图形验证码。';
+
+  @override
+  String get asfcSmsCodeRequired => '请输入短信验证码。';
+
+  @override
+  String get asfcSmsCredentialsRequired => '请输入手机号和短信验证码。';
+
+  @override
+  String get asfcCaptchaLoadFailed => '图形验证码加载失败。';
+
+  @override
+  String get asfcSmsCodeSendFailed => '短信验证码发送失败。';
+
+  @override
   String get login => '登录';
 
   @override

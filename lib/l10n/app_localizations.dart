@@ -182,6 +182,90 @@ abstract class AppLocalizations {
   /// **'Password'**
   String get asfcPassword;
 
+  /// No description provided for @asfcPasswordLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get asfcPasswordLogin;
+
+  /// No description provided for @asfcSmsLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS code'**
+  String get asfcSmsLogin;
+
+  /// No description provided for @asfcMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number'**
+  String get asfcMobile;
+
+  /// No description provided for @asfcSmsCode.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS code'**
+  String get asfcSmsCode;
+
+  /// No description provided for @asfcCaptcha.
+  ///
+  /// In en, this message translates to:
+  /// **'Image code'**
+  String get asfcCaptcha;
+
+  /// No description provided for @asfcRefreshCaptcha.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh image code'**
+  String get asfcRefreshCaptcha;
+
+  /// No description provided for @asfcSendSmsCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get asfcSendSmsCode;
+
+  /// No description provided for @asfcSmsCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry {seconds}s'**
+  String asfcSmsCountdown(int seconds);
+
+  /// No description provided for @asfcMobileRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your mobile number.'**
+  String get asfcMobileRequired;
+
+  /// No description provided for @asfcCaptchaRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the image code.'**
+  String get asfcCaptchaRequired;
+
+  /// No description provided for @asfcSmsCodeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the SMS code.'**
+  String get asfcSmsCodeRequired;
+
+  /// No description provided for @asfcSmsCredentialsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your mobile number and SMS code.'**
+  String get asfcSmsCredentialsRequired;
+
+  /// No description provided for @asfcCaptchaLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load the image code.'**
+  String get asfcCaptchaLoadFailed;
+
+  /// No description provided for @asfcSmsCodeSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to send the SMS code.'**
+  String get asfcSmsCodeSendFailed;
+
   /// No description provided for @login.
   ///
   /// In en, this message translates to:

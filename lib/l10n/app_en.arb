@@ -18,6 +18,25 @@
   "asfcAccountSubtitle": "Sign in with your ASFC / GoFly account",
   "asfcUsername": "Username or mobile",
   "asfcPassword": "Password",
+  "asfcPasswordLogin": "Password",
+  "asfcSmsLogin": "SMS code",
+  "asfcMobile": "Mobile number",
+  "asfcSmsCode": "SMS code",
+  "asfcCaptcha": "Image code",
+  "asfcRefreshCaptcha": "Refresh image code",
+  "asfcSendSmsCode": "Send code",
+  "asfcSmsCountdown": "Retry {seconds}s",
+  "@asfcSmsCountdown": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "asfcMobileRequired": "Enter your mobile number.",
+  "asfcCaptchaRequired": "Enter the image code.",
+  "asfcSmsCodeRequired": "Enter the SMS code.",
+  "asfcSmsCredentialsRequired": "Enter your mobile number and SMS code.",
+  "asfcCaptchaLoadFailed": "Unable to load the image code.",
+  "asfcSmsCodeSendFailed": "Unable to send the SMS code.",
   "login": "Log in",
   "loggingIn": "Logging in…",
   "logout": "Log out",

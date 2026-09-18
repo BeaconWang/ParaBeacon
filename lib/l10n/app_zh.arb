@@ -17,6 +17,25 @@
   "asfcAccountSubtitle": "使用 ASFC / GoFly 账户登录",
   "asfcUsername": "用户名或手机号",
   "asfcPassword": "密码",
+  "asfcPasswordLogin": "密码登录",
+  "asfcSmsLogin": "验证码登录",
+  "asfcMobile": "手机号",
+  "asfcSmsCode": "短信验证码",
+  "asfcCaptcha": "图形验证码",
+  "asfcRefreshCaptcha": "刷新图形验证码",
+  "asfcSendSmsCode": "发送验证码",
+  "asfcSmsCountdown": "{seconds} 秒后重试",
+  "@asfcSmsCountdown": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "asfcMobileRequired": "请输入手机号。",
+  "asfcCaptchaRequired": "请输入图形验证码。",
+  "asfcSmsCodeRequired": "请输入短信验证码。",
+  "asfcSmsCredentialsRequired": "请输入手机号和短信验证码。",
+  "asfcCaptchaLoadFailed": "图形验证码加载失败。",
+  "asfcSmsCodeSendFailed": "短信验证码发送失败。",
   "login": "登录",
   "loggingIn": "正在登录…",
   "logout": "退出登录",

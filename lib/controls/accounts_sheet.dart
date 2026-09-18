@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
@@ -25,7 +27,12 @@ class _AccountsSheetState extends State<_AccountsSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _usernameController;
   late final TextEditingController _passwordController;
+  late final TextEditingController _smsCodeController;
+  late final TextEditingController _captchaController;
   bool _obscurePassword = true;
+  bool _smsMode = false;
+  Timer? _smsCountdownTimer;
+  int _smsSecondsRemaining = 0;
 
   @override
   void initState() {
@@ -33,39 +40,83 @@ class _AccountsSheetState extends State<_AccountsSheet> {
     final auth = AsfcAuthService.instance;
     _usernameController = TextEditingController(text: auth.username ?? '');
     _passwordController = TextEditingController();
+    _smsCodeController = TextEditingController();
+    _captchaController = TextEditingController();
   }
 
   @override
   void dispose() {
+    _smsCountdownTimer?.cancel();
     _usernameController.dispose();
     _passwordController.dispose();
+    _smsCodeController.dispose();
+    _captchaController.dispose();
     super.dispose();
   }
 
   Future<void> _login() async {
-    final l10n = AppLocalizations.of(context);
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final success = await AsfcAuthService.instance.login(
       username: _usernameController.text,
       password: _passwordController.text,
+      smsCode: _smsMode ? _smsCodeController.text : null,
     );
-    if (!mounted || success) {
-      if (mounted && success) Navigator.of(context).pop();
-      return;
+    if (mounted && success) Navigator.of(context).pop();
+  }
+
+  Future<void> _refreshCaptcha() async {
+    await AsfcAuthService.instance.loadCaptcha(
+      mobile: _usernameController.text,
+    );
+  }
+
+  Future<void> _sendSmsCode() async {
+    final success = await AsfcAuthService.instance.sendSmsCode(
+      mobile: _usernameController.text,
+      captcha: _captchaController.text,
+    );
+    if (!mounted || !success) return;
+    _smsCountdownTimer?.cancel();
+    setState(() => _smsSecondsRemaining = 60);
+    _smsCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_smsSecondsRemaining <= 1) {
+        timer.cancel();
+        setState(() => _smsSecondsRemaining = 0);
+      } else {
+        setState(() => _smsSecondsRemaining--);
+      }
+    });
+  }
+
+  Future<void> _setLoginMode(bool smsMode) async {
+    setState(() => _smsMode = smsMode);
+    if (smsMode && _usernameController.text.trim().isNotEmpty) {
+      await _refreshCaptcha();
     }
-    final auth = AsfcAuthService.instance;
-    final error = auth.errorCode;
-    final reason = auth.errorMessage;
-    final message = error == 'connectionFailed'
-        ? l10n.asfcConnectionFailed
-        : error == 'missingCredentials'
-        ? l10n.asfcCredentialsRequired
-        : reason == null
-        ? l10n.asfcLoginFailed
-        : l10n.asfcLoginFailedWithReason(reason);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _errorText(AppLocalizations l10n, AsfcAuthService auth) {
+    if (auth.errorMessage != null) return auth.errorMessage!;
+    switch (auth.errorCode) {
+      case 'connectionFailed':
+        return l10n.asfcConnectionFailed;
+      case 'captchaRequired':
+        return l10n.asfcCaptchaRequired;
+      case 'captchaLoadFailed':
+        return l10n.asfcCaptchaLoadFailed;
+      case 'smsCodeSendFailed':
+        return l10n.asfcSmsCodeSendFailed;
+      case 'smsMobileRequired':
+        return l10n.asfcMobileRequired;
+      case 'smsCredentialsRequired':
+        return l10n.asfcSmsCredentialsRequired;
+      default:
+        return l10n.asfcLoginFailed;
+    }
   }
 
   @override
@@ -147,8 +198,31 @@ class _AccountsSheetState extends State<_AccountsSheet> {
                           label: Text(l10n.logout),
                         ),
                       ] else ...[
-                        if (auth.errorCode == 'loginFailed' ||
-                            auth.errorCode == 'connectionFailed') ...[
+                        SegmentedButton<String>(
+                          segments: [
+                            ButtonSegment<String>(
+                              value: 'password',
+                              label: Text(l10n.asfcPasswordLogin),
+                              icon: const Icon(Icons.password_outlined),
+                            ),
+                            ButtonSegment<String>(
+                              value: 'sms',
+                              label: Text(l10n.asfcSmsLogin),
+                              icon: const Icon(Icons.sms_outlined),
+                            ),
+                          ],
+                          selected: {_smsMode ? 'sms' : 'password'},
+                          onSelectionChanged:
+                              auth.isLoading ||
+                                  auth.isCaptchaLoading ||
+                                  auth.isSmsCodeLoading
+                              ? null
+                              : (selection) =>
+                                    _setLoginMode(selection.first == 'sms'),
+                        ),
+                        const SizedBox(height: 20),
+                        if (auth.errorCode != null &&
+                            auth.errorCode != 'missingCredentials') ...[
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
@@ -166,10 +240,7 @@ class _AccountsSheetState extends State<_AccountsSheet> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    auth.errorMessage ??
-                                        (auth.errorCode == 'connectionFailed'
-                                            ? l10n.asfcConnectionFailed
-                                            : l10n.asfcLoginFailed),
+                                    _errorText(l10n, auth),
                                     style: TextStyle(
                                       color: theme.colorScheme.onErrorContainer,
                                     ),
@@ -190,49 +261,171 @@ class _AccountsSheetState extends State<_AccountsSheet> {
                                 textInputAction: TextInputAction.next,
                                 autofillHints: const [AutofillHints.username],
                                 decoration: InputDecoration(
-                                  labelText: l10n.asfcUsername,
+                                  labelText: _smsMode
+                                      ? l10n.asfcMobile
+                                      : l10n.asfcUsername,
                                   prefixIcon: const Icon(Icons.person_outline),
                                 ),
                                 validator: (value) =>
                                     value == null || value.trim().isEmpty
-                                    ? l10n.asfcCredentialsRequired
+                                    ? (_smsMode
+                                          ? l10n.asfcMobileRequired
+                                          : l10n.asfcCredentialsRequired)
                                     : null,
                               ),
                               const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                textInputAction: TextInputAction.done,
-                                autofillHints: const [AutofillHints.password],
-                                onFieldSubmitted: (_) => _login(),
-                                decoration: InputDecoration(
-                                  labelText: l10n.asfcPassword,
-                                  prefixIcon: const Icon(Icons.lock_outline),
-                                  suffixIcon: IconButton(
-                                    tooltip: _obscurePassword
-                                        ? l10n.showPassword
-                                        : l10n.hidePassword,
-                                    onPressed: () => setState(
-                                      () =>
-                                          _obscurePassword = !_obscurePassword,
-                                    ),
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
+                              if (!_smsMode)
+                                TextFormField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  textInputAction: TextInputAction.done,
+                                  autofillHints: const [AutofillHints.password],
+                                  onFieldSubmitted: (_) => _login(),
+                                  decoration: InputDecoration(
+                                    labelText: l10n.asfcPassword,
+                                    prefixIcon: const Icon(Icons.lock_outline),
+                                    suffixIcon: IconButton(
+                                      tooltip: _obscurePassword
+                                          ? l10n.showPassword
+                                          : l10n.hidePassword,
+                                      onPressed: () => setState(
+                                        () => _obscurePassword =
+                                            !_obscurePassword,
+                                      ),
+                                      icon: Icon(
+                                        _obscurePassword
+                                            ? Icons.visibility_outlined
+                                            : Icons.visibility_off_outlined,
+                                      ),
                                     ),
                                   ),
+                                  validator: (value) =>
+                                      value == null || value.isEmpty
+                                      ? l10n.asfcCredentialsRequired
+                                      : null,
+                                )
+                              else ...[
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 132,
+                                      height: 52,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: theme.colorScheme.outline,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: auth.captchaImageBytes == null
+                                          ? Text(l10n.asfcCaptcha)
+                                          : ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(11),
+                                              child: Image.memory(
+                                                auth.captchaImageBytes!,
+                                                width: 132,
+                                                height: 52,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, _, _) => Text(
+                                                  l10n.asfcCaptchaLoadFailed,
+                                                ),
+                                              ),
+                                            ),
+                                    ),
+                                    IconButton(
+                                      tooltip: l10n.asfcRefreshCaptcha,
+                                      onPressed: auth.isCaptchaLoading
+                                          ? null
+                                          : _refreshCaptcha,
+                                      icon: auth.isCaptchaLoading
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : const Icon(Icons.refresh),
+                                    ),
+                                  ],
                                 ),
-                                validator: (value) =>
-                                    value == null || value.isEmpty
-                                    ? l10n.asfcCredentialsRequired
-                                    : null,
-                              ),
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _captchaController,
+                                  textInputAction: TextInputAction.next,
+                                  decoration: InputDecoration(
+                                    labelText: l10n.asfcCaptcha,
+                                    prefixIcon: const Icon(
+                                      Icons.verified_outlined,
+                                    ),
+                                  ),
+                                  validator: (value) =>
+                                      value == null || value.trim().isEmpty
+                                      ? l10n.asfcCaptchaRequired
+                                      : null,
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _smsCodeController,
+                                        keyboardType: TextInputType.number,
+                                        textInputAction: TextInputAction.done,
+                                        autofillHints: const [
+                                          AutofillHints.oneTimeCode,
+                                        ],
+                                        onFieldSubmitted: (_) => _login(),
+                                        decoration: InputDecoration(
+                                          labelText: l10n.asfcSmsCode,
+                                          prefixIcon: const Icon(
+                                            Icons.sms_outlined,
+                                          ),
+                                        ),
+                                        validator: (value) =>
+                                            value == null ||
+                                                value.trim().isEmpty
+                                            ? l10n.asfcSmsCodeRequired
+                                            : null,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    OutlinedButton(
+                                      onPressed:
+                                          auth.isSmsCodeLoading ||
+                                              _smsSecondsRemaining > 0
+                                          ? null
+                                          : _sendSmsCode,
+                                      child: auth.isSmsCodeLoading
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Text(
+                                              _smsSecondsRemaining > 0
+                                                  ? l10n.asfcSmsCountdown(
+                                                      _smsSecondsRemaining,
+                                                    )
+                                                  : l10n.asfcSendSmsCode,
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               const SizedBox(height: 24),
                               SizedBox(
                                 width: double.infinity,
                                 child: FilledButton.icon(
-                                  onPressed: auth.isLoading ? null : _login,
+                                  onPressed:
+                                      auth.isLoading ||
+                                          auth.isCaptchaLoading ||
+                                          auth.isSmsCodeLoading
+                                      ? null
+                                      : _login,
                                   icon: auth.isLoading
                                       ? const SizedBox(
                                           width: 18,

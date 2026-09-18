@@ -48,6 +48,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aircraftSubtitle => '配置飞行器类型、机型和飞行性能';
 
   @override
+  String get liveTracking => '实时追踪';
+
+  @override
+  String get liveTrackingSubtitle => '通过 XContest 分享实时飞行位置';
+
+  @override
+  String get liveTrackingEnabled => '启用实时追踪';
+
+  @override
+  String get liveTrackingEnabledSubtitle => '将正在进行的飞行发送到 XContest';
+
+  @override
+  String get liveTrackingRequiresXContest => '请先登录 XContest 才能启用实时追踪。';
+
+  @override
+  String get liveTrackingClaimContest => '认领竞赛飞行';
+
+  @override
+  String get liveTrackingClaimContestSubtitle => '将飞行认领到 XContest 竞赛中';
+
+  @override
+  String get liveTrackingShowPublic => '显示公开追踪';
+
+  @override
+  String get liveTrackingShowPublicSubtitle => '允许他人公开查看实时位置';
+
+  @override
+  String get liveTrackingFlightPublic => '公开飞行';
+
+  @override
+  String get liveTrackingFlightPublicSubtitle => '在 XContest 发布已完成的飞行';
+
+  @override
+  String get liveTrackingTemporaryDisable => '暂时停止分享';
+
+  @override
+  String get liveTrackingTemporaryDisableSubtitle => '暂停实时追踪，但不修改主开关';
+
+  @override
+  String get liveTrackingTemporarilyDisabled => '实时追踪已暂时暂停。';
+
+  @override
+  String get liveTrackingReady => '实时追踪已配置并准备就绪。';
+
+  @override
   String get aircraftFaiClass => 'FAI 类别';
 
   @override

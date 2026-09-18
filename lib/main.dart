@@ -11,6 +11,7 @@ import 'l10n/app_localizations.dart';
 
 import 'controls/accounts_sheet.dart';
 import 'controls/aircraft_settings_sheet.dart';
+import 'controls/live_tracking_settings_sheet.dart';
 import 'controls/add_control_sheet.dart';
 import 'controls/bluetooth_sensor_sheet.dart';
 import 'controls/flights_sheet.dart';
@@ -29,6 +30,7 @@ import 'data/aircraft_settings.dart';
 import 'data/airspace_store.dart';
 import 'data/asfc_auth_service.dart';
 import 'data/xcontest_auth_service.dart';
+import 'data/live_tracking_settings.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_transformer.dart';
@@ -110,6 +112,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     AsfcAuthService.instance.load();
     // Restore the XContest OAuth session from platform secure storage.
     XContestAuthService.instance.load();
+    LiveTrackingSettings.instance.load();
     // Restore the aircraft preferences before the Preferences sheet opens.
     AircraftSettings.instance.load();
     // Load persisted debug preferences (e.g. the simulated-source toggle,
@@ -681,6 +684,25 @@ class _DashGridPageState extends State<DashGridPage> {
                           trailing: const Icon(Icons.chevron_right, size: 20),
                           onTap: () async {
                             await showAircraftSettingsSheet(context);
+                            setSheetState(() {});
+                          },
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.track_changes,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.liveTracking),
+                          subtitle: Text(
+                            LiveTrackingSettings.instance.enabled
+                                ? l10n.liveTrackingReady
+                                : l10n.liveTrackingSubtitle,
+                          ),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showLiveTrackingSettingsSheet(context);
                             setSheetState(() {});
                           },
                         ),

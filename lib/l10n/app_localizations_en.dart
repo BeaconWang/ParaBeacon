@@ -49,6 +49,58 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure aircraft type, model and flight performance';
 
   @override
+  String get liveTracking => 'LiveTracking';
+
+  @override
+  String get liveTrackingSubtitle => 'Share your live flight with XContest';
+
+  @override
+  String get liveTrackingEnabled => 'Enable LiveTracking';
+
+  @override
+  String get liveTrackingEnabledSubtitle =>
+      'Send your active flight to XContest';
+
+  @override
+  String get liveTrackingRequiresXContest =>
+      'Sign in to XContest to enable LiveTracking.';
+
+  @override
+  String get liveTrackingClaimContest => 'Claim contest flight';
+
+  @override
+  String get liveTrackingClaimContestSubtitle =>
+      'Claim the flight for an XContest competition';
+
+  @override
+  String get liveTrackingShowPublic => 'Show public tracking';
+
+  @override
+  String get liveTrackingShowPublicSubtitle =>
+      'Allow your live position to be visible publicly';
+
+  @override
+  String get liveTrackingFlightPublic => 'Make flight public';
+
+  @override
+  String get liveTrackingFlightPublicSubtitle =>
+      'Publish the completed flight on XContest';
+
+  @override
+  String get liveTrackingTemporaryDisable => 'Temporarily stop sharing';
+
+  @override
+  String get liveTrackingTemporaryDisableSubtitle =>
+      'Pause LiveTracking without changing the main setting';
+
+  @override
+  String get liveTrackingTemporarilyDisabled =>
+      'LiveTracking is temporarily paused.';
+
+  @override
+  String get liveTrackingReady => 'LiveTracking is configured and ready.';
+
+  @override
   String get aircraftFaiClass => 'FAI class';
 
   @override

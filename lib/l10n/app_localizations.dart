@@ -176,6 +176,96 @@ abstract class AppLocalizations {
   /// **'Configure aircraft type, model and flight performance'**
   String get aircraftSubtitle;
 
+  /// No description provided for @liveTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'LiveTracking'**
+  String get liveTracking;
+
+  /// No description provided for @liveTrackingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your live flight with XContest'**
+  String get liveTrackingSubtitle;
+
+  /// No description provided for @liveTrackingEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable LiveTracking'**
+  String get liveTrackingEnabled;
+
+  /// No description provided for @liveTrackingEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send your active flight to XContest'**
+  String get liveTrackingEnabledSubtitle;
+
+  /// No description provided for @liveTrackingRequiresXContest.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to XContest to enable LiveTracking.'**
+  String get liveTrackingRequiresXContest;
+
+  /// No description provided for @liveTrackingClaimContest.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim contest flight'**
+  String get liveTrackingClaimContest;
+
+  /// No description provided for @liveTrackingClaimContestSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim the flight for an XContest competition'**
+  String get liveTrackingClaimContestSubtitle;
+
+  /// No description provided for @liveTrackingShowPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Show public tracking'**
+  String get liveTrackingShowPublic;
+
+  /// No description provided for @liveTrackingShowPublicSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow your live position to be visible publicly'**
+  String get liveTrackingShowPublicSubtitle;
+
+  /// No description provided for @liveTrackingFlightPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Make flight public'**
+  String get liveTrackingFlightPublic;
+
+  /// No description provided for @liveTrackingFlightPublicSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish the completed flight on XContest'**
+  String get liveTrackingFlightPublicSubtitle;
+
+  /// No description provided for @liveTrackingTemporaryDisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporarily stop sharing'**
+  String get liveTrackingTemporaryDisable;
+
+  /// No description provided for @liveTrackingTemporaryDisableSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause LiveTracking without changing the main setting'**
+  String get liveTrackingTemporaryDisableSubtitle;
+
+  /// No description provided for @liveTrackingTemporarilyDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'LiveTracking is temporarily paused.'**
+  String get liveTrackingTemporarilyDisabled;
+
+  /// No description provided for @liveTrackingReady.
+  ///
+  /// In en, this message translates to:
+  /// **'LiveTracking is configured and ready.'**
+  String get liveTrackingReady;
+
   /// No description provided for @aircraftFaiClass.
   ///
   /// In en, this message translates to:

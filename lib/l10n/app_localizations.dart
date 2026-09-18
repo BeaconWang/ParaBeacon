@@ -884,6 +884,24 @@ abstract class AppLocalizations {
   /// **'Coach ID (optional)'**
   String get certificateCoachId;
 
+  /// No description provided for @certificateCoach.
+  ///
+  /// In en, this message translates to:
+  /// **'Coach'**
+  String get certificateCoach;
+
+  /// No description provided for @certificateCoachSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a coach (optional)'**
+  String get certificateCoachSelect;
+
+  /// No description provided for @certificateCoachesLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading coaches…'**
+  String get certificateCoachesLoading;
+
   /// No description provided for @certificateDocuments.
   ///
   /// In en, this message translates to:

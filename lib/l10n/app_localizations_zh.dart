@@ -404,6 +404,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get certificateCoachId => '教练 ID（可选）';
 
   @override
+  String get certificateCoach => '教练';
+
+  @override
+  String get certificateCoachSelect => '请选择教练（可选）';
+
+  @override
+  String get certificateCoachesLoading => '正在加载教练列表…';
+
+  @override
   String get certificateDocuments => '证明材料';
 
   @override

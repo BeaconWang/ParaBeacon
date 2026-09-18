@@ -418,6 +418,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certificateCoachId => 'Coach ID (optional)';
 
   @override
+  String get certificateCoach => 'Coach';
+
+  @override
+  String get certificateCoachSelect => 'Select a coach (optional)';
+
+  @override
+  String get certificateCoachesLoading => 'Loading coaches…';
+
+  @override
   String get certificateDocuments => 'Documents';
 
   @override

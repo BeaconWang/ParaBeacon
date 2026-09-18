@@ -3,6 +3,43 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+class AsfcCoach {
+  const AsfcCoach({
+    required this.id,
+    required this.name,
+    this.agencyName = '',
+    this.level = '',
+  });
+
+  final int id;
+  final String name;
+  final String agencyName;
+  final String level;
+
+  factory AsfcCoach.fromJson(Map<String, dynamic> json) {
+    return AsfcCoach(
+      id: _asInt(json['id']) ?? _asInt(json['coachId']) ?? 0,
+      name: _asString(json['fullName']) ??
+          _asString(json['coachName']) ??
+          _asString(json['name']) ??
+          '',
+      agencyName: _asString(json['agencyName']) ?? '',
+      level: _asString(json['level']) ?? '',
+    );
+  }
+
+  static String? _asString(Object? value) {
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    return value is num ? value.toString() : null;
+  }
+
+  static int? _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
+  }
+}
+
 class AsfcAuthService extends ChangeNotifier {
   AsfcAuthService._();
 
@@ -23,6 +60,15 @@ class AsfcAuthService extends ChangeNotifier {
   static final Uri _certificateApplicationUri = Uri.parse(
     'https://www.57fly.com/api/train/parasailLicense/customerApply',
   );
+  static final Uri _certificateUpgradeUri = Uri.parse(
+    'https://www.57fly.com/api/train/parasailLicense/customerUpgradeLevelApply',
+  );
+  static final Uri _certificateInfoUri = Uri.parse(
+    'https://www.57fly.com/api/train/parasailLicense/customerInfo',
+  );
+  static final Uri _certificateCoachesUri = Uri.parse(
+    'https://www.57fly.com/api/train/parasailLicense/allCoach',
+  );
   static final Uri _certificateImageUploadUri = Uri.parse(
     'https://upload.57fly.com/api/imageUpload/0/upload',
   );
@@ -36,8 +82,12 @@ class AsfcAuthService extends ChangeNotifier {
   bool _captchaLoading = false;
   bool _smsCodeLoading = false;
   bool _profileLoading = false;
+  bool _certificateInfoLoading = false;
+  bool _certificateCoachesLoading = false;
   Uint8List? _captchaImageBytes;
   Map<String, dynamic>? _profile;
+  Map<String, dynamic>? _certificateApplication;
+  List<AsfcCoach>? _certificateCoaches;
   String? _profileErrorCode;
   String? _profileErrorMessage;
   String? _token;
@@ -51,6 +101,8 @@ class AsfcAuthService extends ChangeNotifier {
   bool get isCaptchaLoading => _captchaLoading;
   bool get isSmsCodeLoading => _smsCodeLoading;
   bool get isProfileLoading => _profileLoading;
+  bool get isCertificateInfoLoading => _certificateInfoLoading;
+  bool get isCertificateCoachesLoading => _certificateCoachesLoading;
   Uint8List? get captchaImageBytes => _captchaImageBytes;
   bool get isSignedIn => _token != null && _token!.isNotEmpty;
   String? get username => _username;
@@ -58,6 +110,11 @@ class AsfcAuthService extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get profile =>
       _profile == null ? null : Map.unmodifiable(_profile!);
+  Map<String, dynamic>? get certificateApplication => _certificateApplication == null
+      ? null
+      : Map.unmodifiable(_certificateApplication!);
+  List<AsfcCoach> get certificateCoaches =>
+      List.unmodifiable(_certificateCoaches ?? const <AsfcCoach>[]);
   String? get profileErrorCode => _profileErrorCode;
   String? get profileErrorMessage => _profileErrorMessage;
   String? get avatarUrl {
@@ -128,6 +185,84 @@ class AsfcAuthService extends ChangeNotifier {
       return false;
     } finally {
       _profileLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Map<String, dynamic>?> loadCertificateApplication({
+    bool force = false,
+  }) async {
+    if (!isSignedIn) return null;
+    if (_certificateInfoLoading || (!force && _certificateApplication != null)) {
+      return certificateApplication;
+    }
+
+    _certificateInfoLoading = true;
+    notifyListeners();
+    try {
+      final response = await http
+          .get(
+            _certificateInfoUri,
+            headers: {'Accept': 'application/json', 'token': _token!},
+          )
+          .timeout(const Duration(seconds: 15));
+      final decoded = _decodeMap(response.body);
+      final status = decoded?['status']?.toString().toLowerCase();
+      final code = decoded?['code']?.toString();
+      final success =
+          response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          (status == 'success' || status == '200' || code == '200');
+      final data = decoded?['data'];
+      if (success && data is Map<String, dynamic>) {
+        _certificateApplication = data;
+      }
+      return certificateApplication;
+    } on Exception {
+      return null;
+    } finally {
+      _certificateInfoLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<AsfcCoach>> loadCertificateCoaches({
+    bool force = false,
+  }) async {
+    if (!isSignedIn) return const <AsfcCoach>[];
+    if (_certificateCoachesLoading || (!force && _certificateCoaches != null)) {
+      return certificateCoaches;
+    }
+
+    _certificateCoachesLoading = true;
+    notifyListeners();
+    try {
+      final response = await http
+          .get(
+            _certificateCoachesUri,
+            headers: {'Accept': 'application/json', 'token': _token!},
+          )
+          .timeout(const Duration(seconds: 15));
+      final decoded = _decodeMap(response.body);
+      final status = decoded?['status']?.toString().toLowerCase();
+      final code = decoded?['code']?.toString();
+      final success =
+          response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          (status == 'success' || status == '200' || code == '200');
+      final data = decoded?['data'];
+      if (success && data is List) {
+        _certificateCoaches = data
+            .whereType<Map<String, dynamic>>()
+            .map(AsfcCoach.fromJson)
+            .where((coach) => coach.id > 0 && coach.name.isNotEmpty)
+            .toList(growable: false);
+      }
+      return certificateCoaches;
+    } on Exception {
+      return const <AsfcCoach>[];
+    } finally {
+      _certificateCoachesLoading = false;
       notifyListeners();
     }
   }
@@ -318,6 +453,8 @@ class AsfcAuthService extends ChangeNotifier {
       _circleToken = circleToken is String ? circleToken : null;
       _username = normalizedUsername;
       _profile = null;
+      _certificateApplication = null;
+      _certificateCoaches = null;
       _profileErrorCode = null;
       _profileErrorMessage = null;
       await _storage.write(key: _tokenKey, value: _token);
@@ -466,7 +603,9 @@ class AsfcAuthService extends ChangeNotifier {
     try {
       final response = await http
           .post(
-            _certificateApplicationUri,
+            parasailLicenseId > 0
+                ? _certificateUpgradeUri
+                : _certificateApplicationUri,
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/json; charset=utf-8',
@@ -581,6 +720,8 @@ class AsfcAuthService extends ChangeNotifier {
     _circleToken = null;
     _username = null;
     _profile = null;
+    _certificateApplication = null;
+    _certificateCoaches = null;
     _profileErrorCode = null;
     _profileErrorMessage = null;
     _errorCode = null;

@@ -28,10 +28,21 @@ class _CertificateApplicationSheetState
   final _formKey = GlobalKey<FormState>();
   final _controllers = <String, TextEditingController>{};
   String _sex = 'MAN';
+  String _credentialsType = 'ID_CARD';
   String? _licensePhoto;
   String? _groupPhoto;
+  List<AsfcCoach> _coaches = const [];
+  AsfcCoach? _selectedCoach;
+  int _certificateId = 0;
+  String _licenseNo = '';
+  String _auditTime = '';
+  String _licenseValidStart = '';
+  String _licenseValidEnd = '';
+  String _areaCode = '';
   bool _uploadingLicensePhoto = false;
   bool _uploadingGroupPhoto = false;
+  bool _loadingExistingData = true;
+  bool _loadingCoaches = true;
   bool _submitting = false;
   bool _prefilled = false;
 
@@ -46,7 +57,6 @@ class _CertificateApplicationSheetState
     'address',
     'area',
     'agencyName',
-    'coachId',
     'urgentContactName',
     'urgentContactPhone',
     'urgentBloodType',
@@ -61,8 +71,24 @@ class _CertificateApplicationSheetState
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = AsfcAuthService.instance;
       await auth.load();
-      if (auth.isSignedIn) await auth.loadProfile();
-      if (mounted) _prefillFromProfile(auth.profile);
+      if (auth.isSignedIn) {
+        await Future.wait([
+          auth.loadProfile(),
+          auth.loadCertificateApplication(),
+          auth.loadCertificateCoaches(),
+        ]);
+      }
+      if (!mounted) return;
+      _prefillFromSources(
+        profile: auth.profile,
+        application: auth.certificateApplication,
+      );
+      setState(() {
+        _coaches = auth.certificateCoaches;
+        _loadingExistingData = false;
+        _loadingCoaches = auth.isCertificateCoachesLoading;
+        _selectCoachById();
+      });
     });
   }
 
@@ -76,34 +102,123 @@ class _CertificateApplicationSheetState
 
   TextEditingController _controller(String name) => _controllers[name]!;
 
-  void _prefillFromProfile(Map<String, dynamic>? profile) {
-    if (_prefilled || profile == null) return;
+  void _prefillFromSources({
+    required Map<String, dynamic>? profile,
+    required Map<String, dynamic>? application,
+  }) {
+    if (_prefilled) return;
     _prefilled = true;
+
+    String value(String key, {List<List<String>> profilePaths = const []}) {
+      final applicationValue = _stringValue(application?[key]);
+      if (applicationValue != null) return applicationValue;
+      for (final path in profilePaths) {
+        final profileValue = _profileValue(profile, path);
+        if (profileValue != null) return profileValue;
+      }
+      return '';
+    }
+
     final values = <String, String>{
-      'fullName': _profileValue(profile, ['user', 'realName']) ??
-          _profileValue(profile, ['user', 'fullName']) ??
-          '',
-      'credentialsNumber':
-          _profileValue(profile, ['user', 'credentialsNumber']) ?? '',
-      'mobile': _profileValue(profile, ['user', 'mobile']) ?? '',
-      'email': _profileValue(profile, ['user', 'email']) ?? '',
-      'address': _profileValue(profile, ['user', 'address']) ?? '',
+      'fullName': value(
+        'fullName',
+        profilePaths: const [
+          ['user', 'realName'],
+          ['user', 'fullName'],
+        ],
+      ),
+      'birthday': value('birthday', profilePaths: const [['user', 'birthday']]),
+      'country': value('country', profilePaths: const [['user', 'country']]),
+      'ethnicityCode': value(
+        'ethnicityCode',
+        profilePaths: const [['user', 'ethnicityCode'], ['user', 'nation']],
+      ),
+      'credentialsNumber': value(
+        'credentialsNumber',
+        profilePaths: const [['user', 'credentialsNumber'], ['user', 'idCard']],
+      ),
+      'mobile': value('mobile', profilePaths: const [['user', 'mobile']]),
+      'email': value('email', profilePaths: const [['user', 'email']]),
+      'address': value('address', profilePaths: const [['user', 'address']]),
+      'area': value('area', profilePaths: const [['user', 'area']]),
+      'agencyName': value(
+        'agencyName',
+        profilePaths: const [['user', 'agencyName']],
+      ),
+      'urgentContactName': value(
+        'urgentContactName',
+        profilePaths: const [['user', 'urgentContactName']],
+      ),
+      'urgentContactPhone': value(
+        'urgentContactPhone',
+        profilePaths: const [['user', 'urgentContactPhone']],
+      ),
+      'urgentBloodType': value(
+        'urgentBloodType',
+        profilePaths: const [['user', 'urgentBloodType']],
+      ),
     };
     for (final entry in values.entries) {
       if (entry.value.isNotEmpty) _controller(entry.key).text = entry.value;
     }
-    setState(() {});
+
+    final sex = value(
+      'sex',
+      profilePaths: const [['user', 'gender'], ['user', 'sex']],
+    );
+    if (sex == 'MAN' || sex == '男') {
+      _sex = 'MAN';
+    } else if (sex == 'WOMAN' || sex == '女') {
+      _sex = 'WOMAN';
+    }
+    _credentialsType = value('credentialsType');
+    if (_credentialsType.isEmpty) _credentialsType = 'ID_CARD';
+    _certificateId = int.tryParse(value('id')) ?? 0;
+    _licenseNo = value('licenseNo');
+    _auditTime = value('auditTime');
+    _licenseValidStart = value('licenseValidStart');
+    _licenseValidEnd = value('licenseValidEnd');
+    _areaCode = value('areaCode');
+    _licensePhoto = _safeImageValue(value('licensePhoto'));
+    _groupPhoto = _safeImageValue(value('groupPhoto'));
+    final coachId = int.tryParse(value('coachId')) ?? 0;
+    if (coachId > 0) _selectedCoach = AsfcCoach(id: coachId, name: value('coachName'));
   }
 
-  String? _profileValue(Map<String, dynamic> profile, List<String> path) {
+  String? _profileValue(Map<String, dynamic>? profile, List<String> path) {
     Object? current = profile;
     for (final part in path) {
       if (current is! Map<String, dynamic>) return null;
       current = current[part];
     }
-    return current is String && current.trim().isNotEmpty
-        ? current.trim()
-        : null;
+    return _stringValue(current);
+  }
+
+  String? _stringValue(Object? value) {
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    if (value is num) return value.toString();
+    return null;
+  }
+
+  String? _safeImageValue(String value) {
+    if (value.isEmpty) return null;
+    final uri = Uri.tryParse(value);
+    if (value.startsWith('/') ||
+        (uri != null && uri.scheme == 'https' && uri.host == 'upload.57fly.com')) {
+      return value;
+    }
+    return null;
+  }
+
+  void _selectCoachById() {
+    final selectedId = _selectedCoach?.id;
+    if (selectedId == null) return;
+    for (final coach in _coaches) {
+      if (coach.id == selectedId) {
+        _selectedCoach = coach;
+        return;
+      }
+    }
   }
 
   String? _required(AppLocalizations l10n, String? value) {
@@ -208,8 +323,14 @@ class _CertificateApplicationSheetState
       urgentContactName: values['urgentContactName']!,
       urgentContactPhone: values['urgentContactPhone']!,
       urgentBloodType: values['urgentBloodType']!,
-      coachId: int.tryParse(values['coachId']!) ?? 0,
-      auditTime: _dateString(DateTime.now()),
+      licenseNo: _licenseNo,
+      auditTime: _auditTime,
+      licenseValidStart: _licenseValidStart,
+      licenseValidEnd: _licenseValidEnd,
+      areaCode: _areaCode,
+      credentialsType: _credentialsType,
+      parasailLicenseId: _certificateId,
+      coachId: _selectedCoach?.id ?? 0,
     );
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -220,12 +341,6 @@ class _CertificateApplicationSheetState
     } else {
       _showMessage(_errorText(AppLocalizations.of(context), AsfcAuthService.instance));
     }
-  }
-
-  String _dateString(DateTime date) {
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '${date.year}-$month-$day';
   }
 
   InputDecoration _decoration(String label, IconData icon) {
@@ -248,6 +363,43 @@ class _CertificateApplicationSheetState
       decoration: _decoration(label, icon).copyWith(hintText: hintText),
       validator: required ? (value) => _required(l10n, value) : null,
     );
+  }
+
+  Widget _coachField(AppLocalizations l10n) {
+    final selected = _selectedCoach;
+    final coaches = [..._coaches];
+    if (selected != null && !coaches.any((coach) => coach.id == selected.id)) {
+      coaches.insert(0, selected);
+    }
+    return DropdownButtonFormField<AsfcCoach>(
+      initialValue: selected,
+      isExpanded: true,
+      decoration: _decoration(l10n.certificateCoach, Icons.person_search_outlined),
+      hint: Text(
+        _loadingCoaches
+            ? l10n.certificateCoachesLoading
+            : l10n.certificateCoachSelect,
+      ),
+      items: coaches
+          .map(
+            (coach) => DropdownMenuItem<AsfcCoach>(
+              value: coach,
+              child: Text(_coachLabel(coach), overflow: TextOverflow.ellipsis),
+            ),
+          )
+          .toList(),
+      onChanged: _submitting || _loadingCoaches
+          ? null
+          : (coach) => setState(() => _selectedCoach = coach),
+    );
+  }
+
+  String _coachLabel(AsfcCoach coach) {
+    final details = [
+      if (coach.agencyName.isNotEmpty) coach.agencyName,
+      if (coach.level.isNotEmpty) coach.level,
+    ];
+    return details.isEmpty ? coach.name : '${coach.name} · ${details.join(' / ')}';
   }
 
   Widget _photoTile({required bool groupPhoto}) {
@@ -301,6 +453,10 @@ class _CertificateApplicationSheetState
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                   children: [
                     Text(l10n.certificateApplicationSubtitle, style: theme.textTheme.bodyMedium),
+                    if (_loadingExistingData || _loadingCoaches) ...[
+                      const SizedBox(height: 12),
+                      const LinearProgressIndicator(),
+                    ],
                     const SizedBox(height: 20),
                     _textField(l10n, 'fullName', l10n.certificateFullName, Icons.person_outline),
                     const SizedBox(height: 12),
@@ -332,7 +488,7 @@ class _CertificateApplicationSheetState
                     const SizedBox(height: 12),
                     _textField(l10n, 'agencyName', l10n.certificateAgency, Icons.school_outlined),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'coachId', l10n.certificateCoachId, Icons.person_search_outlined, keyboardType: TextInputType.number, required: false),
+                    _coachField(l10n),
                     const SizedBox(height: 20),
                     Text(l10n.certificateDocuments, style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),

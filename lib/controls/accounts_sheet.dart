@@ -18,11 +18,22 @@ Future<void> showAccountsSheet(BuildContext context) {
   );
 }
 
-class _AccountsSheet extends StatefulWidget {
-  const _AccountsSheet();
+Future<void> showAsfcLoginSheet(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    shape: const RoundedRectangleBorder(),
+    constraints: const BoxConstraints.expand(),
+    builder: (_) => const _AsfcLoginSheet(),
+  );
+}
+
+class _AsfcLoginSheet extends StatefulWidget {
+  const _AsfcLoginSheet();
 
   @override
-  State<_AccountsSheet> createState() => _AccountsSheetState();
+  State<_AsfcLoginSheet> createState() => _AsfcLoginSheetState();
 }
 
 class _ProfileField {
@@ -52,7 +63,132 @@ class _ProfileAvatar extends StatelessWidget {
   }
 }
 
+class _AccountsSheet extends StatefulWidget {
+  const _AccountsSheet();
+
+  @override
+  State<_AccountsSheet> createState() => _AccountsSheetState();
+}
+
 class _AccountsSheetState extends State<_AccountsSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        AsfcAuthService.instance,
+        XContestAuthService.instance,
+      ]),
+      builder: (context, _) {
+        final asfc = AsfcAuthService.instance;
+        final xcontest = XContestAuthService.instance;
+        return Material(
+          color: theme.colorScheme.surface,
+          child: SafeArea(
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 64,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        tooltip: l10n.close,
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                      ),
+                      Expanded(
+                        child: Text(
+                          l10n.accounts,
+                          style: theme.textTheme.titleLarge,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+                    children: [
+                      Icon(
+                        Icons.account_circle_outlined,
+                        size: 72,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.accounts,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.accountsSubtitle,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      _AccountCard(
+                        icon: Icons.account_circle_outlined,
+                        title: l10n.asfcAccount,
+                        subtitle: asfc.isSignedIn
+                            ? '${l10n.asfcSignedIn} · ${asfc.username ?? ''}'
+                            : l10n.asfcAccountSubtitle,
+                        onTap: () => showAsfcLoginSheet(context),
+                      ),
+                      const SizedBox(height: 12),
+                      _AccountCard(
+                        icon: Icons.public,
+                        title: l10n.xcontestAccount,
+                        subtitle: xcontest.isSignedIn
+                            ? '${l10n.xcontestSignedIn} · ${xcontest.fullName ?? xcontest.username ?? ''}'
+                            : l10n.xcontestAccountSubtitle,
+                        onTap: () => showXContestLoginSheet(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AccountCard extends StatelessWidget {
+  const _AccountCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: ListTile(
+        leading: Icon(icon, color: theme.colorScheme.primary),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _AsfcLoginSheetState extends State<_AsfcLoginSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _usernameController;
   late final TextEditingController _passwordController;
@@ -251,13 +387,9 @@ class _AccountsSheetState extends State<_AccountsSheet> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return AnimatedBuilder(
-      animation: Listenable.merge([
-        AsfcAuthService.instance,
-        XContestAuthService.instance,
-      ]),
+      animation: AsfcAuthService.instance,
       builder: (context, _) {
         final auth = AsfcAuthService.instance;
-        final xcontestAuth = XContestAuthService.instance;
         return Material(
           color: theme.colorScheme.surface,
           child: SafeArea(
@@ -274,7 +406,7 @@ class _AccountsSheetState extends State<_AccountsSheet> {
                       ),
                       Expanded(
                         child: Text(
-                          l10n.accounts,
+                          l10n.asfcAccount,
                           style: theme.textTheme.titleLarge,
                         ),
                       ),
@@ -293,36 +425,19 @@ class _AccountsSheetState extends State<_AccountsSheet> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        l10n.accounts,
+                        l10n.asfcAccount,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        l10n.accountsSubtitle,
+                        l10n.asfcAccountSubtitle,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 28),
-                      Card(
-                        child: ListTile(
-                          leading: Icon(
-                            Icons.public,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.xcontestAccount),
-                          subtitle: Text(
-                            xcontestAuth.isSignedIn
-                                ? '${l10n.xcontestSignedIn} · ${xcontestAuth.fullName ?? xcontestAuth.username ?? ''}'
-                                : l10n.xcontestAccountSubtitle,
-                          ),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => showXContestLoginSheet(context),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
                       if (auth.isSignedIn) ...[
                         Builder(
                           builder: (context) {

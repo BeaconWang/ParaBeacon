@@ -101,7 +101,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aircraftManufacturer => 'Manufacturer';
 
   @override
+  String get aircraftSelectManufacturer => 'Select a manufacturer';
+
+  @override
   String get aircraftModel => 'Model';
+
+  @override
+  String get aircraftSelectModel => 'Select a model';
 
   @override
   String get aircraftName => 'Aircraft name';

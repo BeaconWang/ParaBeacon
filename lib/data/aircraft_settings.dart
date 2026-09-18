@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Persistent aircraft configuration, modelled after XCTrack's Glider
@@ -50,6 +53,7 @@ class AircraftSettings extends ChangeNotifier {
   static const _kEngineType = 'pb.aircraft.engineType';
   static const _kTrimSpeed = 'pb.aircraft.trimSpeedKmh';
   static const _kGoalGlideRatio = 'pb.aircraft.goalGlideRatio';
+  static const _presetsAsset = 'assets/aircraft_presets.json';
 
   String faiClass = '3';
   String manufacturer = '';
@@ -64,8 +68,15 @@ class AircraftSettings extends ChangeNotifier {
 
   bool _loaded = false;
   bool _saving = false;
+  bool _presetsLoaded = false;
+  Map<String, List<String>> _presets = const {};
 
   bool get isLoaded => _loaded;
+  bool get arePresetsLoaded => _presetsLoaded;
+  List<String> get manufacturers => _presets.keys.toList(growable: false);
+
+  List<String> modelsFor(String manufacturer) =>
+      _presets[manufacturer] ?? const <String>[];
   bool get isSaving => _saving;
   bool get isParagliderClass => const {'3', '11', '12'}.contains(faiClass);
   bool get isHangGliderClass =>
@@ -83,6 +94,44 @@ class AircraftSettings extends ChangeNotifier {
       model.trim(),
     ].where((value) => value.isNotEmpty).join(' ');
     return makeAndModel.isEmpty ? faiClassLabel : makeAndModel;
+  }
+
+  Future<void> loadPresets() async {
+    if (_presetsLoaded) return;
+    try {
+      final raw = await rootBundle.loadString(_presetsAsset);
+      final decoded = jsonDecode(raw.replaceFirst('\ufeff', ''));
+      if (decoded is List) {
+        final presets = <String, List<String>>{};
+        for (final entry in decoded) {
+          if (entry is! Map) continue;
+          final brand = entry['name'];
+          final models = entry['models'];
+          if (brand is! String || models is! List) continue;
+          final normalizedBrand = brand.trim();
+          final normalizedModels = <String>[];
+          final seen = <String>{};
+          for (final model in models) {
+            if (model is! String) continue;
+            final normalizedModel = model.trim();
+            if (normalizedModel.isNotEmpty && seen.add(normalizedModel)) {
+              normalizedModels.add(normalizedModel);
+            }
+          }
+          if (normalizedBrand.isNotEmpty) {
+            presets[normalizedBrand] = List.unmodifiable(normalizedModels);
+          }
+        }
+        _presets = Map.unmodifiable(presets);
+      }
+    } on FormatException {
+      _presets = const {};
+    } on FlutterError {
+      _presets = const {};
+    } finally {
+      _presetsLoaded = true;
+      notifyListeners();
+    }
   }
 
   Future<void> load() async {

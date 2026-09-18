@@ -278,11 +278,23 @@ abstract class AppLocalizations {
   /// **'Manufacturer'**
   String get aircraftManufacturer;
 
+  /// No description provided for @aircraftSelectManufacturer.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a manufacturer'**
+  String get aircraftSelectManufacturer;
+
   /// No description provided for @aircraftModel.
   ///
   /// In en, this message translates to:
   /// **'Model'**
   String get aircraftModel;
+
+  /// No description provided for @aircraftSelectModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a model'**
+  String get aircraftSelectModel;
 
   /// No description provided for @aircraftName.
   ///

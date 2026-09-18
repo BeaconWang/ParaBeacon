@@ -306,10 +306,14 @@ class _WeatherSheetState extends State<_WeatherSheet> {
   /// forecast for it. The picker hands back WGS-84 coordinates.
   Future<void> _pickOnMap() async {
     _searchFocus.unfocus();
+    final languageCode = Localizations.localeOf(context).languageCode;
     final picked = await showMapPickerSheet(
       context,
       initialLat: _lat,
       initialLon: _lon,
+      initialTileSourceId: languageCode == 'zh'
+          ? 'amap'
+          : MapPickerDefaults.tileSourceId,
       resolveCurrentLocation: _resolveCurrentFix,
     );
     if (!mounted || picked == null) return;

@@ -48,6 +48,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     with SingleTickerProviderStateMixin {
   /// Tile source used for the replay basemap. Users can switch it in replay.
   String _tileSourceId = 'osm';
+  bool _tileSourceInitialized = false;
 
   final MapController _map = MapController();
 
@@ -86,6 +87,16 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     _spanMs = math.max(1.0, last.difference(first).inMilliseconds.toDouble());
     _computeExtrema();
     _ticker = createTicker(_onTick);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_tileSourceInitialized) return;
+    _tileSourceInitialized = true;
+    _tileSourceId = Localizations.localeOf(context).languageCode == 'zh'
+        ? 'amap-sat'
+        : 'osm';
   }
 
   void _computeExtrema() {

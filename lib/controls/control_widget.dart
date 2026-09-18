@@ -357,7 +357,7 @@ class ControlWidget extends StatelessWidget {
             active: isSelected || isControlled,
             follow: control.boolSetting('follow', fallback: true),
             initialZoom: control.doubleSetting('zoom', fallback: 17.0),
-            tileSource: source is String ? source : 'osm',
+            tileSource: source is String ? source : 'amap-sat',
             trackUp: rot == 'track',
             showNorth: control.boolSetting('showNorth', fallback: false),
             pilotArrowCoef:

@@ -107,11 +107,11 @@ class MapTileSources {
     ),
   ];
 
-  /// Looks up a source by id, defaulting to OSM.
+  /// Looks up a source by id, defaulting to AMap satellite.
   static MapTileSource byId(String id) {
     return all.firstWhere(
       (s) => s.id == id,
-      orElse: () => all.firstWhere((s) => s.id == 'osm'),
+      orElse: () => all.firstWhere((s) => s.id == 'amap-sat'),
     );
   }
 }
@@ -224,7 +224,7 @@ class MapControl extends StatefulWidget {
     super.key,
     this.initialZoom = 17.0,
     this.follow = true,
-    this.tileSource = 'osm',
+    this.tileSource = 'amap-sat',
     this.showTrack = true,
     this.showThermal = true,
     this.showAirspace = true,

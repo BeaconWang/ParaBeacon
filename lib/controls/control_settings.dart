@@ -693,7 +693,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ControlSetting.choice(
       key: 'tileSource',
       label: 'Map source',
-      defaultValue: 'osm',
+      defaultValue: 'amap-sat',
       options: {
         'none': 'None (no basemap)',
         'osm': 'OpenStreetMap',

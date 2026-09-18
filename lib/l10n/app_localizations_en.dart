@@ -143,6 +143,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aircraftSave => 'Save aircraft';
 
   @override
+  String get flightDetailAircraft => 'Aircraft';
+
+  @override
+  String get flightDetailAircraftClass => 'FAI class';
+
+  @override
+  String get flightDetailAircraftManufacturer => 'Manufacturer';
+
+  @override
+  String get flightDetailAircraftModel => 'Model';
+
+  @override
+  String get flightDetailAircraftName => 'Aircraft name';
+
+  @override
+  String get flightDetailAircraftCategory => 'Category';
+
+  @override
+  String get flightDetailAircraftTandem => 'Tandem';
+
+  @override
+  String get flightDetailAircraftEngine => 'Engine';
+
+  @override
+  String get flightDetailAircraftTrimSpeed => 'Trim speed';
+
+  @override
+  String get flightDetailAircraftGlideRatio => 'Goal glide ratio';
+
+  @override
+  String get aircraftTandemYes => 'Yes';
+
+  @override
+  String get aircraftTandemNo => 'No';
+
+  @override
   String get notSet => 'Not set';
 
   @override

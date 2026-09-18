@@ -586,6 +586,40 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                         _detailRow(l10n.flightDetailLanding,
                             track.landingSite ?? '—'),
                       ],
+                      if (track.hasAircraftInformation) ...[
+                        const SizedBox(height: 8),
+                        _sectionLabel(theme, l10n.flightDetailAircraft),
+                        if (track.aircraftFaiClass?.isNotEmpty ?? false)
+                          _detailRow(l10n.flightDetailAircraftClass,
+                              track.aircraftFaiClass!),
+                        if (track.aircraftManufacturer?.isNotEmpty ?? false)
+                          _detailRow(l10n.flightDetailAircraftManufacturer,
+                              track.aircraftManufacturer!),
+                        if (track.aircraftModel?.isNotEmpty ?? false)
+                          _detailRow(l10n.flightDetailAircraftModel,
+                              track.aircraftModel!),
+                        if (track.aircraftName?.isNotEmpty ?? false)
+                          _detailRow(l10n.flightDetailAircraftName,
+                              track.aircraftName!),
+                        if (track.aircraftCategory?.isNotEmpty ?? false)
+                          _detailRow(l10n.flightDetailAircraftCategory,
+                              track.aircraftCategory!),
+                        if (track.aircraftTandem != null)
+                          _detailRow(
+                              l10n.flightDetailAircraftTandem,
+                              track.aircraftTandem!
+                                  ? l10n.aircraftTandemYes
+                                  : l10n.aircraftTandemNo),
+                        if (track.aircraftEngineType?.isNotEmpty ?? false)
+                          _detailRow(l10n.flightDetailAircraftEngine,
+                              track.aircraftEngineType!),
+                        if (track.aircraftTrimSpeedKmh != null)
+                          _detailRow(l10n.flightDetailAircraftTrimSpeed,
+                              '${track.aircraftTrimSpeedKmh!.toStringAsFixed(1)} km/h'),
+                        if (track.aircraftGoalGlideRatio != null)
+                          _detailRow(l10n.flightDetailAircraftGlideRatio,
+                              track.aircraftGoalGlideRatio!.toStringAsFixed(2)),
+                      ],
                       if (track.hasEquipment) ...[
                         const SizedBox(height: 8),
                         _sectionLabel(theme, l10n.equipment),

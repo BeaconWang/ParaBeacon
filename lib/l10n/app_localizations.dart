@@ -362,6 +362,78 @@ abstract class AppLocalizations {
   /// **'Save aircraft'**
   String get aircraftSave;
 
+  /// No description provided for @flightDetailAircraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft'**
+  String get flightDetailAircraft;
+
+  /// No description provided for @flightDetailAircraftClass.
+  ///
+  /// In en, this message translates to:
+  /// **'FAI class'**
+  String get flightDetailAircraftClass;
+
+  /// No description provided for @flightDetailAircraftManufacturer.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer'**
+  String get flightDetailAircraftManufacturer;
+
+  /// No description provided for @flightDetailAircraftModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get flightDetailAircraftModel;
+
+  /// No description provided for @flightDetailAircraftName.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft name'**
+  String get flightDetailAircraftName;
+
+  /// No description provided for @flightDetailAircraftCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get flightDetailAircraftCategory;
+
+  /// No description provided for @flightDetailAircraftTandem.
+  ///
+  /// In en, this message translates to:
+  /// **'Tandem'**
+  String get flightDetailAircraftTandem;
+
+  /// No description provided for @flightDetailAircraftEngine.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine'**
+  String get flightDetailAircraftEngine;
+
+  /// No description provided for @flightDetailAircraftTrimSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim speed'**
+  String get flightDetailAircraftTrimSpeed;
+
+  /// No description provided for @flightDetailAircraftGlideRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal glide ratio'**
+  String get flightDetailAircraftGlideRatio;
+
+  /// No description provided for @aircraftTandemYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get aircraftTandemYes;
+
+  /// No description provided for @aircraftTandemNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get aircraftTandemNo;
+
   /// No description provided for @notSet.
   ///
   /// In en, this message translates to:

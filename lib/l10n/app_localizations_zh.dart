@@ -141,6 +141,42 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aircraftSave => '保存飞行器';
 
   @override
+  String get flightDetailAircraft => '飞行器';
+
+  @override
+  String get flightDetailAircraftClass => 'FAI 类别';
+
+  @override
+  String get flightDetailAircraftManufacturer => '制造商';
+
+  @override
+  String get flightDetailAircraftModel => '型号';
+
+  @override
+  String get flightDetailAircraftName => '飞行器名称';
+
+  @override
+  String get flightDetailAircraftCategory => '类别';
+
+  @override
+  String get flightDetailAircraftTandem => '双人座';
+
+  @override
+  String get flightDetailAircraftEngine => '发动机';
+
+  @override
+  String get flightDetailAircraftTrimSpeed => '配平速度';
+
+  @override
+  String get flightDetailAircraftGlideRatio => '目标滑翔比';
+
+  @override
+  String get aircraftTandemYes => '是';
+
+  @override
+  String get aircraftTandemNo => '否';
+
+  @override
   String get notSet => '未设置';
 
   @override

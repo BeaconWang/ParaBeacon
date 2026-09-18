@@ -84,8 +84,12 @@ class FlightExportService {
     b.writeln('HFPLTPILOTINCHARGE:');
     final configuredAircraft = AircraftSettings.instance.displayName;
     final trackAircraft = track.gliderName?.trim();
+    final snapshotAircraft = [
+      track.aircraftManufacturer?.trim() ?? '',
+      track.aircraftModel?.trim() ?? '',
+    ].where((value) => value.isNotEmpty).join(' ');
     final aircraftType = trackAircraft == null || trackAircraft.isEmpty
-        ? configuredAircraft
+        ? (snapshotAircraft.isEmpty ? configuredAircraft : snapshotAircraft)
         : trackAircraft;
     b.writeln('HFGTYGLIDERTYPE:${_igcHeaderValue(aircraftType)}');
     b.writeln('HFDTMGPSDATUM:WGS84');

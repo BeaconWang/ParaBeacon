@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
+import 'aircraft_settings.dart';
 import 'flight_data.dart';
 import 'flight_state.dart';
 import 'flight_store.dart';
@@ -25,9 +26,9 @@ class FlightSample {
   /// snapshot by default, or the compact XCTrack/IGC-style field set when the
   /// user selected [RecordingDetail.xctrack].
   Map<String, dynamic> toJson() => {
-        't': time.toIso8601String(),
-        'd': data.toJson(compact: RecordingSettings.instance.compactSamples),
-      };
+    't': time.toIso8601String(),
+    'd': data.toJson(compact: RecordingSettings.instance.compactSamples),
+  };
 
   /// Inverse of [toJson]. Returns null when the timestamp is missing/invalid.
   static FlightSample? fromJson(Map<String, dynamic> json) {
@@ -74,6 +75,30 @@ class FlightTrack {
   /// Optional post-flight metadata (set from the Flights sheet, persisted with
   /// the track and included in exports / share cards).
   ///
+  /// Aircraft configuration captured when this flight starts. These fields are
+  /// immutable by convention after recording begins, so historic flights keep
+  /// the aircraft setup that was actually used.
+  String? aircraftFaiClass;
+  String? aircraftManufacturer;
+  String? aircraftModel;
+  String? aircraftName;
+  String? aircraftCategory;
+  bool? aircraftTandem;
+  String? aircraftEngineType;
+  double? aircraftTrimSpeedKmh;
+  double? aircraftGoalGlideRatio;
+
+  bool get hasAircraftInformation =>
+      aircraftFaiClass != null ||
+      aircraftManufacturer?.isNotEmpty == true ||
+      aircraftModel?.isNotEmpty == true ||
+      aircraftName?.isNotEmpty == true ||
+      aircraftCategory?.isNotEmpty == true ||
+      aircraftTandem != null ||
+      aircraftEngineType != null ||
+      aircraftTrimSpeedKmh != null ||
+      aircraftGoalGlideRatio != null;
+
   /// Equipment names used for this flight (free text). Any of these may be
   /// null / empty when the pilot hasn't recorded them.
   String? gliderName;
@@ -168,12 +193,27 @@ class FlightTrack {
       'startTime': startTime.toIso8601String(),
       'endTime': endTime?.toIso8601String(),
       'distanceM': _distanceM,
-      'maxAltitude':
-          _maxAltitude == double.negativeInfinity ? 0.0 : _maxAltitude,
+      'maxAltitude': _maxAltitude == double.negativeInfinity
+          ? 0.0
+          : _maxAltitude,
       'minAltitude': _minAltitude == double.infinity ? 0.0 : _minAltitude,
       'maxClimb': _maxClimb,
       'maxSink': _maxSink,
       'pointCount': pointCount,
+      // Aircraft configuration snapshot captured at takeoff.
+      if (aircraftFaiClass != null) 'aircraftFaiClass': aircraftFaiClass,
+      if (aircraftManufacturer?.isNotEmpty ?? false)
+        'aircraftManufacturer': aircraftManufacturer,
+      if (aircraftModel?.isNotEmpty ?? false) 'aircraftModel': aircraftModel,
+      if (aircraftName?.isNotEmpty ?? false) 'aircraftName': aircraftName,
+      if (aircraftCategory?.isNotEmpty ?? false)
+        'aircraftCategory': aircraftCategory,
+      if (aircraftTandem != null) 'aircraftTandem': aircraftTandem,
+      if (aircraftEngineType != null) 'aircraftEngineType': aircraftEngineType,
+      if (aircraftTrimSpeedKmh != null)
+        'aircraftTrimSpeedKmh': aircraftTrimSpeedKmh,
+      if (aircraftGoalGlideRatio != null)
+        'aircraftGoalGlideRatio': aircraftGoalGlideRatio,
       // Optional post-flight metadata (omitted when unset to keep payloads lean).
       if (gliderName?.isNotEmpty ?? false) 'gliderName': gliderName,
       if (harnessName?.isNotEmpty ?? false) 'harnessName': harnessName,
@@ -185,6 +225,16 @@ class FlightTrack {
 
   /// Copies the optional metadata fields out of a persisted [json] map.
   void _restoreMeta(Map<String, dynamic> json) {
+    aircraftFaiClass = json['aircraftFaiClass'] as String?;
+    aircraftManufacturer = json['aircraftManufacturer'] as String?;
+    aircraftModel = json['aircraftModel'] as String?;
+    aircraftName = json['aircraftName'] as String?;
+    aircraftCategory = json['aircraftCategory'] as String?;
+    aircraftTandem = json['aircraftTandem'] as bool?;
+    aircraftEngineType = json['aircraftEngineType'] as String?;
+    aircraftTrimSpeedKmh = (json['aircraftTrimSpeedKmh'] as num?)?.toDouble();
+    aircraftGoalGlideRatio = (json['aircraftGoalGlideRatio'] as num?)
+        ?.toDouble();
     gliderName = json['gliderName'] as String?;
     harnessName = json['harnessName'] as String?;
     helmetName = json['helmetName'] as String?;
@@ -251,17 +301,24 @@ class FlightTrack {
     // persisted summary rather than returning an empty track.
     if (track.samples.isEmpty) return fromSummaryJson(json);
 
-    track.endTime = DateTime.tryParse(json['endTime'] as String? ?? '') ??
+    track.endTime =
+        DateTime.tryParse(json['endTime'] as String? ?? '') ??
         track.samples.last.time;
     track._restoreMeta(json);
     return track;
   }
 
-  static double _haversineM(double lat1, double lon1, double lat2, double lon2) {
+  static double _haversineM(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const r = 6371000.0;
     final dLat = _rad(lat2 - lat1);
     final dLon = _rad(lon2 - lon1);
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_rad(lat1)) *
             math.cos(_rad(lat2)) *
             math.sin(dLon / 2) *
@@ -395,11 +452,13 @@ class FlightRecorder extends ChangeNotifier {
 
     // Random start within the last ~30 days and a random duration.
     final now = DateTime.now();
-    final start = now.subtract(Duration(
-      days: rnd.nextInt(30),
-      hours: rnd.nextInt(24),
-      minutes: rnd.nextInt(60),
-    ));
+    final start = now.subtract(
+      Duration(
+        days: rnd.nextInt(30),
+        hours: rnd.nextInt(24),
+        minutes: rnd.nextInt(60),
+      ),
+    );
     final durationMin = 5 + rnd.nextInt(55); // 5 .. 60 min
     final sampleCount = math.max(2, durationMin * 6); // ~1 sample / 10 s
 
@@ -445,23 +504,25 @@ class FlightRecorder extends ChangeNotifier {
       lat = lat.clamp(minChinaLat, maxChinaLat);
       lng = lng.clamp(minChinaLng, maxChinaLng);
 
-      track.add(FlightSample(
-        time: t,
-        data: FlightData(
-          verticalSpeed: vSpeed,
-          groundSpeed: groundSpeedKph,
-          altitude: altitude,
-          baroAltitude: altitude,
-          gpsAltitude: altitude,
-          latitude: lat,
-          longitude: lng,
-          heading: heading,
-          gpsAccuracy: 3.0 + rnd.nextDouble() * 5.0,
-          satellites: 6 + rnd.nextInt(8),
-          hasFix: true,
-          timestamp: t,
+      track.add(
+        FlightSample(
+          time: t,
+          data: FlightData(
+            verticalSpeed: vSpeed,
+            groundSpeed: groundSpeedKph,
+            altitude: altitude,
+            baroAltitude: altitude,
+            gpsAltitude: altitude,
+            latitude: lat,
+            longitude: lng,
+            heading: heading,
+            gpsAccuracy: 3.0 + rnd.nextDouble() * 5.0,
+            satellites: 6 + rnd.nextInt(8),
+            hasFix: true,
+            timestamp: t,
+          ),
         ),
-      ));
+      );
     }
     track.endTime = start.add(Duration(milliseconds: spanMs));
 
@@ -534,7 +595,23 @@ class FlightRecorder extends ChangeNotifier {
   }
 
   void _beginRecording() {
-    _current = FlightTrack(startTime: DateTime.now());
+    final aircraft = AircraftSettings.instance;
+    _current = FlightTrack(startTime: DateTime.now())
+      ..aircraftFaiClass = aircraft.faiClass
+      ..aircraftManufacturer = aircraft.manufacturer
+      ..aircraftModel = aircraft.model
+      ..aircraftName = aircraft.name
+      ..aircraftCategory = aircraft.isParagliderClass
+          ? aircraft.paragliderCategory
+          : aircraft.isHangGliderClass
+          ? aircraft.hangGliderCategory
+          : null
+      ..aircraftTandem = aircraft.tandem
+      ..aircraftEngineType = aircraft.engineType
+      ..aircraftTrimSpeedKmh = aircraft.trimSpeedKmh
+      ..aircraftGoalGlideRatio = aircraft.goalGlideRatio
+      // Keep the legacy equipment field aligned with the same takeoff snapshot.
+      ..gliderName = aircraft.displayName;
     _lastStored = null;
   }
 

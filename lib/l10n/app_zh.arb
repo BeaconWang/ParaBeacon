@@ -22,6 +22,12 @@
   "logout": "退出登录",
   "asfcSignedIn": "已登录",
   "asfcLoginFailed": "登录失败，请检查账户信息。",
+  "asfcLoginFailedWithReason": "登录失败：{reason}",
+  "@asfcLoginFailedWithReason": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "asfcConnectionFailed": "无法连接，请检查网络后重试。",
   "asfcCredentialsRequired": "请输入用户名和密码。",
   "showPassword": "显示密码",

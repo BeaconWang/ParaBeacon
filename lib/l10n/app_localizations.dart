@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Login failed. Check your account details.'**
   String get asfcLoginFailed;
 
+  /// No description provided for @asfcLoginFailedWithReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed: {reason}'**
+  String asfcLoginFailedWithReason(String reason);
+
   /// No description provided for @asfcConnectionFailed.
   ///
   /// In en, this message translates to:

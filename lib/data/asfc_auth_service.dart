@@ -23,12 +23,14 @@ class AsfcAuthService extends ChangeNotifier {
   String? _circleToken;
   String? _username;
   String? _errorCode;
+  String? _errorMessage;
 
   bool get isLoaded => _loaded;
   bool get isLoading => _loading;
   bool get isSignedIn => _token != null && _token!.isNotEmpty;
   String? get username => _username;
   String? get errorCode => _errorCode;
+  String? get errorMessage => _errorMessage;
 
   Future<void> load() async {
     if (_loaded) return;
@@ -46,12 +48,14 @@ class AsfcAuthService extends ChangeNotifier {
     final normalizedUsername = username.trim();
     if (normalizedUsername.isEmpty || password.isEmpty) {
       _errorCode = 'missingCredentials';
+      _errorMessage = null;
       notifyListeners();
       return false;
     }
 
     _loading = true;
     _errorCode = null;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -72,13 +76,23 @@ class AsfcAuthService extends ChangeNotifier {
           )
           .timeout(const Duration(seconds: 15));
 
-      final decoded = jsonDecode(response.body);
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } on FormatException {
+        _errorCode = 'loginFailed';
+        _errorMessage = _responseFallbackReason(response);
+        return false;
+      }
       if (decoded is! Map<String, dynamic>) {
-        throw const FormatException('Invalid response');
+        _errorCode = 'loginFailed';
+        _errorMessage = _responseFallbackReason(response);
+        return false;
       }
 
       final status = decoded['status']?.toString().toUpperCase();
       final code = decoded['code']?.toString();
+      final responseReason = _extractResponseReason(decoded);
       final isSuccess =
           response.statusCode >= 200 &&
           response.statusCode < 300 &&
@@ -91,6 +105,9 @@ class AsfcAuthService extends ChangeNotifier {
 
       if (!isSuccess || token is! String || token.isEmpty) {
         _errorCode = 'loginFailed';
+        _errorMessage =
+            responseReason ??
+            _responseFallbackReason(response, status: status, code: code);
         return false;
       }
 
@@ -107,9 +124,11 @@ class AsfcAuthService extends ChangeNotifier {
       return true;
     } on FormatException {
       _errorCode = 'loginFailed';
+      _errorMessage = null;
       return false;
     } on Exception {
       _errorCode = 'connectionFailed';
+      _errorMessage = null;
       return false;
     } finally {
       _loading = false;
@@ -118,11 +137,47 @@ class AsfcAuthService extends ChangeNotifier {
     }
   }
 
+  String _responseFallbackReason(
+    http.Response response, {
+    String? status,
+    String? code,
+  }) {
+    final details = <String>[
+      'HTTP ${response.statusCode}',
+      if (status != null && status.isNotEmpty) 'status=$status',
+      if (code != null && code.isNotEmpty) 'code=$code',
+    ];
+    return details.join(' · ');
+  }
+
+  String? _extractResponseReason(Map<String, dynamic> response) {
+    final candidates = <Object?>[
+      response['message'],
+      response['msg'],
+      response['error'],
+      response['bizStatus'],
+    ];
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      candidates.addAll([data['message'], data['msg'], data['error']]);
+    }
+    for (final candidate in candidates) {
+      if (candidate is String) {
+        final reason = candidate.trim();
+        if (reason.isNotEmpty) {
+          return reason.length <= 200 ? reason : '${reason.substring(0, 200)}…';
+        }
+      }
+    }
+    return null;
+  }
+
   Future<void> logout() async {
     _token = null;
     _circleToken = null;
     _username = null;
     _errorCode = null;
+    _errorMessage = null;
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _circleTokenKey);
     await _storage.delete(key: _usernameKey);

@@ -23,6 +23,12 @@
   "logout": "Log out",
   "asfcSignedIn": "Signed in",
   "asfcLoginFailed": "Login failed. Check your account details.",
+  "asfcLoginFailedWithReason": "Login failed: {reason}",
+  "@asfcLoginFailedWithReason": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "asfcConnectionFailed": "Unable to connect. Check your network and try again.",
   "asfcCredentialsRequired": "Enter your username and password.",
   "showPassword": "Show password",

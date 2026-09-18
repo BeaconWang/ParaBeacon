@@ -53,18 +53,19 @@ class _AccountsSheetState extends State<_AccountsSheet> {
       if (mounted && success) Navigator.of(context).pop();
       return;
     }
-    final error = AsfcAuthService.instance.errorCode;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          error == 'connectionFailed'
-              ? l10n.asfcConnectionFailed
-              : error == 'missingCredentials'
-              ? l10n.asfcCredentialsRequired
-              : l10n.asfcLoginFailed,
-        ),
-      ),
-    );
+    final auth = AsfcAuthService.instance;
+    final error = auth.errorCode;
+    final reason = auth.errorMessage;
+    final message = error == 'connectionFailed'
+        ? l10n.asfcConnectionFailed
+        : error == 'missingCredentials'
+        ? l10n.asfcCredentialsRequired
+        : reason == null
+        ? l10n.asfcLoginFailed
+        : l10n.asfcLoginFailedWithReason(reason);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -146,6 +147,39 @@ class _AccountsSheetState extends State<_AccountsSheet> {
                           label: Text(l10n.logout),
                         ),
                       ] else ...[
+                        if (auth.errorCode == 'loginFailed' ||
+                            auth.errorCode == 'connectionFailed') ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.errorContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: theme.colorScheme.onErrorContainer,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    auth.errorMessage ??
+                                        (auth.errorCode == 'connectionFailed'
+                                            ? l10n.asfcConnectionFailed
+                                            : l10n.asfcLoginFailed),
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onErrorContainer,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                         Form(
                           key: _formKey,
                           child: Column(

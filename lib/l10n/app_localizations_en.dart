@@ -66,6 +66,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get asfcLoginFailed => 'Login failed. Check your account details.';
 
   @override
+  String asfcLoginFailedWithReason(String reason) {
+    return 'Login failed: $reason';
+  }
+
+  @override
   String get asfcConnectionFailed =>
       'Unable to connect. Check your network and try again.';
 

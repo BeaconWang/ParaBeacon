@@ -66,6 +66,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get asfcLoginFailed => '登录失败，请检查账户信息。';
 
   @override
+  String asfcLoginFailedWithReason(String reason) {
+    return '登录失败：$reason';
+  }
+
+  @override
   String get asfcConnectionFailed => '无法连接，请检查网络后重试。';
 
   @override

@@ -33,6 +33,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get add => '添加';
 
   @override
+  String get edit => '编辑';
+
+  @override
+  String get refresh => '刷新';
+
+  @override
+  String get submit => '提交';
+
+  @override
   String get preferences => '偏好设置';
 
   @override
@@ -354,6 +363,123 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get applyForCertificate => '申请证书';
+
+  @override
+  String get certificateDetails => '证书详情';
+
+  @override
+  String get certificateIssued => '已持有';
+
+  @override
+  String get certificatePendingApproval => '待审核';
+
+  @override
+  String get certificatePendingApprovalSubtitle => '您的证书申请正在审核中。';
+
+  @override
+  String get certificateNumber => '证书编号';
+
+  @override
+  String get certificateLevel => '等级';
+
+  @override
+  String get certificateSportCode => '运动编码';
+
+  @override
+  String get certificateValidityStatus => '证书状态';
+
+  @override
+  String get certificateValidity => '有效期';
+
+  @override
+  String get asfcFlightRecords => 'ASFC 飞行记录';
+
+  @override
+  String get asfcFlightSubmit => '提交飞行记录';
+
+  @override
+  String get asfcFlightEdit => '编辑飞行记录';
+
+  @override
+  String get asfcFlightDetails => '飞行记录详情';
+
+  @override
+  String get asfcFlightNoRecords => '暂无 ASFC 飞行记录';
+
+  @override
+  String get asfcFlightDate => '训练日期';
+
+  @override
+  String get asfcFlightAddress => '训练地点';
+
+  @override
+  String get asfcFlightModel => '机型';
+
+  @override
+  String get asfcFlightTask => '飞行任务';
+
+  @override
+  String get asfcFlightStartTime => '开始时间';
+
+  @override
+  String get asfcFlightEndTime => '结束时间';
+
+  @override
+  String get asfcFlightTime => '飞行时间';
+
+  @override
+  String get asfcFlightSeatType => '座位类型';
+
+  @override
+  String get asfcFlightFrontSeat => '前座';
+
+  @override
+  String get asfcFlightBackSeat => '后座';
+
+  @override
+  String get asfcFlightTakeoffMode => '起飞方式';
+
+  @override
+  String get asfcFlightSortie => '起落次数';
+
+  @override
+  String get asfcFlightAgency => '培训机构';
+
+  @override
+  String get asfcFlightCoach => '教练员';
+
+  @override
+  String get asfcFlightSignin => '教练签到备注';
+
+  @override
+  String get asfcFlightSelectAgency => '请选择培训机构';
+
+  @override
+  String get asfcFlightSelectCoach => '请选择教练员';
+
+  @override
+  String get asfcFlightLoading => '加载中…';
+
+  @override
+  String get asfcFlightRequired => '此项为必填项。';
+
+  @override
+  String get asfcFlightSelectionRequired => '请选择培训机构、教练员和起飞方式。';
+
+  @override
+  String get asfcFlightSaveFailed => '飞行记录保存失败。';
+
+  @override
+  String get asfcFlightDeleted => '飞行记录已删除。';
+
+  @override
+  String get asfcFlightDeleteFailed => '飞行记录删除失败。';
+
+  @override
+  String get asfcFlightDeleteTitle => '删除飞行记录？';
+
+  @override
+  String get asfcFlightDeleteConfirmation => '此飞行记录将被永久删除。';
 
   @override
   String get certificateApplication => 'ASFC 证书申请';

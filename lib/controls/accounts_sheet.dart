@@ -7,6 +7,7 @@ import '../data/xcontest_auth_service.dart';
 import '../l10n/app_localizations.dart';
 import 'xcontest_login_sheet.dart';
 import 'certificate_application_sheet.dart';
+import 'asfc_flight_records_sheet.dart';
 
 Future<void> showAccountsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -189,6 +190,117 @@ class _AccountCard extends StatelessWidget {
   }
 }
 
+class _CertificateStatusPanel extends StatelessWidget {
+  const _CertificateStatusPanel({
+    required this.auth,
+    required this.onApply,
+  });
+
+  final AsfcAuthService auth;
+  final VoidCallback onApply;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    if (auth.isCertificateInfoLoading && auth.certificateApplication == null) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: LinearProgressIndicator(),
+        ),
+      );
+    }
+
+    final certificate = auth.certificateStatus;
+    switch (certificate.state) {
+      case AsfcCertificateState.issued:
+        return _issuedCard(context, theme, l10n, certificate);
+      case AsfcCertificateState.pending:
+        return Card(
+          color: theme.colorScheme.secondaryContainer,
+          child: ListTile(
+            leading: Icon(
+              Icons.hourglass_top_outlined,
+              color: theme.colorScheme.onSecondaryContainer,
+            ),
+            title: Text(l10n.certificatePendingApproval),
+            subtitle: Text(l10n.certificatePendingApprovalSubtitle),
+          ),
+        );
+      case AsfcCertificateState.none:
+      case AsfcCertificateState.rejected:
+        return FilledButton.icon(
+          onPressed: auth.isLoading ? null : onApply,
+          icon: const Icon(Icons.workspace_premium_outlined),
+          label: Text(l10n.applyForCertificate),
+        );
+    }
+  }
+
+  Widget _issuedCard(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+    AsfcCertificateStatus certificate,
+  ) {
+    final rows = <(String, String)>[
+      if (certificate.fullName != null)
+        (l10n.certificateFullName, certificate.fullName!),
+      if (certificate.licenseNo != null)
+        (l10n.certificateNumber, certificate.licenseNo!),
+      if (certificate.level != null)
+        (l10n.certificateLevel, certificate.level!),
+      if (certificate.sportCode != null)
+        (l10n.certificateSportCode, certificate.sportCode!),
+      if (certificate.licenseStatusName != null)
+        (l10n.certificateValidityStatus, certificate.licenseStatusName!),
+      if (certificate.licenseValidStart != null ||
+          certificate.licenseValidEnd != null)
+        (
+          l10n.certificateValidity,
+          '${certificate.licenseValidStart ?? '-'} – ${certificate.licenseValidEnd ?? '-'}',
+        ),
+    ];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.workspace_premium, color: theme.colorScheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.certificateDetails,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                Text(
+                  l10n.certificateIssued,
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            for (final row in rows)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(row.$1),
+                trailing: Text(row.$2),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AsfcLoginSheetState extends State<_AsfcLoginSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _usernameController;
@@ -211,7 +323,12 @@ class _AsfcLoginSheetState extends State<_AsfcLoginSheet> {
     _captchaController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await auth.load();
-      if (auth.isSignedIn) await auth.loadProfile();
+      if (auth.isSignedIn) {
+        await Future.wait([
+          auth.loadProfile(),
+          auth.loadCertificateApplication(),
+        ]);
+      }
     });
   }
 
@@ -233,7 +350,10 @@ class _AsfcLoginSheetState extends State<_AsfcLoginSheet> {
       smsCode: _smsMode ? _smsCodeController.text : null,
     );
     if (success) {
-      await AsfcAuthService.instance.loadProfile(force: true);
+      await Future.wait([
+        AsfcAuthService.instance.loadProfile(force: true),
+        AsfcAuthService.instance.loadCertificateApplication(force: true),
+      ]);
     }
   }
 
@@ -501,11 +621,17 @@ class _AsfcLoginSheetState extends State<_AsfcLoginSheet> {
                                         ),
                                         IconButton(
                                           tooltip: l10n.asfcRefreshProfile,
-                                          onPressed: auth.isProfileLoading
+                                          onPressed: auth.isProfileLoading ||
+                                                  auth.isCertificateInfoLoading
                                               ? null
-                                              : () => auth.loadProfile(
-                                                  force: true,
-                                                ),
+                                              : () async {
+                                                  await Future.wait([
+                                                    auth.loadProfile(force: true),
+                                                    auth.loadCertificateApplication(
+                                                      force: true,
+                                                    ),
+                                                  ]);
+                                                },
                                           icon: const Icon(Icons.refresh),
                                         ),
                                       ],
@@ -585,20 +711,25 @@ class _AsfcLoginSheetState extends State<_AsfcLoginSheet> {
                                   ),
                                 ],
                                 const SizedBox(height: 20),
+                                _CertificateStatusPanel(
+                                  auth: auth,
+                                  onApply: () => showCertificateApplicationSheet(context),
+                                ),
+                                const SizedBox(height: 20),
+                                FilledButton.icon(
+                                  onPressed: auth.isLoading
+                                      ? null
+                                      : () => showAsfcFlightRecordsSheet(context),
+                                  icon: const Icon(Icons.flight_takeoff_outlined),
+                                  label: Text(l10n.asfcFlightRecords),
+                                ),
+                                const SizedBox(height: 12),
                                 OutlinedButton.icon(
                                   onPressed: auth.isLoading
                                       ? null
                                       : AsfcAuthService.instance.logout,
                                   icon: const Icon(Icons.logout),
                                   label: Text(l10n.logout),
-                                ),
-                                const SizedBox(height: 12),
-                                FilledButton.icon(
-                                  onPressed: auth.isLoading
-                                      ? null
-                                      : () => showCertificateApplicationSheet(context),
-                                  icon: const Icon(Icons.workspace_premium_outlined),
-                                  label: Text(l10n.applyForCertificate),
                                 ),
                               ],
                             );

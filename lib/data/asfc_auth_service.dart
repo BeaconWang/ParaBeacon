@@ -3,16 +3,43 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+String? _asString(Object? value) {
+  if (value is String && value.trim().isNotEmpty) return value.trim();
+  return value is num ? value.toString() : null;
+}
+
+int? _asInt(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '');
+}
+
+class AsfcAgency {
+  const AsfcAgency({required this.id, required this.name});
+
+  final int id;
+  final String name;
+
+  factory AsfcAgency.fromJson(Map<String, dynamic> json) {
+    return AsfcAgency(
+      id: _asInt(json['id']) ?? _asInt(json['agencyId']) ?? 0,
+      name: _asString(json['agencyName']) ?? _asString(json['name']) ?? '',
+    );
+  }
+}
+
 class AsfcCoach {
   const AsfcCoach({
     required this.id,
     required this.name,
+    this.agencyId = 0,
     this.agencyName = '',
     this.level = '',
   });
 
   final int id;
   final String name;
+  final int agencyId;
   final String agencyName;
   final String level;
 
@@ -23,20 +50,122 @@ class AsfcCoach {
           _asString(json['coachName']) ??
           _asString(json['name']) ??
           '',
+      agencyId: _asInt(json['agencyId']) ??
+          _asInt(json['coachAgencyId']) ??
+          _asInt(json['agency_id']) ??
+          0,
       agencyName: _asString(json['agencyName']) ?? '',
       level: _asString(json['level']) ?? '',
     );
   }
 
-  static String? _asString(Object? value) {
-    if (value is String && value.trim().isNotEmpty) return value.trim();
-    return value is num ? value.toString() : null;
-  }
+}
 
-  static int? _asInt(Object? value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    return int.tryParse(value?.toString() ?? '');
+class AsfcFlightRecord {
+  const AsfcFlightRecord({
+    required this.id,
+    required this.trainTime,
+    required this.address,
+    required this.brandNo,
+    required this.taskName,
+    required this.startTime,
+    required this.endTime,
+    required this.seatType,
+    required this.takeoffMode,
+    required this.sortie,
+    required this.coachAgencyId,
+    required this.coachId,
+    this.userName = '',
+    this.coachName = '',
+    this.coachAgencyName = '',
+    this.auditStatus = 0,
+    this.seatTypeName = '',
+    this.signinDescription = '',
+    this.coachSigninStatus = 0,
+  });
+
+  final int id;
+  final String trainTime;
+  final String address;
+  final String brandNo;
+  final String taskName;
+  final String startTime;
+  final String endTime;
+  final String seatType;
+  final String takeoffMode;
+  final String sortie;
+  final int coachAgencyId;
+  final int coachId;
+  final String userName;
+  final String coachName;
+  final String coachAgencyName;
+  final int auditStatus;
+  final String seatTypeName;
+  final String signinDescription;
+  final int coachSigninStatus;
+
+  factory AsfcFlightRecord.fromJson(Map<String, dynamic> json) {
+    return AsfcFlightRecord(
+      id: _asInt(json['id']) ?? 0,
+      trainTime: _asString(json['trainTime']) ?? '',
+      address: _asString(json['address']) ?? '',
+      brandNo: _asString(json['brandNo']) ?? '',
+      taskName: _asString(json['taskName']) ?? '',
+      startTime: _asString(json['startTime']) ?? '',
+      endTime: _asString(json['endTime']) ?? '',
+      seatType: _asString(json['seatType']) ?? '',
+      takeoffMode: _asString(json['takeoffMode']) ?? '',
+      sortie: _asString(json['sortie']) ?? '',
+      coachAgencyId: _asInt(json['coachAgencyId']) ?? 0,
+      coachId: _asInt(json['coachId']) ?? 0,
+      userName: _asString(json['userName']) ?? '',
+      coachName: _asString(json['coachName']) ?? '',
+      coachAgencyName: _asString(json['coachAgencyName']) ?? '',
+      auditStatus: _asInt(json['audtiStatus']) ?? _asInt(json['auditStatus']) ?? 0,
+      seatTypeName: _asString(json['seatTypeName']) ?? '',
+      signinDescription: _asString(json['signinDescirption']) ??
+          _asString(json['signinDescription']) ?? '',
+      coachSigninStatus: _asInt(json['coachSigninStatus']) ?? 0,
+    );
+  }
+}
+
+enum AsfcCertificateState { none, pending, issued, rejected }
+
+class AsfcCertificateStatus {
+  const AsfcCertificateStatus({
+    required this.state,
+    this.application,
+  });
+
+  final AsfcCertificateState state;
+  final Map<String, dynamic>? application;
+
+  bool get hasRecord => application != null;
+  String? get auditStatus => _stringValue(application?['auditStatus']);
+  String? get licenseNo => _stringValue(application?['licenseNo']);
+  String? get fullName => _stringValue(application?['fullName']);
+  String? get level => _stringValue(application?['level']);
+  String? get country => _stringValue(application?['country']);
+  String? get sexName => _stringValue(application?['sexName']) ??
+      _stringValue(application?['sex']);
+  String? get birthday => _stringValue(application?['birthday']);
+  String? get cityName => _stringValue(application?['cityName']) ??
+      _stringValue(application?['area']);
+  String? get licenseStatusName =>
+      _stringValue(application?['licenseStatusName']);
+  String? get licenseValidStart =>
+      _stringValue(application?['licenseValidStart']) ??
+      _stringValue(application?['startTime']);
+  String? get licenseValidEnd =>
+      _stringValue(application?['licenseValidEnd']) ??
+      _stringValue(application?['endTime']);
+  String? get sportCode => _stringValue(application?['sportCode']);
+
+  static String? _stringValue(Object? value) {
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    if (value is num) return value.toString();
+    return null;
   }
 }
 
@@ -69,6 +198,21 @@ class AsfcAuthService extends ChangeNotifier {
   static final Uri _certificateCoachesUri = Uri.parse(
     'https://www.57fly.com/api/train/parasailLicense/allCoach',
   );
+  static final Uri _flightRecordListUri = Uri.parse(
+    'https://www.57fly.com/api/train/trainFlyRecord/customer/list',
+  );
+  static final Uri _flightRecordDetailUri = Uri.parse(
+    'https://www.57fly.com/api/train/trainFlyRecord/customer/detail',
+  );
+  static final Uri _flightRecordSaveUri = Uri.parse(
+    'https://www.57fly.com/api/train/trainFlyRecord/saveOrUpdate',
+  );
+  static final Uri _flightRecordDeleteUri = Uri.parse(
+    'https://www.57fly.com/api/train/trainFlyRecord/delete',
+  );
+  static final Uri _agenciesUri = Uri.parse(
+    'https://www.57fly.com/api/train/trainAgency/authority',
+  );
   static final Uri _certificateImageUploadUri = Uri.parse(
     'https://upload.57fly.com/api/imageUpload/0/upload',
   );
@@ -84,10 +228,15 @@ class AsfcAuthService extends ChangeNotifier {
   bool _profileLoading = false;
   bool _certificateInfoLoading = false;
   bool _certificateCoachesLoading = false;
+  bool _flightRecordsLoading = false;
+  bool _flightRecordSubmitting = false;
+  bool _agenciesLoading = false;
   Uint8List? _captchaImageBytes;
   Map<String, dynamic>? _profile;
   Map<String, dynamic>? _certificateApplication;
   List<AsfcCoach>? _certificateCoaches;
+  List<AsfcAgency>? _agencies;
+  List<AsfcFlightRecord>? _flightRecords;
   String? _profileErrorCode;
   String? _profileErrorMessage;
   String? _token;
@@ -103,6 +252,9 @@ class AsfcAuthService extends ChangeNotifier {
   bool get isProfileLoading => _profileLoading;
   bool get isCertificateInfoLoading => _certificateInfoLoading;
   bool get isCertificateCoachesLoading => _certificateCoachesLoading;
+  bool get isFlightRecordsLoading => _flightRecordsLoading;
+  bool get isFlightRecordSubmitting => _flightRecordSubmitting;
+  bool get isAgenciesLoading => _agenciesLoading;
   Uint8List? get captchaImageBytes => _captchaImageBytes;
   bool get isSignedIn => _token != null && _token!.isNotEmpty;
   String? get username => _username;
@@ -115,6 +267,33 @@ class AsfcAuthService extends ChangeNotifier {
       : Map.unmodifiable(_certificateApplication!);
   List<AsfcCoach> get certificateCoaches =>
       List.unmodifiable(_certificateCoaches ?? const <AsfcCoach>[]);
+  List<AsfcAgency> get agencies =>
+      List.unmodifiable(_agencies ?? const <AsfcAgency>[]);
+  List<AsfcFlightRecord> get flightRecords =>
+      List.unmodifiable(_flightRecords ?? const <AsfcFlightRecord>[]);
+  AsfcCertificateStatus get certificateStatus {
+    final application = _certificateApplication;
+    if (application == null) {
+      return const AsfcCertificateStatus(state: AsfcCertificateState.none);
+    }
+    final status = _stringValue(application['auditStatus'])?.toUpperCase();
+    final hasCertificate = status == 'ADOPT';
+    final isRejected = status == 'REJECT' || status == 'REFUSE';
+    return AsfcCertificateStatus(
+      application: Map.unmodifiable(application),
+      state: hasCertificate
+          ? AsfcCertificateState.issued
+          : isRejected
+              ? AsfcCertificateState.rejected
+              : AsfcCertificateState.pending,
+    );
+  }
+  static String? _stringValue(Object? value) {
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    if (value is num) return value.toString();
+    return null;
+  }
+
   String? get profileErrorCode => _profileErrorCode;
   String? get profileErrorMessage => _profileErrorMessage;
   String? get avatarUrl {
@@ -214,8 +393,8 @@ class AsfcAuthService extends ChangeNotifier {
           response.statusCode < 300 &&
           (status == 'success' || status == '200' || code == '200');
       final data = decoded?['data'];
-      if (success && data is Map<String, dynamic>) {
-        _certificateApplication = data;
+      if (success) {
+        _certificateApplication = data is Map<String, dynamic> ? data : null;
       }
       return certificateApplication;
     } on Exception {
@@ -265,6 +444,204 @@ class AsfcAuthService extends ChangeNotifier {
       _certificateCoachesLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<List<AsfcAgency>> loadAgencies({bool force = false}) async {
+    if (!isSignedIn) return const <AsfcAgency>[];
+    if (_agenciesLoading || (!force && _agencies != null)) return agencies;
+    _agenciesLoading = true;
+    notifyListeners();
+    try {
+      final response = await http.get(
+        _agenciesUri,
+        headers: {'Accept': 'application/json', 'token': _token!},
+      ).timeout(const Duration(seconds: 15));
+      final decoded = _decodeMap(response.body);
+      final data = decoded?['data'];
+      final success = _isSuccessful(response.statusCode, decoded);
+      if (success && data is List) {
+        _agencies = data
+            .whereType<Map<String, dynamic>>()
+            .map(AsfcAgency.fromJson)
+            .where((agency) => agency.id > 0 && agency.name.isNotEmpty)
+            .toList(growable: false);
+      }
+      return agencies;
+    } on Exception {
+      return const <AsfcAgency>[];
+    } finally {
+      _agenciesLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<AsfcFlightRecord>> loadFlightRecords({
+    int page = 1,
+    bool force = false,
+  }) async {
+    if (!isSignedIn) return const <AsfcFlightRecord>[];
+    if (_flightRecordsLoading || (!force && _flightRecords != null)) {
+      return flightRecords;
+    }
+    _flightRecordsLoading = true;
+    notifyListeners();
+    try {
+      final response = await http.get(
+        _flightRecordListUri.replace(
+          queryParameters: {'page': '$page', 'type': 'CUSTOMER'},
+        ),
+        headers: {'Accept': 'application/json', 'token': _token!},
+      ).timeout(const Duration(seconds: 15));
+      final decoded = _decodeMap(response.body);
+      final data = decoded?['data'];
+      final rows = data is Map<String, dynamic> ? data['rows'] : data;
+      if (_isSuccessful(response.statusCode, decoded) && rows is List) {
+        _flightRecords = rows
+            .whereType<Map<String, dynamic>>()
+            .map(AsfcFlightRecord.fromJson)
+            .where((record) => record.id > 0)
+            .toList(growable: false);
+      }
+      return flightRecords;
+    } on Exception {
+      return const <AsfcFlightRecord>[];
+    } finally {
+      _flightRecordsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<AsfcFlightRecord?> loadFlightRecordDetail(int id) async {
+    if (!isSignedIn || id <= 0) return null;
+    try {
+      final response = await http.get(
+        _flightRecordDetailUri.replace(queryParameters: {'id': '$id'}),
+        headers: {'Accept': 'application/json', 'token': _token!},
+      ).timeout(const Duration(seconds: 15));
+      final decoded = _decodeMap(response.body);
+      final data = decoded?['data'];
+      if (_isSuccessful(response.statusCode, decoded) &&
+          data is Map<String, dynamic>) {
+        return AsfcFlightRecord.fromJson(data);
+      }
+    } on Exception {
+      return null;
+    }
+    return null;
+  }
+
+  Future<bool> saveFlightRecord({
+    int? id,
+    required String trainTime,
+    required String address,
+    required String brandNo,
+    required String taskName,
+    required String startTime,
+    required String endTime,
+    required String seatType,
+    required String takeoffMode,
+    required String sortie,
+    required int coachAgencyId,
+    required int coachId,
+  }) async {
+    if (!isSignedIn || coachAgencyId <= 0 || coachId <= 0) {
+      _errorCode = 'flightRecordSelectionRequired';
+      _errorMessage = null;
+      notifyListeners();
+      return false;
+    }
+    final values = [
+      trainTime,
+      address,
+      brandNo,
+      taskName,
+      startTime,
+      endTime,
+      seatType,
+      takeoffMode,
+      sortie,
+    ];
+    if (values.any((value) => value.trim().isEmpty) ||
+        values.any((value) => value.length > 100)) {
+      _errorCode = 'flightRecordFieldsInvalid';
+      _errorMessage = null;
+      notifyListeners();
+      return false;
+    }
+    _flightRecordSubmitting = true;
+    notifyListeners();
+    try {
+      final payload = <String, dynamic>{
+        'trainTime': trainTime.trim(),
+        'address': address.trim(),
+        'brandNo': brandNo.trim(),
+        'taskName': taskName.trim(),
+        'startTime': startTime.trim(),
+        'endTime': endTime.trim(),
+        'seatType': seatType.trim(),
+        'takeoffMode': takeoffMode.trim(),
+        'sortie': sortie.trim(),
+        'coachAgencyId': coachAgencyId,
+        'coachId': coachId,
+      };
+      if (id != null && id > 0) payload['id'] = id;
+      final response = await http.post(
+        _flightRecordSaveUri,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
+          'token': _token!,
+        },
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 20));
+      final decoded = _decodeMap(response.body);
+      final success = _isSuccessful(response.statusCode, decoded);
+      if (!success) {
+        _errorCode = 'flightRecordSaveFailed';
+        _errorMessage = decoded == null
+            ? 'HTTP ${response.statusCode}'
+            : _extractResponseReason(decoded);
+        return false;
+      }
+      _errorCode = null;
+      _errorMessage = null;
+      await loadFlightRecords(force: true);
+      return true;
+    } on Exception {
+      _errorCode = 'connectionFailed';
+      _errorMessage = null;
+      return false;
+    } finally {
+      _flightRecordSubmitting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> deleteFlightRecord(int id) async {
+    if (!isSignedIn || id <= 0) return false;
+    try {
+      final response = await http.get(
+        _flightRecordDeleteUri.replace(queryParameters: {'id': '$id'}),
+        headers: {'Accept': 'application/json', 'token': _token!},
+      ).timeout(const Duration(seconds: 15));
+      final decoded = _decodeMap(response.body);
+      final success = _isSuccessful(response.statusCode, decoded);
+      if (success) {
+        _flightRecords?.removeWhere((record) => record.id == id);
+        notifyListeners();
+      }
+      return success;
+    } on Exception {
+      return false;
+    }
+  }
+
+  bool _isSuccessful(int statusCode, Map<String, dynamic>? decoded) {
+    final status = decoded?['status']?.toString().toLowerCase();
+    final code = decoded?['code']?.toString();
+    return statusCode >= 200 &&
+        statusCode < 300 &&
+        (status == 'success' || status == '200' || code == '200');
   }
 
   Future<bool> loadCaptcha({required String mobile}) async {
@@ -455,6 +832,8 @@ class AsfcAuthService extends ChangeNotifier {
       _profile = null;
       _certificateApplication = null;
       _certificateCoaches = null;
+      _agencies = null;
+      _flightRecords = null;
       _profileErrorCode = null;
       _profileErrorMessage = null;
       await _storage.write(key: _tokenKey, value: _token);
@@ -722,6 +1101,8 @@ class AsfcAuthService extends ChangeNotifier {
     _profile = null;
     _certificateApplication = null;
     _certificateCoaches = null;
+    _agencies = null;
+    _flightRecords = null;
     _profileErrorCode = null;
     _profileErrorMessage = null;
     _errorCode = null;

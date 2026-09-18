@@ -335,7 +335,10 @@ class _CertificateApplicationSheetState
     if (!mounted) return;
     setState(() => _submitting = false);
     if (success) {
-      _showMessage(AppLocalizations.of(context).certificateApplicationSuccess);
+      final l10n = AppLocalizations.of(context);
+      await AsfcAuthService.instance.loadCertificateApplication(force: true);
+      if (!mounted) return;
+      _showMessage(l10n.certificateApplicationSuccess);
       await Future<void>.delayed(const Duration(milliseconds: 700));
       if (mounted) Navigator.of(context).pop();
     } else {

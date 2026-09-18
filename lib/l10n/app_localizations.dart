@@ -146,6 +146,24 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get add;
 
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submit;
+
   /// No description provided for @preferences.
   ///
   /// In en, this message translates to:
@@ -787,6 +805,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply for certificate'**
   String get applyForCertificate;
+
+  /// No description provided for @certificateDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate details'**
+  String get certificateDetails;
+
+  /// No description provided for @certificateIssued.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued'**
+  String get certificateIssued;
+
+  /// No description provided for @certificatePendingApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending approval'**
+  String get certificatePendingApproval;
+
+  /// No description provided for @certificatePendingApprovalSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your certificate application is being reviewed.'**
+  String get certificatePendingApprovalSubtitle;
+
+  /// No description provided for @certificateNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate number'**
+  String get certificateNumber;
+
+  /// No description provided for @certificateLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level'**
+  String get certificateLevel;
+
+  /// No description provided for @certificateSportCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Sport code'**
+  String get certificateSportCode;
+
+  /// No description provided for @certificateValidityStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Validity status'**
+  String get certificateValidityStatus;
+
+  /// No description provided for @certificateValidity.
+  ///
+  /// In en, this message translates to:
+  /// **'Validity period'**
+  String get certificateValidity;
+
+  /// No description provided for @asfcFlightRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'ASFC flight records'**
+  String get asfcFlightRecords;
+
+  /// No description provided for @asfcFlightSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit flight record'**
+  String get asfcFlightSubmit;
+
+  /// No description provided for @asfcFlightEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit flight record'**
+  String get asfcFlightEdit;
+
+  /// No description provided for @asfcFlightDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight record details'**
+  String get asfcFlightDetails;
+
+  /// No description provided for @asfcFlightNoRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'No ASFC flight records'**
+  String get asfcFlightNoRecords;
+
+  /// No description provided for @asfcFlightDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Training date'**
+  String get asfcFlightDate;
+
+  /// No description provided for @asfcFlightAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get asfcFlightAddress;
+
+  /// No description provided for @asfcFlightModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft model'**
+  String get asfcFlightModel;
+
+  /// No description provided for @asfcFlightTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight task'**
+  String get asfcFlightTask;
+
+  /// No description provided for @asfcFlightStartTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get asfcFlightStartTime;
+
+  /// No description provided for @asfcFlightEndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get asfcFlightEndTime;
+
+  /// No description provided for @asfcFlightTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight time'**
+  String get asfcFlightTime;
+
+  /// No description provided for @asfcFlightSeatType.
+  ///
+  /// In en, this message translates to:
+  /// **'Seat type'**
+  String get asfcFlightSeatType;
+
+  /// No description provided for @asfcFlightFrontSeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Front seat'**
+  String get asfcFlightFrontSeat;
+
+  /// No description provided for @asfcFlightBackSeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Back seat'**
+  String get asfcFlightBackSeat;
+
+  /// No description provided for @asfcFlightTakeoffMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeoff mode'**
+  String get asfcFlightTakeoffMode;
+
+  /// No description provided for @asfcFlightSortie.
+  ///
+  /// In en, this message translates to:
+  /// **'Sorties'**
+  String get asfcFlightSortie;
+
+  /// No description provided for @asfcFlightAgency.
+  ///
+  /// In en, this message translates to:
+  /// **'Training agency'**
+  String get asfcFlightAgency;
+
+  /// No description provided for @asfcFlightCoach.
+  ///
+  /// In en, this message translates to:
+  /// **'Coach'**
+  String get asfcFlightCoach;
+
+  /// No description provided for @asfcFlightSignin.
+  ///
+  /// In en, this message translates to:
+  /// **'Coach sign-in note'**
+  String get asfcFlightSignin;
+
+  /// No description provided for @asfcFlightSelectAgency.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an agency'**
+  String get asfcFlightSelectAgency;
+
+  /// No description provided for @asfcFlightSelectCoach.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a coach'**
+  String get asfcFlightSelectCoach;
+
+  /// No description provided for @asfcFlightLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get asfcFlightLoading;
+
+  /// No description provided for @asfcFlightRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get asfcFlightRequired;
+
+  /// No description provided for @asfcFlightSelectionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an agency, coach and takeoff mode.'**
+  String get asfcFlightSelectionRequired;
+
+  /// No description provided for @asfcFlightSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to save the flight record.'**
+  String get asfcFlightSaveFailed;
+
+  /// No description provided for @asfcFlightDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight record deleted.'**
+  String get asfcFlightDeleted;
+
+  /// No description provided for @asfcFlightDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to delete the flight record.'**
+  String get asfcFlightDeleteFailed;
+
+  /// No description provided for @asfcFlightDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete flight record?'**
+  String get asfcFlightDeleteTitle;
+
+  /// No description provided for @asfcFlightDeleteConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This flight record will be permanently deleted.'**
+  String get asfcFlightDeleteConfirmation;
 
   /// No description provided for @certificateApplication.
   ///

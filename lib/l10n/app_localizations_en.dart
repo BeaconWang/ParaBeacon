@@ -33,6 +33,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get add => 'Add';
 
   @override
+  String get edit => 'Edit';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get submit => 'Submit';
+
+  @override
   String get preferences => 'Preferences';
 
   @override
@@ -367,6 +376,126 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get applyForCertificate => 'Apply for certificate';
+
+  @override
+  String get certificateDetails => 'Certificate details';
+
+  @override
+  String get certificateIssued => 'Issued';
+
+  @override
+  String get certificatePendingApproval => 'Pending approval';
+
+  @override
+  String get certificatePendingApprovalSubtitle =>
+      'Your certificate application is being reviewed.';
+
+  @override
+  String get certificateNumber => 'Certificate number';
+
+  @override
+  String get certificateLevel => 'Level';
+
+  @override
+  String get certificateSportCode => 'Sport code';
+
+  @override
+  String get certificateValidityStatus => 'Validity status';
+
+  @override
+  String get certificateValidity => 'Validity period';
+
+  @override
+  String get asfcFlightRecords => 'ASFC flight records';
+
+  @override
+  String get asfcFlightSubmit => 'Submit flight record';
+
+  @override
+  String get asfcFlightEdit => 'Edit flight record';
+
+  @override
+  String get asfcFlightDetails => 'Flight record details';
+
+  @override
+  String get asfcFlightNoRecords => 'No ASFC flight records';
+
+  @override
+  String get asfcFlightDate => 'Training date';
+
+  @override
+  String get asfcFlightAddress => 'Location';
+
+  @override
+  String get asfcFlightModel => 'Aircraft model';
+
+  @override
+  String get asfcFlightTask => 'Flight task';
+
+  @override
+  String get asfcFlightStartTime => 'Start time';
+
+  @override
+  String get asfcFlightEndTime => 'End time';
+
+  @override
+  String get asfcFlightTime => 'Flight time';
+
+  @override
+  String get asfcFlightSeatType => 'Seat type';
+
+  @override
+  String get asfcFlightFrontSeat => 'Front seat';
+
+  @override
+  String get asfcFlightBackSeat => 'Back seat';
+
+  @override
+  String get asfcFlightTakeoffMode => 'Takeoff mode';
+
+  @override
+  String get asfcFlightSortie => 'Sorties';
+
+  @override
+  String get asfcFlightAgency => 'Training agency';
+
+  @override
+  String get asfcFlightCoach => 'Coach';
+
+  @override
+  String get asfcFlightSignin => 'Coach sign-in note';
+
+  @override
+  String get asfcFlightSelectAgency => 'Select an agency';
+
+  @override
+  String get asfcFlightSelectCoach => 'Select a coach';
+
+  @override
+  String get asfcFlightLoading => 'Loading…';
+
+  @override
+  String get asfcFlightRequired => 'This field is required.';
+
+  @override
+  String get asfcFlightSelectionRequired =>
+      'Select an agency, coach and takeoff mode.';
+
+  @override
+  String get asfcFlightSaveFailed => 'Unable to save the flight record.';
+
+  @override
+  String get asfcFlightDeleted => 'Flight record deleted.';
+
+  @override
+  String get asfcFlightDeleteFailed => 'Unable to delete the flight record.';
+
+  @override
+  String get asfcFlightDeleteTitle => 'Delete flight record?';
+
+  @override
+  String get asfcFlightDeleteConfirmation =>
+      'This flight record will be permanently deleted.';
 
   @override
   String get certificateApplication => 'ASFC certificate application';

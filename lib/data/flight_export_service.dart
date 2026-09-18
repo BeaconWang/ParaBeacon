@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'aircraft_settings.dart';
 import 'flight_derived_stats.dart';
 import 'flight_recorder.dart';
 
@@ -28,8 +29,10 @@ class FlightExportService {
   String buildGpx(FlightTrack track) {
     final b = StringBuffer();
     b.writeln('<?xml version="1.0" encoding="UTF-8"?>');
-    b.writeln('<gpx version="1.1" creator="$_producer" '
-        'xmlns="http://www.topografix.com/GPX/1/1">');
+    b.writeln(
+      '<gpx version="1.1" creator="$_producer" '
+      'xmlns="http://www.topografix.com/GPX/1/1">',
+    );
     b.writeln('  <metadata>');
     b.writeln('    <name>${_xml(flightSlug(track))}</name>');
     b.writeln('    <time>${track.startTime.toUtc().toIso8601String()}</time>');
@@ -74,10 +77,17 @@ class FlightExportService {
     // A record: manufacturer + unique id.
     b.writeln('AXXX$_producer');
     // H records: date + basic headers.
-    b.writeln('HFDTE${two(start.day)}${two(start.month)}${two(start.year % 100)}');
+    b.writeln(
+      'HFDTE${two(start.day)}${two(start.month)}${two(start.year % 100)}',
+    );
     b.writeln('HFFXA035');
     b.writeln('HFPLTPILOTINCHARGE:');
-    b.writeln('HFGTYGLIDERTYPE:');
+    final configuredAircraft = AircraftSettings.instance.displayName;
+    final trackAircraft = track.gliderName?.trim();
+    final aircraftType = trackAircraft == null || trackAircraft.isEmpty
+        ? configuredAircraft
+        : trackAircraft;
+    b.writeln('HFGTYGLIDERTYPE:${_igcHeaderValue(aircraftType)}');
     b.writeln('HFDTMGPSDATUM:WGS84');
     b.writeln('HFRFWFIRMWAREVERSION:1.0');
     b.writeln('HFRHWHARDWAREVERSION:1.0');
@@ -90,6 +100,9 @@ class FlightExportService {
     return b.toString();
   }
 
+  String _igcHeaderValue(String value) =>
+      value.replaceAll(RegExp(r'[\r\n]'), ' ').trim();
+
   /// One IGC "B" fix record.
   String _igcBRecord(FlightSample s) {
     final t = s.time.toUtc();
@@ -101,8 +114,14 @@ class FlightExportService {
 
     // Pressure altitude (baro) and GNSS altitude, 5 digits, zero-padded,
     // clamped to non-negative for the fixed-width field.
-    final baro = (s.data.baroAltitude ?? s.data.altitude).round().clamp(0, 99999);
-    final gnss = (s.data.gpsAltitude ?? s.data.altitude).round().clamp(0, 99999);
+    final baro = (s.data.baroAltitude ?? s.data.altitude).round().clamp(
+      0,
+      99999,
+    );
+    final gnss = (s.data.gpsAltitude ?? s.data.altitude).round().clamp(
+      0,
+      99999,
+    );
     final baroS = baro.toString().padLeft(5, '0');
     final gnssS = gnss.toString().padLeft(5, '0');
 
@@ -143,10 +162,9 @@ class FlightExportService {
     final path = p.join(dir.path, fileName);
     final file = File(path);
     await file.writeAsString(content, flush: true);
-    await Share.shareXFiles(
-      [XFile(path, mimeType: mimeType, name: fileName)],
-      subject: subject,
-    );
+    await Share.shareXFiles([
+      XFile(path, mimeType: mimeType, name: fileName),
+    ], subject: subject);
     return path;
   }
 

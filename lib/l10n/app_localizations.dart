@@ -164,6 +164,216 @@ abstract class AppLocalizations {
   /// **'Manage your ASFC and XContest accounts'**
   String get accountsSubtitle;
 
+  /// No description provided for @aircraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft'**
+  String get aircraft;
+
+  /// No description provided for @aircraftSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure aircraft type, model and flight performance'**
+  String get aircraftSubtitle;
+
+  /// No description provided for @aircraftFaiClass.
+  ///
+  /// In en, this message translates to:
+  /// **'FAI class'**
+  String get aircraftFaiClass;
+
+  /// No description provided for @aircraftFaiParaglider.
+  ///
+  /// In en, this message translates to:
+  /// **'Paraglider'**
+  String get aircraftFaiParaglider;
+
+  /// No description provided for @aircraftFaiHangGlider.
+  ///
+  /// In en, this message translates to:
+  /// **'Hang glider'**
+  String get aircraftFaiHangGlider;
+
+  /// No description provided for @aircraftFaiRigidWing.
+  ///
+  /// In en, this message translates to:
+  /// **'Rigid wing'**
+  String get aircraftFaiRigidWing;
+
+  /// No description provided for @aircraftFaiPoweredParagliderFoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Powered paraglider (foot launch)'**
+  String get aircraftFaiPoweredParagliderFoot;
+
+  /// No description provided for @aircraftFaiPoweredParagliderTrike.
+  ///
+  /// In en, this message translates to:
+  /// **'Powered paraglider (trike)'**
+  String get aircraftFaiPoweredParagliderTrike;
+
+  /// No description provided for @aircraftFaiPoweredAircraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Powered aircraft'**
+  String get aircraftFaiPoweredAircraft;
+
+  /// No description provided for @aircraftFaiRigidWingPowered.
+  ///
+  /// In en, this message translates to:
+  /// **'Rigid wing (powered)'**
+  String get aircraftFaiRigidWingPowered;
+
+  /// No description provided for @aircraftFaiRigidGlider.
+  ///
+  /// In en, this message translates to:
+  /// **'Rigid glider'**
+  String get aircraftFaiRigidGlider;
+
+  /// No description provided for @aircraftCategoryStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get aircraftCategoryStandard;
+
+  /// No description provided for @aircraftCategoryPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get aircraftCategoryPerformance;
+
+  /// No description provided for @aircraftCategoryCompetition.
+  ///
+  /// In en, this message translates to:
+  /// **'Competition'**
+  String get aircraftCategoryCompetition;
+
+  /// No description provided for @aircraftCategoryFlexWing.
+  ///
+  /// In en, this message translates to:
+  /// **'Flex wing'**
+  String get aircraftCategoryFlexWing;
+
+  /// No description provided for @aircraftCategoryRigidWing.
+  ///
+  /// In en, this message translates to:
+  /// **'Rigid wing'**
+  String get aircraftCategoryRigidWing;
+
+  /// No description provided for @aircraftCategoryClass1.
+  ///
+  /// In en, this message translates to:
+  /// **'Class 1'**
+  String get aircraftCategoryClass1;
+
+  /// No description provided for @aircraftCategoryClass5.
+  ///
+  /// In en, this message translates to:
+  /// **'Class 5'**
+  String get aircraftCategoryClass5;
+
+  /// No description provided for @aircraftManufacturer.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturer'**
+  String get aircraftManufacturer;
+
+  /// No description provided for @aircraftModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get aircraftModel;
+
+  /// No description provided for @aircraftName.
+  ///
+  /// In en, this message translates to:
+  /// **'Aircraft name'**
+  String get aircraftName;
+
+  /// No description provided for @aircraftParagliderCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Paraglider category'**
+  String get aircraftParagliderCategory;
+
+  /// No description provided for @aircraftHangGliderCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Hang glider category'**
+  String get aircraftHangGliderCategory;
+
+  /// No description provided for @aircraftTandem.
+  ///
+  /// In en, this message translates to:
+  /// **'Tandem / biplace'**
+  String get aircraftTandem;
+
+  /// No description provided for @aircraftTandemSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This aircraft carries two people'**
+  String get aircraftTandemSubtitle;
+
+  /// No description provided for @aircraftEngineType.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine type'**
+  String get aircraftEngineType;
+
+  /// No description provided for @aircraftEngineNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get aircraftEngineNone;
+
+  /// No description provided for @aircraftEngineElectric.
+  ///
+  /// In en, this message translates to:
+  /// **'Electric'**
+  String get aircraftEngineElectric;
+
+  /// No description provided for @aircraftEngineInternalCombustion.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal combustion'**
+  String get aircraftEngineInternalCombustion;
+
+  /// No description provided for @aircraftTrimSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim speed (km/h)'**
+  String get aircraftTrimSpeed;
+
+  /// No description provided for @aircraftGoalGlideRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal glide ratio'**
+  String get aircraftGoalGlideRatio;
+
+  /// No description provided for @aircraftPositiveNumberRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a positive number.'**
+  String get aircraftPositiveNumberRequired;
+
+  /// No description provided for @aircraftSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save aircraft'**
+  String get aircraftSave;
+
+  /// No description provided for @notSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get notSet;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get saving;
+
   /// No description provided for @asfcAccount.
   ///
   /// In en, this message translates to:

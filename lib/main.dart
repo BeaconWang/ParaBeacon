@@ -10,6 +10,7 @@ import 'dart:ui' as ui;
 import 'l10n/app_localizations.dart';
 
 import 'controls/accounts_sheet.dart';
+import 'controls/aircraft_settings_sheet.dart';
 import 'controls/add_control_sheet.dart';
 import 'controls/bluetooth_sensor_sheet.dart';
 import 'controls/flights_sheet.dart';
@@ -24,6 +25,7 @@ import 'controls/weather_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
 import 'data/device_battery_service.dart';
+import 'data/aircraft_settings.dart';
 import 'data/airspace_store.dart';
 import 'data/asfc_auth_service.dart';
 import 'data/xcontest_auth_service.dart';
@@ -108,6 +110,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     AsfcAuthService.instance.load();
     // Restore the XContest OAuth session from platform secure storage.
     XContestAuthService.instance.load();
+    // Restore the aircraft preferences before the Preferences sheet opens.
+    AircraftSettings.instance.load();
     // Load persisted debug preferences (e.g. the simulated-source toggle,
     // default off). Loading notifies listeners, so if the simulator was
     // previously enabled the data source resumes it automatically.
@@ -650,6 +654,33 @@ class _DashGridPageState extends State<DashGridPage> {
                           trailing: const Icon(Icons.chevron_right, size: 20),
                           onTap: () async {
                             await showAccountsSheet(context);
+                            setSheetState(() {});
+                          },
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.flight,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.aircraft),
+                          subtitle: Text(
+                            AircraftSettings.instance.manufacturer
+                                        .trim()
+                                        .isEmpty &&
+                                    AircraftSettings.instance.model
+                                        .trim()
+                                        .isEmpty &&
+                                    AircraftSettings.instance.name
+                                        .trim()
+                                        .isEmpty
+                                ? l10n.aircraftSubtitle
+                                : AircraftSettings.instance.displayName,
+                          ),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showAircraftSettingsSheet(context);
                             setSheetState(() {});
                           },
                         ),

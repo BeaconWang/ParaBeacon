@@ -42,6 +42,111 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountsSubtitle => '管理 ASFC 和 XContest 账户';
 
   @override
+  String get aircraft => '飞行器';
+
+  @override
+  String get aircraftSubtitle => '配置飞行器类型、机型和飞行性能';
+
+  @override
+  String get aircraftFaiClass => 'FAI 类别';
+
+  @override
+  String get aircraftFaiParaglider => '滑翔伞';
+
+  @override
+  String get aircraftFaiHangGlider => '滑翔翼';
+
+  @override
+  String get aircraftFaiRigidWing => '刚性翼';
+
+  @override
+  String get aircraftFaiPoweredParagliderFoot => '动力伞（助跑起飞）';
+
+  @override
+  String get aircraftFaiPoweredParagliderTrike => '动力伞（三轮车起飞）';
+
+  @override
+  String get aircraftFaiPoweredAircraft => '动力飞行器';
+
+  @override
+  String get aircraftFaiRigidWingPowered => '动力刚性翼';
+
+  @override
+  String get aircraftFaiRigidGlider => '刚性滑翔机';
+
+  @override
+  String get aircraftCategoryStandard => '标准级';
+
+  @override
+  String get aircraftCategoryPerformance => '性能级';
+
+  @override
+  String get aircraftCategoryCompetition => '竞赛级';
+
+  @override
+  String get aircraftCategoryFlexWing => '柔性翼';
+
+  @override
+  String get aircraftCategoryRigidWing => '刚性翼';
+
+  @override
+  String get aircraftCategoryClass1 => '1 类';
+
+  @override
+  String get aircraftCategoryClass5 => '5 类';
+
+  @override
+  String get aircraftManufacturer => '制造商';
+
+  @override
+  String get aircraftModel => '型号';
+
+  @override
+  String get aircraftName => '飞行器名称';
+
+  @override
+  String get aircraftParagliderCategory => '滑翔伞类别';
+
+  @override
+  String get aircraftHangGliderCategory => '滑翔翼类别';
+
+  @override
+  String get aircraftTandem => '双人座 / 载客飞行';
+
+  @override
+  String get aircraftTandemSubtitle => '该飞行器用于搭载两人';
+
+  @override
+  String get aircraftEngineType => '发动机类型';
+
+  @override
+  String get aircraftEngineNone => '无';
+
+  @override
+  String get aircraftEngineElectric => '电动';
+
+  @override
+  String get aircraftEngineInternalCombustion => '内燃机';
+
+  @override
+  String get aircraftTrimSpeed => '配平速度（km/h）';
+
+  @override
+  String get aircraftGoalGlideRatio => '目标滑翔比';
+
+  @override
+  String get aircraftPositiveNumberRequired => '请输入正数。';
+
+  @override
+  String get aircraftSave => '保存飞行器';
+
+  @override
+  String get notSet => '未设置';
+
+  @override
+  String get saving => '保存中…';
+
+  @override
   String get asfcAccount => 'ASFC 账户';
 
   @override

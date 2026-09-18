@@ -42,6 +42,113 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountsSubtitle => 'Manage your ASFC and XContest accounts';
 
   @override
+  String get aircraft => 'Aircraft';
+
+  @override
+  String get aircraftSubtitle =>
+      'Configure aircraft type, model and flight performance';
+
+  @override
+  String get aircraftFaiClass => 'FAI class';
+
+  @override
+  String get aircraftFaiParaglider => 'Paraglider';
+
+  @override
+  String get aircraftFaiHangGlider => 'Hang glider';
+
+  @override
+  String get aircraftFaiRigidWing => 'Rigid wing';
+
+  @override
+  String get aircraftFaiPoweredParagliderFoot =>
+      'Powered paraglider (foot launch)';
+
+  @override
+  String get aircraftFaiPoweredParagliderTrike => 'Powered paraglider (trike)';
+
+  @override
+  String get aircraftFaiPoweredAircraft => 'Powered aircraft';
+
+  @override
+  String get aircraftFaiRigidWingPowered => 'Rigid wing (powered)';
+
+  @override
+  String get aircraftFaiRigidGlider => 'Rigid glider';
+
+  @override
+  String get aircraftCategoryStandard => 'Standard';
+
+  @override
+  String get aircraftCategoryPerformance => 'Performance';
+
+  @override
+  String get aircraftCategoryCompetition => 'Competition';
+
+  @override
+  String get aircraftCategoryFlexWing => 'Flex wing';
+
+  @override
+  String get aircraftCategoryRigidWing => 'Rigid wing';
+
+  @override
+  String get aircraftCategoryClass1 => 'Class 1';
+
+  @override
+  String get aircraftCategoryClass5 => 'Class 5';
+
+  @override
+  String get aircraftManufacturer => 'Manufacturer';
+
+  @override
+  String get aircraftModel => 'Model';
+
+  @override
+  String get aircraftName => 'Aircraft name';
+
+  @override
+  String get aircraftParagliderCategory => 'Paraglider category';
+
+  @override
+  String get aircraftHangGliderCategory => 'Hang glider category';
+
+  @override
+  String get aircraftTandem => 'Tandem / biplace';
+
+  @override
+  String get aircraftTandemSubtitle => 'This aircraft carries two people';
+
+  @override
+  String get aircraftEngineType => 'Engine type';
+
+  @override
+  String get aircraftEngineNone => 'None';
+
+  @override
+  String get aircraftEngineElectric => 'Electric';
+
+  @override
+  String get aircraftEngineInternalCombustion => 'Internal combustion';
+
+  @override
+  String get aircraftTrimSpeed => 'Trim speed (km/h)';
+
+  @override
+  String get aircraftGoalGlideRatio => 'Goal glide ratio';
+
+  @override
+  String get aircraftPositiveNumberRequired => 'Enter a positive number.';
+
+  @override
+  String get aircraftSave => 'Save aircraft';
+
+  @override
+  String get notSet => 'Not set';
+
+  @override
+  String get saving => 'Saving…';
+
+  @override
   String get asfcAccount => 'ASFC account';
 
   @override

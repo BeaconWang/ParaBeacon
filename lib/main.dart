@@ -26,6 +26,7 @@ import 'data/ble/ble_sensor_service.dart';
 import 'data/device_battery_service.dart';
 import 'data/airspace_store.dart';
 import 'data/asfc_auth_service.dart';
+import 'data/xcontest_auth_service.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_transformer.dart';
@@ -105,6 +106,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // Restore the ASFC session from platform secure storage. The account sheet
     // remains usable while this best-effort read completes.
     AsfcAuthService.instance.load();
+    // Restore the XContest OAuth session from platform secure storage.
+    XContestAuthService.instance.load();
     // Load persisted debug preferences (e.g. the simulated-source toggle,
     // default off). Loading notifies listeners, so if the simulator was
     // previously enabled the data source resumes it automatically.
@@ -538,10 +541,6 @@ class _DashGridPageState extends State<DashGridPage> {
           _pageIndicatorVisible = false;
         });
         break;
-      case 'accounts':
-        _closeMenu();
-        await showAccountsSheet(context);
-        break;
       case 'preferences':
         _closeMenu();
         await _openPreferences();
@@ -674,6 +673,21 @@ class _DashGridPageState extends State<DashGridPage> {
                             await showLanguageSettingsSheet(context);
                             // Refresh the subtitle in the still-open Preferences
                             // sheet so it reflects the newly-selected language.
+                            setSheetState(() {});
+                          },
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.account_circle_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.accounts),
+                          subtitle: Text(l10n.accountsSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showAccountsSheet(context);
                             setSheetState(() {});
                           },
                         ),
@@ -1818,7 +1832,6 @@ class _DashGridPageState extends State<DashGridPage> {
                   _closeMenu();
                   _clearAllControls();
                 },
-                onOpenAccounts: () => _onMenuAction('accounts'),
                 onOpenPreferences: () => _onMenuAction('preferences'),
               ),
             ),
@@ -1841,7 +1854,6 @@ class _MenuContent extends StatelessWidget {
   final VoidCallback onAddPage;
   final VoidCallback onDeletePage;
   final VoidCallback onClearAll;
-  final VoidCallback onOpenAccounts;
   final VoidCallback onOpenPreferences;
 
   const _MenuContent({
@@ -1856,7 +1868,6 @@ class _MenuContent extends StatelessWidget {
     required this.onAddPage,
     required this.onDeletePage,
     required this.onClearAll,
-    required this.onOpenAccounts,
     required this.onOpenPreferences,
   });
 
@@ -1988,17 +1999,6 @@ class _MenuContent extends StatelessWidget {
           subtitle: Text(l10n.flightsSubtitle),
           trailing: const Icon(Icons.chevron_right, size: 20),
           onTap: () => showFlightsSheet(context),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: Icon(
-            Icons.account_circle_outlined,
-            color: theme.colorScheme.primary,
-          ),
-          title: Text(l10n.accounts),
-          subtitle: Text(l10n.asfcAccountSubtitle),
-          trailing: const Icon(Icons.chevron_right, size: 20),
-          onTap: onOpenAccounts,
         ),
         const Divider(height: 1),
         ListTile(

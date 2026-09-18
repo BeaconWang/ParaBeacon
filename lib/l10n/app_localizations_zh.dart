@@ -39,10 +39,43 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accounts => '账户';
 
   @override
+  String get accountsSubtitle => '管理 ASFC 和 XContest 账户';
+
+  @override
   String get asfcAccount => 'ASFC 账户';
 
   @override
   String get asfcAccountSubtitle => '使用 ASFC / GoFly 账户登录';
+
+  @override
+  String get xcontestAccount => 'XContest 账户';
+
+  @override
+  String get xcontestAccountSubtitle => '使用 XContest 账户登录';
+
+  @override
+  String get xcontestUsername => '用户名';
+
+  @override
+  String get xcontestPassword => '密码';
+
+  @override
+  String get xcontestUserId => '用户 ID';
+
+  @override
+  String get xcontestSignedIn => '已登录 XContest';
+
+  @override
+  String get xcontestCredentialsRequired => '请输入 XContest 用户名和密码。';
+
+  @override
+  String get xcontestInvalidCredentials => 'XContest 用户名或密码不正确。';
+
+  @override
+  String get xcontestConnectionFailed => '无法连接 XContest，请检查网络后重试。';
+
+  @override
+  String get xcontestLoginFailed => 'XContest 登录失败，请重试。';
 
   @override
   String get asfcUsername => '用户名或手机号';

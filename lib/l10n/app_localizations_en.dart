@@ -39,10 +39,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accounts => 'Accounts';
 
   @override
+  String get accountsSubtitle => 'Manage your ASFC and XContest accounts';
+
+  @override
   String get asfcAccount => 'ASFC account';
 
   @override
   String get asfcAccountSubtitle => 'Sign in with your ASFC / GoFly account';
+
+  @override
+  String get xcontestAccount => 'XContest account';
+
+  @override
+  String get xcontestAccountSubtitle => 'Sign in with your XContest account';
+
+  @override
+  String get xcontestUsername => 'Username';
+
+  @override
+  String get xcontestPassword => 'Password';
+
+  @override
+  String get xcontestUserId => 'User ID';
+
+  @override
+  String get xcontestSignedIn => 'Signed in to XContest';
+
+  @override
+  String get xcontestCredentialsRequired =>
+      'Enter your XContest username and password.';
+
+  @override
+  String get xcontestInvalidCredentials =>
+      'The XContest username or password is incorrect.';
+
+  @override
+  String get xcontestConnectionFailed =>
+      'Unable to connect to XContest. Check your network and try again.';
+
+  @override
+  String get xcontestLoginFailed => 'XContest login failed. Try again.';
 
   @override
   String get asfcUsername => 'Username or mobile';

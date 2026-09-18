@@ -158,6 +158,12 @@ abstract class AppLocalizations {
   /// **'Accounts'**
   String get accounts;
 
+  /// No description provided for @accountsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your ASFC and XContest accounts'**
+  String get accountsSubtitle;
+
   /// No description provided for @asfcAccount.
   ///
   /// In en, this message translates to:
@@ -169,6 +175,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in with your ASFC / GoFly account'**
   String get asfcAccountSubtitle;
+
+  /// No description provided for @xcontestAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'XContest account'**
+  String get xcontestAccount;
+
+  /// No description provided for @xcontestAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with your XContest account'**
+  String get xcontestAccountSubtitle;
+
+  /// No description provided for @xcontestUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get xcontestUsername;
+
+  /// No description provided for @xcontestPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get xcontestPassword;
+
+  /// No description provided for @xcontestUserId.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID'**
+  String get xcontestUserId;
+
+  /// No description provided for @xcontestSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in to XContest'**
+  String get xcontestSignedIn;
+
+  /// No description provided for @xcontestCredentialsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your XContest username and password.'**
+  String get xcontestCredentialsRequired;
+
+  /// No description provided for @xcontestInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'The XContest username or password is incorrect.'**
+  String get xcontestInvalidCredentials;
+
+  /// No description provided for @xcontestConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to connect to XContest. Check your network and try again.'**
+  String get xcontestConnectionFailed;
+
+  /// No description provided for @xcontestLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'XContest login failed. Try again.'**
+  String get xcontestLoginFailed;
 
   /// No description provided for @asfcUsername.
   ///

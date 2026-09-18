@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
+import '../data/xcontest_auth_service.dart';
 import '../l10n/app_localizations.dart';
+import 'xcontest_login_sheet.dart';
 
 Future<void> showAccountsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -65,6 +67,7 @@ class _AccountsSheetState extends State<_AccountsSheet> {
   void initState() {
     super.initState();
     final auth = AsfcAuthService.instance;
+    XContestAuthService.instance.load();
     _usernameController = TextEditingController(text: auth.username ?? '');
     _passwordController = TextEditingController();
     _smsCodeController = TextEditingController();
@@ -248,9 +251,13 @@ class _AccountsSheetState extends State<_AccountsSheet> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return AnimatedBuilder(
-      animation: AsfcAuthService.instance,
+      animation: Listenable.merge([
+        AsfcAuthService.instance,
+        XContestAuthService.instance,
+      ]),
       builder: (context, _) {
         final auth = AsfcAuthService.instance;
+        final xcontestAuth = XContestAuthService.instance;
         return Material(
           color: theme.colorScheme.surface,
           child: SafeArea(
@@ -286,19 +293,36 @@ class _AccountsSheetState extends State<_AccountsSheet> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        l10n.asfcAccount,
+                        l10n.accounts,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        l10n.asfcAccountSubtitle,
+                        l10n.accountsSubtitle,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 28),
+                      Card(
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.public,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.xcontestAccount),
+                          subtitle: Text(
+                            xcontestAuth.isSignedIn
+                                ? '${l10n.xcontestSignedIn} · ${xcontestAuth.fullName ?? xcontestAuth.username ?? ''}'
+                                : l10n.xcontestAccountSubtitle,
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => showXContestLoginSheet(context),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       if (auth.isSignedIn) ...[
                         Builder(
                           builder: (context) {

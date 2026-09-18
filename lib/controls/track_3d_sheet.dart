@@ -395,7 +395,7 @@ class _GestureCanvasState extends State<_GestureCanvas> {
           pitch: widget.pitch,
           zScale: widget.zScale,
           cursorIndex: widget.cursorIndex,
-          gridColor: theme.colorScheme.onSurface.withAlpha(30),
+          gridColor: theme.colorScheme.onSurface.withAlpha(64),
           background: theme.colorScheme.surface,
         ),
         size: Size.infinite,

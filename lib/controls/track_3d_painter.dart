@@ -57,33 +57,56 @@ class Track3DPainter extends CustomPainter {
     final mPerDegLon = 111320.0 * math.cos(lat0 * math.pi / 180.0);
 
     final pts3 = <_V3>[];
+    var minE = double.infinity;
+    var maxE = -double.infinity;
+    var minN = double.infinity;
+    var maxN = -double.infinity;
     for (final s in samples) {
       final e = (s.data.longitude - lon0) * mPerDegLon;
       final n = (s.data.latitude - lat0) * mPerDegLat;
-      final u = (s.data.altitude - minAlt);
+      final u = s.data.altitude - minAlt;
       pts3.add(_V3(e, n, u));
+      minE = math.min(minE, e);
+      maxE = math.max(maxE, e);
+      minN = math.min(minN, n);
+      maxN = math.max(maxN, n);
     }
 
-    // ── 2. Rotate by yaw (about up axis) then pitch (about east axis). ────
+    // ── 2. Perspective camera: yaw around Z, then pitch toward the ground.
+    // The finite camera distance makes parallel ground lines converge toward
+    // a vanishing point, matching a real 3D map rather than an orthographic
+    // chart. Higher pitch values reveal more of the ground plane.
     final cosY = math.cos(yaw), sinY = math.sin(yaw);
     final cosP = math.cos(pitch), sinP = math.sin(pitch);
+    final trackSpan = math.max(maxE - minE, maxN - minN);
+    final gridHalf = math.max(50.0, trackSpan * 0.75);
+    final cameraDistance = math.max(100.0, trackSpan * 1.8);
+    final focalLength = cameraDistance;
+
+    Offset project(double e, double n, double u) {
+      final x1 = e * cosY - n * sinY;
+      final y1 = e * sinY + n * cosY;
+      final z1 = u * zScale;
+      final depth = y1 * cosP - z1 * sinP;
+      final perspective = focalLength /
+          math.max(1.0, cameraDistance + depth);
+      final screenY = (y1 * sinP + z1 * cosP) * perspective;
+      return Offset(x1 * perspective, -screenY);
+    }
 
     final projected = <Offset>[];
     final groundProjected = <Offset>[];
+    final gridSegments = <List<Offset>>[];
     double minX = double.infinity,
         maxX = -double.infinity,
         minY = double.infinity,
         maxY = -double.infinity;
 
-    Offset project(double e, double n, double u) {
-      // Yaw about vertical axis (rotates east/north).
-      final x1 = e * cosY - n * sinY;
-      final y1 = e * sinY + n * cosY;
-      final z1 = u * zScale;
-      // Pitch: tilt the world so higher pitch looks more top-down.
-      final screenX = x1;
-      final screenY = y1 * cosP - z1 * sinP;
-      return Offset(screenX, -screenY);
+    void include(Offset p) {
+      minX = math.min(minX, p.dx);
+      maxX = math.max(maxX, p.dx);
+      minY = math.min(minY, p.dy);
+      maxY = math.max(maxY, p.dy);
     }
 
     for (final v in pts3) {
@@ -91,10 +114,29 @@ class Track3DPainter extends CustomPainter {
       final g = project(v.e, v.n, 0);
       projected.add(p);
       groundProjected.add(g);
-      minX = math.min(minX, math.min(p.dx, g.dx));
-      maxX = math.max(maxX, math.max(p.dx, g.dx));
-      minY = math.min(minY, math.min(p.dy, g.dy));
-      maxY = math.max(maxY, math.max(p.dy, g.dy));
+      include(p);
+      include(g);
+    }
+
+    // Draw a regular ground-plane grid. The perspective projection turns the
+    // cross-plane lines into the trapezoidal wireframe shown in the reference.
+    const gridSteps = 10;
+    for (var i = 0; i <= gridSteps; i++) {
+      final t = -gridHalf + (gridHalf * 2 * i / gridSteps);
+      final across = [
+        project(-gridHalf, t, 0),
+        project(gridHalf, t, 0),
+      ];
+      final along = [
+        project(t, -gridHalf, 0),
+        project(t, gridHalf, 0),
+      ];
+      gridSegments.add(across);
+      gridSegments.add(along);
+      include(across[0]);
+      include(across[1]);
+      include(along[0]);
+      include(along[1]);
     }
 
     // ── 3. Fit-to-view transform (uniform scale + center). ────────────────
@@ -113,7 +155,20 @@ class Track3DPainter extends CustomPainter {
           size.height / 2 + (p.dy - cy) * scale,
         );
 
-    // ── 4. Drop-lines to the ground plane (subtle depth cue). ──────────────
+    // ── 4. Perspective ground grid, behind the flight track. ─────────────
+    final gridPaint = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    for (final segment in gridSegments) {
+      canvas.drawLine(
+        toScreen(segment[0]),
+        toScreen(segment[1]),
+        gridPaint,
+      );
+    }
+
+    // ── 5. Drop-lines to the ground plane (subtle depth cue). ──────────────
     final dropPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1;
@@ -126,7 +181,7 @@ class Track3DPainter extends CustomPainter {
       );
     }
 
-    // ── 5. Ground shadow polyline. ─────────────────────────────────────────
+    // ── 6. Ground shadow polyline. ─────────────────────────────────────────
     final shadowPath = Path();
     for (var i = 0; i < groundProjected.length; i++) {
       final s = toScreen(groundProjected[i]);
@@ -144,7 +199,7 @@ class Track3DPainter extends CustomPainter {
         ..color = gridColor,
     );
 
-    // ── 6. The 3D track, colored by vario. ─────────────────────────────────
+    // ── 7. The 3D track, colored by vario. ─────────────────────────────────
     for (var i = 1; i < projected.length; i++) {
       final v = samples[i].data.verticalSpeed;
       final paint = Paint()
@@ -158,7 +213,7 @@ class Track3DPainter extends CustomPainter {
       );
     }
 
-    // ── 7. Start / end / cursor markers. ───────────────────────────────────
+    // ── 8. Start / end / cursor markers. ───────────────────────────────────
     final startPaint = Paint()..color = Colors.green;
     final endPaint = Paint()..color = Colors.red;
     canvas.drawCircle(toScreen(projected.first), 5, startPaint);

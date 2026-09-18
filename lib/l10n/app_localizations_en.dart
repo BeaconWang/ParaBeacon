@@ -36,6 +36,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferences => 'Preferences';
 
   @override
+  String get accounts => 'Accounts';
+
+  @override
+  String get asfcAccount => 'ASFC account';
+
+  @override
+  String get asfcAccountSubtitle => 'Sign in with your ASFC / GoFly account';
+
+  @override
+  String get asfcUsername => 'Username or mobile';
+
+  @override
+  String get asfcPassword => 'Password';
+
+  @override
+  String get login => 'Log in';
+
+  @override
+  String get loggingIn => 'Logging in…';
+
+  @override
+  String get logout => 'Log out';
+
+  @override
+  String get asfcSignedIn => 'Signed in';
+
+  @override
+  String get asfcLoginFailed => 'Login failed. Check your account details.';
+
+  @override
+  String get asfcConnectionFailed =>
+      'Unable to connect. Check your network and try again.';
+
+  @override
+  String get asfcCredentialsRequired => 'Enter your username and password.';
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
   String get theme => 'Theme';
 
   @override

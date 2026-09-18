@@ -152,6 +152,90 @@ abstract class AppLocalizations {
   /// **'Preferences'**
   String get preferences;
 
+  /// No description provided for @accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get accounts;
+
+  /// No description provided for @asfcAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'ASFC account'**
+  String get asfcAccount;
+
+  /// No description provided for @asfcAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with your ASFC / GoFly account'**
+  String get asfcAccountSubtitle;
+
+  /// No description provided for @asfcUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username or mobile'**
+  String get asfcUsername;
+
+  /// No description provided for @asfcPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get asfcPassword;
+
+  /// No description provided for @login.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in'**
+  String get login;
+
+  /// No description provided for @loggingIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging in…'**
+  String get loggingIn;
+
+  /// No description provided for @logout.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get logout;
+
+  /// No description provided for @asfcSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get asfcSignedIn;
+
+  /// No description provided for @asfcLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed. Check your account details.'**
+  String get asfcLoginFailed;
+
+  /// No description provided for @asfcConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to connect. Check your network and try again.'**
+  String get asfcConnectionFailed;
+
+  /// No description provided for @asfcCredentialsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your username and password.'**
+  String get asfcCredentialsRequired;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
   /// No description provided for @theme.
   ///
   /// In en, this message translates to:

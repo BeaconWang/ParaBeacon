@@ -36,6 +36,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferences => '偏好设置';
 
   @override
+  String get accounts => '账户';
+
+  @override
+  String get asfcAccount => 'ASFC 账户';
+
+  @override
+  String get asfcAccountSubtitle => '使用 ASFC / GoFly 账户登录';
+
+  @override
+  String get asfcUsername => '用户名或手机号';
+
+  @override
+  String get asfcPassword => '密码';
+
+  @override
+  String get login => '登录';
+
+  @override
+  String get loggingIn => '正在登录…';
+
+  @override
+  String get logout => '退出登录';
+
+  @override
+  String get asfcSignedIn => '已登录';
+
+  @override
+  String get asfcLoginFailed => '登录失败，请检查账户信息。';
+
+  @override
+  String get asfcConnectionFailed => '无法连接，请检查网络后重试。';
+
+  @override
+  String get asfcCredentialsRequired => '请输入用户名和密码。';
+
+  @override
+  String get showPassword => '显示密码';
+
+  @override
+  String get hidePassword => '隐藏密码';
+
+  @override
   String get theme => '主题';
 
   @override

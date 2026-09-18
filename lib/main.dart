@@ -9,6 +9,7 @@ import 'dart:ui' as ui;
 
 import 'l10n/app_localizations.dart';
 
+import 'controls/accounts_sheet.dart';
 import 'controls/add_control_sheet.dart';
 import 'controls/bluetooth_sensor_sheet.dart';
 import 'controls/flights_sheet.dart';
@@ -24,6 +25,7 @@ import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
 import 'data/device_battery_service.dart';
 import 'data/airspace_store.dart';
+import 'data/asfc_auth_service.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_transformer.dart';
@@ -63,7 +65,8 @@ class ParaBeaconApp extends StatefulWidget {
   State<ParaBeaconApp> createState() => _ParaBeaconAppState();
 }
 
-class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserver {
+class _ParaBeaconAppState extends State<ParaBeaconApp>
+    with WidgetsBindingObserver {
   // The single, unified raw flight-data source for the whole app (raw data
   // layer: resolves each field by priority Debug > Bluetooth > Other).
   late final BluetoothSensorFlightDataSource _dataSource;
@@ -99,6 +102,9 @@ class _ParaBeaconAppState extends State<ParaBeaconApp> with WidgetsBindingObserv
     // temporarily shows the system bars (e.g. after a permission dialog or
     // when the user returns from another app).
     WidgetsBinding.instance.addObserver(this);
+    // Restore the ASFC session from platform secure storage. The account sheet
+    // remains usable while this best-effort read completes.
+    AsfcAuthService.instance.load();
     // Load persisted debug preferences (e.g. the simulated-source toggle,
     // default off). Loading notifies listeners, so if the simulator was
     // previously enabled the data source resumes it automatically.
@@ -267,8 +273,9 @@ class _DashGridPageState extends State<DashGridPage> {
   bool _pageIndicatorVisible = false;
   Timer? _pageIndicatorHideTimer;
   static const Duration _pageIndicatorHideDelay = Duration(seconds: 1);
-  static const Duration _pageIndicatorFadeDuration =
-      Duration(milliseconds: 200);
+  static const Duration _pageIndicatorFadeDuration = Duration(
+    milliseconds: 200,
+  );
 
   /// Controls on the currently visible page.
   List<PlacedControl> get _controls => _pages[_currentPage].controls;
@@ -501,8 +508,7 @@ class _DashGridPageState extends State<DashGridPage> {
     }
   }
 
-  double get _effectiveMenuOffset =>
-      _menuOpen ? _menuHeight : _dragOffset;
+  double get _effectiveMenuOffset => _menuOpen ? _menuHeight : _dragOffset;
 
   /// Handles a tap on a menu item.
   Future<void> _onMenuAction(String action) async {
@@ -531,6 +537,10 @@ class _DashGridPageState extends State<DashGridPage> {
           _pageIndicatorHideTimer?.cancel();
           _pageIndicatorVisible = false;
         });
+        break;
+      case 'accounts':
+        _closeMenu();
+        await showAccountsSheet(context);
         break;
       case 'preferences':
         _closeMenu();
@@ -605,12 +615,16 @@ class _DashGridPageState extends State<DashGridPage> {
                     padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
                     child: Row(
                       children: [
-                        Icon(Icons.settings_outlined,
-                            color: theme.colorScheme.primary),
+                        Icon(
+                          Icons.settings_outlined,
+                          color: theme.colorScheme.primary,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(l10n.preferences,
-                              style: theme.textTheme.titleLarge),
+                          child: Text(
+                            l10n.preferences,
+                            style: theme.textTheme.titleLarge,
+                          ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close),
@@ -626,127 +640,147 @@ class _DashGridPageState extends State<DashGridPage> {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                       children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.palette_outlined,
-                          color: theme.colorScheme.primary),
-                      title: Text(l10n.theme),
-                      subtitle: Text(
-                          ThemeController.instance.current.labelOf(l10n)),
-                      trailing: const Icon(Icons.chevron_right, size: 20),
-                      onTap: () async {
-                        await showThemeSettingsSheet(context);
-                        // Refresh the subtitle in the still-open Preferences
-                        // sheet so it reflects the newly-selected theme.
-                        setSheetState(() {});
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.language,
-                          color: theme.colorScheme.primary),
-                      title: Text(l10n.language),
-                      subtitle: Text(
-                          LocaleController.instance.current.labelOf(l10n)),
-                      trailing: const Icon(Icons.chevron_right, size: 20),
-                      onTap: () async {
-                        await showLanguageSettingsSheet(context);
-                        // Refresh the subtitle in the still-open Preferences
-                        // sheet so it reflects the newly-selected language.
-                        setSheetState(() {});
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.graphic_eq,
-                          color: theme.colorScheme.primary),
-                      title: Text(l10n.varioSoundSettings),
-                      subtitle: Text(l10n.varioSoundSettingsSubtitle),
-                      trailing: const Icon(Icons.chevron_right, size: 20),
-                      onTap: () => showVarioSoundSettingsSheet(context),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.bluetooth,
-                          color: theme.colorScheme.primary),
-                      title: Text(l10n.bluetoothSensor),
-                      subtitle:
-                          Text(l10n.bluetoothSensorSubtitle),
-                      trailing: const Icon(Icons.chevron_right, size: 20),
-                      onTap: () => showBluetoothSensorSheet(context),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.timeline,
-                          color: theme.colorScheme.primary),
-                      title: Text(l10n.trackRecording),
-                      subtitle: Text(
-                        l10n.trackRecordingSubtitle(
-                          RecordingSettings.instance.intervalMode ==
-                                  RecordingIntervalMode.fixed1s
-                              ? l10n.recordingIntervalEvery1s
-                              : l10n.recordingIntervalSmart,
-                          RecordingSettings.instance.detail ==
-                                  RecordingDetail.full
-                              ? l10n.recordingDetailFull
-                              : l10n.recordingDetailXcTrack,
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.palette_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.theme),
+                          subtitle: Text(
+                            ThemeController.instance.current.labelOf(l10n),
+                          ),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showThemeSettingsSheet(context);
+                            // Refresh the subtitle in the still-open Preferences
+                            // sheet so it reflects the newly-selected theme.
+                            setSheetState(() {});
+                          },
                         ),
-                      ),
-                      trailing: const Icon(Icons.chevron_right, size: 20),
-                      onTap: () async {
-                        await _showRecordingSettingsSheet(context);
-                        setSheetState(() {});
-                      },
-                    ),
-                    // Debug tools are only compiled/shown in debug builds.
-                    if (kDebugMode) ...[
-                      const Divider(height: 1),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12, bottom: 4),
-                        child: Row(
-                          children: [
-                            Icon(Icons.bug_report_outlined,
-                                color: theme.colorScheme.primary, size: 20),
-                            const SizedBox(width: 10),
-                            Text(l10n.debug, style: theme.textTheme.titleMedium),
-                          ],
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.language,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.language),
+                          subtitle: Text(
+                            LocaleController.instance.current.labelOf(l10n),
+                          ),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showLanguageSettingsSheet(context);
+                            // Refresh the subtitle in the still-open Preferences
+                            // sheet so it reflects the newly-selected language.
+                            setSheetState(() {});
+                          },
                         ),
-                      ),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        secondary: Icon(Icons.sensors,
-                            color: theme.colorScheme.primary),
-                        title: Text(l10n.simulatedFlightData),
-                        subtitle: Text(
-                            l10n.simulatedFlightDataSubtitle),
-                        value: DebugSettings.instance.simulatorEnabled,
-                        onChanged: (on) {
-                          DebugSettings.instance.setSimulatorEnabled(on);
-                          setSheetState(() {});
-                        },
-                      ),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        secondary: Icon(Icons.public,
-                            color: theme.colorScheme.primary),
-                        title: Text(l10n.fakeGpsInChina),
-                        subtitle: Text(
-                            l10n.fakeGpsInChinaSubtitle),
-                        value: DebugSettings.instance.fakeChinaLocation,
-                        // Only meaningful while the simulator is running.
-                        onChanged: DebugSettings.instance.simulatorEnabled
-                            ? (on) {
-                                DebugSettings.instance
-                                    .setFakeChinaLocation(on);
-                                setSheetState(() {});
-                              }
-                            : null,
-                      ),
-                    ],
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.graphic_eq,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.varioSoundSettings),
+                          subtitle: Text(l10n.varioSoundSettingsSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () => showVarioSoundSettingsSheet(context),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.bluetooth,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.bluetoothSensor),
+                          subtitle: Text(l10n.bluetoothSensorSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () => showBluetoothSensorSheet(context),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.timeline,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.trackRecording),
+                          subtitle: Text(
+                            l10n.trackRecordingSubtitle(
+                              RecordingSettings.instance.intervalMode ==
+                                      RecordingIntervalMode.fixed1s
+                                  ? l10n.recordingIntervalEvery1s
+                                  : l10n.recordingIntervalSmart,
+                              RecordingSettings.instance.detail ==
+                                      RecordingDetail.full
+                                  ? l10n.recordingDetailFull
+                                  : l10n.recordingDetailXcTrack,
+                            ),
+                          ),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await _showRecordingSettingsSheet(context);
+                            setSheetState(() {});
+                          },
+                        ),
+                        // Debug tools are only compiled/shown in debug builds.
+                        if (kDebugMode) ...[
+                          const Divider(height: 1),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12, bottom: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.bug_report_outlined,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  l10n.debug,
+                                  style: theme.textTheme.titleMedium,
+                                ),
+                              ],
+                            ),
+                          ),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            secondary: Icon(
+                              Icons.sensors,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.simulatedFlightData),
+                            subtitle: Text(l10n.simulatedFlightDataSubtitle),
+                            value: DebugSettings.instance.simulatorEnabled,
+                            onChanged: (on) {
+                              DebugSettings.instance.setSimulatorEnabled(on);
+                              setSheetState(() {});
+                            },
+                          ),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            secondary: Icon(
+                              Icons.public,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.fakeGpsInChina),
+                            subtitle: Text(l10n.fakeGpsInChinaSubtitle),
+                            value: DebugSettings.instance.fakeChinaLocation,
+                            // Only meaningful while the simulator is running.
+                            onChanged: DebugSettings.instance.simulatorEnabled
+                                ? (on) {
+                                    DebugSettings.instance.setFakeChinaLocation(
+                                      on,
+                                    );
+                                    setSheetState(() {});
+                                  }
+                                : null,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -782,8 +816,10 @@ class _DashGridPageState extends State<DashGridPage> {
                       children: [
                         Icon(Icons.timeline, color: theme.colorScheme.primary),
                         const SizedBox(width: 10),
-                        Text(l10n.trackRecording,
-                            style: theme.textTheme.titleLarge),
+                        Text(
+                          l10n.trackRecording,
+                          style: theme.textTheme.titleLarge,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -821,8 +857,10 @@ class _DashGridPageState extends State<DashGridPage> {
                     const Divider(height: 24),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      secondary: Icon(Icons.dataset_outlined,
-                          color: theme.colorScheme.primary),
+                      secondary: Icon(
+                        Icons.dataset_outlined,
+                        color: theme.colorScheme.primary,
+                      ),
                       title: Text(l10n.recordMoreInformation),
                       subtitle: Text(
                         RecordingSettings.instance.detail ==
@@ -830,12 +868,13 @@ class _DashGridPageState extends State<DashGridPage> {
                             ? l10n.recordMoreInformationFull
                             : l10n.recordMoreInformationXcTrack,
                       ),
-                      value: RecordingSettings.instance.detail ==
+                      value:
+                          RecordingSettings.instance.detail ==
                           RecordingDetail.full,
                       onChanged: (on) {
-                        RecordingSettings.instance.setDetail(on
-                            ? RecordingDetail.full
-                            : RecordingDetail.xctrack);
+                        RecordingSettings.instance.setDetail(
+                          on ? RecordingDetail.full : RecordingDetail.xctrack,
+                        );
                         setSheetState(() {});
                       },
                     ),
@@ -1083,8 +1122,7 @@ class _DashGridPageState extends State<DashGridPage> {
       return;
     }
 
-    _verticalGraphTwoFingerRemainder +=
-        currentCenter.dy - previousCenter.dy;
+    _verticalGraphTwoFingerRemainder += currentCenter.dy - previousCenter.dy;
     _verticalGraphTwoFingerCenter = currentCenter;
 
     var steps = 0;
@@ -1114,10 +1152,7 @@ class _DashGridPageState extends State<DashGridPage> {
     );
   }
 
-  void _onVerticalGraphPointerEnd(
-    PlacedControl control,
-    int pointer,
-  ) {
+  void _onVerticalGraphPointerEnd(PlacedControl control, int pointer) {
     if (_verticalGraphGestureControlId != control.instanceId) return;
     _verticalGraphPointers.remove(pointer);
     if (_verticalGraphPointers.length < 2) {
@@ -1129,17 +1164,14 @@ class _DashGridPageState extends State<DashGridPage> {
     }
   }
 
-  Widget _verticalGraphPointerLayer(
-    PlacedControl control,
-    Widget child,
-  ) {
-    final active = _selectedControlId == control.instanceId ||
+  Widget _verticalGraphPointerLayer(PlacedControl control, Widget child) {
+    final active =
+        _selectedControlId == control.instanceId ||
         _activeControlId == control.instanceId;
     if (!active || control.type.id != 'vertical_graph') return child;
 
     return Listener(
-      onPointerSignal: (event) =>
-          _onVerticalGraphPointerSignal(control, event),
+      onPointerSignal: (event) => _onVerticalGraphPointerSignal(control, event),
       onPointerDown: (event) => _onVerticalGraphPointerDown(control, event),
       onPointerMove: (event) => _onVerticalGraphPointerMove(control, event),
       onPointerUp: (event) =>
@@ -1176,10 +1208,14 @@ class _DashGridPageState extends State<DashGridPage> {
       final colDelta = (_dragAccum.dx / _cellWidth(size)).round();
       final rowDelta = (_dragAccum.dy / _cellHeight(size)).round();
 
-      control.col = (_dragStartCol + colDelta)
-          .clamp(0, (maxCols - control.cols).clamp(0, maxCols));
-      control.row = (_dragStartRow + rowDelta)
-          .clamp(0, (maxRows - control.rows).clamp(0, maxRows));
+      control.col = (_dragStartCol + colDelta).clamp(
+        0,
+        (maxCols - control.cols).clamp(0, maxCols),
+      );
+      control.row = (_dragStartRow + rowDelta).clamp(
+        0,
+        (maxRows - control.rows).clamp(0, maxRows),
+      );
     });
   }
 
@@ -1201,13 +1237,16 @@ class _DashGridPageState extends State<DashGridPage> {
       final rowDelta = (_dragAccum.dy / _cellHeight(size)).round();
 
       // At least 1 cell; cannot extend past the grid edge from current origin.
-      control.cols = (_dragStartCols + colDelta)
-          .clamp(1, (maxCols - control.col).clamp(1, maxCols));
-      control.rows = (_dragStartRows + rowDelta)
-          .clamp(1, (maxRows - control.row).clamp(1, maxRows));
+      control.cols = (_dragStartCols + colDelta).clamp(
+        1,
+        (maxCols - control.col).clamp(1, maxCols),
+      );
+      control.rows = (_dragStartRows + rowDelta).clamp(
+        1,
+        (maxRows - control.row).clamp(1, maxRows),
+      );
     });
   }
-
 
   /// Whether pressing the system Back button (Android) / triggering the
   /// root-route pop gesture (iOS) currently has an in-app dismissal to do
@@ -1268,101 +1307,101 @@ class _DashGridPageState extends State<DashGridPage> {
         _handleBackDismiss();
       },
       child: Scaffold(
-      body: Stack(
-        children: [
-          // Pages (tabs). Swipe horizontally to switch pages in view mode;
-          // in edit mode swiping is disabled so controls can be dragged.
-          Positioned.fill(
-            child: NotificationListener<ScrollNotification>(
-              // Track the PageView's horizontal scroll so we can flash the
-              // bottom page indicator while the user is actively swiping
-              // and fade it back out one second after the swipe settles.
-              onNotification: (notification) {
-                if (_isEditMode) return false;
-                // Only react to horizontal (page) scroll — the PageView is
-                // horizontal, and nested controls (lists, maps) are vertical
-                // or don't emit ScrollNotifications, so this filter keeps
-                // stray inner-scroll events from re-arming the timer.
-                if (notification.metrics.axis != Axis.horizontal) {
+        body: Stack(
+          children: [
+            // Pages (tabs). Swipe horizontally to switch pages in view mode;
+            // in edit mode swiping is disabled so controls can be dragged.
+            Positioned.fill(
+              child: NotificationListener<ScrollNotification>(
+                // Track the PageView's horizontal scroll so we can flash the
+                // bottom page indicator while the user is actively swiping
+                // and fade it back out one second after the swipe settles.
+                onNotification: (notification) {
+                  if (_isEditMode) return false;
+                  // Only react to horizontal (page) scroll — the PageView is
+                  // horizontal, and nested controls (lists, maps) are vertical
+                  // or don't emit ScrollNotifications, so this filter keeps
+                  // stray inner-scroll events from re-arming the timer.
+                  if (notification.metrics.axis != Axis.horizontal) {
+                    return false;
+                  }
+                  if (notification is ScrollStartNotification ||
+                      notification is ScrollUpdateNotification) {
+                    _revealPageIndicator();
+                  } else if (notification is ScrollEndNotification) {
+                    _schedulePageIndicatorHide();
+                  }
                   return false;
-                }
-                if (notification is ScrollStartNotification ||
-                    notification is ScrollUpdateNotification) {
-                  _revealPageIndicator();
-                } else if (notification is ScrollEndNotification) {
-                  _schedulePageIndicatorHide();
-                }
-                return false;
-              },
-              child: PageView.builder(
-                controller: _pageController,
-                physics: _isEditMode
-                    ? const NeverScrollableScrollPhysics()
-                    : const PageScrollPhysics(),
-                itemCount: _pages.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                    _selectedControlId = null;
-                    // Leaving a page re-locks whichever control the user had
-                    // unlocked on it, so returning to it starts fresh.
-                    _activeControlId = null;
-                  });
-                  // Persist the last-viewed page so re-launching the app
-                  // returns the user to where they left off.
-                  _saveLayout();
                 },
-                itemBuilder: (context, index) => _buildPageContent(index),
-              ),
-            ),
-          ),
-
-          // Page indicator. Shown with more than one page, or in edit mode
-          // so a single page's icon can be customized. Visibility is driven
-          // entirely by AnimatedOpacity (rather than removing the widget
-          // from the tree) so opening/closing the top menu doesn't cause a
-          // fade-in "pop" every time the indicator reappears — it merely
-          // fades opacity while the menu is open and, if it was visible
-          // before, is already at full opacity the instant the menu closes.
-          //
-          // In view mode the indicator auto-fades one second after the last
-          // page swipe; in edit mode it stays fully visible.
-          if (_pages.length > 1 || _isEditMode)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 16,
-              child: IgnorePointer(
-                ignoring: _menuOpen ||
-                    (!_isEditMode && !_pageIndicatorVisible),
-                child: AnimatedOpacity(
-                  duration: _pageIndicatorFadeDuration,
-                  opacity: _menuOpen
-                      ? 0.0
-                      : ((_isEditMode || _pageIndicatorVisible) ? 1.0 : 0.0),
-                  child: _buildPageIndicator(),
+                child: PageView.builder(
+                  controller: _pageController,
+                  physics: _isEditMode
+                      ? const NeverScrollableScrollPhysics()
+                      : const PageScrollPhysics(),
+                  itemCount: _pages.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                      _selectedControlId = null;
+                      // Leaving a page re-locks whichever control the user had
+                      // unlocked on it, so returning to it starts fresh.
+                      _activeControlId = null;
+                    });
+                    // Persist the last-viewed page so re-launching the app
+                    // returns the user to where they left off.
+                    _saveLayout();
+                  },
+                  itemBuilder: (context, index) => _buildPageContent(index),
                 ),
               ),
             ),
 
-          // Dim overlay when menu is open
-          if (_effectiveMenuOffset > 0 || _menuOpen)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _closeMenu,
-                child: Container(color: Colors.black.withAlpha(80)),
+            // Page indicator. Shown with more than one page, or in edit mode
+            // so a single page's icon can be customized. Visibility is driven
+            // entirely by AnimatedOpacity (rather than removing the widget
+            // from the tree) so opening/closing the top menu doesn't cause a
+            // fade-in "pop" every time the indicator reappears — it merely
+            // fades opacity while the menu is open and, if it was visible
+            // before, is already at full opacity the instant the menu closes.
+            //
+            // In view mode the indicator auto-fades one second after the last
+            // page swipe; in edit mode it stays fully visible.
+            if (_pages.length > 1 || _isEditMode)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 16,
+                child: IgnorePointer(
+                  ignoring:
+                      _menuOpen || (!_isEditMode && !_pageIndicatorVisible),
+                  child: AnimatedOpacity(
+                    duration: _pageIndicatorFadeDuration,
+                    opacity: _menuOpen
+                        ? 0.0
+                        : ((_isEditMode || _pageIndicatorVisible) ? 1.0 : 0.0),
+                    child: _buildPageIndicator(),
+                  ),
+                ),
               ),
-            ),
 
-          // Top swipe menu panel
-          Positioned(
-            left: 0,
-            right: 0,
-            top: _effectiveMenuOffset - _menuHeight,
-            child: _buildMenuPanel(),
-          ),
-        ],
-      ),
+            // Dim overlay when menu is open
+            if (_effectiveMenuOffset > 0 || _menuOpen)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _closeMenu,
+                  child: Container(color: Colors.black.withAlpha(80)),
+                ),
+              ),
+
+            // Top swipe menu panel
+            Positioned(
+              left: 0,
+              right: 0,
+              top: _effectiveMenuOffset - _menuHeight,
+              child: _buildMenuPanel(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1484,8 +1523,10 @@ class _DashGridPageState extends State<DashGridPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(AppLocalizations.of(context).pageIcon,
-                    style: theme.textTheme.titleLarge),
+                Text(
+                  AppLocalizations.of(context).pageIcon,
+                  style: theme.textTheme.titleLarge,
+                ),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
@@ -1505,7 +1546,9 @@ class _DashGridPageState extends State<DashGridPage> {
                           borderRadius: BorderRadius.circular(12),
                           border: isCurrent
                               ? Border.all(
-                                  color: theme.colorScheme.primary, width: 2)
+                                  color: theme.colorScheme.primary,
+                                  width: 2,
+                                )
                               : null,
                         ),
                         child: Icon(
@@ -1599,36 +1642,37 @@ class _DashGridPageState extends State<DashGridPage> {
                     child: _verticalGraphPointerLayer(
                       control,
                       GestureDetector(
-                      // When the control is selected it owns its drag-to-move
-                      // gesture, so swallow pointer events (opaque). While it
-                      // is *not* selected there is nothing to drag here, so be
-                      // translucent: a vertical swipe starting on the control
-                      // then falls through to the fullscreen background gesture
-                      // layer that opens the top menu.
-                      behavior: isSelected
-                          ? HitTestBehavior.opaque
-                          : HitTestBehavior.translucent,
-                      onTap: () => setState(
-                          () => _selectedControlId = control.instanceId),
-                      onLongPress: () => _showControlMenu(control),
-                      // A widget must be selected before it can be moved.
-                      // While unselected the first tap only selects it (like
-                      // non-editing mode); drag/move gestures are ignored so
-                      // an accidental pan can't reposition an unselected
-                      // widget.
-                      onPanStart: isSelected
-                          ? (_) => _onControlDragStart(control)
-                          : null,
-                      onPanUpdate: isSelected
-                          ? (details) =>
-                              _onControlDragUpdate(control, details.delta)
-                          : null,
-                      onPanEnd: isSelected ? (_) => _saveLayout() : null,
-                      // Swallow every pointer event before it reaches the
-                      // control's own contents so its internal interactions
-                      // (map pan/zoom, buttons, list scroll, etc.) are
-                      // disabled while the user is arranging the dashboard.
-                      child: IgnorePointer(child: child),
+                        // When the control is selected it owns its drag-to-move
+                        // gesture, so swallow pointer events (opaque). While it
+                        // is *not* selected there is nothing to drag here, so be
+                        // translucent: a vertical swipe starting on the control
+                        // then falls through to the fullscreen background gesture
+                        // layer that opens the top menu.
+                        behavior: isSelected
+                            ? HitTestBehavior.opaque
+                            : HitTestBehavior.translucent,
+                        onTap: () => setState(
+                          () => _selectedControlId = control.instanceId,
+                        ),
+                        onLongPress: () => _showControlMenu(control),
+                        // A widget must be selected before it can be moved.
+                        // While unselected the first tap only selects it (like
+                        // non-editing mode); drag/move gestures are ignored so
+                        // an accidental pan can't reposition an unselected
+                        // widget.
+                        onPanStart: isSelected
+                            ? (_) => _onControlDragStart(control)
+                            : null,
+                        onPanUpdate: isSelected
+                            ? (details) =>
+                                  _onControlDragUpdate(control, details.delta)
+                            : null,
+                        onPanEnd: isSelected ? (_) => _saveLayout() : null,
+                        // Swallow every pointer event before it reaches the
+                        // control's own contents so its internal interactions
+                        // (map pan/zoom, buttons, list scroll, etc.) are
+                        // disabled while the user is arranging the dashboard.
+                        child: IgnorePointer(child: child),
                       ),
                     ),
                   ),
@@ -1643,10 +1687,12 @@ class _DashGridPageState extends State<DashGridPage> {
                       height: affordanceSize,
                       child: _CornerButton(
                         icon: Icons.close,
-                        backgroundColor:
-                            Theme.of(context).colorScheme.errorContainer,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onErrorContainer,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.errorContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onErrorContainer,
                         onPressed: () => _deleteControl(control.instanceId),
                       ),
                     ),
@@ -1675,29 +1721,29 @@ class _DashGridPageState extends State<DashGridPage> {
                 ],
               )
             : (isControlled
-                // Unlocked ("controlled") widget on the current page: let its
-                // internal interactions (map pan/zoom, buttons, list scroll,
-                // etc.) receive pointer events normally. Tapping outside the
-                // control re-locks it (handled by the background gesture
-                // layer above).
-                ? _verticalGraphPointerLayer(control, child)
-                // Default state: the widget is locked and fully static —
-                // acts as a drawable readout only. IgnorePointer swallows
-                // every internal pointer event so nothing inside the control
-                // reacts to taps or drags. A long-press on the widget flips
-                // it into the unlocked ("controlled") state.
-                : GestureDetector(
-                    // Translucent so vertical drags starting on a locked
-                    // control still reach the fullscreen background gesture
-                    // layer that opens the top menu.
-                    behavior: HitTestBehavior.translucent,
-                    onLongPress: () {
-                      setState(() {
-                        _activeControlId = control.instanceId;
-                      });
-                    },
-                    child: IgnorePointer(child: child),
-                  )),
+                  // Unlocked ("controlled") widget on the current page: let its
+                  // internal interactions (map pan/zoom, buttons, list scroll,
+                  // etc.) receive pointer events normally. Tapping outside the
+                  // control re-locks it (handled by the background gesture
+                  // layer above).
+                  ? _verticalGraphPointerLayer(control, child)
+                  // Default state: the widget is locked and fully static —
+                  // acts as a drawable readout only. IgnorePointer swallows
+                  // every internal pointer event so nothing inside the control
+                  // reacts to taps or drags. A long-press on the widget flips
+                  // it into the unlocked ("controlled") state.
+                  : GestureDetector(
+                      // Translucent so vertical drags starting on a locked
+                      // control still reach the fullscreen background gesture
+                      // layer that opens the top menu.
+                      behavior: HitTestBehavior.translucent,
+                      onLongPress: () {
+                        setState(() {
+                          _activeControlId = control.instanceId;
+                        });
+                      },
+                      child: IgnorePointer(child: child),
+                    )),
       );
     }).toList();
   }
@@ -1709,9 +1755,7 @@ class _DashGridPageState extends State<DashGridPage> {
       constraints: BoxConstraints(maxHeight: maxMenuHeight),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(20),
-        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(100),
@@ -1774,6 +1818,7 @@ class _DashGridPageState extends State<DashGridPage> {
                   _closeMenu();
                   _clearAllControls();
                 },
+                onOpenAccounts: () => _onMenuAction('accounts'),
                 onOpenPreferences: () => _onMenuAction('preferences'),
               ),
             ),
@@ -1796,6 +1841,7 @@ class _MenuContent extends StatelessWidget {
   final VoidCallback onAddPage;
   final VoidCallback onDeletePage;
   final VoidCallback onClearAll;
+  final VoidCallback onOpenAccounts;
   final VoidCallback onOpenPreferences;
 
   const _MenuContent({
@@ -1810,6 +1856,7 @@ class _MenuContent extends StatelessWidget {
     required this.onAddPage,
     required this.onDeletePage,
     required this.onClearAll,
+    required this.onOpenAccounts,
     required this.onOpenPreferences,
   });
 
@@ -1839,14 +1886,20 @@ class _MenuContent extends StatelessWidget {
         if (isEditMode) ...[
           const Divider(height: 1),
           ListTile(
-            leading: Icon(Icons.add_box_outlined, color: theme.colorScheme.primary),
+            leading: Icon(
+              Icons.add_box_outlined,
+              color: theme.colorScheme.primary,
+            ),
             title: Text(l10n.addControl),
             trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: onAddControl,
           ),
           const Divider(height: 1),
           ListTile(
-            leading: Icon(Icons.note_add_outlined, color: theme.colorScheme.primary),
+            leading: Icon(
+              Icons.note_add_outlined,
+              color: theme.colorScheme.primary,
+            ),
             title: Text(l10n.addPage),
             trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: onAddPage,
@@ -1880,7 +1933,11 @@ class _MenuContent extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(_Icons.grid, color: theme.colorScheme.primary, size: 20),
+                    Icon(
+                      _Icons.grid,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(child: Text(l10n.gridSize)),
                     Text(
@@ -1907,8 +1964,9 @@ class _MenuContent extends StatelessWidget {
           ListTile(
             leading: Icon(
               Icons.delete_sweep_outlined,
-              color:
-                  controlCount > 0 ? theme.colorScheme.error : theme.disabledColor,
+              color: controlCount > 0
+                  ? theme.colorScheme.error
+                  : theme.disabledColor,
             ),
             title: Text(
               l10n.clearAllControls,
@@ -1930,6 +1988,17 @@ class _MenuContent extends StatelessWidget {
           subtitle: Text(l10n.flightsSubtitle),
           trailing: const Icon(Icons.chevron_right, size: 20),
           onTap: () => showFlightsSheet(context),
+        ),
+        const Divider(height: 1),
+        ListTile(
+          leading: Icon(
+            Icons.account_circle_outlined,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(l10n.accounts),
+          subtitle: Text(l10n.asfcAccountSubtitle),
+          trailing: const Icon(Icons.chevron_right, size: 20),
+          onTap: onOpenAccounts,
         ),
         const Divider(height: 1),
         ListTile(
@@ -1981,11 +2050,7 @@ class _ResizeHandle extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(
-        Icons.open_in_full,
-        size: 16,
-        color: Colors.white,
-      ),
+      child: const Icon(Icons.open_in_full, size: 16, color: Colors.white),
     );
   }
 }
@@ -2015,9 +2080,7 @@ class _CornerButton extends StatelessWidget {
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onPressed,
-        child: Center(
-          child: Icon(icon, size: 18, color: foregroundColor),
-        ),
+        child: Center(child: Icon(icon, size: 18, color: foregroundColor)),
       ),
     );
   }
@@ -2071,7 +2134,12 @@ class DashGridPainter extends CustomPainter {
     if (cellWidth >= 30) {
       for (int i = 0; i < cols; i++) {
         final x = (i + 0.5) * cellWidth;
-        _drawDashedLine(canvas, Offset(x, 0), Offset(x, size.height), dashPaint);
+        _drawDashedLine(
+          canvas,
+          Offset(x, 0),
+          Offset(x, size.height),
+          dashPaint,
+        );
       }
     }
     if (cellHeight >= 30) {
@@ -2095,10 +2163,7 @@ class DashGridPainter extends CustomPainter {
     while (drawn < len) {
       final segment = (drawn + dashWidth > len) ? len - drawn : dashWidth;
       final from = Offset(start.dx + drawn * dirX, start.dy + drawn * dirY);
-      final to = Offset(
-        from.dx + segment * dirX,
-        from.dy + segment * dirY,
-      );
+      final to = Offset(from.dx + segment * dirX, from.dy + segment * dirY);
       canvas.drawLine(from, to, paint);
       drawn += dashWidth + dashGap;
     }

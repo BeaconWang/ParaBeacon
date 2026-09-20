@@ -7,7 +7,21 @@ import '../data/device_battery_service.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_state.dart';
 import '../data/sun_times.dart';
+import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
+
+String _displayNumber(double value, UnitDimension dimension, String unit) {
+  final converted = UnitValues.convert(value, dimension, unit);
+  final decimals = switch (dimension) {
+    UnitDimension.verticalSpeed => unit == 'fpm' ? 0 : 1,
+    UnitDimension.temperature => 1,
+    UnitDimension.pressure => unit == 'inhg' ? 2 : 1,
+    UnitDimension.speed => unit == 'ms' ? 1 : 0,
+    UnitDimension.altitude => 0,
+    UnitDimension.distance => converted >= 100 ? 0 : 1,
+  };
+  return converted.toStringAsFixed(decimals);
+}
 
 /// Color state of a data value, mirroring XCTrack's value coloring.
 enum ValueState { neutral, good, bad }
@@ -162,10 +176,12 @@ class VerticalSpeedControl extends StatelessWidget {
     } else {
       state = ValueState.neutral;
     }
+    final unit = selectedUnit(context, UnitDimension.verticalSpeed);
+    final displayValue = UnitValues.convert(v, UnitDimension.verticalSpeed, unit);
     return DataValueControl(
       title: AppLocalizations.of(context).controlVerticalSpeed,
-      value: '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)}',
-      unit: 'm/s',
+      value: '${displayValue >= 0 ? '+' : ''}${_displayNumber(v, UnitDimension.verticalSpeed, unit)}',
+      unit: UnitValues.symbol(UnitDimension.verticalSpeed, unit),
       state: state,
       showTitle: showTitle,
     );
@@ -391,10 +407,13 @@ class AltitudeControl extends StatelessWidget {
         title = l10n.controlBaroAltitude;
         break;
     }
+    final unit = selectedUnit(context, UnitDimension.altitude);
     return DataValueControl(
       title: title,
-      value: raw == null ? '--' : raw.toStringAsFixed(0),
-      unit: 'm',
+      value: raw == null
+          ? '--'
+          : _displayNumber(raw, UnitDimension.altitude, unit),
+      unit: UnitValues.symbol(UnitDimension.altitude, unit),
       state: ValueState.neutral,
       showTitle: showTitle,
     );
@@ -430,10 +449,13 @@ class _MaxAltitudeControlState extends State<MaxAltitudeControl> {
       _max = data.altitude;
     }
     final hasSample = _max.isFinite;
+    final unit = selectedUnit(context, UnitDimension.altitude);
     return DataValueControl(
       title: AppLocalizations.of(context).controlMaxAltitude,
-      value: hasSample ? _max.toStringAsFixed(0) : '--',
-      unit: 'm',
+      value: hasSample
+          ? _displayNumber(_max, UnitDimension.altitude, unit)
+          : '--',
+      unit: UnitValues.symbol(UnitDimension.altitude, unit),
       state: ValueState.neutral,
       showTitle: widget.showTitle,
     );
@@ -452,10 +474,13 @@ class GroundSpeedControl extends StatelessWidget {
     // Ground speed is meaningful only with a GPS fix; without one, the
     // simulator-defaulted 0 would be misleading.
     final hasValue = data.hasFix;
+    final unit = selectedUnit(context, UnitDimension.speed);
     return DataValueControl(
       title: AppLocalizations.of(context).controlGroundSpeed,
-      value: hasValue ? data.groundSpeed.toStringAsFixed(0) : '--',
-      unit: 'km/h',
+      value: hasValue
+          ? _displayNumber(data.groundSpeed, UnitDimension.speed, unit)
+          : '--',
+      unit: UnitValues.symbol(UnitDimension.speed, unit),
       state: ValueState.neutral,
       showTitle: showTitle,
     );
@@ -634,10 +659,11 @@ class WindSpeedControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = FlightDataProvider.of(context);
+    final unit = selectedUnit(context, UnitDimension.speed);
     return DataValueControl(
       title: AppLocalizations.of(context).controlWindSpeed,
-      value: data.windSpeed.toStringAsFixed(0),
-      unit: 'km/h',
+      value: _displayNumber(data.windSpeed, UnitDimension.speed, unit),
+      unit: UnitValues.symbol(UnitDimension.speed, unit),
       state: ValueState.neutral,
       showTitle: showTitle,
     );
@@ -683,10 +709,13 @@ class PressureControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = FlightDataProvider.of(context).pressure;
+    final unit = selectedUnit(context, UnitDimension.pressure);
     return DataValueControl(
       title: AppLocalizations.of(context).controlPressure,
-      value: p == null ? '--' : p.toStringAsFixed(1),
-      unit: 'hPa',
+      value: p == null
+          ? '--'
+          : _displayNumber(p, UnitDimension.pressure, unit),
+      unit: UnitValues.symbol(UnitDimension.pressure, unit),
       state: ValueState.neutral,
       showTitle: showTitle,
     );
@@ -702,10 +731,13 @@ class TemperatureControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = FlightDataProvider.of(context).temperature;
+    final unit = selectedUnit(context, UnitDimension.temperature);
     return DataValueControl(
       title: AppLocalizations.of(context).controlTemperature,
-      value: t == null ? '--' : t.toStringAsFixed(1),
-      unit: '°C',
+      value: t == null
+          ? '--'
+          : _displayNumber(t, UnitDimension.temperature, unit),
+      unit: UnitValues.symbol(UnitDimension.temperature, unit),
       state: ValueState.neutral,
       showTitle: showTitle,
     );
@@ -1041,20 +1073,26 @@ class _DistanceToTakeoffControlState extends State<DistanceToTakeoffControl> {
 
     final lat0 = _takeoffLat;
     final lon0 = _takeoffLon;
+    final selected = selectedUnit(context, UnitDimension.distance);
     String value;
     String unit;
     if (!flying || lat0 == null || lon0 == null || !data.hasFix) {
       value = '--';
-      unit = 'km';
+      unit = UnitValues.symbol(UnitDimension.distance, selected);
     } else {
       final meters = _haversineM(lat0, lon0, data.latitude, data.longitude);
-      if (meters < 1000) {
-        value = meters.toStringAsFixed(0);
-        unit = 'm';
+      if (selected == 'auto') {
+        if (meters < 1000) {
+          value = meters.toStringAsFixed(0);
+          unit = 'm';
+        } else {
+          final km = meters / 1000.0;
+          value = km.toStringAsFixed(km >= 100 ? 0 : 1);
+          unit = 'km';
+        }
       } else {
-        final km = meters / 1000.0;
-        value = km.toStringAsFixed(km >= 100 ? 0 : 1);
-        unit = 'km';
+        value = _displayNumber(meters, UnitDimension.distance, selected);
+        unit = UnitValues.symbol(UnitDimension.distance, selected);
       }
     }
 
@@ -1170,12 +1208,13 @@ class GpsAltitudeControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = FlightDataProvider.of(context);
+    final unit = selectedUnit(context, UnitDimension.altitude);
     return DataValueControl(
       title: AppLocalizations.of(context).controlGpsAltitude,
       value: data.gpsAltitude == null
           ? '--'
-          : data.gpsAltitude!.toStringAsFixed(0),
-      unit: 'm',
+          : _displayNumber(data.gpsAltitude!, UnitDimension.altitude, unit),
+      unit: UnitValues.symbol(UnitDimension.altitude, unit),
       showTitle: showTitle,
     );
   }
@@ -1190,12 +1229,13 @@ class BaroAltitudeControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = FlightDataProvider.of(context);
+    final unit = selectedUnit(context, UnitDimension.altitude);
     return DataValueControl(
       title: AppLocalizations.of(context).controlBaroAltitude,
       value: data.baroAltitude == null
           ? '--'
-          : data.baroAltitude!.toStringAsFixed(0),
-      unit: 'm',
+          : _displayNumber(data.baroAltitude!, UnitDimension.altitude, unit),
+      unit: UnitValues.symbol(UnitDimension.altitude, unit),
       showTitle: showTitle,
     );
   }
@@ -1239,10 +1279,13 @@ class GpsAccuracyControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accuracy = FlightDataProvider.of(context).gpsAccuracy;
+    final unit = selectedUnit(context, UnitDimension.altitude);
     return DataValueControl(
       title: AppLocalizations.of(context).controlGpsAccuracy,
-      value: accuracy == null ? '--' : accuracy.toStringAsFixed(1),
-      unit: 'm',
+      value: accuracy == null
+          ? '--'
+          : _displayNumber(accuracy, UnitDimension.altitude, unit),
+      unit: UnitValues.symbol(UnitDimension.altitude, unit),
       showTitle: showTitle,
     );
   }
@@ -1324,13 +1367,18 @@ class _AltitudeAboveTakeoffControlState
         (data.hasFix || data.baroAltitude != null)) {
       _takeoffAltitude = data.altitude;
     }
+    final unit = selectedUnit(context, UnitDimension.altitude);
     final value = !flying || _takeoffAltitude == null
         ? '--'
-        : (data.altitude - _takeoffAltitude!).toStringAsFixed(0);
+        : _displayNumber(
+            data.altitude - _takeoffAltitude!,
+            UnitDimension.altitude,
+            unit,
+          );
     return DataValueControl(
       title: AppLocalizations.of(context).controlAltitudeAboveTakeoff,
       value: value,
-      unit: 'm',
+      unit: UnitValues.symbol(UnitDimension.altitude, unit),
       state: value != '--' && value.startsWith('-')
           ? ValueState.bad
           : ValueState.neutral,

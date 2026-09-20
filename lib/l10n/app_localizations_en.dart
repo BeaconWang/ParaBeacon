@@ -45,6 +45,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferences => 'Preferences';
 
   @override
+  String get units => 'Units';
+
+  @override
+  String get unitsSubtitle => 'Choose default units for dashboard controls';
+
+  @override
+  String get unitAltitude => 'Altitude';
+
+  @override
+  String get unitSpeed => 'Speed';
+
+  @override
+  String get unitVerticalSpeed => 'Vertical speed';
+
+  @override
+  String get unitDistance => 'Distance';
+
+  @override
+  String get unitPressure => 'Pressure';
+
+  @override
+  String get unitTemperature => 'Temperature';
+
+  @override
+  String get settingDisplayUnit => 'Display unit';
+
+  @override
+  String get settingUnitDefault => 'Use Preferences default';
+
+  @override
+  String get unitMeters => 'Meters (m)';
+
+  @override
+  String get unitFeet => 'Feet (ft)';
+
+  @override
+  String get unitKilometersPerHour => 'Kilometers per hour (km/h)';
+
+  @override
+  String get unitMetersPerSecond => 'Meters per second (m/s)';
+
+  @override
+  String get unitMilesPerHour => 'Miles per hour (mph)';
+
+  @override
+  String get unitKnots => 'Knots (kn)';
+
+  @override
+  String get unitFeetPerMinute => 'Feet per minute (ft/min)';
+
+  @override
+  String get unitAutomaticDistance => 'Automatic (m/km)';
+
+  @override
+  String get unitKilometers => 'Kilometers (km)';
+
+  @override
+  String get unitMiles => 'Miles (mi)';
+
+  @override
+  String get unitHectopascals => 'Hectopascals (hPa)';
+
+  @override
+  String get unitInchesOfMercury => 'Inches of mercury (inHg)';
+
+  @override
+  String get unitCelsius => 'Celsius (°C)';
+
+  @override
+  String get unitFahrenheit => 'Fahrenheit (°F)';
+
+  @override
   String get accounts => 'Accounts';
 
   @override

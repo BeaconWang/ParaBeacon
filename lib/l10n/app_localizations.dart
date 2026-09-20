@@ -170,6 +170,150 @@ abstract class AppLocalizations {
   /// **'Preferences'**
   String get preferences;
 
+  /// No description provided for @units.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get units;
+
+  /// No description provided for @unitsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose default units for dashboard controls'**
+  String get unitsSubtitle;
+
+  /// No description provided for @unitAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get unitAltitude;
+
+  /// No description provided for @unitSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get unitSpeed;
+
+  /// No description provided for @unitVerticalSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical speed'**
+  String get unitVerticalSpeed;
+
+  /// No description provided for @unitDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get unitDistance;
+
+  /// No description provided for @unitPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Pressure'**
+  String get unitPressure;
+
+  /// No description provided for @unitTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get unitTemperature;
+
+  /// No description provided for @settingDisplayUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Display unit'**
+  String get settingDisplayUnit;
+
+  /// No description provided for @settingUnitDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Preferences default'**
+  String get settingUnitDefault;
+
+  /// No description provided for @unitMeters.
+  ///
+  /// In en, this message translates to:
+  /// **'Meters (m)'**
+  String get unitMeters;
+
+  /// No description provided for @unitFeet.
+  ///
+  /// In en, this message translates to:
+  /// **'Feet (ft)'**
+  String get unitFeet;
+
+  /// No description provided for @unitKilometersPerHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Kilometers per hour (km/h)'**
+  String get unitKilometersPerHour;
+
+  /// No description provided for @unitMetersPerSecond.
+  ///
+  /// In en, this message translates to:
+  /// **'Meters per second (m/s)'**
+  String get unitMetersPerSecond;
+
+  /// No description provided for @unitMilesPerHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Miles per hour (mph)'**
+  String get unitMilesPerHour;
+
+  /// No description provided for @unitKnots.
+  ///
+  /// In en, this message translates to:
+  /// **'Knots (kn)'**
+  String get unitKnots;
+
+  /// No description provided for @unitFeetPerMinute.
+  ///
+  /// In en, this message translates to:
+  /// **'Feet per minute (ft/min)'**
+  String get unitFeetPerMinute;
+
+  /// No description provided for @unitAutomaticDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic (m/km)'**
+  String get unitAutomaticDistance;
+
+  /// No description provided for @unitKilometers.
+  ///
+  /// In en, this message translates to:
+  /// **'Kilometers (km)'**
+  String get unitKilometers;
+
+  /// No description provided for @unitMiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Miles (mi)'**
+  String get unitMiles;
+
+  /// No description provided for @unitHectopascals.
+  ///
+  /// In en, this message translates to:
+  /// **'Hectopascals (hPa)'**
+  String get unitHectopascals;
+
+  /// No description provided for @unitInchesOfMercury.
+  ///
+  /// In en, this message translates to:
+  /// **'Inches of mercury (inHg)'**
+  String get unitInchesOfMercury;
+
+  /// No description provided for @unitCelsius.
+  ///
+  /// In en, this message translates to:
+  /// **'Celsius (°C)'**
+  String get unitCelsius;
+
+  /// No description provided for @unitFahrenheit.
+  ///
+  /// In en, this message translates to:
+  /// **'Fahrenheit (°F)'**
+  String get unitFahrenheit;
+
   /// No description provided for @accounts.
   ///
   /// In en, this message translates to:

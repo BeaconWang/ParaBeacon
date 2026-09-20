@@ -45,6 +45,78 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferences => '偏好设置';
 
   @override
+  String get units => '单位';
+
+  @override
+  String get unitsSubtitle => '选择仪表控件的默认单位';
+
+  @override
+  String get unitAltitude => '高度';
+
+  @override
+  String get unitSpeed => '速度';
+
+  @override
+  String get unitVerticalSpeed => '垂直速度';
+
+  @override
+  String get unitDistance => '距离';
+
+  @override
+  String get unitPressure => '气压';
+
+  @override
+  String get unitTemperature => '温度';
+
+  @override
+  String get settingDisplayUnit => '显示单位';
+
+  @override
+  String get settingUnitDefault => '使用偏好设置中的默认值';
+
+  @override
+  String get unitMeters => '米（m）';
+
+  @override
+  String get unitFeet => '英尺（ft）';
+
+  @override
+  String get unitKilometersPerHour => '千米/时（km/h）';
+
+  @override
+  String get unitMetersPerSecond => '米/秒（m/s）';
+
+  @override
+  String get unitMilesPerHour => '英里/时（mph）';
+
+  @override
+  String get unitKnots => '节（kn）';
+
+  @override
+  String get unitFeetPerMinute => '英尺/分钟（ft/min）';
+
+  @override
+  String get unitAutomaticDistance => '自动（m/km）';
+
+  @override
+  String get unitKilometers => '千米（km）';
+
+  @override
+  String get unitMiles => '英里（mi）';
+
+  @override
+  String get unitHectopascals => '百帕（hPa）';
+
+  @override
+  String get unitInchesOfMercury => '英寸汞柱（inHg）';
+
+  @override
+  String get unitCelsius => '摄氏度（°C）';
+
+  @override
+  String get unitFahrenheit => '华氏度（°F）';
+
+  @override
   String get accounts => '账户';
 
   @override

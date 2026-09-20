@@ -19,6 +19,7 @@ import 'controls/control_catalog.dart';
 import 'controls/control_context_menu.dart';
 import 'controls/control_settings_sheet.dart';
 import 'controls/control_widget.dart';
+import 'controls/unit_settings_sheet.dart';
 import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
 import 'controls/vario_sound_settings_sheet.dart';
@@ -40,6 +41,7 @@ import 'data/layout_store.dart';
 import 'data/offline_tiles_service.dart';
 import 'data/raw_flight_data_source.dart';
 import 'data/recording_settings.dart';
+import 'data/unit_settings.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
@@ -123,6 +125,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // mode, default = smart/current logic) so the recorder uses the user's
     // choice from the first fix.
     RecordingSettings.instance.load();
+    // Load the persisted default units before dashboard controls render.
+    UnitSettings.instance.load();
     // Load the persisted theme preset before the first frame paints. The
     // MaterialApp below listens to ThemeController so setTheme(...) at any
     // later time rebuilds the whole tree with the new palette.
@@ -686,6 +690,18 @@ class _DashGridPageState extends State<DashGridPage> {
                             await showAircraftSettingsSheet(context);
                             setSheetState(() {});
                           },
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.straighten,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.units),
+                          subtitle: Text(l10n.unitsSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () => showUnitSettingsSheet(context),
                         ),
                         const Divider(height: 1),
                         ListTile(

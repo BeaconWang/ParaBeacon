@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
 
 /// The kind of UI editor a setting uses.
@@ -235,6 +236,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
     // the same label and option set.
     case 'format':
       return l10n.settingFormat;
+    case 'displayUnit':
+      return l10n.settingDisplayUnit;
     default:
       return null;
   }
@@ -269,6 +272,40 @@ String? _settingOptionLabel(
           return l10n.settingFormatDegrees;
         case 'cardinal':
           return l10n.settingFormatCardinal;
+      }
+      return null;
+    case 'displayUnit':
+      switch (optionKey) {
+        case 'default':
+          return l10n.settingUnitDefault;
+        case 'm':
+          return l10n.unitMeters;
+        case 'ft':
+          return l10n.unitFeet;
+        case 'kmh':
+          return l10n.unitKilometersPerHour;
+        case 'ms':
+          return l10n.unitMetersPerSecond;
+        case 'mph':
+          return l10n.unitMilesPerHour;
+        case 'kn':
+          return l10n.unitKnots;
+        case 'fpm':
+          return l10n.unitFeetPerMinute;
+        case 'auto':
+          return l10n.unitAutomaticDistance;
+        case 'km':
+          return l10n.unitKilometers;
+        case 'mi':
+          return l10n.unitMiles;
+        case 'hpa':
+          return l10n.unitHectopascals;
+        case 'inhg':
+          return l10n.unitInchesOfMercury;
+        case 'c':
+          return l10n.unitCelsius;
+        case 'f':
+          return l10n.unitFahrenheit;
       }
       return null;
     case 'source': // altitude source
@@ -450,6 +487,19 @@ const List<ControlSetting> _commonSettings = [
     palette: _textColorPalette,
   ),
 ];
+
+ControlSetting _unitSetting(UnitDimension dimension) {
+  final options = <Object, String>{
+    'default': 'Default',
+    for (final unit in dimension.choices) unit: UnitValues.label(dimension, unit),
+  };
+  return ControlSetting.choice(
+    key: 'displayUnit',
+    label: 'Display unit',
+    defaultValue: 'default',
+    options: options,
+  );
+}
 
 /// Type-specific settings, keyed by control type id.
 const Map<String, List<ControlSetting>> _typeSettings = {
@@ -841,14 +891,34 @@ const Set<String> _controlsWithoutTitle = {
   'compass_wind',
 };
 
+const Map<String, UnitDimension> _unitDimensions = {
+  'vertical_graph': UnitDimension.altitude,
+  'vario': UnitDimension.verticalSpeed,
+  'vertical_speed': UnitDimension.verticalSpeed,
+  'altitude': UnitDimension.altitude,
+  'gps_altitude': UnitDimension.altitude,
+  'baro_altitude': UnitDimension.altitude,
+  'max_altitude': UnitDimension.altitude,
+  'altitude_above_takeoff': UnitDimension.altitude,
+  'ground_speed': UnitDimension.speed,
+  'wind_speed': UnitDimension.speed,
+  'distance_to_takeoff': UnitDimension.distance,
+  'gps_accuracy': UnitDimension.altitude,
+  'pressure': UnitDimension.pressure,
+  'temperature': UnitDimension.temperature,
+  'compass_wind': UnitDimension.speed,
+};
+
 /// Returns the full ordered list of settings for a control type id
 /// (common settings first, then type-specific ones).
 List<ControlSetting> settingsSchemaFor(String typeId) {
   final hidesTitle = _controlsWithoutTitle.contains(typeId);
+  final dimension = _unitDimensions[typeId];
   return [
     for (final setting in _commonSettings)
       if (!(hidesTitle && setting.key == 'showTitle')) setting,
     ...(_typeSettings[typeId] ?? const []),
+    if (dimension != null) _unitSetting(dimension),
   ];
 }
 

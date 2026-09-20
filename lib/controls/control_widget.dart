@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'placed_control.dart';
 import 'data_value_control.dart';
@@ -45,6 +46,18 @@ class ControlWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: UnitSettings.instance,
+      builder: (context, _) => UnitDisplayScope(
+        customUnit: control.setting('displayUnit') is String
+            ? control.setting('displayUnit') as String
+            : null,
+        child: _buildBody(context),
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     final theme = Theme.of(context);
     final showBorder = control.boolSetting('showBorder', fallback: true);
 

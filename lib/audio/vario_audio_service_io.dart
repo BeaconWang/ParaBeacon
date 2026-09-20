@@ -215,6 +215,13 @@ class _VarioSynth {
     _recompute();
   }
 
+  // Normalized soft-clip drive used as a fixed loudness boost. The output is
+  // normalized back to unity at full scale, so this cannot exceed PCM limits.
+  static const double _loudnessDrive = 2.0;
+  static final double _loudnessNormalizer =
+      (math.exp(2.0 * _loudnessDrive) - 1.0) /
+          (math.exp(2.0 * _loudnessDrive) + 1.0);
+
   double _targetSpeed = 0.0;
   double outputGain = 1.0;
 
@@ -283,13 +290,25 @@ class _VarioSynth {
       _appliedGain += (outputGain - _appliedGain) * _gainSmoothing;
 
       final value = sample * _segGain * _appliedGain * _config.masterGain;
-      final s16 = (value.clamp(-1.0, 1.0) * 32767.0).round();
+      // Apply gentle normalized saturation before PCM conversion. This uses the
+      // available digital headroom more effectively than hard clipping, making
+      // the vario noticeably louder at the same system volume while keeping
+      // peaks bounded to the signed 16-bit range.
+      final shaped = _softClip(value);
+      final s16 = (shaped.clamp(-1.0, 1.0) * 32767.0).round();
       final base = i * channels;
       for (var c = 0; c < channels; c++) {
         out[base + c] = s16;
       }
     }
     return out;
+  }
+
+  double _softClip(double value) {
+    final drive = value * _loudnessDrive;
+    final e = math.exp(2.0 * drive);
+    final driven = (e - 1.0) / (e + 1.0);
+    return driven / _loudnessNormalizer;
   }
 
   void _tickCycle() {

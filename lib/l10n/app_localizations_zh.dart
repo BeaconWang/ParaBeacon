@@ -464,6 +464,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get certificateValidity => '有效期';
 
   @override
+  String get certificateIssueDate => '签发日期';
+
+  @override
+  String get certificatePhoto => '照片';
+
+  @override
+  String get certificateUpgrade => '执照升级';
+
+  @override
+  String get certificateSignInList => '签注列表';
+
+  @override
+  String get certificateSignInDate => '签注日期';
+
+  @override
+  String get certificateReviewUnit => '审核人';
+
+  @override
+  String get certificateNoSignIns => '暂无签注记录';
+
+  @override
   String get asfcFlightRecords => 'ASFC 飞行记录';
 
   @override

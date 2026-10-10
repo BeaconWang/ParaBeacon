@@ -46,11 +46,13 @@ class AsfcCoach {
   factory AsfcCoach.fromJson(Map<String, dynamic> json) {
     return AsfcCoach(
       id: _asInt(json['id']) ?? _asInt(json['coachId']) ?? 0,
-      name: _asString(json['fullName']) ??
+      name:
+          _asString(json['fullName']) ??
           _asString(json['coachName']) ??
           _asString(json['name']) ??
           '',
-      agencyId: _asInt(json['agencyId']) ??
+      agencyId:
+          _asInt(json['agencyId']) ??
           _asInt(json['coachAgencyId']) ??
           _asInt(json['agency_id']) ??
           0,
@@ -58,7 +60,6 @@ class AsfcCoach {
       level: _asString(json['level']) ?? '',
     );
   }
-
 }
 
 class AsfcFlightRecord {
@@ -82,6 +83,7 @@ class AsfcFlightRecord {
     this.seatTypeName = '',
     this.signinDescription = '',
     this.coachSigninStatus = 0,
+    this.reviewerName = '',
   });
 
   final int id;
@@ -103,6 +105,7 @@ class AsfcFlightRecord {
   final String seatTypeName;
   final String signinDescription;
   final int coachSigninStatus;
+  final String reviewerName;
 
   factory AsfcFlightRecord.fromJson(Map<String, dynamic> json) {
     return AsfcFlightRecord(
@@ -121,11 +124,22 @@ class AsfcFlightRecord {
       userName: _asString(json['userName']) ?? '',
       coachName: _asString(json['coachName']) ?? '',
       coachAgencyName: _asString(json['coachAgencyName']) ?? '',
-      auditStatus: _asInt(json['audtiStatus']) ?? _asInt(json['auditStatus']) ?? 0,
+      auditStatus:
+          _asInt(json['audtiStatus']) ?? _asInt(json['auditStatus']) ?? 0,
       seatTypeName: _asString(json['seatTypeName']) ?? '',
-      signinDescription: _asString(json['signinDescirption']) ??
-          _asString(json['signinDescription']) ?? '',
+      signinDescription:
+          _asString(json['signinDescirption']) ??
+          _asString(json['signinDescription']) ??
+          '',
       coachSigninStatus: _asInt(json['coachSigninStatus']) ?? 0,
+      reviewerName:
+          _asString(json['reviewerName']) ??
+          _asString(json['auditorName']) ??
+          _asString(json['auditUserName']) ??
+          _asString(json['auditDeptName']) ??
+          _asString(json['auditUnitName']) ??
+          _asString(json['reviewName']) ??
+          '',
     );
   }
 }
@@ -133,10 +147,7 @@ class AsfcFlightRecord {
 enum AsfcCertificateState { none, pending, issued, rejected }
 
 class AsfcCertificateStatus {
-  const AsfcCertificateStatus({
-    required this.state,
-    this.application,
-  });
+  const AsfcCertificateStatus({required this.state, this.application});
 
   final AsfcCertificateState state;
   final Map<String, dynamic>? application;
@@ -147,10 +158,12 @@ class AsfcCertificateStatus {
   String? get fullName => _stringValue(application?['fullName']);
   String? get level => _stringValue(application?['level']);
   String? get country => _stringValue(application?['country']);
-  String? get sexName => _stringValue(application?['sexName']) ??
+  String? get sexName =>
+      _stringValue(application?['sexName']) ??
       _stringValue(application?['sex']);
   String? get birthday => _stringValue(application?['birthday']);
-  String? get cityName => _stringValue(application?['cityName']) ??
+  String? get cityName =>
+      _stringValue(application?['cityName']) ??
       _stringValue(application?['area']);
   String? get licenseStatusName =>
       _stringValue(application?['licenseStatusName']);
@@ -262,7 +275,8 @@ class AsfcAuthService extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get profile =>
       _profile == null ? null : Map.unmodifiable(_profile!);
-  Map<String, dynamic>? get certificateApplication => _certificateApplication == null
+  Map<String, dynamic>? get certificateApplication =>
+      _certificateApplication == null
       ? null
       : Map.unmodifiable(_certificateApplication!);
   List<AsfcCoach> get certificateCoaches =>
@@ -284,10 +298,11 @@ class AsfcAuthService extends ChangeNotifier {
       state: hasCertificate
           ? AsfcCertificateState.issued
           : isRejected
-              ? AsfcCertificateState.rejected
-              : AsfcCertificateState.pending,
+          ? AsfcCertificateState.rejected
+          : AsfcCertificateState.pending,
     );
   }
+
   static String? _stringValue(Object? value) {
     if (value is String && value.trim().isNotEmpty) return value.trim();
     if (value is num) return value.toString();
@@ -372,7 +387,8 @@ class AsfcAuthService extends ChangeNotifier {
     bool force = false,
   }) async {
     if (!isSignedIn) return null;
-    if (_certificateInfoLoading || (!force && _certificateApplication != null)) {
+    if (_certificateInfoLoading ||
+        (!force && _certificateApplication != null)) {
       return certificateApplication;
     }
 
@@ -405,9 +421,7 @@ class AsfcAuthService extends ChangeNotifier {
     }
   }
 
-  Future<List<AsfcCoach>> loadCertificateCoaches({
-    bool force = false,
-  }) async {
+  Future<List<AsfcCoach>> loadCertificateCoaches({bool force = false}) async {
     if (!isSignedIn) return const <AsfcCoach>[];
     if (_certificateCoachesLoading || (!force && _certificateCoaches != null)) {
       return certificateCoaches;
@@ -452,10 +466,12 @@ class AsfcAuthService extends ChangeNotifier {
     _agenciesLoading = true;
     notifyListeners();
     try {
-      final response = await http.get(
-        _agenciesUri,
-        headers: {'Accept': 'application/json', 'token': _token!},
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            _agenciesUri,
+            headers: {'Accept': 'application/json', 'token': _token!},
+          )
+          .timeout(const Duration(seconds: 15));
       final decoded = _decodeMap(response.body);
       final data = decoded?['data'];
       final success = _isSuccessful(response.statusCode, decoded);
@@ -486,12 +502,14 @@ class AsfcAuthService extends ChangeNotifier {
     _flightRecordsLoading = true;
     notifyListeners();
     try {
-      final response = await http.get(
-        _flightRecordListUri.replace(
-          queryParameters: {'page': '$page', 'type': 'CUSTOMER'},
-        ),
-        headers: {'Accept': 'application/json', 'token': _token!},
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            _flightRecordListUri.replace(
+              queryParameters: {'page': '$page', 'type': 'CUSTOMER'},
+            ),
+            headers: {'Accept': 'application/json', 'token': _token!},
+          )
+          .timeout(const Duration(seconds: 15));
       final decoded = _decodeMap(response.body);
       final data = decoded?['data'];
       final rows = data is Map<String, dynamic> ? data['rows'] : data;
@@ -514,10 +532,12 @@ class AsfcAuthService extends ChangeNotifier {
   Future<AsfcFlightRecord?> loadFlightRecordDetail(int id) async {
     if (!isSignedIn || id <= 0) return null;
     try {
-      final response = await http.get(
-        _flightRecordDetailUri.replace(queryParameters: {'id': '$id'}),
-        headers: {'Accept': 'application/json', 'token': _token!},
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            _flightRecordDetailUri.replace(queryParameters: {'id': '$id'}),
+            headers: {'Accept': 'application/json', 'token': _token!},
+          )
+          .timeout(const Duration(seconds: 15));
       final decoded = _decodeMap(response.body);
       final data = decoded?['data'];
       if (_isSuccessful(response.statusCode, decoded) &&
@@ -585,15 +605,17 @@ class AsfcAuthService extends ChangeNotifier {
         'coachId': coachId,
       };
       if (id != null && id > 0) payload['id'] = id;
-      final response = await http.post(
-        _flightRecordSaveUri,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json; charset=utf-8',
-          'token': _token!,
-        },
-        body: jsonEncode(payload),
-      ).timeout(const Duration(seconds: 20));
+      final response = await http
+          .post(
+            _flightRecordSaveUri,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json; charset=utf-8',
+              'token': _token!,
+            },
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 20));
       final decoded = _decodeMap(response.body);
       final success = _isSuccessful(response.statusCode, decoded);
       if (!success) {
@@ -620,10 +642,12 @@ class AsfcAuthService extends ChangeNotifier {
   Future<bool> deleteFlightRecord(int id) async {
     if (!isSignedIn || id <= 0) return false;
     try {
-      final response = await http.get(
-        _flightRecordDeleteUri.replace(queryParameters: {'id': '$id'}),
-        headers: {'Accept': 'application/json', 'token': _token!},
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            _flightRecordDeleteUri.replace(queryParameters: {'id': '$id'}),
+            headers: {'Accept': 'application/json', 'token': _token!},
+          )
+          .timeout(const Duration(seconds: 15));
       final decoded = _decodeMap(response.body);
       final success = _isSuccessful(response.statusCode, decoded);
       if (success) {
@@ -879,11 +903,7 @@ class AsfcAuthService extends ChangeNotifier {
     try {
       final request = http.MultipartRequest('POST', _certificateImageUploadUri)
         ..files.add(
-          http.MultipartFile.fromBytes(
-            'filedata',
-            bytes,
-            filename: filename,
-          ),
+          http.MultipartFile.fromBytes('filedata', bytes, filename: filename),
         );
       final response = await request.send().timeout(
         const Duration(seconds: 30),
@@ -895,13 +915,15 @@ class AsfcAuthService extends ChangeNotifier {
           response.statusCode >= 200 &&
           response.statusCode < 300 &&
           (status == null || status == 'success' || status == '200');
-      final url = decoded?['url'] ??
+      final url =
+          decoded?['url'] ??
           (decoded?['data'] is Map<String, dynamic>
               ? (decoded!['data'] as Map<String, dynamic>)['url']
               : null);
       final normalizedUrl = url is String ? url.trim() : '';
       final parsedUrl = Uri.tryParse(normalizedUrl);
-      final allowedUrl = normalizedUrl.startsWith('/') ||
+      final allowedUrl =
+          normalizedUrl.startsWith('/') ||
           (parsedUrl != null &&
               parsedUrl.scheme == 'https' &&
               parsedUrl.host == 'upload.57fly.com');

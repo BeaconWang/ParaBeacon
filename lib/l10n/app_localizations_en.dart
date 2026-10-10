@@ -478,6 +478,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certificateValidity => 'Validity period';
 
   @override
+  String get certificateIssueDate => 'Issue date';
+
+  @override
+  String get certificatePhoto => 'Photo';
+
+  @override
+  String get certificateUpgrade => 'License upgrade';
+
+  @override
+  String get certificateSignInList => 'Sign-in list';
+
+  @override
+  String get certificateSignInDate => 'Sign-in date';
+
+  @override
+  String get certificateReviewUnit => 'Reviewer';
+
+  @override
+  String get certificateNoSignIns => 'No sign-in records';
+
+  @override
   String get asfcFlightRecords => 'ASFC flight records';
 
   @override

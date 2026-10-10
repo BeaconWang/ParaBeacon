@@ -1004,6 +1004,48 @@ abstract class AppLocalizations {
   /// **'Validity period'**
   String get certificateValidity;
 
+  /// No description provided for @certificateIssueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue date'**
+  String get certificateIssueDate;
+
+  /// No description provided for @certificatePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get certificatePhoto;
+
+  /// No description provided for @certificateUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'License upgrade'**
+  String get certificateUpgrade;
+
+  /// No description provided for @certificateSignInList.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in list'**
+  String get certificateSignInList;
+
+  /// No description provided for @certificateSignInDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in date'**
+  String get certificateSignInDate;
+
+  /// No description provided for @certificateReviewUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewer'**
+  String get certificateReviewUnit;
+
+  /// No description provided for @certificateNoSignIns.
+  ///
+  /// In en, this message translates to:
+  /// **'No sign-in records'**
+  String get certificateNoSignIns;
+
   /// No description provided for @asfcFlightRecords.
   ///
   /// In en, this message translates to:

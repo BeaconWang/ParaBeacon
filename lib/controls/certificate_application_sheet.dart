@@ -4,19 +4,24 @@ import 'package:flutter/material.dart';
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
 
-Future<void> showCertificateApplicationSheet(BuildContext context) {
+Future<void> showCertificateApplicationSheet(
+  BuildContext context, {
+  bool upgrade = false,
+}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (_) => const _CertificateApplicationSheet(),
+    builder: (_) => _CertificateApplicationSheet(upgrade: upgrade),
   );
 }
 
 class _CertificateApplicationSheet extends StatefulWidget {
-  const _CertificateApplicationSheet();
+  const _CertificateApplicationSheet({this.upgrade = false});
+
+  final bool upgrade;
 
   @override
   State<_CertificateApplicationSheet> createState() =>
@@ -127,35 +132,79 @@ class _CertificateApplicationSheetState
           ['user', 'fullName'],
         ],
       ),
-      'birthday': value('birthday', profilePaths: const [['user', 'birthday']]),
-      'country': value('country', profilePaths: const [['user', 'country']]),
+      'birthday': value(
+        'birthday',
+        profilePaths: const [
+          ['user', 'birthday'],
+        ],
+      ),
+      'country': value(
+        'country',
+        profilePaths: const [
+          ['user', 'country'],
+        ],
+      ),
       'ethnicityCode': value(
         'ethnicityCode',
-        profilePaths: const [['user', 'ethnicityCode'], ['user', 'nation']],
+        profilePaths: const [
+          ['user', 'ethnicityCode'],
+          ['user', 'nation'],
+        ],
       ),
       'credentialsNumber': value(
         'credentialsNumber',
-        profilePaths: const [['user', 'credentialsNumber'], ['user', 'idCard']],
+        profilePaths: const [
+          ['user', 'credentialsNumber'],
+          ['user', 'idCard'],
+        ],
       ),
-      'mobile': value('mobile', profilePaths: const [['user', 'mobile']]),
-      'email': value('email', profilePaths: const [['user', 'email']]),
-      'address': value('address', profilePaths: const [['user', 'address']]),
-      'area': value('area', profilePaths: const [['user', 'area']]),
+      'mobile': value(
+        'mobile',
+        profilePaths: const [
+          ['user', 'mobile'],
+        ],
+      ),
+      'email': value(
+        'email',
+        profilePaths: const [
+          ['user', 'email'],
+        ],
+      ),
+      'address': value(
+        'address',
+        profilePaths: const [
+          ['user', 'address'],
+        ],
+      ),
+      'area': value(
+        'area',
+        profilePaths: const [
+          ['user', 'area'],
+        ],
+      ),
       'agencyName': value(
         'agencyName',
-        profilePaths: const [['user', 'agencyName']],
+        profilePaths: const [
+          ['user', 'agencyName'],
+        ],
       ),
       'urgentContactName': value(
         'urgentContactName',
-        profilePaths: const [['user', 'urgentContactName']],
+        profilePaths: const [
+          ['user', 'urgentContactName'],
+        ],
       ),
       'urgentContactPhone': value(
         'urgentContactPhone',
-        profilePaths: const [['user', 'urgentContactPhone']],
+        profilePaths: const [
+          ['user', 'urgentContactPhone'],
+        ],
       ),
       'urgentBloodType': value(
         'urgentBloodType',
-        profilePaths: const [['user', 'urgentBloodType']],
+        profilePaths: const [
+          ['user', 'urgentBloodType'],
+        ],
       ),
     };
     for (final entry in values.entries) {
@@ -164,7 +213,10 @@ class _CertificateApplicationSheetState
 
     final sex = value(
       'sex',
-      profilePaths: const [['user', 'gender'], ['user', 'sex']],
+      profilePaths: const [
+        ['user', 'gender'],
+        ['user', 'sex'],
+      ],
     );
     if (sex == 'MAN' || sex == '男') {
       _sex = 'MAN';
@@ -182,7 +234,8 @@ class _CertificateApplicationSheetState
     _licensePhoto = _safeImageValue(value('licensePhoto'));
     _groupPhoto = _safeImageValue(value('groupPhoto'));
     final coachId = int.tryParse(value('coachId')) ?? 0;
-    if (coachId > 0) _selectedCoach = AsfcCoach(id: coachId, name: value('coachName'));
+    if (coachId > 0)
+      _selectedCoach = AsfcCoach(id: coachId, name: value('coachName'));
   }
 
   String? _profileValue(Map<String, dynamic>? profile, List<String> path) {
@@ -204,7 +257,9 @@ class _CertificateApplicationSheetState
     if (value.isEmpty) return null;
     final uri = Uri.tryParse(value);
     if (value.startsWith('/') ||
-        (uri != null && uri.scheme == 'https' && uri.host == 'upload.57fly.com')) {
+        (uri != null &&
+            uri.scheme == 'https' &&
+            uri.host == 'upload.57fly.com')) {
       return value;
     }
     return null;
@@ -222,7 +277,9 @@ class _CertificateApplicationSheetState
   }
 
   String? _required(AppLocalizations l10n, String? value) {
-    return value == null || value.trim().isEmpty ? l10n.certificateRequired : null;
+    return value == null || value.trim().isEmpty
+        ? l10n.certificateRequired
+        : null;
   }
 
   Future<void> _pickPhoto({required bool groupPhoto}) async {
@@ -342,7 +399,9 @@ class _CertificateApplicationSheetState
       await Future<void>.delayed(const Duration(milliseconds: 700));
       if (mounted) Navigator.of(context).pop();
     } else {
-      _showMessage(_errorText(AppLocalizations.of(context), AsfcAuthService.instance));
+      _showMessage(
+        _errorText(AppLocalizations.of(context), AsfcAuthService.instance),
+      );
     }
   }
 
@@ -377,7 +436,10 @@ class _CertificateApplicationSheetState
     return DropdownButtonFormField<AsfcCoach>(
       initialValue: selected,
       isExpanded: true,
-      decoration: _decoration(l10n.certificateCoach, Icons.person_search_outlined),
+      decoration: _decoration(
+        l10n.certificateCoach,
+        Icons.person_search_outlined,
+      ),
       hint: Text(
         _loadingCoaches
             ? l10n.certificateCoachesLoading
@@ -402,12 +464,16 @@ class _CertificateApplicationSheetState
       if (coach.agencyName.isNotEmpty) coach.agencyName,
       if (coach.level.isNotEmpty) coach.level,
     ];
-    return details.isEmpty ? coach.name : '${coach.name} · ${details.join(' / ')}';
+    return details.isEmpty
+        ? coach.name
+        : '${coach.name} · ${details.join(' / ')}';
   }
 
   Widget _photoTile({required bool groupPhoto}) {
     final l10n = AppLocalizations.of(context);
-    final uploading = groupPhoto ? _uploadingGroupPhoto : _uploadingLicensePhoto;
+    final uploading = groupPhoto
+        ? _uploadingGroupPhoto
+        : _uploadingLicensePhoto;
     final uploaded = groupPhoto ? _groupPhoto != null : _licensePhoto != null;
     return OutlinedButton.icon(
       onPressed: uploading ? null : () => _pickPhoto(groupPhoto: groupPhoto),
@@ -441,10 +507,19 @@ class _CertificateApplicationSheetState
                 children: [
                   IconButton(
                     tooltip: l10n.close,
-                    onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+                    onPressed: _submitting
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close),
                   ),
-                  Expanded(child: Text(l10n.certificateApplication, style: theme.textTheme.titleLarge)),
+                  Expanded(
+                    child: Text(
+                      widget.upgrade
+                          ? l10n.certificateUpgrade
+                          : l10n.certificateApplication,
+                      style: theme.textTheme.titleLarge,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -455,64 +530,165 @@ class _CertificateApplicationSheetState
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                   children: [
-                    Text(l10n.certificateApplicationSubtitle, style: theme.textTheme.bodyMedium),
+                    Text(
+                      l10n.certificateApplicationSubtitle,
+                      style: theme.textTheme.bodyMedium,
+                    ),
                     if (_loadingExistingData || _loadingCoaches) ...[
                       const SizedBox(height: 12),
                       const LinearProgressIndicator(),
                     ],
                     const SizedBox(height: 20),
-                    _textField(l10n, 'fullName', l10n.certificateFullName, Icons.person_outline),
+                    _textField(
+                      l10n,
+                      'fullName',
+                      l10n.certificateFullName,
+                      Icons.person_outline,
+                    ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       initialValue: _sex,
-                      decoration: _decoration(l10n.certificateGender, Icons.wc_outlined),
+                      decoration: _decoration(
+                        l10n.certificateGender,
+                        Icons.wc_outlined,
+                      ),
                       items: [
-                        DropdownMenuItem(value: 'MAN', child: Text(l10n.certificateMale)),
-                        DropdownMenuItem(value: 'WOMAN', child: Text(l10n.certificateFemale)),
+                        DropdownMenuItem(
+                          value: 'MAN',
+                          child: Text(l10n.certificateMale),
+                        ),
+                        DropdownMenuItem(
+                          value: 'WOMAN',
+                          child: Text(l10n.certificateFemale),
+                        ),
                       ],
-                      onChanged: _submitting ? null : (value) => setState(() => _sex = value ?? 'MAN'),
+                      onChanged: _submitting
+                          ? null
+                          : (value) => setState(() => _sex = value ?? 'MAN'),
                     ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'birthday', l10n.certificateBirthday, Icons.calendar_today_outlined, hintText: 'YYYY-MM-DD'),
+                    _textField(
+                      l10n,
+                      'birthday',
+                      l10n.certificateBirthday,
+                      Icons.calendar_today_outlined,
+                      hintText: 'YYYY-MM-DD',
+                    ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'country', l10n.certificateCountry, Icons.flag_outlined),
+                    _textField(
+                      l10n,
+                      'country',
+                      l10n.certificateCountry,
+                      Icons.flag_outlined,
+                    ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'ethnicityCode', l10n.certificateEthnicity, Icons.groups_outlined),
+                    _textField(
+                      l10n,
+                      'ethnicityCode',
+                      l10n.certificateEthnicity,
+                      Icons.groups_outlined,
+                    ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'credentialsNumber', l10n.certificateIdNumber, Icons.badge_outlined, keyboardType: TextInputType.number),
+                    _textField(
+                      l10n,
+                      'credentialsNumber',
+                      l10n.certificateIdNumber,
+                      Icons.badge_outlined,
+                      keyboardType: TextInputType.number,
+                    ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'mobile', l10n.certificateMobile, Icons.phone_outlined, keyboardType: TextInputType.phone),
+                    _textField(
+                      l10n,
+                      'mobile',
+                      l10n.certificateMobile,
+                      Icons.phone_outlined,
+                      keyboardType: TextInputType.phone,
+                    ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'email', l10n.certificateEmail, Icons.email_outlined, keyboardType: TextInputType.emailAddress),
+                    _textField(
+                      l10n,
+                      'email',
+                      l10n.certificateEmail,
+                      Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'address', l10n.certificateAddress, Icons.home_outlined),
+                    _textField(
+                      l10n,
+                      'address',
+                      l10n.certificateAddress,
+                      Icons.home_outlined,
+                    ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'area', l10n.certificateArea, Icons.location_on_outlined),
+                    _textField(
+                      l10n,
+                      'area',
+                      l10n.certificateArea,
+                      Icons.location_on_outlined,
+                    ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'agencyName', l10n.certificateAgency, Icons.school_outlined),
+                    _textField(
+                      l10n,
+                      'agencyName',
+                      l10n.certificateAgency,
+                      Icons.school_outlined,
+                    ),
                     const SizedBox(height: 12),
                     _coachField(l10n),
                     const SizedBox(height: 20),
-                    Text(l10n.certificateDocuments, style: theme.textTheme.titleMedium),
+                    Text(
+                      l10n.certificateDocuments,
+                      style: theme.textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
                     _photoTile(groupPhoto: false),
                     const SizedBox(height: 8),
                     _photoTile(groupPhoto: true),
                     const SizedBox(height: 20),
-                    Text(l10n.certificateEmergencyContact, style: theme.textTheme.titleMedium),
+                    Text(
+                      l10n.certificateEmergencyContact,
+                      style: theme.textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
-                    _textField(l10n, 'urgentContactName', l10n.certificateContactName, Icons.contact_phone_outlined),
+                    _textField(
+                      l10n,
+                      'urgentContactName',
+                      l10n.certificateContactName,
+                      Icons.contact_phone_outlined,
+                    ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'urgentContactPhone', l10n.certificateContactPhone, Icons.phone_callback_outlined, keyboardType: TextInputType.phone),
+                    _textField(
+                      l10n,
+                      'urgentContactPhone',
+                      l10n.certificateContactPhone,
+                      Icons.phone_callback_outlined,
+                      keyboardType: TextInputType.phone,
+                    ),
                     const SizedBox(height: 12),
-                    _textField(l10n, 'urgentBloodType', l10n.certificateBloodType, Icons.bloodtype_outlined),
+                    _textField(
+                      l10n,
+                      'urgentBloodType',
+                      l10n.certificateBloodType,
+                      Icons.bloodtype_outlined,
+                    ),
                     const SizedBox(height: 24),
                     FilledButton.icon(
-                      onPressed: _submitting || _uploadingLicensePhoto || _uploadingGroupPhoto ? null : _submit,
+                      onPressed:
+                          _submitting ||
+                              _uploadingLicensePhoto ||
+                              _uploadingGroupPhoto
+                          ? null
+                          : _submit,
                       icon: _submitting
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Icon(Icons.send_outlined),
-                      label: Text(_submitting ? l10n.submitting : l10n.submitApplication),
+                      label: Text(
+                        _submitting ? l10n.submitting : l10n.submitApplication,
+                      ),
                     ),
                   ],
                 ),

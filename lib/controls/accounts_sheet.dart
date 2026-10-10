@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import 'xcontest_login_sheet.dart';
 import 'certificate_application_sheet.dart';
 import 'asfc_flight_records_sheet.dart';
+import 'asfc_certificate_sheets.dart';
 
 Future<void> showAccountsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -194,10 +195,12 @@ class _CertificateStatusPanel extends StatelessWidget {
   const _CertificateStatusPanel({
     required this.auth,
     required this.onApply,
+    required this.onDetails,
   });
 
   final AsfcAuthService auth;
   final VoidCallback onApply;
+  final VoidCallback onDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +218,7 @@ class _CertificateStatusPanel extends StatelessWidget {
     final certificate = auth.certificateStatus;
     switch (certificate.state) {
       case AsfcCertificateState.issued:
-        return _issuedCard(context, theme, l10n, certificate);
+        return _issuedCard(context, theme, l10n, certificate, onDetails);
       case AsfcCertificateState.pending:
         return Card(
           color: theme.colorScheme.secondaryContainer,
@@ -243,6 +246,7 @@ class _CertificateStatusPanel extends StatelessWidget {
     ThemeData theme,
     AppLocalizations l10n,
     AsfcCertificateStatus certificate,
+    VoidCallback onDetails,
   ) {
     final rows = <(String, String)>[
       if (certificate.fullName != null)
@@ -263,37 +267,67 @@ class _CertificateStatusPanel extends StatelessWidget {
         ),
     ];
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onDetails,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Icon(Icons.workspace_premium, color: theme.colorScheme.primary),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    l10n.certificateDetails,
-                    style: theme.textTheme.titleMedium,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.workspace_premium,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          l10n.certificateDetails,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                      Text(
+                        l10n.certificateIssued,
+                        style: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Text(
-                  l10n.certificateIssued,
-                  style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            for (final row in rows)
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(row.$1),
-                trailing: Text(row.$2),
+                  for (final row in rows.take(4))
+                    ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(row.$1),
+                      trailing: Text(row.$2),
+                    ),
+                ],
               ),
+            ),
+            Container(
+              color: theme.colorScheme.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      certificate.level ?? '—',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: theme.colorScheme.onPrimary),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -621,12 +655,15 @@ class _AsfcLoginSheetState extends State<_AsfcLoginSheet> {
                                         ),
                                         IconButton(
                                           tooltip: l10n.asfcRefreshProfile,
-                                          onPressed: auth.isProfileLoading ||
+                                          onPressed:
+                                              auth.isProfileLoading ||
                                                   auth.isCertificateInfoLoading
                                               ? null
                                               : () async {
                                                   await Future.wait([
-                                                    auth.loadProfile(force: true),
+                                                    auth.loadProfile(
+                                                      force: true,
+                                                    ),
                                                     auth.loadCertificateApplication(
                                                       force: true,
                                                     ),
@@ -713,14 +750,20 @@ class _AsfcLoginSheetState extends State<_AsfcLoginSheet> {
                                 const SizedBox(height: 20),
                                 _CertificateStatusPanel(
                                   auth: auth,
-                                  onApply: () => showCertificateApplicationSheet(context),
+                                  onApply: () =>
+                                      showCertificateApplicationSheet(context),
+                                  onDetails: () =>
+                                      showAsfcCertificateDetailsSheet(context),
                                 ),
                                 const SizedBox(height: 20),
                                 FilledButton.icon(
                                   onPressed: auth.isLoading
                                       ? null
-                                      : () => showAsfcFlightRecordsSheet(context),
-                                  icon: const Icon(Icons.flight_takeoff_outlined),
+                                      : () =>
+                                            showAsfcFlightRecordsSheet(context),
+                                  icon: const Icon(
+                                    Icons.flight_takeoff_outlined,
+                                  ),
                                   label: Text(l10n.asfcFlightRecords),
                                 ),
                                 const SizedBox(height: 12),

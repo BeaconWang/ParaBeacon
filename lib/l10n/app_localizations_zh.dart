@@ -440,6 +440,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get certificateDetails => '证书详情';
 
   @override
+  String get certificateDetailsView => '详情';
+
+  @override
+  String get certificateCardView => '卡片';
+
+  @override
+  String get certificateSwipeHint => '左右滑动切换视图';
+
+  @override
+  String get certificateCardTitle => '航空运动飞行员执照';
+
+  @override
   String get certificateIssued => '已持有';
 
   @override

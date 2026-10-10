@@ -453,6 +453,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certificateDetails => 'Certificate details';
 
   @override
+  String get certificateDetailsView => 'Details';
+
+  @override
+  String get certificateCardView => 'Card';
+
+  @override
+  String get certificateSwipeHint => 'Swipe left or right to switch views';
+
+  @override
+  String get certificateCardTitle => 'Aviation Sports Pilot Certificate';
+
+  @override
   String get certificateIssued => 'Issued';
 
   @override

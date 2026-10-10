@@ -4,6 +4,7 @@ import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
 import 'asfc_flight_records_sheet.dart';
 import 'certificate_application_sheet.dart';
+import 'desktop_scrolling.dart';
 
 Future<void> showAsfcCertificateDetailsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -30,8 +31,24 @@ Future<void> showAsfcCertificateSigninsSheet(
   );
 }
 
-class _AsfcCertificateDetailsSheet extends StatelessWidget {
+class _AsfcCertificateDetailsSheet extends StatefulWidget {
   const _AsfcCertificateDetailsSheet();
+
+  @override
+  State<_AsfcCertificateDetailsSheet> createState() =>
+      _AsfcCertificateDetailsSheetState();
+}
+
+class _AsfcCertificateDetailsSheetState
+    extends State<_AsfcCertificateDetailsSheet> {
+  final PageController _pageController = PageController();
+  int _page = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   String? _value(Map<String, dynamic> data, List<String> keys) {
     for (final key in keys) {
@@ -49,6 +66,86 @@ class _AsfcCertificateDetailsSheet extends StatelessWidget {
         title,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
           color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeSelector(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        children: [
+          _buildModeButton(
+            title: l10n.certificateDetailsView,
+            icon: Icons.list_alt_outlined,
+            index: 0,
+          ),
+          const SizedBox(width: 8),
+          _buildModeButton(
+            title: l10n.certificateCardView,
+            icon: Icons.badge_outlined,
+            index: 1,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeButton({
+    required String title,
+    required IconData icon,
+    required int index,
+  }) {
+    final theme = Theme.of(context);
+    final selected = _page == index;
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: title,
+        child: Material(
+          color: selected
+              ? theme.colorScheme.primaryContainer
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOut,
+            ),
+            child: SizedBox(
+              height: 40,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: selected
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: selected
+                            ? theme.colorScheme.onPrimaryContainer
+                            : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: selected ? FontWeight.w600 : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -130,71 +227,498 @@ class _AsfcCertificateDetailsSheet extends StatelessWidget {
           children: [
             _CertificateSheetHeader(title: l10n.certificateDetails),
             const Divider(height: 1),
+            _buildModeSelector(l10n),
+            const Divider(height: 1),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.only(bottom: 20),
-                children: [
-                  _CertificateDetailRow(
-                    label: l10n.certificatePhoto,
-                    value: '',
-                    trailing: photoUrl == null
-                        ? CircleAvatar(
-                            backgroundColor: theme.colorScheme.primaryContainer,
-                            child: Icon(
-                              Icons.person,
-                              color: theme.colorScheme.onPrimaryContainer,
+              child: ScrollConfiguration(
+                behavior: const MouseDragScrollBehavior(),
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) => setState(() => _page = index),
+                  children: [
+                    ListView(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      children: [
+                        _CertificateDetailRow(
+                          label: l10n.certificatePhoto,
+                          value: '',
+                          trailing: photoUrl == null
+                              ? CircleAvatar(
+                                  backgroundColor:
+                                      theme.colorScheme.primaryContainer,
+                                  child: Icon(
+                                    Icons.person,
+                                    color: theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                )
+                              : CircleAvatar(
+                                  backgroundImage: NetworkImage(photoUrl),
+                                ),
+                          height: 72,
+                        ),
+                        for (final row in details)
+                          if (row.$2 != null)
+                            _CertificateDetailRow(
+                              label: row.$1,
+                              value: row.$2!,
                             ),
-                          )
-                        : CircleAvatar(backgroundImage: NetworkImage(photoUrl)),
-                    height: 72,
-                  ),
-                  for (final row in details)
-                    if (row.$2 != null)
-                      _CertificateDetailRow(label: row.$1, value: row.$2!),
-                  _CertificateDetailRow(
-                    label: l10n.certificateLevel,
-                    value: level,
-                    trailing: Text('${l10n.certificateSportCode}: $sportCode'),
-                  ),
-                  if (_value(certificate, ['groupPhoto']) != null) ...[
-                    _sectionTitle(context, l10n.certificateDocuments),
-                    _CertificateDocumentRow(
-                      label: l10n.groupPhoto,
-                      imageUrl: _value(certificate, ['groupPhoto'])!,
+                        _CertificateDetailRow(
+                          label: l10n.certificateLevel,
+                          value: level,
+                          trailing: Text(
+                            '${l10n.certificateSportCode}: $sportCode',
+                          ),
+                        ),
+                        if (_value(certificate, ['groupPhoto']) != null) ...[
+                          _sectionTitle(context, l10n.certificateDocuments),
+                          _CertificateDocumentRow(
+                            label: l10n.groupPhoto,
+                            imageUrl: _value(certificate, ['groupPhoto'])!,
+                          ),
+                        ],
+                        if (emergency.any((row) => row.$2 != null)) ...[
+                          _sectionTitle(
+                            context,
+                            l10n.certificateEmergencyContact,
+                          ),
+                          for (final row in emergency)
+                            if (row.$2 != null)
+                              _CertificateDetailRow(
+                                label: row.$1,
+                                value: row.$2!,
+                              ),
+                        ],
+                        const SizedBox(height: 12),
+                        _CertificateActionRow(
+                          icon: Icons.flight_takeoff_outlined,
+                          title: l10n.asfcFlightRecords,
+                          onTap: () => showAsfcFlightRecordsSheet(context),
+                        ),
+                        _CertificateActionRow(
+                          icon: Icons.upgrade,
+                          title: l10n.certificateUpgrade,
+                          onTap: () => showCertificateApplicationSheet(
+                            context,
+                            upgrade: true,
+                          ),
+                        ),
+                        _CertificateActionRow(
+                          icon: Icons.list_alt_outlined,
+                          title: l10n.certificateSignInList,
+                          onTap: () => showAsfcCertificateSigninsSheet(
+                            context,
+                            sportCode: sportCode,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 24,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 760),
+                              child: _CertificateCardPreview(
+                                photoUrl: photoUrl,
+                                title: l10n.certificateCardTitle,
+                                fullName:
+                                    status.fullName ??
+                                    _value(certificate, ['fullName']),
+                                gender:
+                                    status.sexName ??
+                                    _value(certificate, ['sexName', 'sex']),
+                                birthday:
+                                    status.birthday ??
+                                    _value(certificate, ['birthday']),
+                                country: _value(certificate, ['country']),
+                                licenseNo:
+                                    status.licenseNo ??
+                                    _value(certificate, ['licenseNo']),
+                                validity: validity.isEmpty
+                                    ? null
+                                    : validity.join(' – '),
+                                validityStatus: status.licenseStatusName,
+                                level: level,
+                                sportCode: sportCode,
+                                l10n: l10n,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              l10n.certificateSwipeHint,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
-                  if (emergency.any((row) => row.$2 != null)) ...[
-                    _sectionTitle(context, l10n.certificateEmergencyContact),
-                    for (final row in emergency)
-                      if (row.$2 != null)
-                        _CertificateDetailRow(label: row.$1, value: row.$2!),
-                  ],
-                  const SizedBox(height: 12),
-                  _CertificateActionRow(
-                    icon: Icons.flight_takeoff_outlined,
-                    title: l10n.asfcFlightRecords,
-                    onTap: () => showAsfcFlightRecordsSheet(context),
-                  ),
-                  _CertificateActionRow(
-                    icon: Icons.upgrade,
-                    title: l10n.certificateUpgrade,
-                    onTap: () =>
-                        showCertificateApplicationSheet(context, upgrade: true),
-                  ),
-                  _CertificateActionRow(
-                    icon: Icons.list_alt_outlined,
-                    title: l10n.certificateSignInList,
-                    onTap: () => showAsfcCertificateSigninsSheet(
-                      context,
-                      sportCode: sportCode,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CertificateCardPreview extends StatelessWidget {
+  const _CertificateCardPreview({
+    required this.photoUrl,
+    required this.title,
+    required this.fullName,
+    required this.gender,
+    required this.birthday,
+    required this.country,
+    required this.licenseNo,
+    required this.validity,
+    required this.validityStatus,
+    required this.level,
+    required this.sportCode,
+    required this.l10n,
+  });
+
+  final String? photoUrl;
+  final String title;
+  final String? fullName;
+  final String? gender;
+  final String? birthday;
+  final String? country;
+  final String? licenseNo;
+  final String? validity;
+  final String? validityStatus;
+  final String level;
+  final String sportCode;
+  final AppLocalizations l10n;
+
+  Widget _field(
+    String label,
+    String? value,
+    double labelFontSize,
+    double valueFontSize, {
+    bool emphasized = false,
+  }) {
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '$label  ',
+            style: TextStyle(
+              color: const Color(0xFF737B83),
+              fontSize: labelFontSize,
+            ),
+          ),
+          TextSpan(
+            text: value?.isNotEmpty == true ? value : '—',
+            style: TextStyle(
+              color: const Color(0xFF30363B),
+              fontSize: valueFontSize,
+              fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final pad = width * 0.032;
+        final labelFontSize = (width * 0.023).clamp(8.0, 17.0).toDouble();
+        final valueFontSize = (width * 0.031).clamp(10.0, 23.0).toDouble();
+        final smallFontSize = (width * 0.019).clamp(7.0, 14.0).toDouble();
+        final portraitWidth = width * 0.16;
+        final portraitHeight = width / 2.02 * 0.46;
+        final imageUri = Uri.tryParse(photoUrl ?? '');
+        final portrait =
+            imageUri != null &&
+                (imageUri.scheme == 'http' || imageUri.scheme == 'https')
+            ? Image.network(
+                photoUrl!,
+                width: portraitWidth,
+                height: portraitHeight,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(Icons.person_outline),
+              )
+            : const Center(child: Icon(Icons.person_outline));
+        final status = validityStatus?.trim();
+
+        return AspectRatio(
+          aspectRatio: 2.02,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.16),
+                  blurRadius: 22,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: LayoutBuilder(
+                builder: (context, cardConstraints) {
+                  final cardWidth = cardConstraints.maxWidth;
+                  final cardHeight = cardConstraints.maxHeight;
+                  return Stack(
+                    children: [
+                      const Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Colors.white, Color(0xFFF5FAFC)],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: cardWidth * 0.08,
+                        top: cardHeight * 0.2,
+                        child: IgnorePointer(
+                          child: Opacity(
+                            opacity: 0.055,
+                            child: Text(
+                              'ASFC',
+                              style: TextStyle(
+                                color: const Color(0xFF168BC7),
+                                fontSize: cardHeight * 0.74,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          pad,
+                          pad * 0.7,
+                          pad,
+                          cardHeight * 0.19 + pad * 0.35,
+                        ),
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              height: cardHeight * 0.26,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.flight_takeoff,
+                                    color: const Color(0xFF168BC7),
+                                    size: cardHeight * 0.14,
+                                  ),
+                                  SizedBox(width: pad * 0.25),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'ASFC',
+                                        style: TextStyle(
+                                          color: const Color(0xFF176CA8),
+                                          fontSize: valueFontSize,
+                                          fontWeight: FontWeight.w800,
+                                          height: 1,
+                                        ),
+                                      ),
+                                      Text(
+                                        'AERO SPORTS FEDERATION OF CHINA',
+                                        style: TextStyle(
+                                          color: const Color(0xFF4282A9),
+                                          fontSize: smallFontSize * 0.66,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(width: pad * 0.7),
+                                  Expanded(
+                                    child: Center(
+                                      child: Text(
+                                        title,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: const Color(0xFF176CA8),
+                                          fontSize: (width * 0.034)
+                                              .clamp(11.0, 25.0)
+                                              .toDouble(),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  if (status != null && status.isNotEmpty) ...[
+                                    SizedBox(width: pad * 0.7),
+                                    Text(
+                                      status,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: const Color(0xFF168BC7),
+                                        fontSize: labelFontSize,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: cardWidth * 0.16,
+                                    height: cardHeight * 0.46,
+                                    clipBehavior: Clip.antiAlias,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE6EEF2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: portrait,
+                                  ),
+                                  SizedBox(width: pad * 0.7),
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _field(
+                                          l10n.certificateFullName,
+                                          fullName,
+                                          labelFontSize,
+                                          valueFontSize,
+                                          emphasized: true,
+                                        ),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: _field(
+                                                l10n.certificateGender,
+                                                gender,
+                                                labelFontSize,
+                                                valueFontSize,
+                                              ),
+                                            ),
+                                            SizedBox(width: pad * 0.4),
+                                            Expanded(
+                                              child: _field(
+                                                l10n.certificateCountry,
+                                                country,
+                                                labelFontSize,
+                                                valueFontSize,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        _field(
+                                          l10n.certificateBirthday,
+                                          birthday,
+                                          labelFontSize,
+                                          valueFontSize,
+                                        ),
+                                        _field(
+                                          l10n.certificateNumber,
+                                          licenseNo,
+                                          labelFontSize,
+                                          valueFontSize,
+                                        ),
+                                        _field(
+                                          l10n.certificateValidity,
+                                          validity,
+                                          labelFontSize,
+                                          valueFontSize,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(width: pad * 0.6),
+                                  SizedBox(
+                                    width: cardWidth * 0.12,
+                                    child: FittedBox(
+                                      child: Icon(
+                                        Icons.qr_code_2,
+                                        color: const Color(0xFF374047),
+                                        size: cardHeight * 0.43,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        height: cardHeight * 0.19,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: pad),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF50C6E9), Color(0xFF348FEA)],
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${l10n.certificateLevel}: $level',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: valueFontSize,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: pad),
+                              Text(
+                                '${l10n.certificateSportCode}: $sportCode',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: smallFontSize,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

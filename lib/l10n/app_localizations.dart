@@ -956,6 +956,30 @@ abstract class AppLocalizations {
   /// **'Certificate details'**
   String get certificateDetails;
 
+  /// No description provided for @certificateDetailsView.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get certificateDetailsView;
+
+  /// No description provided for @certificateCardView.
+  ///
+  /// In en, this message translates to:
+  /// **'Card'**
+  String get certificateCardView;
+
+  /// No description provided for @certificateSwipeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe left or right to switch views'**
+  String get certificateSwipeHint;
+
+  /// No description provided for @certificateCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Aviation Sports Pilot Certificate'**
+  String get certificateCardTitle;
+
   /// No description provided for @certificateIssued.
   ///
   /// In en, this message translates to:

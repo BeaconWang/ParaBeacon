@@ -205,7 +205,7 @@ class VarioAudioConfig {
     this.sinkToneSeconds = 0.5,
     this.sinkWaveform = VarioWaveform.long,
     this.fadeFraction = 0.05,
-    this.masterGain = 0.9,
+    this.masterGain = 1.0,
   });
 
   /// The XCTrack-matching default profile.

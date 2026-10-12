@@ -3254,6 +3254,24 @@ abstract class AppLocalizations {
   /// **'Data Monitor'**
   String get dataMonitorTitle;
 
+  /// No description provided for @dataMonitorMinimize.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize data monitor'**
+  String get dataMonitorMinimize;
+
+  /// No description provided for @dataMonitorRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore data monitor'**
+  String get dataMonitorRestore;
+
+  /// No description provided for @dataMonitorResize.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize data monitor'**
+  String get dataMonitorResize;
+
   /// No description provided for @dataMonitorLive.
   ///
   /// In en, this message translates to:

@@ -591,6 +591,9 @@
   "settingShowStatus": "显示航向/高度与 GPS 状态",
 
   "dataMonitorTitle": "数据监视器",
+  "dataMonitorMinimize": "最小化数据监视器",
+  "dataMonitorRestore": "还原数据监视器",
+  "dataMonitorResize": "调整数据监视器大小",
   "dataMonitorLive": "实时",
   "dataMonitorFix": "定位",
   "dataMonitorYes": "是",

@@ -68,6 +68,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   bool _playing = false;
   double _speed = 1.0;
   bool _audioSync = false;
+  bool _telemetryMinimized = false;
+  Offset _telemetryOffset = const Offset(8, 8);
+  Size? _telemetrySize;
 
   /// Active track-coloring mode (affects the map polyline and profile chart).
   TrackColorMode _colorMode = TrackColorMode.vario;
@@ -184,7 +187,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   void _setCursor(double ms) {
     setState(() => _cursorMs = ms.clamp(0.0, _spanMs));
     if (_audioSync && _playing) {
-      VarioAudioService.instance.setPreviewSpeed(_currentSample().data.verticalSpeed);
+      VarioAudioService.instance.setPreviewSpeed(
+        _currentSample().data.verticalSpeed,
+      );
     }
     _followCursor();
   }
@@ -192,7 +197,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   // ── Vario audio (preview takeover so it won't fight the live feed) ────────
 
   void _startAudio() {
-    VarioAudioService.instance.beginPreview(_currentSample().data.verticalSpeed);
+    VarioAudioService.instance.beginPreview(
+      _currentSample().data.verticalSpeed,
+    );
   }
 
   void _stopAudio() {
@@ -280,7 +287,8 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   LatLng? _firstFix() {
     for (final s in _samples) {
-      if (s.data.hasFix) return _shift(LatLng(s.data.latitude, s.data.longitude));
+      if (s.data.hasFix)
+        return _shift(LatLng(s.data.latitude, s.data.longitude));
     }
     return null;
   }
@@ -303,12 +311,16 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
             padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
             child: Row(
               children: [
-                Icon(Icons.play_circle_outline,
-                    color: theme.colorScheme.primary),
+                Icon(
+                  Icons.play_circle_outline,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(l10n.replayTitle,
-                      style: theme.textTheme.titleLarge),
+                  child: Text(
+                    l10n.replayTitle,
+                    style: theme.textTheme.titleLarge,
+                  ),
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.layers_outlined),
@@ -392,8 +404,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                         MarkerLayer(
                           markers: [
                             Marker(
-                              point: _shift(LatLng(
-                                  cur.data.latitude, cur.data.longitude)),
+                              point: _shift(
+                                LatLng(cur.data.latitude, cur.data.longitude),
+                              ),
                               width: 34,
                               height: 34,
                               child: _CursorMarker(
@@ -406,11 +419,17 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                     ],
                   ),
                 ),
-                // Live readout for the current cursor time.
-                Positioned(
-                  left: 8,
-                  top: 8,
-                  child: _readoutChip(theme, cur),
+                // Telemetry follows the current replay sample on every tick/seek.
+                LayoutBuilder(
+                  builder: (context, bounds) => Stack(
+                    children: [
+                      Positioned(
+                        left: _telemetryOffset.dx,
+                        top: _telemetryOffset.dy,
+                        child: _telemetryPanel(theme, cur, bounds),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -437,26 +456,363 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     );
   }
 
-  Widget _readoutChip(ThemeData theme, FlightSample s) {
+  double _telemetryPanelWidth(BoxConstraints bounds) {
+    final maxWidth = math.max(0.0, bounds.maxWidth - 16);
+    final minWidth = math.min(200.0, maxWidth);
+    return (_telemetrySize?.width ?? math.min(360.0, maxWidth))
+        .clamp(minWidth, maxWidth)
+        .toDouble();
+  }
+
+  double _telemetryPanelMaxHeight(BoxConstraints bounds, bool minimized) {
+    final maxHeight = math.max(0.0, bounds.maxHeight - 16);
+    if (minimized) return math.min(60.0, maxHeight);
+    final defaultContentHeight = math.min(
+      bounds.maxHeight * 0.32,
+      MediaQuery.sizeOf(context).height * 0.32,
+    );
+    final minHeight = math.min(150.0, maxHeight);
+    return (_telemetrySize?.height ?? defaultContentHeight + 84)
+        .clamp(minHeight, maxHeight)
+        .toDouble();
+  }
+
+  void _moveTelemetryPanel(Offset delta, BoxConstraints bounds) {
+    final maxLeft = math.max(
+      0.0,
+      bounds.maxWidth - _telemetryPanelWidth(bounds),
+    );
+    final maxTop = math.max(
+      0.0,
+      bounds.maxHeight - _telemetryPanelMaxHeight(bounds, _telemetryMinimized),
+    );
+    setState(() {
+      _telemetryOffset = Offset(
+        (_telemetryOffset.dx + delta.dx).clamp(0.0, maxLeft).toDouble(),
+        (_telemetryOffset.dy + delta.dy).clamp(0.0, maxTop).toDouble(),
+      );
+    });
+  }
+
+  void _resizeTelemetryPanel(Offset delta, BoxConstraints bounds) {
+    final maxWidth = math.max(0.0, bounds.maxWidth - 16);
+    final maxHeight = math.max(0.0, bounds.maxHeight - 16);
+    final minWidth = math.min(200.0, maxWidth);
+    final minHeight = math.min(150.0, maxHeight);
+    final currentSize = Size(
+      _telemetryPanelWidth(bounds),
+      _telemetryPanelMaxHeight(bounds, false),
+    );
+    final nextWidth = (currentSize.width + delta.dx)
+        .clamp(minWidth, maxWidth)
+        .toDouble();
+    final nextHeight = (currentSize.height + delta.dy)
+        .clamp(minHeight, maxHeight)
+        .toDouble();
+    setState(() {
+      _telemetrySize = Size(nextWidth, nextHeight);
+      _telemetryOffset = Offset(
+        _telemetryOffset.dx.clamp(0.0, bounds.maxWidth - nextWidth).toDouble(),
+        _telemetryOffset.dy
+            .clamp(0.0, bounds.maxHeight - nextHeight)
+            .toDouble(),
+      );
+    });
+  }
+
+  void _toggleTelemetryMinimized(BoxConstraints bounds) {
+    final minimized = !_telemetryMinimized;
+    final maxTop = math.max(
+      0.0,
+      bounds.maxHeight - _telemetryPanelMaxHeight(bounds, minimized),
+    );
+    setState(() {
+      _telemetryMinimized = minimized;
+      _telemetryOffset = Offset(
+        _telemetryOffset.dx,
+        _telemetryOffset.dy.clamp(0.0, maxTop).toDouble(),
+      );
+    });
+  }
+
+  Widget _telemetryPanel(
+    ThemeData theme,
+    FlightSample sample,
+    BoxConstraints bounds,
+  ) {
     final l10n = AppLocalizations.of(context);
-    final d = s.data;
-    final vario = d.verticalSpeed;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withAlpha(200),
-        borderRadius: BorderRadius.circular(6),
+    final data = sample.data;
+    String optionalNumber(double? value, int decimals) =>
+        value == null ? '—' : value.toStringAsFixed(decimals);
+    final sampleTime = data.timestamp ?? sample.time;
+    final glideRatioValue = data.groundSpeed / 3.6 / -data.verticalSpeed;
+    final glideRatio =
+        !data.hasFix ||
+            data.verticalSpeed >= -0.1 ||
+            !glideRatioValue.isFinite ||
+            glideRatioValue <= 0
+        ? '—'
+        : glideRatioValue >= 100
+        ? '99+'
+        : glideRatioValue.toStringAsFixed(1);
+    final altitudeDelta = data.baroAltitude == null || data.gpsAltitude == null
+        ? '—'
+        : '${data.baroAltitude! >= data.gpsAltitude! ? '+' : ''}${(data.baroAltitude! - data.gpsAltitude!).toStringAsFixed(1)} m';
+    final speedMs = data.groundSpeed / 3.6;
+    final totalEnergyAltitude =
+        (data.altitude + speedMs * speedMs / (2 * 9.80665)).toStringAsFixed(1);
+    final metrics = <(String, String)>[
+      (l10n.dataMonitorTimestamp, _formatSampleTime(sampleTime)),
+      (
+        l10n.dataMonitorFix,
+        data.hasFix ? l10n.dataMonitorYes : l10n.dataMonitorNo,
       ),
-      child: Text(
-        l10n.replayReadout(
-          '${d.heading.round()}',
-          '${d.altitude.round()}',
-          '${vario >= 0 ? '+' : ''}${vario.toStringAsFixed(1)}',
+      (
+        l10n.dataMonitorVerticalSpeed,
+        '${data.verticalSpeed >= 0 ? '+' : ''}${data.verticalSpeed.toStringAsFixed(2)} m/s',
+      ),
+      (
+        l10n.dataMonitorGroundSpeed,
+        '${data.groundSpeed.toStringAsFixed(1)} km/h',
+      ),
+      (l10n.dataMonitorAltitude, '${data.altitude.toStringAsFixed(1)} m'),
+      (
+        l10n.dataMonitorBaroAltitude,
+        '${optionalNumber(data.baroAltitude, 1)} m',
+      ),
+      (l10n.dataMonitorGpsAltitude, '${optionalNumber(data.gpsAltitude, 1)} m'),
+      (l10n.dataMonitorLatitude, '${data.latitude.toStringAsFixed(6)}°'),
+      (l10n.dataMonitorLongitude, '${data.longitude.toStringAsFixed(6)}°'),
+      (l10n.dataMonitorHeading, '${data.heading.toStringAsFixed(0)}°'),
+      (l10n.dataMonitorBearing, '${optionalNumber(data.bearing, 0)}°'),
+      (l10n.dataMonitorGpsAccuracy, '${optionalNumber(data.gpsAccuracy, 1)} m'),
+      (l10n.dataMonitorSatellites, data.satellites?.toString() ?? '—'),
+      (l10n.dataMonitorWindSpeed, '${data.windSpeed.toStringAsFixed(1)} km/h'),
+      (
+        l10n.dataMonitorWindDirection,
+        '${data.windDirection.toStringAsFixed(0)}°',
+      ),
+      (l10n.dataMonitorPressure, '${optionalNumber(data.pressure, 1)} hPa'),
+      (
+        l10n.dataMonitorTemperature,
+        '${optionalNumber(data.temperature, 1)} °C',
+      ),
+      (
+        l10n.dataMonitorBattery,
+        data.battery == null ? '—' : '${data.battery}%',
+      ),
+      (
+        l10n.dataMonitorHeartRate,
+        data.heartRate == null ? '—' : '${data.heartRate} bpm',
+      ),
+    ];
+    final derivedMetrics = <(String, String)>[
+      (l10n.dataMonitorGlideRatio, glideRatio),
+      (l10n.dataMonitorHeading, _cardinal8(data.heading)),
+      (l10n.dataMonitorWindDir, _cardinal8(data.windDirection)),
+      (l10n.dataMonitorBaroGpsDelta, altitudeDelta),
+      (l10n.dataMonitorTotalEnergy, '$totalEnergyAltitude m'),
+    ];
+    final panelWidth = _telemetryPanelWidth(bounds);
+    final panelHeight = _telemetryPanelMaxHeight(bounds, _telemetryMinimized);
+
+    return SizedBox(
+      width: panelWidth,
+      height: panelHeight,
+      child: Card(
+        color: theme.colorScheme.surface.withAlpha(238),
+        elevation: 4,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
-        style: theme.textTheme.labelMedium
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanUpdate: (details) =>
+                          _moveTelemetryPanel(details.delta, bounds),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.drag_indicator,
+                            size: 18,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 5),
+                          Icon(
+                            Icons.monitor_heart_outlined,
+                            size: 18,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              l10n.dataMonitorTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.replayTitle,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: _telemetryMinimized
+                        ? l10n.dataMonitorRestore
+                        : l10n.dataMonitorMinimize,
+                    visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 34,
+                      height: 34,
+                    ),
+                    padding: EdgeInsets.zero,
+                    onPressed: () => _toggleTelemetryMinimized(bounds),
+                    icon: Icon(
+                      _telemetryMinimized ? Icons.open_in_full : Icons.minimize,
+                      size: 18,
+                    ),
+                  ),
+                ],
+              ),
+              if (!_telemetryMinimized) ...[
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: metrics.length + derivedMetrics.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index < metrics.length) {
+                        final metric = metrics[index];
+                        return _telemetryMetric(
+                          theme,
+                          metric.$1,
+                          metric.$2,
+                          index,
+                        );
+                      }
+                      if (index == metrics.length) {
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 7, 4, 3),
+                          child: Text(
+                            l10n.dataMonitorDerived.toUpperCase(),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        );
+                      }
+                      final metric = derivedMetrics[index - metrics.length - 1];
+                      return _telemetryMetric(
+                        theme,
+                        metric.$1,
+                        metric.$2,
+                        index,
+                      );
+                    },
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Tooltip(
+                    message: l10n.dataMonitorResize,
+                    child: Semantics(
+                      button: true,
+                      label: l10n.dataMonitorResize,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onPanUpdate: (details) =>
+                            _resizeTelemetryPanel(details.delta, bounds),
+                        child: SizedBox(
+                          width: 28,
+                          height: 20,
+                          child: Icon(
+                            Icons.south_east,
+                            size: 16,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  Widget _telemetryMetric(
+    ThemeData theme,
+    String label,
+    String value,
+    int index,
+  ) {
+    return Container(
+      color: index.isEven
+          ? Colors.transparent
+          : theme.colorScheme.surfaceContainerHighest.withAlpha(80),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _cardinal8(double degrees) {
+    const labels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    final normalized = ((degrees % 360) + 360) % 360;
+    return labels[((normalized / 45).round()) % 8];
+  }
+
+  String _formatSampleTime(DateTime time) {
+    final local = time.toLocal();
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    final second = local.second.toString().padLeft(2, '0');
+    return '$hour:$minute:$second';
   }
 
   Widget _buildControls(ThemeData theme) {
@@ -510,12 +866,15 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
               ),
               TextButton(
                 onPressed: canReplay ? _cycleSpeed : null,
-                child: Text('${_speed.toStringAsFixed(_speed % 1 == 0 ? 0 : 1)}×'),
+                child: Text(
+                  '${_speed.toStringAsFixed(_speed % 1 == 0 ? 0 : 1)}×',
+                ),
               ),
               IconButton(
                 icon: Icon(_audioSync ? Icons.volume_up : Icons.volume_off),
-                tooltip:
-                    _audioSync ? l10n.replayVarioSoundOn : l10n.replayVarioSoundOff,
+                tooltip: _audioSync
+                    ? l10n.replayVarioSoundOn
+                    : l10n.replayVarioSoundOff,
                 color: _audioSync ? theme.colorScheme.primary : null,
                 onPressed: canReplay ? _toggleAudioSync : null,
               ),
@@ -540,8 +899,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   void _fitTrack() {
     final pts = <LatLng>[
       for (final s in _samples)
-        if (s.data.hasFix)
-          _shift(LatLng(s.data.latitude, s.data.longitude)),
+        if (s.data.hasFix) _shift(LatLng(s.data.latitude, s.data.longitude)),
     ];
     if (pts.length < 2) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -561,8 +919,8 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     if (_samples.length < 2) return const [];
     final curIdx = _currentIndex();
 
-    LatLng at(int i) => _shift(
-        LatLng(_samples[i].data.latitude, _samples[i].data.longitude));
+    LatLng at(int i) =>
+        _shift(LatLng(_samples[i].data.latitude, _samples[i].data.longitude));
 
     final out = <Polyline>[];
     int runStart = 0;
@@ -570,11 +928,13 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
     void flush(int endExclusive) {
       if (endExclusive - runStart < 2) return;
-      out.add(Polyline(
-        points: [for (int i = runStart; i < endExclusive; i++) at(i)],
-        strokeWidth: 3,
-        color: runColor,
-      ));
+      out.add(
+        Polyline(
+          points: [for (int i = runStart; i < endExclusive; i++) at(i)],
+          strokeWidth: 3,
+          color: runColor,
+        ),
+      );
     }
 
     for (int i = 2; i < _samples.length; i++) {
@@ -604,7 +964,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   /// Blue→red ramp across [min]..[max]; used for the speed & altitude modes.
   Color _rampColor(double v, double min, double max, {required bool dimmed}) {
-    final t = (max - min) > 1e-6 ? ((v - min) / (max - min)).clamp(0.0, 1.0) : 0.5;
+    final t = (max - min) > 1e-6
+        ? ((v - min) / (max - min)).clamp(0.0, 1.0)
+        : 0.5;
     final c = Color.lerp(const Color(0xFF3B82F6), const Color(0xFFFF3B30), t)!;
     return dimmed ? c.withAlpha(60) : c;
   }
@@ -653,9 +1015,14 @@ class _CursorMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     return Transform.rotate(
       angle: heading * math.pi / 180.0,
-      child: Icon(Icons.navigation, color: color, size: 30, shadows: const [
-        Shadow(color: Colors.black54, blurRadius: 3, offset: Offset(0, 1)),
-      ]),
+      child: Icon(
+        Icons.navigation,
+        color: color,
+        size: 30,
+        shadows: const [
+          Shadow(color: Colors.black54, blurRadius: 3, offset: Offset(0, 1)),
+        ],
+      ),
     );
   }
 }
@@ -757,8 +1124,7 @@ class _AltitudeProfilePainter extends CustomPainter {
         .toDouble();
 
     Offset pt(int i) {
-      final relMs =
-          samples[i].time.difference(t0).inMilliseconds.toDouble();
+      final relMs = samples[i].time.difference(t0).inMilliseconds.toDouble();
       final x = (relMs / totalMs) * size.width;
       final norm = (samples[i].data.altitude - minAlt) / span;
       final y = padTop + h * (1.0 - norm.clamp(0.0, 1.0));

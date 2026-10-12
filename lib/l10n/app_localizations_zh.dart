@@ -1633,6 +1633,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dataMonitorTitle => '数据监视器';
 
   @override
+  String get dataMonitorMinimize => '最小化数据监视器';
+
+  @override
+  String get dataMonitorRestore => '还原数据监视器';
+
+  @override
+  String get dataMonitorResize => '调整数据监视器大小';
+
+  @override
   String get dataMonitorLive => '实时';
 
   @override

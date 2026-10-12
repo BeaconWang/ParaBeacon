@@ -1672,6 +1672,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dataMonitorTitle => 'Data Monitor';
 
   @override
+  String get dataMonitorMinimize => 'Minimize data monitor';
+
+  @override
+  String get dataMonitorRestore => 'Restore data monitor';
+
+  @override
+  String get dataMonitorResize => 'Resize data monitor';
+
+  @override
   String get dataMonitorLive => 'LIVE';
 
   @override

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -29,6 +30,34 @@ class FlightImportResult {
   int get total => added + skipped + failed;
 }
 
+/// Summary of a completed flight-library export.
+class FlightExportResult {
+  const FlightExportResult({
+    required this.fileName,
+    required this.flightCount,
+    required this.byteSize,
+    required this.savedToDevice,
+    this.destination,
+  });
+
+  /// Name of the generated `.pbflights` bundle.
+  final String fileName;
+
+  /// Number of flights written into the bundle.
+  final int flightCount;
+
+  /// Size of the generated bundle in bytes.
+  final int byteSize;
+
+  /// True when the bundle was written to a persistent device location
+  /// (Android), false when it was handed to the share sheet.
+  final bool savedToDevice;
+
+  /// The document URI (Android) or file path where the bundle was written,
+  /// when available.
+  final String? destination;
+}
+
 /// Exports the whole flight library to a single `.pbflights` bundle and imports
 /// it back, with duplicate detection.
 ///
@@ -46,6 +75,9 @@ class FlightLibraryIO {
   static const String _formatId = 'parabeacon.flights';
   static const int _formatVersion = 1;
   static const String _ext = 'pbflights';
+  static const MethodChannel _androidExportChannel = MethodChannel(
+    'com.beacon.parabeacon/flight_library',
+  );
 
   // ── Export ─────────────────────────────────────────────────────────────
 
@@ -70,22 +102,52 @@ class FlightLibraryIO {
     return encoded ?? const <int>[];
   }
 
-  /// Exports the current library to a temp `.pbflights` file and shares it.
-  /// Returns the temp file path.
-  Future<String> exportAndShare(List<FlightTrack> tracks) async {
+  /// Exports flight records. Android saves the bundle to the public
+  /// `Downloads/ParaBeacon` folder on Android 10+, and uses the system document
+  /// picker on older versions. Other platforms share a temporary `.pbflights`
+  /// file.
+  ///
+  /// Returns a [FlightExportResult] describing the written bundle, or null when
+  /// the Android save picker is cancelled.
+  Future<FlightExportResult?> exportAndShare(List<FlightTrack> tracks) async {
     final bytes = buildBundle(tracks);
-    final dir = await getTemporaryDirectory();
     String two(int n) => n.toString().padLeft(2, '0');
     final now = DateTime.now();
     final fileName =
-        'parabeacon_${now.year}${two(now.month)}${two(now.day)}.$_ext';
+        'parabeacon_${now.year}${two(now.month)}${two(now.day)}_${two(now.hour)}${two(now.minute)}${two(now.second)}.$_ext';
+
+    if (Platform.isAndroid) {
+      final destination = await _saveAndroidDocument(bytes, fileName);
+      if (destination == null) return null;
+      return FlightExportResult(
+        fileName: fileName,
+        flightCount: tracks.length,
+        byteSize: bytes.length,
+        savedToDevice: true,
+        destination: destination,
+      );
+    }
+
+    final dir = await getTemporaryDirectory();
     final path = p.join(dir.path, fileName);
     await File(path).writeAsBytes(bytes, flush: true);
-    await Share.shareXFiles(
-      [XFile(path, name: fileName)],
-      subject: 'ParaBeacon flight library',
+    await Share.shareXFiles([
+      XFile(path, name: fileName),
+    ], subject: 'ParaBeacon flight library');
+    return FlightExportResult(
+      fileName: fileName,
+      flightCount: tracks.length,
+      byteSize: bytes.length,
+      savedToDevice: false,
+      destination: path,
     );
-    return path;
+  }
+
+  Future<String?> _saveAndroidDocument(List<int> bytes, String fileName) {
+    return _androidExportChannel.invokeMethod<String>('saveFlightBundle', {
+      'fileName': fileName,
+      'bytes': Uint8List.fromList(bytes),
+    });
   }
 
   // ── Import ─────────────────────────────────────────────────────────────
@@ -145,8 +207,7 @@ class FlightLibraryIO {
           failed++;
           continue;
         }
-        if (_isDuplicate(track, existing) ||
-            _isDuplicate(track, imported)) {
+        if (_isDuplicate(track, existing) || _isDuplicate(track, imported)) {
           skipped++;
           continue;
         }
@@ -167,8 +228,7 @@ class FlightLibraryIO {
   /// ±5 s AND the point counts agree (mirrors the reference project's rule).
   bool _isDuplicate(FlightTrack t, List<FlightTrack> list) {
     for (final e in list) {
-      final dtMs =
-          (t.startTime.difference(e.startTime)).inMilliseconds.abs();
+      final dtMs = (t.startTime.difference(e.startTime)).inMilliseconds.abs();
       if (dtMs <= 5000 && t.pointCount == e.pointCount) return true;
     }
     return false;

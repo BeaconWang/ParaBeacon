@@ -694,6 +694,8 @@
   "flightsAddRandomDebug": "Add random flight (debug)",
   "flightsImportLibrary": "Import library (.pbflights)",
   "flightsExportLibrary": "Export library (.pbflights)",
+  "flightsSelectRecords": "Select flights to export",
+  "flightsExportSelected": "Export selected flights (.pbflights)",
   "flightsClearAll": "Clear all",
   "flightsPlaceNameSettings": "Place-name lookup settings",
   "flightsNoneRecorded": "No flights recorded yet",
@@ -747,6 +749,14 @@
     }
   },
   "flightsLibraryExportFailed": "Library export failed: {error}",
+  "flightsLibraryExportSaved": "Flight bundle saved on the device.",
+  "flightsExportDoneTitle": "Export complete",
+  "flightsExportDoneSaved": "The flight bundle was saved to your device.",
+  "flightsExportDoneShared": "The flight bundle is ready to share.",
+  "flightsExportDetailFlights": "Flights",
+  "flightsExportDetailFileName": "File",
+  "flightsExportDetailSize": "Size",
+  "flightsExportDetailLocation": "Location",
   "@flightsLibraryExportFailed": {
     "placeholders": { "error": { "type": "String" } }
   },

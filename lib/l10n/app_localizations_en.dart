@@ -1771,6 +1771,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsExportLibrary => 'Export library (.pbflights)';
 
   @override
+  String get flightsSelectRecords => 'Select flights to export';
+
+  @override
+  String get flightsExportSelected => 'Export selected flights (.pbflights)';
+
+  @override
   String get flightsClearAll => 'Clear all';
 
   @override
@@ -1874,6 +1880,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String flightsLibraryExportFailed(String error) {
     return 'Library export failed: $error';
   }
+
+  @override
+  String get flightsLibraryExportSaved => 'Flight bundle saved on the device.';
+
+  @override
+  String get flightsExportDoneTitle => 'Export complete';
+
+  @override
+  String get flightsExportDoneSaved =>
+      'The flight bundle was saved to your device.';
+
+  @override
+  String get flightsExportDoneShared => 'The flight bundle is ready to share.';
+
+  @override
+  String get flightsExportDetailFlights => 'Flights';
+
+  @override
+  String get flightsExportDetailFileName => 'File';
+
+  @override
+  String get flightsExportDetailSize => 'Size';
+
+  @override
+  String get flightsExportDetailLocation => 'Location';
 
   @override
   String flightsImportResult(int added, int skipped) {

@@ -37,6 +37,8 @@ class _FlightsSheet extends StatefulWidget {
 
 class _FlightsSheetState extends State<_FlightsSheet> {
   final FlightRecorder _recorder = FlightRecorder.instance;
+  final Set<FlightTrack> _selectedTracks = <FlightTrack>{};
+  bool _selectionMode = false;
 
   @override
   void initState() {
@@ -104,11 +106,18 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
           final titleRow = Row(
             children: [
-              Icon(Icons.route, color: theme.colorScheme.primary),
+              Icon(
+                _selectionMode ? Icons.checklist : Icons.route,
+                color: theme.colorScheme.primary,
+              ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(AppLocalizations.of(context).flights,
-                    style: theme.textTheme.titleLarge),
+                child: Text(
+                  _selectionMode
+                      ? '${AppLocalizations.of(context).flights} (${_selectedTracks.length})'
+                      : AppLocalizations.of(context).flights,
+                  style: theme.textTheme.titleLarge,
+                ),
               ),
               if (fitsOnOneRow) ...actions,
             ],
@@ -123,10 +132,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
               titleRow,
               Align(
                 alignment: Alignment.centerRight,
-                child: Wrap(
-                  alignment: WrapAlignment.end,
-                  children: actions,
-                ),
+                child: Wrap(alignment: WrapAlignment.end, children: actions),
               ),
             ],
           );
@@ -138,6 +144,27 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   /// The set of header action buttons, in display order.
   List<Widget> _headerActions(List<FlightTrack> tracks) {
     final l10n = AppLocalizations.of(context);
+    if (_selectionMode) {
+      return [
+        IconButton(
+          icon: const Icon(Icons.file_upload_outlined),
+          tooltip: l10n.flightsExportSelected,
+          onPressed: _selectedTracks.isEmpty
+              ? null
+              : () => _exportLibrary(_selectedTracks.toList()),
+        ),
+        IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: l10n.cancel,
+          onPressed: _leaveSelectionMode,
+        ),
+        IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: l10n.close,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ];
+    }
     return [
       // DEBUG ONLY — inject a random flight record for testing.
       if (kDebugMode)
@@ -156,6 +183,12 @@ class _FlightsSheetState extends State<_FlightsSheet> {
           icon: const Icon(Icons.file_upload_outlined),
           tooltip: l10n.flightsExportLibrary,
           onPressed: () => _exportLibrary(tracks),
+        ),
+      if (tracks.isNotEmpty)
+        IconButton(
+          icon: const Icon(Icons.checklist),
+          tooltip: l10n.flightsSelectRecords,
+          onPressed: _enterSelectionMode,
         ),
       if (tracks.isNotEmpty)
         IconButton(
@@ -182,13 +215,18 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.route_outlined,
-              size: 48, color: theme.colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.route_outlined,
+            size: 48,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 12),
-          Text(l10n.flightsNoneRecorded,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              )),
+          Text(
+            l10n.flightsNoneRecorded,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             l10n.flightsStartToRecord,
@@ -201,14 +239,57 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     );
   }
 
+  void _enterSelectionMode() {
+    setState(() {
+      _selectionMode = true;
+      _selectedTracks.clear();
+    });
+  }
+
+  /// Enters selection mode from a long-press and selects [track].
+  void _enterSelectionModeWith(FlightTrack track) {
+    if (_selectionMode) {
+      _toggleTrackSelection(track);
+      return;
+    }
+    setState(() {
+      _selectionMode = true;
+      _selectedTracks
+        ..clear()
+        ..add(track);
+    });
+  }
+
+  void _leaveSelectionMode() {
+    setState(() {
+      _selectionMode = false;
+      _selectedTracks.clear();
+    });
+  }
+
+  void _toggleTrackSelection(FlightTrack track) {
+    setState(() {
+      if (!_selectedTracks.add(track)) _selectedTracks.remove(track);
+    });
+  }
+
   Widget _trackTile(ThemeData theme, FlightTrack track) {
     final l10n = AppLocalizations.of(context);
     final canReplay = track.samples.length >= 2;
+    final selected = _selectedTracks.contains(track);
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.primaryContainer,
-        child: Icon(Icons.flight, color: theme.colorScheme.onPrimaryContainer),
-      ),
+      leading: _selectionMode
+          ? Checkbox(
+              value: selected,
+              onChanged: (_) => _toggleTrackSelection(track),
+            )
+          : CircleAvatar(
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Icon(
+                Icons.flight,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
       title: Text(_fmtDateTime(track.startTime)),
       subtitle: Text(
         l10n.flightsListSubtitle(
@@ -217,29 +298,37 @@ class _FlightsSheetState extends State<_FlightsSheet> {
           track.pointCount,
         ),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.play_circle_outline),
-            tooltip:
-                canReplay ? l10n.flightsReplay : l10n.flightsNoPointsToReplay,
-            onPressed: canReplay ? () => _replay(track) : null,
-          ),
-          IconButton(
-            icon: const Icon(Icons.threed_rotation),
-            tooltip:
-                canReplay ? l10n.flights3dReplay : l10n.flightsNoPointsToReplay,
-            onPressed: canReplay ? () => _replay3D(track) : null,
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: l10n.delete,
-            onPressed: () => _recorder.deleteTrack(track),
-          ),
-        ],
-      ),
-      onTap: () => _showDetail(track),
+      trailing: _selectionMode
+          ? null
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.play_circle_outline),
+                  tooltip: canReplay
+                      ? l10n.flightsReplay
+                      : l10n.flightsNoPointsToReplay,
+                  onPressed: canReplay ? () => _replay(track) : null,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.threed_rotation),
+                  tooltip: canReplay
+                      ? l10n.flights3dReplay
+                      : l10n.flightsNoPointsToReplay,
+                  onPressed: canReplay ? () => _replay3D(track) : null,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: l10n.delete,
+                  onPressed: () => _recorder.deleteTrack(track),
+                ),
+              ],
+            ),
+      selected: _selectionMode && selected,
+      onTap: _selectionMode
+          ? () => _toggleTrackSelection(track)
+          : () => _showDetail(track),
+      onLongPress: () => _enterSelectionModeWith(track),
     );
   }
 
@@ -256,11 +345,10 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<void> _saveShareCard(FlightTrack track) async {
     final l10n = AppLocalizations.of(context);
     try {
-      final saved =
-          await FlightShareCardService.instance.saveToGallery(track);
-      _snack(saved
-          ? l10n.flightsShareCardSaved
-          : l10n.flightsShareCardSharedFile);
+      final saved = await FlightShareCardService.instance.saveToGallery(track);
+      _snack(
+        saved ? l10n.flightsShareCardSaved : l10n.flightsShareCardSharedFile,
+      );
     } catch (e) {
       _snack(l10n.flightsShareCardFailed('$e'));
     }
@@ -282,16 +370,22 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     }
     _snack(l10n.flightsLookingUpSites);
     try {
-      final takeoff = await ReverseGeocoderService.instance
-          .tryLookup(fixes.first.data.latitude, fixes.first.data.longitude);
-      final landing = await ReverseGeocoderService.instance
-          .tryLookup(fixes.last.data.latitude, fixes.last.data.longitude);
+      final takeoff = await ReverseGeocoderService.instance.tryLookup(
+        fixes.first.data.latitude,
+        fixes.first.data.longitude,
+      );
+      final landing = await ReverseGeocoderService.instance.tryLookup(
+        fixes.last.data.latitude,
+        fixes.last.data.longitude,
+      );
       if (takeoff != null) track.takeoffSite = takeoff;
       if (landing != null) track.landingSite = landing;
       _recorder.persistTrackMeta(track);
-      _snack(takeoff == null && landing == null
-          ? l10n.flightsNoPlaceNames
-          : l10n.flightsSiteNamesUpdated);
+      _snack(
+        takeoff == null && landing == null
+            ? l10n.flightsNoPlaceNames
+            : l10n.flightsSiteNamesUpdated,
+      );
     } catch (e) {
       _snack(l10n.flightsLookupFailed('$e'));
     }
@@ -304,11 +398,14 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context);
     final glider = TextEditingController(
-        text: track.gliderName ?? EquipmentStore.instance.glider ?? '');
+      text: track.gliderName ?? EquipmentStore.instance.glider ?? '',
+    );
     final harness = TextEditingController(
-        text: track.harnessName ?? EquipmentStore.instance.harness ?? '');
+      text: track.harnessName ?? EquipmentStore.instance.harness ?? '',
+    );
     final helmet = TextEditingController(
-        text: track.helmetName ?? EquipmentStore.instance.helmet ?? '');
+      text: track.helmetName ?? EquipmentStore.instance.helmet ?? '',
+    );
 
     final saved = await showDialog<bool>(
       context: context,
@@ -438,7 +535,9 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       _runExport(() => FlightReportService.instance.sharePdf(track), 'PDF');
 
   Future<void> _runExport(
-      Future<String> Function() action, String label) async {
+    Future<String> Function() action,
+    String label,
+  ) async {
     final l10n = AppLocalizations.of(context);
     try {
       await action();
@@ -452,10 +551,121 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<void> _exportLibrary(List<FlightTrack> tracks) async {
     final l10n = AppLocalizations.of(context);
     try {
-      await FlightLibraryIO.instance.exportAndShare(tracks);
+      final result = await FlightLibraryIO.instance.exportAndShare(tracks);
+      if (result == null) return;
+      if (_selectionMode) _leaveSelectionMode();
+      await _showExportResultDialog(result);
     } catch (e) {
       _snack(l10n.flightsLibraryExportFailed('$e'));
     }
+  }
+
+  Future<void> _showExportResultDialog(FlightExportResult result) async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          icon: Icon(
+            Icons.check_circle_outline,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(l10n.flightsExportDoneTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                result.savedToDevice
+                    ? l10n.flightsExportDoneSaved
+                    : l10n.flightsExportDoneShared,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              _exportDetailRow(
+                theme,
+                l10n.flightsExportDetailFlights,
+                '${result.flightCount}',
+              ),
+              _exportDetailRow(
+                theme,
+                l10n.flightsExportDetailFileName,
+                result.fileName,
+              ),
+              _exportDetailRow(
+                theme,
+                l10n.flightsExportDetailSize,
+                _formatBytes(result.byteSize),
+              ),
+              if (result.savedToDevice && result.destination != null)
+                _exportDetailRow(
+                  theme,
+                  l10n.flightsExportDetailLocation,
+                  _describeDestination(result.destination!),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.close),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _exportDetailRow(ThemeData theme, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 92,
+            child: Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    final kb = bytes / 1024;
+    if (kb < 1024) return '${kb.toStringAsFixed(1)} KB';
+    return '${(kb / 1024).toStringAsFixed(2)} MB';
+  }
+
+  /// Presents a readable destination for an Android document URI, falling back
+  /// to the raw value when it is not a recognizable path.
+  String _describeDestination(String destination) {
+    if (destination.contains('ParaBeacon')) {
+      return 'Downloads/ParaBeacon';
+    }
+    final decoded = Uri.decodeFull(destination);
+    final marker = decoded.lastIndexOf('/');
+    if (marker >= 0 && marker < decoded.length - 1) {
+      return decoded.substring(marker + 1);
+    }
+    return decoded;
   }
 
   Future<void> _importLibrary() async {
@@ -469,10 +679,15 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       final path = picked?.files.single.path;
       if (path == null) return;
       final result = await FlightLibraryIO.instance.importFile(path);
-      _snack(result.failed > 0
-          ? l10n.flightsImportResultFailed(
-              result.added, result.skipped, result.failed)
-          : l10n.flightsImportResult(result.added, result.skipped));
+      _snack(
+        result.failed > 0
+            ? l10n.flightsImportResultFailed(
+                result.added,
+                result.skipped,
+                result.failed,
+              )
+            : l10n.flightsImportResult(result.added, result.skipped),
+      );
     } catch (e) {
       _snack(l10n.flightsImportFailed('$e'));
     }
@@ -480,9 +695,9 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
   void _snack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _sectionLabel(ThemeData theme, String text) {
@@ -558,178 +773,262 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                      _detailRow(l10n.flightDetailStart,
-                          _fmtDateTime(track.startTime)),
-                      _detailRow(
+                        _detailRow(
+                          l10n.flightDetailStart,
+                          _fmtDateTime(track.startTime),
+                        ),
+                        _detailRow(
                           l10n.flightDetailEnd,
                           track.endTime != null
                               ? _fmtDateTime(track.endTime!)
-                              : '—'),
-                      _detailRow(l10n.flightDetailDuration,
-                          _fmtDuration(track.duration)),
-                      _detailRow(l10n.flightDetailDistance,
-                          '${(track.distanceM / 1000).toStringAsFixed(2)} km'),
-                      _detailRow(l10n.flightDetailMaxAltitude,
-                          '${track.maxAltitude.toStringAsFixed(0)} m'),
-                      _detailRow(l10n.flightDetailMinAltitude,
-                          '${track.minAltitude.toStringAsFixed(0)} m'),
-                      _detailRow(l10n.flightDetailMaxClimb,
-                          '${track.maxClimb.toStringAsFixed(1)} m/s'),
-                      _detailRow(l10n.flightDetailMaxSink,
-                          '${track.maxSink.toStringAsFixed(1)} m/s'),
-                      _detailRow(l10n.flightDetailSamples,
-                          '${track.pointCount}'),
-                      if ((track.takeoffSite?.isNotEmpty ?? false) ||
-                          (track.landingSite?.isNotEmpty ?? false)) ...[
-                        _detailRow(l10n.flightDetailTakeoff,
-                            track.takeoffSite ?? '—'),
-                        _detailRow(l10n.flightDetailLanding,
-                            track.landingSite ?? '—'),
-                      ],
-                      if (track.hasAircraftInformation) ...[
-                        const SizedBox(height: 8),
-                        _sectionLabel(theme, l10n.flightDetailAircraft),
-                        if (track.aircraftFaiClass?.isNotEmpty ?? false)
-                          _detailRow(l10n.flightDetailAircraftClass,
-                              track.aircraftFaiClass!),
-                        if (track.aircraftManufacturer?.isNotEmpty ?? false)
-                          _detailRow(l10n.flightDetailAircraftManufacturer,
-                              track.aircraftManufacturer!),
-                        if (track.aircraftModel?.isNotEmpty ?? false)
-                          _detailRow(l10n.flightDetailAircraftModel,
-                              track.aircraftModel!),
-                        if (track.aircraftName?.isNotEmpty ?? false)
-                          _detailRow(l10n.flightDetailAircraftName,
-                              track.aircraftName!),
-                        if (track.aircraftCategory?.isNotEmpty ?? false)
-                          _detailRow(l10n.flightDetailAircraftCategory,
-                              track.aircraftCategory!),
-                        if (track.aircraftTandem != null)
+                              : '—',
+                        ),
+                        _detailRow(
+                          l10n.flightDetailDuration,
+                          _fmtDuration(track.duration),
+                        ),
+                        _detailRow(
+                          l10n.flightDetailDistance,
+                          '${(track.distanceM / 1000).toStringAsFixed(2)} km',
+                        ),
+                        _detailRow(
+                          l10n.flightDetailMaxAltitude,
+                          '${track.maxAltitude.toStringAsFixed(0)} m',
+                        ),
+                        _detailRow(
+                          l10n.flightDetailMinAltitude,
+                          '${track.minAltitude.toStringAsFixed(0)} m',
+                        ),
+                        _detailRow(
+                          l10n.flightDetailMaxClimb,
+                          '${track.maxClimb.toStringAsFixed(1)} m/s',
+                        ),
+                        _detailRow(
+                          l10n.flightDetailMaxSink,
+                          '${track.maxSink.toStringAsFixed(1)} m/s',
+                        ),
+                        _detailRow(
+                          l10n.flightDetailSamples,
+                          '${track.pointCount}',
+                        ),
+                        if ((track.takeoffSite?.isNotEmpty ?? false) ||
+                            (track.landingSite?.isNotEmpty ?? false)) ...[
                           _detailRow(
+                            l10n.flightDetailTakeoff,
+                            track.takeoffSite ?? '—',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailLanding,
+                            track.landingSite ?? '—',
+                          ),
+                        ],
+                        if (track.hasAircraftInformation) ...[
+                          const SizedBox(height: 8),
+                          _sectionLabel(theme, l10n.flightDetailAircraft),
+                          if (track.aircraftFaiClass?.isNotEmpty ?? false)
+                            _detailRow(
+                              l10n.flightDetailAircraftClass,
+                              track.aircraftFaiClass!,
+                            ),
+                          if (track.aircraftManufacturer?.isNotEmpty ?? false)
+                            _detailRow(
+                              l10n.flightDetailAircraftManufacturer,
+                              track.aircraftManufacturer!,
+                            ),
+                          if (track.aircraftModel?.isNotEmpty ?? false)
+                            _detailRow(
+                              l10n.flightDetailAircraftModel,
+                              track.aircraftModel!,
+                            ),
+                          if (track.aircraftName?.isNotEmpty ?? false)
+                            _detailRow(
+                              l10n.flightDetailAircraftName,
+                              track.aircraftName!,
+                            ),
+                          if (track.aircraftCategory?.isNotEmpty ?? false)
+                            _detailRow(
+                              l10n.flightDetailAircraftCategory,
+                              track.aircraftCategory!,
+                            ),
+                          if (track.aircraftTandem != null)
+                            _detailRow(
                               l10n.flightDetailAircraftTandem,
                               track.aircraftTandem!
                                   ? l10n.aircraftTandemYes
-                                  : l10n.aircraftTandemNo),
-                        if (track.aircraftEngineType?.isNotEmpty ?? false)
-                          _detailRow(l10n.flightDetailAircraftEngine,
-                              track.aircraftEngineType!),
-                        if (track.aircraftTrimSpeedKmh != null)
-                          _detailRow(l10n.flightDetailAircraftTrimSpeed,
-                              '${track.aircraftTrimSpeedKmh!.toStringAsFixed(1)} km/h'),
-                        if (track.aircraftGoalGlideRatio != null)
-                          _detailRow(l10n.flightDetailAircraftGlideRatio,
-                              track.aircraftGoalGlideRatio!.toStringAsFixed(2)),
-                      ],
-                      if (track.hasEquipment) ...[
-                        const SizedBox(height: 8),
-                        _sectionLabel(theme, l10n.equipment),
-                        if (track.gliderName?.isNotEmpty ?? false)
-                          _detailRow(
-                              l10n.equipmentGlider, track.gliderName!),
-                        if (track.harnessName?.isNotEmpty ?? false)
-                          _detailRow(
-                              l10n.equipmentHarness, track.harnessName!),
-                        if (track.helmetName?.isNotEmpty ?? false)
-                          _detailRow(
-                              l10n.equipmentHelmet, track.helmetName!),
-                      ],
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () async {
-                            await _editEquipment(track);
-                            setDialogState(() {});
-                          },
-                          icon: const Icon(Icons.edit_outlined, size: 18),
-                          label: Text(track.hasEquipment
-                              ? l10n.equipmentEdit
-                              : l10n.equipmentAdd),
+                                  : l10n.aircraftTandemNo,
+                            ),
+                          if (track.aircraftEngineType?.isNotEmpty ?? false)
+                            _detailRow(
+                              l10n.flightDetailAircraftEngine,
+                              track.aircraftEngineType!,
+                            ),
+                          if (track.aircraftTrimSpeedKmh != null)
+                            _detailRow(
+                              l10n.flightDetailAircraftTrimSpeed,
+                              '${track.aircraftTrimSpeedKmh!.toStringAsFixed(1)} km/h',
+                            ),
+                          if (track.aircraftGoalGlideRatio != null)
+                            _detailRow(
+                              l10n.flightDetailAircraftGlideRatio,
+                              track.aircraftGoalGlideRatio!.toStringAsFixed(2),
+                            ),
+                        ],
+                        if (track.hasEquipment) ...[
+                          const SizedBox(height: 8),
+                          _sectionLabel(theme, l10n.equipment),
+                          if (track.gliderName?.isNotEmpty ?? false)
+                            _detailRow(l10n.equipmentGlider, track.gliderName!),
+                          if (track.harnessName?.isNotEmpty ?? false)
+                            _detailRow(
+                              l10n.equipmentHarness,
+                              track.harnessName!,
+                            ),
+                          if (track.helmetName?.isNotEmpty ?? false)
+                            _detailRow(l10n.equipmentHelmet, track.helmetName!),
+                        ],
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () async {
+                              await _editEquipment(track);
+                              setDialogState(() {});
+                            },
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            label: Text(
+                              track.hasEquipment
+                                  ? l10n.equipmentEdit
+                                  : l10n.equipmentAdd,
+                            ),
+                          ),
                         ),
-                      ),
-                      if (track.hasSamples) ...[
-                        const SizedBox(height: 8),
-                        _sectionLabel(theme, l10n.flightDetailPerformance),
-                        _detailRow(l10n.flightDetailStraightDistance,
-                            '${(stats.straightDistanceM / 1000).toStringAsFixed(2)} km'),
-                        _detailRow(l10n.flightDetailXcDistance,
-                            '${(stats.xcDistanceM / 1000).toStringAsFixed(2)} km'),
-                        if (stats.faiTriangleM > 0)
+                        if (track.hasSamples) ...[
+                          const SizedBox(height: 8),
+                          _sectionLabel(theme, l10n.flightDetailPerformance),
                           _detailRow(
+                            l10n.flightDetailStraightDistance,
+                            '${(stats.straightDistanceM / 1000).toStringAsFixed(2)} km',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailXcDistance,
+                            '${(stats.xcDistanceM / 1000).toStringAsFixed(2)} km',
+                          ),
+                          if (stats.faiTriangleM > 0)
+                            _detailRow(
                               l10n.flightDetailFaiTriangle,
                               '${(stats.faiTriangleM / 1000).toStringAsFixed(2)} km'
-                              '${stats.faiClosed ? ' (${l10n.flightDetailFaiClosed})' : ''}'),
-                        _detailRow(l10n.flightDetailMaxFromStart,
-                            '${(stats.maxDistanceFromStartM / 1000).toStringAsFixed(2)} km'),
-                        _detailRow(l10n.flightDetailAvgGroundSpeed,
-                            '${stats.avgGroundSpeedKph.toStringAsFixed(1)} km/h'),
-                        _detailRow(l10n.flightDetailAvgCruiseSpeed,
-                            '${stats.avgCruiseSpeedKph.toStringAsFixed(1)} km/h'),
-                        _detailRow(l10n.flightDetailMaxSpeed,
-                            '${stats.maxSpeedKph.toStringAsFixed(1)} km/h'),
-                        _detailRow(l10n.flightDetailAvgClimb,
-                            '${stats.avgClimbMs.toStringAsFixed(1)} m/s'),
-                        _detailRow(l10n.flightDetailAvgSink,
-                            '${stats.avgSinkMs.toStringAsFixed(1)} m/s'),
-                        _detailRow(
+                              '${stats.faiClosed ? ' (${l10n.flightDetailFaiClosed})' : ''}',
+                            ),
+                          _detailRow(
+                            l10n.flightDetailMaxFromStart,
+                            '${(stats.maxDistanceFromStartM / 1000).toStringAsFixed(2)} km',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailAvgGroundSpeed,
+                            '${stats.avgGroundSpeedKph.toStringAsFixed(1)} km/h',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailAvgCruiseSpeed,
+                            '${stats.avgCruiseSpeedKph.toStringAsFixed(1)} km/h',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailMaxSpeed,
+                            '${stats.maxSpeedKph.toStringAsFixed(1)} km/h',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailAvgClimb,
+                            '${stats.avgClimbMs.toStringAsFixed(1)} m/s',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailAvgSink,
+                            '${stats.avgSinkMs.toStringAsFixed(1)} m/s',
+                          ),
+                          _detailRow(
                             l10n.flightDetailAvgGlideRatio,
                             stats.avgGlideRatio > 0
                                 ? stats.avgGlideRatio.toStringAsFixed(1)
-                                : '—'),
-                        _detailRow(l10n.flightDetailTrackEfficiency,
-                            '${(stats.trackEfficiency * 100).toStringAsFixed(0)} %'),
-                        _detailRow(l10n.flightDetailThermals,
-                            '${stats.thermalCount}'),
-                        _detailRow(l10n.flightDetailAltGained,
-                            '${stats.altitudeGainedM.toStringAsFixed(0)} m'),
-                        _detailRow(l10n.flightDetailAltLost,
-                            '${stats.altitudeLostM.toStringAsFixed(0)} m'),
-                        _detailRow(l10n.flightDetailClimbTime,
-                            _fmtDuration(stats.climbTime)),
-                        _detailRow(l10n.flightDetailGlideTime,
-                            _fmtDuration(stats.glideTime)),
-                        _detailRow(l10n.flightDetailSinkTime,
-                            _fmtDuration(stats.sinkTime)),
-                        _detailRow(l10n.flightDetailMovingTime,
-                            _fmtDuration(stats.movingTime)),
-                        const SizedBox(height: 8),
-                        _sectionLabel(theme, l10n.flightDetailExport),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            OutlinedButton.icon(
-                              onPressed: () => _exportGpx(track),
-                              icon: const Icon(Icons.map_outlined, size: 18),
-                              label: const Text('GPX'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: () => _exportIgc(track),
-                              icon:
-                                  const Icon(Icons.description_outlined, size: 18),
-                              label: const Text('IGC'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: () => _exportPdf(track),
-                              icon:
-                                  const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                              label: const Text('PDF'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: () => _saveShareCard(track),
-                              icon: const Icon(Icons.image_outlined, size: 18),
-                              label: Text(l10n.flightExportShareCard),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: () async {
-                                await _resolveSites(track);
-                                setDialogState(() {});
-                              },
-                              icon: const Icon(Icons.place_outlined, size: 18),
-                              label: Text(l10n.flightDetailSiteNames),
-                            ),
-                          ],
-                        ),
-                      ],
+                                : '—',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailTrackEfficiency,
+                            '${(stats.trackEfficiency * 100).toStringAsFixed(0)} %',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailThermals,
+                            '${stats.thermalCount}',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailAltGained,
+                            '${stats.altitudeGainedM.toStringAsFixed(0)} m',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailAltLost,
+                            '${stats.altitudeLostM.toStringAsFixed(0)} m',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailClimbTime,
+                            _fmtDuration(stats.climbTime),
+                          ),
+                          _detailRow(
+                            l10n.flightDetailGlideTime,
+                            _fmtDuration(stats.glideTime),
+                          ),
+                          _detailRow(
+                            l10n.flightDetailSinkTime,
+                            _fmtDuration(stats.sinkTime),
+                          ),
+                          _detailRow(
+                            l10n.flightDetailMovingTime,
+                            _fmtDuration(stats.movingTime),
+                          ),
+                          const SizedBox(height: 8),
+                          _sectionLabel(theme, l10n.flightDetailExport),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () => _exportGpx(track),
+                                icon: const Icon(Icons.map_outlined, size: 18),
+                                label: const Text('GPX'),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () => _exportIgc(track),
+                                icon: const Icon(
+                                  Icons.description_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text('IGC'),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () => _exportPdf(track),
+                                icon: const Icon(
+                                  Icons.picture_as_pdf_outlined,
+                                  size: 18,
+                                ),
+                                label: const Text('PDF'),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () => _saveShareCard(track),
+                                icon: const Icon(
+                                  Icons.image_outlined,
+                                  size: 18,
+                                ),
+                                label: Text(l10n.flightExportShareCard),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () async {
+                                  await _resolveSites(track);
+                                  setDialogState(() {});
+                                },
+                                icon: const Icon(
+                                  Icons.place_outlined,
+                                  size: 18,
+                                ),
+                                label: Text(l10n.flightDetailSiteNames),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),

@@ -1732,6 +1732,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsExportLibrary => '导出库（.pbflights）';
 
   @override
+  String get flightsSelectRecords => '选择要导出的飞行';
+
+  @override
+  String get flightsExportSelected => '导出所选飞行（.pbflights）';
+
+  @override
   String get flightsClearAll => '全部清除';
 
   @override
@@ -1831,6 +1837,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String flightsLibraryExportFailed(String error) {
     return '库导出失败：$error';
   }
+
+  @override
+  String get flightsLibraryExportSaved => '飞行数据包已保存到设备。';
+
+  @override
+  String get flightsExportDoneTitle => '导出完成';
+
+  @override
+  String get flightsExportDoneSaved => '飞行数据包已保存到设备。';
+
+  @override
+  String get flightsExportDoneShared => '飞行数据包已准备好分享。';
+
+  @override
+  String get flightsExportDetailFlights => '飞行数量';
+
+  @override
+  String get flightsExportDetailFileName => '文件';
+
+  @override
+  String get flightsExportDetailSize => '大小';
+
+  @override
+  String get flightsExportDetailLocation => '位置';
 
   @override
   String flightsImportResult(int added, int skipped) {

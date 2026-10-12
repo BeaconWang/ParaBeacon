@@ -3452,6 +3452,18 @@ abstract class AppLocalizations {
   /// **'Export library (.pbflights)'**
   String get flightsExportLibrary;
 
+  /// No description provided for @flightsSelectRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'Select flights to export'**
+  String get flightsSelectRecords;
+
+  /// No description provided for @flightsExportSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Export selected flights (.pbflights)'**
+  String get flightsExportSelected;
+
   /// No description provided for @flightsClearAll.
   ///
   /// In en, this message translates to:
@@ -3631,6 +3643,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Library export failed: {error}'**
   String flightsLibraryExportFailed(String error);
+
+  /// No description provided for @flightsLibraryExportSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight bundle saved on the device.'**
+  String get flightsLibraryExportSaved;
+
+  /// No description provided for @flightsExportDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export complete'**
+  String get flightsExportDoneTitle;
+
+  /// No description provided for @flightsExportDoneSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'The flight bundle was saved to your device.'**
+  String get flightsExportDoneSaved;
+
+  /// No description provided for @flightsExportDoneShared.
+  ///
+  /// In en, this message translates to:
+  /// **'The flight bundle is ready to share.'**
+  String get flightsExportDoneShared;
+
+  /// No description provided for @flightsExportDetailFlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights'**
+  String get flightsExportDetailFlights;
+
+  /// No description provided for @flightsExportDetailFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get flightsExportDetailFileName;
+
+  /// No description provided for @flightsExportDetailSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get flightsExportDetailSize;
+
+  /// No description provided for @flightsExportDetailLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get flightsExportDetailLocation;
 
   /// No description provided for @flightsImportResult.
   ///

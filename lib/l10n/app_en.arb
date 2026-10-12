@@ -817,6 +817,75 @@
   "flightDetailSiteNames": "Site names",
   "flightExportShareCard": "Share card",
 
+  "flightsStatistics": "Statistics",
+  "flightsStatisticsAll": "Statistics (all flights)",
+  "flightsStatisticsSelected": "Statistics (selected flights)",
+  "statsTitle": "Flight statistics",
+  "statsScopeAll": "All flights · {count}",
+  "@statsScopeAll": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsScopeSelected": "Selected · {count}",
+  "@statsScopeSelected": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsNoData": "No flights to analyze",
+  "statsNoDataHint": "Record or select flights to see statistics.",
+  "statsNotEnoughData": "Not enough data",
+  "statsRecordOn": "on {date}",
+  "@statsRecordOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "statsFlightsCount": "{count, plural, =0{No flights} =1{1 flight} other{{count} flights}}",
+  "@statsFlightsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "statsSectionOverview": "Overview",
+  "statsSectionRecords": "Personal records",
+  "statsSectionAverages": "Averages",
+  "statsSectionTotals": "Totals",
+  "statsSectionByYear": "Flights by year",
+  "statsSectionByMonth": "Seasonality (by month)",
+  "statsSectionByAircraft": "By glider / aircraft",
+  "statsSectionBySite": "By takeoff site",
+
+  "statsFlights": "Flights",
+  "statsTotalAirtime": "Total airtime",
+  "statsTotalDistance": "Total distance",
+  "statsTotalXcDistance": "Total XC distance",
+  "statsDateRange": "Date range",
+  "statsActiveDays": "Active days",
+  "statsFlightsPerDay": "Flights / active day",
+  "statsFirstFlight": "First flight",
+  "statsLastFlight": "Last flight",
+  "statsSampledFlights": "Flights with track data",
+
+  "statsLongestFlight": "Longest flight",
+  "statsLongestDistance": "Longest track distance",
+  "statsLongestXc": "Longest straight distance",
+  "statsMaxDistanceFromStart": "Farthest from launch",
+  "statsHighestAltitude": "Highest altitude",
+  "statsLowestAltitude": "Lowest altitude",
+  "statsMaxClimb": "Strongest climb",
+  "statsMaxSink": "Strongest sink",
+  "statsMaxSpeed": "Top speed",
+  "statsBestGlide": "Best glide ratio",
+  "statsBestFaiTriangle": "Best FAI triangle",
+
+  "statsAvgDuration": "Avg flight time",
+  "statsAvgDistance": "Avg track distance",
+  "statsAvgXcDistance": "Avg straight distance",
+  "statsAvgMaxAltitude": "Avg max altitude",
+  "statsAvgSpeed": "Avg ground speed",
+  "statsAvgGlide": "Avg glide ratio",
+
+  "statsTotalAltGained": "Total altitude gained",
+  "statsTotalAltLost": "Total altitude lost",
+  "statsTotalThermals": "Thermals climbed",
+  "statsTotalMovingTime": "Total moving time",
+  "statsTotalSamples": "Track points",
+
   "flightsDeleteSamplesTitle": "Delete sample data?",
   "flightsDeleteSamplesMessage": "This removes the per-point track data (position/altitude/vario) for this flight. The flight and its summary stay in the log, but it can no longer be replayed. This cannot be undone.",
   "flightsClearAllTitle": "Clear all flights?",

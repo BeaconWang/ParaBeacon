@@ -2030,6 +2030,174 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightExportShareCard => 'Share card';
 
   @override
+  String get flightsStatistics => 'Statistics';
+
+  @override
+  String get flightsStatisticsAll => 'Statistics (all flights)';
+
+  @override
+  String get flightsStatisticsSelected => 'Statistics (selected flights)';
+
+  @override
+  String get statsTitle => 'Flight statistics';
+
+  @override
+  String statsScopeAll(int count) {
+    return 'All flights · $count';
+  }
+
+  @override
+  String statsScopeSelected(int count) {
+    return 'Selected · $count';
+  }
+
+  @override
+  String get statsNoData => 'No flights to analyze';
+
+  @override
+  String get statsNoDataHint => 'Record or select flights to see statistics.';
+
+  @override
+  String get statsNotEnoughData => 'Not enough data';
+
+  @override
+  String statsRecordOn(String date) {
+    return 'on $date';
+  }
+
+  @override
+  String statsFlightsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count flights',
+      one: '1 flight',
+      zero: 'No flights',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get statsSectionOverview => 'Overview';
+
+  @override
+  String get statsSectionRecords => 'Personal records';
+
+  @override
+  String get statsSectionAverages => 'Averages';
+
+  @override
+  String get statsSectionTotals => 'Totals';
+
+  @override
+  String get statsSectionByYear => 'Flights by year';
+
+  @override
+  String get statsSectionByMonth => 'Seasonality (by month)';
+
+  @override
+  String get statsSectionByAircraft => 'By glider / aircraft';
+
+  @override
+  String get statsSectionBySite => 'By takeoff site';
+
+  @override
+  String get statsFlights => 'Flights';
+
+  @override
+  String get statsTotalAirtime => 'Total airtime';
+
+  @override
+  String get statsTotalDistance => 'Total distance';
+
+  @override
+  String get statsTotalXcDistance => 'Total XC distance';
+
+  @override
+  String get statsDateRange => 'Date range';
+
+  @override
+  String get statsActiveDays => 'Active days';
+
+  @override
+  String get statsFlightsPerDay => 'Flights / active day';
+
+  @override
+  String get statsFirstFlight => 'First flight';
+
+  @override
+  String get statsLastFlight => 'Last flight';
+
+  @override
+  String get statsSampledFlights => 'Flights with track data';
+
+  @override
+  String get statsLongestFlight => 'Longest flight';
+
+  @override
+  String get statsLongestDistance => 'Longest track distance';
+
+  @override
+  String get statsLongestXc => 'Longest straight distance';
+
+  @override
+  String get statsMaxDistanceFromStart => 'Farthest from launch';
+
+  @override
+  String get statsHighestAltitude => 'Highest altitude';
+
+  @override
+  String get statsLowestAltitude => 'Lowest altitude';
+
+  @override
+  String get statsMaxClimb => 'Strongest climb';
+
+  @override
+  String get statsMaxSink => 'Strongest sink';
+
+  @override
+  String get statsMaxSpeed => 'Top speed';
+
+  @override
+  String get statsBestGlide => 'Best glide ratio';
+
+  @override
+  String get statsBestFaiTriangle => 'Best FAI triangle';
+
+  @override
+  String get statsAvgDuration => 'Avg flight time';
+
+  @override
+  String get statsAvgDistance => 'Avg track distance';
+
+  @override
+  String get statsAvgXcDistance => 'Avg straight distance';
+
+  @override
+  String get statsAvgMaxAltitude => 'Avg max altitude';
+
+  @override
+  String get statsAvgSpeed => 'Avg ground speed';
+
+  @override
+  String get statsAvgGlide => 'Avg glide ratio';
+
+  @override
+  String get statsTotalAltGained => 'Total altitude gained';
+
+  @override
+  String get statsTotalAltLost => 'Total altitude lost';
+
+  @override
+  String get statsTotalThermals => 'Thermals climbed';
+
+  @override
+  String get statsTotalMovingTime => 'Total moving time';
+
+  @override
+  String get statsTotalSamples => 'Track points';
+
+  @override
   String get flightsDeleteSamplesTitle => 'Delete sample data?';
 
   @override

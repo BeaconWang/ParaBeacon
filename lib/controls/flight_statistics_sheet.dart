@@ -1,0 +1,673 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../data/flight_recorder.dart';
+import '../data/flight_statistics.dart';
+import '../l10n/app_localizations.dart';
+
+/// Opens the flight Statistics screen for [tracks] as a full-screen sheet.
+///
+/// [selected] controls the scope label in the header (all flights vs. the
+/// currently-selected subset).
+Future<void> showFlightStatisticsSheet(
+  BuildContext context, {
+  required List<FlightTrack> tracks,
+  required bool selected,
+}) {
+  final snapshot = List<FlightTrack>.unmodifiable(tracks);
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    shape: const RoundedRectangleBorder(),
+    constraints: const BoxConstraints.expand(),
+    builder: (context) =>
+        _FlightStatisticsSheet(tracks: snapshot, selected: selected),
+  );
+}
+
+class _FlightStatisticsSheet extends StatelessWidget {
+  const _FlightStatisticsSheet({required this.tracks, required this.selected});
+
+  final List<FlightTrack> tracks;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final stats = FlightStatistics.compute(tracks);
+    final locale = Localizations.localeOf(context).toString();
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: l10n.close,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.statsTitle),
+            Text(
+              selected
+                  ? l10n.statsScopeSelected(stats.flightCount)
+                  : l10n.statsScopeAll(stats.flightCount),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: SafeArea(
+        top: false,
+        child: stats.isEmpty
+            ? _empty(context, theme, l10n)
+            : _StatsBody(stats: stats, locale: locale),
+      ),
+    );
+  }
+
+  Widget _empty(BuildContext context, ThemeData theme, AppLocalizations l10n) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.insights_outlined,
+            size: 48,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            l10n.statsNoData,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.statsNoDataHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatsBody extends StatelessWidget {
+  const _StatsBody({required this.stats, required this.locale});
+
+  final FlightStatistics stats;
+  final String locale;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      children: [
+        // ── Hero summary cards ────────────────────────────────────────────
+        _heroGrid(context, theme, l10n),
+        const SizedBox(height: 20),
+
+        // ── Overview ───────────────────────────────────────────────────────
+        _Section(
+          title: l10n.statsSectionOverview,
+          icon: Icons.dashboard_outlined,
+          child: Column(
+            children: [
+              _kv(theme, l10n.statsDateRange, _dateRange(l10n)),
+              _kv(theme, l10n.statsFirstFlight, _date(stats.firstFlight)),
+              _kv(theme, l10n.statsLastFlight, _date(stats.lastFlight)),
+              _kv(theme, l10n.statsActiveDays, '${stats.activeDays}'),
+              _kv(
+                theme,
+                l10n.statsFlightsPerDay,
+                stats.flightsPerActiveDay.toStringAsFixed(1),
+              ),
+              _kv(
+                theme,
+                l10n.statsSampledFlights,
+                '${stats.flightsWithSamples} / ${stats.flightCount}',
+              ),
+            ],
+          ),
+        ),
+
+        // ── Personal records ─────────────────────────────────────────────
+        _Section(
+          title: l10n.statsSectionRecords,
+          icon: Icons.emoji_events_outlined,
+          child: Column(
+            children: [
+              _record(
+                theme,
+                l10n,
+                l10n.statsLongestFlight,
+                stats.longestDuration == null
+                    ? null
+                    : _hms(stats.longestDuration!.value),
+                stats.longestDuration?.track,
+              ),
+              _record(
+                theme,
+                l10n,
+                l10n.statsLongestDistance,
+                stats.longestTrackDistanceM == null
+                    ? null
+                    : _km(stats.longestTrackDistanceM!.value, 2),
+                stats.longestTrackDistanceM?.track,
+              ),
+              _record(
+                theme,
+                l10n,
+                l10n.statsLongestXc,
+                stats.longestStraightDistanceM == null
+                    ? null
+                    : _km(stats.longestStraightDistanceM!.value, 2),
+                stats.longestStraightDistanceM?.track,
+              ),
+              _record(
+                theme,
+                l10n,
+                l10n.statsBestFaiTriangle,
+                stats.bestFaiTriangleM == null
+                    ? null
+                    : _km(stats.bestFaiTriangleM!.value, 2),
+                stats.bestFaiTriangleM?.track,
+              ),
+              _record(
+                theme,
+                l10n,
+                l10n.statsMaxDistanceFromStart,
+                stats.maxDistanceFromStartM == null
+                    ? null
+                    : _km(stats.maxDistanceFromStartM!.value, 2),
+                stats.maxDistanceFromStartM?.track,
+              ),
+              _record(
+                theme,
+                l10n,
+                l10n.statsHighestAltitude,
+                stats.highestAltitudeM == null
+                    ? null
+                    : '${stats.highestAltitudeM!.value.toStringAsFixed(0)} m',
+                stats.highestAltitudeM?.track,
+              ),
+              _record(
+                theme,
+                l10n,
+                l10n.statsMaxClimb,
+                stats.maxClimbMs == null
+                    ? null
+                    : '${stats.maxClimbMs!.value.toStringAsFixed(1)} m/s',
+                stats.maxClimbMs?.track,
+              ),
+              _record(
+                theme,
+                l10n,
+                l10n.statsMaxSink,
+                stats.maxSinkMs == null
+                    ? null
+                    : '${stats.maxSinkMs!.value.toStringAsFixed(1)} m/s',
+                stats.maxSinkMs?.track,
+              ),
+              _record(
+                theme,
+                l10n,
+                l10n.statsMaxSpeed,
+                stats.maxSpeedKph == null
+                    ? null
+                    : '${stats.maxSpeedKph!.value.toStringAsFixed(1)} km/h',
+                stats.maxSpeedKph?.track,
+              ),
+              _record(
+                theme,
+                l10n,
+                l10n.statsBestGlide,
+                stats.bestGlideRatio?.value.toStringAsFixed(1),
+                stats.bestGlideRatio?.track,
+              ),
+            ],
+          ),
+        ),
+
+        // ── Averages ────────────────────────────────────────────────────
+        _Section(
+          title: l10n.statsSectionAverages,
+          icon: Icons.timeline_outlined,
+          child: Column(
+            children: [
+              _kv(theme, l10n.statsAvgDuration, _hms(stats.avgDuration)),
+              _kv(theme, l10n.statsAvgDistance, _km(stats.avgTrackDistanceM, 2)),
+              _kv(
+                theme,
+                l10n.statsAvgXcDistance,
+                _km(stats.avgStraightDistanceM, 2),
+              ),
+              _kv(
+                theme,
+                l10n.statsAvgMaxAltitude,
+                '${stats.avgMaxAltitudeM.toStringAsFixed(0)} m',
+              ),
+              _kv(
+                theme,
+                l10n.statsAvgSpeed,
+                '${stats.avgSpeedKph.toStringAsFixed(1)} km/h',
+              ),
+              _kv(
+                theme,
+                l10n.statsAvgGlide,
+                stats.avgGlideRatio > 0
+                    ? stats.avgGlideRatio.toStringAsFixed(1)
+                    : '—',
+              ),
+            ],
+          ),
+        ),
+
+        // ── Totals ──────────────────────────────────────────────────────
+        _Section(
+          title: l10n.statsSectionTotals,
+          icon: Icons.summarize_outlined,
+          child: Column(
+            children: [
+              _kv(
+                theme,
+                l10n.statsTotalAltGained,
+                '${stats.totalAltitudeGainedM.toStringAsFixed(0)} m',
+              ),
+              _kv(
+                theme,
+                l10n.statsTotalAltLost,
+                '${stats.totalAltitudeLostM.toStringAsFixed(0)} m',
+              ),
+              _kv(theme, l10n.statsTotalThermals, '${stats.totalThermals}'),
+              _kv(
+                theme,
+                l10n.statsTotalMovingTime,
+                _hms(stats.totalAirtimeMoving),
+              ),
+              _kv(theme, l10n.statsTotalSamples, '${stats.totalSamples}'),
+            ],
+          ),
+        ),
+
+        // ── Distributions ────────────────────────────────────────────────
+        _Section(
+          title: l10n.statsSectionByYear,
+          icon: Icons.calendar_today_outlined,
+          child: _BarChart(buckets: stats.byYear, locale: locale),
+        ),
+        _Section(
+          title: l10n.statsSectionByMonth,
+          icon: Icons.wb_sunny_outlined,
+          child: _BarChart(
+            buckets: stats.monthsLabeled(_monthLabels()),
+            locale: locale,
+            hideEmpty: false,
+          ),
+        ),
+        if (stats.byAircraft.isNotEmpty)
+          _Section(
+            title: l10n.statsSectionByAircraft,
+            icon: Icons.paragliding_outlined,
+            child: _BarChart(buckets: stats.byAircraft, locale: locale),
+          ),
+        if (stats.byTakeoffSite.isNotEmpty)
+          _Section(
+            title: l10n.statsSectionBySite,
+            icon: Icons.place_outlined,
+            child: _BarChart(buckets: stats.byTakeoffSite, locale: locale),
+          ),
+      ],
+    );
+  }
+
+  // ── Hero cards ───────────────────────────────────────────────────────────
+  Widget _heroGrid(BuildContext context, ThemeData theme, AppLocalizations l10n) {
+    final cards = <Widget>[
+      _HeroCard(
+        icon: Icons.flight_takeoff,
+        label: l10n.statsFlights,
+        value: '${stats.flightCount}',
+      ),
+      _HeroCard(
+        icon: Icons.timer_outlined,
+        label: l10n.statsTotalAirtime,
+        value: _hms(stats.totalDuration),
+      ),
+      _HeroCard(
+        icon: Icons.straighten,
+        label: l10n.statsTotalDistance,
+        value: _km(stats.totalTrackDistanceM, 1),
+      ),
+      _HeroCard(
+        icon: Icons.explore_outlined,
+        label: l10n.statsTotalXcDistance,
+        value: _km(stats.totalStraightDistanceM, 1),
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 12.0;
+        final width = (constraints.maxWidth - spacing) / 2;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final c in cards) SizedBox(width: width, child: c),
+          ],
+        );
+      },
+    );
+  }
+
+  // ── Row builders ───────────────────────────────────────────────────────
+  Widget _kv(ThemeData theme, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            value,
+            textAlign: TextAlign.end,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _record(
+    ThemeData theme,
+    AppLocalizations l10n,
+    String label,
+    String? value,
+    FlightTrack? track,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value ?? '—',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: value == null ? theme.colorScheme.onSurfaceVariant : null,
+                ),
+              ),
+              if (value != null && track != null)
+                Text(
+                  l10n.statsRecordOn(_date(track.startTime)),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Formatting helpers ────────────────────────────────────────────────────
+  String _dateRange(AppLocalizations l10n) {
+    final a = stats.firstFlight;
+    final b = stats.lastFlight;
+    if (a == null || b == null) return '—';
+    final da = _date(a);
+    final db = _date(b);
+    return da == db ? da : '$da → $db';
+  }
+
+  String _date(DateTime? t) {
+    if (t == null) return '—';
+    return DateFormat.yMMMd(locale).format(t);
+  }
+
+  List<String> _monthLabels() {
+    final fmt = DateFormat.MMM(locale);
+    return [
+      for (var m = 1; m <= 12; m++) fmt.format(DateTime(2020, m)),
+    ];
+  }
+
+  /// Kilometres with [digits] decimals. The caller appends the unit except for
+  /// the already-suffixed hero card.
+  static String _km(double meters, int digits) =>
+      '${(meters / 1000).toStringAsFixed(digits)} km';
+
+  static String _hms(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes % 60;
+    if (h > 0) return '${h}h ${m.toString().padLeft(2, '0')}m';
+    final s = d.inSeconds % 60;
+    return '${m}m ${s.toString().padLeft(2, '0')}s';
+  }
+}
+
+/// A titled card section with an icon and a soft surface background.
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.icon, required this.child});
+
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 14),
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A compact hero statistic card (big value + small label).
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: theme.colorScheme.primary),
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A simple dependency-free horizontal bar chart over labelled [buckets].
+///
+/// Bars are scaled to the busiest bucket's flight count; each row shows the
+/// label, the proportional bar and the flight count plus airtime.
+class _BarChart extends StatelessWidget {
+  const _BarChart({
+    required this.buckets,
+    required this.locale,
+    this.hideEmpty = true,
+  });
+
+  final List<FlightBucket> buckets;
+  final String locale;
+  final bool hideEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final shown = hideEmpty
+        ? buckets.where((b) => b.count > 0).toList()
+        : buckets;
+    if (shown.isEmpty) {
+      return Text(
+        l10n.statsNotEnoughData,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+    final maxCount = shown.map((b) => b.count).fold<int>(0, (a, b) => a > b ? a : b);
+
+    return Column(
+      children: [
+        for (final b in shown) _row(theme, b, maxCount),
+      ],
+    );
+  }
+
+  Widget _row(ThemeData theme, FlightBucket b, int maxCount) {
+    final fraction = maxCount == 0 ? 0.0 : b.count / maxCount;
+    final h = b.duration.inHours;
+    final m = b.duration.inMinutes % 60;
+    final airtime = h > 0 ? '${h}h ${m}m' : '${m}m';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 52,
+            child: Text(
+              b.label,
+              style: theme.textTheme.bodySmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Stack(
+              children: [
+                Container(
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: fraction.clamp(0.0, 1.0),
+                  child: Container(
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 92,
+            child: Text(
+              b.count == 0 ? '—' : '${b.count} · $airtime',
+              textAlign: TextAlign.end,
+              style: theme.textTheme.labelSmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

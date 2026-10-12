@@ -13,6 +13,7 @@ import '../data/geo_name_settings.dart';
 import '../data/reverse_geocoder_service.dart';
 import '../l10n/app_localizations.dart';
 import 'flight_replay_sheet.dart';
+import 'flight_statistics_sheet.dart';
 import 'track_3d_sheet.dart';
 
 /// Opens the Flights screen (all recorded flights) as a full-screen sheet.
@@ -147,6 +148,13 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     if (_selectionMode) {
       return [
         IconButton(
+          icon: const Icon(Icons.insights_outlined),
+          tooltip: l10n.flightsStatisticsSelected,
+          onPressed: _selectedTracks.isEmpty
+              ? null
+              : () => _showStatistics(_selectedTracks.toList(), selected: true),
+        ),
+        IconButton(
           icon: const Icon(Icons.file_upload_outlined),
           tooltip: l10n.flightsExportSelected,
           onPressed: _selectedTracks.isEmpty
@@ -173,6 +181,12 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         tooltip: l10n.flightsImportLibrary,
         onPressed: _importLibrary,
       ),
+      if (tracks.isNotEmpty)
+        IconButton(
+          icon: const Icon(Icons.insights_outlined),
+          tooltip: l10n.flightsStatisticsAll,
+          onPressed: () => _showStatistics(tracks, selected: false),
+        ),
       if (tracks.isNotEmpty)
         IconButton(
           icon: const Icon(Icons.file_upload_outlined),
@@ -315,6 +329,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
   void _replay3D(FlightTrack track) {
     showTrack3DSheet(context, track);
+  }
+
+  void _showStatistics(List<FlightTrack> tracks, {required bool selected}) {
+    if (tracks.isEmpty) return;
+    showFlightStatisticsSheet(context, tracks: tracks, selected: selected);
   }
 
   // ── Share card ─────────────────────────────────────────────────────────

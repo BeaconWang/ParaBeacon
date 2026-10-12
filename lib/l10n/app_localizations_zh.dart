@@ -1986,6 +1986,173 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightExportShareCard => '分享卡片';
 
   @override
+  String get flightsStatistics => '统计';
+
+  @override
+  String get flightsStatisticsAll => '统计（全部飞行）';
+
+  @override
+  String get flightsStatisticsSelected => '统计（所选飞行）';
+
+  @override
+  String get statsTitle => '飞行统计';
+
+  @override
+  String statsScopeAll(int count) {
+    return '全部飞行 · $count';
+  }
+
+  @override
+  String statsScopeSelected(int count) {
+    return '已选 · $count';
+  }
+
+  @override
+  String get statsNoData => '没有可统计的飞行';
+
+  @override
+  String get statsNoDataHint => '记录或选择飞行后即可查看统计数据。';
+
+  @override
+  String get statsNotEnoughData => '数据不足';
+
+  @override
+  String statsRecordOn(String date) {
+    return '于 $date';
+  }
+
+  @override
+  String statsFlightsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 次飞行',
+      zero: '无飞行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get statsSectionOverview => '概览';
+
+  @override
+  String get statsSectionRecords => '个人纪录';
+
+  @override
+  String get statsSectionAverages => '平均值';
+
+  @override
+  String get statsSectionTotals => '累计';
+
+  @override
+  String get statsSectionByYear => '按年份统计';
+
+  @override
+  String get statsSectionByMonth => '季节分布（按月）';
+
+  @override
+  String get statsSectionByAircraft => '按翼伞 / 飞行器';
+
+  @override
+  String get statsSectionBySite => '按起飞地点';
+
+  @override
+  String get statsFlights => '飞行次数';
+
+  @override
+  String get statsTotalAirtime => '总飞行时间';
+
+  @override
+  String get statsTotalDistance => '总距离';
+
+  @override
+  String get statsTotalXcDistance => '总越野距离';
+
+  @override
+  String get statsDateRange => '日期范围';
+
+  @override
+  String get statsActiveDays => '飞行天数';
+
+  @override
+  String get statsFlightsPerDay => '每飞行日次数';
+
+  @override
+  String get statsFirstFlight => '首次飞行';
+
+  @override
+  String get statsLastFlight => '最近飞行';
+
+  @override
+  String get statsSampledFlights => '含航迹数据的飞行';
+
+  @override
+  String get statsLongestFlight => '最长飞行时间';
+
+  @override
+  String get statsLongestDistance => '最长航迹距离';
+
+  @override
+  String get statsLongestXc => '最长直线距离';
+
+  @override
+  String get statsMaxDistanceFromStart => '距起点最远';
+
+  @override
+  String get statsHighestAltitude => '最高海拔';
+
+  @override
+  String get statsLowestAltitude => '最低海拔';
+
+  @override
+  String get statsMaxClimb => '最强爬升';
+
+  @override
+  String get statsMaxSink => '最强下沉';
+
+  @override
+  String get statsMaxSpeed => '最高速度';
+
+  @override
+  String get statsBestGlide => '最佳滑翔比';
+
+  @override
+  String get statsBestFaiTriangle => '最佳 FAI 三角';
+
+  @override
+  String get statsAvgDuration => '平均飞行时间';
+
+  @override
+  String get statsAvgDistance => '平均航迹距离';
+
+  @override
+  String get statsAvgXcDistance => '平均直线距离';
+
+  @override
+  String get statsAvgMaxAltitude => '平均最高海拔';
+
+  @override
+  String get statsAvgSpeed => '平均地速';
+
+  @override
+  String get statsAvgGlide => '平均滑翔比';
+
+  @override
+  String get statsTotalAltGained => '累计爬升高度';
+
+  @override
+  String get statsTotalAltLost => '累计下降高度';
+
+  @override
+  String get statsTotalThermals => '热气流爬升次数';
+
+  @override
+  String get statsTotalMovingTime => '总移动时间';
+
+  @override
+  String get statsTotalSamples => '航迹点数';
+
+  @override
   String get flightsDeleteSamplesTitle => '删除采样数据？';
 
   @override

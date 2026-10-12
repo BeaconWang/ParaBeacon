@@ -710,6 +710,75 @@
   "flightDetailSiteNames": "地名",
   "flightExportShareCard": "分享卡片",
 
+  "flightsStatistics": "统计",
+  "flightsStatisticsAll": "统计（全部飞行）",
+  "flightsStatisticsSelected": "统计（所选飞行）",
+  "statsTitle": "飞行统计",
+  "statsScopeAll": "全部飞行 · {count}",
+  "@statsScopeAll": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsScopeSelected": "已选 · {count}",
+  "@statsScopeSelected": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsNoData": "没有可统计的飞行",
+  "statsNoDataHint": "记录或选择飞行后即可查看统计数据。",
+  "statsNotEnoughData": "数据不足",
+  "statsRecordOn": "于 {date}",
+  "@statsRecordOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "statsFlightsCount": "{count, plural, =0{无飞行} other{{count} 次飞行}}",
+  "@statsFlightsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "statsSectionOverview": "概览",
+  "statsSectionRecords": "个人纪录",
+  "statsSectionAverages": "平均值",
+  "statsSectionTotals": "累计",
+  "statsSectionByYear": "按年份统计",
+  "statsSectionByMonth": "季节分布（按月）",
+  "statsSectionByAircraft": "按翼伞 / 飞行器",
+  "statsSectionBySite": "按起飞地点",
+
+  "statsFlights": "飞行次数",
+  "statsTotalAirtime": "总飞行时间",
+  "statsTotalDistance": "总距离",
+  "statsTotalXcDistance": "总越野距离",
+  "statsDateRange": "日期范围",
+  "statsActiveDays": "飞行天数",
+  "statsFlightsPerDay": "每飞行日次数",
+  "statsFirstFlight": "首次飞行",
+  "statsLastFlight": "最近飞行",
+  "statsSampledFlights": "含航迹数据的飞行",
+
+  "statsLongestFlight": "最长飞行时间",
+  "statsLongestDistance": "最长航迹距离",
+  "statsLongestXc": "最长直线距离",
+  "statsMaxDistanceFromStart": "距起点最远",
+  "statsHighestAltitude": "最高海拔",
+  "statsLowestAltitude": "最低海拔",
+  "statsMaxClimb": "最强爬升",
+  "statsMaxSink": "最强下沉",
+  "statsMaxSpeed": "最高速度",
+  "statsBestGlide": "最佳滑翔比",
+  "statsBestFaiTriangle": "最佳 FAI 三角",
+
+  "statsAvgDuration": "平均飞行时间",
+  "statsAvgDistance": "平均航迹距离",
+  "statsAvgXcDistance": "平均直线距离",
+  "statsAvgMaxAltitude": "平均最高海拔",
+  "statsAvgSpeed": "平均地速",
+  "statsAvgGlide": "平均滑翔比",
+
+  "statsTotalAltGained": "累计爬升高度",
+  "statsTotalAltLost": "累计下降高度",
+  "statsTotalThermals": "热气流爬升次数",
+  "statsTotalMovingTime": "总移动时间",
+  "statsTotalSamples": "航迹点数",
+
   "flightsDeleteSamplesTitle": "删除采样数据？",
   "flightsDeleteSamplesMessage": "这将删除此飞行的逐点航迹数据（位置/海拔/升降）。飞行及其摘要仍保留在记录中，但将无法再回放。此操作无法撤销。",
   "flightsClearAllTitle": "清除所有飞行？",

@@ -3926,6 +3926,312 @@ abstract class AppLocalizations {
   /// **'Share card'**
   String get flightExportShareCard;
 
+  /// No description provided for @flightsStatistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics'**
+  String get flightsStatistics;
+
+  /// No description provided for @flightsStatisticsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics (all flights)'**
+  String get flightsStatisticsAll;
+
+  /// No description provided for @flightsStatisticsSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics (selected flights)'**
+  String get flightsStatisticsSelected;
+
+  /// No description provided for @statsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight statistics'**
+  String get statsTitle;
+
+  /// No description provided for @statsScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All flights · {count}'**
+  String statsScopeAll(int count);
+
+  /// No description provided for @statsScopeSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected · {count}'**
+  String statsScopeSelected(int count);
+
+  /// No description provided for @statsNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No flights to analyze'**
+  String get statsNoData;
+
+  /// No description provided for @statsNoDataHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Record or select flights to see statistics.'**
+  String get statsNoDataHint;
+
+  /// No description provided for @statsNotEnoughData.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough data'**
+  String get statsNotEnoughData;
+
+  /// No description provided for @statsRecordOn.
+  ///
+  /// In en, this message translates to:
+  /// **'on {date}'**
+  String statsRecordOn(String date);
+
+  /// No description provided for @statsFlightsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No flights} =1{1 flight} other{{count} flights}}'**
+  String statsFlightsCount(int count);
+
+  /// No description provided for @statsSectionOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get statsSectionOverview;
+
+  /// No description provided for @statsSectionRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal records'**
+  String get statsSectionRecords;
+
+  /// No description provided for @statsSectionAverages.
+  ///
+  /// In en, this message translates to:
+  /// **'Averages'**
+  String get statsSectionAverages;
+
+  /// No description provided for @statsSectionTotals.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals'**
+  String get statsSectionTotals;
+
+  /// No description provided for @statsSectionByYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights by year'**
+  String get statsSectionByYear;
+
+  /// No description provided for @statsSectionByMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Seasonality (by month)'**
+  String get statsSectionByMonth;
+
+  /// No description provided for @statsSectionByAircraft.
+  ///
+  /// In en, this message translates to:
+  /// **'By glider / aircraft'**
+  String get statsSectionByAircraft;
+
+  /// No description provided for @statsSectionBySite.
+  ///
+  /// In en, this message translates to:
+  /// **'By takeoff site'**
+  String get statsSectionBySite;
+
+  /// No description provided for @statsFlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights'**
+  String get statsFlights;
+
+  /// No description provided for @statsTotalAirtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Total airtime'**
+  String get statsTotalAirtime;
+
+  /// No description provided for @statsTotalDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Total distance'**
+  String get statsTotalDistance;
+
+  /// No description provided for @statsTotalXcDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Total XC distance'**
+  String get statsTotalXcDistance;
+
+  /// No description provided for @statsDateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get statsDateRange;
+
+  /// No description provided for @statsActiveDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Active days'**
+  String get statsActiveDays;
+
+  /// No description provided for @statsFlightsPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights / active day'**
+  String get statsFlightsPerDay;
+
+  /// No description provided for @statsFirstFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'First flight'**
+  String get statsFirstFlight;
+
+  /// No description provided for @statsLastFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Last flight'**
+  String get statsLastFlight;
+
+  /// No description provided for @statsSampledFlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights with track data'**
+  String get statsSampledFlights;
+
+  /// No description provided for @statsLongestFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest flight'**
+  String get statsLongestFlight;
+
+  /// No description provided for @statsLongestDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest track distance'**
+  String get statsLongestDistance;
+
+  /// No description provided for @statsLongestXc.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest straight distance'**
+  String get statsLongestXc;
+
+  /// No description provided for @statsMaxDistanceFromStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Farthest from launch'**
+  String get statsMaxDistanceFromStart;
+
+  /// No description provided for @statsHighestAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest altitude'**
+  String get statsHighestAltitude;
+
+  /// No description provided for @statsLowestAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Lowest altitude'**
+  String get statsLowestAltitude;
+
+  /// No description provided for @statsMaxClimb.
+  ///
+  /// In en, this message translates to:
+  /// **'Strongest climb'**
+  String get statsMaxClimb;
+
+  /// No description provided for @statsMaxSink.
+  ///
+  /// In en, this message translates to:
+  /// **'Strongest sink'**
+  String get statsMaxSink;
+
+  /// No description provided for @statsMaxSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Top speed'**
+  String get statsMaxSpeed;
+
+  /// No description provided for @statsBestGlide.
+  ///
+  /// In en, this message translates to:
+  /// **'Best glide ratio'**
+  String get statsBestGlide;
+
+  /// No description provided for @statsBestFaiTriangle.
+  ///
+  /// In en, this message translates to:
+  /// **'Best FAI triangle'**
+  String get statsBestFaiTriangle;
+
+  /// No description provided for @statsAvgDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg flight time'**
+  String get statsAvgDuration;
+
+  /// No description provided for @statsAvgDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg track distance'**
+  String get statsAvgDistance;
+
+  /// No description provided for @statsAvgXcDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg straight distance'**
+  String get statsAvgXcDistance;
+
+  /// No description provided for @statsAvgMaxAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg max altitude'**
+  String get statsAvgMaxAltitude;
+
+  /// No description provided for @statsAvgSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg ground speed'**
+  String get statsAvgSpeed;
+
+  /// No description provided for @statsAvgGlide.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg glide ratio'**
+  String get statsAvgGlide;
+
+  /// No description provided for @statsTotalAltGained.
+  ///
+  /// In en, this message translates to:
+  /// **'Total altitude gained'**
+  String get statsTotalAltGained;
+
+  /// No description provided for @statsTotalAltLost.
+  ///
+  /// In en, this message translates to:
+  /// **'Total altitude lost'**
+  String get statsTotalAltLost;
+
+  /// No description provided for @statsTotalThermals.
+  ///
+  /// In en, this message translates to:
+  /// **'Thermals climbed'**
+  String get statsTotalThermals;
+
+  /// No description provided for @statsTotalMovingTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Total moving time'**
+  String get statsTotalMovingTime;
+
+  /// No description provided for @statsTotalSamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Track points'**
+  String get statsTotalSamples;
+
   /// No description provided for @flightsDeleteSamplesTitle.
   ///
   /// In en, this message translates to:

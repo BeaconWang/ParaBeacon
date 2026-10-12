@@ -181,21 +181,10 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         ),
       if (tracks.isNotEmpty)
         IconButton(
-          icon: const Icon(Icons.checklist),
-          tooltip: l10n.flightsSelectRecords,
-          onPressed: _enterSelectionMode,
-        ),
-      if (tracks.isNotEmpty)
-        IconButton(
           icon: const Icon(Icons.delete_sweep_outlined),
           tooltip: l10n.flightsClearAll,
           onPressed: _confirmClearAll,
         ),
-      IconButton(
-        icon: const Icon(Icons.travel_explore),
-        tooltip: l10n.flightsPlaceNameSettings,
-        onPressed: _openGeoSettings,
-      ),
       IconButton(
         icon: const Icon(Icons.close),
         tooltip: l10n.close,
@@ -232,13 +221,6 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         ],
       ),
     );
-  }
-
-  void _enterSelectionMode() {
-    setState(() {
-      _selectionMode = true;
-      _selectedTracks.clear();
-    });
   }
 
   /// Enters selection mode from a long-press and selects [track].
@@ -457,65 +439,6 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       harness: track.harnessName,
       helmet: track.helmetName,
     );
-  }
-
-  // ── Place-name (reverse geocoding) settings ──────────────────────────────
-
-  Future<void> _openGeoSettings() async {
-    await GeoNameSettings.instance.load();
-    if (!mounted) return;
-    final l10n = AppLocalizations.of(context);
-    final settings = GeoNameSettings.instance;
-    final keyCtrl = TextEditingController(text: settings.amapKey ?? '');
-    var auto = settings.autoLookup;
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setInner) => AlertDialog(
-          title: Text(l10n.placeNameLookup),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.placeNameLookupDescription),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: keyCtrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.placeNameAmapKeyLabel,
-                  ),
-                  obscureText: true,
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.placeNameAutoLookup),
-                  value: auto,
-                  onChanged: (v) => setInner(() => auto = v),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(l10n.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(l10n.save),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (saved != true) return;
-    final key = keyCtrl.text.trim();
-    await settings.setAmapKey(key.isEmpty ? null : key);
-    await settings.setAutoLookup(auto);
-    _snack(l10n.placeNameSettingsSaved);
   }
 
   // ── Per-flight export ──────────────────────────────────────────────────

@@ -1999,6 +1999,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsClearAllMessage => '这将移除所有已记录的飞行。';
 
   @override
+  String get flightsDeleteTitle => '删除飞行记录？';
+
+  @override
+  String get flightsDeleteMessage => '此飞行记录将被永久删除，此操作无法撤销。';
+
+  @override
   String get replayTitle => '回放';
 
   @override

@@ -821,6 +821,8 @@
   "flightsDeleteSamplesMessage": "This removes the per-point track data (position/altitude/vario) for this flight. The flight and its summary stay in the log, but it can no longer be replayed. This cannot be undone.",
   "flightsClearAllTitle": "Clear all flights?",
   "flightsClearAllMessage": "This removes every recorded flight.",
+  "flightsDeleteTitle": "Delete flight?",
+  "flightsDeleteMessage": "This flight record will be permanently deleted. This cannot be undone.",
 
   "replayTitle": "Replay",
   "replayColorBy": "Color by",

@@ -297,7 +297,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
                   tooltip: l10n.delete,
-                  onPressed: () => _recorder.deleteTrack(track),
+                  onPressed: () => _confirmDeleteTrack(track),
                 ),
               ],
             ),
@@ -1014,6 +1014,28 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       ),
     );
     if (confirmed == true) _recorder.clearTracks();
+  }
+
+  Future<void> _confirmDeleteTrack(FlightTrack track) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.flightsDeleteTitle),
+        content: Text(l10n.flightsDeleteMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) _recorder.deleteTrack(track);
   }
 
   static String _fmtDateTime(DateTime t) {

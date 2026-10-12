@@ -714,6 +714,8 @@
   "flightsDeleteSamplesMessage": "这将删除此飞行的逐点航迹数据（位置/海拔/升降）。飞行及其摘要仍保留在记录中，但将无法再回放。此操作无法撤销。",
   "flightsClearAllTitle": "清除所有飞行？",
   "flightsClearAllMessage": "这将移除所有已记录的飞行。",
+  "flightsDeleteTitle": "删除飞行记录？",
+  "flightsDeleteMessage": "此飞行记录将被永久删除，此操作无法撤销。",
 
   "replayTitle": "回放",
   "replayColorBy": "着色依据",

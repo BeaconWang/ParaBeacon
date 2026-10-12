@@ -3950,6 +3950,18 @@ abstract class AppLocalizations {
   /// **'This removes every recorded flight.'**
   String get flightsClearAllMessage;
 
+  /// No description provided for @flightsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete flight?'**
+  String get flightsDeleteTitle;
+
+  /// No description provided for @flightsDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This flight record will be permanently deleted. This cannot be undone.'**
+  String get flightsDeleteMessage;
+
   /// No description provided for @replayTitle.
   ///
   /// In en, this message translates to:

@@ -2043,6 +2043,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsClearAllMessage => 'This removes every recorded flight.';
 
   @override
+  String get flightsDeleteTitle => 'Delete flight?';
+
+  @override
+  String get flightsDeleteMessage =>
+      'This flight record will be permanently deleted. This cannot be undone.';
+
+  @override
   String get replayTitle => 'Replay';
 
   @override

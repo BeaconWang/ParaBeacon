@@ -68,7 +68,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   bool _playing = false;
   double _speed = 1.0;
   bool _audioSync = false;
-  bool _telemetryMinimized = false;
+  bool _telemetryMinimized = true;
   Offset _telemetryOffset = const Offset(8, 8);
   Size? _telemetrySize;
 

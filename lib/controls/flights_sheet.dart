@@ -158,11 +158,6 @@ class _FlightsSheetState extends State<_FlightsSheet> {
           tooltip: l10n.cancel,
           onPressed: _leaveSelectionMode,
         ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: l10n.close,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
       ];
     }
     return [

@@ -699,7 +699,7 @@
   "flightsImportModeFolder": "Select a folder",
   "flightsImportModeFolderNote": "Import every .igc in a folder — no file limit",
   "flightsImportModeFiles": "Select files",
-  "flightsImportModeFilesNote": "Pick individual .igc files (up to ~1000)",
+  "flightsImportModeFilesNote": "Pick individual .igc files (up to 100)",
   "flightsImportXcTrackNote": "XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThat folder can't be opened directly on most phones. Copy it (or its .igc files) to Download first, then import from there.",
   "flightsImportingXcTrack": "Importing XCTrack flights…",
   "flightsImportNoIgc": "No .igc files were found in that folder.",

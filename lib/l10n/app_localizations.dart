@@ -3485,7 +3485,7 @@ abstract class AppLocalizations {
   /// No description provided for @flightsImportModeFilesNote.
   ///
   /// In en, this message translates to:
-  /// **'Pick individual .igc files (up to ~1000)'**
+  /// **'Pick individual .igc files (up to 100)'**
   String get flightsImportModeFilesNote;
 
   /// No description provided for @flightsImportXcTrackNote.

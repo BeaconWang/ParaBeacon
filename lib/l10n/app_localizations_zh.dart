@@ -1747,7 +1747,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsImportModeFiles => '选择文件';
 
   @override
-  String get flightsImportModeFilesNote => '逐个选择 .igc 文件（最多约 1000 个）';
+  String get flightsImportModeFilesNote => '逐个选择 .igc 文件（最多 100 个）';
 
   @override
   String get flightsImportXcTrackNote =>

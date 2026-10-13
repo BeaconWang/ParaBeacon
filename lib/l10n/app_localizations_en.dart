@@ -1789,7 +1789,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get flightsImportModeFilesNote =>
-      'Pick individual .igc files (up to ~1000)';
+      'Pick individual .igc files (up to 100)';
 
   @override
   String get flightsImportXcTrackNote =>

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'flight_data.dart';
 import 'raw_flight_data_source.dart';
+import 'wind_estimator.dart';
 
 /// The **data-transform layer**.
 ///
@@ -37,6 +38,12 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
   /// Timestamped *raw input* vertical-speed samples within
   /// [verticalSpeedWindow], oldest first.
   final List<_VsSample> _vsSamples = <_VsSample>[];
+
+  /// Derives a wind estimate from GPS ground-velocity while circling, used to
+  /// populate [FlightData.windSpeed] / [FlightData.windDirection] when the raw
+  /// feed carries no sensor wind reading. Fed once per raw update (never from a
+  /// widget's build), so the trailing window tracks real GPS cadence.
+  final WindEstimator _windEstimator = WindEstimator();
 
   /// The latest transformed snapshot exposed to controls.
   FlightData _data = FlightData.empty;
@@ -88,9 +95,43 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
     // timestamp, which would corrupt trailing-window eviction and time weights.
     // Debug-override input in particular is a live "now" user action.
     final avgVs = _averagedVerticalSpeed(raw.verticalSpeed, DateTime.now());
-    _data =
+    var next =
         raw.verticalSpeed == avgVs ? raw : raw.copyWith(verticalSpeed: avgVs);
+
+    // Wind: prefer a real sensor reading. When the feed carries none, derive it
+    // from GPS ground-velocity while circling so every control (compass, map,
+    // etc.) sees a consistent, non-zero wind. Only confident estimates (enough
+    // of a circle flown) are published; otherwise wind stays unknown (0).
+    next = _withDerivedWind(next);
+
+    _data = next;
     notifyListeners();
+  }
+
+  /// Returns [snapshot] with a derived wind reading applied when it has a GPS
+  /// fix but no sensor-provided wind. The estimate comes from fitting ground
+  /// speed vs heading over a trailing window (see [WindEstimator]); it is only
+  /// published once confident. A sensor wind (windSpeed > 0.1) is left intact,
+  /// and the estimator is reset so it does not blend stale pre-sensor samples.
+  FlightData _withDerivedWind(FlightData snapshot) {
+    if (snapshot.windSpeed > 0.1) {
+      _windEstimator.reset();
+      return snapshot;
+    }
+    if (!snapshot.hasFix) {
+      _windEstimator.reset();
+      return snapshot;
+    }
+    final est = _windEstimator.add(
+      groundSpeedMps: snapshot.groundSpeed / 3.6,
+      headingDeg: snapshot.heading,
+      time: DateTime.now(),
+    );
+    if (est == null || !est.confident) return snapshot;
+    return snapshot.copyWith(
+      windSpeed: est.speedKmh,
+      windDirection: est.fromDirectionDeg,
+    );
   }
 
   /// Records the raw input [raw] at [when] and returns the *time-weighted* mean

@@ -309,13 +309,10 @@ class _MapControlState extends State<MapControl> {
   final ThermalDetector _thermalDetector = ThermalDetector();
   ThermalHint? _thermal;
 
-  /// Self-contained wind estimator fed from GPS ground velocity while
-  /// circling. Used as a fallback when the sensor feed has no wind reading,
-  /// and to drift-compensate the thermal core.
-  final WindEstimator _windEstimator = WindEstimator();
-
-  /// Most recent wind estimate (sensor-provided when available, otherwise
-  /// derived from circling). Null until enough data / no wind.
+  /// Most recent wind estimate mirrored from the shared flight-data feed
+  /// (sensor-provided when available, otherwise a GPS circling estimate
+  /// computed in [FlightDataTransformer]). Null when wind is unknown. Used to
+  /// draw the wind indicator and to drift-compensate the thermal core.
   WindEstimate? _wind;
 
   /// Latest airspace proximity list (drives boundary colouring).
@@ -486,7 +483,6 @@ class _MapControlState extends State<MapControl> {
     final double climb = data.verticalSpeed;
     final double heading = data.heading;
     final double altMsl = data.altitude;
-    final double groundMps = data.groundSpeed / 3.6; // km/h -> m/s
     if (data.hasFix) {
       wgs = LatLng(data.latitude, data.longitude);
     }
@@ -503,21 +499,16 @@ class _MapControlState extends State<MapControl> {
       );
       AirspaceStore.instance
           .updatePosition(wgs.latitude, wgs.longitude, altMsl);
-      // Wind: prefer a real sensor reading; otherwise fall back to the
-      // circling estimator so the map can still show/use wind.
-      final estimate = _windEstimator.add(
-        groundSpeedMps: groundMps,
-        headingDeg: heading,
-      );
-      if (data.windSpeed > 0.1) {
-        _wind = WindEstimate(
-          fromDirectionDeg: data.windDirection,
-          speedMps: data.windSpeed / 3.6,
-          confident: true,
-        );
-      } else {
-        _wind = estimate;
-      }
+      // Wind is resolved centrally in the flight-data pipeline (a real sensor
+      // reading when available, otherwise a GPS circling estimate), so the map
+      // just mirrors the shared value and stays consistent with other controls.
+      _wind = data.windSpeed > 0.1
+          ? WindEstimate(
+              fromDirectionDeg: data.windDirection,
+              speedMps: data.windSpeed / 3.6,
+              confident: true,
+            )
+          : null;
     }
 
     // Render position in the tile coordinate system (GCJ-shifted if needed).

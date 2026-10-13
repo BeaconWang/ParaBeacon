@@ -585,13 +585,10 @@ class _MapControlState extends State<MapControl> {
                 if (widget.showTrack)
                   PolylineLayer(polylines: _buildTrackPolylines()),
 
-                // Previously-worked thermal cores ("N latest thermals").
-                if (widget.showThermal && widget.latestThermals > 0)
-                  CircleLayer(circles: _buildHistoryThermalCircles()),
-
-                // Thermal / climb-assistant ring (current core).
-                if (widget.showThermal && _thermal != null)
-                  CircleLayer(circles: [_buildThermalCircle(_thermal!)]),
+                // XCTrack-style Thermal Assistant: estimated position ring +
+                // climb-coloured core dots (current + N latest thermals).
+                if (widget.showThermal)
+                  CircleLayer(circles: _buildThermalCircles()),
 
                 if (hasFix)
                   MarkerLayer(
@@ -1002,48 +999,99 @@ class _MapControlState extends State<MapControl> {
     );
   }
 
-  /// Builds faded rings for the most recent previously-worked thermal cores
-  /// (XCTrack's "Show N latest thermals"), oldest most faded.
-  List<CircleMarker> _buildHistoryThermalCircles() {
-    final history = _thermalDetector.history;
-    if (history.isEmpty) return const [];
-    final take =
-        history.length > widget.latestThermals ? widget.latestThermals : history.length;
-    final start = history.length - take;
+  /// XCTrack's climb→colour ramp (`theme.a.H`): grey (sink) → green (weak
+  /// lift) → yellow (~1–2 m/s) → red (strong lift). [fade] ∈ [0,1] drives the
+  /// alpha exactly as XCTrack fades aged markers (0 = newest/opaque,
+  /// 1 = oldest → alpha 55).
+  Color _xcThermalColor(double climbMps, double fade) {
+    final f = fade.clamp(0.0, 1.0);
+    final alpha = (255 - f * 200).clamp(0.0, 255.0).round();
+    if (climbMps < 0) {
+      // Sink → grey.
+      return Color.fromARGB(alpha, 128, 128, 128);
+    } else if (climbMps < 1.0) {
+      // Grey → green.
+      final x = (climbMps * 128).round().clamp(0, 128);
+      return Color.fromARGB(alpha, 128 - x, 128 + x, 128 - x);
+    } else if (climbMps < 2.0) {
+      // Green → yellow.
+      final r = ((climbMps - 1.0) * 255).round().clamp(0, 255);
+      return Color.fromARGB(alpha, r, 255, 0);
+    } else {
+      // Yellow → red.
+      final g = (255 - (climbMps - 2.0) * 255 / 3).clamp(0.0, 255.0).round();
+      return Color.fromARGB(alpha, 255, g, 0);
+    }
+  }
+
+  /// XCTrack's thermal-core marker (`theme.a.Z`): three stacked, screen-sized
+  /// circles — a black r=8 outline, a white r=6 halo, and a centre dot r=4
+  /// coloured by the core's climb strength ([_xcThermalColor]). Pixel-sized so
+  /// the marker stays constant on screen regardless of zoom.
+  List<CircleMarker> _buildCoreDot(LatLng pos, double climbMps, double fade) {
+    final f = fade.clamp(0.0, 1.0);
+    final outlineAlpha = (255 - f * 200).clamp(0.0, 255.0).round();
+    return [
+      CircleMarker(point: pos, radius: 8, color: Color.fromARGB(outlineAlpha, 0, 0, 0)),
+      CircleMarker(
+          point: pos, radius: 6, color: Color.fromARGB(outlineAlpha, 255, 255, 255)),
+      CircleMarker(point: pos, radius: 4, color: _xcThermalColor(climbMps, f)),
+    ];
+  }
+
+  /// Builds the whole XCTrack-style Thermal Assistant overlay as one ordered
+  /// list of circles: faded core dots for the N most-recent worked thermals
+  /// (bottom), then the current core's estimated blue position ring, then the
+  /// current core dot on top.
+  List<CircleMarker> _buildThermalCircles() {
     final out = <CircleMarker>[];
-    for (int i = start; i < history.length; i++) {
-      final t = history[i];
-      // Newer entries are more opaque; older ones fade out.
-      final age = (i - start) / take; // 0 (oldest) .. ~1 (newest)
-      final alpha = (30 + 60 * age).round().clamp(20, 120);
-      final strong = t.avgClimbMps >= 2.0;
-      final color = strong ? const Color(0xFF13FF43) : const Color(0xFFD4FF6A);
-      final drifted = _applyWindDrift(t.centerLat, t.centerLon);
-      out.add(CircleMarker(
-        point: _shift(LatLng(drifted[0], drifted[1]), widget.tileSource),
-        radius: t.radiusM,
-        useRadiusInMeter: true,
-        color: color.withAlpha((alpha * 0.4).round()),
-        borderColor: color.withAlpha(alpha + 60),
-        borderStrokeWidth: 1.5,
+
+    // Previously-worked cores ("Show N latest thermals"): older = more faded.
+    if (widget.latestThermals > 0) {
+      final history = _thermalDetector.history;
+      final take = history.length > widget.latestThermals
+          ? widget.latestThermals
+          : history.length;
+      final start = history.length - take;
+      for (int i = start; i < history.length; i++) {
+        final t = history[i];
+        final age = take <= 0 ? 1.0 : (i - start) / take; // 0 oldest..~1 newest
+        final fade = (1.0 - age).clamp(0.0, 0.7);
+        final drifted = _applyWindDrift(t.centerLat, t.centerLon);
+        out.addAll(_buildCoreDot(
+          _shift(LatLng(drifted[0], drifted[1]), widget.tileSource),
+          t.avgClimbMps,
+          fade,
+        ));
+      }
+    }
+
+    // Current core: XCTrack's estimated-position ring (semi-transparent blue,
+    // `theme.a.Y` → argb(224,64,64,160)) then an opaque core dot on top.
+    final cur = _thermal;
+    if (cur != null) {
+      out.add(_buildThermalCircle(cur));
+      final drifted = _applyWindDrift(cur.centerLat, cur.centerLon);
+      out.addAll(_buildCoreDot(
+        _shift(LatLng(drifted[0], drifted[1]), widget.tileSource),
+        cur.avgClimbMps,
+        0.0,
       ));
     }
     return out;
   }
 
-  /// Builds the thermal/climb-assistant ring at the detected core (feature 27).
+  /// XCTrack's estimated thermal-position ring (`theme.a.Y`): a stroked,
+  /// semi-transparent blue circle around the current core, no fill.
   CircleMarker _buildThermalCircle(ThermalHint t) {
     final drifted = _applyWindDrift(t.centerLat, t.centerLon);
     final pos = _shift(LatLng(drifted[0], drifted[1]), widget.tileSource);
-    // Greener the stronger the climb.
-    final strong = t.avgClimbMps >= 2.0;
-    final color = strong ? const Color(0xFF13FF43) : const Color(0xFFD4FF6A);
     return CircleMarker(
       point: pos,
       radius: t.radiusM,
       useRadiusInMeter: true,
-      color: color.withAlpha(38),
-      borderColor: color,
+      color: const Color(0x00000000), // no fill
+      borderColor: const Color(0xE04040A0), // argb(224, 64, 64, 160) bluish
       borderStrokeWidth: 2,
     );
   }

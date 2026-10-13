@@ -1774,8 +1774,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsImportXcTrack => 'Import XCTrack flights (.igc)';
 
   @override
+  String get flightsImportXcTrackPickMode =>
+      'How do you want to select the tracklogs?';
+
+  @override
+  String get flightsImportModeFolder => 'Select a folder';
+
+  @override
+  String get flightsImportModeFolderNote =>
+      'Import every .igc in a folder — no file limit';
+
+  @override
+  String get flightsImportModeFiles => 'Select files';
+
+  @override
+  String get flightsImportModeFilesNote =>
+      'Pick individual .igc files (up to ~1000)';
+
+  @override
   String get flightsImportXcTrackNote =>
-      'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThat folder can\'t be opened directly on most phones. Copy the .igc files to Download first, then select them here (you can pick several at once).';
+      'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThat folder can\'t be opened directly on most phones. Copy it (or its .igc files) to Download first, then import from there.';
 
   @override
   String get flightsImportingXcTrack => 'Importing XCTrack flights…';

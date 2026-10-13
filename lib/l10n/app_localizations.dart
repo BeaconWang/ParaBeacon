@@ -3458,10 +3458,40 @@ abstract class AppLocalizations {
   /// **'Import XCTrack flights (.igc)'**
   String get flightsImportXcTrack;
 
+  /// No description provided for @flightsImportXcTrackPickMode.
+  ///
+  /// In en, this message translates to:
+  /// **'How do you want to select the tracklogs?'**
+  String get flightsImportXcTrackPickMode;
+
+  /// No description provided for @flightsImportModeFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a folder'**
+  String get flightsImportModeFolder;
+
+  /// No description provided for @flightsImportModeFolderNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Import every .igc in a folder — no file limit'**
+  String get flightsImportModeFolderNote;
+
+  /// No description provided for @flightsImportModeFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Select files'**
+  String get flightsImportModeFiles;
+
+  /// No description provided for @flightsImportModeFilesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick individual .igc files (up to ~1000)'**
+  String get flightsImportModeFilesNote;
+
   /// No description provided for @flightsImportXcTrackNote.
   ///
   /// In en, this message translates to:
-  /// **'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThat folder can\'t be opened directly on most phones. Copy the .igc files to Download first, then select them here (you can pick several at once).'**
+  /// **'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThat folder can\'t be opened directly on most phones. Copy it (or its .igc files) to Download first, then import from there.'**
   String get flightsImportXcTrackNote;
 
   /// No description provided for @flightsImportingXcTrack.

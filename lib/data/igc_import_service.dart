@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
 import 'flight_data.dart';
@@ -30,6 +31,38 @@ class IgcImportService {
 
   /// File extension (no dot) handled by this importer.
   static const String extension = 'igc';
+
+  static const MethodChannel _androidChannel = MethodChannel(
+    'com.beacon.parabeacon/flight_library',
+  );
+
+  /// Android only: lets the user pick a folder (via the Storage Access
+  /// Framework) and imports **every** `.igc` tracklog inside it, recursively.
+  ///
+  /// Unlike multi-selecting files — which the system document picker caps at
+  /// ~1000 — the user grants access to the whole directory tree in a single
+  /// selection, and the native side streams the files back, so there is no
+  /// practical limit on how many flights can be imported at once.
+  ///
+  /// Returns null when the user cancels the folder picker.
+  Future<FlightImportResult?> importAndroidFolder() async {
+    final list = await _androidChannel.invokeMethod<List<dynamic>>(
+      'importIgcFolder',
+    );
+    if (list == null) return null; // cancelled
+    final contents = <List<int>>[];
+    for (final item in list) {
+      if (item is Map) {
+        final bytes = item['content'];
+        if (bytes is Uint8List) {
+          contents.add(bytes);
+        } else if (bytes is List<int>) {
+          contents.add(bytes);
+        }
+      }
+    }
+    return importContents(contents);
+  }
 
   /// Scans [dirPath] (recursively) for `.igc` files, parses each into a
   /// [FlightTrack] and imports the non-duplicates into the [FlightRecorder].

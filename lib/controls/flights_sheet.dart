@@ -26,6 +26,16 @@ enum _ImportSource {
   xcTrackFolder,
 }
 
+/// How the user selects XCTrack `.igc` tracklogs on Android (see
+/// [_FlightsSheetState._importXcTrackAndroid]).
+enum _IgcPickMode {
+  /// Grant access to a whole folder (no file-count limit).
+  folder,
+
+  /// Multi-select individual files (capped at ~1000 by the system picker).
+  files,
+}
+
 /// Opens the Flights screen (all recorded flights) as a full-screen sheet.
 Future<void> showFlightsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -537,20 +547,32 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
   /// Imports XCTrack `.igc` tracklogs.
   ///
-  /// On mobile (Android/iOS) a picked *folder* is a Storage Access Framework
-  /// URI the app can't read directly, so the pilot selects the `.igc` files
-  /// instead (the picker hands back readable bytes). On desktop a folder is
-  /// readable through `dart:io`, so we scan the whole directory.
+  ///  * **Android** — the user first chooses how to select: a *folder* (via the
+  ///    Storage Access Framework; the native side reads every `.igc` inside it
+  ///    with no file-count limit) or individual *files* (multi-select, capped
+  ///    at ~1000 by the system picker).
+  ///  * **iOS** — the pilot selects the `.igc` files (the picker returns
+  ///    readable bytes).
+  ///  * **Desktop** — a picked folder is readable through `dart:io`, so the
+  ///    whole directory is scanned.
   Future<void> _importXcTrackFolder() async {
     final l10n = AppLocalizations.of(context);
-    final mobile =
-        !kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS);
+    final isAndroid =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    final isIos = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
     try {
-      final result = mobile
-          ? await _importXcTrackFiles(l10n)
-          : await _importXcTrackDirectory(l10n);
+      final FlightImportResult? result;
+      if (isAndroid) {
+        final mode = await _chooseIgcPickMode(l10n);
+        if (mode == null || !mounted) return; // cancelled
+        result = mode == _IgcPickMode.folder
+            ? await _importXcTrackAndroidFolder(l10n)
+            : await _importXcTrackFiles(l10n);
+      } else if (isIos) {
+        result = await _importXcTrackFiles(l10n);
+      } else {
+        result = await _importXcTrackDirectory(l10n);
+      }
       if (!mounted || result == null) return;
       if (result.total == 0) {
         _snack(l10n.flightsImportNoIgc);
@@ -570,11 +592,57 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     }
   }
 
-  /// Mobile path: pick one or more `.igc` files and import their bytes.
-  ///
-  /// Uses [FileType.any] rather than a custom-extension filter: Android can't
-  /// map the unknown `.igc` extension to a MIME type, which makes the picker
-  /// fail to open, so we accept any file and keep only the `.igc` ones here.
+  /// Android: asks whether to select a folder or individual files.
+  Future<_IgcPickMode?> _chooseIgcPickMode(AppLocalizations l10n) {
+    return showModalBottomSheet<_IgcPickMode>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.flightsImportXcTrackPickMode,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_open_outlined),
+              title: Text(l10n.flightsImportModeFolder),
+              subtitle: Text(l10n.flightsImportModeFolderNote),
+              onTap: () => Navigator.of(context).pop(_IgcPickMode.folder),
+            ),
+            ListTile(
+              leading: const Icon(Icons.insert_drive_file_outlined),
+              title: Text(l10n.flightsImportModeFiles),
+              subtitle: Text(l10n.flightsImportModeFilesNote),
+              onTap: () => Navigator.of(context).pop(_IgcPickMode.files),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Android path: pick a folder via SAF and import every `.igc` in it
+  /// (recursively), with no file-count limit.
+  Future<FlightImportResult?> _importXcTrackAndroidFolder(
+    AppLocalizations l10n,
+  ) async {
+    final result = await IgcImportService.instance.importAndroidFolder();
+    // Surface the "importing" hint only once a folder was actually chosen.
+    if (result != null && result.total > 0 && mounted) {
+      _snack(l10n.flightsImportingXcTrack);
+    }
+    return result;
+  }
+
+  /// Pick one or more `.igc` files and import their bytes (iOS, or Android when
+  /// the user chose file-selection mode).
   Future<FlightImportResult?> _importXcTrackFiles(AppLocalizations l10n) async {
     final picked = await FilePicker.platform.pickFiles(
       dialogTitle: l10n.flightsImportXcTrack,

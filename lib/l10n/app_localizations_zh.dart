@@ -1732,11 +1732,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsImportLibrary => '导入库（.pbflights）';
 
   @override
-  String get flightsImportXcTrack => '导入 XCTrack 文件夹（.igc）';
+  String get flightsImportXcTrack => '导入 XCTrack 飞行（.igc）';
 
   @override
   String get flightsImportXcTrackNote =>
-      'XCTrack 的航迹文件存放在：\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\n多数手机无法直接选择该目录。请先将其（或其中的 .igc 文件）复制到 Download 目录，再在此选择该文件夹。';
+      'XCTrack 的航迹文件存放在：\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\n多数手机无法直接打开该目录。请先将 .igc 文件复制到 Download 目录，再在此选择（可一次多选）。';
 
   @override
   String get flightsImportingXcTrack => '正在导入 XCTrack 飞行…';

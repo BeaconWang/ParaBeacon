@@ -1771,11 +1771,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsImportLibrary => 'Import library (.pbflights)';
 
   @override
-  String get flightsImportXcTrack => 'Import XCTrack folder (.igc)';
+  String get flightsImportXcTrack => 'Import XCTrack flights (.igc)';
 
   @override
   String get flightsImportXcTrackNote =>
-      'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThis folder isn\'t directly selectable on most phones. Copy it (or its .igc files) to Download first, then pick that folder here.';
+      'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThat folder can\'t be opened directly on most phones. Copy the .igc files to Download first, then select them here (you can pick several at once).';
 
   @override
   String get flightsImportingXcTrack => 'Importing XCTrack flights…';

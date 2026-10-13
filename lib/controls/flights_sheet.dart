@@ -499,6 +499,9 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   /// XCTrack `.igc` tracklogs.
   Future<void> _showImportMenu() async {
     final l10n = AppLocalizations.of(context);
+    // The note explains the Android-only tracklog location / copy-to-Download
+    // workaround, so only surface it on Android.
+    final showNote = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     final choice = await showModalBottomSheet<_ImportSource>(
       context: context,
       builder: (context) => SafeArea(
@@ -514,8 +517,8 @@ class _FlightsSheetState extends State<_FlightsSheet> {
             ListTile(
               leading: const Icon(Icons.folder_open_outlined),
               title: Text(l10n.flightsImportXcTrack),
-              subtitle: Text(l10n.flightsImportXcTrackNote),
-              isThreeLine: true,
+              subtitle: showNote ? Text(l10n.flightsImportXcTrackNote) : null,
+              isThreeLine: showNote,
               onTap: () =>
                   Navigator.of(context).pop(_ImportSource.xcTrackFolder),
             ),
@@ -532,18 +535,23 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     }
   }
 
-  /// Imports every `.igc` tracklog in a user-selected folder (e.g. the
-  /// `Tracklogs` folder copied off an XCTrack device).
+  /// Imports XCTrack `.igc` tracklogs.
+  ///
+  /// On mobile (Android/iOS) a picked *folder* is a Storage Access Framework
+  /// URI the app can't read directly, so the pilot selects the `.igc` files
+  /// instead (the picker hands back readable bytes). On desktop a folder is
+  /// readable through `dart:io`, so we scan the whole directory.
   Future<void> _importXcTrackFolder() async {
     final l10n = AppLocalizations.of(context);
+    final mobile =
+        !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
     try {
-      final dirPath = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: l10n.flightsImportXcTrack,
-      );
-      if (dirPath == null || !mounted) return;
-      _snack(l10n.flightsImportingXcTrack);
-      final result = await IgcImportService.instance.importDirectory(dirPath);
-      if (!mounted) return;
+      final result = mobile
+          ? await _importXcTrackFiles(l10n)
+          : await _importXcTrackDirectory(l10n);
+      if (!mounted || result == null) return;
       if (result.total == 0) {
         _snack(l10n.flightsImportNoIgc);
         return;
@@ -560,6 +568,47 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     } catch (e) {
       if (mounted) _snack(l10n.flightsImportFailed('$e'));
     }
+  }
+
+  /// Mobile path: pick one or more `.igc` files and import their bytes.
+  ///
+  /// Uses [FileType.any] rather than a custom-extension filter: Android can't
+  /// map the unknown `.igc` extension to a MIME type, which makes the picker
+  /// fail to open, so we accept any file and keep only the `.igc` ones here.
+  Future<FlightImportResult?> _importXcTrackFiles(AppLocalizations l10n) async {
+    final picked = await FilePicker.platform.pickFiles(
+      dialogTitle: l10n.flightsImportXcTrack,
+      type: FileType.any,
+      allowMultiple: true,
+      withData: true,
+    );
+    final files = picked?.files;
+    if (files == null || files.isEmpty || !mounted) return null;
+    final contents = <List<int>>[];
+    for (final f in files) {
+      final name = f.name.toLowerCase();
+      if (!name.endsWith('.${IgcImportService.extension}')) continue;
+      final bytes = f.bytes;
+      if (bytes != null) contents.add(bytes);
+    }
+    if (contents.isEmpty) {
+      _snack(l10n.flightsImportNoIgc);
+      return null;
+    }
+    _snack(l10n.flightsImportingXcTrack);
+    return IgcImportService.instance.importContents(contents);
+  }
+
+  /// Desktop path: pick a folder and scan it recursively for `.igc` files.
+  Future<FlightImportResult?> _importXcTrackDirectory(
+    AppLocalizations l10n,
+  ) async {
+    final dirPath = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: l10n.flightsImportXcTrack,
+    );
+    if (dirPath == null || !mounted) return null;
+    _snack(l10n.flightsImportingXcTrack);
+    return IgcImportService.instance.importDirectory(dirPath);
   }
 
   Future<void> _exportLibrary(List<FlightTrack> tracks) async {

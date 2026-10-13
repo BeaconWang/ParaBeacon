@@ -34,6 +34,11 @@ class IgcImportService {
   /// Scans [dirPath] (recursively) for `.igc` files, parses each into a
   /// [FlightTrack] and imports the non-duplicates into the [FlightRecorder].
   ///
+  /// Works where the app can read the folder directly through `dart:io`
+  /// (desktop, or Android paths the app owns). On Android, a folder picked via
+  /// the system picker is usually a Storage Access Framework URI that cannot be
+  /// read this way — use [importContents] with the picker's file bytes instead.
+  ///
   /// Duplicates — against the existing library *and* within this batch — are
   /// skipped using the same rule as the `.pbflights` importer (start time
   /// within ±5 s and matching point count). Files that cannot be parsed are
@@ -54,6 +59,40 @@ class IgcImportService {
     // Deterministic order (XCTrack names sort chronologically).
     files.sort((a, b) => a.path.compareTo(b.path));
 
+    final parsed = <FlightTrack?>[];
+    for (final file in files) {
+      try {
+        parsed.add(await parseFile(file));
+      } catch (_) {
+        parsed.add(null);
+      }
+    }
+    return _commit(parsed);
+  }
+
+  /// Imports IGC documents from their raw [contents] (one `List<int>` per
+  /// file), parsing and de-duplicating exactly like [importDirectory].
+  ///
+  /// This is the path used on Android/iOS, where the user picks the `.igc`
+  /// files through the system file picker (which hands back readable bytes),
+  /// avoiding the storage-permission limits that block reading a picked folder
+  /// directly.
+  Future<FlightImportResult> importContents(List<List<int>> contents) async {
+    final parsed = <FlightTrack?>[];
+    for (final bytes in contents) {
+      try {
+        final text = const Utf8Decoder(allowMalformed: true).convert(bytes);
+        parsed.add(parseString(text));
+      } catch (_) {
+        parsed.add(null);
+      }
+    }
+    return _commit(parsed);
+  }
+
+  /// De-duplicates [parsed] tracks (null entries count as parse failures),
+  /// commits the survivors to the [FlightRecorder] and returns a summary.
+  FlightImportResult _commit(List<FlightTrack?> parsed) {
     final recorder = FlightRecorder.instance;
     final existing = recorder.tracks;
     final imported = <FlightTrack>[];
@@ -61,13 +100,7 @@ class IgcImportService {
     var skipped = 0;
     var failed = 0;
 
-    for (final file in files) {
-      FlightTrack? track;
-      try {
-        track = await parseFile(file);
-      } catch (_) {
-        track = null;
-      }
+    for (final track in parsed) {
       if (track == null) {
         failed++;
         continue;

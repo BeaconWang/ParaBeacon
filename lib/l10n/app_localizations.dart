@@ -3455,13 +3455,13 @@ abstract class AppLocalizations {
   /// No description provided for @flightsImportXcTrack.
   ///
   /// In en, this message translates to:
-  /// **'Import XCTrack folder (.igc)'**
+  /// **'Import XCTrack flights (.igc)'**
   String get flightsImportXcTrack;
 
   /// No description provided for @flightsImportXcTrackNote.
   ///
   /// In en, this message translates to:
-  /// **'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThis folder isn\'t directly selectable on most phones. Copy it (or its .igc files) to Download first, then pick that folder here.'**
+  /// **'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThat folder can\'t be opened directly on most phones. Copy the .igc files to Download first, then select them here (you can pick several at once).'**
   String get flightsImportXcTrackNote;
 
   /// No description provided for @flightsImportingXcTrack.

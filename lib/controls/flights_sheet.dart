@@ -514,6 +514,8 @@ class _FlightsSheetState extends State<_FlightsSheet> {
             ListTile(
               leading: const Icon(Icons.folder_open_outlined),
               title: Text(l10n.flightsImportXcTrack),
+              subtitle: Text(l10n.flightsImportXcTrackNote),
+              isThreeLine: true,
               onTap: () =>
                   Navigator.of(context).pop(_ImportSource.xcTrackFolder),
             ),

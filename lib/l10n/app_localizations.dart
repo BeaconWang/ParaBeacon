@@ -3458,6 +3458,12 @@ abstract class AppLocalizations {
   /// **'Import XCTrack folder (.igc)'**
   String get flightsImportXcTrack;
 
+  /// No description provided for @flightsImportXcTrackNote.
+  ///
+  /// In en, this message translates to:
+  /// **'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThis folder isn\'t directly selectable on most phones. Copy it (or its .igc files) to Download first, then pick that folder here.'**
+  String get flightsImportXcTrackNote;
+
   /// No description provided for @flightsImportingXcTrack.
   ///
   /// In en, this message translates to:

@@ -1774,6 +1774,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsImportXcTrack => 'Import XCTrack folder (.igc)';
 
   @override
+  String get flightsImportXcTrackNote =>
+      'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThis folder isn\'t directly selectable on most phones. Copy it (or its .igc files) to Download first, then pick that folder here.';
+
+  @override
   String get flightsImportingXcTrack => 'Importing XCTrack flights…';
 
   @override

@@ -692,7 +692,11 @@
   "dataMonitorTotalEnergy": "Total energy",
 
   "flightsAddRandomDebug": "Add random flight (debug)",
+  "flightsImport": "Import flights",
   "flightsImportLibrary": "Import library (.pbflights)",
+  "flightsImportXcTrack": "Import XCTrack folder (.igc)",
+  "flightsImportingXcTrack": "Importing XCTrack flights…",
+  "flightsImportNoIgc": "No .igc files were found in that folder.",
   "flightsExportLibrary": "Export library (.pbflights)",
   "flightsSelectRecords": "Select flights to export",
   "flightsExportSelected": "Export selected flights (.pbflights)",

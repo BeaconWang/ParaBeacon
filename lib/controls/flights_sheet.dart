@@ -10,11 +10,21 @@ import '../data/flight_recorder.dart';
 import '../data/flight_report_service.dart';
 import '../data/flight_share_card_service.dart';
 import '../data/geo_name_settings.dart';
+import '../data/igc_import_service.dart';
 import '../data/reverse_geocoder_service.dart';
 import '../l10n/app_localizations.dart';
 import 'flight_replay_sheet.dart';
 import 'flight_statistics_sheet.dart';
 import 'track_3d_sheet.dart';
+
+/// Where imported flights come from (see [_FlightsSheetState._showImportMenu]).
+enum _ImportSource {
+  /// A `.pbflights` library bundle exported by this app.
+  library,
+
+  /// A folder of XCTrack `.igc` tracklogs.
+  xcTrackFolder,
+}
 
 /// Opens the Flights screen (all recorded flights) as a full-screen sheet.
 Future<void> showFlightsSheet(BuildContext context) {
@@ -178,8 +188,8 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         ),
       IconButton(
         icon: const Icon(Icons.file_download_outlined),
-        tooltip: l10n.flightsImportLibrary,
-        onPressed: _importLibrary,
+        tooltip: l10n.flightsImport,
+        onPressed: _showImportMenu,
       ),
       if (tracks.isNotEmpty)
         IconButton(
@@ -484,6 +494,71 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   }
 
   // ── Library import / export ────────────────────────────────────────────
+
+  /// Presents the import-source chooser: a `.pbflights` bundle, or a folder of
+  /// XCTrack `.igc` tracklogs.
+  Future<void> _showImportMenu() async {
+    final l10n = AppLocalizations.of(context);
+    final choice = await showModalBottomSheet<_ImportSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.folder_zip_outlined),
+              title: Text(l10n.flightsImportLibrary),
+              onTap: () =>
+                  Navigator.of(context).pop(_ImportSource.library),
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_open_outlined),
+              title: Text(l10n.flightsImportXcTrack),
+              onTap: () =>
+                  Navigator.of(context).pop(_ImportSource.xcTrackFolder),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || choice == null) return;
+    switch (choice) {
+      case _ImportSource.library:
+        await _importLibrary();
+      case _ImportSource.xcTrackFolder:
+        await _importXcTrackFolder();
+    }
+  }
+
+  /// Imports every `.igc` tracklog in a user-selected folder (e.g. the
+  /// `Tracklogs` folder copied off an XCTrack device).
+  Future<void> _importXcTrackFolder() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final dirPath = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: l10n.flightsImportXcTrack,
+      );
+      if (dirPath == null || !mounted) return;
+      _snack(l10n.flightsImportingXcTrack);
+      final result = await IgcImportService.instance.importDirectory(dirPath);
+      if (!mounted) return;
+      if (result.total == 0) {
+        _snack(l10n.flightsImportNoIgc);
+        return;
+      }
+      _snack(
+        result.failed > 0
+            ? l10n.flightsImportResultFailed(
+                result.added,
+                result.skipped,
+                result.failed,
+              )
+            : l10n.flightsImportResult(result.added, result.skipped),
+      );
+    } catch (e) {
+      if (mounted) _snack(l10n.flightsImportFailed('$e'));
+    }
+  }
 
   Future<void> _exportLibrary(List<FlightTrack> tracks) async {
     final l10n = AppLocalizations.of(context);

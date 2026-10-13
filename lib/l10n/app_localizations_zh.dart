@@ -1726,7 +1726,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsAddRandomDebug => '添加随机飞行（调试）';
 
   @override
+  String get flightsImport => '导入飞行';
+
+  @override
   String get flightsImportLibrary => '导入库（.pbflights）';
+
+  @override
+  String get flightsImportXcTrack => '导入 XCTrack 文件夹（.igc）';
+
+  @override
+  String get flightsImportingXcTrack => '正在导入 XCTrack 飞行…';
+
+  @override
+  String get flightsImportNoIgc => '该文件夹中未找到 .igc 文件。';
 
   @override
   String get flightsExportLibrary => '导出库（.pbflights）';

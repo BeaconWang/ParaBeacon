@@ -1765,7 +1765,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsAddRandomDebug => 'Add random flight (debug)';
 
   @override
+  String get flightsImport => 'Import flights';
+
+  @override
   String get flightsImportLibrary => 'Import library (.pbflights)';
+
+  @override
+  String get flightsImportXcTrack => 'Import XCTrack folder (.igc)';
+
+  @override
+  String get flightsImportingXcTrack => 'Importing XCTrack flights…';
+
+  @override
+  String get flightsImportNoIgc => 'No .igc files were found in that folder.';
 
   @override
   String get flightsExportLibrary => 'Export library (.pbflights)';

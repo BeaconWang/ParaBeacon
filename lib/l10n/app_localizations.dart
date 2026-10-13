@@ -3440,11 +3440,35 @@ abstract class AppLocalizations {
   /// **'Add random flight (debug)'**
   String get flightsAddRandomDebug;
 
+  /// No description provided for @flightsImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import flights'**
+  String get flightsImport;
+
   /// No description provided for @flightsImportLibrary.
   ///
   /// In en, this message translates to:
   /// **'Import library (.pbflights)'**
   String get flightsImportLibrary;
+
+  /// No description provided for @flightsImportXcTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Import XCTrack folder (.igc)'**
+  String get flightsImportXcTrack;
+
+  /// No description provided for @flightsImportingXcTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing XCTrack flights…'**
+  String get flightsImportingXcTrack;
+
+  /// No description provided for @flightsImportNoIgc.
+  ///
+  /// In en, this message translates to:
+  /// **'No .igc files were found in that folder.'**
+  String get flightsImportNoIgc;
 
   /// No description provided for @flightsExportLibrary.
   ///

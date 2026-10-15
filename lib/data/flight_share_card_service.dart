@@ -23,7 +23,7 @@ class FlightShareCardService {
   static final FlightShareCardService instance = FlightShareCardService._();
 
   static const int _w = 1080;
-  static const int _h = 1920;
+  static const int _h = 2480;
 
   /// Renders the card for [track] and returns the PNG bytes.
   Future<List<int>> renderPng(FlightTrack track) async {
@@ -35,8 +35,10 @@ class FlightShareCardService {
     _paintBackground(canvas, size);
     _paintHeader(canvas, size, track);
     final mapBottom = _paintTrackMap(canvas, size, track);
-    _paintStats(canvas, size, track, stats, top: mapBottom + 40);
-    _paintFooter(canvas, size);
+    final profileBottom =
+        _paintAltitudeProfile(canvas, size, track, top: mapBottom + 28);
+    _paintStats(canvas, size, track, stats, top: profileBottom + 36);
+    _paintFooter(canvas, size, track);
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(_w, _h);
@@ -95,16 +97,22 @@ class FlightShareCardService {
     _text(
       canvas,
       'ParaBeacon',
-      Offset(60, 70),
+      Offset(60, 64),
       fontSize: 44,
       color: const Color(0xFF7FD1FF),
       weight: FontWeight.w700,
     );
+
+    // Full date plus the start→end clock range.
+    final end = track.endTime;
+    final when = end != null
+        ? '${_fmtDate(track.startTime)}  –  ${_fmtTime(end)}'
+        : _fmtDate(track.startTime);
     _text(
       canvas,
-      _fmtDate(track.startTime),
-      Offset(60, 130),
-      fontSize: 34,
+      when,
+      Offset(60, 122),
+      fontSize: 32,
       color: Colors.white,
       weight: FontWeight.w600,
     );
@@ -117,7 +125,7 @@ class FlightShareCardService {
       _text(
         canvas,
         site,
-        Offset(60, 178),
+        Offset(60, 170),
         fontSize: 26,
         color: const Color(0xFFB9D4E3),
         maxWidth: _w - 120.0,
@@ -128,9 +136,9 @@ class FlightShareCardService {
   /// Draws the track shape into a framed box and returns its bottom Y.
   double _paintTrackMap(Canvas canvas, Size size, FlightTrack track) {
     const left = 60.0;
-    const top = 240.0;
+    const top = 230.0;
     final boxW = _w - 120.0;
-    const boxH = 720.0;
+    const boxH = 470.0;
     final rect = Rect.fromLTWH(left, top, boxW, boxH);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
@@ -163,31 +171,38 @@ class FlightShareCardService {
             offY + (maxLat - lat) * scale,
           );
 
-      final path = Path();
-      for (var i = 0; i < samples.length; i++) {
-        final o = project(samples[i].data.latitude, samples[i].data.longitude);
-        if (i == 0) {
-          path.moveTo(o.dx, o.dy);
-        } else {
-          path.lineTo(o.dx, o.dy);
-        }
+      // Colour the track by altitude so climbs/descents read at a glance.
+      double minAlt = double.infinity, maxAlt = double.negativeInfinity;
+      for (final s in samples) {
+        minAlt = math.min(minAlt, s.data.altitude);
+        maxAlt = math.max(maxAlt, s.data.altitude);
       }
-      canvas.drawPath(
-        path,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 5
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round
-          ..color = const Color(0xFF39D98A),
-      );
+      final altSpan = math.max(1.0, maxAlt - minAlt);
+
+      final segPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      for (var i = 1; i < samples.length; i++) {
+        final a = project(
+            samples[i - 1].data.latitude, samples[i - 1].data.longitude);
+        final b = project(samples[i].data.latitude, samples[i].data.longitude);
+        final t = ((samples[i].data.altitude - minAlt) / altSpan).clamp(0.0, 1.0);
+        segPaint.color = _altitudeColor(t);
+        canvas.drawLine(a, b, segPaint);
+      }
 
       final start = project(
           samples.first.data.latitude, samples.first.data.longitude);
       final end =
           project(samples.last.data.latitude, samples.last.data.longitude);
-      canvas.drawCircle(start, 12, Paint()..color = const Color(0xFF4ADE80));
-      canvas.drawCircle(end, 12, Paint()..color = const Color(0xFFFF6B6B));
+      canvas.drawCircle(start, 13, Paint()..color = const Color(0xFF4ADE80));
+      canvas.drawCircle(end, 13, Paint()..color = const Color(0xFFFF6B6B));
+      _text(canvas, 'Launch', Offset(start.dx + 18, start.dy - 16),
+          fontSize: 22, color: const Color(0xFFCDEFD8), weight: FontWeight.w600);
+      _text(canvas, 'Landing', Offset(end.dx + 18, end.dy - 16),
+          fontSize: 22, color: const Color(0xFFFFD2D2), weight: FontWeight.w600);
     } else {
       _text(
         canvas,
@@ -209,56 +224,293 @@ class FlightShareCardService {
     return top + boxH;
   }
 
-  void _paintStats(
+  /// Draws an altitude-over-time profile (filled area chart) into a framed box
+  /// and returns its bottom Y. Falls back to just the frame when there isn't
+  /// enough per-sample data to plot.
+  double _paintAltitudeProfile(
+    Canvas canvas,
+    Size size,
+    FlightTrack track, {
+    required double top,
+  }) {
+    const left = 60.0;
+    final boxW = _w - 120.0;
+    const boxH = 230.0;
+    final rect = Rect.fromLTWH(left, top, boxW, boxH);
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
+
+    canvas.drawRRect(rrect, Paint()..color = const Color(0x22000000));
+
+    _text(canvas, 'Altitude', Offset(left + 28, top + 18),
+        fontSize: 24, color: const Color(0xFF8FB6CC), weight: FontWeight.w600);
+
+    final samples =
+        track.samples.where((s) => s.data.altitude.isFinite).toList();
+    if (samples.length >= 2) {
+      final startMs = samples.first.time.millisecondsSinceEpoch;
+      final spanMs = math.max(
+        1,
+        samples.last.time.millisecondsSinceEpoch - startMs,
+      );
+      double minAlt = double.infinity, maxAlt = double.negativeInfinity;
+      for (final s in samples) {
+        minAlt = math.min(minAlt, s.data.altitude);
+        maxAlt = math.max(maxAlt, s.data.altitude);
+      }
+      final altSpan = math.max(1.0, maxAlt - minAlt);
+
+      const padX = 40.0;
+      const padTop = 64.0;
+      const padBottom = 36.0;
+      final plotLeft = left + padX;
+      final plotRight = left + boxW - padX;
+      final plotTop = top + padTop;
+      final plotBottom = top + boxH - padBottom;
+      final plotW = plotRight - plotLeft;
+      final plotH = plotBottom - plotTop;
+
+      Offset project(int ms, double alt) => Offset(
+            plotLeft + (ms - startMs) / spanMs * plotW,
+            plotBottom - (alt - minAlt) / altSpan * plotH,
+          );
+
+      canvas.save();
+      canvas.clipRRect(rrect);
+
+      final line = Path();
+      for (var i = 0; i < samples.length; i++) {
+        final o = project(
+            samples[i].time.millisecondsSinceEpoch, samples[i].data.altitude);
+        if (i == 0) {
+          line.moveTo(o.dx, o.dy);
+        } else {
+          line.lineTo(o.dx, o.dy);
+        }
+      }
+
+      final fill = Path.from(line)
+        ..lineTo(plotRight, plotBottom)
+        ..lineTo(plotLeft, plotBottom)
+        ..close();
+      canvas.drawPath(
+        fill,
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(plotLeft, plotTop),
+            Offset(plotLeft, plotBottom),
+            const [Color(0x5539D98A), Color(0x0039D98A)],
+          ),
+      );
+      canvas.drawPath(
+        line,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 4
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..color = const Color(0xFF7FD1FF),
+      );
+
+      canvas.restore();
+
+      _text(canvas, '${maxAlt.toStringAsFixed(0)} m',
+          Offset(plotLeft, plotTop - 30),
+          fontSize: 22, color: const Color(0xFFB9D4E3));
+      _text(canvas, '${minAlt.toStringAsFixed(0)} m',
+          Offset(plotLeft, plotBottom + 4),
+          fontSize: 22, color: const Color(0xFFB9D4E3));
+    } else {
+      _text(
+        canvas,
+        'No altitude data',
+        Offset(left + boxW / 2 - 110, top + boxH / 2 - 10),
+        fontSize: 26,
+        color: const Color(0x66FFFFFF),
+      );
+    }
+
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0x33FFFFFF),
+    );
+    return top + boxH;
+  }
+
+  /// Maps a normalized altitude [t] in 0..1 to a cool→warm colour ramp
+  /// (blue → cyan → green → amber → red).
+  Color _altitudeColor(double t) {
+    const stops = <Color>[
+      Color(0xFF3B82F6), // low  – blue
+      Color(0xFF22D3EE), // cyan
+      Color(0xFF39D98A), // green
+      Color(0xFFFACC15), // amber
+      Color(0xFFF97316), // high – orange
+    ];
+    final x = t.clamp(0.0, 1.0) * (stops.length - 1);
+    final i = x.floor().clamp(0, stops.length - 2);
+    return Color.lerp(stops[i], stops[i + 1], x - i)!;
+  }
+
+  /// Paints the full flight read-out: every derived performance metric in a
+  /// 3-column grid, followed by Sites, Equipment and Aircraft sections. Returns
+  /// the bottom Y so the footer can sit below it.
+  double _paintStats(
     Canvas canvas,
     Size size,
     FlightTrack track,
     FlightDerivedStats stats, {
     required double top,
   }) {
+    const left = 60.0;
+
+    // ── Performance grid (all metrics the detail view shows) ───────────────
+    String km(double m) => '${(m / 1000).toStringAsFixed(1)} km';
+    String m(double v) => '${v.toStringAsFixed(0)} m';
+    String ms(double v) => '${v.toStringAsFixed(1)} m/s';
+    String kph(double v) => '${v.toStringAsFixed(0)} km/h';
+
     final entries = <(String, String)>[
       ('Duration', _fmtDuration(track.duration)),
-      ('Track', '${(stats.trackDistanceM / 1000).toStringAsFixed(1)} km'),
-      ('XC', '${(stats.xcDistanceM / 1000).toStringAsFixed(1)} km'),
-      ('Max alt', '${track.maxAltitude.toStringAsFixed(0)} m'),
-      ('Max climb', '${track.maxClimb.toStringAsFixed(1)} m/s'),
-      ('Max sink', '${track.maxSink.toStringAsFixed(1)} m/s'),
+      ('Moving', _fmtDuration(stats.movingTime)),
+      ('Points', '${track.pointCount}'),
+      ('Track', km(stats.trackDistanceM)),
+      ('Straight', km(stats.straightDistanceM)),
+      ('XC', km(stats.xcDistanceM)),
+      if (stats.maxDistanceFromStartM > 0)
+        ('Max from start', km(stats.maxDistanceFromStartM)),
+      if (stats.trackEfficiency > 0)
+        ('Efficiency', '${(stats.trackEfficiency * 100).toStringAsFixed(0)}%'),
       if (stats.faiTriangleM > 0)
-        ('FAI', '${(stats.faiTriangleM / 1000).toStringAsFixed(1)} km'),
+        (
+          stats.faiClosed ? 'FAI (closed)' : 'FAI',
+          km(stats.faiTriangleM),
+        ),
+      ('Max alt', m(track.maxAltitude)),
+      ('Min alt', m(track.minAltitude)),
+      if (stats.altitudeGainedM > 0) ('Alt gain', m(stats.altitudeGainedM)),
+      if (stats.altitudeLostM > 0) ('Alt loss', m(stats.altitudeLostM)),
+      ('Max climb', ms(track.maxClimb)),
+      ('Max sink', ms(track.maxSink)),
+      if (stats.avgClimbMs > 0) ('Avg climb', ms(stats.avgClimbMs)),
+      if (stats.avgSinkMs < 0) ('Avg sink', ms(stats.avgSinkMs)),
+      if (stats.avgGroundSpeedKph > 0)
+        ('Avg speed', kph(stats.avgGroundSpeedKph)),
+      if (stats.avgCruiseSpeedKph > 0)
+        ('Cruise', kph(stats.avgCruiseSpeedKph)),
+      if (stats.maxSpeedKph > 0) ('Max speed', kph(stats.maxSpeedKph)),
+      if (stats.avgGlideRatio > 0)
+        ('Avg glide', '${stats.avgGlideRatio.toStringAsFixed(1)}:1'),
       ('Thermals', '${stats.thermalCount}'),
+      if (stats.climbTime > Duration.zero)
+        ('Climb time', _fmtDuration(stats.climbTime)),
+      if (stats.glideTime > Duration.zero)
+        ('Glide time', _fmtDuration(stats.glideTime)),
+      if (stats.sinkTime > Duration.zero)
+        ('Sink time', _fmtDuration(stats.sinkTime)),
     ];
 
-    const left = 60.0;
-    final cellW = (_w - 120.0) / 2;
-    const cellH = 130.0;
+    const cols = 3;
+    final cellW = (_w - 120.0) / cols;
+    const cellH = 104.0;
     for (var i = 0; i < entries.length; i++) {
-      final col = i % 2;
-      final row = i ~/ 2;
+      final col = i % cols;
+      final row = i ~/ cols;
       final x = left + col * cellW;
       final y = top + row * cellH;
       _text(canvas, entries[i].$1, Offset(x, y),
-          fontSize: 26, color: const Color(0xFF8FB6CC), weight: FontWeight.w500);
-      _text(canvas, entries[i].$2, Offset(x, y + 34),
-          fontSize: 46, color: Colors.white, weight: FontWeight.w700);
+          fontSize: 24,
+          color: const Color(0xFF8FB6CC),
+          weight: FontWeight.w500,
+          maxWidth: cellW - 16);
+      _text(canvas, entries[i].$2, Offset(x, y + 32),
+          fontSize: 38,
+          color: Colors.white,
+          weight: FontWeight.w700,
+          maxWidth: cellW - 16);
     }
 
-    // Equipment line, if present.
+    var y = top + ((entries.length + cols - 1) ~/ cols) * cellH + 20;
+
+    // ── Sites ──────────────────────────────────────────────────────────────
+    final sites = <String>[
+      if (track.takeoffSite?.isNotEmpty ?? false)
+        'Launch: ${track.takeoffSite}',
+      if (track.landingSite?.isNotEmpty ?? false)
+        'Landing: ${track.landingSite}',
+    ];
+    if (sites.isNotEmpty) {
+      y = _paintSection(canvas, 'Sites', sites, left: left, top: y);
+    }
+
+    // ── Equipment ───────────────────────────────────────────────────────────
     if (track.hasEquipment) {
-      final rows = ((entries.length + 1) ~/ 2);
-      final ey = top + rows * cellH + 12;
       final equip = [track.gliderName, track.harnessName, track.helmetName]
           .where((e) => e != null && e.isNotEmpty)
           .cast<String>()
           .join('  ·  ');
-      _text(canvas, equip, Offset(left, ey),
-          fontSize: 26, color: const Color(0xFFB9D4E3), maxWidth: _w - 120.0);
+      y = _paintSection(canvas, 'Equipment', [equip], left: left, top: y);
     }
+
+    // ── Aircraft (every configured field) ────────────────────────────────────
+    final aircraft = <String>[
+      if (track.aircraftName?.isNotEmpty ?? false) track.aircraftName!,
+      if ((track.aircraftManufacturer?.isNotEmpty ?? false) ||
+          (track.aircraftModel?.isNotEmpty ?? false))
+        [track.aircraftManufacturer, track.aircraftModel]
+            .where((e) => e != null && e.isNotEmpty)
+            .join(' '),
+      if (track.aircraftFaiClass?.isNotEmpty ?? false)
+        'Class ${track.aircraftFaiClass}',
+      if (track.aircraftCategory?.isNotEmpty ?? false)
+        track.aircraftCategory!,
+      if (track.aircraftTandem == true) 'Tandem',
+      if (track.aircraftEngineType?.isNotEmpty ?? false)
+        'Engine: ${track.aircraftEngineType}',
+      if (track.aircraftTrimSpeedKmh != null)
+        'Trim ${track.aircraftTrimSpeedKmh!.toStringAsFixed(0)} km/h',
+      if (track.aircraftGoalGlideRatio != null)
+        'Glide ${track.aircraftGoalGlideRatio!.toStringAsFixed(1)}:1',
+    ];
+    if (aircraft.isNotEmpty) {
+      y = _paintSection(
+        canvas,
+        'Aircraft',
+        [aircraft.join('  ·  ')],
+        left: left,
+        top: y,
+      );
+    }
+
+    return y;
   }
 
-  void _paintFooter(Canvas canvas, Size size) {
+  /// Draws a labelled section (heading + one or more wrapped text lines) and
+  /// returns the Y below it.
+  double _paintSection(
+    Canvas canvas,
+    String label,
+    List<String> lines, {
+    required double left,
+    required double top,
+  }) {
+    _text(canvas, label.toUpperCase(), Offset(left, top),
+        fontSize: 22, color: const Color(0xFF5E8198), weight: FontWeight.w700);
+    var y = top + 34;
+    for (final line in lines) {
+      _text(canvas, line, Offset(left, y),
+          fontSize: 28, color: const Color(0xFFDCEAF3), maxWidth: _w - 120.0);
+      y += 42;
+    }
+    return y + 14;
+  }
+
+  void _paintFooter(Canvas canvas, Size size, FlightTrack track) {
     _text(
       canvas,
-      'Recorded with ParaBeacon',
+      'Recorded with ParaBeacon  ·  ${track.pointCount} points',
       Offset(60, _h - 80.0),
       fontSize: 24,
       color: const Color(0x88FFFFFF),
@@ -294,6 +546,11 @@ class FlightShareCardService {
   static String _fmtDate(DateTime t) {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${t.year}-${two(t.month)}-${two(t.day)}  ${two(t.hour)}:${two(t.minute)}';
+  }
+
+  static String _fmtTime(DateTime t) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(t.hour)}:${two(t.minute)}';
   }
 
   static String _fmtDuration(Duration d) {

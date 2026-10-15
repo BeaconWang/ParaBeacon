@@ -3,6 +3,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../data/ble/ble_sensor_service.dart';
 import '../data/ble/sensor_readings.dart';
+import '../data/sensors/internal_sensor_service.dart';
 
 /// Opens the Bluetooth sensor screen as a modal bottom sheet.
 ///
@@ -30,11 +31,13 @@ class _BluetoothSensorSheet extends StatefulWidget {
 
 class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
   final BleSensorService _svc = BleSensorService.instance;
+  final InternalSensorService _internal = InternalSensorService.instance;
 
   @override
   void initState() {
     super.initState();
     _svc.init();
+    _internal.init();
   }
 
   @override
@@ -73,7 +76,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
             ),
             Expanded(
               child: AnimatedBuilder(
-                animation: _svc,
+                animation: Listenable.merge([_svc, _internal]),
                 builder: (context, _) {
                   if (!_svc.supported) {
                     return _buildUnsupported(theme);
@@ -86,6 +89,12 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
                       const SizedBox(height: 8),
                       _optionsCard(theme),
                       const SizedBox(height: 20),
+                      if (_internal.supported) ...[
+                        _sectionLabel(theme, 'Internal sensor'),
+                        const SizedBox(height: 8),
+                        _internalSensorCard(theme),
+                        const SizedBox(height: 20),
+                      ],
                       _sectionLabel(theme, 'Connection'),
                       const SizedBox(height: 8),
                       _adapterBanner(theme),
@@ -142,6 +151,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
 
   // ── Options ─────────────────────────────────────────────────────────────
   Widget _optionsCard(ThemeData theme) {
+    final internalAvailable = _internal.supported && _internal.available;
     return _card(
       theme,
       [
@@ -152,8 +162,68 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
           value: _svc.enabled,
           onChanged: (v) => _svc.setEnabled(v),
         ),
+        if (_internal.supported) ...[
+          const Divider(height: 1),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Prefer internal sensor'),
+            subtitle: Text(
+              internalAvailable
+                  ? 'Use this device’s built-in barometer first'
+                  : 'No built-in barometer detected on this device',
+            ),
+            // Only usable when the device actually has a barometer; reflect the
+            // real state so the toggle greys out when there is nothing to use.
+            value: _internal.enabled && internalAvailable,
+            onChanged:
+                internalAvailable ? (v) => _internal.setEnabled(v) : null,
+          ),
+        ],
       ],
     );
+  }
+
+  // ── Internal sensor (device barometer) ────────────────────────────────────
+  Widget _internalSensorCard(ThemeData theme) {
+    final available = _internal.available;
+    final active = _internal.isActiveFeed;
+    final r = _internal.readings;
+
+    final Color statusColor;
+    final IconData statusIcon;
+    final String statusText;
+    if (!available) {
+      statusColor = theme.colorScheme.onSurfaceVariant;
+      statusIcon = Icons.sensors_off;
+      statusText = 'No barometer detected';
+    } else if (active) {
+      statusColor = theme.colorScheme.primary;
+      statusIcon = Icons.sensors;
+      statusText = 'Barometer connected';
+    } else {
+      statusColor = theme.colorScheme.onSurfaceVariant;
+      statusIcon = Icons.sensors;
+      statusText = 'Barometer detected (not preferred)';
+    }
+
+    final children = <Widget>[
+      _row(theme, statusIcon, 'Status', statusText, valueColor: statusColor),
+    ];
+
+    if (available) {
+      children
+        ..add(const Divider(height: 1))
+        ..add(_fieldRow(theme, Icons.swap_vert, 'Vertical speed',
+            r.varioMs?.toStringAsFixed(1), 'm/s'))
+        ..add(const Divider(height: 1))
+        ..add(_fieldRow(theme, Icons.terrain, 'Altitude',
+            r.altitudeM?.toStringAsFixed(0), 'm'))
+        ..add(const Divider(height: 1))
+        ..add(_fieldRow(theme, Icons.compress, 'Pressure',
+            r.pressureHpa?.toStringAsFixed(2), 'hPa'));
+    }
+
+    return _card(theme, children);
   }
 
   Widget _adapterBanner(ThemeData theme) {

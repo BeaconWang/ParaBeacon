@@ -37,6 +37,8 @@ import 'data/flight_data_provider.dart';
 import 'data/flight_data_transformer.dart';
 import 'data/flight_recorder.dart';
 import 'data/gps_flight_data_bridge.dart';
+import 'data/sensors/internal_sensor_service.dart';
+import 'data/sensors/internal_sensor_bridge.dart';
 import 'data/layout_store.dart';
 import 'data/offline_tiles_service.dart';
 import 'data/raw_flight_data_source.dart';
@@ -102,6 +104,11 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   // baro altitude, ...).
   late final GpsFlightDataBridge _gpsBridge;
 
+  // Forwards the device's own built-in barometer (when present and preferred)
+  // into [_dataSource] at a tier above the BLE sensor, so an internal sensor
+  // drives vario/altitude/pressure ahead of an external BLE device.
+  late final InternalSensorBridge _internalBridge;
+
   @override
   void initState() {
     super.initState();
@@ -152,6 +159,13 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // its vertical speed takes over from the simulator.
     BleSensorService.instance.init();
     _bleBridge = BleFlightDataBridge(source: _dataSource)..attach();
+
+    // Bring up the device's internal barometer (best-effort; no-op where there
+    // is no barometer or on desktop/web). When present and preferred, its
+    // readings take over the vario/altitude/pressure tier ahead of any BLE
+    // sensor — "use the internal sensor first".
+    InternalSensorService.instance.init();
+    _internalBridge = InternalSensorBridge(source: _dataSource)..attach();
 
     // Bring up the device battery monitor (best-effort). Powers the charging /
     // level indicator on the Status Line widget.
@@ -209,6 +223,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _gpsBridge.dispose();
+    _internalBridge.dispose();
     _bleBridge.dispose();
     _varioAudio.dispose();
     _transformer.dispose();

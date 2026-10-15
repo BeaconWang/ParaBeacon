@@ -89,15 +89,22 @@ class FlightDataOverride {
 /// tier that currently provides it:
 ///
 ///   1. [debugOverride]   — manual debug/bench values (ALWAYS wins).
-///   2. [bluetoothSensor] — the real (or simulated) BLE sensor feed.
-///   3. [other]           — any other/fallback feed (e.g. defaults, GPS-derived).
+///   2. [internalSensor]  — the device's own built-in barometer, when present
+///                          and preferred by the user.
+///   3. [bluetoothSensor] — the real (or simulated) BLE sensor feed.
+///   4. [other]           — any other/fallback feed (e.g. defaults, GPS-derived).
 ///
-/// i.e. **Debug > Bluetooth sensor > Other**.
+/// i.e. **Debug > Internal sensor > Bluetooth sensor > Other**.
 ///
 /// This ordering describes the *raw data layer*; the downstream data-transform
 /// layer then derives values (e.g. an averaged vertical speed) from whatever
 /// raw value won here.
-enum FlightDataPriority { debugOverride, bluetoothSensor, other }
+enum FlightDataPriority {
+  debugOverride,
+  internalSensor,
+  bluetoothSensor,
+  other,
+}
 
 /// The **raw data layer**.
 ///
@@ -135,15 +142,23 @@ abstract class RawFlightDataSource extends ChangeNotifier
 
   /// Which priority tier currently supplies the effective raw vertical speed:
   /// [FlightDataPriority.debugOverride] when a debug vertical-speed override is
-  /// active, [FlightDataPriority.bluetoothSensor] when a sensor/simulator feed
-  /// is providing it, otherwise [FlightDataPriority.other].
+  /// active, [FlightDataPriority.internalSensor] when the device's built-in
+  /// barometer is the preferred feed, [FlightDataPriority.bluetoothSensor] when
+  /// a BLE sensor/simulator feed is providing it, otherwise
+  /// [FlightDataPriority.other].
   FlightDataPriority get verticalSpeedSource {
     if (_override.verticalSpeed != null) {
       return FlightDataPriority.debugOverride;
     }
+    if (_hasInternalFeed) return FlightDataPriority.internalSensor;
     if (_hasBluetoothFeed) return FlightDataPriority.bluetoothSensor;
     return FlightDataPriority.other;
   }
+
+  /// Whether an internal-sensor-tier feed (device barometer) is currently
+  /// supplying values. Subclasses override this to reflect their live state;
+  /// the default is `false`.
+  bool get _hasInternalFeed => false;
 
   /// Whether a bluetooth-sensor-tier feed is currently supplying values.
   /// Subclasses that represent a BLE feed override this to reflect their live
@@ -344,6 +359,11 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   /// overwrites the live sensor readings.
   bool _realSensorActive = false;
 
+  /// Whether the device's built-in barometer is currently feeding the
+  /// internal-sensor tier. When true it owns the vario/altitude/pressure fields
+  /// (ahead of any BLE sensor) and the simulator is suppressed.
+  bool _internalSensorActive = false;
+
   /// Debug preferences that gate the development simulator. The simulator only
   /// runs as a fallback feed while [DebugSettings.simulatorEnabled] is true.
   final DebugSettings _debug;
@@ -366,8 +386,13 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   @override
   bool get _hasBluetoothFeed => _connected;
 
+  /// The internal barometer owns the vertical-speed tier whenever it is the
+  /// active feed, taking precedence over the BLE sensor.
+  @override
+  bool get _hasInternalFeed => _internalSensorActive;
+
   void _onDebugSettingsChanged() {
-    if (_realSensorActive) {
+    if (_realSensorActive || _internalSensorActive) {
       _lastFakeChinaLocation = _debug.fakeChinaLocation;
       return;
     }
@@ -403,6 +428,12 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   /// development simulator).
   bool get isRealSensorActive => _realSensorActive;
 
+  /// Whether the device's built-in barometer is currently the active feed.
+  /// While true it owns the vertical-speed / altitude / pressure fields ahead
+  /// of any BLE sensor, so a connected BLE sensor only contributes the fields
+  /// the barometer does not provide (temperature, battery, heart rate).
+  bool get isInternalSensorActive => _internalSensorActive;
+
   /// Marks that a real BLE sensor is now the active source. This pauses the
   /// development simulator (if running) so the live sensor's vertical speed is
   /// the single source of truth for the bluetooth-sensor tier.
@@ -424,7 +455,11 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   /// is true; otherwise the feed is left frozen regardless of [resumeSimulator].
   void endRealSensor({bool resumeSimulator = true}) {
     _realSensorActive = false;
-    if (resumeSimulator && _debug.simulatorEnabled) {
+    if (_internalSensorActive) {
+      // The internal barometer is still feeding the sensor tier; keep the feed
+      // connected and never resume the simulator over it.
+      _connected = true;
+    } else if (resumeSimulator && _debug.simulatorEnabled) {
       connectSimulated();
     } else {
       _connected = false;
@@ -432,13 +467,68 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
     notifyListeners();
   }
 
+  /// Marks that the device's built-in barometer is now the active (preferred)
+  /// source. Pauses the development simulator so it never fights the live
+  /// readings, and marks the feed connected so the vario audio can sound even
+  /// with no BLE device paired.
+  void beginInternalSensor() {
+    _internalSensorActive = true;
+    _sim?.removeListener(_onSim);
+    _sim?.stop();
+    _connected = true;
+    notifyListeners();
+  }
+
+  /// Marks that the internal barometer is no longer the active feed. If a BLE
+  /// sensor is still connected the feed stays on it; otherwise the development
+  /// simulator resumes (when enabled), matching [endRealSensor].
+  void endInternalSensor({bool resumeSimulator = true}) {
+    _internalSensorActive = false;
+    if (_realSensorActive) {
+      _connected = true;
+    } else if (resumeSimulator && _debug.simulatorEnabled) {
+      connectSimulated();
+    } else {
+      _connected = false;
+    }
+    notifyListeners();
+  }
+
+  /// Feeds a snapshot from the device's built-in barometer into the
+  /// internal-sensor tier (vario / barometric altitude / pressure).
+  ///
+  /// Implicitly marks the internal sensor active, suppressing the simulator so
+  /// the barometer always wins over it, and taking precedence over the BLE
+  /// sensor for these fields (see [BleFlightDataBridge]). Other fields
+  /// (position, temperature, battery, heart rate) are left untouched.
+  void ingestInternalSnapshot({
+    required double verticalSpeed,
+    required double baroAltitude,
+    required double pressureHpa,
+    DateTime? timestamp,
+  }) {
+    if (verticalSpeed.isNaN || verticalSpeed.isInfinite) return;
+    if (!_internalSensorActive) beginInternalSensor();
+    final base = rawData;
+    update(base.copyWith(
+      verticalSpeed: verticalSpeed,
+      altitude: baroAltitude,
+      baroAltitude: baroAltitude,
+      pressure: pressureHpa,
+      timestamp: timestamp ?? DateTime.now(),
+    ));
+    _connected = true;
+  }
+
   /// Feeds a single vertical-speed reading from the BLE sensor (m/s), keeping
   /// all other fields as they were. This is the field the vario audio consumes.
   ///
   /// Receiving a real reading implicitly marks the real sensor as active,
-  /// suppressing the simulator so the sensor's value always wins.
+  /// suppressing the simulator so the sensor's value always wins. No-op while
+  /// the internal barometer owns the vertical-speed tier.
   void ingestVerticalSpeed(double verticalSpeed) {
     if (verticalSpeed.isNaN || verticalSpeed.isInfinite) return;
+    if (_internalSensorActive) return;
     if (!_realSensorActive) beginRealSensor();
     update(rawData.copyWith(verticalSpeed: verticalSpeed));
     _connected = true;
@@ -524,7 +614,7 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   void connectSimulated({
     Duration tickInterval = const Duration(milliseconds: 100),
   }) {
-    if (_realSensorActive) return;
+    if (_realSensorActive || _internalSensorActive) return;
     if (!_debug.simulatorEnabled) return;
     _sim ??= SimulatedFlightDataSource(tickInterval: tickInterval);
     // Mirror the simulator's raw output into this source's raw tier.
@@ -535,8 +625,8 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   }
 
   void _onSim() {
-    // Ignore simulator ticks once a real sensor has taken over.
-    if (_realSensorActive) return;
+    // Ignore simulator ticks once a real or internal sensor has taken over.
+    if (_realSensorActive || _internalSensorActive) return;
     final sim = _sim;
     if (sim != null) update(sim.rawData);
   }

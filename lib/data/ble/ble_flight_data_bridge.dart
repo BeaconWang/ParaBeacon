@@ -77,13 +77,20 @@ class BleFlightDataBridge {
     // Only meaningful while a device is connected.
     if (!service.isConnected) return;
 
+    // When the device's internal barometer is the preferred, active feed it
+    // owns the vario / altitude / pressure fields (Internal > Bluetooth). In
+    // that case the BLE sensor only contributes the fields the barometer does
+    // not provide (temperature, battery, heart rate) — passing null for the
+    // barometer-owned fields leaves the internal sensor's values intact.
+    final internalOwns = source.isInternalSensorActive;
+
     // Vertical speed is the primary field the vario audio consumes.
-    final vario = r.varioMs;
+    final vario = internalOwns ? null : r.varioMs;
 
     // The sensor's altitude is barometric (derived from pressure by the
     // parser). Feed it into both the barometric-specific field and the
     // effective [altitude] convenience value.
-    final baroAlt = r.altitudeM;
+    final baroAlt = internalOwns ? null : r.altitudeM;
 
     // Build a snapshot preserving previously-known fields, updating only the
     // ones this sensor reports (all maintenance fields are forwarded so the
@@ -93,7 +100,7 @@ class BleFlightDataBridge {
       verticalSpeed: vario,
       altitude: baroAlt,
       baroAltitude: baroAlt,
-      pressure: r.pressureHpa,
+      pressure: internalOwns ? null : r.pressureHpa,
       temperature: r.temperatureC,
       battery: r.batteryPct,
       heartRate: r.heartRate,

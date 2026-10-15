@@ -70,6 +70,13 @@ dependencies:
   # Runtime permission requests for BLE scanning/connecting on mobile.
   permission_handler: ^11.3.1
 
+  # Device built-in motion/environment sensors. Used to read the phone/tablet's
+  # internal barometric pressure sensor (when present) so the app can derive a
+  # vario/altitude feed from the device itself and prefer it over an external
+  # BLE sensor. On hardware without a barometer the stream simply never emits
+  # (or errors) and the feature stays inactive — degrades gracefully.
+  sensors_plus: ^6.1.0
+
   # Persist the selected sensor so it can auto-reconnect on next launch.
   shared_preferences: ^2.3.2
 

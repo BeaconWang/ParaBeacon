@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../l10n/app_localizations.dart';
 import 'flight_derived_stats.dart';
 import 'flight_recorder.dart';
 
@@ -25,8 +26,10 @@ class FlightShareCardService {
   static const int _w = 1080;
   static const int _h = 2480;
 
-  /// Renders the card for [track] and returns the PNG bytes.
-  Future<List<int>> renderPng(FlightTrack track) async {
+  /// Renders the card for [track] and returns the PNG bytes. All on-card text
+  /// is localized through [l10n], so the card follows the app's current
+  /// language (e.g. Chinese when the app is set to Chinese).
+  Future<List<int>> renderPng(FlightTrack track, AppLocalizations l10n) async {
     final stats = FlightDerivedStats.compute(track);
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -34,11 +37,11 @@ class FlightShareCardService {
 
     _paintBackground(canvas, size);
     _paintHeader(canvas, size, track);
-    final mapBottom = _paintTrackMap(canvas, size, track);
+    final mapBottom = _paintTrackMap(canvas, size, track, l10n);
     final profileBottom =
-        _paintAltitudeProfile(canvas, size, track, top: mapBottom + 28);
-    _paintStats(canvas, size, track, stats, top: profileBottom + 36);
-    _paintFooter(canvas, size, track);
+        _paintAltitudeProfile(canvas, size, track, l10n, top: mapBottom + 28);
+    _paintStats(canvas, size, track, stats, l10n, top: profileBottom + 36);
+    _paintFooter(canvas, size, track, l10n);
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(_w, _h);
@@ -50,8 +53,8 @@ class FlightShareCardService {
   /// Renders the card and saves it to the gallery. Returns true on success.
   /// On failure (no gallery / permission), writes a temp file and opens the
   /// share sheet instead, returning false.
-  Future<bool> saveToGallery(FlightTrack track) async {
-    final bytes = await renderPng(track);
+  Future<bool> saveToGallery(FlightTrack track, AppLocalizations l10n) async {
+    final bytes = await renderPng(track, l10n);
     final dir = await getTemporaryDirectory();
     final fileName = '${flightSlug(track)}.png';
     final path = p.join(dir.path, fileName);
@@ -134,7 +137,8 @@ class FlightShareCardService {
   }
 
   /// Draws the track shape into a framed box and returns its bottom Y.
-  double _paintTrackMap(Canvas canvas, Size size, FlightTrack track) {
+  double _paintTrackMap(
+      Canvas canvas, Size size, FlightTrack track, AppLocalizations l10n) {
     const left = 60.0;
     const top = 230.0;
     final boxW = _w - 120.0;
@@ -199,14 +203,15 @@ class FlightShareCardService {
           project(samples.last.data.latitude, samples.last.data.longitude);
       canvas.drawCircle(start, 13, Paint()..color = const Color(0xFF4ADE80));
       canvas.drawCircle(end, 13, Paint()..color = const Color(0xFFFF6B6B));
-      _text(canvas, 'Launch', Offset(start.dx + 18, start.dy - 16),
+      _text(canvas, l10n.flightDetailTakeoff,
+          Offset(start.dx + 18, start.dy - 16),
           fontSize: 22, color: const Color(0xFFCDEFD8), weight: FontWeight.w600);
-      _text(canvas, 'Landing', Offset(end.dx + 18, end.dy - 16),
+      _text(canvas, l10n.flightDetailLanding, Offset(end.dx + 18, end.dy - 16),
           fontSize: 22, color: const Color(0xFFFFD2D2), weight: FontWeight.w600);
     } else {
       _text(
         canvas,
-        'No track',
+        l10n.flightShareCardNoTrack,
         Offset(left + boxW / 2 - 70, top + boxH / 2 - 20),
         fontSize: 32,
         color: const Color(0x66FFFFFF),
@@ -230,7 +235,8 @@ class FlightShareCardService {
   double _paintAltitudeProfile(
     Canvas canvas,
     Size size,
-    FlightTrack track, {
+    FlightTrack track,
+    AppLocalizations l10n, {
     required double top,
   }) {
     const left = 60.0;
@@ -241,7 +247,7 @@ class FlightShareCardService {
 
     canvas.drawRRect(rrect, Paint()..color = const Color(0x22000000));
 
-    _text(canvas, 'Altitude', Offset(left + 28, top + 18),
+    _text(canvas, l10n.unitAltitude, Offset(left + 28, top + 18),
         fontSize: 24, color: const Color(0xFF8FB6CC), weight: FontWeight.w600);
 
     final samples =
@@ -322,7 +328,7 @@ class FlightShareCardService {
     } else {
       _text(
         canvas,
-        'No altitude data',
+        l10n.flightShareCardNoAltitude,
         Offset(left + boxW / 2 - 110, top + boxH / 2 - 10),
         fontSize: 26,
         color: const Color(0x66FFFFFF),
@@ -361,7 +367,8 @@ class FlightShareCardService {
     Canvas canvas,
     Size size,
     FlightTrack track,
-    FlightDerivedStats stats, {
+    FlightDerivedStats stats,
+    AppLocalizations l10n, {
     required double top,
   }) {
     const left = 60.0;
@@ -373,43 +380,50 @@ class FlightShareCardService {
     String kph(double v) => '${v.toStringAsFixed(0)} km/h';
 
     final entries = <(String, String)>[
-      ('Duration', _fmtDuration(track.duration)),
-      ('Moving', _fmtDuration(stats.movingTime)),
-      ('Points', '${track.pointCount}'),
-      ('Track', km(stats.trackDistanceM)),
-      ('Straight', km(stats.straightDistanceM)),
-      ('XC', km(stats.xcDistanceM)),
+      (l10n.flightDetailDuration, _fmtDuration(track.duration)),
+      (l10n.flightDetailMovingTime, _fmtDuration(stats.movingTime)),
+      (l10n.flightDetailSamples, '${track.pointCount}'),
+      (l10n.flightDetailDistance, km(stats.trackDistanceM)),
+      (l10n.flightDetailStraightDistance, km(stats.straightDistanceM)),
+      (l10n.flightDetailXcDistance, km(stats.xcDistanceM)),
       if (stats.maxDistanceFromStartM > 0)
-        ('Max from start', km(stats.maxDistanceFromStartM)),
+        (l10n.flightDetailMaxFromStart, km(stats.maxDistanceFromStartM)),
       if (stats.trackEfficiency > 0)
-        ('Efficiency', '${(stats.trackEfficiency * 100).toStringAsFixed(0)}%'),
+        (l10n.flightDetailTrackEfficiency,
+            '${(stats.trackEfficiency * 100).toStringAsFixed(0)}%'),
       if (stats.faiTriangleM > 0)
         (
-          stats.faiClosed ? 'FAI (closed)' : 'FAI',
+          stats.faiClosed
+              ? '${l10n.flightDetailFaiTriangle} (${l10n.flightDetailFaiClosed})'
+              : l10n.flightDetailFaiTriangle,
           km(stats.faiTriangleM),
         ),
-      ('Max alt', m(track.maxAltitude)),
-      ('Min alt', m(track.minAltitude)),
-      if (stats.altitudeGainedM > 0) ('Alt gain', m(stats.altitudeGainedM)),
-      if (stats.altitudeLostM > 0) ('Alt loss', m(stats.altitudeLostM)),
-      ('Max climb', ms(track.maxClimb)),
-      ('Max sink', ms(track.maxSink)),
-      if (stats.avgClimbMs > 0) ('Avg climb', ms(stats.avgClimbMs)),
-      if (stats.avgSinkMs < 0) ('Avg sink', ms(stats.avgSinkMs)),
+      (l10n.flightDetailMaxAltitude, m(track.maxAltitude)),
+      (l10n.flightDetailMinAltitude, m(track.minAltitude)),
+      if (stats.altitudeGainedM > 0)
+        (l10n.flightDetailAltGained, m(stats.altitudeGainedM)),
+      if (stats.altitudeLostM > 0)
+        (l10n.flightDetailAltLost, m(stats.altitudeLostM)),
+      (l10n.flightDetailMaxClimb, ms(track.maxClimb)),
+      (l10n.flightDetailMaxSink, ms(track.maxSink)),
+      if (stats.avgClimbMs > 0) (l10n.flightDetailAvgClimb, ms(stats.avgClimbMs)),
+      if (stats.avgSinkMs < 0) (l10n.flightDetailAvgSink, ms(stats.avgSinkMs)),
       if (stats.avgGroundSpeedKph > 0)
-        ('Avg speed', kph(stats.avgGroundSpeedKph)),
+        (l10n.flightDetailAvgGroundSpeed, kph(stats.avgGroundSpeedKph)),
       if (stats.avgCruiseSpeedKph > 0)
-        ('Cruise', kph(stats.avgCruiseSpeedKph)),
-      if (stats.maxSpeedKph > 0) ('Max speed', kph(stats.maxSpeedKph)),
+        (l10n.flightDetailAvgCruiseSpeed, kph(stats.avgCruiseSpeedKph)),
+      if (stats.maxSpeedKph > 0)
+        (l10n.flightDetailMaxSpeed, kph(stats.maxSpeedKph)),
       if (stats.avgGlideRatio > 0)
-        ('Avg glide', '${stats.avgGlideRatio.toStringAsFixed(1)}:1'),
-      ('Thermals', '${stats.thermalCount}'),
+        (l10n.flightDetailAvgGlideRatio,
+            '${stats.avgGlideRatio.toStringAsFixed(1)}:1'),
+      (l10n.flightDetailThermals, '${stats.thermalCount}'),
       if (stats.climbTime > Duration.zero)
-        ('Climb time', _fmtDuration(stats.climbTime)),
+        (l10n.flightDetailClimbTime, _fmtDuration(stats.climbTime)),
       if (stats.glideTime > Duration.zero)
-        ('Glide time', _fmtDuration(stats.glideTime)),
+        (l10n.flightDetailGlideTime, _fmtDuration(stats.glideTime)),
       if (stats.sinkTime > Duration.zero)
-        ('Sink time', _fmtDuration(stats.sinkTime)),
+        (l10n.flightDetailSinkTime, _fmtDuration(stats.sinkTime)),
     ];
 
     const cols = 3;
@@ -437,12 +451,13 @@ class FlightShareCardService {
     // ── Sites ──────────────────────────────────────────────────────────────
     final sites = <String>[
       if (track.takeoffSite?.isNotEmpty ?? false)
-        'Launch: ${track.takeoffSite}',
+        '${l10n.flightDetailTakeoff}: ${track.takeoffSite}',
       if (track.landingSite?.isNotEmpty ?? false)
-        'Landing: ${track.landingSite}',
+        '${l10n.flightDetailLanding}: ${track.landingSite}',
     ];
     if (sites.isNotEmpty) {
-      y = _paintSection(canvas, 'Sites', sites, left: left, top: y);
+      y = _paintSection(canvas, l10n.flightDetailSiteNames, sites,
+          left: left, top: y);
     }
 
     // ── Equipment ───────────────────────────────────────────────────────────
@@ -451,7 +466,7 @@ class FlightShareCardService {
           .where((e) => e != null && e.isNotEmpty)
           .cast<String>()
           .join('  ·  ');
-      y = _paintSection(canvas, 'Equipment', [equip], left: left, top: y);
+      y = _paintSection(canvas, l10n.equipment, [equip], left: left, top: y);
     }
 
     // ── Aircraft (every configured field) ────────────────────────────────────
@@ -463,21 +478,23 @@ class FlightShareCardService {
             .where((e) => e != null && e.isNotEmpty)
             .join(' '),
       if (track.aircraftFaiClass?.isNotEmpty ?? false)
-        'Class ${track.aircraftFaiClass}',
+        '${l10n.flightDetailAircraftClass} ${track.aircraftFaiClass}',
       if (track.aircraftCategory?.isNotEmpty ?? false)
         track.aircraftCategory!,
-      if (track.aircraftTandem == true) 'Tandem',
+      if (track.aircraftTandem == true) l10n.flightDetailAircraftTandem,
       if (track.aircraftEngineType?.isNotEmpty ?? false)
-        'Engine: ${track.aircraftEngineType}',
+        '${l10n.flightDetailAircraftEngine}: ${track.aircraftEngineType}',
       if (track.aircraftTrimSpeedKmh != null)
-        'Trim ${track.aircraftTrimSpeedKmh!.toStringAsFixed(0)} km/h',
+        '${l10n.flightDetailAircraftTrimSpeed} '
+            '${track.aircraftTrimSpeedKmh!.toStringAsFixed(0)} km/h',
       if (track.aircraftGoalGlideRatio != null)
-        'Glide ${track.aircraftGoalGlideRatio!.toStringAsFixed(1)}:1',
+        '${l10n.flightDetailAircraftGlideRatio} '
+            '${track.aircraftGoalGlideRatio!.toStringAsFixed(1)}:1',
     ];
     if (aircraft.isNotEmpty) {
       y = _paintSection(
         canvas,
-        'Aircraft',
+        l10n.flightDetailAircraft,
         [aircraft.join('  ·  ')],
         left: left,
         top: y,
@@ -507,10 +524,11 @@ class FlightShareCardService {
     return y + 14;
   }
 
-  void _paintFooter(Canvas canvas, Size size, FlightTrack track) {
+  void _paintFooter(
+      Canvas canvas, Size size, FlightTrack track, AppLocalizations l10n) {
     _text(
       canvas,
-      'Recorded with ParaBeacon  ·  ${track.pointCount} points',
+      l10n.flightShareCardFooter(track.pointCount),
       Offset(60, _h - 80.0),
       fontSize: 24,
       color: const Color(0x88FFFFFF),

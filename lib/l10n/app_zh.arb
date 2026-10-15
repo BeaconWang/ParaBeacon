@@ -719,6 +719,12 @@
   "flightDetailExport": "导出",
   "flightDetailSiteNames": "地名",
   "flightExportShareCard": "分享卡片",
+  "flightShareCardNoTrack": "无航迹",
+  "flightShareCardNoAltitude": "无海拔数据",
+  "flightShareCardFooter": "由 ParaBeacon 记录 · {points} 个采样点",
+  "@flightShareCardFooter": {
+    "placeholders": { "points": { "type": "int" } }
+  },
 
   "flightsStatistics": "统计",
   "flightsStatisticsAll": "统计（全部飞行）",

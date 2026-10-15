@@ -361,7 +361,8 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<void> _saveShareCard(FlightTrack track) async {
     final l10n = AppLocalizations.of(context);
     try {
-      final saved = await FlightShareCardService.instance.saveToGallery(track);
+      final saved =
+          await FlightShareCardService.instance.saveToGallery(track, l10n);
       _snack(
         saved ? l10n.flightsShareCardSaved : l10n.flightsShareCardSharedFile,
       );

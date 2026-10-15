@@ -2017,6 +2017,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightExportShareCard => '分享卡片';
 
   @override
+  String get flightShareCardNoTrack => '无航迹';
+
+  @override
+  String get flightShareCardNoAltitude => '无海拔数据';
+
+  @override
+  String flightShareCardFooter(int points) {
+    return '由 ParaBeacon 记录 · $points 个采样点';
+  }
+
+  @override
   String get flightsStatistics => '统计';
 
   @override

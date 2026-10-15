@@ -2064,6 +2064,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightExportShareCard => 'Share card';
 
   @override
+  String get flightShareCardNoTrack => 'No track';
+
+  @override
+  String get flightShareCardNoAltitude => 'No altitude data';
+
+  @override
+  String flightShareCardFooter(int points) {
+    return 'Recorded with ParaBeacon · $points points';
+  }
+
+  @override
   String get flightsStatistics => 'Statistics';
 
   @override

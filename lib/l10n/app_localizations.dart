@@ -3986,6 +3986,24 @@ abstract class AppLocalizations {
   /// **'Share card'**
   String get flightExportShareCard;
 
+  /// No description provided for @flightShareCardNoTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'No track'**
+  String get flightShareCardNoTrack;
+
+  /// No description provided for @flightShareCardNoAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'No altitude data'**
+  String get flightShareCardNoAltitude;
+
+  /// No description provided for @flightShareCardFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded with ParaBeacon · {points} points'**
+  String flightShareCardFooter(int points);
+
   /// No description provided for @flightsStatistics.
   ///
   /// In en, this message translates to:

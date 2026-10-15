@@ -826,6 +826,12 @@
   "flightDetailExport": "Export",
   "flightDetailSiteNames": "Site names",
   "flightExportShareCard": "Share card",
+  "flightShareCardNoTrack": "No track",
+  "flightShareCardNoAltitude": "No altitude data",
+  "flightShareCardFooter": "Recorded with ParaBeacon · {points} points",
+  "@flightShareCardFooter": {
+    "placeholders": { "points": { "type": "int" } }
+  },
 
   "flightsStatistics": "Statistics",
   "flightsStatisticsAll": "Statistics (all flights)",

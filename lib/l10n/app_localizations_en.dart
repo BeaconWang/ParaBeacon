@@ -755,7 +755,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gridSize => 'Grid size';
 
   @override
-  String get bluetoothSensor => 'Bluetooth Sensor';
+  String get bluetoothSensor => 'Sensor';
 
   @override
   String get bluetoothSensorSubtitle => 'Connect an external BLE sensor';

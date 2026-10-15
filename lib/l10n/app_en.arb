@@ -254,7 +254,7 @@
   "varioSoundSettings": "Vario sound settings",
   "varioSoundSettingsSubtitle": "Sound, volume, thresholds, pitch and waveform",
   "gridSize": "Grid size",
-  "bluetoothSensor": "Bluetooth Sensor",
+  "bluetoothSensor": "Sensor",
   "bluetoothSensorSubtitle": "Connect an external BLE sensor",
   "trackRecording": "Track recording",
   "trackRecordingSubtitle": "{interval} · {detail}",

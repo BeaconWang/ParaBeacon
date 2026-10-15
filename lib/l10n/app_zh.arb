@@ -253,7 +253,7 @@
   "varioSoundSettings": "升降音设置",
   "varioSoundSettingsSubtitle": "音效、音量、阈值、音高与波形",
   "gridSize": "网格大小",
-  "bluetoothSensor": "蓝牙传感器",
+  "bluetoothSensor": "传感器",
   "bluetoothSensorSubtitle": "连接外部 BLE 传感器",
   "trackRecording": "航迹记录",
   "trackRecordingSubtitle": "{interval} · {detail}",

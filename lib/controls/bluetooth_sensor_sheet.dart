@@ -62,9 +62,9 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: Row(
                 children: [
-                  Icon(Icons.bluetooth, color: theme.colorScheme.primary),
+                  Icon(Icons.sensors, color: theme.colorScheme.primary),
                   const SizedBox(width: 10),
-                  Text('Bluetooth Sensor',
+                  Text('Sensor',
                       style: theme.textTheme.titleLarge),
                   const Spacer(),
                   IconButton(

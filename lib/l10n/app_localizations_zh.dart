@@ -733,7 +733,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get gridSize => '网格大小';
 
   @override
-  String get bluetoothSensor => '蓝牙传感器';
+  String get bluetoothSensor => '传感器';
 
   @override
   String get bluetoothSensorSubtitle => '连接外部 BLE 传感器';

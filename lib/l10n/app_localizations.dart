@@ -1541,7 +1541,7 @@ abstract class AppLocalizations {
   /// No description provided for @bluetoothSensor.
   ///
   /// In en, this message translates to:
-  /// **'Bluetooth Sensor'**
+  /// **'Sensor'**
   String get bluetoothSensor;
 
   /// No description provided for @bluetoothSensorSubtitle.

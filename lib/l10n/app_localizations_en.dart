@@ -2341,4 +2341,221 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get replay3dStatVario => 'VARIO';
+
+  @override
+  String get sensorTitle => 'Sensor';
+
+  @override
+  String get sensorOptions => 'Options';
+
+  @override
+  String get sensorEnableBluetooth => 'Enable Bluetooth sensor';
+
+  @override
+  String get sensorEnableBluetoothSubtitle =>
+      'Scan and connect to external sensors';
+
+  @override
+  String get sensorPreferInternal => 'Prefer internal sensor';
+
+  @override
+  String get sensorPreferInternalSubtitle =>
+      'Use this device’s built-in barometer first';
+
+  @override
+  String get sensorNoInternalBarometer =>
+      'No built-in barometer detected on this device';
+
+  @override
+  String get sensorInternalSection => 'Internal sensor';
+
+  @override
+  String get sensorStatus => 'Status';
+
+  @override
+  String get sensorBarometerNotDetected => 'No barometer detected';
+
+  @override
+  String get sensorBarometerConnected => 'Barometer connected';
+
+  @override
+  String get sensorBarometerNotPreferred =>
+      'Barometer detected (not preferred)';
+
+  @override
+  String get sensorConnection => 'Connection';
+
+  @override
+  String sensorBluetoothState(String state) {
+    return 'Bluetooth: $state';
+  }
+
+  @override
+  String get sensorLiveDataFields => 'Live data fields';
+
+  @override
+  String get sensorNearbyDevices => 'Nearby devices';
+
+  @override
+  String get sensorFieldAltitude => 'Altitude';
+
+  @override
+  String get sensorFieldVerticalSpeed => 'Vertical speed';
+
+  @override
+  String get sensorFieldPressure => 'Pressure';
+
+  @override
+  String get sensorFieldTemperature => 'Temperature';
+
+  @override
+  String get sensorFieldHeartRate => 'Heart rate';
+
+  @override
+  String get sensorFieldBattery => 'Battery';
+
+  @override
+  String get sensorNoDeviceSelected => 'No device selected';
+
+  @override
+  String get sensorDevice => 'Device';
+
+  @override
+  String get sensorConnected => 'Connected';
+
+  @override
+  String get sensorConnecting => 'Connecting…';
+
+  @override
+  String get sensorDisconnected => 'Disconnected';
+
+  @override
+  String get sensorConnect => 'Connect';
+
+  @override
+  String get sensorDisconnect => 'Disconnect';
+
+  @override
+  String get sensorForget => 'Forget';
+
+  @override
+  String get sensorScan => 'Scan';
+
+  @override
+  String get sensorStop => 'Stop';
+
+  @override
+  String get sensorDevices => 'Devices';
+
+  @override
+  String get sensorTapScan => 'Tap Scan';
+
+  @override
+  String get sensorEnableFirst => 'Enable first';
+
+  @override
+  String get sensorUnknownDevice => '(unknown)';
+
+  @override
+  String sensorRssiDbm(int rssi) {
+    return '$rssi dBm';
+  }
+
+  @override
+  String get sensorUnsupported =>
+      'Bluetooth sensors are only available on iOS and Android.';
+
+  @override
+  String get varioSoundTitle => 'Vario Sound Settings';
+
+  @override
+  String get varioSoundResetTooltip => 'Reset to defaults';
+
+  @override
+  String get varioSoundPreview => 'Preview sound';
+
+  @override
+  String get varioSoundPreviewLive => 'LIVE';
+
+  @override
+  String get varioSoundPreviewMuted => 'MUTED';
+
+  @override
+  String get varioSoundVerticalSpeed => 'Vertical speed';
+
+  @override
+  String get varioSoundSectionThresholds => 'Thresholds';
+
+  @override
+  String get varioSoundLiftThreshold => 'Lift threshold';
+
+  @override
+  String get varioSoundSinkThreshold => 'Sink threshold';
+
+  @override
+  String get varioSoundSectionPitch => 'Pitch';
+
+  @override
+  String get varioSoundLiftBasePitch => 'Lift base pitch';
+
+  @override
+  String get varioSoundLiftPitchRange => 'Lift pitch range';
+
+  @override
+  String get varioSoundSinkBasePitch => 'Sink base pitch';
+
+  @override
+  String get varioSoundSectionWaveform => 'Waveform';
+
+  @override
+  String get varioSoundLiftWaveform => 'Lift waveform';
+
+  @override
+  String get varioSoundSinkWaveform => 'Sink waveform';
+
+  @override
+  String get varioSoundSectionOutput => 'Output';
+
+  @override
+  String get varioSoundVarioSound => 'Vario sound';
+
+  @override
+  String get varioSoundVarioSoundDescription =>
+      'Master on/off for the vario beeper.';
+
+  @override
+  String get varioSoundVolume => 'Vario volume';
+
+  @override
+  String get varioSoundMasterGain => 'Master gain';
+
+  @override
+  String get varioSoundSectionBehavior => 'Behavior';
+
+  @override
+  String get varioSoundOnlyWhenFlying => 'Sound only when flying';
+
+  @override
+  String get varioSoundOnlyWhenFlyingDescription =>
+      'Stay silent until a flight is started, then beep normally.';
+
+  @override
+  String get varioSoundOnlyWhenSensorConnected =>
+      'Sound only when sensor connected';
+
+  @override
+  String get varioSoundOnlyWhenSensorConnectedDescription =>
+      'Stay silent unless a Bluetooth sensor is connected.';
+
+  @override
+  String get varioWaveformTick => 'Tick';
+
+  @override
+  String get varioWaveformTack => 'Tack';
+
+  @override
+  String get varioWaveformSquare => 'Square';
+
+  @override
+  String get varioWaveformLong => 'Long';
 }

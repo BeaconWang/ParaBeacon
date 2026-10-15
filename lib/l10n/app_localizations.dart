@@ -4495,6 +4495,414 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'VARIO'**
   String get replay3dStatVario;
+
+  /// No description provided for @sensorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensor'**
+  String get sensorTitle;
+
+  /// No description provided for @sensorOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get sensorOptions;
+
+  /// No description provided for @sensorEnableBluetooth.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Bluetooth sensor'**
+  String get sensorEnableBluetooth;
+
+  /// No description provided for @sensorEnableBluetoothSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan and connect to external sensors'**
+  String get sensorEnableBluetoothSubtitle;
+
+  /// No description provided for @sensorPreferInternal.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer internal sensor'**
+  String get sensorPreferInternal;
+
+  /// No description provided for @sensorPreferInternalSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this device’s built-in barometer first'**
+  String get sensorPreferInternalSubtitle;
+
+  /// No description provided for @sensorNoInternalBarometer.
+  ///
+  /// In en, this message translates to:
+  /// **'No built-in barometer detected on this device'**
+  String get sensorNoInternalBarometer;
+
+  /// No description provided for @sensorInternalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal sensor'**
+  String get sensorInternalSection;
+
+  /// No description provided for @sensorStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get sensorStatus;
+
+  /// No description provided for @sensorBarometerNotDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'No barometer detected'**
+  String get sensorBarometerNotDetected;
+
+  /// No description provided for @sensorBarometerConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Barometer connected'**
+  String get sensorBarometerConnected;
+
+  /// No description provided for @sensorBarometerNotPreferred.
+  ///
+  /// In en, this message translates to:
+  /// **'Barometer detected (not preferred)'**
+  String get sensorBarometerNotPreferred;
+
+  /// No description provided for @sensorConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get sensorConnection;
+
+  /// No description provided for @sensorBluetoothState.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth: {state}'**
+  String sensorBluetoothState(String state);
+
+  /// No description provided for @sensorLiveDataFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Live data fields'**
+  String get sensorLiveDataFields;
+
+  /// No description provided for @sensorNearbyDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby devices'**
+  String get sensorNearbyDevices;
+
+  /// No description provided for @sensorFieldAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get sensorFieldAltitude;
+
+  /// No description provided for @sensorFieldVerticalSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical speed'**
+  String get sensorFieldVerticalSpeed;
+
+  /// No description provided for @sensorFieldPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Pressure'**
+  String get sensorFieldPressure;
+
+  /// No description provided for @sensorFieldTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get sensorFieldTemperature;
+
+  /// No description provided for @sensorFieldHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart rate'**
+  String get sensorFieldHeartRate;
+
+  /// No description provided for @sensorFieldBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery'**
+  String get sensorFieldBattery;
+
+  /// No description provided for @sensorNoDeviceSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No device selected'**
+  String get sensorNoDeviceSelected;
+
+  /// No description provided for @sensorDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get sensorDevice;
+
+  /// No description provided for @sensorConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get sensorConnected;
+
+  /// No description provided for @sensorConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get sensorConnecting;
+
+  /// No description provided for @sensorDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected'**
+  String get sensorDisconnected;
+
+  /// No description provided for @sensorConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get sensorConnect;
+
+  /// No description provided for @sensorDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get sensorDisconnect;
+
+  /// No description provided for @sensorForget.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get sensorForget;
+
+  /// No description provided for @sensorScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get sensorScan;
+
+  /// No description provided for @sensorStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get sensorStop;
+
+  /// No description provided for @sensorDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get sensorDevices;
+
+  /// No description provided for @sensorTapScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Scan'**
+  String get sensorTapScan;
+
+  /// No description provided for @sensorEnableFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable first'**
+  String get sensorEnableFirst;
+
+  /// No description provided for @sensorUnknownDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'(unknown)'**
+  String get sensorUnknownDevice;
+
+  /// No description provided for @sensorRssiDbm.
+  ///
+  /// In en, this message translates to:
+  /// **'{rssi} dBm'**
+  String sensorRssiDbm(int rssi);
+
+  /// No description provided for @sensorUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth sensors are only available on iOS and Android.'**
+  String get sensorUnsupported;
+
+  /// No description provided for @varioSoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario Sound Settings'**
+  String get varioSoundTitle;
+
+  /// No description provided for @varioSoundResetTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to defaults'**
+  String get varioSoundResetTooltip;
+
+  /// No description provided for @varioSoundPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview sound'**
+  String get varioSoundPreview;
+
+  /// No description provided for @varioSoundPreviewLive.
+  ///
+  /// In en, this message translates to:
+  /// **'LIVE'**
+  String get varioSoundPreviewLive;
+
+  /// No description provided for @varioSoundPreviewMuted.
+  ///
+  /// In en, this message translates to:
+  /// **'MUTED'**
+  String get varioSoundPreviewMuted;
+
+  /// No description provided for @varioSoundVerticalSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical speed'**
+  String get varioSoundVerticalSpeed;
+
+  /// No description provided for @varioSoundSectionThresholds.
+  ///
+  /// In en, this message translates to:
+  /// **'Thresholds'**
+  String get varioSoundSectionThresholds;
+
+  /// No description provided for @varioSoundLiftThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift threshold'**
+  String get varioSoundLiftThreshold;
+
+  /// No description provided for @varioSoundSinkThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Sink threshold'**
+  String get varioSoundSinkThreshold;
+
+  /// No description provided for @varioSoundSectionPitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch'**
+  String get varioSoundSectionPitch;
+
+  /// No description provided for @varioSoundLiftBasePitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift base pitch'**
+  String get varioSoundLiftBasePitch;
+
+  /// No description provided for @varioSoundLiftPitchRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift pitch range'**
+  String get varioSoundLiftPitchRange;
+
+  /// No description provided for @varioSoundSinkBasePitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Sink base pitch'**
+  String get varioSoundSinkBasePitch;
+
+  /// No description provided for @varioSoundSectionWaveform.
+  ///
+  /// In en, this message translates to:
+  /// **'Waveform'**
+  String get varioSoundSectionWaveform;
+
+  /// No description provided for @varioSoundLiftWaveform.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift waveform'**
+  String get varioSoundLiftWaveform;
+
+  /// No description provided for @varioSoundSinkWaveform.
+  ///
+  /// In en, this message translates to:
+  /// **'Sink waveform'**
+  String get varioSoundSinkWaveform;
+
+  /// No description provided for @varioSoundSectionOutput.
+  ///
+  /// In en, this message translates to:
+  /// **'Output'**
+  String get varioSoundSectionOutput;
+
+  /// No description provided for @varioSoundVarioSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario sound'**
+  String get varioSoundVarioSound;
+
+  /// No description provided for @varioSoundVarioSoundDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Master on/off for the vario beeper.'**
+  String get varioSoundVarioSoundDescription;
+
+  /// No description provided for @varioSoundVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario volume'**
+  String get varioSoundVolume;
+
+  /// No description provided for @varioSoundMasterGain.
+  ///
+  /// In en, this message translates to:
+  /// **'Master gain'**
+  String get varioSoundMasterGain;
+
+  /// No description provided for @varioSoundSectionBehavior.
+  ///
+  /// In en, this message translates to:
+  /// **'Behavior'**
+  String get varioSoundSectionBehavior;
+
+  /// No description provided for @varioSoundOnlyWhenFlying.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound only when flying'**
+  String get varioSoundOnlyWhenFlying;
+
+  /// No description provided for @varioSoundOnlyWhenFlyingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay silent until a flight is started, then beep normally.'**
+  String get varioSoundOnlyWhenFlyingDescription;
+
+  /// No description provided for @varioSoundOnlyWhenSensorConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound only when sensor connected'**
+  String get varioSoundOnlyWhenSensorConnected;
+
+  /// No description provided for @varioSoundOnlyWhenSensorConnectedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay silent unless a Bluetooth sensor is connected.'**
+  String get varioSoundOnlyWhenSensorConnectedDescription;
+
+  /// No description provided for @varioWaveformTick.
+  ///
+  /// In en, this message translates to:
+  /// **'Tick'**
+  String get varioWaveformTick;
+
+  /// No description provided for @varioWaveformTack.
+  ///
+  /// In en, this message translates to:
+  /// **'Tack'**
+  String get varioWaveformTack;
+
+  /// No description provided for @varioWaveformSquare.
+  ///
+  /// In en, this message translates to:
+  /// **'Square'**
+  String get varioWaveformSquare;
+
+  /// No description provided for @varioWaveformLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Long'**
+  String get varioWaveformLong;
 }
 
 class _AppLocalizationsDelegate

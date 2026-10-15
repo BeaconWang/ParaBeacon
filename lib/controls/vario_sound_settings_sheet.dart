@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../audio/vario_audio_service.dart';
 import '../audio/vario_config.dart';
 import '../audio/vario_sound_settings.dart';
+import '../l10n/app_localizations.dart';
 
 /// Opens the Vario Sound Settings screen as a modal bottom sheet.
 ///
@@ -81,6 +82,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return DraggableScrollableSheet(
       expand: false,
@@ -96,11 +98,11 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                 children: [
                   Icon(Icons.graphic_eq, color: theme.colorScheme.primary),
                   const SizedBox(width: 10),
-                  Text('Vario Sound Settings',
+                  Text(l10n.varioSoundTitle,
                       style: theme.textTheme.titleLarge),
                   const Spacer(),
                   IconButton(
-                    tooltip: 'Reset to defaults',
+                    tooltip: l10n.varioSoundResetTooltip,
                     icon: const Icon(Icons.restart_alt),
                     onPressed: () async {
                       await _settings.resetToDefaults();
@@ -122,14 +124,14 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                     controller: scrollController,
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     children: [
-                      _testCard(theme),
+                      _testCard(theme, l10n),
                       const SizedBox(height: 20),
-                      _sectionLabel(theme, 'Thresholds'),
+                      _sectionLabel(theme, l10n.varioSoundSectionThresholds),
                       const SizedBox(height: 8),
                       _sliderCard(
                         theme,
                         icon: Icons.trending_up,
-                        label: 'Lift threshold',
+                        label: l10n.varioSoundLiftThreshold,
                         value: _settings.liftThreshold,
                         min: 0.0,
                         max: 3.0,
@@ -140,7 +142,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                       _sliderCard(
                         theme,
                         icon: Icons.trending_down,
-                        label: 'Sink threshold',
+                        label: l10n.varioSoundSinkThreshold,
                         value: _settings.sinkThreshold,
                         min: -6.0,
                         max: -0.5,
@@ -149,12 +151,12 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                         onChanged: _settings.setSinkThreshold,
                       ),
                       const SizedBox(height: 20),
-                      _sectionLabel(theme, 'Pitch'),
+                      _sectionLabel(theme, l10n.varioSoundSectionPitch),
                       const SizedBox(height: 8),
                       _sliderCard(
                         theme,
                         icon: Icons.music_note,
-                        label: 'Lift base pitch',
+                        label: l10n.varioSoundLiftBasePitch,
                         value: _settings.liftBaseFreq,
                         min: 300.0,
                         max: 1200.0,
@@ -165,7 +167,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                       _sliderCard(
                         theme,
                         icon: Icons.stacked_line_chart,
-                        label: 'Lift pitch range',
+                        label: l10n.varioSoundLiftPitchRange,
                         value: _settings.liftFreqSpan,
                         min: 200.0,
                         max: 1500.0,
@@ -176,7 +178,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                       _sliderCard(
                         theme,
                         icon: Icons.music_note_outlined,
-                        label: 'Sink base pitch',
+                        label: l10n.varioSoundSinkBasePitch,
                         value: _settings.sinkBaseFreq,
                         min: 300.0,
                         max: 1200.0,
@@ -185,38 +187,40 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                         onChanged: _settings.setSinkBaseFreq,
                       ),
                       const SizedBox(height: 20),
-                      _sectionLabel(theme, 'Waveform'),
+                      _sectionLabel(theme, l10n.varioSoundSectionWaveform),
                       const SizedBox(height: 8),
                       _waveformCard(
                         theme,
-                        label: 'Lift waveform',
+                        l10n,
+                        label: l10n.varioSoundLiftWaveform,
                         value: _settings.liftWaveform,
                         onChanged: _settings.setLiftWaveform,
                       ),
                       const SizedBox(height: 8),
                       _waveformCard(
                         theme,
-                        label: 'Sink waveform',
+                        l10n,
+                        label: l10n.varioSoundSinkWaveform,
                         value: _settings.sinkWaveform,
                         onChanged: _settings.setSinkWaveform,
                       ),
                       const SizedBox(height: 20),
-                      _sectionLabel(theme, 'Output'),
+                      _sectionLabel(theme, l10n.varioSoundSectionOutput),
                       const SizedBox(height: 8),
                       _switchCard(
                         theme,
                         icon: _settings.muted
                             ? Icons.volume_off_outlined
                             : Icons.volume_up_outlined,
-                        label: 'Vario sound',
-                        description: 'Master on/off for the vario beeper.',
+                        label: l10n.varioSoundVarioSound,
+                        description: l10n.varioSoundVarioSoundDescription,
                         value: !_settings.muted,
                         onChanged: (on) => _settings.setMuted(!on),
                       ),
                       _sliderCard(
                         theme,
                         icon: Icons.graphic_eq,
-                        label: 'Vario volume',
+                        label: l10n.varioSoundVolume,
                         value: _settings.volume,
                         min: 0.0,
                         max: 1.0,
@@ -233,7 +237,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                         _sliderCard(
                           theme,
                           icon: Icons.volume_up_outlined,
-                          label: 'Master gain',
+                          label: l10n.varioSoundMasterGain,
                           value: _settings.masterGain,
                           min: 0.0,
                           max: 1.0,
@@ -242,15 +246,13 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                           onChanged: _settings.setMasterGain,
                         ),
                       const SizedBox(height: 20),
-                      _sectionLabel(theme, 'Behavior'),
+                      _sectionLabel(theme, l10n.varioSoundSectionBehavior),
                       const SizedBox(height: 8),
                       _switchCard(
                         theme,
                         icon: Icons.flight_takeoff,
-                        label: 'Sound only when flying',
-                        description:
-                            'Stay silent until a flight is started, then '
-                            'beep normally.',
+                        label: l10n.varioSoundOnlyWhenFlying,
+                        description: l10n.varioSoundOnlyWhenFlyingDescription,
                         value: _settings.soundOnlyWhenFlying,
                         onChanged: _settings.setSoundOnlyWhenFlying,
                       ),
@@ -258,10 +260,9 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                       _switchCard(
                         theme,
                         icon: Icons.bluetooth_connected,
-                        label: 'Sound only when sensor connected',
+                        label: l10n.varioSoundOnlyWhenSensorConnected,
                         description:
-                            'Stay silent unless a Bluetooth sensor is '
-                            'connected.',
+                            l10n.varioSoundOnlyWhenSensorConnectedDescription,
                         value: _settings.soundOnlyWhenSensorConnected,
                         onChanged: _settings.setSoundOnlyWhenSensorConnected,
                       ),
@@ -277,7 +278,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
   }
 
   // ── Test controls ─────────────────────────────────────────────────────────
-  Widget _testCard(ThemeData theme) {
+  Widget _testCard(ThemeData theme, AppLocalizations l10n) {
     final speedLabel = '${_previewSpeed >= 0 ? '+' : ''}'
         '${_previewSpeed.toStringAsFixed(1)} m/s';
     return _card(theme, [
@@ -289,13 +290,16 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                 size: 20, color: theme.colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('Preview sound', style: theme.textTheme.bodyMedium),
+              child: Text(l10n.varioSoundPreview,
+                  style: theme.textTheme.bodyMedium),
             ),
             // Tap to mute/unmute the audition. Shows "LIVE" while audible and
             // "MUTED" while silenced; the slider position is preserved either
             // way.
             _PreviewToggleChip(
               muted: _previewMuted,
+              liveLabel: l10n.varioSoundPreviewLive,
+              mutedLabel: l10n.varioSoundPreviewMuted,
               onTap: _togglePreviewMuted,
             ),
           ],
@@ -309,8 +313,8 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
             Icon(Icons.height, size: 20, color: theme.colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
-              child:
-                  Text('Vertical speed', style: theme.textTheme.bodyMedium),
+              child: Text(l10n.varioSoundVerticalSpeed,
+                  style: theme.textTheme.bodyMedium),
             ),
             Text(
               speedLabel,
@@ -423,7 +427,8 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
   }
 
   Widget _waveformCard(
-    ThemeData theme, {
+    ThemeData theme,
+    AppLocalizations l10n, {
     required String label,
     required VarioWaveform value,
     required ValueChanged<VarioWaveform> onChanged,
@@ -441,7 +446,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
               children: VarioWaveform.values.map((w) {
                 final selected = w == value;
                 return ChoiceChip(
-                  label: Text(_waveformName(w)),
+                  label: Text(_waveformName(l10n, w)),
                   selected: selected,
                   onSelected: (_) => onChanged(w),
                 );
@@ -453,16 +458,16 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
     ]);
   }
 
-  String _waveformName(VarioWaveform w) {
+  String _waveformName(AppLocalizations l10n, VarioWaveform w) {
     switch (w) {
       case VarioWaveform.tick:
-        return 'Tick';
+        return l10n.varioWaveformTick;
       case VarioWaveform.tack:
-        return 'Tack';
+        return l10n.varioWaveformTack;
       case VarioWaveform.square:
-        return 'Square';
+        return l10n.varioWaveformSquare;
       case VarioWaveform.long:
-        return 'Long';
+        return l10n.varioWaveformLong;
     }
   }
 
@@ -488,9 +493,16 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
 /// Tappable chip that mutes/unmutes the audition. Reads "LIVE" (highlighted)
 /// while audible and "MUTED" (subdued) while silenced.
 class _PreviewToggleChip extends StatelessWidget {
-  const _PreviewToggleChip({required this.muted, required this.onTap});
+  const _PreviewToggleChip({
+    required this.muted,
+    required this.liveLabel,
+    required this.mutedLabel,
+    required this.onTap,
+  });
 
   final bool muted;
+  final String liveLabel;
+  final String mutedLabel;
   final VoidCallback onTap;
 
   @override
@@ -523,7 +535,7 @@ class _PreviewToggleChip extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                muted ? 'MUTED' : 'LIVE',
+                muted ? mutedLabel : liveLabel,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: fg,
                   fontWeight: FontWeight.w700,

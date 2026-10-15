@@ -2291,4 +2291,212 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get replay3dStatVario => '升降';
+
+  @override
+  String get sensorTitle => '传感器';
+
+  @override
+  String get sensorOptions => '选项';
+
+  @override
+  String get sensorEnableBluetooth => '启用蓝牙传感器';
+
+  @override
+  String get sensorEnableBluetoothSubtitle => '扫描并连接外部传感器';
+
+  @override
+  String get sensorPreferInternal => '优先使用内置传感器';
+
+  @override
+  String get sensorPreferInternalSubtitle => '优先使用本设备的内置气压计';
+
+  @override
+  String get sensorNoInternalBarometer => '本设备未检测到内置气压计';
+
+  @override
+  String get sensorInternalSection => '内置传感器';
+
+  @override
+  String get sensorStatus => '状态';
+
+  @override
+  String get sensorBarometerNotDetected => '未检测到气压计';
+
+  @override
+  String get sensorBarometerConnected => '气压计已连接';
+
+  @override
+  String get sensorBarometerNotPreferred => '已检测到气压计（未优先使用）';
+
+  @override
+  String get sensorConnection => '连接';
+
+  @override
+  String sensorBluetoothState(String state) {
+    return '蓝牙：$state';
+  }
+
+  @override
+  String get sensorLiveDataFields => '实时数据字段';
+
+  @override
+  String get sensorNearbyDevices => '附近设备';
+
+  @override
+  String get sensorFieldAltitude => '海拔';
+
+  @override
+  String get sensorFieldVerticalSpeed => '升降速度';
+
+  @override
+  String get sensorFieldPressure => '气压';
+
+  @override
+  String get sensorFieldTemperature => '温度';
+
+  @override
+  String get sensorFieldHeartRate => '心率';
+
+  @override
+  String get sensorFieldBattery => '电量';
+
+  @override
+  String get sensorNoDeviceSelected => '未选择设备';
+
+  @override
+  String get sensorDevice => '设备';
+
+  @override
+  String get sensorConnected => '已连接';
+
+  @override
+  String get sensorConnecting => '连接中…';
+
+  @override
+  String get sensorDisconnected => '已断开';
+
+  @override
+  String get sensorConnect => '连接';
+
+  @override
+  String get sensorDisconnect => '断开连接';
+
+  @override
+  String get sensorForget => '忘记设备';
+
+  @override
+  String get sensorScan => '扫描';
+
+  @override
+  String get sensorStop => '停止';
+
+  @override
+  String get sensorDevices => '设备';
+
+  @override
+  String get sensorTapScan => '点击扫描';
+
+  @override
+  String get sensorEnableFirst => '请先启用';
+
+  @override
+  String get sensorUnknownDevice => '（未知）';
+
+  @override
+  String sensorRssiDbm(int rssi) {
+    return '$rssi dBm';
+  }
+
+  @override
+  String get sensorUnsupported => '蓝牙传感器仅在 iOS 和 Android 上可用。';
+
+  @override
+  String get varioSoundTitle => '升降音设置';
+
+  @override
+  String get varioSoundResetTooltip => '恢复默认';
+
+  @override
+  String get varioSoundPreview => '试听声音';
+
+  @override
+  String get varioSoundPreviewLive => '实时';
+
+  @override
+  String get varioSoundPreviewMuted => '已静音';
+
+  @override
+  String get varioSoundVerticalSpeed => '升降速度';
+
+  @override
+  String get varioSoundSectionThresholds => '阈值';
+
+  @override
+  String get varioSoundLiftThreshold => '上升阈值';
+
+  @override
+  String get varioSoundSinkThreshold => '下降阈值';
+
+  @override
+  String get varioSoundSectionPitch => '音高';
+
+  @override
+  String get varioSoundLiftBasePitch => '上升基准音高';
+
+  @override
+  String get varioSoundLiftPitchRange => '上升音高范围';
+
+  @override
+  String get varioSoundSinkBasePitch => '下降基准音高';
+
+  @override
+  String get varioSoundSectionWaveform => '波形';
+
+  @override
+  String get varioSoundLiftWaveform => '上升波形';
+
+  @override
+  String get varioSoundSinkWaveform => '下降波形';
+
+  @override
+  String get varioSoundSectionOutput => '输出';
+
+  @override
+  String get varioSoundVarioSound => '升降音';
+
+  @override
+  String get varioSoundVarioSoundDescription => '升降音的总开关。';
+
+  @override
+  String get varioSoundVolume => '升降音音量';
+
+  @override
+  String get varioSoundMasterGain => '主增益';
+
+  @override
+  String get varioSoundSectionBehavior => '行为';
+
+  @override
+  String get varioSoundOnlyWhenFlying => '仅在飞行时发声';
+
+  @override
+  String get varioSoundOnlyWhenFlyingDescription => '开始飞行前保持静音，之后正常发声。';
+
+  @override
+  String get varioSoundOnlyWhenSensorConnected => '仅在传感器连接时发声';
+
+  @override
+  String get varioSoundOnlyWhenSensorConnectedDescription => '未连接蓝牙传感器时保持静音。';
+
+  @override
+  String get varioWaveformTick => '滴答';
+
+  @override
+  String get varioWaveformTack => '嗒嗒';
+
+  @override
+  String get varioWaveformSquare => '方波';
+
+  @override
+  String get varioWaveformLong => '长音';
 }

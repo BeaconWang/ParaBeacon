@@ -4,6 +4,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../data/ble/ble_sensor_service.dart';
 import '../data/ble/sensor_readings.dart';
 import '../data/sensors/internal_sensor_service.dart';
+import '../l10n/app_localizations.dart';
 
 /// Opens the Bluetooth sensor screen as a modal bottom sheet.
 ///
@@ -49,6 +50,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return DraggableScrollableSheet(
       expand: false,
@@ -64,7 +66,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
                 children: [
                   Icon(Icons.sensors, color: theme.colorScheme.primary),
                   const SizedBox(width: 10),
-                  Text('Sensor',
+                  Text(l10n.sensorTitle,
                       style: theme.textTheme.titleLarge),
                   const Spacer(),
                   IconButton(
@@ -79,41 +81,41 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
                 animation: Listenable.merge([_svc, _internal]),
                 builder: (context, _) {
                   if (!_svc.supported) {
-                    return _buildUnsupported(theme);
+                    return _buildUnsupported(theme, l10n);
                   }
                   return ListView(
                     controller: scrollController,
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     children: [
-                      _sectionLabel(theme, 'Options'),
+                      _sectionLabel(theme, l10n.sensorOptions),
                       const SizedBox(height: 8),
-                      _optionsCard(theme),
+                      _optionsCard(theme, l10n),
                       const SizedBox(height: 20),
                       if (_internal.supported) ...[
-                        _sectionLabel(theme, 'Internal sensor'),
+                        _sectionLabel(theme, l10n.sensorInternalSection),
                         const SizedBox(height: 8),
-                        _internalSensorCard(theme),
+                        _internalSensorCard(theme, l10n),
                         const SizedBox(height: 20),
                       ],
-                      _sectionLabel(theme, 'Connection'),
+                      _sectionLabel(theme, l10n.sensorConnection),
                       const SizedBox(height: 8),
-                      _adapterBanner(theme),
+                      _adapterBanner(theme, l10n),
                       if (_svc.error != null) ...[
                         const SizedBox(height: 8),
                         _errorBanner(theme, _svc.error!),
                       ],
                       const SizedBox(height: 8),
-                      _connectionCard(theme),
+                      _connectionCard(theme, l10n),
                       const SizedBox(height: 20),
-                      _sectionLabel(theme, 'Live data fields'),
+                      _sectionLabel(theme, l10n.sensorLiveDataFields),
                       const SizedBox(height: 8),
-                      _readingsCard(theme, _svc.readings),
+                      _readingsCard(theme, l10n, _svc.readings),
                       const SizedBox(height: 20),
-                      _sectionLabel(theme, 'Nearby devices'),
+                      _sectionLabel(theme, l10n.sensorNearbyDevices),
                       const SizedBox(height: 8),
-                      _scanControls(theme),
+                      _scanControls(theme, l10n),
                       const SizedBox(height: 8),
-                      _scanList(theme),
+                      _scanList(theme, l10n),
                     ],
                   );
                 },
@@ -126,7 +128,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
   }
 
   // ── Unsupported platform ──────────────────────────────────────────────────
-  Widget _buildUnsupported(ThemeData theme) {
+  Widget _buildUnsupported(ThemeData theme, AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -137,7 +139,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
                 size: 48, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
-              'Bluetooth sensors are only available on iOS and Android.',
+              l10n.sensorUnsupported,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
@@ -150,15 +152,15 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
   }
 
   // ── Options ─────────────────────────────────────────────────────────────
-  Widget _optionsCard(ThemeData theme) {
+  Widget _optionsCard(ThemeData theme, AppLocalizations l10n) {
     final internalAvailable = _internal.supported && _internal.available;
     return _card(
       theme,
       [
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Enable Bluetooth sensor'),
-          subtitle: const Text('Scan and connect to external sensors'),
+          title: Text(l10n.sensorEnableBluetooth),
+          subtitle: Text(l10n.sensorEnableBluetoothSubtitle),
           value: _svc.enabled,
           onChanged: (v) => _svc.setEnabled(v),
         ),
@@ -166,11 +168,11 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
           const Divider(height: 1),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Prefer internal sensor'),
+            title: Text(l10n.sensorPreferInternal),
             subtitle: Text(
               internalAvailable
-                  ? 'Use this device’s built-in barometer first'
-                  : 'No built-in barometer detected on this device',
+                  ? l10n.sensorPreferInternalSubtitle
+                  : l10n.sensorNoInternalBarometer,
             ),
             // Only usable when the device actually has a barometer; reflect the
             // real state so the toggle greys out when there is nothing to use.
@@ -184,7 +186,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
   }
 
   // ── Internal sensor (device barometer) ────────────────────────────────────
-  Widget _internalSensorCard(ThemeData theme) {
+  Widget _internalSensorCard(ThemeData theme, AppLocalizations l10n) {
     final available = _internal.available;
     final active = _internal.isActiveFeed;
     final r = _internal.readings;
@@ -195,38 +197,39 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     if (!available) {
       statusColor = theme.colorScheme.onSurfaceVariant;
       statusIcon = Icons.sensors_off;
-      statusText = 'No barometer detected';
+      statusText = l10n.sensorBarometerNotDetected;
     } else if (active) {
       statusColor = theme.colorScheme.primary;
       statusIcon = Icons.sensors;
-      statusText = 'Barometer connected';
+      statusText = l10n.sensorBarometerConnected;
     } else {
       statusColor = theme.colorScheme.onSurfaceVariant;
       statusIcon = Icons.sensors;
-      statusText = 'Barometer detected (not preferred)';
+      statusText = l10n.sensorBarometerNotPreferred;
     }
 
     final children = <Widget>[
-      _row(theme, statusIcon, 'Status', statusText, valueColor: statusColor),
+      _row(theme, statusIcon, l10n.sensorStatus, statusText,
+          valueColor: statusColor),
     ];
 
     if (available) {
       children
         ..add(const Divider(height: 1))
-        ..add(_fieldRow(theme, Icons.swap_vert, 'Vertical speed',
+        ..add(_fieldRow(theme, Icons.swap_vert, l10n.sensorFieldVerticalSpeed,
             r.varioMs?.toStringAsFixed(1), 'm/s'))
         ..add(const Divider(height: 1))
-        ..add(_fieldRow(theme, Icons.terrain, 'Altitude',
+        ..add(_fieldRow(theme, Icons.terrain, l10n.sensorFieldAltitude,
             r.altitudeM?.toStringAsFixed(0), 'm'))
         ..add(const Divider(height: 1))
-        ..add(_fieldRow(theme, Icons.compress, 'Pressure',
+        ..add(_fieldRow(theme, Icons.compress, l10n.sensorFieldPressure,
             r.pressureHpa?.toStringAsFixed(2), 'hPa'));
     }
 
     return _card(theme, children);
   }
 
-  Widget _adapterBanner(ThemeData theme) {
+  Widget _adapterBanner(ThemeData theme, AppLocalizations l10n) {
     final on = _svc.isAdapterOn;
     final color = on ? theme.colorScheme.primary : theme.colorScheme.error;
     return Container(
@@ -241,7 +244,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
           Icon(on ? Icons.bluetooth : Icons.bluetooth_disabled,
               color: color, size: 20),
           const SizedBox(width: 8),
-          Text('Bluetooth: ${_svc.adapterState.name}',
+          Text(l10n.sensorBluetoothState(_svc.adapterState.name),
               style: theme.textTheme.bodyMedium),
         ],
       ),
@@ -264,13 +267,14 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     );
   }
 
-  Widget _connectionCard(ThemeData theme) {
+  Widget _connectionCard(ThemeData theme, AppLocalizations l10n) {
     final connected = _svc.isConnected;
     final connecting = _svc.hasSavedDevice && !connected;
 
     if (!_svc.hasSavedDevice) {
       return _card(theme, [
-        _row(theme, Icons.link_off, 'Status', 'No device selected',
+        _row(theme, Icons.link_off, l10n.sensorStatus,
+            l10n.sensorNoDeviceSelected,
             valueColor: theme.colorScheme.onSurfaceVariant),
       ]);
     }
@@ -282,10 +286,10 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
       _row(
         theme,
         connected ? Icons.link : Icons.link_off,
-        _svc.selectedName ?? _svc.selectedId ?? 'Device',
+        _svc.selectedName ?? _svc.selectedId ?? l10n.sensorDevice,
         connected
-            ? 'Connected'
-            : (connecting ? 'Connecting…' : 'Disconnected'),
+            ? l10n.sensorConnected
+            : (connecting ? l10n.sensorConnecting : l10n.sensorDisconnected),
         valueColor: statusColor,
       ),
       const Divider(height: 1),
@@ -299,20 +303,20 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
                     ? () => _svc.connectToId(_svc.selectedId!)
                     : null,
                 icon: const Icon(Icons.bluetooth_searching, size: 18),
-                label: const Text('Connect'),
+                label: Text(l10n.sensorConnect),
               ),
             if (connected)
               TextButton.icon(
                 onPressed: () => _svc.disconnect(),
                 icon: const Icon(Icons.link_off, size: 18),
-                label: const Text('Disconnect'),
+                label: Text(l10n.sensorDisconnect),
               ),
             const Spacer(),
             TextButton.icon(
               onPressed: () => _svc.forgetDevice(),
               icon: Icon(Icons.delete_outline,
                   size: 18, color: theme.colorScheme.error),
-              label: Text('Forget',
+              label: Text(l10n.sensorForget,
                   style: TextStyle(color: theme.colorScheme.error)),
             ),
           ],
@@ -322,20 +326,20 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
   }
 
   // ── All data fields ─────────────────────────────────────────────────────
-  Widget _readingsCard(ThemeData theme, SensorReadings r) {
+  Widget _readingsCard(ThemeData theme, AppLocalizations l10n, SensorReadings r) {
     // Show every known field; unavailable ones render as "—".
     final rows = <Widget>[
-      _fieldRow(theme, Icons.terrain, 'Altitude',
+      _fieldRow(theme, Icons.terrain, l10n.sensorFieldAltitude,
           r.altitudeM?.toStringAsFixed(0), 'm'),
-      _fieldRow(theme, Icons.swap_vert, 'Vertical speed',
+      _fieldRow(theme, Icons.swap_vert, l10n.sensorFieldVerticalSpeed,
           r.varioMs?.toStringAsFixed(1), 'm/s'),
-      _fieldRow(theme, Icons.compress, 'Pressure',
+      _fieldRow(theme, Icons.compress, l10n.sensorFieldPressure,
           r.pressureHpa?.toStringAsFixed(2), 'hPa'),
-      _fieldRow(theme, Icons.thermostat, 'Temperature',
+      _fieldRow(theme, Icons.thermostat, l10n.sensorFieldTemperature,
           r.temperatureC?.toStringAsFixed(1), '°C'),
-      _fieldRow(theme, Icons.favorite, 'Heart rate',
+      _fieldRow(theme, Icons.favorite, l10n.sensorFieldHeartRate,
           r.heartRate?.toString(), 'bpm'),
-      _fieldRow(theme, Icons.battery_full, 'Battery',
+      _fieldRow(theme, Icons.battery_full, l10n.sensorFieldBattery,
           r.batteryPct?.toString(), '%'),
     ];
 
@@ -376,7 +380,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
   }
 
   // ── Scan ────────────────────────────────────────────────────────────────
-  Widget _scanControls(ThemeData theme) {
+  Widget _scanControls(ThemeData theme, AppLocalizations l10n) {
     final scanning = _svc.isScanning;
     return Row(
       children: [
@@ -385,7 +389,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
               ? null
               : (scanning ? () => _svc.stopScan() : () => _svc.startScan()),
           icon: Icon(scanning ? Icons.stop : Icons.search, size: 18),
-          label: Text(scanning ? 'Stop' : 'Scan'),
+          label: Text(scanning ? l10n.sensorStop : l10n.sensorScan),
         ),
         const SizedBox(width: 12),
         if (scanning)
@@ -398,29 +402,29 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     );
   }
 
-  Widget _scanList(ThemeData theme) {
+  Widget _scanList(ThemeData theme, AppLocalizations l10n) {
     final results = _svc.scanResults;
     if (results.isEmpty) {
       return _card(theme, [
-        _row(theme, Icons.search_off, 'Devices',
-            _svc.enabled ? 'Tap Scan' : 'Enable first',
+        _row(theme, Icons.search_off, l10n.sensorDevices,
+            _svc.enabled ? l10n.sensorTapScan : l10n.sensorEnableFirst,
             valueColor: theme.colorScheme.onSurfaceVariant),
       ]);
     }
     final children = <Widget>[];
     for (var i = 0; i < results.length; i++) {
       if (i > 0) children.add(const Divider(height: 1));
-      children.add(_scanTile(theme, results[i]));
+      children.add(_scanTile(theme, l10n, results[i]));
     }
     return _card(theme, children);
   }
 
-  Widget _scanTile(ThemeData theme, ScanResult r) {
+  Widget _scanTile(ThemeData theme, AppLocalizations l10n, ScanResult r) {
     final name = r.advertisementData.advName.trim().isNotEmpty
         ? r.advertisementData.advName
         : (r.device.platformName.isNotEmpty
             ? r.device.platformName
-            : '(unknown)');
+            : l10n.sensorUnknownDevice);
     return InkWell(
       onTap: () => _svc.connect(r.device, name: name),
       child: Padding(
@@ -442,7 +446,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
                 ],
               ),
             ),
-            Text('${r.rssi} dBm',
+            Text(l10n.sensorRssiDbm(r.rssi),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 )),

@@ -1454,6 +1454,82 @@ class _DashGridPageState extends State<DashGridPage> {
               ),
             ),
 
+            // Edit-mode overlay stays above every dashboard control. It is
+            // pointer-transparent so dragging and selecting controls still
+            // works underneath the grid.
+            if (_isEditMode)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Stack(
+                    children: [
+                      CustomPaint(
+                        painter: DashGridPainter(
+                          cellWidth: _cellWidth(MediaQuery.of(context).size),
+                          cellHeight: _cellHeight(MediaQuery.of(context).size),
+                          lineColor: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        size: Size.infinite,
+                      ),
+                      Positioned(
+                        top: 16,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer
+                                  .withAlpha(220),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.edit_outlined,
+                                  size: 18,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  AppLocalizations.of(context).editMode,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelLarge
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             // Page indicator. Shown with more than one page, or in edit mode
             // so a single page's icon can be customized. Visibility is driven
             // entirely by AnimatedOpacity (rather than removing the widget
@@ -1504,7 +1580,7 @@ class _DashGridPageState extends State<DashGridPage> {
     );
   }
 
-  /// Builds the content (grid + controls + gesture layer) for one page.
+  /// Builds the content (controls + gesture layer) for one page.
   Widget _buildPageContent(int pageIndex) {
     final page = _pages[pageIndex];
     return Stack(
@@ -1529,18 +1605,7 @@ class _DashGridPageState extends State<DashGridPage> {
             onVerticalDragStart: _menuOpen ? null : _onDragStart,
             onVerticalDragUpdate: _menuOpen ? null : _onDragUpdate,
             onVerticalDragEnd: _menuOpen ? null : _onDragEnd,
-            child: _isEditMode
-                ? CustomPaint(
-                    painter: DashGridPainter(
-                      cellWidth: _cellWidth(MediaQuery.of(context).size),
-                      cellHeight: _cellHeight(MediaQuery.of(context).size),
-                      // Use the theme's on-surface color so the grid is
-                      // visible on light backgrounds too, not just dark ones.
-                      lineColor: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    size: Size.infinite,
-                  )
-                : const SizedBox.expand(),
+            child: const SizedBox.expand(),
           ),
         ),
 

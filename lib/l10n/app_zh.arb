@@ -725,6 +725,20 @@
   "@flightShareCardFooter": {
     "placeholders": { "points": { "type": "int" } }
   },
+  "flightReportTitle": "ParaBeacon 飞行报告",
+  "flightReportDate": "日期",
+  "flightReportTrackMap": "航迹",
+  "flightReportAltitudeProfile": "海拔曲线",
+  "flightReportSummary": "摘要",
+  "flightReportDistanceAltitude": "距离与海拔",
+  "flightReportGeneratedBy": "由 ParaBeacon 生成",
+  "flightReportPage": "第 {current} / {total} 页",
+  "@flightReportPage": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
 
   "flightsStatistics": "统计",
   "flightsStatisticsAll": "统计（全部飞行）",

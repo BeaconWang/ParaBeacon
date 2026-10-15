@@ -2028,6 +2028,32 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get flightReportTitle => 'ParaBeacon 飞行报告';
+
+  @override
+  String get flightReportDate => '日期';
+
+  @override
+  String get flightReportTrackMap => '航迹';
+
+  @override
+  String get flightReportAltitudeProfile => '海拔曲线';
+
+  @override
+  String get flightReportSummary => '摘要';
+
+  @override
+  String get flightReportDistanceAltitude => '距离与海拔';
+
+  @override
+  String get flightReportGeneratedBy => '由 ParaBeacon 生成';
+
+  @override
+  String flightReportPage(int current, int total) {
+    return '第 $current / $total 页';
+  }
+
+  @override
   String get flightsStatistics => '统计';
 
   @override

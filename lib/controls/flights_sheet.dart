@@ -489,8 +489,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<void> _exportIgc(FlightTrack track) =>
       _runExport(() => FlightExportService.instance.shareIgc(track), 'IGC');
 
-  Future<void> _exportPdf(FlightTrack track) =>
-      _runExport(() => FlightReportService.instance.sharePdf(track), 'PDF');
+  Future<void> _exportPdf(FlightTrack track) {
+    final l10n = AppLocalizations.of(context);
+    return _runExport(
+        () => FlightReportService.instance.sharePdf(track, l10n), 'PDF');
+  }
 
   Future<void> _runExport(
     Future<String> Function() action,

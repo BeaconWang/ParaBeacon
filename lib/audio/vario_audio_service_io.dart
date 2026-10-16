@@ -244,7 +244,6 @@ class _VarioSynth {
   int _sinkPhase = 0;
   int _nearLiftPhase = 0;
   bool _keypointTone = true;
-  double _longAverageSpeed = 0.0;
 
   _VarioState _prevState = _VarioState.deadband;
 
@@ -280,9 +279,6 @@ class _VarioSynth {
 
     for (var i = 0; i < frameCount; i++) {
       _smoothedSpeed += (_targetSpeed - _smoothedSpeed) * _speedSmoothing;
-      final averageWindow = math.max(0.1, _config.classicLongAverageSeconds);
-      final averageAlpha = 1.0 - math.exp(-_dt / averageWindow);
-      _longAverageSpeed += (_smoothedSpeed - _longAverageSpeed) * averageAlpha;
       _tickCycle();
 
       double sample = 0.0;
@@ -402,7 +398,8 @@ class _VarioSynth {
         } else {
           _inTone = true;
           _segForceFade = false;
-          _segWave = _classicLiftWaveform();
+          // Always use the user-selected lift waveform, independent of speed.
+          _segWave = _config.liftWaveform;
           _segDuration = _config.liftToneSeconds;
           final f = _config.liftFrequencyFor(speed);
           _toneStartFreq = f;
@@ -449,16 +446,6 @@ class _VarioSynth {
     }
 
     _prevState = state;
-  }
-
-  VarioWaveform _classicLiftWaveform() {
-    if (!_config.classicTickEnabled ||
-        _config.liftWaveform != VarioWaveform.tack) {
-      return _config.liftWaveform;
-    }
-    return _longAverageSpeed >= _config.classicTickAverageThreshold
-        ? VarioWaveform.tick
-        : VarioWaveform.tack;
   }
 
   double _instantaneousFreq() {

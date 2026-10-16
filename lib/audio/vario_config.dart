@@ -97,16 +97,6 @@ class VarioAudioConfig {
   /// default (pure classic engine).
   final VarioKeypointCurve keypoints;
 
-  /// Long-term average window used by the classic TICK/TACK selector.
-  final double classicLongAverageSeconds;
-
-  /// The classic engine emits TICK once the long-term average reaches this
-  /// value; lower lift remains TACK.
-  final double classicTickAverageThreshold;
-
-  /// Enables the classic long-average TICK selector.
-  final bool classicTickEnabled;
-
   // ---------------------------------------------------------------------------
   // Deadband cue — double-beep pattern played between sink and lift thresholds.
   // ---------------------------------------------------------------------------
@@ -204,9 +194,6 @@ class VarioAudioConfig {
     this.liftThreshold = 0.2,
     this.sinkThreshold = -2.0,
     this.keypoints = VarioKeypointCurve.empty,
-    this.classicLongAverageSeconds = 10.0,
-    this.classicTickAverageThreshold = 0.5,
-    this.classicTickEnabled = true,
     this.nearLiftEnabled = true,
     this.nearLiftFreq = 300,
     this.nearLiftToneSeconds = 0.2,
@@ -243,9 +230,6 @@ class VarioAudioConfig {
     double? liftThreshold,
     double? sinkThreshold,
     VarioKeypointCurve? keypoints,
-    double? classicLongAverageSeconds,
-    double? classicTickAverageThreshold,
-    bool? classicTickEnabled,
     bool? nearLiftEnabled,
     double? nearLiftFreq,
     double? nearLiftToneSeconds,
@@ -278,11 +262,6 @@ class VarioAudioConfig {
       liftThreshold: liftThreshold ?? this.liftThreshold,
       sinkThreshold: sinkThreshold ?? this.sinkThreshold,
       keypoints: keypoints ?? this.keypoints,
-      classicLongAverageSeconds:
-          classicLongAverageSeconds ?? this.classicLongAverageSeconds,
-      classicTickAverageThreshold:
-          classicTickAverageThreshold ?? this.classicTickAverageThreshold,
-      classicTickEnabled: classicTickEnabled ?? this.classicTickEnabled,
       nearLiftEnabled: nearLiftEnabled ?? this.nearLiftEnabled,
       nearLiftFreq: nearLiftFreq ?? this.nearLiftFreq,
       nearLiftToneSeconds: nearLiftToneSeconds ?? this.nearLiftToneSeconds,

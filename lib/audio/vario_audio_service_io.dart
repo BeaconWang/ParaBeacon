@@ -201,7 +201,7 @@ class VarioAudioService {
 // DSP CORE — pure, backend-agnostic PCM synthesis (XCTrack-faithful).
 // =============================================================================
 
-enum _VarioState { deadband, nearLift, lift, sink, custom }
+enum _VarioState { deadband, nearLift, lift, sink }
 
 class _VarioSynth {
   _VarioSynth(this._config) {
@@ -243,7 +243,6 @@ class _VarioSynth {
 
   int _sinkPhase = 0;
   int _nearLiftPhase = 0;
-  bool _customTone = true;
   double _longAverageSpeed = 0.0;
 
   _VarioState _prevState = _VarioState.deadband;
@@ -261,9 +260,6 @@ class _VarioSynth {
   }
 
   _VarioState _stateFor(double speed) {
-    if (_config.profileMode == VarioProfileMode.custom) {
-      return _VarioState.custom;
-    }
     if (speed >= _config.liftThreshold) return _VarioState.lift;
     if (speed <= _config.sinkThreshold) return _VarioState.sink;
 
@@ -327,37 +323,6 @@ class _VarioSynth {
     final state = _stateFor(speed);
     _segElapsed = 0.0;
     switch (state) {
-      case _VarioState.custom:
-        final point = _config.customCurve.sampleAt(speed);
-        if (point.duty <= 0.0) {
-          _customTone = false;
-        } else if (_prevState != _VarioState.custom) {
-          _customTone = true;
-        } else if (point.isContinuous) {
-          _customTone = true;
-        } else {
-          _customTone = !_customTone;
-        }
-        _segGain = 1.0;
-        if (_customTone) {
-          _inTone = true;
-          _segWave = point.isContinuous
-              ? VarioWaveform.long
-              : VarioWaveform.tack;
-          _segForceFade = !point.isContinuous;
-          _segDuration = math.max(
-            _dt,
-            point.isContinuous ? point.cycleSeconds : point.toneSeconds,
-          );
-          _toneStartFreq = point.freqHz;
-          _toneEndFreq = point.freqHz;
-        } else {
-          _inTone = false;
-          _segForceFade = false;
-          _segDuration = math.max(_dt, point.gapSeconds);
-        }
-        break;
-
       case _VarioState.deadband:
         _inTone = false;
         _segForceFade = false;

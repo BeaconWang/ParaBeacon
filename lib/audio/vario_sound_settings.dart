@@ -1,11 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'vario_audio_service.dart';
 import 'vario_config.dart';
-import 'vario_sound_curve.dart';
 
 /// Persisted, user-tunable Vario sound settings.
 ///
@@ -29,8 +26,6 @@ class VarioSoundSettings extends ChangeNotifier {
   static const _kLiftBaseFreq = 'pb.vario.liftBaseFreq';
   static const _kLiftFreqSpan = 'pb.vario.liftFreqSpan';
   static const _kSinkBaseFreq = 'pb.vario.sinkBaseFreq';
-  static const _kProfileMode = 'pb.vario.profileMode';
-  static const _kCustomCurve = 'pb.vario.customCurve';
   static const _kLiftWaveform = 'pb.vario.liftWaveform';
   static const _kSinkWaveform = 'pb.vario.sinkWaveform';
   static const _kMasterGain = 'pb.vario.masterGain';
@@ -54,8 +49,6 @@ class VarioSoundSettings extends ChangeNotifier {
   double _liftBaseFreq = _base.liftBaseFreq;
   double _liftFreqSpan = _base.liftFreqSpan;
   double _sinkBaseFreq = _base.sinkBaseFreq;
-  VarioProfileMode _profileMode = _base.profileMode;
-  VarioSoundCurve _customCurve = _base.customCurve;
   VarioWaveform _liftWaveform = _base.liftWaveform;
   VarioWaveform _sinkWaveform = _base.sinkWaveform;
   double _masterGain = _base.masterGain;
@@ -85,8 +78,6 @@ class VarioSoundSettings extends ChangeNotifier {
   double get liftBaseFreq => _liftBaseFreq;
   double get liftFreqSpan => _liftFreqSpan;
   double get sinkBaseFreq => _sinkBaseFreq;
-  VarioProfileMode get profileMode => _profileMode;
-  VarioSoundCurve get customCurve => _customCurve;
   VarioWaveform get liftWaveform => _liftWaveform;
   VarioWaveform get sinkWaveform => _sinkWaveform;
   double get masterGain => _masterGain;
@@ -105,8 +96,6 @@ class VarioSoundSettings extends ChangeNotifier {
     liftBaseFreq: _liftBaseFreq,
     liftFreqSpan: _liftFreqSpan,
     sinkBaseFreq: _sinkBaseFreq,
-    profileMode: _profileMode,
-    customCurve: _customCurve,
     liftWaveform: _liftWaveform,
     sinkWaveform: _sinkWaveform,
     masterGain: _masterGain,
@@ -139,10 +128,6 @@ class VarioSoundSettings extends ChangeNotifier {
           sp.getDouble(_kLegacyClimbFreqSpan) ??
           _liftFreqSpan;
       _sinkBaseFreq = sp.getDouble(_kSinkBaseFreq) ?? _sinkBaseFreq;
-      _profileMode =
-          _profileModeFromName(sp.getString(_kProfileMode)) ?? _profileMode;
-      _customCurve =
-          _curveFromJson(sp.getString(_kCustomCurve)) ?? _customCurve;
       _liftWaveform =
           _waveformFromName(sp.getString(_kLiftWaveform)) ??
           _waveformFromName(sp.getString(_kLegacyClimbWaveform)) ??
@@ -221,19 +206,6 @@ class VarioSoundSettings extends ChangeNotifier {
     _applyAndNotify();
   }
 
-  void setProfileMode(VarioProfileMode mode) {
-    if (_profileMode == mode) return;
-    _profileMode = mode;
-    _persistString(_kProfileMode, mode.name);
-    _applyAndNotify();
-  }
-
-  void setCustomCurve(VarioSoundCurve curve) {
-    _customCurve = curve;
-    _persistString(_kCustomCurve, jsonEncode(_curveToJson(curve)));
-    _applyAndNotify();
-  }
-
   void setLiftWaveform(VarioWaveform w) {
     _liftWaveform = w;
     _persistString(_kLiftWaveform, w.name);
@@ -294,8 +266,6 @@ class VarioSoundSettings extends ChangeNotifier {
     _liftBaseFreq = _base.liftBaseFreq;
     _liftFreqSpan = _base.liftFreqSpan;
     _sinkBaseFreq = _base.sinkBaseFreq;
-    _profileMode = _base.profileMode;
-    _customCurve = _base.customCurve;
     _liftWaveform = _base.liftWaveform;
     _sinkWaveform = _base.sinkWaveform;
     _masterGain = _base.masterGain;
@@ -311,8 +281,6 @@ class VarioSoundSettings extends ChangeNotifier {
         sp.remove(_kLiftBaseFreq),
         sp.remove(_kLiftFreqSpan),
         sp.remove(_kSinkBaseFreq),
-        sp.remove(_kProfileMode),
-        sp.remove(_kCustomCurve),
         sp.remove(_kLiftWaveform),
         sp.remove(_kSinkWaveform),
         sp.remove(_kMasterGain),
@@ -370,55 +338,5 @@ class VarioSoundSettings extends ChangeNotifier {
       if (w.name == name) return w;
     }
     return null;
-  }
-
-  static VarioProfileMode? _profileModeFromName(String? name) {
-    if (name == null) return null;
-    for (final mode in VarioProfileMode.values) {
-      if (mode.name == name) return mode;
-    }
-    return null;
-  }
-
-  static List<Map<String, double>> _curveToJson(VarioSoundCurve curve) => curve
-      .anchors
-      .map(
-        (anchor) => <String, double>{
-          'lift': anchor.lift,
-          'freqHz': anchor.freqHz,
-          'cycleMs': anchor.cycleMs,
-          'dutyPct': anchor.dutyPct,
-        },
-      )
-      .toList(growable: false);
-
-  static VarioSoundCurve? _curveFromJson(String? encoded) {
-    if (encoded == null || encoded.length > 64 * 1024) return null;
-    try {
-      final decoded = jsonDecode(encoded);
-      if (decoded is! List || decoded.length > 128) return null;
-      final anchors = <VarioSoundAnchor>[];
-      for (final item in decoded) {
-        if (item is! Map) return null;
-        final lift = item['lift'];
-        final freq = item['freqHz'];
-        final cycle = item['cycleMs'];
-        final duty = item['dutyPct'];
-        if (lift is! num || freq is! num || cycle is! num || duty is! num) {
-          return null;
-        }
-        anchors.add(
-          VarioSoundAnchor(
-            lift: lift.toDouble(),
-            freqHz: freq.toDouble(),
-            cycleMs: cycle.toDouble(),
-            dutyPct: duty.toDouble(),
-          ),
-        );
-      }
-      return VarioSoundCurve(anchors);
-    } catch (_) {
-      return null;
-    }
   }
 }

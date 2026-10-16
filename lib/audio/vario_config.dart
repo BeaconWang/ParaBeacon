@@ -30,11 +30,6 @@
 
 import 'dart:math' as math;
 
-import 'vario_sound_curve.dart';
-
-/// Selects the classic threshold-driven engine or the XCTrack custom curve.
-enum VarioProfileMode { classic, custom }
-
 /// XCTrack waveform families (enum `b1` in the APK).
 enum VarioWaveform {
   /// TICK — rich additive blend (used by some weak-lift profiles).
@@ -93,12 +88,6 @@ class VarioAudioConfig {
   /// At/below this sink rate the sink alarm is active (XCTrack `f26100d`,
   /// default -2.0 m/s; note XCTrack stores it negated).
   final double sinkThreshold;
-
-  /// Selects the classic threshold engine or the custom lift/frequency curve.
-  final VarioProfileMode profileMode;
-
-  /// XCTrack custom profile. It is ignored while [profileMode] is classic.
-  final VarioSoundCurve customCurve;
 
   /// Long-term average window used by the classic TICK/TACK selector.
   final double classicLongAverageSeconds;
@@ -206,8 +195,6 @@ class VarioAudioConfig {
     this.lookAheadMs = 90.0,
     this.liftThreshold = 0.2,
     this.sinkThreshold = -2.0,
-    this.profileMode = VarioProfileMode.classic,
-    this.customCurve = VarioSoundCurve.defaultCurve,
     this.classicLongAverageSeconds = 10.0,
     this.classicTickAverageThreshold = 0.5,
     this.classicTickEnabled = true,
@@ -246,8 +233,6 @@ class VarioAudioConfig {
     double? lookAheadMs,
     double? liftThreshold,
     double? sinkThreshold,
-    VarioProfileMode? profileMode,
-    VarioSoundCurve? customCurve,
     double? classicLongAverageSeconds,
     double? classicTickAverageThreshold,
     bool? classicTickEnabled,
@@ -282,8 +267,6 @@ class VarioAudioConfig {
       lookAheadMs: lookAheadMs ?? this.lookAheadMs,
       liftThreshold: liftThreshold ?? this.liftThreshold,
       sinkThreshold: sinkThreshold ?? this.sinkThreshold,
-      profileMode: profileMode ?? this.profileMode,
-      customCurve: customCurve ?? this.customCurve,
       classicLongAverageSeconds:
           classicLongAverageSeconds ?? this.classicLongAverageSeconds,
       classicTickAverageThreshold:

@@ -125,8 +125,6 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                     children: [
                       _testCard(theme, l10n),
                       const SizedBox(height: 20),
-                      _profileModeCard(theme),
-                      const SizedBox(height: 20),
                       _sectionLabel(theme, l10n.varioSoundSectionThresholds),
                       const SizedBox(height: 8),
                       _sliderCard(
@@ -348,45 +346,6 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
   }
 
   // ── Widgets ─────────────────────────────────────────────────────────────
-  Widget _profileModeCard(ThemeData theme) {
-    return _card(theme, [
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Sound profile', style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: VarioProfileMode.values.map((mode) {
-                final selected = mode == _settings.profileMode;
-                return ChoiceChip(
-                  label: Text(
-                    mode == VarioProfileMode.classic
-                        ? 'Classic'
-                        : 'Custom curve',
-                  ),
-                  selected: selected,
-                  onSelected: (_) => _settings.setProfileMode(mode),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _settings.profileMode == VarioProfileMode.custom
-                  ? 'Uses the -10 to +10 m/s frequency, cycle and duty curve.'
-                  : 'Uses threshold-driven TICK, TACK and SQUARE selection.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ]);
-  }
-
   Widget _sliderCard(
     ThemeData theme, {
     required IconData icon,

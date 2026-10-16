@@ -37,7 +37,7 @@ class VarioAudioService {
   static final VarioAudioService instance = VarioAudioService();
 
   VarioAudioService({VarioAudioConfig config = VarioAudioConfig.xcTrack})
-      : _synth = _VarioSynth(config);
+    : _synth = _VarioSynth(config);
 
   final _VarioSynth _synth;
   final _PcmSink _sink = _PcmSink();
@@ -201,7 +201,7 @@ class VarioAudioService {
 // DSP CORE — pure, backend-agnostic PCM synthesis (XCTrack-faithful).
 // =============================================================================
 
-enum _VarioState { deadband, nearLift, lift, sink }
+enum _VarioState { deadband, nearLift, lift, sink, custom }
 
 class _VarioSynth {
   _VarioSynth(this._config) {
@@ -220,7 +220,7 @@ class _VarioSynth {
   static const double _loudnessDrive = 2.0;
   static final double _loudnessNormalizer =
       (math.exp(2.0 * _loudnessDrive) - 1.0) /
-          (math.exp(2.0 * _loudnessDrive) + 1.0);
+      (math.exp(2.0 * _loudnessDrive) + 1.0);
 
   double _targetSpeed = 0.0;
   double outputGain = 1.0;
@@ -243,6 +243,8 @@ class _VarioSynth {
 
   int _sinkPhase = 0;
   int _nearLiftPhase = 0;
+  bool _customTone = true;
+  double _longAverageSpeed = 0.0;
 
   _VarioState _prevState = _VarioState.deadband;
 
@@ -259,6 +261,9 @@ class _VarioSynth {
   }
 
   _VarioState _stateFor(double speed) {
+    if (_config.profileMode == VarioProfileMode.custom) {
+      return _VarioState.custom;
+    }
     if (speed >= _config.liftThreshold) return _VarioState.lift;
     if (speed <= _config.sinkThreshold) return _VarioState.sink;
 
@@ -276,6 +281,9 @@ class _VarioSynth {
 
     for (var i = 0; i < frameCount; i++) {
       _smoothedSpeed += (_targetSpeed - _smoothedSpeed) * _speedSmoothing;
+      final averageWindow = math.max(0.1, _config.classicLongAverageSeconds);
+      final averageAlpha = 1.0 - math.exp(-_dt / averageWindow);
+      _longAverageSpeed += (_smoothedSpeed - _longAverageSpeed) * averageAlpha;
       _tickCycle();
 
       double sample = 0.0;
@@ -319,6 +327,37 @@ class _VarioSynth {
     final state = _stateFor(speed);
     _segElapsed = 0.0;
     switch (state) {
+      case _VarioState.custom:
+        final point = _config.customCurve.sampleAt(speed);
+        if (point.duty <= 0.0) {
+          _customTone = false;
+        } else if (_prevState != _VarioState.custom) {
+          _customTone = true;
+        } else if (point.isContinuous) {
+          _customTone = true;
+        } else {
+          _customTone = !_customTone;
+        }
+        _segGain = 1.0;
+        if (_customTone) {
+          _inTone = true;
+          _segWave = point.isContinuous
+              ? VarioWaveform.long
+              : VarioWaveform.tack;
+          _segForceFade = !point.isContinuous;
+          _segDuration = math.max(
+            _dt,
+            point.isContinuous ? point.cycleSeconds : point.toneSeconds,
+          );
+          _toneStartFreq = point.freqHz;
+          _toneEndFreq = point.freqHz;
+        } else {
+          _inTone = false;
+          _segForceFade = false;
+          _segDuration = math.max(_dt, point.gapSeconds);
+        }
+        break;
+
       case _VarioState.deadband:
         _inTone = false;
         _segForceFade = false;
@@ -360,12 +399,11 @@ class _VarioSynth {
         if (_inTone) {
           _inTone = false;
           final period = _config.liftPeriodFor(speed);
-          _segDuration =
-              math.max(0.001, period - _config.liftToneSeconds);
+          _segDuration = math.max(0.001, period - _config.liftToneSeconds);
         } else {
           _inTone = true;
           _segForceFade = false;
-          _segWave = _config.liftWaveform;
+          _segWave = _classicLiftWaveform();
           _segDuration = _config.liftToneSeconds;
           final f = _config.liftFrequencyFor(speed);
           _toneStartFreq = f;
@@ -414,6 +452,16 @@ class _VarioSynth {
     _prevState = state;
   }
 
+  VarioWaveform _classicLiftWaveform() {
+    if (!_config.classicTickEnabled ||
+        _config.liftWaveform != VarioWaveform.tack) {
+      return _config.liftWaveform;
+    }
+    return _longAverageSpeed >= _config.classicTickAverageThreshold
+        ? VarioWaveform.tick
+        : VarioWaveform.tack;
+  }
+
   double _instantaneousFreq() {
     if (_toneStartFreq == _toneEndFreq || _segDuration <= 0) {
       return _toneStartFreq;
@@ -433,7 +481,8 @@ class _VarioSynth {
         return (_tri(p) * 20000.0 + sq * 10000.0) / 30000.0;
       case VarioWaveform.tick:
         final sq = (p % 1.0) < 0.5 ? 1.0 : -1.0;
-        final v = _tri(p) * 5000.0 +
+        final v =
+            _tri(p) * 5000.0 +
             sq * 10000.0 +
             _tri(p / 2.0) * 7500.0 +
             _tri(p * 2.0) * 3000.0 +
@@ -497,8 +546,7 @@ class _PcmSink {
     _channels = channels;
     _targetLatencySeconds = (lookAheadMs * 0.001).clamp(0.008, 0.5);
 
-    final bufferFrames =
-        math.max(256, (chunkMs * 0.001 * sampleRate).round());
+    final bufferFrames = math.max(256, (chunkMs * 0.001 * sampleRate).round());
     final fifoCapacityFrames = math.max(
       bufferFrames * 4,
       (_targetLatencySeconds * 3.0 * sampleRate).round(),
@@ -513,8 +561,10 @@ class _PcmSink {
     );
     _player = player;
 
-    _nativeCapacityFrames =
-        math.max(bufferFrames, (_targetLatencySeconds * sampleRate).ceil());
+    _nativeCapacityFrames = math.max(
+      bufferFrames,
+      (_targetLatencySeconds * sampleRate).ceil(),
+    );
     _native = malloc<Int16>(_nativeCapacityFrames * channels);
 
     _open = true;
@@ -537,8 +587,7 @@ class _PcmSink {
     var wantFrames = targetFrames - queuedFrames;
     if (wantFrames <= 0) return;
 
-    final freeFrames =
-        math.max(0, _fifoCapacityFrames - queuedFrames - 1);
+    final freeFrames = math.max(0, _fifoCapacityFrames - queuedFrames - 1);
     wantFrames = math.min(wantFrames, freeFrames);
     wantFrames = math.min(wantFrames, _nativeCapacityFrames);
     if (wantFrames <= 0) return;

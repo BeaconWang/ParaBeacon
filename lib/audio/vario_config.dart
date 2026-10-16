@@ -14,8 +14,8 @@
 //     usage = USAGE_ASSISTANCE_SONIFICATION, buffer = getMinBufferSize() (raw).
 //   * Oscillator u7.a(x) is a TRIANGLE wave (period 1.0, phase-shifted +0.25),
 //     amplitude -1..+1 — NOT a sine or a square.
-//   * Waveforms (enum b1): TICK, TACK, SQUARE, LONG. TACK is the normal climb
-//     beep; it is a triangle at 20000 amplitude plus a 15000 square component.
+//   * Waveforms (enum b1): TICK, TACK, SQUARE, LONG. TACK and LONG use the
+//     triangle carrier; TACK is intermittent while LONG is continuous.
 //   * Pitch within a beep can GLIDE exponentially from f0 -> f1 over the beep;
 //     the phase is the analytic integral of the instantaneous frequency so the
 //     waveform is perfectly phase-continuous (no clicks).
@@ -29,6 +29,11 @@
 // -----------------------------------------------------------------------------
 
 import 'dart:math' as math;
+
+import 'vario_sound_curve.dart';
+
+/// Selects the classic threshold-driven engine or the XCTrack custom curve.
+enum VarioProfileMode { classic, custom }
 
 /// XCTrack waveform families (enum `b1` in the APK).
 enum VarioWaveform {
@@ -88,6 +93,22 @@ class VarioAudioConfig {
   /// At/below this sink rate the sink alarm is active (XCTrack `f26100d`,
   /// default -2.0 m/s; note XCTrack stores it negated).
   final double sinkThreshold;
+
+  /// Selects the classic threshold engine or the custom lift/frequency curve.
+  final VarioProfileMode profileMode;
+
+  /// XCTrack custom profile. It is ignored while [profileMode] is classic.
+  final VarioSoundCurve customCurve;
+
+  /// Long-term average window used by the classic TICK/TACK selector.
+  final double classicLongAverageSeconds;
+
+  /// The classic engine emits TICK once the long-term average reaches this
+  /// value; lower lift remains TACK.
+  final double classicTickAverageThreshold;
+
+  /// Enables the classic long-average TICK selector.
+  final bool classicTickEnabled;
 
   // ---------------------------------------------------------------------------
   // Deadband cue — double-beep pattern played between sink and lift thresholds.
@@ -162,7 +183,8 @@ class VarioAudioConfig {
   /// for the current sink rate ([sinkFrequencyFor]).
   final double sinkToneSeconds;
 
-  /// Waveform for the sink tone (LONG = pure triangle, no envelope).
+  /// Waveform for the classic sink tone. XCTrack's classic sink event is
+  /// SQUARE; custom profiles derive LONG/TACK from duty instead.
   final VarioWaveform sinkWaveform;
 
   // ---------------------------------------------------------------------------
@@ -184,6 +206,11 @@ class VarioAudioConfig {
     this.lookAheadMs = 90.0,
     this.liftThreshold = 0.2,
     this.sinkThreshold = -2.0,
+    this.profileMode = VarioProfileMode.classic,
+    this.customCurve = VarioSoundCurve.defaultCurve,
+    this.classicLongAverageSeconds = 10.0,
+    this.classicTickAverageThreshold = 0.5,
+    this.classicTickEnabled = true,
     this.nearLiftEnabled = true,
     this.nearLiftFreq = 300,
     this.nearLiftToneSeconds = 0.2,
@@ -203,7 +230,7 @@ class VarioAudioConfig {
     this.sinkSemitonesPerOctave = 12.0,
     this.sinkPeriodSeconds = 1.0,
     this.sinkToneSeconds = 0.5,
-    this.sinkWaveform = VarioWaveform.long,
+    this.sinkWaveform = VarioWaveform.square,
     this.fadeFraction = 0.05,
     this.masterGain = 1.0,
   });
@@ -219,6 +246,11 @@ class VarioAudioConfig {
     double? lookAheadMs,
     double? liftThreshold,
     double? sinkThreshold,
+    VarioProfileMode? profileMode,
+    VarioSoundCurve? customCurve,
+    double? classicLongAverageSeconds,
+    double? classicTickAverageThreshold,
+    bool? classicTickEnabled,
     bool? nearLiftEnabled,
     double? nearLiftFreq,
     double? nearLiftToneSeconds,
@@ -250,6 +282,13 @@ class VarioAudioConfig {
       lookAheadMs: lookAheadMs ?? this.lookAheadMs,
       liftThreshold: liftThreshold ?? this.liftThreshold,
       sinkThreshold: sinkThreshold ?? this.sinkThreshold,
+      profileMode: profileMode ?? this.profileMode,
+      customCurve: customCurve ?? this.customCurve,
+      classicLongAverageSeconds:
+          classicLongAverageSeconds ?? this.classicLongAverageSeconds,
+      classicTickAverageThreshold:
+          classicTickAverageThreshold ?? this.classicTickAverageThreshold,
+      classicTickEnabled: classicTickEnabled ?? this.classicTickEnabled,
       nearLiftEnabled: nearLiftEnabled ?? this.nearLiftEnabled,
       nearLiftFreq: nearLiftFreq ?? this.nearLiftFreq,
       nearLiftToneSeconds: nearLiftToneSeconds ?? this.nearLiftToneSeconds,

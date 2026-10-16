@@ -98,8 +98,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                 children: [
                   Icon(Icons.graphic_eq, color: theme.colorScheme.primary),
                   const SizedBox(width: 10),
-                  Text(l10n.varioSoundTitle,
-                      style: theme.textTheme.titleLarge),
+                  Text(l10n.varioSoundTitle, style: theme.textTheme.titleLarge),
                   const Spacer(),
                   IconButton(
                     tooltip: l10n.varioSoundResetTooltip,
@@ -126,6 +125,8 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                     children: [
                       _testCard(theme, l10n),
                       const SizedBox(height: 20),
+                      _profileModeCard(theme),
+                      const SizedBox(height: 20),
                       _sectionLabel(theme, l10n.varioSoundSectionThresholds),
                       const SizedBox(height: 8),
                       _sliderCard(
@@ -136,7 +137,8 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                         min: 0.0,
                         max: 3.0,
                         divisions: 30,
-                        display: '${_settings.liftThreshold.toStringAsFixed(1)} m/s',
+                        display:
+                            '${_settings.liftThreshold.toStringAsFixed(1)} m/s',
                         onChanged: _settings.setLiftThreshold,
                       ),
                       _sliderCard(
@@ -147,7 +149,8 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                         min: -6.0,
                         max: -0.5,
                         divisions: 55,
-                        display: '${_settings.sinkThreshold.toStringAsFixed(1)} m/s',
+                        display:
+                            '${_settings.sinkThreshold.toStringAsFixed(1)} m/s',
                         onChanged: _settings.setSinkThreshold,
                       ),
                       const SizedBox(height: 20),
@@ -226,8 +229,7 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                         max: 1.0,
                         divisions: 20,
                         display: '${(_settings.volume * 100).round()}%',
-                        onChanged:
-                            _settings.muted ? null : _settings.setVolume,
+                        onChanged: _settings.muted ? null : _settings.setVolume,
                       ),
                       // Master gain is the profile's baseline headroom (a
                       // tuning constant, distinct from the live "Vario volume").
@@ -279,19 +281,25 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
 
   // ── Test controls ─────────────────────────────────────────────────────────
   Widget _testCard(ThemeData theme, AppLocalizations l10n) {
-    final speedLabel = '${_previewSpeed >= 0 ? '+' : ''}'
+    final speedLabel =
+        '${_previewSpeed >= 0 ? '+' : ''}'
         '${_previewSpeed.toStringAsFixed(1)} m/s';
     return _card(theme, [
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            Icon(Icons.play_circle_outline,
-                size: 20, color: theme.colorScheme.primary),
+            Icon(
+              Icons.play_circle_outline,
+              size: 20,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(l10n.varioSoundPreview,
-                  style: theme.textTheme.bodyMedium),
+              child: Text(
+                l10n.varioSoundPreview,
+                style: theme.textTheme.bodyMedium,
+              ),
             ),
             // Tap to mute/unmute the audition. Shows "LIVE" while audible and
             // "MUTED" while silenced; the slider position is preserved either
@@ -313,8 +321,10 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
             Icon(Icons.height, size: 20, color: theme.colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(l10n.varioSoundVerticalSpeed,
-                  style: theme.textTheme.bodyMedium),
+              child: Text(
+                l10n.varioSoundVerticalSpeed,
+                style: theme.textTheme.bodyMedium,
+              ),
             ),
             Text(
               speedLabel,
@@ -338,6 +348,45 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
   }
 
   // ── Widgets ─────────────────────────────────────────────────────────────
+  Widget _profileModeCard(ThemeData theme) {
+    return _card(theme, [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Sound profile', style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: VarioProfileMode.values.map((mode) {
+                final selected = mode == _settings.profileMode;
+                return ChoiceChip(
+                  label: Text(
+                    mode == VarioProfileMode.classic
+                        ? 'Classic'
+                        : 'Custom curve',
+                  ),
+                  selected: selected,
+                  onSelected: (_) => _settings.setProfileMode(mode),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _settings.profileMode == VarioProfileMode.custom
+                  ? 'Uses the -10 to +10 m/s frequency, cycle and duty curve.'
+                  : 'Uses threshold-driven TICK, TACK and SQUARE selection.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ]);
+  }
+
   Widget _sliderCard(
     ThemeData theme, {
     required IconData icon,
@@ -472,22 +521,22 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
   }
 
   Widget _sectionLabel(ThemeData theme, String label) => Text(
-        label.toUpperCase(),
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.primary,
-          letterSpacing: 1.0,
-          fontWeight: FontWeight.w700,
-        ),
-      );
+    label.toUpperCase(),
+    style: theme.textTheme.labelMedium?.copyWith(
+      color: theme.colorScheme.primary,
+      letterSpacing: 1.0,
+      fontWeight: FontWeight.w700,
+    ),
+  );
 
   Widget _card(ThemeData theme, List<Widget> children) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(children: children),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    decoration: BoxDecoration(
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(children: children),
+  );
 }
 
 /// Tappable chip that mutes/unmutes the audition. Reads "LIVE" (highlighted)

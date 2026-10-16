@@ -136,6 +136,9 @@ class VarioSoundSettings extends ChangeNotifier {
       sinkWaveform: _sinkWaveform,
       keypoints: _keypoints,
       masterGain: _masterGain,
+      // Custom profile pins one fixed waveform per speed: disable the XCTrack
+      // periodic TICK accent so the chosen lift waveform never auto-switches.
+      classicTickEnabled: false,
     );
   }
 

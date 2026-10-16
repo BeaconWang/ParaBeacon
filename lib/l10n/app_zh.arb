@@ -876,6 +876,12 @@
 
   "varioSoundTitle": "升降音设置",
   "varioSoundResetTooltip": "恢复默认",
+  "varioSoundSectionProfile": "升降音配置",
+  "varioSoundProfileTitle": "升降音配置",
+  "varioSoundProfileXcTrack": "XC Track",
+  "varioSoundProfileCustom": "自定义",
+  "varioSoundProfileXcTrackDescription": "原版 XCTrack 声音，自定义设置已禁用。",
+  "varioSoundProfileCustomDescription": "自行调节阈值、音高、波形和关键点。",
   "varioSoundPreview": "试听声音",
   "varioSoundPreviewLive": "实时",
   "varioSoundPreviewMuted": "已静音",

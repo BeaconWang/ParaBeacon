@@ -7,6 +7,14 @@ import 'vario_audio_service.dart';
 import 'vario_config.dart';
 import 'vario_keypoints.dart';
 
+/// Top-level vario sound profile.
+///
+/// [xcTrack] is the stock, XCTrack-faithful preset: all custom tuning (lift/
+/// sink thresholds, pitch, waveform and keypoints) is ignored and the engine
+/// runs on [VarioAudioConfig.xcTrack] defaults. [custom] applies the user's
+/// saved tuning on top of those defaults.
+enum VarioSoundProfile { xcTrack, custom }
+
 /// Persisted, user-tunable Vario sound settings.
 ///
 /// Owns the subset of [VarioAudioConfig] fields that are meaningful to expose
@@ -24,6 +32,7 @@ class VarioSoundSettings extends ChangeNotifier {
   static final VarioSoundSettings instance = VarioSoundSettings._();
 
   // ── Persistence keys ──────────────────────────────────────────────────────
+  static const _kProfile = 'pb.vario.profile';
   static const _kLiftThreshold = 'pb.vario.liftThreshold';
   static const _kSinkThreshold = 'pb.vario.sinkThreshold';
   static const _kLiftBaseFreq = 'pb.vario.liftBaseFreq';
@@ -48,6 +57,7 @@ class VarioSoundSettings extends ChangeNotifier {
   static const VarioAudioConfig _base = VarioAudioConfig.xcTrack;
 
   // ── Current values (initialized to the XCTrack defaults) ──────────────────
+  VarioSoundProfile _profile = VarioSoundProfile.xcTrack;
   double _liftThreshold = _base.liftThreshold;
   double _sinkThreshold = _base.sinkThreshold;
   double _liftBaseFreq = _base.liftBaseFreq;
@@ -78,6 +88,13 @@ class VarioSoundSettings extends ChangeNotifier {
   /// Output volume, 0..1. Mirrors [VarioAudioService.volume] and is persisted.
   double _volume = 1.0;
 
+  /// The selected top-level sound profile.
+  VarioSoundProfile get profile => _profile;
+
+  /// Whether the custom tuning controls are active. False while the stock
+  /// [VarioSoundProfile.xcTrack] profile is selected.
+  bool get customEnabled => _profile == VarioSoundProfile.custom;
+
   double get liftThreshold => _liftThreshold;
   double get sinkThreshold => _sinkThreshold;
   double get liftBaseFreq => _liftBaseFreq;
@@ -101,18 +118,26 @@ class VarioSoundSettings extends ChangeNotifier {
   bool _loaded = false;
   bool get isLoaded => _loaded;
 
-  /// Builds the effective [VarioAudioConfig] from the current settings.
-  VarioAudioConfig get config => _base.copyWith(
-    liftThreshold: _liftThreshold,
-    sinkThreshold: _sinkThreshold,
-    liftBaseFreq: _liftBaseFreq,
-    liftFreqSpan: _liftFreqSpan,
-    sinkBaseFreq: _sinkBaseFreq,
-    liftWaveform: _liftWaveform,
-    sinkWaveform: _sinkWaveform,
-    keypoints: _keypoints,
-    masterGain: _masterGain,
-  );
+  /// Builds the effective [VarioAudioConfig] from the current settings. Under
+  /// the stock [VarioSoundProfile.xcTrack] profile the custom tuning is ignored
+  /// and the engine runs on the XCTrack defaults (master gain still applies, as
+  /// it is an output-headroom control rather than a sound-shaping knob).
+  VarioAudioConfig get config {
+    if (_profile == VarioSoundProfile.xcTrack) {
+      return _base.copyWith(masterGain: _masterGain);
+    }
+    return _base.copyWith(
+      liftThreshold: _liftThreshold,
+      sinkThreshold: _sinkThreshold,
+      liftBaseFreq: _liftBaseFreq,
+      liftFreqSpan: _liftFreqSpan,
+      sinkBaseFreq: _sinkBaseFreq,
+      liftWaveform: _liftWaveform,
+      sinkWaveform: _sinkWaveform,
+      keypoints: _keypoints,
+      masterGain: _masterGain,
+    );
+  }
 
   /// Loads persisted values (if any) and applies them to the audio service.
   /// Safe to call multiple times; only the first load reads storage.
@@ -125,6 +150,8 @@ class VarioSoundSettings extends ChangeNotifier {
     _loaded = true;
     try {
       final sp = await SharedPreferences.getInstance();
+
+      _profile = _profileFromName(sp.getString(_kProfile)) ?? _profile;
 
       // New keys first, falling back to legacy keys for a one-time migration.
       _liftThreshold =
@@ -189,6 +216,13 @@ class VarioSoundSettings extends ChangeNotifier {
   }
 
   // ── Mutators (each persists + applies live) ───────────────────────────────
+  void setProfile(VarioSoundProfile profile) {
+    if (_profile == profile) return;
+    _profile = profile;
+    _persistString(_kProfile, profile.name);
+    _applyAndNotify();
+  }
+
   void setLiftThreshold(double v) {
     _liftThreshold = v.clamp(0.0, 5.0);
     _persistDouble(_kLiftThreshold, _liftThreshold);
@@ -305,6 +339,7 @@ class VarioSoundSettings extends ChangeNotifier {
 
   /// Restores all values to the XCTrack defaults and clears storage.
   Future<void> resetToDefaults() async {
+    _profile = VarioSoundProfile.xcTrack;
     _liftThreshold = _base.liftThreshold;
     _sinkThreshold = _base.sinkThreshold;
     _liftBaseFreq = _base.liftBaseFreq;
@@ -321,6 +356,7 @@ class VarioSoundSettings extends ChangeNotifier {
     try {
       final sp = await SharedPreferences.getInstance();
       await Future.wait([
+        sp.remove(_kProfile),
         sp.remove(_kLiftThreshold),
         sp.remove(_kSinkThreshold),
         sp.remove(_kLiftBaseFreq),
@@ -382,6 +418,14 @@ class VarioSoundSettings extends ChangeNotifier {
     if (name == null) return null;
     for (final w in VarioWaveform.values) {
       if (w.name == name) return w;
+    }
+    return null;
+  }
+
+  static VarioSoundProfile? _profileFromName(String? name) {
+    if (name == null) return null;
+    for (final p in VarioSoundProfile.values) {
+      if (p.name == name) return p;
     }
     return null;
   }

@@ -1000,6 +1000,12 @@
 
   "varioSoundTitle": "Vario Sound Settings",
   "varioSoundResetTooltip": "Reset to defaults",
+  "varioSoundSectionProfile": "Vario sound profile",
+  "varioSoundProfileTitle": "Vario sound profile",
+  "varioSoundProfileXcTrack": "XC Track",
+  "varioSoundProfileCustom": "Custom",
+  "varioSoundProfileXcTrackDescription": "Stock XCTrack sound. Custom tuning is disabled.",
+  "varioSoundProfileCustomDescription": "Tune thresholds, pitch, waveform and keypoints yourself.",
   "varioSoundPreview": "Preview sound",
   "varioSoundPreviewLive": "LIVE",
   "varioSoundPreviewMuted": "MUTED",

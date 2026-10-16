@@ -2472,6 +2472,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get varioSoundResetTooltip => 'Reset to defaults';
 
   @override
+  String get varioSoundSectionProfile => 'Vario sound profile';
+
+  @override
+  String get varioSoundProfileTitle => 'Vario sound profile';
+
+  @override
+  String get varioSoundProfileXcTrack => 'XC Track';
+
+  @override
+  String get varioSoundProfileCustom => 'Custom';
+
+  @override
+  String get varioSoundProfileXcTrackDescription =>
+      'Stock XCTrack sound. Custom tuning is disabled.';
+
+  @override
+  String get varioSoundProfileCustomDescription =>
+      'Tune thresholds, pitch, waveform and keypoints yourself.';
+
+  @override
   String get varioSoundPreview => 'Preview sound';
 
   @override

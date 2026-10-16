@@ -169,88 +169,11 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                     children: [
                       _testCard(theme, l10n),
                       const SizedBox(height: 20),
-                      _keypointsCard(theme, l10n),
+                      _sectionLabel(theme, l10n.varioSoundSectionProfile),
+                      const SizedBox(height: 8),
+                      _profileCard(theme, l10n),
                       const SizedBox(height: 20),
-                      _sectionLabel(theme, l10n.varioSoundSectionThresholds),
-                      const SizedBox(height: 8),
-                      _sliderCard(
-                        theme,
-                        icon: Icons.trending_up,
-                        label: l10n.varioSoundLiftThreshold,
-                        value: _settings.liftThreshold,
-                        min: 0.0,
-                        max: 3.0,
-                        divisions: 30,
-                        display:
-                            '${_settings.liftThreshold.toStringAsFixed(1)} m/s',
-                        onChanged: _settings.setLiftThreshold,
-                      ),
-                      _sliderCard(
-                        theme,
-                        icon: Icons.trending_down,
-                        label: l10n.varioSoundSinkThreshold,
-                        value: _settings.sinkThreshold,
-                        min: -6.0,
-                        max: -0.5,
-                        divisions: 55,
-                        display:
-                            '${_settings.sinkThreshold.toStringAsFixed(1)} m/s',
-                        onChanged: _settings.setSinkThreshold,
-                      ),
-                      const SizedBox(height: 20),
-                      _sectionLabel(theme, l10n.varioSoundSectionPitch),
-                      const SizedBox(height: 8),
-                      _sliderCard(
-                        theme,
-                        icon: Icons.music_note,
-                        label: l10n.varioSoundLiftBasePitch,
-                        value: _settings.liftBaseFreq,
-                        min: 300.0,
-                        max: 1200.0,
-                        divisions: 90,
-                        display: '${_settings.liftBaseFreq.round()} Hz',
-                        onChanged: _settings.setLiftBaseFreq,
-                      ),
-                      _sliderCard(
-                        theme,
-                        icon: Icons.stacked_line_chart,
-                        label: l10n.varioSoundLiftPitchRange,
-                        value: _settings.liftFreqSpan,
-                        min: 200.0,
-                        max: 1500.0,
-                        divisions: 130,
-                        display: '+${_settings.liftFreqSpan.round()} Hz',
-                        onChanged: _settings.setLiftFreqSpan,
-                      ),
-                      _sliderCard(
-                        theme,
-                        icon: Icons.music_note_outlined,
-                        label: l10n.varioSoundSinkBasePitch,
-                        value: _settings.sinkBaseFreq,
-                        min: 300.0,
-                        max: 1200.0,
-                        divisions: 90,
-                        display: '${_settings.sinkBaseFreq.round()} Hz',
-                        onChanged: _settings.setSinkBaseFreq,
-                      ),
-                      const SizedBox(height: 20),
-                      _sectionLabel(theme, l10n.varioSoundSectionWaveform),
-                      const SizedBox(height: 8),
-                      _waveformCard(
-                        theme,
-                        l10n,
-                        label: l10n.varioSoundLiftWaveform,
-                        value: _settings.liftWaveform,
-                        onChanged: _settings.setLiftWaveform,
-                      ),
-                      const SizedBox(height: 8),
-                      _waveformCard(
-                        theme,
-                        l10n,
-                        label: l10n.varioSoundSinkWaveform,
-                        value: _settings.sinkWaveform,
-                        onChanged: _settings.setSinkWaveform,
-                      ),
+                      _customTuningGroup(theme, l10n),
                       const SizedBox(height: 20),
                       _sectionLabel(theme, l10n.varioSoundSectionOutput),
                       const SizedBox(height: 8),
@@ -389,6 +312,153 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
         onChanged: _setPreviewSpeed,
       ),
     ]);
+  }
+
+  // ── Vario sound profile ────────────────────────────────────────────────────
+  Widget _profileCard(ThemeData theme, AppLocalizations l10n) {
+    return _card(theme, [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.varioSoundProfileTitle,
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: VarioSoundProfile.values.map((p) {
+                return ChoiceChip(
+                  label: Text(_profileName(l10n, p)),
+                  selected: p == _settings.profile,
+                  onSelected: (_) => _settings.setProfile(p),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _settings.profile == VarioSoundProfile.xcTrack
+                  ? l10n.varioSoundProfileXcTrackDescription
+                  : l10n.varioSoundProfileCustomDescription,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ]);
+  }
+
+  String _profileName(AppLocalizations l10n, VarioSoundProfile p) {
+    switch (p) {
+      case VarioSoundProfile.xcTrack:
+        return l10n.varioSoundProfileXcTrack;
+      case VarioSoundProfile.custom:
+        return l10n.varioSoundProfileCustom;
+    }
+  }
+
+  /// The custom tuning sections (keypoints, thresholds, pitch, waveform). The
+  /// whole group is greyed out and non-interactive while the stock "XC Track"
+  /// profile is selected.
+  Widget _customTuningGroup(ThemeData theme, AppLocalizations l10n) {
+    final enabled = _settings.customEnabled;
+    final group = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _keypointsCard(theme, l10n),
+        const SizedBox(height: 20),
+        _sectionLabel(theme, l10n.varioSoundSectionThresholds),
+        const SizedBox(height: 8),
+        _sliderCard(
+          theme,
+          icon: Icons.trending_up,
+          label: l10n.varioSoundLiftThreshold,
+          value: _settings.liftThreshold,
+          min: 0.0,
+          max: 3.0,
+          divisions: 30,
+          display: '${_settings.liftThreshold.toStringAsFixed(1)} m/s',
+          onChanged: _settings.setLiftThreshold,
+        ),
+        _sliderCard(
+          theme,
+          icon: Icons.trending_down,
+          label: l10n.varioSoundSinkThreshold,
+          value: _settings.sinkThreshold,
+          min: -6.0,
+          max: -0.5,
+          divisions: 55,
+          display: '${_settings.sinkThreshold.toStringAsFixed(1)} m/s',
+          onChanged: _settings.setSinkThreshold,
+        ),
+        const SizedBox(height: 20),
+        _sectionLabel(theme, l10n.varioSoundSectionPitch),
+        const SizedBox(height: 8),
+        _sliderCard(
+          theme,
+          icon: Icons.music_note,
+          label: l10n.varioSoundLiftBasePitch,
+          value: _settings.liftBaseFreq,
+          min: 300.0,
+          max: 1200.0,
+          divisions: 90,
+          display: '${_settings.liftBaseFreq.round()} Hz',
+          onChanged: _settings.setLiftBaseFreq,
+        ),
+        _sliderCard(
+          theme,
+          icon: Icons.stacked_line_chart,
+          label: l10n.varioSoundLiftPitchRange,
+          value: _settings.liftFreqSpan,
+          min: 200.0,
+          max: 1500.0,
+          divisions: 130,
+          display: '+${_settings.liftFreqSpan.round()} Hz',
+          onChanged: _settings.setLiftFreqSpan,
+        ),
+        _sliderCard(
+          theme,
+          icon: Icons.music_note_outlined,
+          label: l10n.varioSoundSinkBasePitch,
+          value: _settings.sinkBaseFreq,
+          min: 300.0,
+          max: 1200.0,
+          divisions: 90,
+          display: '${_settings.sinkBaseFreq.round()} Hz',
+          onChanged: _settings.setSinkBaseFreq,
+        ),
+        const SizedBox(height: 20),
+        _sectionLabel(theme, l10n.varioSoundSectionWaveform),
+        const SizedBox(height: 8),
+        _waveformCard(
+          theme,
+          l10n,
+          label: l10n.varioSoundLiftWaveform,
+          value: _settings.liftWaveform,
+          onChanged: _settings.setLiftWaveform,
+        ),
+        const SizedBox(height: 8),
+        _waveformCard(
+          theme,
+          l10n,
+          label: l10n.varioSoundSinkWaveform,
+          value: _settings.sinkWaveform,
+          onChanged: _settings.setSinkWaveform,
+        ),
+      ],
+    );
+    return IgnorePointer(
+      ignoring: !enabled,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 150),
+        opacity: enabled ? 1.0 : 0.4,
+        child: group,
+      ),
+    );
   }
 
   // ── Vertical-speed keypoints ───────────────────────────────────────────────

@@ -2417,6 +2417,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get varioSoundResetTooltip => '恢复默认';
 
   @override
+  String get varioSoundSectionProfile => '升降音配置';
+
+  @override
+  String get varioSoundProfileTitle => '升降音配置';
+
+  @override
+  String get varioSoundProfileXcTrack => 'XC Track';
+
+  @override
+  String get varioSoundProfileCustom => '自定义';
+
+  @override
+  String get varioSoundProfileXcTrackDescription => '原版 XCTrack 声音，自定义设置已禁用。';
+
+  @override
+  String get varioSoundProfileCustomDescription => '自行调节阈值、音高、波形和关键点。';
+
+  @override
   String get varioSoundPreview => '试听声音';
 
   @override

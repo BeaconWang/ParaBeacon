@@ -4736,6 +4736,42 @@ abstract class AppLocalizations {
   /// **'Reset to defaults'**
   String get varioSoundResetTooltip;
 
+  /// No description provided for @varioSoundSectionProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario sound profile'**
+  String get varioSoundSectionProfile;
+
+  /// No description provided for @varioSoundProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario sound profile'**
+  String get varioSoundProfileTitle;
+
+  /// No description provided for @varioSoundProfileXcTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'XC Track'**
+  String get varioSoundProfileXcTrack;
+
+  /// No description provided for @varioSoundProfileCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get varioSoundProfileCustom;
+
+  /// No description provided for @varioSoundProfileXcTrackDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock XCTrack sound. Custom tuning is disabled.'**
+  String get varioSoundProfileXcTrackDescription;
+
+  /// No description provided for @varioSoundProfileCustomDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tune thresholds, pitch, waveform and keypoints yourself.'**
+  String get varioSoundProfileCustomDescription;
+
   /// No description provided for @varioSoundPreview.
   ///
   /// In en, this message translates to:

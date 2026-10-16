@@ -245,6 +245,12 @@ class _VarioSynth {
   int _nearLiftPhase = 0;
   bool _keypointTone = true;
 
+  // XCTrack TICK accent: an exponentially-averaged climb value and a per-beep
+  // counter. One TICK is emitted every `round(avgLiftSpeed)` lift beeps while
+  // the average is at/above the threshold.
+  double _avgLiftSpeed = 0.0;
+  int _liftTickCounter = 0;
+
   _VarioState _prevState = _VarioState.deadband;
 
   double _sr = 22050.0;
@@ -279,6 +285,9 @@ class _VarioSynth {
 
     for (var i = 0; i < frameCount; i++) {
       _smoothedSpeed += (_targetSpeed - _smoothedSpeed) * _speedSmoothing;
+      final avgWindow = math.max(0.05, _config.classicTickAverageSeconds);
+      final avgAlpha = 1.0 - math.exp(-_dt / avgWindow);
+      _avgLiftSpeed += (_smoothedSpeed - _avgLiftSpeed) * avgAlpha;
       _tickCycle();
 
       double sample = 0.0;
@@ -391,6 +400,9 @@ class _VarioSynth {
 
       case _VarioState.lift:
         _segGain = 1.0;
+        // Reset the TICK accent counter on each fresh entry into lift so a new
+        // climb can start with a TICK accent immediately.
+        if (_prevState != _VarioState.lift) _liftTickCounter = 0;
         if (_inTone) {
           _inTone = false;
           final period = _config.liftPeriodFor(speed);
@@ -398,8 +410,7 @@ class _VarioSynth {
         } else {
           _inTone = true;
           _segForceFade = false;
-          // Always use the user-selected lift waveform, independent of speed.
-          _segWave = _config.liftWaveform;
+          _segWave = _liftBeepWaveform();
           _segDuration = _config.liftToneSeconds;
           final f = _config.liftFrequencyFor(speed);
           _toneStartFreq = f;
@@ -446,6 +457,29 @@ class _VarioSynth {
     }
 
     _prevState = state;
+  }
+
+  /// Chooses the waveform for the next lift beep. Reproduces XCTrack's TICK
+  /// accent: when the chosen lift waveform is TACK and the TICK option is on,
+  /// one TICK is emitted every `round(avgLiftSpeed)` beeps while the averaged
+  /// climb is at/above [VarioAudioConfig.classicTickThreshold]; all other beeps
+  /// (and any non-TACK chosen waveform) use the chosen waveform unchanged.
+  VarioWaveform _liftBeepWaveform() {
+    final base = _config.liftWaveform;
+    if (!_config.classicTickEnabled || base != VarioWaveform.tack) {
+      return base;
+    }
+    if (_liftTickCounter > 0) {
+      _liftTickCounter--;
+      return VarioWaveform.tack;
+    }
+    if (_avgLiftSpeed >= _config.classicTickThreshold) {
+      // Emit a TICK accent now, then TACK for the next round(avg) - 1 beeps.
+      final n = _avgLiftSpeed.round();
+      _liftTickCounter = math.max(0, n - 1);
+      return VarioWaveform.tick;
+    }
+    return VarioWaveform.tack;
   }
 
   double _instantaneousFreq() {

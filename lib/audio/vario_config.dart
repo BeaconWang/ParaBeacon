@@ -98,6 +98,30 @@ class VarioAudioConfig {
   final VarioKeypointCurve keypoints;
 
   // ---------------------------------------------------------------------------
+  // Classic TICK accent — XCTrack-faithful periodic TICK during steady lift.
+  //
+  // XCTrack beeps TACK during climb, but periodically substitutes a brighter
+  // TICK accent: when the (averaged) climb reaches [classicTickThreshold] and
+  // the user TICK option is on, the first beep of each cycle becomes a TICK and
+  // the next `round(avgClimb) - 1` beeps stay TACK — i.e. one TICK every
+  // `round(avgClimb)` beeps. The accent only applies when the chosen lift
+  // waveform is TACK; any other chosen waveform is used as-is at every speed.
+  // ---------------------------------------------------------------------------
+
+  /// Enables the XCTrack periodic TICK accent during steady lift. Only takes
+  /// effect when [liftWaveform] is TACK.
+  final bool classicTickEnabled;
+
+  /// Averaged-climb threshold (m/s) above which the TICK accent is emitted.
+  /// XCTrack constant: 0.5 m/s.
+  final double classicTickThreshold;
+
+  /// Exponential averaging window (s) for the climb value that drives the TICK
+  /// accent cadence. Kept short so the cadence tracks the current climb without
+  /// the long lag of a multi-second integrator.
+  final double classicTickAverageSeconds;
+
+  // ---------------------------------------------------------------------------
   // Deadband cue — double-beep pattern played between sink and lift thresholds.
   // ---------------------------------------------------------------------------
 
@@ -194,6 +218,9 @@ class VarioAudioConfig {
     this.liftThreshold = 0.2,
     this.sinkThreshold = -2.0,
     this.keypoints = VarioKeypointCurve.empty,
+    this.classicTickEnabled = true,
+    this.classicTickThreshold = 0.5,
+    this.classicTickAverageSeconds = 3.0,
     this.nearLiftEnabled = true,
     this.nearLiftFreq = 300,
     this.nearLiftToneSeconds = 0.2,
@@ -230,6 +257,9 @@ class VarioAudioConfig {
     double? liftThreshold,
     double? sinkThreshold,
     VarioKeypointCurve? keypoints,
+    bool? classicTickEnabled,
+    double? classicTickThreshold,
+    double? classicTickAverageSeconds,
     bool? nearLiftEnabled,
     double? nearLiftFreq,
     double? nearLiftToneSeconds,
@@ -262,6 +292,10 @@ class VarioAudioConfig {
       liftThreshold: liftThreshold ?? this.liftThreshold,
       sinkThreshold: sinkThreshold ?? this.sinkThreshold,
       keypoints: keypoints ?? this.keypoints,
+      classicTickEnabled: classicTickEnabled ?? this.classicTickEnabled,
+      classicTickThreshold: classicTickThreshold ?? this.classicTickThreshold,
+      classicTickAverageSeconds:
+          classicTickAverageSeconds ?? this.classicTickAverageSeconds,
       nearLiftEnabled: nearLiftEnabled ?? this.nearLiftEnabled,
       nearLiftFreq: nearLiftFreq ?? this.nearLiftFreq,
       nearLiftToneSeconds: nearLiftToneSeconds ?? this.nearLiftToneSeconds,

@@ -2484,6 +2484,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get varioSoundVerticalSpeed => 'Vertical speed';
 
   @override
+  String get varioSoundKeypointsTitle => 'Vertical speed keypoints';
+
+  @override
+  String get varioSoundKeypointsDescription =>
+      'Pin a custom pitch, beep rate, duty and waveform to a vertical speed. The vario interpolates between keypoints and uses the default sound outside their range.';
+
+  @override
+  String varioSoundKeypointAddAt(String speed) {
+    return 'Add at $speed';
+  }
+
+  @override
+  String get varioSoundKeypointClearAll => 'Clear all';
+
+  @override
+  String get varioSoundKeypointsEmpty =>
+      'No keypoints yet. Drag the vertical speed slider above and add one.';
+
+  @override
+  String get varioSoundKeypointsNeedTwo =>
+      'Add at least two keypoints to shape the sound.';
+
+  @override
+  String get varioSoundKeypointAudition => 'Audition';
+
+  @override
+  String get varioSoundKeypointDelete => 'Delete keypoint';
+
+  @override
+  String get varioSoundKeypointPitch => 'Pitch';
+
+  @override
+  String get varioSoundKeypointCycle => 'Beep cycle';
+
+  @override
+  String get varioSoundKeypointDuty => 'Duty';
+
+  @override
+  String get varioSoundKeypointContinuous => 'Continuous';
+
+  @override
+  String get varioSoundKeypointWaveform => 'Waveform';
+
+  @override
   String get varioSoundSectionThresholds => 'Thresholds';
 
   @override

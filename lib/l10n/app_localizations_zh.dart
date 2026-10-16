@@ -2429,6 +2429,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get varioSoundVerticalSpeed => '升降速度';
 
   @override
+  String get varioSoundKeypointsTitle => '升降速度关键点';
+
+  @override
+  String get varioSoundKeypointsDescription =>
+      '为某个升降速度固定自定义的音高、蜂鸣节奏、音长和波形。关键点之间会线性插值，超出范围时使用默认声音。';
+
+  @override
+  String varioSoundKeypointAddAt(String speed) {
+    return '在 $speed 添加';
+  }
+
+  @override
+  String get varioSoundKeypointClearAll => '全部清除';
+
+  @override
+  String get varioSoundKeypointsEmpty => '暂无关键点。拖动上方的升降速度滑块并添加一个。';
+
+  @override
+  String get varioSoundKeypointsNeedTwo => '至少添加两个关键点才能塑形声音。';
+
+  @override
+  String get varioSoundKeypointAudition => '试听';
+
+  @override
+  String get varioSoundKeypointDelete => '删除关键点';
+
+  @override
+  String get varioSoundKeypointPitch => '音高';
+
+  @override
+  String get varioSoundKeypointCycle => '蜂鸣周期';
+
+  @override
+  String get varioSoundKeypointDuty => '音长占比';
+
+  @override
+  String get varioSoundKeypointContinuous => '连续音';
+
+  @override
+  String get varioSoundKeypointWaveform => '波形';
+
+  @override
   String get varioSoundSectionThresholds => '阈值';
 
   @override

@@ -880,6 +880,24 @@
   "varioSoundPreviewLive": "实时",
   "varioSoundPreviewMuted": "已静音",
   "varioSoundVerticalSpeed": "升降速度",
+  "varioSoundKeypointsTitle": "升降速度关键点",
+  "varioSoundKeypointsDescription": "为某个升降速度固定自定义的音高、蜂鸣节奏、音长和波形。关键点之间会线性插值，超出范围时使用默认声音。",
+  "varioSoundKeypointAddAt": "在 {speed} 添加",
+  "@varioSoundKeypointAddAt": {
+    "placeholders": {
+      "speed": { "type": "String" }
+    }
+  },
+  "varioSoundKeypointClearAll": "全部清除",
+  "varioSoundKeypointsEmpty": "暂无关键点。拖动上方的升降速度滑块并添加一个。",
+  "varioSoundKeypointsNeedTwo": "至少添加两个关键点才能塑形声音。",
+  "varioSoundKeypointAudition": "试听",
+  "varioSoundKeypointDelete": "删除关键点",
+  "varioSoundKeypointPitch": "音高",
+  "varioSoundKeypointCycle": "蜂鸣周期",
+  "varioSoundKeypointDuty": "音长占比",
+  "varioSoundKeypointContinuous": "连续音",
+  "varioSoundKeypointWaveform": "波形",
   "varioSoundSectionThresholds": "阈值",
   "varioSoundLiftThreshold": "上升阈值",
   "varioSoundSinkThreshold": "下降阈值",

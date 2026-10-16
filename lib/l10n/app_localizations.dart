@@ -4760,6 +4760,84 @@ abstract class AppLocalizations {
   /// **'Vertical speed'**
   String get varioSoundVerticalSpeed;
 
+  /// No description provided for @varioSoundKeypointsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical speed keypoints'**
+  String get varioSoundKeypointsTitle;
+
+  /// No description provided for @varioSoundKeypointsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin a custom pitch, beep rate, duty and waveform to a vertical speed. The vario interpolates between keypoints and uses the default sound outside their range.'**
+  String get varioSoundKeypointsDescription;
+
+  /// No description provided for @varioSoundKeypointAddAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at {speed}'**
+  String varioSoundKeypointAddAt(String speed);
+
+  /// No description provided for @varioSoundKeypointClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get varioSoundKeypointClearAll;
+
+  /// No description provided for @varioSoundKeypointsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No keypoints yet. Drag the vertical speed slider above and add one.'**
+  String get varioSoundKeypointsEmpty;
+
+  /// No description provided for @varioSoundKeypointsNeedTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least two keypoints to shape the sound.'**
+  String get varioSoundKeypointsNeedTwo;
+
+  /// No description provided for @varioSoundKeypointAudition.
+  ///
+  /// In en, this message translates to:
+  /// **'Audition'**
+  String get varioSoundKeypointAudition;
+
+  /// No description provided for @varioSoundKeypointDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete keypoint'**
+  String get varioSoundKeypointDelete;
+
+  /// No description provided for @varioSoundKeypointPitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch'**
+  String get varioSoundKeypointPitch;
+
+  /// No description provided for @varioSoundKeypointCycle.
+  ///
+  /// In en, this message translates to:
+  /// **'Beep cycle'**
+  String get varioSoundKeypointCycle;
+
+  /// No description provided for @varioSoundKeypointDuty.
+  ///
+  /// In en, this message translates to:
+  /// **'Duty'**
+  String get varioSoundKeypointDuty;
+
+  /// No description provided for @varioSoundKeypointContinuous.
+  ///
+  /// In en, this message translates to:
+  /// **'Continuous'**
+  String get varioSoundKeypointContinuous;
+
+  /// No description provided for @varioSoundKeypointWaveform.
+  ///
+  /// In en, this message translates to:
+  /// **'Waveform'**
+  String get varioSoundKeypointWaveform;
+
   /// No description provided for @varioSoundSectionThresholds.
   ///
   /// In en, this message translates to:

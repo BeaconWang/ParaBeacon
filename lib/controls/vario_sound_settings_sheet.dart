@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../audio/vario_audio_service.dart';
 import '../audio/vario_config.dart';
+import '../audio/vario_keypoints.dart';
 import '../audio/vario_sound_settings.dart';
 import '../l10n/app_localizations.dart';
 
@@ -79,6 +80,49 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
     _audio.setPreviewMuted(_previewMuted);
   }
 
+  /// Builds a sensible initial keypoint for [speed]: reuse the interpolated
+  /// curve value if already covered, otherwise seed from the classic formula so
+  /// the first keypoint matches what the user is currently hearing.
+  VarioKeypoint _defaultKeypointAt(double speed) {
+    final curve = _settings.keypoints;
+    if (curve.covers(speed)) {
+      final s = curve.sampleAt(speed);
+      return VarioKeypoint(
+        speed: speed,
+        freqHz: s.freqHz,
+        cycleSeconds: s.cycleSeconds,
+        duty: s.duty,
+        waveform: s.waveform,
+      );
+    }
+    final c = _settings.config;
+    if (speed >= 0) {
+      final v = speed <= 0 ? 0.01 : speed;
+      final cycle = c.liftPeriodFor(v);
+      return VarioKeypoint(
+        speed: speed,
+        freqHz: c.liftFrequencyFor(v),
+        cycleSeconds: cycle,
+        duty: (c.liftToneSeconds / cycle).clamp(0.05, 1.0),
+        waveform: c.liftWaveform,
+      );
+    }
+    final cycle = c.sinkPeriodSeconds;
+    return VarioKeypoint(
+      speed: speed,
+      freqHz: c.sinkFrequencyFor(speed),
+      cycleSeconds: cycle,
+      duty: (c.sinkToneSeconds / cycle).clamp(0.05, 1.0),
+      waveform: c.sinkWaveform,
+    );
+  }
+
+  void _addKeypointAtCurrentSpeed() {
+    // Snap to the 0.1 m/s bucket the model de-duplicates on.
+    final speed = double.parse(_previewSpeed.toStringAsFixed(1));
+    _settings.upsertKeypoint(_defaultKeypointAt(speed));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -124,6 +168,8 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     children: [
                       _testCard(theme, l10n),
+                      const SizedBox(height: 20),
+                      _keypointsCard(theme, l10n),
                       const SizedBox(height: 20),
                       _sectionLabel(theme, l10n.varioSoundSectionThresholds),
                       const SizedBox(height: 8),
@@ -343,6 +389,258 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
         onChanged: _setPreviewSpeed,
       ),
     ]);
+  }
+
+  // ── Vertical-speed keypoints ───────────────────────────────────────────────
+  Widget _keypointsCard(ThemeData theme, AppLocalizations l10n) {
+    final keypoints = _settings.keypointList;
+    final speedLabel =
+        '${_previewSpeed >= 0 ? '+' : ''}'
+        '${_previewSpeed.toStringAsFixed(1)} m/s';
+    return _card(theme, [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.timeline, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.varioSoundKeypointsTitle,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.varioSoundKeypointsDescription,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: _addKeypointAtCurrentSpeed,
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(l10n.varioSoundKeypointAddAt(speedLabel)),
+              ),
+            ),
+            if (keypoints.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: _settings.clearKeypoints,
+                child: Text(l10n.varioSoundKeypointClearAll),
+              ),
+            ],
+          ],
+        ),
+      ),
+      if (keypoints.isEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 2, bottom: 8),
+          child: Text(
+            l10n.varioSoundKeypointsEmpty,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        )
+      else ...[
+        if (keypoints.length < 2)
+          Padding(
+            padding: const EdgeInsets.only(top: 2, bottom: 4),
+            child: Text(
+              l10n.varioSoundKeypointsNeedTwo,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.tertiary,
+              ),
+            ),
+          ),
+        ...keypoints.map((kp) => _keypointTile(theme, l10n, kp)),
+      ],
+    ]);
+  }
+
+  Widget _keypointTile(
+    ThemeData theme,
+    AppLocalizations l10n,
+    VarioKeypoint kp,
+  ) {
+    final speedLabel =
+        '${kp.speed >= 0 ? '+' : ''}${kp.speed.toStringAsFixed(1)} m/s';
+    final cycleMs = (kp.cycleSeconds * 1000).round();
+    final dutyLabel = kp.duty >= 1.0
+        ? l10n.varioSoundKeypointContinuous
+        : '${(kp.duty * 100).round()}%';
+    final summary = '${kp.freqHz.round()} Hz · $cycleMs ms · $dutyLabel';
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  speedLabel,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  summary,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          children: [
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => _setPreviewSpeed(kp.speed),
+                  icon: const Icon(Icons.play_arrow, size: 18),
+                  label: Text(l10n.varioSoundKeypointAudition),
+                ),
+                const Spacer(),
+                IconButton(
+                  tooltip: l10n.varioSoundKeypointDelete,
+                  icon: Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: theme.colorScheme.error,
+                  ),
+                  onPressed: () => _settings.removeKeypoint(kp.speed),
+                ),
+              ],
+            ),
+            _miniSlider(
+              theme,
+              label: l10n.varioSoundKeypointPitch,
+              value: kp.freqHz,
+              min: 100.0,
+              max: 2000.0,
+              divisions: 190,
+              display: '${kp.freqHz.round()} Hz',
+              onChanged: (v) =>
+                  _settings.upsertKeypoint(kp.copyWith(freqHz: v)),
+            ),
+            _miniSlider(
+              theme,
+              label: l10n.varioSoundKeypointCycle,
+              value: kp.cycleSeconds,
+              min: 0.05,
+              max: 2.0,
+              divisions: 195,
+              display: '${(kp.cycleSeconds * 1000).round()} ms',
+              onChanged: (v) =>
+                  _settings.upsertKeypoint(kp.copyWith(cycleSeconds: v)),
+            ),
+            _miniSlider(
+              theme,
+              label: l10n.varioSoundKeypointDuty,
+              value: kp.duty,
+              min: 0.05,
+              max: 1.0,
+              divisions: 19,
+              display: dutyLabel,
+              onChanged: (v) => _settings.upsertKeypoint(kp.copyWith(duty: v)),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 6),
+                child: Text(
+                  l10n.varioSoundKeypointWaveform,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 8,
+                children: VarioWaveform.values.map((w) {
+                  return ChoiceChip(
+                    label: Text(_waveformName(l10n, w)),
+                    selected: w == kp.waveform,
+                    onSelected: (_) =>
+                        _settings.upsertKeypoint(kp.copyWith(waveform: w)),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _miniSlider(
+    ThemeData theme, {
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required String display,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(label, style: theme.textTheme.bodySmall)),
+            Text(
+              display,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        Slider(
+          value: value.clamp(min, max),
+          min: min,
+          max: max,
+          divisions: divisions,
+          label: display,
+          onChanged: onChanged,
+        ),
+      ],
+    );
   }
 
   // ── Widgets ─────────────────────────────────────────────────────────────

@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'vario_audio_service.dart';
 import 'vario_config.dart';
+import 'vario_keypoints.dart';
 
 /// Persisted, user-tunable Vario sound settings.
 ///
@@ -28,6 +31,7 @@ class VarioSoundSettings extends ChangeNotifier {
   static const _kSinkBaseFreq = 'pb.vario.sinkBaseFreq';
   static const _kLiftWaveform = 'pb.vario.liftWaveform';
   static const _kSinkWaveform = 'pb.vario.sinkWaveform';
+  static const _kKeypoints = 'pb.vario.keypoints';
   static const _kMasterGain = 'pb.vario.masterGain';
   static const _kSoundOnlyWhenFlying = 'pb.vario.soundOnlyWhenFlying';
   static const _kSoundOnlyWhenSensorConnected =
@@ -51,6 +55,7 @@ class VarioSoundSettings extends ChangeNotifier {
   double _sinkBaseFreq = _base.sinkBaseFreq;
   VarioWaveform _liftWaveform = _base.liftWaveform;
   VarioWaveform _sinkWaveform = _base.sinkWaveform;
+  VarioKeypointCurve _keypoints = _base.keypoints;
   double _masterGain = _base.masterGain;
 
   /// When true, the live vario beeper is silenced until a flight has started
@@ -80,6 +85,13 @@ class VarioSoundSettings extends ChangeNotifier {
   double get sinkBaseFreq => _sinkBaseFreq;
   VarioWaveform get liftWaveform => _liftWaveform;
   VarioWaveform get sinkWaveform => _sinkWaveform;
+
+  /// The current user keypoint curve (sorted ascending by speed).
+  VarioKeypointCurve get keypoints => _keypoints;
+
+  /// Convenience view of the keypoint list (sorted ascending by speed).
+  List<VarioKeypoint> get keypointList => _keypoints.anchors;
+
   double get masterGain => _masterGain;
   bool get soundOnlyWhenFlying => _soundOnlyWhenFlying;
   bool get soundOnlyWhenSensorConnected => _soundOnlyWhenSensorConnected;
@@ -98,6 +110,7 @@ class VarioSoundSettings extends ChangeNotifier {
     sinkBaseFreq: _sinkBaseFreq,
     liftWaveform: _liftWaveform,
     sinkWaveform: _sinkWaveform,
+    keypoints: _keypoints,
     masterGain: _masterGain,
   );
 
@@ -134,6 +147,7 @@ class VarioSoundSettings extends ChangeNotifier {
           _liftWaveform;
       _sinkWaveform =
           _waveformFromName(sp.getString(_kSinkWaveform)) ?? _sinkWaveform;
+      _keypoints = _keypointsFromJson(sp.getString(_kKeypoints)) ?? _keypoints;
       _masterGain = sp.getDouble(_kMasterGain) ?? _masterGain;
       _soundOnlyWhenFlying =
           sp.getBool(_kSoundOnlyWhenFlying) ?? _soundOnlyWhenFlying;
@@ -224,6 +238,36 @@ class VarioSoundSettings extends ChangeNotifier {
     _applyAndNotify();
   }
 
+  // ── Vertical-speed keypoints ──────────────────────────────────────────────
+
+  /// Inserts [kp] (or replaces an existing keypoint at the same ~0.1 m/s
+  /// bucket), keeping the curve sorted, then persists + applies live.
+  void upsertKeypoint(VarioKeypoint kp) {
+    _keypoints = _keypoints.upsert(kp);
+    _persistKeypoints();
+    _applyAndNotify();
+  }
+
+  /// Removes any keypoint at [speed]'s ~0.1 m/s bucket.
+  void removeKeypoint(double speed) {
+    final next = _keypoints.removeAt(speed);
+    if (next.length == _keypoints.length) return;
+    _keypoints = next;
+    _persistKeypoints();
+    _applyAndNotify();
+  }
+
+  /// Removes all keypoints (reverts to the pure classic engine).
+  void clearKeypoints() {
+    if (_keypoints.isEmpty) return;
+    _keypoints = VarioKeypointCurve.empty;
+    _persistKeypoints();
+    _applyAndNotify();
+  }
+
+  void _persistKeypoints() =>
+      _persistString(_kKeypoints, jsonEncode(_keypointsToJson(_keypoints)));
+
   /// Enables/disables gating the live vario beeper on an in-progress flight.
   /// Only affects the live sensor feed (see [VarioAudioBridge]); it does not
   /// change the [VarioAudioConfig], so no need to re-apply the audio config.
@@ -268,6 +312,7 @@ class VarioSoundSettings extends ChangeNotifier {
     _sinkBaseFreq = _base.sinkBaseFreq;
     _liftWaveform = _base.liftWaveform;
     _sinkWaveform = _base.sinkWaveform;
+    _keypoints = _base.keypoints;
     _masterGain = _base.masterGain;
     _soundOnlyWhenFlying = true;
     _soundOnlyWhenSensorConnected = true;
@@ -283,6 +328,7 @@ class VarioSoundSettings extends ChangeNotifier {
         sp.remove(_kSinkBaseFreq),
         sp.remove(_kLiftWaveform),
         sp.remove(_kSinkWaveform),
+        sp.remove(_kKeypoints),
         sp.remove(_kMasterGain),
         sp.remove(_kSoundOnlyWhenFlying),
         sp.remove(_kSoundOnlyWhenSensorConnected),
@@ -338,5 +384,54 @@ class VarioSoundSettings extends ChangeNotifier {
       if (w.name == name) return w;
     }
     return null;
+  }
+
+  static List<Map<String, Object>> _keypointsToJson(VarioKeypointCurve curve) =>
+      curve.anchors
+          .map(
+            (kp) => <String, Object>{
+              'speed': kp.speed,
+              'freqHz': kp.freqHz,
+              'cycleMs': kp.cycleSeconds * 1000.0,
+              'dutyPct': kp.duty * 100.0,
+              'waveform': kp.waveform.name,
+            },
+          )
+          .toList(growable: false);
+
+  static VarioKeypointCurve? _keypointsFromJson(String? encoded) {
+    if (encoded == null || encoded.length > 64 * 1024) return null;
+    try {
+      final decoded = jsonDecode(encoded);
+      if (decoded is! List || decoded.length > 128) return null;
+      final keypoints = <VarioKeypoint>[];
+      for (final item in decoded) {
+        if (item is! Map) return null;
+        final speed = item['speed'];
+        final freq = item['freqHz'];
+        final cycleMs = item['cycleMs'];
+        final dutyPct = item['dutyPct'];
+        final waveform = _waveformFromName(item['waveform'] as String?);
+        if (speed is! num ||
+            freq is! num ||
+            cycleMs is! num ||
+            dutyPct is! num ||
+            waveform == null) {
+          return null;
+        }
+        keypoints.add(
+          VarioKeypoint(
+            speed: speed.toDouble(),
+            freqHz: freq.toDouble(),
+            cycleSeconds: cycleMs.toDouble() / 1000.0,
+            duty: (dutyPct.toDouble() / 100.0).clamp(0.0, 1.0),
+            waveform: waveform,
+          ),
+        );
+      }
+      return VarioKeypointCurve.sorted(keypoints);
+    } catch (_) {
+      return null;
+    }
   }
 }

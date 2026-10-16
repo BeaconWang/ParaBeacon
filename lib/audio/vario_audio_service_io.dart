@@ -201,7 +201,7 @@ class VarioAudioService {
 // DSP CORE — pure, backend-agnostic PCM synthesis (XCTrack-faithful).
 // =============================================================================
 
-enum _VarioState { deadband, nearLift, lift, sink }
+enum _VarioState { deadband, nearLift, lift, sink, keypoint }
 
 class _VarioSynth {
   _VarioSynth(this._config) {
@@ -243,6 +243,7 @@ class _VarioSynth {
 
   int _sinkPhase = 0;
   int _nearLiftPhase = 0;
+  bool _keypointTone = true;
   double _longAverageSpeed = 0.0;
 
   _VarioState _prevState = _VarioState.deadband;
@@ -260,6 +261,8 @@ class _VarioSynth {
   }
 
   _VarioState _stateFor(double speed) {
+    // User keypoints take over whenever the speed falls inside their range.
+    if (_config.keypoints.covers(speed)) return _VarioState.keypoint;
     if (speed >= _config.liftThreshold) return _VarioState.lift;
     if (speed <= _config.sinkThreshold) return _VarioState.sink;
 
@@ -323,6 +326,37 @@ class _VarioSynth {
     final state = _stateFor(speed);
     _segElapsed = 0.0;
     switch (state) {
+      case _VarioState.keypoint:
+        final point = _config.keypoints.sampleAt(speed);
+        if (point.duty <= 0.0) {
+          _keypointTone = false;
+        } else if (_prevState != _VarioState.keypoint) {
+          _keypointTone = true;
+        } else if (point.isContinuous) {
+          _keypointTone = true;
+        } else {
+          _keypointTone = !_keypointTone;
+        }
+        _segGain = 1.0;
+        if (_keypointTone) {
+          _inTone = true;
+          _segWave = point.waveform;
+          // Short intermittent beeps always get an envelope (even LONG) to
+          // avoid clicks; a continuous tone is left un-faded.
+          _segForceFade = !point.isContinuous;
+          _segDuration = math.max(
+            _dt,
+            point.isContinuous ? point.cycleSeconds : point.toneSeconds,
+          );
+          _toneStartFreq = point.freqHz;
+          _toneEndFreq = point.freqHz;
+        } else {
+          _inTone = false;
+          _segForceFade = false;
+          _segDuration = math.max(_dt, point.gapSeconds);
+        }
+        break;
+
       case _VarioState.deadband:
         _inTone = false;
         _segForceFade = false;

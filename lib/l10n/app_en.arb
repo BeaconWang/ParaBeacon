@@ -1004,6 +1004,24 @@
   "varioSoundPreviewLive": "LIVE",
   "varioSoundPreviewMuted": "MUTED",
   "varioSoundVerticalSpeed": "Vertical speed",
+  "varioSoundKeypointsTitle": "Vertical speed keypoints",
+  "varioSoundKeypointsDescription": "Pin a custom pitch, beep rate, duty and waveform to a vertical speed. The vario interpolates between keypoints and uses the default sound outside their range.",
+  "varioSoundKeypointAddAt": "Add at {speed}",
+  "@varioSoundKeypointAddAt": {
+    "placeholders": {
+      "speed": { "type": "String" }
+    }
+  },
+  "varioSoundKeypointClearAll": "Clear all",
+  "varioSoundKeypointsEmpty": "No keypoints yet. Drag the vertical speed slider above and add one.",
+  "varioSoundKeypointsNeedTwo": "Add at least two keypoints to shape the sound.",
+  "varioSoundKeypointAudition": "Audition",
+  "varioSoundKeypointDelete": "Delete keypoint",
+  "varioSoundKeypointPitch": "Pitch",
+  "varioSoundKeypointCycle": "Beep cycle",
+  "varioSoundKeypointDuty": "Duty",
+  "varioSoundKeypointContinuous": "Continuous",
+  "varioSoundKeypointWaveform": "Waveform",
   "varioSoundSectionThresholds": "Thresholds",
   "varioSoundLiftThreshold": "Lift threshold",
   "varioSoundSinkThreshold": "Sink threshold",

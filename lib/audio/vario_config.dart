@@ -30,6 +30,8 @@
 
 import 'dart:math' as math;
 
+import 'vario_keypoints.dart';
+
 /// XCTrack waveform families (enum `b1` in the APK).
 enum VarioWaveform {
   /// TICK — rich additive blend (used by some weak-lift profiles).
@@ -88,6 +90,12 @@ class VarioAudioConfig {
   /// At/below this sink rate the sink alarm is active (XCTrack `f26100d`,
   /// default -2.0 m/s; note XCTrack stores it negated).
   final double sinkThreshold;
+
+  /// User-defined vertical-speed keypoints. When at least two keypoints are
+  /// present and the current speed is within their range, the synth uses the
+  /// interpolated keypoint sound instead of the classic formula. Empty by
+  /// default (pure classic engine).
+  final VarioKeypointCurve keypoints;
 
   /// Long-term average window used by the classic TICK/TACK selector.
   final double classicLongAverageSeconds;
@@ -195,6 +203,7 @@ class VarioAudioConfig {
     this.lookAheadMs = 90.0,
     this.liftThreshold = 0.2,
     this.sinkThreshold = -2.0,
+    this.keypoints = VarioKeypointCurve.empty,
     this.classicLongAverageSeconds = 10.0,
     this.classicTickAverageThreshold = 0.5,
     this.classicTickEnabled = true,
@@ -233,6 +242,7 @@ class VarioAudioConfig {
     double? lookAheadMs,
     double? liftThreshold,
     double? sinkThreshold,
+    VarioKeypointCurve? keypoints,
     double? classicLongAverageSeconds,
     double? classicTickAverageThreshold,
     bool? classicTickEnabled,
@@ -267,6 +277,7 @@ class VarioAudioConfig {
       lookAheadMs: lookAheadMs ?? this.lookAheadMs,
       liftThreshold: liftThreshold ?? this.liftThreshold,
       sinkThreshold: sinkThreshold ?? this.sinkThreshold,
+      keypoints: keypoints ?? this.keypoints,
       classicLongAverageSeconds:
           classicLongAverageSeconds ?? this.classicLongAverageSeconds,
       classicTickAverageThreshold:

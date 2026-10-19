@@ -86,24 +86,34 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     final theme = Theme.of(context);
     final tracks = _recorder.tracks;
 
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header.
-          _buildHeader(theme, tracks),
-          const Divider(height: 1),
-          Expanded(
-            child: tracks.isEmpty
-                ? _empty(theme)
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: tracks.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, i) => _trackTile(theme, tracks[i]),
-                  ),
-          ),
-        ],
+    return IconButtonTheme(
+      data: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          minimumSize: const Size.square(40),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header.
+            _buildHeader(theme, tracks),
+            const Divider(height: 1),
+            Expanded(
+              child: tracks.isEmpty
+                  ? _empty(theme)
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: tracks.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, i) => _trackTile(theme, tracks[i]),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -112,8 +122,8 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   /// on a single row, they wrap onto a second row below the title.
   Widget _buildHeader(ThemeData theme, List<FlightTrack> tracks) {
     final actions = _headerActions(tracks);
-    // Approximate width of a single IconButton (48px default touch target).
-    const buttonWidth = 48.0;
+    // Compact IconButtons use a 40px target width.
+    const buttonWidth = 40.0;
     // Minimum width we want to reserve for the title before wrapping.
     const minTitleWidth = 120.0;
 

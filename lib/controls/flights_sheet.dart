@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../data/flight_aircraft_editor.dart';
 import '../data/equipment_store.dart';
 import '../data/flight_derived_stats.dart';
 import '../data/flight_export_service.dart';
@@ -508,6 +509,28 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       harness: track.harnessName,
       helmet: track.helmetName,
     );
+  }
+
+  Future<void> _editAircraft(FlightTrack track) async {
+    final draft = await showFlightAircraftEditor(context, track);
+    if (!mounted || draft == null) return;
+
+    String? normalize(String value) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+
+    track
+      ..aircraftFaiClass = draft.faiClass
+      ..aircraftManufacturer = normalize(draft.manufacturer)
+      ..aircraftModel = normalize(draft.model)
+      ..aircraftName = normalize(draft.name)
+      ..aircraftCategory = normalize(draft.category)
+      ..aircraftTandem = draft.tandem
+      ..aircraftEngineType = draft.engineType
+      ..aircraftTrimSpeedKmh = draft.trimSpeedKmh
+      ..aircraftGoalGlideRatio = draft.goalGlideRatio;
+    _recorder.persistTrackMeta(track);
   }
 
   // ── Per-flight export ──────────────────────────────────────────────────
@@ -1037,6 +1060,17 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                               track.aircraftGoalGlideRatio!.toStringAsFixed(2),
                             ),
                         ],
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () async {
+                              await _editAircraft(track);
+                              setDialogState(() {});
+                            },
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            label: Text(l10n.flightDetailAircraftEdit),
+                          ),
+                        ),
                         if (track.hasEquipment) ...[
                           const SizedBox(height: 8),
                           _sectionLabel(theme, l10n.equipment),

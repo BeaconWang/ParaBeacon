@@ -92,6 +92,7 @@
   "aircraftPositiveNumberRequired": "请输入正数。",
   "aircraftSave": "保存飞行器",
   "flightDetailAircraft": "飞行器",
+  "flightDetailAircraftEdit": "编辑飞行器",
   "flightDetailAircraftClass": "FAI 类别",
   "flightDetailAircraftManufacturer": "制造商",
   "flightDetailAircraftModel": "型号",

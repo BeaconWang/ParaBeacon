@@ -93,6 +93,7 @@
   "aircraftPositiveNumberRequired": "Enter a positive number.",
   "aircraftSave": "Save aircraft",
   "flightDetailAircraft": "Aircraft",
+  "flightDetailAircraftEdit": "Edit Aircraft",
   "flightDetailAircraftClass": "FAI class",
   "flightDetailAircraftManufacturer": "Manufacturer",
   "flightDetailAircraftModel": "Model",

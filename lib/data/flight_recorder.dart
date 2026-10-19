@@ -88,9 +88,9 @@ class FlightTrack {
   /// Optional post-flight metadata (set from the Flights sheet, persisted with
   /// the track and included in exports / share cards).
   ///
-  /// Aircraft configuration captured when this flight starts. These fields are
-  /// immutable by convention after recording begins, so historic flights keep
-  /// the aircraft setup that was actually used.
+  /// Aircraft configuration captured when this flight starts. It is stored on
+  /// the flight so later edits to the active aircraft do not change history;
+  /// users can correct this snapshot from the flight details screen.
   String? aircraftFaiClass;
   String? aircraftManufacturer;
   String? aircraftModel;
@@ -452,9 +452,9 @@ class FlightRecorder extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Persists in-place edits to a logged [track]'s optional metadata (equipment
-  /// names, reverse-geocoded site names) and notifies listeners. No-op if the
-  /// track isn't in the log.
+  /// Persists in-place edits to a logged [track]'s optional metadata (aircraft,
+  /// equipment names, reverse-geocoded site names) and notifies listeners.
+  /// No-op if the track isn't in the log.
   void persistTrackMeta(FlightTrack track) {
     if (!_tracks.contains(track)) return;
     FlightStore.instance.save(_tracks);

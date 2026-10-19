@@ -285,6 +285,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailAircraft => 'Aircraft';
 
   @override
+  String get flightDetailAircraftEdit => 'Edit Aircraft';
+
+  @override
   String get flightDetailAircraftClass => 'FAI class';
 
   @override

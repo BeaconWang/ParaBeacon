@@ -632,6 +632,12 @@ abstract class AppLocalizations {
   /// **'Aircraft'**
   String get flightDetailAircraft;
 
+  /// No description provided for @flightDetailAircraftEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Aircraft'**
+  String get flightDetailAircraftEdit;
+
   /// No description provided for @flightDetailAircraftClass.
   ///
   /// In en, this message translates to:

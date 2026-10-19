@@ -276,6 +276,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightDetailAircraft => '飞行器';
 
   @override
+  String get flightDetailAircraftEdit => '编辑飞行器';
+
+  @override
   String get flightDetailAircraftClass => 'FAI 类别';
 
   @override

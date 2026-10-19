@@ -24,7 +24,7 @@ class FlightShareCardService {
   static final FlightShareCardService instance = FlightShareCardService._();
 
   static const int _w = 1080;
-  static const int _h = 2480;
+  static const int _h = 3800;
 
   /// Renders the card for [track] and returns the PNG bytes. All on-card text
   /// is localized through [l10n], so the card follows the app's current
@@ -38,8 +38,13 @@ class FlightShareCardService {
     _paintBackground(canvas, size);
     _paintHeader(canvas, size, track);
     final mapBottom = _paintTrackMap(canvas, size, track, l10n);
-    final profileBottom =
-        _paintAltitudeProfile(canvas, size, track, l10n, top: mapBottom + 28);
+    final profileBottom = _paintAltitudeProfile(
+      canvas,
+      size,
+      track,
+      l10n,
+      top: mapBottom + 28,
+    );
     _paintStats(canvas, size, track, stats, l10n, top: profileBottom + 36);
     _paintFooter(canvas, size, track, l10n);
 
@@ -78,10 +83,9 @@ class FlightShareCardService {
   }
 
   Future<void> _share(String path, String fileName) async {
-    await Share.shareXFiles(
-      [XFile(path, mimeType: 'image/png', name: fileName)],
-      subject: 'ParaBeacon flight',
-    );
+    await Share.shareXFiles([
+      XFile(path, mimeType: 'image/png', name: fileName),
+    ], subject: 'ParaBeacon flight');
   }
 
   // ── Painting ───────────────────────────────────────────────────────────
@@ -110,8 +114,8 @@ class FlightShareCardService {
     final start = track.firstRecordedTime;
     final end = track.endTime != null ? track.lastRecordedTime : null;
     final when = end != null
-        ? '${_fmtDate(start)}  –  ${_fmtTime(end)}'
-        : _fmtDate(start);
+        ? '${_fmtDateOnly(start)}  ·  ${_fmtTime(start)} – ${_fmtTime(end)}'
+        : '${_fmtDateOnly(start)}  ·  ${_fmtTime(start)}';
     _text(
       canvas,
       when,
@@ -121,10 +125,10 @@ class FlightShareCardService {
       weight: FontWeight.w600,
     );
 
-    final site = [track.takeoffSite, track.landingSite]
-        .where((e) => e != null && e.isNotEmpty)
-        .cast<String>()
-        .join('  →  ');
+    final site = [
+      track.takeoffSite,
+      track.landingSite,
+    ].where((e) => e != null && e.isNotEmpty).cast<String>().join('  →  ');
     if (site.isNotEmpty) {
       _text(
         canvas,
@@ -139,7 +143,11 @@ class FlightShareCardService {
 
   /// Draws the track shape into a framed box and returns its bottom Y.
   double _paintTrackMap(
-      Canvas canvas, Size size, FlightTrack track, AppLocalizations l10n) {
+    Canvas canvas,
+    Size size,
+    FlightTrack track,
+    AppLocalizations l10n,
+  ) {
     const left = 60.0;
     const top = 230.0;
     final boxW = _w - 120.0;
@@ -171,10 +179,10 @@ class FlightShareCardService {
       final offY = top + (boxH - spanLat * scale) / 2;
 
       Offset project(double lat, double lon) => Offset(
-            offX + (lon - minLon) * scale,
-            // Flip Y so north is up.
-            offY + (maxLat - lat) * scale,
-          );
+        offX + (lon - minLon) * scale,
+        // Flip Y so north is up.
+        offY + (maxLat - lat) * scale,
+      );
 
       // Colour the track by altitude so climbs/descents read at a glance.
       double minAlt = double.infinity, maxAlt = double.negativeInfinity;
@@ -191,24 +199,44 @@ class FlightShareCardService {
         ..strokeJoin = StrokeJoin.round;
       for (var i = 1; i < samples.length; i++) {
         final a = project(
-            samples[i - 1].data.latitude, samples[i - 1].data.longitude);
+          samples[i - 1].data.latitude,
+          samples[i - 1].data.longitude,
+        );
         final b = project(samples[i].data.latitude, samples[i].data.longitude);
-        final t = ((samples[i].data.altitude - minAlt) / altSpan).clamp(0.0, 1.0);
+        final t = ((samples[i].data.altitude - minAlt) / altSpan).clamp(
+          0.0,
+          1.0,
+        );
         segPaint.color = _altitudeColor(t);
         canvas.drawLine(a, b, segPaint);
       }
 
       final start = project(
-          samples.first.data.latitude, samples.first.data.longitude);
-      final end =
-          project(samples.last.data.latitude, samples.last.data.longitude);
+        samples.first.data.latitude,
+        samples.first.data.longitude,
+      );
+      final end = project(
+        samples.last.data.latitude,
+        samples.last.data.longitude,
+      );
       canvas.drawCircle(start, 13, Paint()..color = const Color(0xFF4ADE80));
       canvas.drawCircle(end, 13, Paint()..color = const Color(0xFFFF6B6B));
-      _text(canvas, l10n.flightDetailTakeoff,
-          Offset(start.dx + 18, start.dy - 16),
-          fontSize: 22, color: const Color(0xFFCDEFD8), weight: FontWeight.w600);
-      _text(canvas, l10n.flightDetailLanding, Offset(end.dx + 18, end.dy - 16),
-          fontSize: 22, color: const Color(0xFFFFD2D2), weight: FontWeight.w600);
+      _text(
+        canvas,
+        l10n.flightDetailTakeoff,
+        Offset(start.dx + 18, start.dy - 16),
+        fontSize: 22,
+        color: const Color(0xFFCDEFD8),
+        weight: FontWeight.w600,
+      );
+      _text(
+        canvas,
+        l10n.flightDetailLanding,
+        Offset(end.dx + 18, end.dy - 16),
+        fontSize: 22,
+        color: const Color(0xFFFFD2D2),
+        weight: FontWeight.w600,
+      );
     } else {
       _text(
         canvas,
@@ -248,11 +276,18 @@ class FlightShareCardService {
 
     canvas.drawRRect(rrect, Paint()..color = const Color(0x22000000));
 
-    _text(canvas, l10n.unitAltitude, Offset(left + 28, top + 18),
-        fontSize: 24, color: const Color(0xFF8FB6CC), weight: FontWeight.w600);
+    _text(
+      canvas,
+      l10n.unitAltitude,
+      Offset(left + 28, top + 18),
+      fontSize: 24,
+      color: const Color(0xFF8FB6CC),
+      weight: FontWeight.w600,
+    );
 
-    final samples =
-        track.samples.where((s) => s.data.altitude.isFinite).toList();
+    final samples = track.samples
+        .where((s) => s.data.altitude.isFinite)
+        .toList();
     if (samples.length >= 2) {
       final startMs = samples.first.time.millisecondsSinceEpoch;
       final spanMs = math.max(
@@ -277,9 +312,9 @@ class FlightShareCardService {
       final plotH = plotBottom - plotTop;
 
       Offset project(int ms, double alt) => Offset(
-            plotLeft + (ms - startMs) / spanMs * plotW,
-            plotBottom - (alt - minAlt) / altSpan * plotH,
-          );
+        plotLeft + (ms - startMs) / spanMs * plotW,
+        plotBottom - (alt - minAlt) / altSpan * plotH,
+      );
 
       canvas.save();
       canvas.clipRRect(rrect);
@@ -287,7 +322,9 @@ class FlightShareCardService {
       final line = Path();
       for (var i = 0; i < samples.length; i++) {
         final o = project(
-            samples[i].time.millisecondsSinceEpoch, samples[i].data.altitude);
+          samples[i].time.millisecondsSinceEpoch,
+          samples[i].data.altitude,
+        );
         if (i == 0) {
           line.moveTo(o.dx, o.dy);
         } else {
@@ -320,12 +357,20 @@ class FlightShareCardService {
 
       canvas.restore();
 
-      _text(canvas, '${maxAlt.toStringAsFixed(0)} m',
-          Offset(plotLeft, plotTop - 30),
-          fontSize: 22, color: const Color(0xFFB9D4E3));
-      _text(canvas, '${minAlt.toStringAsFixed(0)} m',
-          Offset(plotLeft, plotBottom + 4),
-          fontSize: 22, color: const Color(0xFFB9D4E3));
+      _text(
+        canvas,
+        '${maxAlt.toStringAsFixed(0)} m',
+        Offset(plotLeft, plotTop - 30),
+        fontSize: 22,
+        color: const Color(0xFFB9D4E3),
+      );
+      _text(
+        canvas,
+        '${minAlt.toStringAsFixed(0)} m',
+        Offset(plotLeft, plotBottom + 4),
+        fontSize: 22,
+        color: const Color(0xFFB9D4E3),
+      );
     } else {
       _text(
         canvas,
@@ -361,9 +406,8 @@ class FlightShareCardService {
     return Color.lerp(stops[i], stops[i + 1], x - i)!;
   }
 
-  /// Paints the full flight read-out: every derived performance metric in a
-  /// 3-column grid, followed by Sites, Equipment and Aircraft sections. Returns
-  /// the bottom Y so the footer can sit below it.
+  /// Paints all available Flight details, grouped into the same categories as
+  /// the detail screen. Returns the content bottom so the footer stays clear.
   double _paintStats(
     Canvas canvas,
     Size size,
@@ -372,160 +416,285 @@ class FlightShareCardService {
     AppLocalizations l10n, {
     required double top,
   }) {
-    const left = 60.0;
+    String km(double value) => '${(value / 1000).toStringAsFixed(2)} km';
+    String m(double value) => '${value.toStringAsFixed(0)} m';
+    String ms(double value) => '${value.toStringAsFixed(1)} m/s';
+    String kph(double value) => '${value.toStringAsFixed(1)} km/h';
 
-    // ── Performance grid (all metrics the detail view shows) ───────────────
-    String km(double m) => '${(m / 1000).toStringAsFixed(1)} km';
-    String m(double v) => '${v.toStringAsFixed(0)} m';
-    String ms(double v) => '${v.toStringAsFixed(1)} m/s';
-    String kph(double v) => '${v.toStringAsFixed(0)} km/h';
-
-    final entries = <(String, String)>[
-      (l10n.flightDetailDuration, _fmtDuration(track.duration)),
-      (l10n.flightDetailMovingTime, _fmtDuration(stats.movingTime)),
-      (l10n.flightDetailSamples, '${track.pointCount}'),
-      (l10n.flightDetailDistance, km(stats.trackDistanceM)),
-      (l10n.flightDetailStraightDistance, km(stats.straightDistanceM)),
-      if (stats.maxDistanceFromStartM > 0)
-        (l10n.flightDetailMaxFromStart, km(stats.maxDistanceFromStartM)),
-      if (stats.trackEfficiency > 0)
-        (l10n.flightDetailTrackEfficiency,
-            '${(stats.trackEfficiency * 100).toStringAsFixed(0)}%'),
-      if (stats.faiTriangleM > 0)
+    final start = track.firstRecordedTime;
+    final end = track.endTime != null ? track.lastRecordedTime : null;
+    var y = _paintMetricSection(
+      canvas,
+      l10n.flightDetailFlight,
+      [
+        (l10n.flightReportDate, _fmtDateOnly(start)),
+        (l10n.flightDetailStart, '${_fmtDateOnly(start)} ${_fmtTime(start)}'),
         (
-          stats.faiClosed
-              ? '${l10n.flightDetailFaiTriangle} (${l10n.flightDetailFaiClosed})'
-              : l10n.flightDetailFaiTriangle,
-          km(stats.faiTriangleM),
+          l10n.flightDetailEnd,
+          end != null ? '${_fmtDateOnly(end)} ${_fmtTime(end)}' : '—',
         ),
-      (l10n.flightDetailMaxAltitude, m(track.maxAltitude)),
-      (l10n.flightDetailMinAltitude, m(track.minAltitude)),
-      if (stats.altitudeGainedM > 0)
-        (l10n.flightDetailAltGained, m(stats.altitudeGainedM)),
-      if (stats.altitudeLostM > 0)
-        (l10n.flightDetailAltLost, m(stats.altitudeLostM)),
-      (l10n.flightDetailMaxClimb, ms(track.maxClimb)),
-      (l10n.flightDetailMaxSink, ms(track.maxSink)),
-      if (stats.avgClimbMs > 0) (l10n.flightDetailAvgClimb, ms(stats.avgClimbMs)),
-      if (stats.avgSinkMs < 0) (l10n.flightDetailAvgSink, ms(stats.avgSinkMs)),
-      if (stats.avgGroundSpeedKph > 0)
-        (l10n.flightDetailAvgGroundSpeed, kph(stats.avgGroundSpeedKph)),
-      if (stats.avgCruiseSpeedKph > 0)
-        (l10n.flightDetailAvgCruiseSpeed, kph(stats.avgCruiseSpeedKph)),
-      if (stats.maxSpeedKph > 0)
-        (l10n.flightDetailMaxSpeed, kph(stats.maxSpeedKph)),
-      if (stats.avgGlideRatio > 0)
-        (l10n.flightDetailAvgGlideRatio,
-            '${stats.avgGlideRatio.toStringAsFixed(1)}:1'),
-      (l10n.flightDetailThermals, '${stats.thermalCount}'),
-      if (stats.climbTime > Duration.zero)
-        (l10n.flightDetailClimbTime, _fmtDuration(stats.climbTime)),
-      if (stats.glideTime > Duration.zero)
-        (l10n.flightDetailGlideTime, _fmtDuration(stats.glideTime)),
-      if (stats.sinkTime > Duration.zero)
-        (l10n.flightDetailSinkTime, _fmtDuration(stats.sinkTime)),
-    ];
+        (l10n.flightDetailDuration, _fmtDuration(track.duration)),
+        (l10n.flightDetailSamples, '${track.pointCount}'),
+        if (track.pilotName?.isNotEmpty ?? false)
+          (l10n.flightDetailPilot, track.pilotName!),
+      ],
+      left: 60,
+      top: top,
+    );
 
-    const cols = 3;
-    final cellW = (_w - 120.0) / cols;
-    const cellH = 104.0;
-    for (var i = 0; i < entries.length; i++) {
-      final col = i % cols;
-      final row = i ~/ cols;
-      final x = left + col * cellW;
-      final y = top + row * cellH;
-      _text(canvas, entries[i].$1, Offset(x, y),
-          fontSize: 24,
-          color: const Color(0xFF8FB6CC),
-          weight: FontWeight.w500,
-          maxWidth: cellW - 16);
-      _text(canvas, entries[i].$2, Offset(x, y + 32),
-          fontSize: 38,
-          color: Colors.white,
-          weight: FontWeight.w700,
-          maxWidth: cellW - 16);
-    }
+    final takeoff = _endpointText(
+      track.takeoffSite,
+      track.takeoffLatitude,
+      track.takeoffLongitude,
+      track.takeoffAltitude,
+    );
+    final landing = _endpointText(
+      track.landingSite,
+      track.landingLatitude,
+      track.landingLongitude,
+      track.landingAltitude,
+    );
+    y = _paintMetricSection(
+      canvas,
+      l10n.flightDetailRoute,
+      [
+        (l10n.flightDetailDistance, km(track.distanceM)),
+        if (takeoff != null) (l10n.flightDetailTakeoff, takeoff),
+        if (landing != null) (l10n.flightDetailLanding, landing),
+      ],
+      left: 60,
+      top: y,
+    );
 
-    var y = top + ((entries.length + cols - 1) ~/ cols) * cellH + 20;
+    y = _paintMetricSection(
+      canvas,
+      l10n.flightDetailAltitude,
+      [
+        (l10n.flightDetailMaxAltitude, m(track.maxAltitude)),
+        (l10n.flightDetailMinAltitude, m(track.minAltitude)),
+        (l10n.flightDetailMaxClimb, ms(track.maxClimb)),
+        (l10n.flightDetailMaxSink, ms(track.maxSink)),
+        if (!track.hasSamples && track.maxAltGainM != null)
+          (l10n.flightDetailMaxAltGain, m(track.maxAltGainM!)),
+        if (!track.hasSamples && track.elevationDropM != null)
+          (l10n.flightDetailElevationDrop, m(track.elevationDropM!)),
+      ],
+      left: 60,
+      top: y,
+    );
 
-    // ── Sites ──────────────────────────────────────────────────────────────
-    final sites = <String>[
-      if (track.takeoffSite?.isNotEmpty ?? false)
-        '${l10n.flightDetailTakeoff}: ${track.takeoffSite}',
-      if (track.landingSite?.isNotEmpty ?? false)
-        '${l10n.flightDetailLanding}: ${track.landingSite}',
-    ];
-    if (sites.isNotEmpty) {
-      y = _paintSection(canvas, l10n.flightDetailSiteNames, sites,
-          left: left, top: y);
-    }
-
-    // ── Equipment ───────────────────────────────────────────────────────────
-    if (track.hasEquipment) {
-      final equip = [track.gliderName, track.harnessName, track.helmetName]
-          .where((e) => e != null && e.isNotEmpty)
-          .cast<String>()
-          .join('  ·  ');
-      y = _paintSection(canvas, l10n.equipment, [equip], left: left, top: y);
-    }
-
-    // ── Aircraft (every configured field) ────────────────────────────────────
-    final aircraft = <String>[
-      if (track.aircraftName?.isNotEmpty ?? false) track.aircraftName!,
-      if ((track.aircraftManufacturer?.isNotEmpty ?? false) ||
-          (track.aircraftModel?.isNotEmpty ?? false))
-        [track.aircraftManufacturer, track.aircraftModel]
-            .where((e) => e != null && e.isNotEmpty)
-            .join(' '),
-      if (track.aircraftFaiClass?.isNotEmpty ?? false)
-        '${l10n.flightDetailAircraftClass} ${track.aircraftFaiClass}',
-      if (track.aircraftCategory?.isNotEmpty ?? false)
-        track.aircraftCategory!,
-      if (track.aircraftTandem == true) l10n.flightDetailAircraftTandem,
-      if (track.aircraftEngineType?.isNotEmpty ?? false)
-        '${l10n.flightDetailAircraftEngine}: ${track.aircraftEngineType}',
-      if (track.aircraftTrimSpeedKmh != null)
-        '${l10n.flightDetailAircraftTrimSpeed} '
-            '${track.aircraftTrimSpeedKmh!.toStringAsFixed(0)} km/h',
-      if (track.aircraftGoalGlideRatio != null)
-        '${l10n.flightDetailAircraftGlideRatio} '
-            '${track.aircraftGoalGlideRatio!.toStringAsFixed(1)}:1',
-    ];
-    if (aircraft.isNotEmpty) {
-      y = _paintSection(
+    if (track.hasSamples) {
+      y = _paintMetricSection(
         canvas,
-        l10n.flightDetailAircraft,
-        [aircraft.join('  ·  ')],
-        left: left,
+        l10n.flightDetailRouteMetrics,
+        [
+          (l10n.flightDetailStraightDistance, km(stats.straightDistanceM)),
+          if (stats.threeTurnpointM > 0)
+            (
+              l10n.flightDetailThreeTurnpoints,
+              _routeText(stats.threeTurnpointM, stats.threeTurnpointLegsM, km),
+            ),
+          if (stats.faiTriangleM > 0)
+            (
+              l10n.flightDetailFaiTriangle,
+              _triangleText(
+                l10n,
+                stats.faiTriangleM,
+                stats.faiTriangleLegsM,
+                stats.faiClosingM,
+                stats.faiClosed,
+                km,
+              ),
+            ),
+          if (stats.flatTriangleM > 0)
+            (
+              l10n.flightDetailFlatTriangle,
+              _triangleText(
+                l10n,
+                stats.flatTriangleM,
+                stats.flatTriangleLegsM,
+                stats.flatClosingM,
+                stats.flatClosed,
+                km,
+              ),
+            ),
+          (l10n.flightDetailMaxFromStart, km(stats.maxDistanceFromStartM)),
+          (
+            l10n.flightDetailTrackEfficiency,
+            '${(stats.trackEfficiency * 100).toStringAsFixed(0)} %',
+          ),
+        ],
+        left: 60,
+        top: y,
+      );
+      y = _paintMetricSection(
+        canvas,
+        l10n.flightDetailSpeedGlide,
+        [
+          (l10n.flightDetailAvgGroundSpeed, kph(stats.avgGroundSpeedKph)),
+          (l10n.flightDetailAvgCruiseSpeed, kph(stats.avgCruiseSpeedKph)),
+          (l10n.flightDetailMaxSpeed, kph(stats.maxSpeedKph)),
+          (
+            l10n.flightDetailAvgGlideRatio,
+            stats.avgGlideRatio > 0
+                ? stats.avgGlideRatio.toStringAsFixed(1)
+                : '—',
+          ),
+        ],
+        left: 60,
+        top: y,
+      );
+      y = _paintMetricSection(
+        canvas,
+        l10n.flightDetailClimbAltitude,
+        [
+          (l10n.flightDetailAvgClimb, ms(stats.avgClimbMs)),
+          (l10n.flightDetailAvgSink, ms(stats.avgSinkMs)),
+          (l10n.flightDetailThermals, '${stats.thermalCount}'),
+          (l10n.flightDetailAltGained, m(stats.altitudeGainedM)),
+          (l10n.flightDetailAltLost, m(stats.altitudeLostM)),
+          (
+            l10n.flightDetailMaxAltGain,
+            m(track.maxAltGainM ?? stats.maxAltGainM),
+          ),
+          (
+            l10n.flightDetailElevationDrop,
+            m(track.elevationDropM ?? stats.elevationDropM),
+          ),
+        ],
+        left: 60,
+        top: y,
+      );
+      y = _paintMetricSection(
+        canvas,
+        l10n.flightDetailTimeBreakdown,
+        [
+          (l10n.flightDetailClimbTime, _fmtDuration(stats.climbTime)),
+          (l10n.flightDetailGlideTime, _fmtDuration(stats.glideTime)),
+          (l10n.flightDetailSinkTime, _fmtDuration(stats.sinkTime)),
+          (l10n.flightDetailMovingTime, _fmtDuration(stats.movingTime)),
+        ],
+        left: 60,
         top: y,
       );
     }
 
+    final equipment = <(String, String)>[
+      if (track.gliderName?.isNotEmpty ?? false)
+        (l10n.equipmentGlider, track.gliderName!),
+      if (track.harnessName?.isNotEmpty ?? false)
+        (l10n.equipmentHarness, track.harnessName!),
+      if (track.helmetName?.isNotEmpty ?? false)
+        (l10n.equipmentHelmet, track.helmetName!),
+    ];
+    if (equipment.isNotEmpty) {
+      y = _paintMetricSection(
+        canvas,
+        l10n.equipment,
+        equipment,
+        left: 60,
+        top: y,
+      );
+    }
+
+    final aircraft = <(String, String)>[
+      if (track.aircraftName?.isNotEmpty ?? false)
+        (l10n.flightDetailAircraftName, track.aircraftName!),
+      if (track.aircraftManufacturer?.isNotEmpty ?? false)
+        (l10n.flightDetailAircraftManufacturer, track.aircraftManufacturer!),
+      if (track.aircraftModel?.isNotEmpty ?? false)
+        (l10n.flightDetailAircraftModel, track.aircraftModel!),
+      if (track.aircraftFaiClass?.isNotEmpty ?? false)
+        (l10n.flightDetailAircraftClass, track.aircraftFaiClass!),
+      if (track.aircraftCategory?.isNotEmpty ?? false)
+        (l10n.flightDetailAircraftCategory, track.aircraftCategory!),
+      if (track.aircraftTandem != null)
+        (
+          l10n.flightDetailAircraftTandem,
+          track.aircraftTandem!
+              ? l10n.aircraftTandemYes
+              : l10n.aircraftTandemNo,
+        ),
+      if (track.aircraftEngineType?.isNotEmpty ?? false)
+        (l10n.flightDetailAircraftEngine, track.aircraftEngineType!),
+      if (track.aircraftTrimSpeedKmh != null)
+        (
+          l10n.flightDetailAircraftTrimSpeed,
+          '${track.aircraftTrimSpeedKmh!.toStringAsFixed(1)} km/h',
+        ),
+      if (track.aircraftGoalGlideRatio != null)
+        (
+          l10n.flightDetailAircraftGlideRatio,
+          track.aircraftGoalGlideRatio!.toStringAsFixed(2),
+        ),
+    ];
+    if (aircraft.isNotEmpty) {
+      y = _paintMetricSection(
+        canvas,
+        l10n.flightDetailAircraft,
+        aircraft,
+        left: 60,
+        top: y,
+      );
+    }
     return y;
   }
 
-  /// Draws a labelled section (heading + one or more wrapped text lines) and
-  /// returns the Y below it.
-  double _paintSection(
+  double _paintMetricSection(
     Canvas canvas,
     String label,
-    List<String> lines, {
+    List<(String, String)> entries, {
     required double left,
     required double top,
   }) {
-    _text(canvas, label.toUpperCase(), Offset(left, top),
-        fontSize: 22, color: const Color(0xFF5E8198), weight: FontWeight.w700);
-    var y = top + 34;
-    for (final line in lines) {
-      _text(canvas, line, Offset(left, y),
-          fontSize: 28, color: const Color(0xFFDCEAF3), maxWidth: _w - 120.0);
-      y += 42;
+    if (entries.isEmpty) return top;
+    _text(
+      canvas,
+      label.toUpperCase(),
+      Offset(left, top),
+      fontSize: 22,
+      color: const Color(0xFF5E8198),
+      weight: FontWeight.w700,
+    );
+
+    const columns = 3;
+    const cellHeight = 112.0;
+    final cellWidth = (_w - 120.0) / columns;
+    for (var i = 0; i < entries.length; i++) {
+      final column = i % columns;
+      final row = i ~/ columns;
+      final x = left + column * cellWidth;
+      final y = top + 42 + row * cellHeight;
+      _text(
+        canvas,
+        entries[i].$1,
+        Offset(x, y),
+        fontSize: 22,
+        color: const Color(0xFF8FB6CC),
+        weight: FontWeight.w500,
+        maxWidth: cellWidth - 16,
+      );
+      _text(
+        canvas,
+        entries[i].$2,
+        Offset(x, y + 30),
+        fontSize: entries[i].$2.length > 24 ? 18 : 30,
+        color: Colors.white,
+        weight: FontWeight.w700,
+        maxWidth: cellWidth - 16,
+        maxLines: 3,
+      );
     }
-    return y + 14;
+    final rowCount = (entries.length + columns - 1) ~/ columns;
+    return top + 42 + rowCount * cellHeight + 14;
   }
 
   void _paintFooter(
-      Canvas canvas, Size size, FlightTrack track, AppLocalizations l10n) {
+    Canvas canvas,
+    Size size,
+    FlightTrack track,
+    AppLocalizations l10n,
+  ) {
     _text(
       canvas,
       l10n.flightShareCardFooter(track.pointCount),
@@ -543,27 +712,82 @@ class FlightShareCardService {
     required Color color,
     FontWeight weight = FontWeight.normal,
     double? maxWidth,
+    int maxLines = 2,
   }) {
     final tp = TextPainter(
       text: TextSpan(
         text: text,
-        style: TextStyle(
-          color: color,
-          fontSize: fontSize,
-          fontWeight: weight,
-        ),
+        style: TextStyle(color: color, fontSize: fontSize, fontWeight: weight),
       ),
       textDirection: TextDirection.ltr,
-      maxLines: 2,
+      maxLines: maxLines,
       ellipsis: '…',
     );
     tp.layout(maxWidth: maxWidth ?? (_w - offset.dx - 40));
     tp.paint(canvas, offset);
   }
 
-  static String _fmtDate(DateTime t) {
+  static String _fmtDateOnly(DateTime t) {
     String two(int n) => n.toString().padLeft(2, '0');
-    return '${t.year}-${two(t.month)}-${two(t.day)}  ${two(t.hour)}:${two(t.minute)}';
+    return '${t.year}-${two(t.month)}-${two(t.day)}';
+  }
+
+  static String _routeText(
+    double totalM,
+    List<double> legsM,
+    String Function(double) formatKm,
+  ) {
+    final legs = legsM.isNotEmpty ? ' · ${_legsText(legsM, formatKm)}' : '';
+    return '${formatKm(totalM)}$legs';
+  }
+
+  static String _triangleText(
+    AppLocalizations l10n,
+    double totalM,
+    List<double> legsM,
+    double closingM,
+    bool closed,
+    String Function(double) formatKm,
+  ) {
+    final legs = legsM.isNotEmpty ? ' · ${_legsText(legsM, formatKm)}' : '';
+    final closing = closingM > 0
+        ? ' · ${l10n.flightDetailClosing} ${closingM.round()} m'
+        : '';
+    final mark = closed ? ' (${l10n.flightDetailFaiClosed})' : '';
+    return '${formatKm(totalM)}$legs$closing$mark';
+  }
+
+  static String _legsText(
+    List<double> legsM,
+    String Function(double) formatKm,
+  ) => legsM
+      .map((value) => value >= 1000 ? formatKm(value) : '${value.round()}m')
+      .join(' / ');
+
+  static String? _endpointText(
+    String? site,
+    double? latitude,
+    double? longitude,
+    double? altitude,
+  ) {
+    final coords = _formatCoordinates(latitude, longitude);
+    final parts = <String>[
+      if (coords != null) coords,
+      if (altitude != null) '${altitude.round()} m',
+    ];
+    final detail = parts.join(' · ');
+    final hasSite = site?.isNotEmpty ?? false;
+    if (hasSite && detail.isNotEmpty) return '$site ($detail)';
+    if (hasSite) return site;
+    return detail.isNotEmpty ? detail : null;
+  }
+
+  static String? _formatCoordinates(double? latitude, double? longitude) {
+    if (latitude == null || longitude == null) return null;
+    final northSouth = latitude >= 0 ? 'N' : 'S';
+    final eastWest = longitude >= 0 ? 'E' : 'W';
+    return '${latitude.abs().toStringAsFixed(4)}°$northSouth, '
+        '${longitude.abs().toStringAsFixed(4)}°$eastWest';
   }
 
   static String _fmtTime(DateTime t) {

@@ -38,11 +38,22 @@ class FlightReportService {
     final contentW = PdfPageFormat.a4.width - _pageMargin * 2;
 
     // ── Optional sections, built only when they carry information ───────────
-    final siteRows = <List<String>>[
-      if (track.takeoffSite?.isNotEmpty ?? false)
-        [l10n.flightDetailTakeoff, track.takeoffSite!],
-      if (track.landingSite?.isNotEmpty ?? false)
-        [l10n.flightDetailLanding, track.landingSite!],
+    final takeoff = _endpointText(
+      track.takeoffSite,
+      track.takeoffLatitude,
+      track.takeoffLongitude,
+      track.takeoffAltitude,
+    );
+    final landing = _endpointText(
+      track.landingSite,
+      track.landingLatitude,
+      track.landingLongitude,
+      track.landingAltitude,
+    );
+    final routeRows = <List<String>>[
+      [l10n.flightDetailDistance, _km(track.distanceM)],
+      if (takeoff != null) [l10n.flightDetailTakeoff, takeoff],
+      if (landing != null) [l10n.flightDetailLanding, landing],
     ];
 
     final equipRows = <List<String>>[
@@ -68,19 +79,21 @@ class FlightReportService {
       if (track.aircraftTandem != null)
         [
           l10n.flightDetailAircraftTandem,
-          track.aircraftTandem! ? l10n.aircraftTandemYes : l10n.aircraftTandemNo,
+          track.aircraftTandem!
+              ? l10n.aircraftTandemYes
+              : l10n.aircraftTandemNo,
         ],
       if (track.aircraftEngineType?.isNotEmpty ?? false)
         [l10n.flightDetailAircraftEngine, track.aircraftEngineType!],
       if (track.aircraftTrimSpeedKmh != null)
         [
           l10n.flightDetailAircraftTrimSpeed,
-          '${track.aircraftTrimSpeedKmh!.toStringAsFixed(0)} km/h'
+          '${track.aircraftTrimSpeedKmh!.toStringAsFixed(1)} km/h',
         ],
       if (track.aircraftGoalGlideRatio != null)
         [
           l10n.flightDetailAircraftGlideRatio,
-          '${track.aircraftGoalGlideRatio!.toStringAsFixed(1)}:1'
+          track.aircraftGoalGlideRatio!.toStringAsFixed(2),
         ],
     ];
 
@@ -96,13 +109,17 @@ class FlightReportService {
             children: [
               pw.Text(
                 l10n.flightReportGeneratedBy,
-                style:
-                    const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                style: const pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColors.grey600,
+                ),
               ),
               pw.Text(
                 l10n.flightReportPage(context.pageNumber, context.pagesCount),
-                style:
-                    const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                style: const pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColors.grey600,
+                ),
               ),
             ],
           ),
@@ -112,7 +129,7 @@ class FlightReportService {
           final start = track.firstRecordedTime;
           final when = end != null
               ? '${_fmtDate(start)}  ·  '
-                  '${_fmtTime(start)} – ${_fmtTime(end)}'
+                    '${_fmtTime(start)} - ${_fmtTime(end)}'
               : _fmtDate(start);
 
           return [
@@ -124,18 +141,8 @@ class FlightReportService {
             pw.Text(title, style: const pw.TextStyle(fontSize: 12)),
             pw.Text(
               when,
-              style:
-                  const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+              style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
             ),
-            if ([track.takeoffSite, track.landingSite]
-                .any((e) => e != null && e.isNotEmpty))
-              pw.Text(
-                [track.takeoffSite, track.landingSite]
-                    .where((e) => e != null && e.isNotEmpty)
-                    .join('  →  '),
-                style: const pw.TextStyle(
-                    fontSize: 11, color: PdfColors.blueGrey700),
-              ),
             pw.Divider(),
             pw.SizedBox(height: 4),
 
@@ -147,63 +154,160 @@ class FlightReportService {
             _altitudeProfile(track, contentW, l10n),
             pw.SizedBox(height: 12),
 
-            // ── Tables ──────────────────────────────────────────────────────
-            _section(l10n.flightReportSummary),
+            // ── Flight and route details ────────────────────────────────────
+            _section(l10n.flightDetailFlight),
             _table([
               [l10n.flightReportDate, _fmtDate(start)],
-              [l10n.flightDetailStart, _fmtTime(start)],
-              [l10n.flightDetailEnd, end != null ? _fmtTime(end) : '—'],
+              [l10n.flightDetailStart, '${_fmtDate(start)} ${_fmtTime(start)}'],
+              [
+                l10n.flightDetailEnd,
+                end != null ? '${_fmtDate(end)} ${_fmtTime(end)}' : '-',
+              ],
               [l10n.flightDetailDuration, _fmtDuration(track.duration)],
-              [l10n.flightDetailMovingTime, _fmtDuration(stats.movingTime)],
               [l10n.flightDetailSamples, '${track.pointCount}'],
+              if (track.pilotName?.isNotEmpty ?? false)
+                [l10n.flightDetailPilot, track.pilotName!],
             ]),
             pw.SizedBox(height: 12),
-            _section(l10n.flightReportDistanceAltitude),
+            _section(l10n.flightDetailRoute),
+            _table(routeRows),
+            pw.SizedBox(height: 12),
+            _section(l10n.flightDetailAltitude),
             _table([
-              [l10n.flightDetailDistance, _km(stats.trackDistanceM)],
-              [l10n.flightDetailStraightDistance, _km(stats.straightDistanceM)],
-              [l10n.flightDetailMaxFromStart, _km(stats.maxDistanceFromStartM)],
-              if (stats.faiTriangleM > 0)
+              [
+                l10n.flightDetailMaxAltitude,
+                '${track.maxAltitude.toStringAsFixed(0)} m',
+              ],
+              [
+                l10n.flightDetailMinAltitude,
+                '${track.minAltitude.toStringAsFixed(0)} m',
+              ],
+              [
+                l10n.flightDetailMaxClimb,
+                '${track.maxClimb.toStringAsFixed(1)} m/s',
+              ],
+              [
+                l10n.flightDetailMaxSink,
+                '${track.maxSink.toStringAsFixed(1)} m/s',
+              ],
+              if (!track.hasSamples && track.maxAltGainM != null)
                 [
-                  stats.faiClosed
-                      ? '${l10n.flightDetailFaiTriangle} (${l10n.flightDetailFaiClosed})'
-                      : l10n.flightDetailFaiTriangle,
-                  _km(stats.faiTriangleM),
+                  l10n.flightDetailMaxAltGain,
+                  '${track.maxAltGainM!.toStringAsFixed(0)} m',
                 ],
-              [
-                l10n.flightDetailTrackEfficiency,
-                '${(stats.trackEfficiency * 100).toStringAsFixed(0)} %'
-              ],
-              [l10n.flightDetailMaxAltitude, '${track.maxAltitude.toStringAsFixed(0)} m'],
-              [l10n.flightDetailMinAltitude, '${track.minAltitude.toStringAsFixed(0)} m'],
-              [l10n.flightDetailAltGained, '${stats.altitudeGainedM.toStringAsFixed(0)} m'],
-              [l10n.flightDetailAltLost, '${stats.altitudeLostM.toStringAsFixed(0)} m'],
+              if (!track.hasSamples && track.elevationDropM != null)
+                [
+                  l10n.flightDetailElevationDrop,
+                  '${track.elevationDropM!.toStringAsFixed(0)} m',
+                ],
             ]),
-            pw.SizedBox(height: 12),
-            _section(l10n.flightDetailPerformance),
-            _table([
-              [l10n.flightDetailAvgGroundSpeed, '${stats.avgGroundSpeedKph.toStringAsFixed(1)} km/h'],
-              [l10n.flightDetailAvgCruiseSpeed, '${stats.avgCruiseSpeedKph.toStringAsFixed(1)} km/h'],
-              [l10n.flightDetailMaxSpeed, '${stats.maxSpeedKph.toStringAsFixed(1)} km/h'],
-              [l10n.flightDetailMaxClimb, '${track.maxClimb.toStringAsFixed(1)} m/s'],
-              [l10n.flightDetailMaxSink, '${track.maxSink.toStringAsFixed(1)} m/s'],
-              [l10n.flightDetailAvgClimb, '${stats.avgClimbMs.toStringAsFixed(1)} m/s'],
-              [l10n.flightDetailAvgSink, '${stats.avgSinkMs.toStringAsFixed(1)} m/s'],
-              [
-                l10n.flightDetailAvgGlideRatio,
-                stats.avgGlideRatio > 0
-                    ? '${stats.avgGlideRatio.toStringAsFixed(1)}:1'
-                    : '—'
-              ],
-              [l10n.flightDetailThermals, '${stats.thermalCount}'],
-              [l10n.flightDetailClimbTime, _fmtDuration(stats.climbTime)],
-              [l10n.flightDetailGlideTime, _fmtDuration(stats.glideTime)],
-              [l10n.flightDetailSinkTime, _fmtDuration(stats.sinkTime)],
-            ]),
-            if (siteRows.isNotEmpty) ...[
+            if (track.hasSamples) ...[
               pw.SizedBox(height: 12),
-              _section(l10n.flightDetailSiteNames),
-              _table(siteRows),
+              _section(l10n.flightDetailPerformance),
+              _caption(l10n.flightDetailRouteMetrics),
+              _table([
+                [
+                  l10n.flightDetailStraightDistance,
+                  _routeText(stats.straightDistanceM, const []),
+                ],
+                if (stats.threeTurnpointM > 0)
+                  [
+                    l10n.flightDetailThreeTurnpoints,
+                    _routeText(
+                      stats.threeTurnpointM,
+                      stats.threeTurnpointLegsM,
+                    ),
+                  ],
+                if (stats.faiTriangleM > 0)
+                  [
+                    l10n.flightDetailFaiTriangle,
+                    _triangleText(
+                      l10n,
+                      stats.faiTriangleM,
+                      stats.faiTriangleLegsM,
+                      stats.faiClosingM,
+                      stats.faiClosed,
+                    ),
+                  ],
+                if (stats.flatTriangleM > 0)
+                  [
+                    l10n.flightDetailFlatTriangle,
+                    _triangleText(
+                      l10n,
+                      stats.flatTriangleM,
+                      stats.flatTriangleLegsM,
+                      stats.flatClosingM,
+                      stats.flatClosed,
+                    ),
+                  ],
+                [
+                  l10n.flightDetailMaxFromStart,
+                  _km(stats.maxDistanceFromStartM),
+                ],
+                [
+                  l10n.flightDetailTrackEfficiency,
+                  '${(stats.trackEfficiency * 100).toStringAsFixed(0)} %',
+                ],
+              ]),
+              pw.SizedBox(height: 8),
+              _caption(l10n.flightDetailSpeedGlide),
+              _table([
+                [
+                  l10n.flightDetailAvgGroundSpeed,
+                  '${stats.avgGroundSpeedKph.toStringAsFixed(1)} km/h',
+                ],
+                [
+                  l10n.flightDetailAvgCruiseSpeed,
+                  '${stats.avgCruiseSpeedKph.toStringAsFixed(1)} km/h',
+                ],
+                [
+                  l10n.flightDetailMaxSpeed,
+                  '${stats.maxSpeedKph.toStringAsFixed(1)} km/h',
+                ],
+                [
+                  l10n.flightDetailAvgGlideRatio,
+                  stats.avgGlideRatio > 0
+                      ? stats.avgGlideRatio.toStringAsFixed(1)
+                      : '-',
+                ],
+              ]),
+              pw.SizedBox(height: 8),
+              _caption(l10n.flightDetailClimbAltitude),
+              _table([
+                [
+                  l10n.flightDetailAvgClimb,
+                  '${stats.avgClimbMs.toStringAsFixed(1)} m/s',
+                ],
+                [
+                  l10n.flightDetailAvgSink,
+                  '${stats.avgSinkMs.toStringAsFixed(1)} m/s',
+                ],
+                [l10n.flightDetailThermals, '${stats.thermalCount}'],
+                [
+                  l10n.flightDetailAltGained,
+                  '${stats.altitudeGainedM.toStringAsFixed(0)} m',
+                ],
+                [
+                  l10n.flightDetailAltLost,
+                  '${stats.altitudeLostM.toStringAsFixed(0)} m',
+                ],
+                [
+                  l10n.flightDetailMaxAltGain,
+                  '${(track.maxAltGainM ?? stats.maxAltGainM).toStringAsFixed(0)} m',
+                ],
+                [
+                  l10n.flightDetailElevationDrop,
+                  '${(track.elevationDropM ?? stats.elevationDropM).toStringAsFixed(0)} m',
+                ],
+              ]),
+              pw.SizedBox(height: 8),
+              _caption(l10n.flightDetailTimeBreakdown),
+              _table([
+                [l10n.flightDetailClimbTime, _fmtDuration(stats.climbTime)],
+                [l10n.flightDetailGlideTime, _fmtDuration(stats.glideTime)],
+                [l10n.flightDetailSinkTime, _fmtDuration(stats.sinkTime)],
+                [l10n.flightDetailMovingTime, _fmtDuration(stats.movingTime)],
+              ]),
             ],
             if (equipRows.isNotEmpty) ...[
               pw.SizedBox(height: 12),
@@ -230,10 +334,9 @@ class FlightReportService {
     final fileName = '${flightSlug(track)}.pdf';
     final path = p.join(dir.path, fileName);
     await File(path).writeAsBytes(bytes, flush: true);
-    await Share.shareXFiles(
-      [XFile(path, mimeType: 'application/pdf', name: fileName)],
-      subject: 'ParaBeacon flight ${flightSlug(track)}',
-    );
+    await Share.shareXFiles([
+      XFile(path, mimeType: 'application/pdf', name: fileName),
+    ], subject: 'ParaBeacon flight ${flightSlug(track)}');
     return path;
   }
 
@@ -260,7 +363,10 @@ class FlightReportService {
   /// A framed top-down track map, coloured by altitude, with launch/landing
   /// markers. Falls back to a "No track" note when there's too little data.
   static pw.Widget _trackMap(
-      FlightTrack track, double width, AppLocalizations l10n) {
+    FlightTrack track,
+    double width,
+    AppLocalizations l10n,
+  ) {
     final samples = track.samples.where((s) => s.data.hasFix).toList();
     const height = 220.0;
     if (samples.length < 2) {
@@ -273,7 +379,10 @@ class FlightReportService {
   }
 
   static void _paintTrack(
-      PdfGraphics canvas, PdfPoint size, List<FlightSample> samples) {
+    PdfGraphics canvas,
+    PdfPoint size,
+    List<FlightSample> samples,
+  ) {
     final w = size.x, h = size.y;
     _paintFrame(canvas, w, h);
 
@@ -303,8 +412,10 @@ class FlightReportService {
       ..setLineCap(PdfLineCap.round)
       ..setLineJoin(PdfLineJoin.round);
     for (var i = 1; i < samples.length; i++) {
-      final a =
-          project(samples[i - 1].data.latitude, samples[i - 1].data.longitude);
+      final a = project(
+        samples[i - 1].data.latitude,
+        samples[i - 1].data.longitude,
+      );
       final b = project(samples[i].data.latitude, samples[i].data.longitude);
       final t = ((samples[i].data.altitude - minAlt) / altSpan).clamp(0.0, 1.0);
       canvas
@@ -314,9 +425,14 @@ class FlightReportService {
         ..strokePath();
     }
 
-    final start =
-        project(samples.first.data.latitude, samples.first.data.longitude);
-    final end = project(samples.last.data.latitude, samples.last.data.longitude);
+    final start = project(
+      samples.first.data.latitude,
+      samples.first.data.longitude,
+    );
+    final end = project(
+      samples.last.data.latitude,
+      samples.last.data.longitude,
+    );
     canvas
       ..setFillColor(const PdfColor(0.29, 0.87, 0.50))
       ..drawEllipse(start.x, start.y, 4.5, 4.5)
@@ -328,9 +444,13 @@ class FlightReportService {
 
   /// A framed altitude-over-time area chart, with min/max labels overlaid.
   static pw.Widget _altitudeProfile(
-      FlightTrack track, double width, AppLocalizations l10n) {
-    final samples =
-        track.samples.where((s) => s.data.altitude.isFinite).toList();
+    FlightTrack track,
+    double width,
+    AppLocalizations l10n,
+  ) {
+    final samples = track.samples
+        .where((s) => s.data.altitude.isFinite)
+        .toList();
     const height = 150.0;
     if (samples.length < 2) {
       return _emptyBox(width, height, l10n.flightShareCardNoAltitude);
@@ -340,8 +460,7 @@ class FlightReportService {
       minAlt = math.min(minAlt, s.data.altitude);
       maxAlt = math.max(maxAlt, s.data.altitude);
     }
-    const labelStyle =
-        pw.TextStyle(fontSize: 8, color: PdfColors.blueGrey700);
+    const labelStyle = pw.TextStyle(fontSize: 8, color: PdfColors.blueGrey700);
     return pw.Stack(
       children: [
         pw.CustomPaint(
@@ -363,13 +482,18 @@ class FlightReportService {
   }
 
   static void _paintAltitude(
-      PdfGraphics canvas, PdfPoint size, List<FlightSample> samples) {
+    PdfGraphics canvas,
+    PdfPoint size,
+    List<FlightSample> samples,
+  ) {
     final w = size.x, h = size.y;
     _paintFrame(canvas, w, h);
 
     final startMs = samples.first.time.millisecondsSinceEpoch;
-    final spanMs =
-        math.max(1, samples.last.time.millisecondsSinceEpoch - startMs);
+    final spanMs = math.max(
+      1,
+      samples.last.time.millisecondsSinceEpoch - startMs,
+    );
     double minAlt = double.infinity, maxAlt = double.negativeInfinity;
     for (final s in samples) {
       minAlt = math.min(minAlt, s.data.altitude);
@@ -387,9 +511,9 @@ class FlightReportService {
     final plotH = plotTop - plotBottom;
 
     PdfPoint project(int ms, double alt) => PdfPoint(
-          plotLeft + (ms - startMs) / spanMs * plotW,
-          plotBottom + (alt - minAlt) / altSpan * plotH,
-        );
+      plotLeft + (ms - startMs) / spanMs * plotW,
+      plotBottom + (alt - minAlt) / altSpan * plotH,
+    );
 
     // Filled area under the curve.
     canvas.setFillColor(const PdfColor(0.22, 0.85, 0.54, 0.25));
@@ -409,8 +533,10 @@ class FlightReportService {
       ..setLineCap(PdfLineCap.round)
       ..setLineJoin(PdfLineJoin.round);
     for (var i = 0; i < samples.length; i++) {
-      final o =
-          project(samples[i].time.millisecondsSinceEpoch, samples[i].data.altitude);
+      final o = project(
+        samples[i].time.millisecondsSinceEpoch,
+        samples[i].data.altitude,
+      );
       if (i == 0) {
         canvas.moveTo(o.x, o.y);
       } else {
@@ -469,35 +595,32 @@ class FlightReportService {
   // ── Small PDF helpers ─────────────────────────────────────────────────────
 
   static pw.Widget _caption(String text) => pw.Padding(
-        padding: const pw.EdgeInsets.only(bottom: 3),
-        child: pw.Text(
-          text,
-          style: pw.TextStyle(
-            fontSize: 11,
-            fontWeight: pw.FontWeight.bold,
-            color: PdfColors.blueGrey600,
-          ),
-        ),
-      );
+    padding: const pw.EdgeInsets.only(bottom: 3),
+    child: pw.Text(
+      text,
+      style: pw.TextStyle(
+        fontSize: 11,
+        fontWeight: pw.FontWeight.bold,
+        color: PdfColors.blueGrey600,
+      ),
+    ),
+  );
 
   static pw.Widget _section(String title) => pw.Padding(
-        padding: const pw.EdgeInsets.only(bottom: 4),
-        child: pw.Text(
-          title,
-          style: pw.TextStyle(
-            fontSize: 14,
-            fontWeight: pw.FontWeight.bold,
-            color: PdfColors.blueGrey800,
-          ),
-        ),
-      );
+    padding: const pw.EdgeInsets.only(bottom: 4),
+    child: pw.Text(
+      title,
+      style: pw.TextStyle(
+        fontSize: 14,
+        fontWeight: pw.FontWeight.bold,
+        color: PdfColors.blueGrey800,
+      ),
+    ),
+  );
 
   static pw.Widget _table(List<List<String>> rows) {
     return pw.Table(
-      columnWidths: const {
-        0: pw.FlexColumnWidth(2),
-        1: pw.FlexColumnWidth(3),
-      },
+      columnWidths: const {0: pw.FlexColumnWidth(2), 1: pw.FlexColumnWidth(3)},
       children: [
         for (final r in rows)
           pw.TableRow(
@@ -531,6 +654,60 @@ class FlightReportService {
   static String _km(double m) => m >= 1000
       ? '${(m / 1000).toStringAsFixed(2)} km'
       : '${m.toStringAsFixed(0)} m';
+
+  static String _routeText(double totalM, List<double> legsM) {
+    final legs = legsM.isNotEmpty ? ' · ${_legsText(legsM)}' : '';
+    return '${_km(totalM)}$legs';
+  }
+
+  static String _triangleText(
+    AppLocalizations l10n,
+    double totalM,
+    List<double> legsM,
+    double closingM,
+    bool closed,
+  ) {
+    final legs = legsM.isNotEmpty ? ' · ${_legsText(legsM)}' : '';
+    final closing = closingM > 0
+        ? ' · ${l10n.flightDetailClosing} ${closingM.round()} m'
+        : '';
+    final mark = closed ? ' (${l10n.flightDetailFaiClosed})' : '';
+    return '${_km(totalM)}$legs$closing$mark';
+  }
+
+  static String _legsText(List<double> legsM) => legsM
+      .map((value) {
+        return value >= 1000
+            ? '${(value / 1000).toStringAsFixed(2)}km'
+            : '${value.round()}m';
+      })
+      .join(' / ');
+
+  static String? _endpointText(
+    String? site,
+    double? latitude,
+    double? longitude,
+    double? altitude,
+  ) {
+    final coords = _fmtCoords(latitude, longitude);
+    final parts = <String>[
+      if (coords != null) coords,
+      if (altitude != null) '${altitude.round()} m',
+    ];
+    final detail = parts.join(' · ');
+    final hasSite = site?.isNotEmpty ?? false;
+    if (hasSite && detail.isNotEmpty) return '$site ($detail)';
+    if (hasSite) return site;
+    return detail.isNotEmpty ? detail : null;
+  }
+
+  static String? _fmtCoords(double? latitude, double? longitude) {
+    if (latitude == null || longitude == null) return null;
+    final northSouth = latitude >= 0 ? 'N' : 'S';
+    final eastWest = longitude >= 0 ? 'E' : 'W';
+    return '${latitude.abs().toStringAsFixed(4)}°$northSouth, '
+        '${longitude.abs().toStringAsFixed(4)}°$eastWest';
+  }
 
   static String _fmtDate(DateTime t) =>
       '${t.year}-${_two(t.month)}-${_two(t.day)}';

@@ -1,4 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'auto_flight_detector.dart';
 
 /// Global, app-wide flight session state.
 ///
@@ -7,8 +10,8 @@ import 'package:flutter/foundation.dart';
 /// on different dashboard pages) listen to and mutate this same instance, so
 /// starting a flight from one button is immediately reflected on all of them.
 ///
-/// It is intentionally a plain in-memory singleton — the flight session is a
-/// runtime concept and does not need to survive an app restart.
+/// The active flight session is runtime-only; auto-detection preferences are
+/// persisted separately so they can be restored after an app restart.
 class FlightState extends ChangeNotifier {
   FlightState._();
 
@@ -31,22 +34,94 @@ class FlightState extends ChangeNotifier {
     return DateTime.now().difference(start);
   }
 
-  /// Whether the system should automatically detect take-off / landing and
-  /// start / stop the flight on its own. This is a shared, app-wide preference
-  /// (toggled from the checkbox next to any Flight button), so every button
-  /// reflects the same auto-detect mode.
+  static const _kAutoDetect = 'pb.flight.autoDetect';
+  static const _kLandingMode = 'pb.flight.landingMode';
+  static const _kTakeoffSpeedKph = 'pb.flight.takeoffSpeedKph';
+
   bool _autoDetect = false;
   bool get autoDetect => _autoDetect;
+
+  LandingDetectionMode _landingMode = LandingDetectionMode.automatic;
+  LandingDetectionMode get landingMode => _landingMode;
+
+  double _takeoffSpeedKph = 6.0;
+  double get takeoffSpeedKph => _takeoffSpeedKph;
+
+  bool _settingsLoaded = false;
+
+  /// Loads persisted detection preferences once; defaults remain active if
+  /// storage is unavailable or contains an unknown value.
+  Future<void> loadSettings() async {
+    if (_settingsLoaded) return;
+    _settingsLoaded = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _autoDetect = prefs.getBool(_kAutoDetect) ?? _autoDetect;
+      _landingMode = _decodeLandingMode(prefs.getString(_kLandingMode));
+      final speed = prefs.getDouble(_kTakeoffSpeedKph);
+      if (speed != null && speed.isFinite) {
+        _takeoffSpeedKph = speed.clamp(1.0, 20.0).toDouble();
+      }
+    } catch (_) {
+      // Keep defaults when preferences are unavailable.
+    }
+    notifyListeners();
+  }
 
   /// Enables or disables automatic flight detection.
   void setAutoDetect(bool value) {
     if (_autoDetect == value) return;
     _autoDetect = value;
+    _persistBool(_kAutoDetect, value);
+    notifyListeners();
+  }
+
+  void setLandingMode(LandingDetectionMode mode) {
+    if (_landingMode == mode) return;
+    _landingMode = mode;
+    _persistString(_kLandingMode, mode.name);
+    notifyListeners();
+  }
+
+  void setTakeoffSpeedKph(double speed) {
+    if (!speed.isFinite) return;
+    final next = speed.clamp(1.0, 20.0).toDouble();
+    if (_takeoffSpeedKph == next) return;
+    _takeoffSpeedKph = next;
+    _persistDouble(_kTakeoffSpeedKph, next);
     notifyListeners();
   }
 
   /// Toggles automatic flight detection.
   void toggleAutoDetect() => setAutoDetect(!_autoDetect);
+
+  static LandingDetectionMode _decodeLandingMode(String? value) {
+    return LandingDetectionMode.values.firstWhere(
+      (mode) => mode.name == value,
+      orElse: () => LandingDetectionMode.automatic,
+    );
+  }
+
+  void _persistBool(String key, bool value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(key, value);
+    } catch (_) {}
+  }
+
+  void _persistString(String key, String value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, value);
+    } catch (_) {}
+  }
+
+  void _persistDouble(String key, double value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(key, value);
+    } catch (_) {}
+  }
 
   /// Starts a flight. No-op if one is already in progress.
   void start() {

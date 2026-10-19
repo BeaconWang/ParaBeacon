@@ -98,8 +98,12 @@ class FlightData {
   /// Pilot heart rate in bpm (from a paired HR strap), or null when unknown.
   final int? heartRate;
 
-  /// When this snapshot was produced.
+  /// When this snapshot was produced or last updated by a sensor.
   final DateTime? timestamp;
+
+  /// When the GPS position/fix was measured. Kept separate from [timestamp]
+  /// because non-GPS sensors may refresh the snapshot while GPS is stale.
+  final DateTime? gpsTimestamp;
 
   const FlightData({
     this.verticalSpeed = 0.0,
@@ -121,6 +125,7 @@ class FlightData {
     this.battery,
     this.heartRate,
     this.timestamp,
+    this.gpsTimestamp,
   });
 
   static const FlightData empty = FlightData();
@@ -145,6 +150,7 @@ class FlightData {
     int? battery,
     int? heartRate,
     DateTime? timestamp,
+    DateTime? gpsTimestamp,
   }) {
     return FlightData(
       verticalSpeed: verticalSpeed ?? this.verticalSpeed,
@@ -166,6 +172,7 @@ class FlightData {
       battery: battery ?? this.battery,
       heartRate: heartRate ?? this.heartRate,
       timestamp: timestamp ?? this.timestamp,
+      gpsTimestamp: gpsTimestamp ?? this.gpsTimestamp,
     );
   }
 
@@ -192,6 +199,7 @@ class FlightData {
       if (baroAltitude != null) map['balt'] = baroAltitude;
       if (gpsAltitude != null) map['galt'] = gpsAltitude;
       if (timestamp != null) map['ts'] = timestamp!.toIso8601String();
+      if (gpsTimestamp != null) map['gpsTs'] = gpsTimestamp!.toIso8601String();
       return map;
     }
     final map = <String, dynamic>{
@@ -215,6 +223,7 @@ class FlightData {
     if (battery != null) map['bat'] = battery;
     if (heartRate != null) map['hr'] = heartRate;
     if (timestamp != null) map['ts'] = timestamp!.toIso8601String();
+    if (gpsTimestamp != null) map['gpsTs'] = gpsTimestamp!.toIso8601String();
     return map;
   }
 
@@ -242,6 +251,7 @@ class FlightData {
       battery: i('bat'),
       heartRate: i('hr'),
       timestamp: DateTime.tryParse(json['ts'] as String? ?? ''),
+      gpsTimestamp: DateTime.tryParse(json['gpsTs'] as String? ?? ''),
     );
   }
 }

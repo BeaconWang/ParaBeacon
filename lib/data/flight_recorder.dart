@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 
 import 'aircraft_settings.dart';
+import 'auto_flight_detector.dart';
 import 'flight_data.dart';
 import 'flight_state.dart';
 import 'flight_store.dart';
@@ -346,9 +347,11 @@ class FlightTrack {
 ///    redundant points while stationary.
 ///  * **Incremental statistics** — distance/altitude/vario extremes are folded
 ///    in per sample (O(1)) rather than recomputed over the whole track.
-///  * **Auto take-off / landing** — when [FlightState.autoDetect] is on, ground
-///    speed crossing thresholds for a debounce window auto-starts/stops the
-///    flight (which in turn starts/stops recording).
+///  * **Auto take-off / landing** — when [FlightState.autoDetect] is on, a
+///    fresh GPS fix and position-derived speed feed an 8-second take-off /
+///    landing detector. Landing can be automatic, manually confirmed, or
+///    disabled; an automatic relaunch within 65 seconds resumes the track.
+
 class FlightRecorder extends ChangeNotifier {
   FlightRecorder._();
   static final FlightRecorder instance = FlightRecorder._();
@@ -363,10 +366,7 @@ class FlightRecorder extends ChangeNotifier {
   static const double minDistanceM = 3.0;
   static const double minAltitudeDeltaM = 1.0;
 
-  /// Auto-detection thresholds (ground speed in km/h) and debounce window.
-  static const double _takeoffSpeedKph = 12.0;
-  static const double _landingSpeedKph = 5.0;
-  static const Duration _confirmWindow = Duration(seconds: 8);
+  final AutoFlightDetector _autoFlightDetector = AutoFlightDetector();
 
   FlightState? _flightState;
   FlightDataView? _source;
@@ -374,10 +374,13 @@ class FlightRecorder extends ChangeNotifier {
 
   FlightTrack? _current;
   bool _wasFlying = false;
+  bool _automaticLandingTransition = false;
+  bool _automaticTakeoffTransition = false;
+  bool _landingConfirmationPending = false;
+  FlightTrack? _quickRelaunchTrack;
+  DateTime? _quickRelaunchAt;
 
   FlightSample? _lastStored;
-  DateTime? _movingSince;
-  DateTime? _stoppedSince;
 
   /// The most recently completed track (available after landing/stop).
   FlightTrack? _lastCompleted;
@@ -552,6 +555,20 @@ class FlightRecorder extends ChangeNotifier {
 
   bool get isRecording => _current != null;
   int get pointCount => _current?.pointCount ?? 0;
+  bool get hasPendingLandingConfirmation => _landingConfirmationPending;
+
+  /// Resolves the manual landing prompt. A negative answer leaves the flight
+  /// running and puts the detector into its anti-repeat cooldown.
+  void resolveLandingConfirmation(bool landed) {
+    if (!_landingConfirmationPending) return;
+    _landingConfirmationPending = false;
+    _autoFlightDetector.resolveLandingConfirmation(
+      landed: landed,
+      resolvedAt: DateTime.now(),
+    );
+    if (landed) _flightState?.stop();
+    notifyListeners();
+  }
 
   /// Binds to the shared flight state and a data view. Idempotent.
   ///
@@ -587,14 +604,48 @@ class FlightRecorder extends ChangeNotifier {
     if (flying == _wasFlying) return;
     _wasFlying = flying;
     if (flying) {
-      _beginRecording();
+      final resumeQuickRelaunch = _automaticTakeoffTransition;
+      _automaticTakeoffTransition = false;
+      _beginRecording(allowQuickRelaunch: resumeQuickRelaunch);
     } else {
+      final automaticLanding = _automaticLandingTransition;
+      _automaticLandingTransition = false;
+      final completed = _current;
       _finishRecording();
+      if (automaticLanding && completed != null) {
+        _quickRelaunchTrack = completed;
+        _quickRelaunchAt = DateTime.now();
+      } else {
+        _quickRelaunchTrack = null;
+        _quickRelaunchAt = null;
+      }
     }
     notifyListeners();
   }
 
-  void _beginRecording() {
+  void _beginRecording({bool allowQuickRelaunch = false}) {
+    final relaunchTrack = _quickRelaunchTrack;
+    final relaunchAt = _quickRelaunchAt;
+    if (allowQuickRelaunch &&
+        relaunchTrack != null &&
+        relaunchAt != null &&
+        DateTime.now().difference(relaunchAt) <
+            AutoFlightDetector.quickRelaunchWindow &&
+        _tracks.remove(relaunchTrack)) {
+      relaunchTrack.endTime = null;
+      _current = relaunchTrack;
+      _lastStored = relaunchTrack.samples.isEmpty
+          ? null
+          : relaunchTrack.samples.last;
+      _quickRelaunchTrack = null;
+      _quickRelaunchAt = null;
+      _lastCompleted = _tracks.isNotEmpty ? _tracks.first : null;
+      FlightStore.instance.save(_tracks);
+      return;
+    }
+
+    _quickRelaunchTrack = null;
+    _quickRelaunchAt = null;
     final aircraft = AircraftSettings.instance;
     _current = FlightTrack(startTime: DateTime.now())
       ..aircraftFaiClass = aircraft.faiClass
@@ -620,16 +671,12 @@ class FlightRecorder extends ChangeNotifier {
     if (t != null) {
       t.endTime = DateTime.now();
       _lastCompleted = t;
-      // Log every finished flight so the pilot can see it in the Flights
-      // sheet — even if no samples were captured (e.g. no sensor / no GPS
-      // fix). The summary still has meaningful start/end times.
+      // Keep empty-but-valid sessions visible even if no sensor sample arrived.
       _tracks.insert(0, t);
       FlightStore.instance.save(_tracks);
     }
     _current = null;
     _lastStored = null;
-    _movingSince = null;
-    _stoppedSince = null;
   }
 
   void _onData() {
@@ -637,10 +684,31 @@ class FlightRecorder extends ChangeNotifier {
     final fs = _flightState;
     if (source == null || fs == null) return;
     final data = source.data;
-    final now = data.timestamp ?? DateTime.now();
-
-    // Auto take-off / landing detection (only when enabled).
-    if (fs.autoDetect) _runAutoDetect(fs, data, now);
+    final observedAt = DateTime.now();
+    final sampleTime = data.timestamp ?? observedAt;
+    final action = _autoFlightDetector.update(
+      data: data,
+      observedAt: observedAt,
+      isFlying: fs.isFlying,
+      flightStartedAt: fs.startedAt,
+      autoDetectEnabled: fs.autoDetect,
+      landingMode: fs.landingMode,
+      takeoffSpeedKph: fs.takeoffSpeedKph,
+    );
+    switch (action) {
+      case AutoFlightAction.takeoff:
+        _automaticTakeoffTransition = true;
+        fs.start();
+      case AutoFlightAction.automaticLanding:
+        _automaticLandingTransition = true;
+        fs.stop();
+      case AutoFlightAction.requestLandingConfirmation:
+        _landingConfirmationPending = true;
+        notifyListeners();
+      case null:
+        break;
+    }
+    final now = sampleTime;
 
     // Record only while a flight is in progress.
     final track = _current;
@@ -686,30 +754,5 @@ class FlightRecorder extends ChangeNotifier {
       if (moved < minDistanceM && climbed < minAltitudeDeltaM) return false;
     }
     return true;
-  }
-
-  void _runAutoDetect(FlightState fs, FlightData data, DateTime now) {
-    final speed = data.groundSpeed; // km/h
-    if (!fs.isFlying) {
-      if (speed > _takeoffSpeedKph) {
-        _movingSince ??= now;
-        if (now.difference(_movingSince!) >= _confirmWindow) {
-          fs.start(); // triggers _beginRecording via state listener
-          _movingSince = null;
-        }
-      } else {
-        _movingSince = null;
-      }
-    } else {
-      if (speed < _landingSpeedKph) {
-        _stoppedSince ??= now;
-        if (now.difference(_stoppedSince!) >= _confirmWindow) {
-          fs.stop(); // triggers _finishRecording via state listener
-          _stoppedSince = null;
-        }
-      } else {
-        _stoppedSince = null;
-      }
-    }
   }
 }

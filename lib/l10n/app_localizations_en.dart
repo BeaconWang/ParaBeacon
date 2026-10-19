@@ -1433,7 +1433,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightButtonAuto => 'AUTO';
 
   @override
-  String get flightButtonAutoTooltip => 'Auto-detect take-off / landing';
+  String get flightButtonAutoTooltip =>
+      'Tap to toggle auto-detection; long-press for settings';
+
+  @override
+  String get flightAutoSettingsTitle => 'Auto take-off / landing';
+
+  @override
+  String get flightAutoTakeoffSpeed => 'Take-off speed threshold';
+
+  @override
+  String get flightLandingAutomatic => 'Automatic landing';
+
+  @override
+  String get flightLandingAutomaticDescription =>
+      'End the flight automatically when landing is detected';
+
+  @override
+  String get flightLandingManual => 'Manual confirmation';
+
+  @override
+  String get flightLandingManualDescription =>
+      'Ask before ending the flight after landing is detected';
+
+  @override
+  String get flightLandingNoDetection => 'Do not detect landing';
+
+  @override
+  String get flightLandingNoDetectionDescription =>
+      'Take-off detection stays on; stop the flight manually';
+
+  @override
+  String get flightLandingDetectedTitle => 'Landing detected';
+
+  @override
+  String get flightLandingDetectedBody =>
+      'Confirm landing and finish this flight recording?';
+
+  @override
+  String get flightLandingConfirm => 'Just landed';
+
+  @override
+  String get flightLandingStillFlying => 'Still flying';
 
   @override
   String flightRecordingReadout(int points, String km) {

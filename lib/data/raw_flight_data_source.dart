@@ -317,6 +317,7 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
       heartRate: heartRate,
       hasFix: true,
       timestamp: now,
+      gpsTimestamp: now,
     ));
   }
 
@@ -573,6 +574,7 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
     // would jitter between the sim's synthetic track and the real device GPS.
     if (!_realSensorActive && _sim != null && _debug.simulatorEnabled) return;
 
+    final fixTime = timestamp ?? DateTime.now();
     final base = rawData;
     // Only touch fields GPS legitimately provides; leave BLE-owned fields
     // (verticalSpeed / baroAltitude / pressure / temperature / battery / HR)
@@ -591,7 +593,8 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
       gpsAccuracy: gpsAccuracy,
       satellites: satellites,
       hasFix: true,
-      timestamp: timestamp ?? DateTime.now(),
+      timestamp: fixTime,
+      gpsTimestamp: fixTime,
     );
     update(next);
   }

@@ -1395,7 +1395,43 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightButtonAuto => '自动';
 
   @override
-  String get flightButtonAutoTooltip => '自动检测起飞 / 降落';
+  String get flightButtonAutoTooltip => '点按切换自动检测；长按设置选项';
+
+  @override
+  String get flightAutoSettingsTitle => '自动起飞 / 着陆';
+
+  @override
+  String get flightAutoTakeoffSpeed => '起飞速度阈值';
+
+  @override
+  String get flightLandingAutomatic => '自动着陆';
+
+  @override
+  String get flightLandingAutomaticDescription => '检测到着陆后自动结束飞行';
+
+  @override
+  String get flightLandingManual => '手动确认';
+
+  @override
+  String get flightLandingManualDescription => '检测到着陆后先询问，再结束飞行';
+
+  @override
+  String get flightLandingNoDetection => '不检测着陆';
+
+  @override
+  String get flightLandingNoDetectionDescription => '仍自动检测起飞；着陆时手动停止';
+
+  @override
+  String get flightLandingDetectedTitle => '检测到着陆';
+
+  @override
+  String get flightLandingDetectedBody => '确认着陆并结束本次飞行记录吗？';
+
+  @override
+  String get flightLandingConfirm => '刚刚着陆';
+
+  @override
+  String get flightLandingStillFlying => '仍在飞行';
 
   @override
   String flightRecordingReadout(int points, String km) {

@@ -36,6 +36,7 @@ import 'data/debug_settings.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_transformer.dart';
 import 'data/flight_recorder.dart';
+import 'data/flight_state.dart';
 import 'data/gps_flight_data_bridge.dart';
 import 'data/sensors/internal_sensor_service.dart';
 import 'data/sensors/internal_sensor_bridge.dart';
@@ -109,6 +110,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   // drives vario/altitude/pressure ahead of an external BLE device.
   late final InternalSensorBridge _internalBridge;
 
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  final FlightRecorder _flightRecorder = FlightRecorder.instance;
+  bool _landingPromptVisible = false;
+
   @override
   void initState() {
     super.initState();
@@ -132,6 +137,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // mode, default = smart/current logic) so the recorder uses the user's
     // choice from the first fix.
     RecordingSettings.instance.load();
+    FlightState.instance.loadSettings();
     // Load the persisted default units before dashboard controls render.
     UnitSettings.instance.load();
     // Load the persisted theme preset before the first frame paints. The
@@ -185,7 +191,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // Continuously record the full flight-data feed while a flight is in
     // progress (driven by the shared FlightState; supports auto take-off /
     // landing detection when enabled). Records the transformed feed.
-    FlightRecorder.instance.bind(_transformer);
+    _flightRecorder.bind(_transformer);
+    _flightRecorder.addListener(_onFlightRecorderChanged);
     // Restore previously-saved flight summaries so the Flights sheet
     // shows past flights across app restarts (best-effort; failures are
     // silent so a corrupt on-disk log doesn't block startup).
@@ -222,6 +229,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _flightRecorder.removeListener(_onFlightRecorderChanged);
     _gpsBridge.dispose();
     _internalBridge.dispose();
     _bleBridge.dispose();
@@ -229,6 +237,42 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _transformer.dispose();
     _dataSource.dispose();
     super.dispose();
+  }
+
+  void _onFlightRecorderChanged() {
+    if (!_flightRecorder.hasPendingLandingConfirmation ||
+        _landingPromptVisible) {
+      return;
+    }
+    _landingPromptVisible = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final context = _navigatorKey.currentContext;
+      if (!mounted || context == null) {
+        _landingPromptVisible = false;
+        return;
+      }
+      final l10n = AppLocalizations.of(context);
+      final landed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.flightLandingDetectedTitle),
+          content: Text(l10n.flightLandingDetectedBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.flightLandingStillFlying),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.flightLandingConfirm),
+            ),
+          ],
+        ),
+      );
+      _landingPromptVisible = false;
+      _flightRecorder.resolveLandingConfirmation(landed == true);
+    });
   }
 
   @override
@@ -254,6 +298,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
         ]),
         builder: (context, _) {
           return MaterialApp(
+            navigatorKey: _navigatorKey,
             title: 'ParaBeacon',
             debugShowCheckedModeBanner: false,
             theme: themeDataFor(ThemeController.instance.current),

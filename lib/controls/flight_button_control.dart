@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/auto_flight_detector.dart';
 import '../data/flight_recorder.dart';
 import '../data/flight_state.dart';
 import '../l10n/app_localizations.dart';
@@ -192,6 +193,7 @@ class _AutoDetectBadge extends StatelessWidget {
       message: l10n.flightButtonAutoTooltip,
       child: InkWell(
         onTap: () => onChanged(!enabled),
+        onLongPress: () => _showAutoDetectionSettings(context),
         child: Container(
           height: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -250,6 +252,90 @@ class _AutoDetectBadge extends StatelessWidget {
   }
 }
 
+Future<void> _showAutoDetectionSettings(BuildContext context) async {
+  final flight = FlightState.instance;
+  var takeoffSpeed = flight.takeoffSpeedKph;
+  await showModalBottomSheet<void>(
+    context: context,
+    builder: (_) => StatefulBuilder(
+      builder: (context, setSheetState) {
+        final l10n = AppLocalizations.of(context);
+        final theme = Theme.of(context);
+        final modes = <(LandingDetectionMode, String, String)>[
+          (
+            LandingDetectionMode.automatic,
+            l10n.flightLandingAutomatic,
+            l10n.flightLandingAutomaticDescription,
+          ),
+          (
+            LandingDetectionMode.manual,
+            l10n.flightLandingManual,
+            l10n.flightLandingManualDescription,
+          ),
+          (
+            LandingDetectionMode.noDetection,
+            l10n.flightLandingNoDetection,
+            l10n.flightLandingNoDetectionDescription,
+          ),
+        ];
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  child: Text(
+                    l10n.flightAutoSettingsTitle,
+                    style: theme.textTheme.titleLarge,
+                  ),
+                ),
+                for (final (mode, title, description) in modes)
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                    leading: Icon(
+                      flight.landingMode == mode
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                    ),
+                    title: Text(title),
+                    subtitle: Text(description),
+                    onTap: () {
+                      flight.setLandingMode(mode);
+                      setSheetState(() {});
+                    },
+                  ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    '${l10n.flightAutoTakeoffSpeed}: '
+                    '${takeoffSpeed.toStringAsFixed(0)} km/h',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                Slider(
+                  min: 1,
+                  max: 20,
+                  divisions: 19,
+                  value: takeoffSpeed,
+                  label: '${takeoffSpeed.toStringAsFixed(0)} km/h',
+                  onChanged: (value) => setSheetState(() {
+                    takeoffSpeed = value;
+                  }),
+                  onChangeEnd: flight.setTakeoffSpeedKph,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
 /// A tiny "● REC · N pts" readout backed by the [FlightRecorder]. Rebuilds as
 /// samples are appended so the pilot can see recording is live and growing.
 class _RecordingReadout extends StatelessWidget {
@@ -273,12 +359,17 @@ class _RecordingReadout extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.fiber_manual_record,
-                  size: fontSize + 2, color: fgColor),
+              Icon(
+                Icons.fiber_manual_record,
+                size: fontSize + 2,
+                color: fgColor,
+              ),
               const SizedBox(width: 3),
               Text(
                 l10n.flightRecordingReadout(
-                    track.pointCount, km.toStringAsFixed(1)),
+                  track.pointCount,
+                  km.toStringAsFixed(1),
+                ),
                 style: TextStyle(
                   fontSize: fontSize,
                   color: fgColor.withAlpha(230),

@@ -2789,8 +2789,80 @@ abstract class AppLocalizations {
   /// No description provided for @flightButtonAutoTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Auto-detect take-off / landing'**
+  /// **'Tap to toggle auto-detection; long-press for settings'**
   String get flightButtonAutoTooltip;
+
+  /// No description provided for @flightAutoSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto take-off / landing'**
+  String get flightAutoSettingsTitle;
+
+  /// No description provided for @flightAutoTakeoffSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Take-off speed threshold'**
+  String get flightAutoTakeoffSpeed;
+
+  /// No description provided for @flightLandingAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic landing'**
+  String get flightLandingAutomatic;
+
+  /// No description provided for @flightLandingAutomaticDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'End the flight automatically when landing is detected'**
+  String get flightLandingAutomaticDescription;
+
+  /// No description provided for @flightLandingManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual confirmation'**
+  String get flightLandingManual;
+
+  /// No description provided for @flightLandingManualDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask before ending the flight after landing is detected'**
+  String get flightLandingManualDescription;
+
+  /// No description provided for @flightLandingNoDetection.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not detect landing'**
+  String get flightLandingNoDetection;
+
+  /// No description provided for @flightLandingNoDetectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Take-off detection stays on; stop the flight manually'**
+  String get flightLandingNoDetectionDescription;
+
+  /// No description provided for @flightLandingDetectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing detected'**
+  String get flightLandingDetectedTitle;
+
+  /// No description provided for @flightLandingDetectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm landing and finish this flight recording?'**
+  String get flightLandingDetectedBody;
+
+  /// No description provided for @flightLandingConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Just landed'**
+  String get flightLandingConfirm;
+
+  /// No description provided for @flightLandingStillFlying.
+  ///
+  /// In en, this message translates to:
+  /// **'Still flying'**
+  String get flightLandingStillFlying;
 
   /// No description provided for @flightRecordingReadout.
   ///

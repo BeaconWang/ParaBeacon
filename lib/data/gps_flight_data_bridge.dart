@@ -131,29 +131,28 @@ class GpsFlightDataBridge {
   }
 
   void _watchServiceStatus() {
-    _serviceStatusSub ??= Geolocator.getServiceStatusStream().listen(
-      (status) async {
-        if (status == ServiceStatus.enabled && _sub == null) {
-          // User re-enabled location: (re)check permission and start streaming.
-          var permission = await Geolocator.checkPermission();
-          if (permission == LocationPermission.denied ||
-              permission == LocationPermission.deniedForever) {
-            return;
-          }
-          _startStream();
-        } else if (status == ServiceStatus.disabled) {
-          // Services went away: mark the fix lost and stop the stream (the
-          // service-status listener will restart it when they come back).
-          _sub?.cancel();
-          _sub = null;
-          if (_hadFix) {
-            _hadFix = false;
-            source.reportGpsFixLost();
-          }
+    _serviceStatusSub ??= Geolocator.getServiceStatusStream().listen((
+      status,
+    ) async {
+      if (status == ServiceStatus.enabled && _sub == null) {
+        // User re-enabled location: (re)check permission and start streaming.
+        var permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          return;
         }
-      },
-      onError: (_) {},
-    );
+        _startStream();
+      } else if (status == ServiceStatus.disabled) {
+        // Services went away: mark the fix lost and stop the stream (the
+        // service-status listener will restart it when they come back).
+        _sub?.cancel();
+        _sub = null;
+        if (_hadFix) {
+          _hadFix = false;
+          source.reportGpsFixLost();
+        }
+      }
+    }, onError: (_) {});
   }
 
   void _startStream() {
@@ -162,18 +161,22 @@ class GpsFlightDataBridge {
     // Snapshot the configuration this stream is opened with so a later flight
     // start/stop knows whether the native stream has to be reopened.
     _backgroundMode = flightState.isFlying;
-    _sub = Geolocator.getPositionStream(
-      locationSettings: _buildLocationSettings(background: _backgroundMode),
-    ).listen(_onPosition, onError: (_) {
-      // Transient stream error: cancel; the service-status watcher (or a
-      // subsequent attach()) will restart it.
-      _sub?.cancel();
-      _sub = null;
-      if (_hadFix) {
-        _hadFix = false;
-        source.reportGpsFixLost();
-      }
-    });
+    _sub =
+        Geolocator.getPositionStream(
+          locationSettings: _buildLocationSettings(background: _backgroundMode),
+        ).listen(
+          _onPosition,
+          onError: (_) {
+            // Transient stream error: cancel; the service-status watcher (or a
+            // subsequent attach()) will restart it.
+            _sub?.cancel();
+            _sub = null;
+            if (_hadFix) {
+              _hadFix = false;
+              source.reportGpsFixLost();
+            }
+          },
+        );
   }
 
   /// Reacts to a flight starting or stopping.
@@ -247,8 +250,10 @@ class GpsFlightDataBridge {
                 notificationText:
                     'Logging your track with the screen off. Tap to return.',
                 notificationChannelName: 'Flight recording',
-                notificationIcon:
-                    AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
+                notificationIcon: AndroidResource(
+                  name: 'ic_launcher',
+                  defType: 'mipmap',
+                ),
                 // Keep the CPU alive so location + the recorder keep running
                 // while the screen is off, and pin the notification so the
                 // service can't be casually swiped away mid-flight.
@@ -298,11 +303,16 @@ class GpsFlightDataBridge {
       // downstream consumers get a valid angle.
       heading: (pos.heading.isFinite && pos.heading >= 0) ? pos.heading : 0.0,
       // Geolocator reports speed in m/s; the app-wide model uses km/h.
-      groundSpeedKmh:
-          (pos.speed.isFinite && pos.speed >= 0) ? pos.speed * 3.6 : 0.0,
-      gpsAltitude: pos.altitude.isFinite ? pos.altitude : null,
+      groundSpeedKmh: (pos.speed.isFinite && pos.speed >= 0)
+          ? pos.speed * 3.6
+          : 0.0,
+      hasGroundSpeed: pos.hasSpeed,
+      gpsAltitude: pos.hasAltitude && pos.altitude.isFinite
+          ? pos.altitude
+          : null,
       gpsAccuracy: pos.accuracy.isFinite ? pos.accuracy : null,
       timestamp: pos.timestamp,
+      isMockLocation: pos.isMocked,
     );
   }
 

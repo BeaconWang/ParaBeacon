@@ -39,6 +39,9 @@ class FlightData {
   /// Ground speed in km/h.
   final double groundSpeed;
 
+  /// Whether the current position supplied a measured ground speed.
+  final bool hasGroundSpeed;
+
   // ── Altitude ────────────────────────────────────────────────────────────
 
   /// The effective altitude above sea level, in meters. Prefers the
@@ -52,6 +55,10 @@ class FlightData {
 
   /// GPS (geometric) altitude in meters, or null without a 3D GPS fix.
   final double? gpsAltitude;
+
+  /// Terrain elevation at the current position, in meters, when available.
+  /// Null follows XCTrack's fallback for an unavailable terrain query.
+  final double? terrainElevationM;
 
   // ── Position / navigation ─────────────────────────────────────────────────
 
@@ -75,6 +82,9 @@ class FlightData {
 
   /// Whether a GPS fix is currently available.
   final bool hasFix;
+
+  /// Whether the GPS location is marked as a mock location by the platform.
+  final bool isMockLocation;
 
   // ── Air / wind ──────────────────────────────────────────────────────────
 
@@ -108,9 +118,11 @@ class FlightData {
   const FlightData({
     this.verticalSpeed = 0.0,
     this.groundSpeed = 0.0,
+    this.hasGroundSpeed = true,
     this.altitude = 0.0,
     this.baroAltitude,
     this.gpsAltitude,
+    this.terrainElevationM,
     this.latitude = 0.0,
     this.longitude = 0.0,
     this.heading = 0.0,
@@ -118,6 +130,7 @@ class FlightData {
     this.gpsAccuracy,
     this.satellites,
     this.hasFix = false,
+    this.isMockLocation = false,
     this.windSpeed = 0.0,
     this.windDirection = 0.0,
     this.pressure,
@@ -133,9 +146,11 @@ class FlightData {
   FlightData copyWith({
     double? verticalSpeed,
     double? groundSpeed,
+    bool? hasGroundSpeed,
     double? altitude,
     double? baroAltitude,
     double? gpsAltitude,
+    double? terrainElevationM,
     double? latitude,
     double? longitude,
     double? heading,
@@ -143,6 +158,7 @@ class FlightData {
     double? gpsAccuracy,
     int? satellites,
     bool? hasFix,
+    bool? isMockLocation,
     double? windSpeed,
     double? windDirection,
     double? pressure,
@@ -155,9 +171,11 @@ class FlightData {
     return FlightData(
       verticalSpeed: verticalSpeed ?? this.verticalSpeed,
       groundSpeed: groundSpeed ?? this.groundSpeed,
+      hasGroundSpeed: hasGroundSpeed ?? this.hasGroundSpeed,
       altitude: altitude ?? this.altitude,
       baroAltitude: baroAltitude ?? this.baroAltitude,
       gpsAltitude: gpsAltitude ?? this.gpsAltitude,
+      terrainElevationM: terrainElevationM ?? this.terrainElevationM,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       heading: heading ?? this.heading,
@@ -165,6 +183,7 @@ class FlightData {
       gpsAccuracy: gpsAccuracy ?? this.gpsAccuracy,
       satellites: satellites ?? this.satellites,
       hasFix: hasFix ?? this.hasFix,
+      isMockLocation: isMockLocation ?? this.isMockLocation,
       windSpeed: windSpeed ?? this.windSpeed,
       windDirection: windDirection ?? this.windDirection,
       pressure: pressure ?? this.pressure,
@@ -190,14 +209,17 @@ class FlightData {
     if (compact) {
       final map = <String, dynamic>{
         'gs': groundSpeed,
+        'hasGs': hasGroundSpeed,
         'alt': altitude,
         'lat': latitude,
         'lng': longitude,
         'hdg': heading,
         'fix': hasFix,
+        'mock': isMockLocation,
       };
       if (baroAltitude != null) map['balt'] = baroAltitude;
       if (gpsAltitude != null) map['galt'] = gpsAltitude;
+      if (terrainElevationM != null) map['terrain'] = terrainElevationM;
       if (timestamp != null) map['ts'] = timestamp!.toIso8601String();
       if (gpsTimestamp != null) map['gpsTs'] = gpsTimestamp!.toIso8601String();
       return map;
@@ -205,16 +227,19 @@ class FlightData {
     final map = <String, dynamic>{
       've': verticalSpeed,
       'gs': groundSpeed,
+      'hasGs': hasGroundSpeed,
       'alt': altitude,
       'lat': latitude,
       'lng': longitude,
       'hdg': heading,
       'fix': hasFix,
+      'mock': isMockLocation,
       'ws': windSpeed,
       'wd': windDirection,
     };
     if (baroAltitude != null) map['balt'] = baroAltitude;
     if (gpsAltitude != null) map['galt'] = gpsAltitude;
+    if (terrainElevationM != null) map['terrain'] = terrainElevationM;
     if (bearing != null) map['brg'] = bearing;
     if (gpsAccuracy != null) map['acc'] = gpsAccuracy;
     if (satellites != null) map['sat'] = satellites;
@@ -234,9 +259,11 @@ class FlightData {
     return FlightData(
       verticalSpeed: d('ve') ?? 0.0,
       groundSpeed: d('gs') ?? 0.0,
+      hasGroundSpeed: json['hasGs'] as bool? ?? true,
       altitude: d('alt') ?? 0.0,
       baroAltitude: d('balt'),
       gpsAltitude: d('galt'),
+      terrainElevationM: d('terrain'),
       latitude: d('lat') ?? 0.0,
       longitude: d('lng') ?? 0.0,
       heading: d('hdg') ?? 0.0,
@@ -244,6 +271,7 @@ class FlightData {
       gpsAccuracy: d('acc'),
       satellites: i('sat'),
       hasFix: json['fix'] as bool? ?? false,
+      isMockLocation: json['mock'] as bool? ?? false,
       windSpeed: d('ws') ?? 0.0,
       windDirection: d('wd') ?? 0.0,
       pressure: d('prs'),

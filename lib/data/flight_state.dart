@@ -38,7 +38,7 @@ class FlightState extends ChangeNotifier {
   static const _kLandingMode = 'pb.flight.landingMode';
   static const _kTakeoffSpeedKph = 'pb.flight.takeoffSpeedKph';
 
-  bool _autoDetect = false;
+  bool _autoDetect = true;
   bool get autoDetect => _autoDetect;
 
   LandingDetectionMode _landingMode = LandingDetectionMode.automatic;
@@ -123,11 +123,11 @@ class FlightState extends ChangeNotifier {
     } catch (_) {}
   }
 
-  /// Starts a flight. No-op if one is already in progress.
-  void start() {
+  /// Starts a flight at the GPS point time when available.
+  void start({DateTime? at}) {
     if (_isFlying) return;
     _isFlying = true;
-    _startedAt = DateTime.now();
+    _startedAt = at ?? DateTime.now();
     notifyListeners();
   }
 

@@ -58,14 +58,16 @@ class FlightDataOverride {
     bool clearWindDirection = false,
   }) {
     return FlightDataOverride(
-      verticalSpeed:
-          clearVerticalSpeed ? null : (verticalSpeed ?? this.verticalSpeed),
+      verticalSpeed: clearVerticalSpeed
+          ? null
+          : (verticalSpeed ?? this.verticalSpeed),
       altitude: clearAltitude ? null : (altitude ?? this.altitude),
       groundSpeed: clearGroundSpeed ? null : (groundSpeed ?? this.groundSpeed),
       heading: clearHeading ? null : (heading ?? this.heading),
       windSpeed: clearWindSpeed ? null : (windSpeed ?? this.windSpeed),
-      windDirection:
-          clearWindDirection ? null : (windDirection ?? this.windDirection),
+      windDirection: clearWindDirection
+          ? null
+          : (windDirection ?? this.windDirection),
     );
   }
 
@@ -278,13 +280,15 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     final dt = tickInterval.inMilliseconds / 1000.0;
     final altitude = (prev.altitude + vs * dt).clamp(0.0, 8000.0);
 
-    final groundSpeed = 25.0 + math.sin(DateTime.now().millisecondsSinceEpoch / 5000.0) * 10.0;
+    final groundSpeed =
+        25.0 + math.sin(DateTime.now().millisecondsSinceEpoch / 5000.0) * 10.0;
 
     // Drift the position slightly based on ground speed + heading.
     final metersPerTick = (groundSpeed / 3.6) * dt;
     final headingRad = heading * math.pi / 180.0;
     _lat += (metersPerTick * math.cos(headingRad)) / 111320.0;
-    _lon += (metersPerTick * math.sin(headingRad)) /
+    _lon +=
+        (metersPerTick * math.sin(headingRad)) /
         (111320.0 * math.cos(_lat * math.pi / 180.0));
 
     // Derive plausible maintenance data from the simulated altitude:
@@ -295,30 +299,37 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     final pressure = seaLevelHpa * math.pow(1.0 - altitude / 44330.0, 5.255);
     final temperature = 15.0 - altitude * 0.0065;
     final now = DateTime.now();
-    final battery = (100 - (now.millisecondsSinceEpoch ~/ 60000) % 100).clamp(1, 100);
-    final heartRate = 70 + (math.sin(now.millisecondsSinceEpoch / 3000.0) * 15).round();
+    final battery = (100 - (now.millisecondsSinceEpoch ~/ 60000) % 100).clamp(
+      1,
+      100,
+    );
+    final heartRate =
+        70 + (math.sin(now.millisecondsSinceEpoch / 3000.0) * 15).round();
 
-    update(prev.copyWith(
-      verticalSpeed: vs,
-      altitude: altitude,
-      baroAltitude: altitude,
-      gpsAltitude: altitude + 3.0, // GPS altitude typically differs from baro
-      groundSpeed: groundSpeed,
-      heading: heading,
-      latitude: _lat,
-      longitude: _lon,
-      windSpeed: 12.0,
-      windDirection: windDir,
-      pressure: pressure.toDouble(),
-      temperature: temperature,
-      gpsAccuracy: 4.0,
-      satellites: 12,
-      battery: battery,
-      heartRate: heartRate,
-      hasFix: true,
-      timestamp: now,
-      gpsTimestamp: now,
-    ));
+    update(
+      prev.copyWith(
+        verticalSpeed: vs,
+        altitude: altitude,
+        baroAltitude: altitude,
+        gpsAltitude: altitude + 3.0, // GPS altitude typically differs from baro
+        groundSpeed: groundSpeed,
+        heading: heading,
+        latitude: _lat,
+        longitude: _lon,
+        windSpeed: 12.0,
+        windDirection: windDir,
+        pressure: pressure.toDouble(),
+        temperature: temperature,
+        gpsAccuracy: 4.0,
+        satellites: 12,
+        battery: battery,
+        heartRate: heartRate,
+        hasFix: true,
+        isMockLocation: true,
+        timestamp: now,
+        gpsTimestamp: now,
+      ),
+    );
   }
 
   /// Linearly interpolates between two angles taking the shortest path.
@@ -370,7 +381,7 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   final DebugSettings _debug;
 
   BluetoothSensorFlightDataSource({DebugSettings? debugSettings})
-      : _debug = debugSettings ?? DebugSettings.instance {
+    : _debug = debugSettings ?? DebugSettings.instance {
     // React to the simulator toggle being flipped at runtime.
     _lastFakeChinaLocation = _debug.fakeChinaLocation;
     _debug.addListener(_onDebugSettingsChanged);
@@ -511,13 +522,15 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
     if (verticalSpeed.isNaN || verticalSpeed.isInfinite) return;
     if (!_internalSensorActive) beginInternalSensor();
     final base = rawData;
-    update(base.copyWith(
-      verticalSpeed: verticalSpeed,
-      altitude: baroAltitude,
-      baroAltitude: baroAltitude,
-      pressure: pressureHpa,
-      timestamp: timestamp ?? DateTime.now(),
-    ));
+    update(
+      base.copyWith(
+        verticalSpeed: verticalSpeed,
+        altitude: baroAltitude,
+        baroAltitude: baroAltitude,
+        pressure: pressureHpa,
+        timestamp: timestamp ?? DateTime.now(),
+      ),
+    );
     _connected = true;
   }
 
@@ -565,10 +578,12 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
     required double longitude,
     required double heading,
     required double groundSpeedKmh,
+    bool hasGroundSpeed = true,
     double? gpsAltitude,
     double? gpsAccuracy,
     int? satellites,
     DateTime? timestamp,
+    bool isMockLocation = false,
   }) {
     // Simulator wins on position while it's on: otherwise the fake flight
     // would jitter between the sim's synthetic track and the real device GPS.
@@ -584,6 +599,7 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
       longitude: longitude,
       heading: heading,
       groundSpeed: groundSpeedKmh,
+      hasGroundSpeed: hasGroundSpeed,
       gpsAltitude: gpsAltitude,
       // Prefer barometric altitude when we have it; only promote GPS altitude
       // into the effective `altitude` field when no baro reading exists.
@@ -593,6 +609,7 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
       gpsAccuracy: gpsAccuracy,
       satellites: satellites,
       hasFix: true,
+      isMockLocation: isMockLocation,
       timestamp: fixTime,
       gpsTimestamp: fixTime,
     );

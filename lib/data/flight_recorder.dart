@@ -347,10 +347,10 @@ class FlightTrack {
 ///    redundant points while stationary.
 ///  * **Incremental statistics** — distance/altitude/vario extremes are folded
 ///    in per sample (O(1)) rather than recomputed over the whole track.
-///  * **Auto take-off / landing** — when [FlightState.autoDetect] is on, a
-///    fresh GPS fix and position-derived speed feed an 8-second take-off /
-///    landing detector. Landing can be automatic, manually confirmed, or
-///    disabled; an automatic relaunch within 65 seconds resumes the track.
+///  * **Auto take-off / landing** — when [FlightState.autoDetect] is on, XCTrack's
+///    point-speed take-off test and 30-second/altitude/wind landing test drive
+///    the flight state. Landing can be automatic, manually confirmed, or
+///    disabled; a take-off point within 65 seconds reopens the same track.
 
 class FlightRecorder extends ChangeNotifier {
   FlightRecorder._();
@@ -377,6 +377,7 @@ class FlightRecorder extends ChangeNotifier {
   bool _automaticLandingTransition = false;
   bool _automaticTakeoffTransition = false;
   bool _landingConfirmationPending = false;
+  DateTime? _transitionPointTime;
   FlightTrack? _quickRelaunchTrack;
   DateTime? _quickRelaunchAt;
 
@@ -562,10 +563,7 @@ class FlightRecorder extends ChangeNotifier {
   void resolveLandingConfirmation(bool landed) {
     if (!_landingConfirmationPending) return;
     _landingConfirmationPending = false;
-    _autoFlightDetector.resolveLandingConfirmation(
-      landed: landed,
-      resolvedAt: DateTime.now(),
-    );
+    _autoFlightDetector.resolveLandingConfirmation();
     if (landed) _flightState?.stop();
     notifyListeners();
   }
@@ -603,10 +601,15 @@ class FlightRecorder extends ChangeNotifier {
     final flying = _flightState?.isFlying ?? false;
     if (flying == _wasFlying) return;
     _wasFlying = flying;
+    final transitionPointTime = _transitionPointTime;
+    _transitionPointTime = null;
     if (flying) {
       final resumeQuickRelaunch = _automaticTakeoffTransition;
       _automaticTakeoffTransition = false;
-      _beginRecording(allowQuickRelaunch: resumeQuickRelaunch);
+      _beginRecording(
+        allowQuickRelaunch: resumeQuickRelaunch,
+        at: transitionPointTime,
+      );
     } else {
       final automaticLanding = _automaticLandingTransition;
       _automaticLandingTransition = false;
@@ -614,7 +617,7 @@ class FlightRecorder extends ChangeNotifier {
       _finishRecording();
       if (automaticLanding && completed != null) {
         _quickRelaunchTrack = completed;
-        _quickRelaunchAt = DateTime.now();
+        _quickRelaunchAt = transitionPointTime;
       } else {
         _quickRelaunchTrack = null;
         _quickRelaunchAt = null;
@@ -623,14 +626,18 @@ class FlightRecorder extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _beginRecording({bool allowQuickRelaunch = false}) {
+  void _beginRecording({bool allowQuickRelaunch = false, DateTime? at}) {
     final relaunchTrack = _quickRelaunchTrack;
     final relaunchAt = _quickRelaunchAt;
+    final relaunchDelta = at != null && relaunchAt != null
+        ? at.difference(relaunchAt)
+        : null;
     if (allowQuickRelaunch &&
         relaunchTrack != null &&
         relaunchAt != null &&
-        DateTime.now().difference(relaunchAt) <
-            AutoFlightDetector.quickRelaunchWindow &&
+        relaunchDelta != null &&
+        !relaunchDelta.isNegative &&
+        relaunchDelta < AutoFlightDetector.quickRelaunchWindow &&
         _tracks.remove(relaunchTrack)) {
       relaunchTrack.endTime = null;
       _current = relaunchTrack;
@@ -685,7 +692,7 @@ class FlightRecorder extends ChangeNotifier {
     if (source == null || fs == null) return;
     final data = source.data;
     final observedAt = DateTime.now();
-    final sampleTime = data.timestamp ?? observedAt;
+    final sampleTime = data.gpsTimestamp ?? data.timestamp ?? observedAt;
     final action = _autoFlightDetector.update(
       data: data,
       observedAt: observedAt,
@@ -694,13 +701,16 @@ class FlightRecorder extends ChangeNotifier {
       autoDetectEnabled: fs.autoDetect,
       landingMode: fs.landingMode,
       takeoffSpeedKph: fs.takeoffSpeedKph,
+      trimSpeedKph: AircraftSettings.instance.trimSpeedKmh,
     );
     switch (action) {
       case AutoFlightAction.takeoff:
         _automaticTakeoffTransition = true;
-        fs.start();
+        _transitionPointTime = sampleTime;
+        fs.start(at: sampleTime);
       case AutoFlightAction.automaticLanding:
         _automaticLandingTransition = true;
+        _transitionPointTime = sampleTime;
         fs.stop();
       case AutoFlightAction.requestLandingConfirmation:
         _landingConfirmationPending = true;

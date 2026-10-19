@@ -2,33 +2,40 @@ import 'dart:math' as math;
 
 import 'flight_data.dart';
 
+/// Landing handling configured to mirror XCTrack's detection modes.
 enum LandingDetectionMode { automatic, manual, noDetection }
 
 enum AutoFlightAction { takeoff, automaticLanding, requestLandingConfirmation }
 
-/// Stateful GPS-driven take-off and landing detector.
+/// GPS-driven take-off and landing detector following XCTrack's thresholds.
 ///
-/// Inputs must be fresh GPS snapshots. Candidate windows only advance on
-/// distinct samples, preventing repeated notifications from one stale fix from
-/// satisfying the debounce interval.
+/// Speeds in the detector use m/s, matching the source algorithm. Input
+/// [FlightData] stores ground and wind speed in km/h, so those values are
+/// converted at the boundary. A null terrain elevation follows XCTrack's
+/// terrain-query-NaN fallback (height delta = 1000 m).
 class AutoFlightDetector {
-  static const Duration confirmationWindow = Duration(seconds: 8);
   static const Duration minimumFlightBeforeLanding = Duration(seconds: 30);
   static const Duration manualLandingCooldown = Duration(seconds: 30);
-  static const Duration maximumFixAge = Duration(seconds: 10);
-  static const Duration maximumSampleGap = Duration(seconds: 3);
   static const Duration quickRelaunchWindow = Duration(seconds: 65);
+  static const Duration speedBucketWidth = Duration(seconds: 3);
+  static const Duration maximumTimestampOffset = Duration(minutes: 30);
+  static const int speedBucketCount = 5;
 
-  static const double landingBaseSpeedKph = 5.0;
-  static const double maximumGpsAccuracyM = 50.0;
+  static const double _terrainUnavailableHeightDeltaM = 1000.0;
+  static const double _windSpeedFactor = 1.1111111405455043;
 
-  final List<_PositionSample> _positions = <_PositionSample>[];
-  final List<double> _recentSpeedsKph = <double>[];
+  final Stopwatch _monotonicClock = Stopwatch()..start();
+  final List<_PositionSample> _takeoffHistory = <_PositionSample>[];
+  final List<double> _landingSpeedBuckets = List<double>.filled(
+    speedBucketCount,
+    double.nan,
+  );
 
   DateTime? _lastSampleTime;
-  DateTime? _takeoffCandidateSince;
-  DateTime? _landingCandidateSince;
-  DateTime? _landingCooldownUntil;
+  Duration? _lastArrivalMonotonic;
+  _PositionSample? _lastPosition;
+  int _nextSpeedBucket = 0;
+  Duration? _landingCooldownUntil;
   bool _landingConfirmationPending = false;
 
   bool get hasPendingLandingConfirmation => _landingConfirmationPending;
@@ -41,168 +48,220 @@ class AutoFlightDetector {
     required bool autoDetectEnabled,
     required LandingDetectionMode landingMode,
     required double takeoffSpeedKph,
+    required double trimSpeedKph,
+    Duration? monotonicTime,
   }) {
-    if (!autoDetectEnabled) {
-      _resetCandidates(clearHistory: true);
-      return null;
-    }
-
     final sampleTime = data.gpsTimestamp ?? data.timestamp ?? observedAt;
-    if (!_isUsableFix(data, sampleTime, observedAt)) {
-      _resetCandidates(clearHistory: true);
-      return null;
-    }
+    final nowMonotonic = monotonicTime ?? _monotonicClock.elapsed;
+    if (!_isUsableFix(data, sampleTime)) return null;
 
-    final lastSample = _lastSampleTime;
-    if (lastSample != null) {
-      if (!sampleTime.isAfter(lastSample)) return null;
-      if (sampleTime.difference(lastSample) > maximumSampleGap) {
-        _resetCandidates(clearHistory: true);
+    final lastSampleTime = _lastSampleTime;
+    final lastArrivalMonotonic = _lastArrivalMonotonic;
+    if (lastSampleTime != null) {
+      if (sampleTime == lastSampleTime) return null;
+      if (lastArrivalMonotonic != null) {
+        final expectedTime = lastSampleTime.add(
+          nowMonotonic - lastArrivalMonotonic,
+        );
+        if (sampleTime.difference(expectedTime).abs() >
+            maximumTimestampOffset) {
+          return null;
+        }
       }
     }
     _lastSampleTime = sampleTime;
+    _lastArrivalMonotonic = nowMonotonic;
 
-    _positions.add(_PositionSample(sampleTime, data.latitude, data.longitude));
-    if (_positions.length > 5) _positions.removeAt(0);
+    final previous = _lastPosition;
+    final derivedSpeedMps = previous == null
+        ? 0.0
+        : _derivedSpeed(previous, sampleTime, data.latitude, data.longitude);
+    final currentSpeedMps = data.hasGroundSpeed
+        ? data.groundSpeed / 3.6
+        : derivedSpeedMps;
+    final current = _PositionSample(
+      time: sampleTime,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      derivedSpeedMps: derivedSpeedMps,
+    );
+    _lastPosition = current;
 
-    var effectiveSpeedKph = data.groundSpeed;
-    final derivedSpeedKph = _positionDerivedSpeedKph();
-    if (derivedSpeedKph != null) {
-      if ((effectiveSpeedKph - derivedSpeedKph).abs() > 25.0) {
-        _resetCandidates(clearHistory: true);
-        return null;
-      }
-      effectiveSpeedKph = math.min(effectiveSpeedKph, derivedSpeedKph);
-    }
-
-    _recentSpeedsKph.add(effectiveSpeedKph);
-    if (_recentSpeedsKph.length > 5) _recentSpeedsKph.removeAt(0);
+    _updateLandingSpeedBuckets(sampleTime, currentSpeedMps);
 
     if (!isFlying) {
-      _landingCandidateSince = null;
       _landingConfirmationPending = false;
-      if (effectiveSpeedKph > takeoffSpeedKph) {
-        _takeoffCandidateSince ??= sampleTime;
-        if (sampleTime.difference(_takeoffCandidateSince!) >=
-            confirmationWindow) {
-          _takeoffCandidateSince = null;
-          return AutoFlightAction.takeoff;
-        }
-      } else {
-        _takeoffCandidateSince = null;
+      if (autoDetectEnabled &&
+          _isTakeoff(
+            currentSpeedMps,
+            derivedSpeedMps,
+            current,
+            takeoffSpeedKph / 3.6,
+          )) {
+        _landingCooldownUntil = null;
+        return AutoFlightAction.takeoff;
+      }
+      _takeoffHistory.add(current);
+      if (_takeoffHistory.length > speedBucketCount) {
+        _takeoffHistory.removeAt(0);
       }
       return null;
     }
 
-    _takeoffCandidateSince = null;
-    if (landingMode == LandingDetectionMode.noDetection ||
+    if (!autoDetectEnabled ||
+        landingMode == LandingDetectionMode.noDetection ||
         _landingConfirmationPending) {
-      _landingCandidateSince = null;
       return null;
     }
 
     if (flightStartedAt == null ||
-        sampleTime.difference(flightStartedAt) < minimumFlightBeforeLanding) {
-      _landingCandidateSince = null;
+        !sampleTime.isAfter(flightStartedAt.add(minimumFlightBeforeLanding))) {
       return null;
     }
 
-    if (_landingCooldownUntil case final cooldown?
-        when sampleTime.isBefore(cooldown)) {
-      _landingCandidateSince = null;
-      return null;
-    }
+    final cooldownUntil = _landingCooldownUntil;
+    if (cooldownUntil != null && nowMonotonic < cooldownUntil) return null;
     _landingCooldownUntil = null;
 
-    final sinkMps = math.max(0.0, -data.verticalSpeed);
-    final dynamicLandingLimitKph = (landingBaseSpeedKph + sinkMps * 1.5).clamp(
-      5.0,
-      8.0,
-    );
-    final recentMinimumSpeed = _recentSpeedsKph.reduce(math.min);
-    final lowSpeed =
-        effectiveSpeedKph < dynamicLandingLimitKph &&
-        recentMinimumSpeed < dynamicLandingLimitKph;
-    if (!lowSpeed || data.verticalSpeed < -4.0) {
-      _landingCandidateSince = null;
+    final terrainElevationM = data.terrainElevationM;
+    final heightDeltaM =
+        data.gpsAltitude == null ||
+            terrainElevationM == null ||
+            !terrainElevationM.isFinite
+        ? _terrainUnavailableHeightDeltaM
+        : data.gpsAltitude! - terrainElevationM;
+    final altitudeFactor = _altitudeFactor(heightDeltaM);
+    final trimMps = trimSpeedKph / 3.6;
+    final windRatio = trimMps > 0 ? (data.windSpeed / 3.6) / trimMps : 0.0;
+    final windFactor = _windFactor(windRatio);
+    final speedLimitMps = _windSpeedFactor * altitudeFactor * windFactor;
+
+    final recentMinimumSpeed = _landingSpeedBuckets
+        .where((speed) => !speed.isNaN)
+        .fold<double>(double.infinity, math.min);
+    if (!(currentSpeedMps < speedLimitMps &&
+        recentMinimumSpeed < speedLimitMps)) {
       return null;
     }
 
-    _landingCandidateSince ??= sampleTime;
-    if (sampleTime.difference(_landingCandidateSince!) < confirmationWindow) {
-      return null;
-    }
-
-    _landingCandidateSince = null;
-    if (landingMode == LandingDetectionMode.manual) {
+    if (landingMode == LandingDetectionMode.manual && !data.isMockLocation) {
       _landingConfirmationPending = true;
-      _landingCooldownUntil = sampleTime.add(manualLandingCooldown);
+      _landingCooldownUntil = nowMonotonic + manualLandingCooldown;
       return AutoFlightAction.requestLandingConfirmation;
     }
     return AutoFlightAction.automaticLanding;
   }
 
-  /// Clears an outstanding manual prompt. Dismissal starts the cooldown so a
-  /// persistent low-speed condition does not immediately reopen the dialog.
-  void resolveLandingConfirmation({
-    required bool landed,
-    required DateTime resolvedAt,
-  }) {
-    if (!_landingConfirmationPending) return;
+  /// Resolving the dialog does not move XCTrack's cooldown start time: the
+  /// 30-second window begins when the confirmation-needed event was emitted.
+  void resolveLandingConfirmation() {
     _landingConfirmationPending = false;
-    _landingCandidateSince = null;
-    _landingCooldownUntil = landed
-        ? null
-        : resolvedAt.add(manualLandingCooldown);
   }
 
   void reset() {
-    _resetCandidates(clearHistory: true);
+    _takeoffHistory.clear();
+    _landingSpeedBuckets.fillRange(0, _landingSpeedBuckets.length, double.nan);
+    _lastSampleTime = null;
+    _lastArrivalMonotonic = null;
+    _lastPosition = null;
+    _nextSpeedBucket = 0;
     _landingCooldownUntil = null;
     _landingConfirmationPending = false;
   }
 
-  bool _isUsableFix(FlightData data, DateTime sampleTime, DateTime observedAt) {
-    if (!data.hasFix ||
-        !data.groundSpeed.isFinite ||
-        data.groundSpeed < 0.0 ||
-        data.groundSpeed > 200.0 ||
-        !data.latitude.isFinite ||
-        !data.longitude.isFinite ||
-        data.latitude < -90.0 ||
-        data.latitude > 90.0 ||
-        data.longitude < -180.0 ||
-        data.longitude > 180.0 ||
-        !data.verticalSpeed.isFinite) {
-      return false;
+  bool _isTakeoff(
+    double gpsSpeedMps,
+    double previousPointSpeedMps,
+    _PositionSample current,
+    double takeoffThresholdMps,
+  ) {
+    var speedMps = math.min(gpsSpeedMps, previousPointSpeedMps);
+    if (_takeoffHistory.length >= 3) {
+      final reference = _takeoffHistory[_takeoffHistory.length - 3];
+      final elapsedSeconds =
+          current.time.difference(reference.time).inMilliseconds / 1000.0;
+      final historySpeedMps =
+          _distanceM(
+            reference.latitude,
+            reference.longitude,
+            current.latitude,
+            current.longitude,
+          ) /
+          elapsedSeconds;
+      speedMps = math.min(speedMps, historySpeedMps);
+      return speedMps > takeoffThresholdMps;
     }
-    final accuracy = data.gpsAccuracy;
-    if (accuracy != null &&
-        (!accuracy.isFinite ||
-            accuracy < 0.0 ||
-            accuracy > maximumGpsAccuracyM)) {
-      return false;
-    }
-    final age = observedAt.difference(sampleTime);
-    return age <= maximumFixAge && age >= const Duration(seconds: -2);
+    return false;
   }
 
-  double? _positionDerivedSpeedKph() {
-    if (_positions.length < 3) return null;
-    final first = _positions.first;
-    final last = _positions.last;
-    final elapsed = last.time.difference(first.time);
-    if (elapsed < const Duration(seconds: 1) ||
-        elapsed > const Duration(seconds: 10)) {
-      return null;
+  static double _altitudeFactor(double heightDeltaM) {
+    if (heightDeltaM > 100.0) return 0.5;
+    if (heightDeltaM < 0.0) return 1.0;
+    return 1.0 - heightDeltaM / 200.0;
+  }
+
+  static double _windFactor(double windToTrimRatio) {
+    if (windToTrimRatio < 0.5) return 1.0;
+    if (windToTrimRatio > 1.0) return 0.5;
+    return 1.5 - windToTrimRatio;
+  }
+
+  double _derivedSpeed(
+    _PositionSample previous,
+    DateTime currentTime,
+    double currentLatitude,
+    double currentLongitude,
+  ) {
+    if (previous.time.isBefore(currentTime)) {
+      final elapsedMs = currentTime.difference(previous.time).inMilliseconds;
+      return _distanceM(
+            previous.latitude,
+            previous.longitude,
+            currentLatitude,
+            currentLongitude,
+          ) *
+          1000.0 /
+          elapsedMs;
     }
-    final distanceM = _distanceM(
-      first.latitude,
-      first.longitude,
-      last.latitude,
-      last.longitude,
+    return previous.derivedSpeedMps;
+  }
+
+  void _updateLandingSpeedBuckets(DateTime time, double speedMps) {
+    final bucket =
+        time.millisecondsSinceEpoch ~/ speedBucketWidth.inMilliseconds;
+    if (bucket < 0 || bucket < _nextSpeedBucket - 1) return;
+
+    if (bucket == _nextSpeedBucket - 1) {
+      final slot = bucket % speedBucketCount;
+      _landingSpeedBuckets[slot] = math.min(
+        _landingSpeedBuckets[slot],
+        speedMps,
+      );
+      return;
+    }
+
+    final firstBucketToClear = math.max(
+      _nextSpeedBucket,
+      bucket - speedBucketCount + 1,
     );
-    return distanceM / elapsed.inMilliseconds * 3600.0;
+    for (var index = firstBucketToClear; index < bucket; index++) {
+      _landingSpeedBuckets[index % speedBucketCount] = double.nan;
+    }
+    _landingSpeedBuckets[bucket % speedBucketCount] = speedMps;
+    _nextSpeedBucket = bucket + 1;
+  }
+
+  static bool _isUsableFix(FlightData data, DateTime sampleTime) {
+    return data.hasFix &&
+        sampleTime.millisecondsSinceEpoch >= 0 &&
+        data.groundSpeed.isFinite &&
+        data.latitude.isFinite &&
+        data.longitude.isFinite &&
+        data.latitude >= -90.0 &&
+        data.latitude <= 90.0 &&
+        data.longitude >= -180.0 &&
+        data.longitude <= 180.0 &&
+        (data.latitude != 0.0 || data.longitude != 0.0);
   }
 
   static double _distanceM(double lat1, double lon1, double lat2, double lon2) {
@@ -219,22 +278,18 @@ class AutoFlightDetector {
   }
 
   static double _radians(double degrees) => degrees * math.pi / 180.0;
-
-  void _resetCandidates({bool clearHistory = false}) {
-    _takeoffCandidateSince = null;
-    _landingCandidateSince = null;
-    if (clearHistory) {
-      _positions.clear();
-      _recentSpeedsKph.clear();
-      _lastSampleTime = null;
-    }
-  }
 }
 
 class _PositionSample {
-  const _PositionSample(this.time, this.latitude, this.longitude);
+  const _PositionSample({
+    required this.time,
+    required this.latitude,
+    required this.longitude,
+    required this.derivedSpeedMps,
+  });
 
   final DateTime time;
   final double latitude;
   final double longitude;
+  final double derivedSpeedMps;
 }

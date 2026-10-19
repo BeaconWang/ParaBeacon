@@ -2039,6 +2039,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailLanding => 'Landing';
 
   @override
+  String get flightDetailPilot => 'Pilot';
+
+  @override
   String get flightDetailPerformance => 'Performance';
 
   @override
@@ -2052,6 +2055,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get flightDetailFaiClosed => 'closed';
+
+  @override
+  String get flightDetailFlatTriangle => 'Flat triangle';
+
+  @override
+  String get flightDetailThreeTurnpoints => '3-turnpoint distance';
+
+  @override
+  String get flightDetailClosing => 'closing';
+
+  @override
+  String get flightDetailMaxAltGain => 'Max alt gain';
+
+  @override
+  String get flightDetailElevationDrop => 'Elevation drop';
 
   @override
   String get flightDetailMaxFromStart => 'Max from start';

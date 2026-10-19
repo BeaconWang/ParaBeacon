@@ -122,6 +122,10 @@ class FlightTrack {
   String? takeoffSite;
   String? landingSite;
 
+  /// Pilot in command. Populated from the IGC `HFPLT` header on import; null
+  /// for live recordings that carry no configured pilot.
+  String? pilotName;
+
   /// All recorded samples (full snapshots), in chronological order. Empty for
   /// tracks restored from a persisted summary.
   final List<FlightSample> samples = [];
@@ -139,6 +143,17 @@ class FlightTrack {
   double _maxClimb = 0.0;
   double _maxSink = 0.0;
 
+  // Launch / landing coordinates, captured from the first and last fix so they
+  // remain available even after the per-sample data has been dropped.
+  double? _takeoffLat;
+  double? _takeoffLon;
+  double? _landingLat;
+  double? _landingLon;
+
+  // Launch / landing altitude (meters), captured the same way.
+  double? _takeoffAltitude;
+  double? _landingAltitude;
+
   /// Point count carried across a persistence round-trip when [samples] is
   /// empty (i.e. the track was restored from disk).
   int? _persistedPointCount;
@@ -155,6 +170,16 @@ class FlightTrack {
   /// Strongest climb (m/s, >= 0) and sink (m/s, <= 0) seen.
   double get maxClimb => _maxClimb;
   double get maxSink => _maxSink;
+
+  /// Launch / landing coordinates, or null when unknown (no fix seen).
+  double? get takeoffLatitude => _takeoffLat;
+  double? get takeoffLongitude => _takeoffLon;
+  double? get landingLatitude => _landingLat;
+  double? get landingLongitude => _landingLon;
+
+  /// Launch / landing altitude in meters, or null when unknown.
+  double? get takeoffAltitude => _takeoffAltitude;
+  double? get landingAltitude => _landingAltitude;
 
   int get pointCount => _persistedPointCount ?? samples.length;
 
@@ -187,6 +212,16 @@ class FlightTrack {
     final v = s.data.verticalSpeed;
     if (v > _maxClimb) _maxClimb = v;
     if (v < _maxSink) _maxSink = v;
+
+    if (s.data.hasFix) {
+      // First fix is the launch; the latest fix is (so far) the landing.
+      _takeoffLat ??= s.data.latitude;
+      _takeoffLon ??= s.data.longitude;
+      _takeoffAltitude ??= s.data.altitude;
+      _landingLat = s.data.latitude;
+      _landingLon = s.data.longitude;
+      _landingAltitude = s.data.altitude;
+    }
 
     if (prev != null && s.data.hasFix && prev.data.hasFix) {
       _distanceM += _haversineM(
@@ -236,6 +271,13 @@ class FlightTrack {
       if (helmetName?.isNotEmpty ?? false) 'helmetName': helmetName,
       if (takeoffSite?.isNotEmpty ?? false) 'takeoffSite': takeoffSite,
       if (landingSite?.isNotEmpty ?? false) 'landingSite': landingSite,
+      if (pilotName?.isNotEmpty ?? false) 'pilotName': pilotName,
+      if (_takeoffLat != null) 'takeoffLat': _takeoffLat,
+      if (_takeoffLon != null) 'takeoffLon': _takeoffLon,
+      if (_landingLat != null) 'landingLat': _landingLat,
+      if (_landingLon != null) 'landingLon': _landingLon,
+      if (_takeoffAltitude != null) 'takeoffAlt': _takeoffAltitude,
+      if (_landingAltitude != null) 'landingAlt': _landingAltitude,
     };
   }
 
@@ -258,6 +300,13 @@ class FlightTrack {
     helmetName = json['helmetName'] as String?;
     takeoffSite = json['takeoffSite'] as String?;
     landingSite = json['landingSite'] as String?;
+    pilotName = json['pilotName'] as String?;
+    _takeoffLat = (json['takeoffLat'] as num?)?.toDouble();
+    _takeoffLon = (json['takeoffLon'] as num?)?.toDouble();
+    _landingLat = (json['landingLat'] as num?)?.toDouble();
+    _landingLon = (json['landingLon'] as num?)?.toDouble();
+    _takeoffAltitude = (json['takeoffAlt'] as num?)?.toDouble();
+    _landingAltitude = (json['landingAlt'] as num?)?.toDouble();
   }
 
   /// Inverse of [toSummaryJson]. Returns null if the payload is malformed

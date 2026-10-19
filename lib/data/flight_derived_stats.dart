@@ -47,6 +47,16 @@ class FlightDerivedStats {
     this.xcDistanceM = 0,
     this.faiTriangleM = 0,
     this.faiClosed = false,
+    this.faiTriangleLegsM = const [],
+    this.faiClosingM = 0,
+    this.flatTriangleM = 0,
+    this.flatTriangleLegsM = const [],
+    this.flatClosingM = 0,
+    this.flatClosed = false,
+    this.threeTurnpointM = 0,
+    this.threeTurnpointLegsM = const [],
+    this.maxAltGainM = 0,
+    this.elevationDropM = 0,
   });
 
   /// Straight-line (start → end) distance, meters.
@@ -98,6 +108,43 @@ class FlightDerivedStats {
   /// Whether the best FAI triangle is "closed" (start and end within the FAI
   /// closing tolerance of 5% of the triangle perimeter).
   final bool faiClosed;
+
+  /// The three side lengths (meters) of the best FAI triangle, or empty when
+  /// none was found. Order is around the triangle (leg1, leg2, leg3).
+  final List<double> faiTriangleLegsM;
+
+  /// Closing-gap distance (meters) of the best FAI triangle — how far apart the
+  /// circuit's entry and exit points are. Smaller is a "rounder" triangle.
+  final double faiClosingM;
+
+  /// Best "flat" (free) triangle scored distance (perimeter − closing gap),
+  /// meters. Unlike the FAI triangle this has no shortest-leg constraint, only
+  /// the 20% closing rule. 0 when no qualifying triangle exists.
+  final double flatTriangleM;
+
+  /// The three side lengths (meters) of the best flat triangle, or empty.
+  final List<double> flatTriangleLegsM;
+
+  /// Closing-gap distance (meters) of the best flat triangle.
+  final double flatClosingM;
+
+  /// Whether the best flat triangle closes within 5% of its perimeter.
+  final bool flatClosed;
+
+  /// Best free distance over three turnpoints (five chronological points,
+  /// four legs), meters — the classic XC "open distance" metric. 0 when the
+  /// track is too short.
+  final double threeTurnpointM;
+
+  /// The four leg lengths (meters) of the best 3-turnpoint route, or empty.
+  final List<double> threeTurnpointLegsM;
+
+  /// Height of the single biggest climb (meters): the largest gain from a
+  /// local low to a later high over the flight.
+  final double maxAltGainM;
+
+  /// Elevation drop (meters): launch altitude minus the lowest altitude seen.
+  final double elevationDropM;
 
   static const FlightDerivedStats zero = FlightDerivedStats(
     straightDistanceM: 0,
@@ -172,6 +219,13 @@ class FlightDerivedStats {
     double gained = 0;
     double lost = 0;
 
+    // Biggest single climb (trough→peak) and the global altitude extremes for
+    // the elevation-drop metric. Seeded with the launch altitude.
+    final launchAlt = first.data.altitude;
+    double minSoFar = launchAlt;
+    double maxAltGain = 0;
+    double globalMin = launchAlt;
+
     // Cruise (glide) speed accumulation.
     double cruiseSpeedSum = 0;
     int cruiseSpeedCount = 0;
@@ -218,6 +272,13 @@ class FlightDerivedStats {
       } else {
         lost += -dAlt;
       }
+
+      // Max single-climb height and running altitude extremes.
+      final alt = b.data.altitude;
+      final gain = alt - minSoFar;
+      if (gain > maxAltGain) maxAltGain = gain;
+      if (alt < minSoFar) minSoFar = alt;
+      if (alt < globalMin) globalMin = alt;
 
       final v = b.data.verticalSpeed;
       if (v > 0) {
@@ -271,7 +332,7 @@ class FlightDerivedStats {
         last.time.difference(first.time).inMilliseconds / 1000.0;
     final avgGs = totalSec > 0 ? (trackDist / totalSec) * 3.6 : 0.0;
 
-    final fai = _bestFaiTriangle(s);
+    final routes = _bestRoutes(s);
 
     return FlightDerivedStats(
       straightDistanceM: straight,
@@ -293,27 +354,45 @@ class FlightDerivedStats {
       glideTime: Duration(milliseconds: glideMs),
       movingTime: Duration(milliseconds: movingMs),
       xcDistanceM: straight,
-      faiTriangleM: fai.$1,
-      faiClosed: fai.$2,
+      faiTriangleM: routes.faiTotalM,
+      faiClosed: routes.faiClosed,
+      faiTriangleLegsM: routes.faiLegsM,
+      faiClosingM: routes.faiClosingM,
+      flatTriangleM: routes.flatTotalM,
+      flatTriangleLegsM: routes.flatLegsM,
+      flatClosingM: routes.flatClosingM,
+      flatClosed: routes.flatClosed,
+      threeTurnpointM: routes.threeTurnpointM,
+      threeTurnpointLegsM: routes.threeTurnpointLegsM,
+      maxAltGainM: maxAltGain,
+      elevationDropM: (launchAlt - globalMin).clamp(0.0, double.infinity),
     );
   }
 
-  /// Searches for the largest FAI triangle over the track.
+  /// Searches the track for the standard cross-country routes XC scorers show:
+  /// the best free distance over three turnpoints, and the best flat and FAI
+  /// triangles.
   ///
-  /// A full O(n³) search is infeasible for long tracks, so the track is first
-  /// reduced to at most [_faiMaxPoints] evenly-spaced points; the triangle
-  /// search then runs on that reduced set. This mirrors the heuristic used by
-  /// the reference project's optimizer — good enough for a post-flight summary,
-  /// not a scoring-grade optimizer. Returns `(perimeterMeters, closed)`.
-  static (double, bool) _bestFaiTriangle(List<FlightSample> s) {
-    if (s.length < 3) return (0.0, false);
+  /// A full search is infeasible on long tracks, so the track is first reduced
+  /// to at most [_routeMaxPoints] evenly-spaced points; the (O(n³) triangle /
+  /// O(n²) distance) searches then run on that reduced set. This is a solid
+  /// approximation — it converges on the official XContest optimizer as the
+  /// resolution rises — but is not a certified scoring engine.
+  ///
+  /// Triangle scoring mirrors XContest: the three turnpoints are chosen to
+  /// maximize the triangle perimeter subject to the circuit "closing" within
+  /// 20% of that perimeter (an FAI triangle additionally requires the shortest
+  /// leg to be ≥ 28% of the perimeter). The reported triangle distance is the
+  /// perimeter minus the closing gap.
+  static _RouteStats _bestRoutes(List<FlightSample> s) {
+    if (s.length < 3) return _RouteStats.empty;
 
     // Downsample to a manageable point count.
     final pts = <FlightSample>[];
-    if (s.length <= _faiMaxPoints) {
+    if (s.length <= _routeMaxPoints) {
       pts.addAll(s);
     } else {
-      final stride = s.length / _faiMaxPoints;
+      final stride = s.length / _routeMaxPoints;
       for (var i = 0.0; i < s.length; i += stride) {
         pts.add(s[i.floor()]);
       }
@@ -336,47 +415,114 @@ class FlightDerivedStats {
       }
     }
 
-    double best = 0;
-    var bestI = 0, bestJ = 0, bestK = 0;
+    // ── Free distance over three turnpoints (five ordered points, four legs).
+    // dp[p][j] = best total path using p points and ending at index j.
+    const p = 5;
+    const neg = -1e18;
+    final dp = List.generate(p, (_) => List<double>.filled(n, neg));
+    final par = List.generate(p, (_) => List<int>.filled(n, -1));
+    for (var j = 0; j < n; j++) {
+      dp[0][j] = 0;
+    }
+    for (var step = 1; step < p; step++) {
+      for (var j = 0; j < n; j++) {
+        var best = neg, bi = -1;
+        for (var i = 0; i < j; i++) {
+          final c = dp[step - 1][i] + dist[i][j];
+          if (c > best) {
+            best = c;
+            bi = i;
+          }
+        }
+        dp[step][j] = best;
+        par[step][j] = bi;
+      }
+    }
+    var tpTotal = 0.0;
+    var tpEnd = -1;
+    for (var j = 0; j < n; j++) {
+      if (dp[p - 1][j] > tpTotal) {
+        tpTotal = dp[p - 1][j];
+        tpEnd = j;
+      }
+    }
+    final tpLegs = <double>[];
+    if (tpEnd >= 0) {
+      var cj = tpEnd, cp = p - 1;
+      while (cp >= 1) {
+        final ci = par[cp][cj];
+        if (ci < 0) break;
+        tpLegs.insert(0, dist[ci][cj]);
+        cj = ci;
+        cp--;
+      }
+    }
+
+    // ── Triangles.
+    // closingMin[i][k] = min distance between any point ≤ i and any point ≥ k,
+    // i.e. the smallest gap to close a circuit entered at/after i and exited
+    // at/before k. Built in two O(n²) passes.
+    final h = List.generate(n, (_) => List<double>.filled(n, 1e18));
+    for (var i = 0; i < n; i++) {
+      for (var k = n - 1; k >= 0; k--) {
+        final next = k + 1 < n ? h[i][k + 1] : 1e18;
+        h[i][k] = math.min(next, dist[i][k]);
+      }
+    }
+    final closingMin = List.generate(n, (_) => List<double>.filled(n, 1e18));
+    for (var i = 0; i < n; i++) {
+      for (var k = 0; k < n; k++) {
+        final up = i > 0 ? closingMin[i - 1][k] : 1e18;
+        closingMin[i][k] = math.min(up, h[i][k]);
+      }
+    }
+
+    var flatPerim = 0.0, flatClosing = 0.0;
+    List<double> flatLegs = const [];
+    var faiPerim = 0.0, faiClosing = 0.0;
+    List<double> faiLegs = const [];
     for (var i = 0; i < n - 2; i++) {
       for (var j = i + 1; j < n - 1; j++) {
         final dij = dist[i][j];
         for (var k = j + 1; k < n; k++) {
           final perim = dij + dist[j][k] + dist[k][i];
-          if (perim > best) {
-            // FAI rule-of-thumb: the shortest leg must be >= 28% of perimeter.
-            final legs = [dij, dist[j][k], dist[k][i]];
-            final shortest = legs.reduce(math.min);
-            if (shortest >= 0.28 * perim) {
-              best = perim;
-              bestI = i;
-              bestJ = j;
-              bestK = k;
-            }
+          if (perim <= 0) continue;
+          final closing = closingMin[i][k];
+          if (closing > 0.20 * perim) continue; // must close within 20%
+          if (perim > flatPerim) {
+            flatPerim = perim;
+            flatClosing = closing;
+            flatLegs = [dij, dist[j][k], dist[k][i]];
+          }
+          final shortest = math.min(dij, math.min(dist[j][k], dist[k][i]));
+          if (shortest >= 0.28 * perim && perim > faiPerim) {
+            faiPerim = perim;
+            faiClosing = closing;
+            faiLegs = [dij, dist[j][k], dist[k][i]];
           }
         }
       }
     }
 
-    if (best <= 0) return (0.0, false);
-
-    // Closed if the leg from the point before the first vertex back to the
-    // point after the last vertex is within 5% of the perimeter. Approximate by
-    // checking the start→end closing distance against the tolerance.
-    final closingDist = _haversineM(
-      pts[bestI].data.latitude,
-      pts[bestI].data.longitude,
-      pts[bestK].data.latitude,
-      pts[bestK].data.longitude,
+    return _RouteStats(
+      threeTurnpointM: tpTotal,
+      threeTurnpointLegsM: tpLegs,
+      flatTotalM: flatPerim > 0 ? (flatPerim - flatClosing) : 0.0,
+      flatLegsM: flatLegs,
+      flatClosingM: flatClosing,
+      flatClosed: flatPerim > 0 && flatClosing <= 0.05 * flatPerim,
+      faiTotalM: faiPerim > 0 ? (faiPerim - faiClosing) : 0.0,
+      faiLegsM: faiLegs,
+      faiClosingM: faiClosing,
+      faiClosed: faiPerim > 0 && faiClosing <= 0.05 * faiPerim,
     );
-    final closed = closingDist <= 0.05 * best;
-    // bestJ participates via the perimeter; silence unused-in-release hints.
-    assert(bestJ >= 0);
-    return (best, closed);
   }
 
-  /// Max points fed to the O(n³) FAI search.
-  static const int _faiMaxPoints = 120;
+  /// Max points fed to the route search. Higher converges on the official
+  /// optimizer at the cost of an O(n³) triangle scan; 240 keeps the on-demand
+  /// detail-screen computation well under a frame budget while staying close
+  /// to XContest's figures.
+  static const int _routeMaxPoints = 240;
 
   static double _haversineM(double lat1, double lon1, double lat2, double lon2) {
     const r = 6371000.0;
@@ -392,4 +538,45 @@ class FlightDerivedStats {
   }
 
   static double _rad(double deg) => deg * (math.pi / 180.0);
+}
+
+/// Internal result of [FlightDerivedStats._bestRoutes]: the best 3-turnpoint
+/// free distance plus the best flat and FAI triangles.
+class _RouteStats {
+  const _RouteStats({
+    required this.threeTurnpointM,
+    required this.threeTurnpointLegsM,
+    required this.flatTotalM,
+    required this.flatLegsM,
+    required this.flatClosingM,
+    required this.flatClosed,
+    required this.faiTotalM,
+    required this.faiLegsM,
+    required this.faiClosingM,
+    required this.faiClosed,
+  });
+
+  final double threeTurnpointM;
+  final List<double> threeTurnpointLegsM;
+  final double flatTotalM;
+  final List<double> flatLegsM;
+  final double flatClosingM;
+  final bool flatClosed;
+  final double faiTotalM;
+  final List<double> faiLegsM;
+  final double faiClosingM;
+  final bool faiClosed;
+
+  static const _RouteStats empty = _RouteStats(
+    threeTurnpointM: 0,
+    threeTurnpointLegsM: [],
+    flatTotalM: 0,
+    flatLegsM: [],
+    flatClosingM: 0,
+    flatClosed: false,
+    faiTotalM: 0,
+    faiLegsM: [],
+    faiClosingM: 0,
+    faiClosed: false,
+  );
 }

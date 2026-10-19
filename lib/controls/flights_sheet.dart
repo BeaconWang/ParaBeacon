@@ -1018,17 +1018,31 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           l10n.flightDetailSamples,
                           '${track.pointCount}',
                         ),
-                        if ((track.takeoffSite?.isNotEmpty ?? false) ||
-                            (track.landingSite?.isNotEmpty ?? false)) ...[
+                        if (track.pilotName?.isNotEmpty ?? false)
                           _detailRow(
-                            l10n.flightDetailTakeoff,
-                            track.takeoffSite ?? '—',
+                            l10n.flightDetailPilot,
+                            track.pilotName!,
                           ),
-                          _detailRow(
-                            l10n.flightDetailLanding,
-                            track.landingSite ?? '—',
-                          ),
-                        ],
+                        ...() {
+                          final takeoff = _endpointText(
+                            track.takeoffSite,
+                            track.takeoffLatitude,
+                            track.takeoffLongitude,
+                            track.takeoffAltitude,
+                          );
+                          final landing = _endpointText(
+                            track.landingSite,
+                            track.landingLatitude,
+                            track.landingLongitude,
+                            track.landingAltitude,
+                          );
+                          return [
+                            if (takeoff != null)
+                              _detailRow(l10n.flightDetailTakeoff, takeoff),
+                            if (landing != null)
+                              _detailRow(l10n.flightDetailLanding, landing),
+                          ];
+                        }(),
                         if (track.hasAircraftInformation) ...[
                           const SizedBox(height: 8),
                           _sectionLabel(theme, l10n.flightDetailAircraft),
@@ -1130,11 +1144,35 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                             l10n.flightDetailXcDistance,
                             '${(stats.xcDistanceM / 1000).toStringAsFixed(2)} km',
                           ),
+                          if (stats.threeTurnpointM > 0)
+                            _detailRow(
+                              l10n.flightDetailThreeTurnpoints,
+                              _routeText(
+                                stats.threeTurnpointM,
+                                stats.threeTurnpointLegsM,
+                              ),
+                            ),
                           if (stats.faiTriangleM > 0)
                             _detailRow(
                               l10n.flightDetailFaiTriangle,
-                              '${(stats.faiTriangleM / 1000).toStringAsFixed(2)} km'
-                              '${stats.faiClosed ? ' (${l10n.flightDetailFaiClosed})' : ''}',
+                              _triangleText(
+                                l10n,
+                                stats.faiTriangleM,
+                                stats.faiTriangleLegsM,
+                                stats.faiClosingM,
+                                stats.faiClosed,
+                              ),
+                            ),
+                          if (stats.flatTriangleM > 0)
+                            _detailRow(
+                              l10n.flightDetailFlatTriangle,
+                              _triangleText(
+                                l10n,
+                                stats.flatTriangleM,
+                                stats.flatTriangleLegsM,
+                                stats.flatClosingM,
+                                stats.flatClosed,
+                              ),
                             ),
                           _detailRow(
                             l10n.flightDetailMaxFromStart,
@@ -1181,6 +1219,14 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           _detailRow(
                             l10n.flightDetailAltLost,
                             '${stats.altitudeLostM.toStringAsFixed(0)} m',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailMaxAltGain,
+                            '${stats.maxAltGainM.toStringAsFixed(0)} m',
+                          ),
+                          _detailRow(
+                            l10n.flightDetailElevationDrop,
+                            '${stats.elevationDropM.toStringAsFixed(0)} m',
                           ),
                           _detailRow(
                             l10n.flightDetailClimbTime,
@@ -1350,5 +1396,70 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     final s = d.inSeconds % 60;
     String two(int n) => n.toString().padLeft(2, '0');
     return h > 0 ? '$h:${two(m)}:${two(s)}' : '${two(m)}:${two(s)}';
+  }
+
+  /// Formats a lat/lon pair the way XCTrack shows launch/landing, e.g.
+  /// `22.8311°N, 114.7010°E`. Returns null when either value is missing.
+  static String? _fmtCoords(double? lat, double? lon) {
+    if (lat == null || lon == null) return null;
+    final ns = lat >= 0 ? 'N' : 'S';
+    final ew = lon >= 0 ? 'E' : 'W';
+    return '${lat.abs().toStringAsFixed(4)}°$ns, '
+        '${lon.abs().toStringAsFixed(4)}°$ew';
+  }
+
+  /// Formats a distance in km with two decimals.
+  static String _km(double m) => '${(m / 1000).toStringAsFixed(2)} km';
+
+  /// Formats a list of leg lengths as `a / b / c` using meters below 1 km and
+  /// km above, keeping the row readable.
+  static String _legsText(List<double> legsM) {
+    String one(double m) =>
+        m >= 1000 ? '${(m / 1000).toStringAsFixed(2)}km' : '${m.round()}m';
+    return legsM.map(one).join(' / ');
+  }
+
+  /// A free-distance route row: total plus its legs.
+  static String _routeText(double totalM, List<double> legsM) {
+    final legs = legsM.isNotEmpty ? ' · ${_legsText(legsM)}' : '';
+    return '${_km(totalM)}$legs';
+  }
+
+  /// A triangle row: scored distance, the three legs, the closing gap and a
+  /// "closed" marker when the circuit closes tightly.
+  static String _triangleText(
+    AppLocalizations l10n,
+    double totalM,
+    List<double> legsM,
+    double closingM,
+    bool closed,
+  ) {
+    final legs = legsM.isNotEmpty ? ' · ${_legsText(legsM)}' : '';
+    final closing = closingM > 0
+        ? ' · ${l10n.flightDetailClosing} ${closingM.round()} m'
+        : '';
+    final mark = closed ? ' (${l10n.flightDetailFaiClosed})' : '';
+    return '${_km(totalM)}$legs$closing$mark';
+  }
+
+  /// Combines an optional site name with its coordinates and altitude for a
+  /// launch/landing detail row. Returns a string like
+  /// `Site (22.8311°N, 114.7010°E · 300 m)`, degrading gracefully when parts
+  /// are missing, or null when nothing is known.
+  static String? _endpointText(
+    String? site,
+    double? lat,
+    double? lon,
+    double? altitude,
+  ) {
+    final hasSite = site != null && site.isNotEmpty;
+    final coords = _fmtCoords(lat, lon);
+    final parts = <String>[];
+    if (coords != null) parts.add(coords);
+    if (altitude != null) parts.add('${altitude.round()} m');
+    final detail = parts.join(' · ');
+    if (hasSite && detail.isNotEmpty) return '$site ($detail)';
+    if (hasSite) return site;
+    return detail.isNotEmpty ? detail : null;
   }
 }

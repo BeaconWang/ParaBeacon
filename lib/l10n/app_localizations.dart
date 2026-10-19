@@ -3926,6 +3926,12 @@ abstract class AppLocalizations {
   /// **'Landing'**
   String get flightDetailLanding;
 
+  /// No description provided for @flightDetailPilot.
+  ///
+  /// In en, this message translates to:
+  /// **'Pilot'**
+  String get flightDetailPilot;
+
   /// No description provided for @flightDetailPerformance.
   ///
   /// In en, this message translates to:
@@ -3955,6 +3961,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'closed'**
   String get flightDetailFaiClosed;
+
+  /// No description provided for @flightDetailFlatTriangle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flat triangle'**
+  String get flightDetailFlatTriangle;
+
+  /// No description provided for @flightDetailThreeTurnpoints.
+  ///
+  /// In en, this message translates to:
+  /// **'3-turnpoint distance'**
+  String get flightDetailThreeTurnpoints;
+
+  /// No description provided for @flightDetailClosing.
+  ///
+  /// In en, this message translates to:
+  /// **'closing'**
+  String get flightDetailClosing;
+
+  /// No description provided for @flightDetailMaxAltGain.
+  ///
+  /// In en, this message translates to:
+  /// **'Max alt gain'**
+  String get flightDetailMaxAltGain;
+
+  /// No description provided for @flightDetailElevationDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Elevation drop'**
+  String get flightDetailElevationDrop;
 
   /// No description provided for @flightDetailMaxFromStart.
   ///

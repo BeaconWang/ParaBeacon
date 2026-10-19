@@ -169,6 +169,7 @@ class IgcImportService {
 
     DateTime? flightDate; // UTC date (midnight) from the H record.
     String? gliderType;
+    String? pilot;
 
     // First pass: headers.
     for (final line in lines) {
@@ -179,6 +180,15 @@ class IgcImportService {
         if (idx >= 0 && idx + 1 < line.length) {
           final v = line.substring(idx + 1).trim();
           if (v.isNotEmpty) gliderType = v;
+        }
+      } else if (line.startsWith('HFPLTPILOTINCHARGE') ||
+          line.startsWith('HFPLT')) {
+        // Pilot in command. Form is `HFPLTPILOTINCHARGE:Name` (current) or a
+        // legacy `HFPLT…:Name`; take whatever follows the first colon.
+        final idx = line.indexOf(':');
+        if (idx >= 0 && idx + 1 < line.length) {
+          final v = line.substring(idx + 1).trim();
+          if (v.isNotEmpty) pilot ??= v;
         }
       }
     }
@@ -293,6 +303,7 @@ class IgcImportService {
 
     track.endTime = fixes.last.time.toLocal();
     if (gliderType != null) track.gliderName = gliderType;
+    if (pilot != null) track.pilotName = pilot;
     return track;
   }
 

@@ -1987,6 +1987,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightDetailLanding => '降落';
 
   @override
+  String get flightDetailPilot => '飞行员';
+
+  @override
   String get flightDetailPerformance => '性能';
 
   @override
@@ -2000,6 +2003,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get flightDetailFaiClosed => '闭合';
+
+  @override
+  String get flightDetailFlatTriangle => '平面三角';
+
+  @override
+  String get flightDetailThreeTurnpoints => '3 转折点距离';
+
+  @override
+  String get flightDetailClosing => '闭合距离';
+
+  @override
+  String get flightDetailMaxAltGain => '最大爬升高度';
+
+  @override
+  String get flightDetailElevationDrop => '海拔落差';
 
   @override
   String get flightDetailMaxFromStart => '距起点最远';

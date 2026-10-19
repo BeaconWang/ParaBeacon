@@ -206,27 +206,58 @@ class IgcImportService {
 
     if (fixes.length < 2) return null;
 
+    // Decide a *single* altitude source for the whole track before deriving
+    // anything from it.
+    //
+    // IGC carries two altitudes per fix: pressure (baro) and GNSS. A barometer
+    // normally gives a smoother, more accurate vertical trace, so it is
+    // preferred — but only when it is actually present and trustworthy.
+    //
+    // Phones without a (reliable) barometer — or an instrument whose BLE baro
+    // sensor drops out mid-flight — leave the pressure-altitude field at 0 on
+    // some or all fixes (XCTrack reports this as "no baro data"). Choosing the
+    // source *per fix* (`baro != 0 ? baro : gnss`) is the real bug: whenever
+    // baro flips between a reading and 0 the altitude snaps between the two
+    // very different sources, fabricating huge false climb/sink spikes and an
+    // inflated max altitude. So if baro is missing on more than a small
+    // fraction of fixes, fall back to GNSS altitude for the entire track.
+    final baroPresent = fixes.where((f) => f.baroAltitude != 0).length;
+    final useBaro = baroPresent >= fixes.length * 0.9;
+
     // IGC times are UTC; present them in local wall-clock time so a flight
     // shows at the hour the pilot actually flew (same convention as live
     // recording, which stamps samples with the local clock).
     final track = FlightTrack(startTime: fixes.first.time.toLocal());
 
+    // Effective altitude for one fix from the chosen source, carrying the last
+    // valid value forward across isolated dropouts (a 0 in the chosen source)
+    // so a momentary gap never shows up as a jump in altitude or vario.
+    double? lastAlt;
+    double altOf(_IgcFix f) {
+      final raw = useBaro ? f.baroAltitude : f.gnssAltitude;
+      if (raw != 0) {
+        lastAlt = raw.toDouble();
+        return lastAlt!;
+      }
+      // Chosen source missing on this fix: hold the previous value, or (for a
+      // leading gap) borrow the other source just this once.
+      final fallback = useBaro ? f.gnssAltitude : f.baroAltitude;
+      lastAlt ??= fallback != 0 ? fallback.toDouble() : 0.0;
+      return lastAlt!;
+    }
+
     _IgcFix? prev;
+    double? prevAlt;
     for (final f in fixes) {
       final time = f.time.toLocal();
-      final effectiveAlt = f.baroAltitude != 0
-          ? f.baroAltitude.toDouble()
-          : f.gnssAltitude.toDouble();
+      final effectiveAlt = altOf(f);
 
       double verticalSpeed = 0;
       double groundSpeed = 0;
       double heading = 0;
-      if (prev != null) {
+      if (prev != null && prevAlt != null) {
         final dtSec = f.time.difference(prev.time).inMilliseconds / 1000.0;
         if (dtSec > 0) {
-          final prevAlt = prev.baroAltitude != 0
-              ? prev.baroAltitude.toDouble()
-              : prev.gnssAltitude.toDouble();
           verticalSpeed = (effectiveAlt - prevAlt) / dtSec;
           final distM = _haversineM(
             prev.lat,
@@ -257,6 +288,7 @@ class IgcImportService {
         ),
       );
       prev = f;
+      prevAlt = effectiveAlt;
     }
 
     track.endTime = fixes.last.time.toLocal();

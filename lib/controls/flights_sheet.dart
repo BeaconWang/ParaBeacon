@@ -124,16 +124,26 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     final actions = _headerActions(tracks);
     // Compact IconButtons use a 40px target width.
     const buttonWidth = 40.0;
-    // Minimum width we want to reserve for the title before wrapping.
-    const minTitleWidth = 120.0;
+
+    final titleText = _selectionMode
+        ? '${AppLocalizations.of(context).flights} (${_selectedTracks.length})'
+        : AppLocalizations.of(context).flights;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final actionsWidth = actions.length * buttonWidth;
+          // Measure the actual title width so the row only wraps when the
+          // title and buttons would genuinely collide, instead of reserving
+          // a fixed amount that leaves a large gap in the middle.
+          final titlePainter = TextPainter(
+            text: TextSpan(text: titleText, style: theme.textTheme.titleLarge),
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+          )..layout();
           // Leading icon (24) + gap (10) + title + actions.
-          final needed = 24 + 10 + minTitleWidth + actionsWidth;
+          final needed = 24 + 10 + titlePainter.width + actionsWidth;
           final fitsOnOneRow = needed <= constraints.maxWidth;
 
           final titleRow = Row(
@@ -145,10 +155,9 @@ class _FlightsSheetState extends State<_FlightsSheet> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  _selectionMode
-                      ? '${AppLocalizations.of(context).flights} (${_selectedTracks.length})'
-                      : AppLocalizations.of(context).flights,
+                  titleText,
                   style: theme.textTheme.titleLarge,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (fitsOnOneRow) ...actions,

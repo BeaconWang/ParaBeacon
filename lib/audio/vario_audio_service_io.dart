@@ -50,7 +50,14 @@ class VarioAudioService {
   // output is ramped to silence regardless of the driven speed. Used by the
   // flight-data bridge to enforce "sound only when flying" — feeding 0 m/s is
   // not enough because the deadband near-lift cue would still beep.
-  bool _gateOpen = true;
+  //
+  // Starts CLOSED so the engine is silent from the very first rendered sample.
+  // init() begins rendering immediately, and the live feed defaults to 0 m/s
+  // which maps to the audible near-lift cue; if the gate defaulted open the
+  // vario would beep for a moment on app launch before the bridge applies its
+  // real "sound only when flying/connected" decision. The bridge opens the
+  // gate explicitly once sound is actually warranted.
+  bool _gateOpen = false;
 
   // Preview takeover. When active, live vertical-speed updates (e.g. from the
   // flight-data bridge) are ignored and the engine is driven by the preview
@@ -223,7 +230,12 @@ class _VarioSynth {
       (math.exp(2.0 * _loudnessDrive) + 1.0);
 
   double _targetSpeed = 0.0;
-  double outputGain = 1.0;
+  // Starts at 0.0 so the engine is silent from the very first rendered sample.
+  // The sink begins rendering during init() before any mute/volume/gate setter
+  // runs; defaulting this to 1.0 made the vario audible for that first buffer
+  // on app launch (the 0 m/s live feed maps to the near-lift cue). The service
+  // raises this to the real volume only once sound is actually warranted.
+  double outputGain = 0.0;
 
   void setTargetSpeed(double v) => _targetSpeed = v;
 

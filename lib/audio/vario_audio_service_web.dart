@@ -35,7 +35,9 @@ class VarioAudioService {
   VarioAudioConfig _config;
   bool _muted = false;
   double _volume = 1.0;
-  bool _gateOpen = true;
+  // Starts CLOSED to mirror the native engine, which begins silent on launch
+  // until the flight-data bridge opens the gate.
+  bool _gateOpen = false;
   bool _previewActive = false;
   bool _previewMuted = false;
 

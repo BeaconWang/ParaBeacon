@@ -106,11 +106,12 @@ class FlightShareCardService {
       weight: FontWeight.w700,
     );
 
-    // Full date plus the start→end clock range.
-    final end = track.endTime;
+    // Full date plus the first→last tracklog clock range.
+    final start = track.firstRecordedTime;
+    final end = track.endTime != null ? track.lastRecordedTime : null;
     final when = end != null
-        ? '${_fmtDate(track.startTime)}  –  ${_fmtTime(end)}'
-        : _fmtDate(track.startTime);
+        ? '${_fmtDate(start)}  –  ${_fmtTime(end)}'
+        : _fmtDate(start);
     _text(
       canvas,
       when,
@@ -385,7 +386,6 @@ class FlightShareCardService {
       (l10n.flightDetailSamples, '${track.pointCount}'),
       (l10n.flightDetailDistance, km(stats.trackDistanceM)),
       (l10n.flightDetailStraightDistance, km(stats.straightDistanceM)),
-      (l10n.flightDetailXcDistance, km(stats.xcDistanceM)),
       if (stats.maxDistanceFromStartM > 0)
         (l10n.flightDetailMaxFromStart, km(stats.maxDistanceFromStartM)),
       if (stats.trackEfficiency > 0)

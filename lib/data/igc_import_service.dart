@@ -170,6 +170,7 @@ class IgcImportService {
     DateTime? flightDate; // UTC date (midnight) from the H record.
     String? gliderType;
     String? pilot;
+    String? takeoffSite;
 
     // First pass: headers.
     for (final line in lines) {
@@ -180,6 +181,12 @@ class IgcImportService {
         if (idx >= 0 && idx + 1 < line.length) {
           final v = line.substring(idx + 1).trim();
           if (v.isNotEmpty) gliderType = v;
+        }
+      } else if (line.startsWith('HOSITSITE')) {
+        final idx = line.indexOf(':');
+        if (idx >= 0 && idx + 1 < line.length) {
+          final v = line.substring(idx + 1).trim();
+          if (v.isNotEmpty) takeoffSite = v;
         }
       } else if (line.startsWith('HFPLTPILOTINCHARGE') ||
           line.startsWith('HFPLT')) {
@@ -288,7 +295,7 @@ class IgcImportService {
             groundSpeed: groundSpeed,
             altitude: effectiveAlt,
             baroAltitude: f.baroAltitude != 0 ? f.baroAltitude.toDouble() : null,
-            gpsAltitude: f.gnssAltitude != 0 ? f.gnssAltitude.toDouble() : null,
+            gpsAltitude: f.gnssAltitude.toDouble(),
             latitude: f.lat,
             longitude: f.lon,
             heading: heading,
@@ -304,6 +311,7 @@ class IgcImportService {
     track.endTime = fixes.last.time.toLocal();
     if (gliderType != null) track.gliderName = gliderType;
     if (pilot != null) track.pilotName = pilot;
+    if (takeoffSite != null) track.takeoffSite = takeoffSite;
     return track;
   }
 

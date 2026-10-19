@@ -108,11 +108,12 @@ class FlightReportService {
           ),
         ),
         build: (context) {
-          final end = track.endTime;
+          final end = track.endTime != null ? track.lastRecordedTime : null;
+          final start = track.firstRecordedTime;
           final when = end != null
-              ? '${_fmtDate(track.startTime)}  ·  '
-                  '${_fmtTime(track.startTime)} – ${_fmtTime(end)}'
-              : _fmtDate(track.startTime);
+              ? '${_fmtDate(start)}  ·  '
+                  '${_fmtTime(start)} – ${_fmtTime(end)}'
+              : _fmtDate(start);
 
           return [
             pw.Text(
@@ -149,8 +150,8 @@ class FlightReportService {
             // ── Tables ──────────────────────────────────────────────────────
             _section(l10n.flightReportSummary),
             _table([
-              [l10n.flightReportDate, _fmtDate(track.startTime)],
-              [l10n.flightDetailStart, _fmtTime(track.startTime)],
+              [l10n.flightReportDate, _fmtDate(start)],
+              [l10n.flightDetailStart, _fmtTime(start)],
               [l10n.flightDetailEnd, end != null ? _fmtTime(end) : '—'],
               [l10n.flightDetailDuration, _fmtDuration(track.duration)],
               [l10n.flightDetailMovingTime, _fmtDuration(stats.movingTime)],
@@ -161,7 +162,6 @@ class FlightReportService {
             _table([
               [l10n.flightDetailDistance, _km(stats.trackDistanceM)],
               [l10n.flightDetailStraightDistance, _km(stats.straightDistanceM)],
-              [l10n.flightDetailXcDistance, _km(stats.xcDistanceM)],
               [l10n.flightDetailMaxFromStart, _km(stats.maxDistanceFromStartM)],
               if (stats.faiTriangleM > 0)
                 [

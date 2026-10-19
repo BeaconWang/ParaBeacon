@@ -16,15 +16,12 @@ String flightSlug(FlightTrack track) {
       '${two(t.hour)}${two(t.minute)}';
 }
 
-/// Derived performance metrics computed from a completed [FlightTrack]'s
-/// per-sample data.
+/// Performance metrics derived from a [FlightTrack].
 ///
-/// This is a self-contained port of the reference project's
-/// `FlightDerivedStats`, adapted to this project's [FlightTrack]/[FlightSample]
-/// model (ground speed in km/h, vertical speed in m/s). All values are computed
-/// in one pass over the samples; when a track carries no per-sample data (a
-/// summary-only flight restored from disk) the derived fields fall back to the
-/// summary statistics where possible and to zero otherwise.
+/// The shared tracklog and route fields follow XCTrack's sources and algorithms;
+/// ParaBeacon-specific speed, glide, and thermal metrics remain calculated from
+/// its recorded sensor snapshots. Summary-only flights use stored values where
+/// available and cannot recompute route metrics without their samples.
 class FlightDerivedStats {
   const FlightDerivedStats({
     required this.straightDistanceM,
@@ -59,7 +56,7 @@ class FlightDerivedStats {
     this.elevationDropM = 0,
   });
 
-  /// Straight-line (start → end) distance, meters.
+  /// XCTrack VP2: greatest straight-line distance between two track fixes.
   final double straightDistanceM;
 
   /// Total along-track distance, meters.
@@ -97,8 +94,7 @@ class FlightDerivedStats {
   final Duration glideTime;
   final Duration movingTime;
 
-  /// Cross-country "free / open" distance — here the straight start→end
-  /// distance, which is the simplest widely-used XC proxy, meters.
+  /// Backward-compatible alias for the XCTrack VP2 straight distance, meters.
   final double xcDistanceM;
 
   /// Best FAI-triangle perimeter found over the (downsampled) track, meters.
@@ -180,7 +176,7 @@ class FlightDerivedStats {
 
   /// Computes the derived stats for [track]. Cheap enough to call on demand.
   factory FlightDerivedStats.compute(FlightTrack track) {
-    final s = track.samples;
+    final s = track.samples.where((sample) => sample.data.hasFix).toList();
     if (s.length < 2) {
       // Summary-only or trivial track: surface what the summary already knows.
       return FlightDerivedStats(
@@ -201,6 +197,8 @@ class FlightDerivedStats {
         sinkTime: Duration.zero,
         glideTime: Duration.zero,
         movingTime: Duration.zero,
+        maxAltGainM: track.maxAltGainM ?? 0.0,
+        elevationDropM: track.elevationDropM ?? 0.0,
       );
     }
 
@@ -219,8 +217,8 @@ class FlightDerivedStats {
     double gained = 0;
     double lost = 0;
 
-    // Biggest single climb (trough→peak). Seeded with the launch altitude.
-    final launchAlt = first.data.altitude;
+    // XCTrack's max gain and elevation drop use GNSS altitude.
+    final launchAlt = _xctrackAltitude(first);
     double minSoFar = launchAlt;
     double maxAltGain = 0;
 
@@ -244,6 +242,7 @@ class FlightDerivedStats {
       final a = s[i - 1];
       final b = s[i];
       final dtMs = b.time.difference(a.time).inMilliseconds;
+      if (dtMs <= 0) continue;
       final dt = dtMs / 1000.0;
 
       final stepM = _haversineM(
@@ -271,8 +270,8 @@ class FlightDerivedStats {
         lost += -dAlt;
       }
 
-      // Max single-climb height and running altitude extremes.
-      final alt = b.data.altitude;
+      // XCTrack's max altitude gain uses GNSS altitude.
+      final alt = _xctrackAltitude(b);
       final gain = alt - minSoFar;
       if (gain > maxAltGain) maxAltGain = gain;
       if (alt < minSoFar) minSoFar = alt;
@@ -318,18 +317,12 @@ class FlightDerivedStats {
       }
     }
 
-    final straight = _haversineM(
-      first.data.latitude,
-      first.data.longitude,
-      last.data.latitude,
-      last.data.longitude,
-    );
+    final routes = _bestRoutes(s);
+    final straight = routes.vp2M;
 
     final totalSec =
         last.time.difference(first.time).inMilliseconds / 1000.0;
     final avgGs = totalSec > 0 ? (trackDist / totalSec) * 3.6 : 0.0;
-
-    final routes = _bestRoutes(s);
 
     return FlightDerivedStats(
       straightDistanceM: straight,
@@ -362,7 +355,7 @@ class FlightDerivedStats {
       threeTurnpointM: routes.threeTurnpointM,
       threeTurnpointLegsM: routes.threeTurnpointLegsM,
       maxAltGainM: maxAltGain,
-      elevationDropM: launchAlt - last.data.altitude,
+      elevationDropM: launchAlt - _xctrackAltitude(last),
     );
   }
 
@@ -370,32 +363,13 @@ class FlightDerivedStats {
   /// the best free distance over three turnpoints, and the best flat and FAI
   /// triangles.
   ///
-  /// A full search is infeasible on long tracks, so the track is first reduced
-  /// to at most [_routeMaxPoints] evenly-spaced points; the (O(n³) triangle /
-  /// O(n²) distance) searches then run on that reduced set. This is a solid
-  /// approximation — it converges on the official XContest optimizer as the
-  /// resolution rises — but is not a certified scoring engine.
-  ///
-  /// Triangle scoring mirrors XContest: the three turnpoints are chosen to
-  /// maximize the triangle perimeter subject to the circuit "closing" within
-  /// 20% of that perimeter (an FAI triangle additionally requires the shortest
-  /// leg to be ≥ 28% of the perimeter). The reported triangle distance is the
-  /// perimeter minus the closing gap.
+  /// Mirrors XCTrack's route search: simplify tracks over 150 fixes using its
+  /// cross-track-error anchor selection, then resample to 500 points. Route
+  /// distances use the same 6,371 km haversine radius.
   static _RouteStats _bestRoutes(List<FlightSample> s) {
-    if (s.length < 3) return _RouteStats.empty;
+    if (s.length < 2) return _RouteStats.empty;
 
-    // Downsample to a manageable point count.
-    final pts = <FlightSample>[];
-    if (s.length <= _routeMaxPoints) {
-      pts.addAll(s);
-    } else {
-      final stride = s.length / _routeMaxPoints;
-      for (var i = 0.0; i < s.length; i += stride) {
-        pts.add(s[i.floor()]);
-      }
-      if (pts.last != s.last) pts.add(s.last);
-    }
-
+    final pts = _xctrackRouteSamples(s);
     final n = pts.length;
     // Precompute pairwise distances.
     final dist = List.generate(n, (_) => List<double>.filled(n, 0));
@@ -409,6 +383,13 @@ class FlightDerivedStats {
         );
         dist[i][j] = d;
         dist[j][i] = d;
+      }
+    }
+
+    var vp2 = 0.0;
+    for (var i = 0; i < n - 1; i++) {
+      for (var j = i + 1; j < n; j++) {
+        if (dist[i][j] > vp2) vp2 = dist[i][j];
       }
     }
 
@@ -474,34 +455,41 @@ class FlightDerivedStats {
       }
     }
 
-    var flatPerim = 0.0, flatClosing = 0.0;
+    // XCTrack's default Contest.TriangleClosing value is 20 percent.
+    var flatScore = 0.0, flatPerim = 0.0, flatClosing = 0.0;
     List<double> flatLegs = const [];
-    var faiPerim = 0.0, faiClosing = 0.0;
+    var faiScore = 0.0, faiPerim = 0.0, faiClosing = 0.0;
     List<double> faiLegs = const [];
     for (var i = 0; i < n - 2; i++) {
       for (var j = i + 1; j < n - 1; j++) {
         final dij = dist[i][j];
         for (var k = j + 1; k < n; k++) {
-          final perim = dij + dist[j][k] + dist[k][i];
+          final djk = dist[j][k];
+          final dki = dist[k][i];
+          final perim = dij + djk + dki;
           if (perim <= 0) continue;
           final closing = closingMin[i][k];
-          if (closing > 0.20 * perim) continue; // must close within 20%
-          if (perim > flatPerim) {
+          if (closing > _triangleClosingRatio * perim) continue;
+          final score = perim - closing;
+          if (score > flatScore) {
+            flatScore = score;
             flatPerim = perim;
             flatClosing = closing;
-            flatLegs = [dij, dist[j][k], dist[k][i]];
+            flatLegs = [dij, djk, dki];
           }
-          final shortest = math.min(dij, math.min(dist[j][k], dist[k][i]));
-          if (shortest >= 0.28 * perim && perim > faiPerim) {
+          final shortest = math.min(dij, math.min(djk, dki));
+          if (shortest >= 0.28 * perim && score > faiScore) {
+            faiScore = score;
             faiPerim = perim;
             faiClosing = closing;
-            faiLegs = [dij, dist[j][k], dist[k][i]];
+            faiLegs = [dij, djk, dki];
           }
         }
       }
     }
 
     return _RouteStats(
+      vp2M: vp2,
       threeTurnpointM: tpTotal,
       threeTurnpointLegsM: tpLegs,
       flatTotalM: flatPerim > 0 ? (flatPerim - flatClosing) : 0.0,
@@ -515,11 +503,93 @@ class FlightDerivedStats {
     );
   }
 
-  /// Max points fed to the route search. Higher converges on the official
-  /// optimizer at the cost of an O(n³) triangle scan; 240 keeps the on-demand
-  /// detail-screen computation well under a frame budget while staying close
-  /// to XContest's figures.
-  static const int _routeMaxPoints = 240;
+  static const int _routeAnchorCount = 150;
+  static const int _routeMaxPoints = 500;
+  static const double _triangleClosingRatio = 0.20;
+
+  static List<FlightSample> _xctrackRouteSamples(List<FlightSample> samples) {
+    if (samples.length <= _routeAnchorCount) return samples;
+
+    final anchors = <int>[0, samples.length - 1];
+    while (anchors.length < _routeAnchorCount) {
+      var bestError = -1.0;
+      var bestSegment = -1;
+      var bestIndex = -1;
+      for (var segment = 0; segment < anchors.length - 1; segment++) {
+        final start = anchors[segment];
+        final end = anchors[segment + 1];
+        for (var index = start + 1; index < end; index++) {
+          final error = _crossTrackErrorSquared(
+            samples[start],
+            samples[end],
+            samples[index],
+          );
+          if (error > bestError) {
+            bestError = error;
+            bestSegment = segment;
+            bestIndex = index;
+          }
+        }
+      }
+      if (bestSegment < 0 || bestIndex < 0) break;
+      anchors.insert(bestSegment + 1, bestIndex);
+    }
+
+    final sampled = List<FlightSample?>.filled(_routeMaxPoints, null);
+    var outputStart = 0;
+    for (var segment = 0; segment < anchors.length - 1; segment++) {
+      final rawStart = anchors[segment];
+      final rawEnd = anchors[segment + 1];
+      final outputEnd =
+          ((_routeMaxPoints - 1) * rawEnd / (samples.length - 1)).floor();
+      sampled[outputStart] = samples[rawStart];
+      final outputSpan = outputEnd - outputStart;
+      if (outputSpan > 0) {
+        for (var output = outputStart + 1; output < outputEnd; output++) {
+          final raw = rawStart +
+              ((output - outputStart) * (rawEnd - rawStart) ~/ outputSpan);
+          sampled[output] = samples[raw];
+        }
+      }
+      outputStart = outputEnd;
+    }
+    sampled[outputStart] = samples.last;
+    return sampled.whereType<FlightSample>().toList(growable: false);
+  }
+
+  static double _crossTrackErrorSquared(
+    FlightSample start,
+    FlightSample end,
+    FlightSample point,
+  ) {
+    const metersPerDegree = 111194.92664455874;
+    final cosLatitude = math.cos(
+      _rad((start.data.latitude + end.data.latitude) / 2),
+    );
+    final dx = (end.data.longitude - start.data.longitude) *
+        metersPerDegree *
+        cosLatitude;
+    final dy = (end.data.latitude - start.data.latitude) * metersPerDegree;
+    final px = (point.data.longitude - start.data.longitude) *
+        metersPerDegree *
+        cosLatitude;
+    final py = (point.data.latitude - start.data.latitude) * metersPerDegree;
+    final segmentLengthSquared = dx * dx + dy * dy;
+    final pointLengthSquared = px * px + py * py;
+    if (segmentLengthSquared < 1e-12) return pointLengthSquared;
+    final projection = (px * dx + py * dy) / segmentLengthSquared;
+    if (projection <= 0) return pointLengthSquared;
+    if (projection >= 1) {
+      final ex = px - dx;
+      final ey = py - dy;
+      return ex * ex + ey * ey;
+    }
+    final cross = px * dy - py * dx;
+    return cross * cross / segmentLengthSquared;
+  }
+
+  static double _xctrackAltitude(FlightSample sample) =>
+      sample.data.gpsAltitude ?? sample.data.altitude;
 
   static double _haversineM(double lat1, double lon1, double lat2, double lon2) {
     const r = 6371000.0;
@@ -541,6 +611,7 @@ class FlightDerivedStats {
 /// free distance plus the best flat and FAI triangles.
 class _RouteStats {
   const _RouteStats({
+    required this.vp2M,
     required this.threeTurnpointM,
     required this.threeTurnpointLegsM,
     required this.flatTotalM,
@@ -553,6 +624,7 @@ class _RouteStats {
     required this.faiClosed,
   });
 
+  final double vp2M;
   final double threeTurnpointM;
   final List<double> threeTurnpointLegsM;
   final double flatTotalM;
@@ -565,6 +637,7 @@ class _RouteStats {
   final bool faiClosed;
 
   static const _RouteStats empty = _RouteStats(
+    vp2M: 0,
     threeTurnpointM: 0,
     threeTurnpointLegsM: [],
     flatTotalM: 0,

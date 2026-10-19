@@ -63,12 +63,30 @@ class FlightTrack {
     required int pointCount,
     required double? maxAltGainM,
     required double? elevationDropM,
+    double? gpsMaxClimb,
+    double? gpsMaxSink,
+    double? baroMaxClimb,
+    double? baroMaxSink,
+    bool? hasBaroData,
   }) {
     _distanceM = distanceM;
     _maxAltitude = maxAltitude;
     _minAltitude = minAltitude;
     _maxClimb = maxClimb;
     _maxSink = maxSink;
+    _gpsMaxClimb = gpsMaxClimb;
+    _gpsMaxSink = gpsMaxSink;
+    _baroMaxClimb = baroMaxClimb;
+    _baroMaxSink = baroMaxSink;
+    _hasBaroData = hasBaroData;
+    if (hasBaroData != null) {
+      _maxClimb = hasBaroData
+          ? (baroMaxClimb ?? maxClimb)
+          : (gpsMaxClimb ?? maxClimb);
+      _maxSink = hasBaroData
+          ? (baroMaxSink ?? maxSink)
+          : (gpsMaxSink ?? maxSink);
+    }
     _maxAltGainM = maxAltGainM;
     _elevationDropM = elevationDropM;
     _persistedPointCount = pointCount;
@@ -146,6 +164,17 @@ class FlightTrack {
   double _minAltitude = double.infinity;
   double _maxClimb = 0.0;
   double _maxSink = 0.0;
+  double? _gpsMaxClimb;
+  double? _gpsMaxSink;
+  double? _baroMaxClimb;
+  double? _baroMaxSink;
+  bool? _hasBaroData;
+  DateTime? _gpsVarioWindowStart;
+  double? _gpsVarioWindowPreviousAltitude;
+  double _gpsVarioWindowChange = 0.0;
+  DateTime? _baroVarioWindowStart;
+  double? _baroVarioWindowPreviousAltitude;
+  double _baroVarioWindowChange = 0.0;
   double? _maxAltGainM;
   double? _elevationDropM;
   double? _firstSampleAltitude;
@@ -160,21 +189,23 @@ class FlightTrack {
   // Launch / landing altitude (meters), captured the same way.
   double? _takeoffAltitude;
   double? _landingAltitude;
+  FlightSample? _lastFixSample;
 
   /// Point count carried across a persistence round-trip when [samples] is
   /// empty (i.e. the track was restored from disk).
   int? _persistedPointCount;
 
-  /// Cumulative ground track distance in meters.
+  /// Cumulative distance between successive, chronologically increasing fixes.
   double get distanceM => _distanceM;
 
-  /// Highest / lowest altitude seen (meters). Zero before any sample.
+  /// Highest / lowest GNSS altitude seen (meters). Zero before any sample.
   double get maxAltitude =>
       _maxAltitude == double.negativeInfinity ? 0.0 : _maxAltitude;
   double get minAltitude =>
       _minAltitude == double.infinity ? 0.0 : _minAltitude;
 
-  /// Strongest climb (m/s, >= 0) and sink (m/s, <= 0) seen.
+  /// XCTrack's maximum 30-second climb/sink interval rates, in m/s; pressure
+  /// altitude is used when available, otherwise GNSS altitude is used.
   double get maxClimb => _maxClimb;
   double get maxSink => _maxSink;
 
@@ -209,16 +240,29 @@ class FlightTrack {
     // the live [samples] list is emptied.
     _persistedPointCount = samples.length;
     samples.clear();
+    _lastFixSample = null;
   }
 
-  Duration get duration => (endTime ?? DateTime.now()).difference(startTime);
+  DateTime get firstRecordedTime =>
+      samples.isNotEmpty ? samples.first.time : startTime;
 
-  /// Appends a sample and folds it into the running statistics.
+  DateTime get lastRecordedTime => samples.isNotEmpty
+      ? samples.last.time
+      : (endTime ?? DateTime.now());
+
+  Duration get duration => samples.isNotEmpty
+      ? samples.last.time.difference(samples.first.time)
+      : (endTime ?? DateTime.now()).difference(startTime);
+
+  /// Appends a sample and folds it into XCTrack-compatible summary statistics.
   void add(FlightSample s) {
     final prev = samples.isNotEmpty ? samples.last : null;
     samples.add(s);
 
-    final alt = s.data.altitude;
+    final chronological = prev == null || s.time.isAfter(prev.time);
+    if (!chronological) return;
+
+    final alt = s.data.gpsAltitude ?? s.data.altitude;
     _maxAltGainM ??= 0.0;
     if (_minAltitude != double.infinity) {
       final gain = alt - _minAltitude;
@@ -229,27 +273,98 @@ class FlightTrack {
     if (alt > _maxAltitude) _maxAltitude = alt;
     if (alt < _minAltitude) _minAltitude = alt;
 
-    final v = s.data.verticalSpeed;
-    if (v > _maxClimb) _maxClimb = v;
-    if (v < _maxSink) _maxSink = v;
-
-    if (s.data.hasFix) {
-      // First fix is the launch; the latest fix is (so far) the landing.
-      _takeoffLat ??= s.data.latitude;
-      _takeoffLon ??= s.data.longitude;
-      _takeoffAltitude ??= s.data.altitude;
-      _landingLat = s.data.latitude;
-      _landingLon = s.data.longitude;
-      _landingAltitude = s.data.altitude;
+    _foldVarioWindow(
+      time: s.time,
+      altitude: alt,
+      barometric: false,
+    );
+    final baroAlt = s.data.baroAltitude;
+    _hasBaroData = baroAlt != null && baroAlt != 0;
+    if (baroAlt != null && baroAlt != 0) {
+      _foldVarioWindow(time: s.time, altitude: baroAlt, barometric: true);
+    }
+    if (_hasBaroData == true) {
+      _maxClimb = _baroMaxClimb ?? 0.0;
+      _maxSink = _baroMaxSink ?? 0.0;
+    } else {
+      _maxClimb = _gpsMaxClimb ?? 0.0;
+      _maxSink = _gpsMaxSink ?? 0.0;
     }
 
-    if (prev != null && s.data.hasFix && prev.data.hasFix) {
-      _distanceM += _haversineM(
-        prev.data.latitude,
-        prev.data.longitude,
-        s.data.latitude,
-        s.data.longitude,
-      );
+    if (s.data.hasFix) {
+      // XCTrack uses the first and last tracklog fixes for endpoint values.
+      _takeoffLat ??= s.data.latitude;
+      _takeoffLon ??= s.data.longitude;
+      _takeoffAltitude ??= alt;
+      _landingLat = s.data.latitude;
+      _landingLon = s.data.longitude;
+      _landingAltitude = alt;
+
+      final previousFix = _lastFixSample;
+      if (previousFix != null) {
+        _distanceM += _haversineM(
+          previousFix.data.latitude,
+          previousFix.data.longitude,
+          s.data.latitude,
+          s.data.longitude,
+        );
+      }
+      _lastFixSample = s;
+    }
+  }
+
+  void _foldVarioWindow({
+    required DateTime time,
+    required double altitude,
+    required bool barometric,
+  }) {
+    final start = barometric ? _baroVarioWindowStart : _gpsVarioWindowStart;
+    final previous = barometric
+        ? _baroVarioWindowPreviousAltitude
+        : _gpsVarioWindowPreviousAltitude;
+    if (start == null || previous == null) {
+      if (barometric) {
+        _baroVarioWindowStart = time;
+        _baroVarioWindowPreviousAltitude = altitude;
+        _baroVarioWindowChange = 0.0;
+      } else {
+        _gpsVarioWindowStart = time;
+        _gpsVarioWindowPreviousAltitude = altitude;
+        _gpsVarioWindowChange = 0.0;
+      }
+      return;
+    }
+
+    if (barometric) {
+      _baroVarioWindowChange += altitude - previous;
+      _baroVarioWindowPreviousAltitude = altitude;
+    } else {
+      _gpsVarioWindowChange += altitude - previous;
+      _gpsVarioWindowPreviousAltitude = altitude;
+    }
+
+    final elapsed = time.difference(start);
+    if (elapsed < const Duration(seconds: 30)) return;
+    final change = barometric
+        ? _baroVarioWindowChange
+        : _gpsVarioWindowChange;
+    final rate = change / (elapsed.inMilliseconds / 1000.0);
+    if (barometric) {
+      final maxClimb = _baroMaxClimb ?? 0.0;
+      final maxSink = _baroMaxSink ?? 0.0;
+      if (rate > maxClimb) _baroMaxClimb = rate;
+      if (rate < maxSink) _baroMaxSink = rate;
+      _baroVarioWindowStart = null;
+      _baroVarioWindowPreviousAltitude = null;
+      _baroVarioWindowChange = 0.0;
+    } else {
+      final maxClimb = _gpsMaxClimb ?? 0.0;
+      final maxSink = _gpsMaxSink ?? 0.0;
+      if (rate > maxClimb) _gpsMaxClimb = rate;
+      if (rate < maxSink) _gpsMaxSink = rate;
+      _gpsVarioWindowStart = null;
+      _gpsVarioWindowPreviousAltitude = null;
+      _gpsVarioWindowChange = 0.0;
     }
   }
 
@@ -267,6 +382,11 @@ class FlightTrack {
       'minAltitude': _minAltitude == double.infinity ? 0.0 : _minAltitude,
       'maxClimb': _maxClimb,
       'maxSink': _maxSink,
+      if (_gpsMaxClimb != null) 'gpsMaxClimb': _gpsMaxClimb,
+      if (_gpsMaxSink != null) 'gpsMaxSink': _gpsMaxSink,
+      if (_baroMaxClimb != null) 'baroMaxClimb': _baroMaxClimb,
+      if (_baroMaxSink != null) 'baroMaxSink': _baroMaxSink,
+      if (_hasBaroData != null) 'hasBaroData': _hasBaroData,
       if (_maxAltGainM != null) 'maxAltGainM': _maxAltGainM,
       if (_elevationDropM != null) 'elevationDropM': _elevationDropM,
       'pointCount': pointCount,
@@ -352,6 +472,11 @@ class FlightTrack {
       pointCount: (json['pointCount'] as num?)?.toInt() ?? 0,
       maxAltGainM: (json['maxAltGainM'] as num?)?.toDouble(),
       elevationDropM: (json['elevationDropM'] as num?)?.toDouble(),
+      gpsMaxClimb: (json['gpsMaxClimb'] as num?)?.toDouble(),
+      gpsMaxSink: (json['gpsMaxSink'] as num?)?.toDouble(),
+      baroMaxClimb: (json['baroMaxClimb'] as num?)?.toDouble(),
+      baroMaxSink: (json['baroMaxSink'] as num?)?.toDouble(),
+      hasBaroData: json['hasBaroData'] as bool?,
     ).._restoreMeta(json);
   }
 

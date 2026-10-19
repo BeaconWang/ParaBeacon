@@ -301,7 +301,36 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-      title: Text(_fmtDateTime(track.startTime)),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              _fmtDateTime(track.startTime),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (track.isAutoFlight) ...[
+            const SizedBox(width: 8),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                child: Text(
+                  l10n.flightButtonAuto,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
       subtitle: Text(
         l10n.flightsListSubtitle(
           _fmtDuration(track.duration),

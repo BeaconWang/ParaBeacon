@@ -73,6 +73,18 @@ class FlightTrack {
   final DateTime startTime;
   DateTime? endTime;
 
+  /// Whether this flight was started by automatic take-off detection. Null is
+  /// used only for synthetic debug tracks with independently randomized markers.
+  bool? startedAutomatically;
+
+  /// Whether this flight was ended by automatic landing detection. Null is
+  /// used only for synthetic debug tracks with independently randomized markers.
+  bool? endedAutomatically;
+
+  /// True only when automatic detection started and ended this flight.
+  bool get isAutoFlight =>
+      startedAutomatically == true && endedAutomatically == true;
+
   /// Optional post-flight metadata (set from the Flights sheet, persisted with
   /// the track and included in exports / share cards).
   ///
@@ -201,6 +213,9 @@ class FlightTrack {
       'maxClimb': _maxClimb,
       'maxSink': _maxSink,
       'pointCount': pointCount,
+      if (startedAutomatically != null)
+        'startedAutomatically': startedAutomatically,
+      if (endedAutomatically != null) 'endedAutomatically': endedAutomatically,
       // Aircraft configuration snapshot captured at takeoff.
       if (aircraftFaiClass != null) 'aircraftFaiClass': aircraftFaiClass,
       if (aircraftManufacturer?.isNotEmpty ?? false)
@@ -226,6 +241,8 @@ class FlightTrack {
 
   /// Copies the optional metadata fields out of a persisted [json] map.
   void _restoreMeta(Map<String, dynamic> json) {
+    startedAutomatically = json['startedAutomatically'] as bool?;
+    endedAutomatically = json['endedAutomatically'] as bool?;
     aircraftFaiClass = json['aircraftFaiClass'] as String?;
     aircraftManufacturer = json['aircraftManufacturer'] as String?;
     aircraftModel = json['aircraftModel'] as String?;
@@ -449,6 +466,8 @@ class FlightRecorder extends ChangeNotifier {
   /// vertical speed) so the Flights screen *and* the replay screen can both be
   /// exercised without a real flight. Statistics are derived from the samples
   /// by [FlightTrack.add], exactly like a genuine recording.
+  /// The start/end automation markers are randomized independently so the
+  /// Flights list can exercise AUTO and non-AUTO appearances.
   /// No-op in release/profile builds.
   void addRandomDebugTrack() {
     if (!kDebugMode) return;
@@ -466,7 +485,9 @@ class FlightRecorder extends ChangeNotifier {
     final durationMin = 5 + rnd.nextInt(55); // 5 .. 60 min
     final sampleCount = math.max(2, durationMin * 6); // ~1 sample / 10 s
 
-    final track = FlightTrack(startTime: start);
+    final track = FlightTrack(startTime: start)
+      ..startedAutomatically = rnd.nextBool()
+      ..endedAutomatically = rnd.nextBool();
 
     // Keep the generated replay in an interior-China region. The bounds are
     // deliberately conservative so the random walk cannot enter a neighboring
@@ -604,17 +625,18 @@ class FlightRecorder extends ChangeNotifier {
     final transitionPointTime = _transitionPointTime;
     _transitionPointTime = null;
     if (flying) {
-      final resumeQuickRelaunch = _automaticTakeoffTransition;
+      final automaticTakeoff = _automaticTakeoffTransition;
       _automaticTakeoffTransition = false;
       _beginRecording(
-        allowQuickRelaunch: resumeQuickRelaunch,
+        allowQuickRelaunch: automaticTakeoff,
+        automaticTakeoff: automaticTakeoff,
         at: transitionPointTime,
       );
     } else {
       final automaticLanding = _automaticLandingTransition;
       _automaticLandingTransition = false;
       final completed = _current;
-      _finishRecording();
+      _finishRecording(automaticLanding: automaticLanding);
       if (automaticLanding && completed != null) {
         _quickRelaunchTrack = completed;
         _quickRelaunchAt = transitionPointTime;
@@ -626,7 +648,11 @@ class FlightRecorder extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _beginRecording({bool allowQuickRelaunch = false, DateTime? at}) {
+  void _beginRecording({
+    bool allowQuickRelaunch = false,
+    bool automaticTakeoff = false,
+    DateTime? at,
+  }) {
     final relaunchTrack = _quickRelaunchTrack;
     final relaunchAt = _quickRelaunchAt;
     final relaunchDelta = at != null && relaunchAt != null
@@ -640,6 +666,7 @@ class FlightRecorder extends ChangeNotifier {
         relaunchDelta < AutoFlightDetector.quickRelaunchWindow &&
         _tracks.remove(relaunchTrack)) {
       relaunchTrack.endTime = null;
+      relaunchTrack.endedAutomatically = false;
       _current = relaunchTrack;
       _lastStored = relaunchTrack.samples.isEmpty
           ? null
@@ -668,14 +695,17 @@ class FlightRecorder extends ChangeNotifier {
       ..aircraftEngineType = aircraft.engineType
       ..aircraftTrimSpeedKmh = aircraft.trimSpeedKmh
       ..aircraftGoalGlideRatio = aircraft.goalGlideRatio
+      ..startedAutomatically = automaticTakeoff
+      ..endedAutomatically = false
       // Keep the legacy equipment field aligned with the same takeoff snapshot.
       ..gliderName = aircraft.displayName;
     _lastStored = null;
   }
 
-  void _finishRecording() {
+  void _finishRecording({bool automaticLanding = false}) {
     final t = _current;
     if (t != null) {
+      t.endedAutomatically = automaticLanding;
       t.endTime = DateTime.now();
       _lastCompleted = t;
       // Keep empty-but-valid sessions visible even if no sensor sample arrived.

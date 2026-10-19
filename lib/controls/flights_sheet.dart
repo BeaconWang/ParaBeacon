@@ -290,6 +290,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     final canReplay = track.samples.length >= 2;
     final selected = _selectedTracks.contains(track);
     return ListTile(
+      contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 0),
       leading: _selectionMode
           ? Checkbox(
               value: selected,

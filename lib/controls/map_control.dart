@@ -516,6 +516,11 @@ class _MapControlState extends State<MapControl> {
         ? _shift(wgs, widget.tileSource)
         : _shift(const LatLng(46.5197, 6.6323), widget.tileSource);
 
+    // "None" basemap (with no offline source standing in for it) renders only
+    // the overlays on a transparent background, so the dashboard/theme behind
+    // the map shows through instead of flutter_map's default opaque grey fill.
+    final bool blankBasemap = src.isNone && !_offlineActive;
+
     return _SuppressPageSwipe(
       child: Stack(
         children: [
@@ -527,6 +532,12 @@ class _MapControlState extends State<MapControl> {
                 initialZoom: widget.initialZoom,
                 minZoom: 2,
                 maxZoom: src.maxZoom,
+                // Transparent when there is no basemap so the grid overlay
+                // floats over the dashboard; otherwise keep flutter_map's
+                // default opaque grey tile backdrop.
+                backgroundColor: blankBasemap
+                    ? Colors.transparent
+                    : const Color(0xFFE0E0E0),
                 onPositionChanged: (camera, hasGesture) {
                   if (hasGesture && _follow) {
                     setState(() => _follow = false);
@@ -555,10 +566,11 @@ class _MapControlState extends State<MapControl> {
 
                 // "None" basemap: draw a dashed reference grid so the user
                 // still has a sense of scale and orientation on the blank
-                // background. Skipped when an offline basemap is active.
-                if (src.isNone && !_offlineActive)
+                // transparent background. Skipped when an offline basemap is
+                // active (it provides its own imagery).
+                if (blankBasemap)
                   _DashedGridLayer(
-                    color: theme.colorScheme.onSurface.withAlpha(46),
+                    color: theme.colorScheme.onSurface.withAlpha(90),
                     labelColor: theme.colorScheme.onSurfaceVariant,
                   ),
 

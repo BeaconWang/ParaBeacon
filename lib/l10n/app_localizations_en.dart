@@ -2006,6 +2006,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailDeleteSamples => 'Delete samples';
 
   @override
+  String get flightDetailFlight => 'Flight';
+
+  @override
+  String get flightDetailRoute => 'Route';
+
+  @override
+  String get flightDetailAltitude => 'Altitude';
+
+  @override
+  String get flightDetailRouteMetrics => 'Route metrics';
+
+  @override
+  String get flightDetailSpeedGlide => 'Speed & glide';
+
+  @override
+  String get flightDetailClimbAltitude => 'Climb & altitude';
+
+  @override
+  String get flightDetailTimeBreakdown => 'Time breakdown';
+
+  @override
   String get flightDetailStart => 'Start';
 
   @override

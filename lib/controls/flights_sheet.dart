@@ -411,8 +411,10 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<void> _saveShareCard(FlightTrack track) async {
     final l10n = AppLocalizations.of(context);
     try {
-      final saved =
-          await FlightShareCardService.instance.saveToGallery(track, l10n);
+      final saved = await FlightShareCardService.instance.saveToGallery(
+        track,
+        l10n,
+      );
       _snack(
         saved ? l10n.flightsShareCardSaved : l10n.flightsShareCardSharedFile,
       );
@@ -564,7 +566,9 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<void> _exportPdf(FlightTrack track) {
     final l10n = AppLocalizations.of(context);
     return _runExport(
-        () => FlightReportService.instance.sharePdf(track, l10n), 'PDF');
+      () => FlightReportService.instance.sharePdf(track, l10n),
+      'PDF',
+    );
   }
 
   Future<void> _runExport(
@@ -597,8 +601,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
             ListTile(
               leading: const Icon(Icons.folder_zip_outlined),
               title: Text(l10n.flightsImportLibrary),
-              onTap: () =>
-                  Navigator.of(context).pop(_ImportSource.library),
+              onTap: () => Navigator.of(context).pop(_ImportSource.library),
             ),
             ListTile(
               leading: const Icon(Icons.folder_open_outlined),
@@ -982,6 +985,8 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SizedBox(height: 8),
+                        _sectionLabel(theme, l10n.flightDetailFlight),
                         _detailRow(
                           l10n.flightDetailStart,
                           _fmtDateTime(track.firstRecordedTime),
@@ -997,39 +1002,17 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           _fmtDuration(track.duration),
                         ),
                         _detailRow(
-                          l10n.flightDetailDistance,
-                          '${(track.distanceM / 1000).toStringAsFixed(2)} km',
-                        ),
-                        _detailRow(
-                          l10n.flightDetailMaxAltitude,
-                          '${track.maxAltitude.toStringAsFixed(0)} m',
-                        ),
-                        _detailRow(
-                          l10n.flightDetailMinAltitude,
-                          '${track.minAltitude.toStringAsFixed(0)} m',
-                        ),
-                        _detailRow(
-                          l10n.flightDetailMaxClimb,
-                          '${track.maxClimb.toStringAsFixed(1)} m/s',
-                        ),
-                        _detailRow(
-                          l10n.flightDetailMaxSink,
-                          '${track.maxSink.toStringAsFixed(1)} m/s',
-                        ),
-                        _detailRow(
                           l10n.flightDetailSamples,
                           '${track.pointCount}',
                         ),
                         if (track.pilotName?.isNotEmpty ?? false)
-                          _detailRow(
-                            l10n.flightDetailPilot,
-                            track.pilotName!,
-                          ),
-                        if (track.gliderName?.isNotEmpty ?? false)
-                          _detailRow(
-                            l10n.equipmentGlider,
-                            track.gliderName!,
-                          ),
+                          _detailRow(l10n.flightDetailPilot, track.pilotName!),
+                        const SizedBox(height: 8),
+                        _sectionLabel(theme, l10n.flightDetailRoute),
+                        _detailRow(
+                          l10n.flightDetailDistance,
+                          '${(track.distanceM / 1000).toStringAsFixed(2)} km',
+                        ),
                         ...() {
                           final takeoff = _endpointText(
                             track.takeoffSite,
@@ -1050,9 +1033,27 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                               _detailRow(l10n.flightDetailLanding, landing),
                           ];
                         }(),
+                        const SizedBox(height: 8),
+                        _sectionLabel(theme, l10n.flightDetailAltitude),
+                        _detailRow(
+                          l10n.flightDetailMaxAltitude,
+                          '${track.maxAltitude.toStringAsFixed(0)} m',
+                        ),
+                        _detailRow(
+                          l10n.flightDetailMinAltitude,
+                          '${track.minAltitude.toStringAsFixed(0)} m',
+                        ),
+                        _detailRow(
+                          l10n.flightDetailMaxClimb,
+                          '${track.maxClimb.toStringAsFixed(1)} m/s',
+                        ),
+                        _detailRow(
+                          l10n.flightDetailMaxSink,
+                          '${track.maxSink.toStringAsFixed(1)} m/s',
+                        ),
+                        const SizedBox(height: 8),
+                        _sectionLabel(theme, l10n.flightDetailAircraft),
                         if (track.hasAircraftInformation) ...[
-                          const SizedBox(height: 8),
-                          _sectionLabel(theme, l10n.flightDetailAircraft),
                           if (track.aircraftFaiClass?.isNotEmpty ?? false)
                             _detailRow(
                               l10n.flightDetailAircraftClass,
@@ -1112,10 +1113,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                             label: Text(l10n.flightDetailAircraftEdit),
                           ),
                         ),
-                        if ((track.harnessName?.isNotEmpty ?? false) ||
-                            (track.helmetName?.isNotEmpty ?? false)) ...[
-                          const SizedBox(height: 8),
-                          _sectionLabel(theme, l10n.equipment),
+                        const SizedBox(height: 8),
+                        _sectionLabel(theme, l10n.equipment),
+                        if (track.hasEquipment) ...[
+                          if (track.gliderName?.isNotEmpty ?? false)
+                            _detailRow(l10n.equipmentGlider, track.gliderName!),
                           if (track.harnessName?.isNotEmpty ?? false)
                             _detailRow(
                               l10n.equipmentHarness,
@@ -1142,6 +1144,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                         if (track.hasSamples) ...[
                           const SizedBox(height: 8),
                           _sectionLabel(theme, l10n.flightDetailPerformance),
+                          _sectionLabel(theme, l10n.flightDetailRouteMetrics),
                           _detailRow(
                             l10n.flightDetailStraightDistance,
                             '${(stats.straightDistanceM / 1000).toStringAsFixed(2)} km',
@@ -1181,6 +1184,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                             '${(stats.maxDistanceFromStartM / 1000).toStringAsFixed(2)} km',
                           ),
                           _detailRow(
+                            l10n.flightDetailTrackEfficiency,
+                            '${(stats.trackEfficiency * 100).toStringAsFixed(0)} %',
+                          ),
+                          _sectionLabel(theme, l10n.flightDetailSpeedGlide),
+                          _detailRow(
                             l10n.flightDetailAvgGroundSpeed,
                             '${stats.avgGroundSpeedKph.toStringAsFixed(1)} km/h',
                           ),
@@ -1193,22 +1201,19 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                             '${stats.maxSpeedKph.toStringAsFixed(1)} km/h',
                           ),
                           _detailRow(
+                            l10n.flightDetailAvgGlideRatio,
+                            stats.avgGlideRatio > 0
+                                ? stats.avgGlideRatio.toStringAsFixed(1)
+                                : '—',
+                          ),
+                          _sectionLabel(theme, l10n.flightDetailClimbAltitude),
+                          _detailRow(
                             l10n.flightDetailAvgClimb,
                             '${stats.avgClimbMs.toStringAsFixed(1)} m/s',
                           ),
                           _detailRow(
                             l10n.flightDetailAvgSink,
                             '${stats.avgSinkMs.toStringAsFixed(1)} m/s',
-                          ),
-                          _detailRow(
-                            l10n.flightDetailAvgGlideRatio,
-                            stats.avgGlideRatio > 0
-                                ? stats.avgGlideRatio.toStringAsFixed(1)
-                                : '—',
-                          ),
-                          _detailRow(
-                            l10n.flightDetailTrackEfficiency,
-                            '${(stats.trackEfficiency * 100).toStringAsFixed(0)} %',
                           ),
                           _detailRow(
                             l10n.flightDetailThermals,
@@ -1230,6 +1235,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                             l10n.flightDetailElevationDrop,
                             '${(elevationDropM ?? stats.elevationDropM).toStringAsFixed(0)} m',
                           ),
+                          _sectionLabel(theme, l10n.flightDetailTimeBreakdown),
                           _detailRow(
                             l10n.flightDetailClimbTime,
                             _fmtDuration(stats.climbTime),
@@ -1299,7 +1305,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                             (maxAltGainM != null ||
                                 elevationDropM != null)) ...[
                           const SizedBox(height: 8),
-                          _sectionLabel(theme, l10n.flightDetailPerformance),
+                          _sectionLabel(theme, l10n.flightDetailAltitude),
                           if (maxAltGainM != null)
                             _detailRow(
                               l10n.flightDetailMaxAltGain,

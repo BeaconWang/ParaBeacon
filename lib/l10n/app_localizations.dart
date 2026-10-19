@@ -3860,6 +3860,48 @@ abstract class AppLocalizations {
   /// **'Delete samples'**
   String get flightDetailDeleteSamples;
 
+  /// No description provided for @flightDetailFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight'**
+  String get flightDetailFlight;
+
+  /// No description provided for @flightDetailRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Route'**
+  String get flightDetailRoute;
+
+  /// No description provided for @flightDetailAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get flightDetailAltitude;
+
+  /// No description provided for @flightDetailRouteMetrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Route metrics'**
+  String get flightDetailRouteMetrics;
+
+  /// No description provided for @flightDetailSpeedGlide.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed & glide'**
+  String get flightDetailSpeedGlide;
+
+  /// No description provided for @flightDetailClimbAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Climb & altitude'**
+  String get flightDetailClimbAltitude;
+
+  /// No description provided for @flightDetailTimeBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Time breakdown'**
+  String get flightDetailTimeBreakdown;
+
   /// No description provided for @flightDetailStart.
   ///
   /// In en, this message translates to:

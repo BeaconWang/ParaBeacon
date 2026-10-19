@@ -805,6 +805,13 @@
 
   "flightDetailsTitle": "Flight details",
   "flightDetailDeleteSamples": "Delete samples",
+  "flightDetailFlight": "Flight",
+  "flightDetailRoute": "Route",
+  "flightDetailAltitude": "Altitude",
+  "flightDetailRouteMetrics": "Route metrics",
+  "flightDetailSpeedGlide": "Speed & glide",
+  "flightDetailClimbAltitude": "Climb & altitude",
+  "flightDetailTimeBreakdown": "Time breakdown",
   "flightDetailStart": "Start",
   "flightDetailEnd": "End",
   "flightDetailDuration": "Duration",

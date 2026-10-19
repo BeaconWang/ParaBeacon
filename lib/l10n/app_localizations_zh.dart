@@ -1954,6 +1954,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightDetailDeleteSamples => '删除采样数据';
 
   @override
+  String get flightDetailFlight => '飞行概况';
+
+  @override
+  String get flightDetailRoute => '航线';
+
+  @override
+  String get flightDetailAltitude => '海拔';
+
+  @override
+  String get flightDetailRouteMetrics => '航线数据';
+
+  @override
+  String get flightDetailSpeedGlide => '速度与滑翔';
+
+  @override
+  String get flightDetailClimbAltitude => '爬升与海拔';
+
+  @override
+  String get flightDetailTimeBreakdown => '时间统计';
+
+  @override
   String get flightDetailStart => '开始';
 
   @override

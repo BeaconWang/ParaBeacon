@@ -698,6 +698,13 @@
 
   "flightDetailsTitle": "飞行详情",
   "flightDetailDeleteSamples": "删除采样数据",
+  "flightDetailFlight": "飞行概况",
+  "flightDetailRoute": "航线",
+  "flightDetailAltitude": "海拔",
+  "flightDetailRouteMetrics": "航线数据",
+  "flightDetailSpeedGlide": "速度与滑翔",
+  "flightDetailClimbAltitude": "爬升与海拔",
+  "flightDetailTimeBreakdown": "时间统计",
   "flightDetailStart": "开始",
   "flightDetailEnd": "结束",
   "flightDetailDuration": "时长",

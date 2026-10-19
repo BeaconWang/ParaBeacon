@@ -61,12 +61,16 @@ class FlightTrack {
     required double maxClimb,
     required double maxSink,
     required int pointCount,
+    required double? maxAltGainM,
+    required double? elevationDropM,
   }) {
     _distanceM = distanceM;
     _maxAltitude = maxAltitude;
     _minAltitude = minAltitude;
     _maxClimb = maxClimb;
     _maxSink = maxSink;
+    _maxAltGainM = maxAltGainM;
+    _elevationDropM = elevationDropM;
     _persistedPointCount = pointCount;
   }
 
@@ -142,6 +146,9 @@ class FlightTrack {
   double _minAltitude = double.infinity;
   double _maxClimb = 0.0;
   double _maxSink = 0.0;
+  double? _maxAltGainM;
+  double? _elevationDropM;
+  double? _firstSampleAltitude;
 
   // Launch / landing coordinates, captured from the first and last fix so they
   // remain available even after the per-sample data has been dropped.
@@ -170,6 +177,12 @@ class FlightTrack {
   /// Strongest climb (m/s, >= 0) and sink (m/s, <= 0) seen.
   double get maxClimb => _maxClimb;
   double get maxSink => _maxSink;
+
+  /// Largest altitude gain from a preceding low to a later high, if known.
+  double? get maxAltGainM => _maxAltGainM;
+
+  /// First-sample altitude minus the latest sample altitude, if known.
+  double? get elevationDropM => _elevationDropM;
 
   /// Launch / landing coordinates, or null when unknown (no fix seen).
   double? get takeoffLatitude => _takeoffLat;
@@ -206,6 +219,13 @@ class FlightTrack {
     samples.add(s);
 
     final alt = s.data.altitude;
+    _maxAltGainM ??= 0.0;
+    if (_minAltitude != double.infinity) {
+      final gain = alt - _minAltitude;
+      if (gain > _maxAltGainM!) _maxAltGainM = gain;
+    }
+    _firstSampleAltitude ??= alt;
+    _elevationDropM = _firstSampleAltitude! - alt;
     if (alt > _maxAltitude) _maxAltitude = alt;
     if (alt < _minAltitude) _minAltitude = alt;
 
@@ -247,6 +267,8 @@ class FlightTrack {
       'minAltitude': _minAltitude == double.infinity ? 0.0 : _minAltitude,
       'maxClimb': _maxClimb,
       'maxSink': _maxSink,
+      if (_maxAltGainM != null) 'maxAltGainM': _maxAltGainM,
+      if (_elevationDropM != null) 'elevationDropM': _elevationDropM,
       'pointCount': pointCount,
       if (startedAutomatically != null)
         'startedAutomatically': startedAutomatically,
@@ -307,6 +329,9 @@ class FlightTrack {
     _landingLon = (json['landingLon'] as num?)?.toDouble();
     _takeoffAltitude = (json['takeoffAlt'] as num?)?.toDouble();
     _landingAltitude = (json['landingAlt'] as num?)?.toDouble();
+    _elevationDropM ??= _takeoffAltitude != null && _landingAltitude != null
+        ? _takeoffAltitude! - _landingAltitude!
+        : null;
   }
 
   /// Inverse of [toSummaryJson]. Returns null if the payload is malformed
@@ -325,6 +350,8 @@ class FlightTrack {
       maxClimb: (json['maxClimb'] as num?)?.toDouble() ?? 0.0,
       maxSink: (json['maxSink'] as num?)?.toDouble() ?? 0.0,
       pointCount: (json['pointCount'] as num?)?.toInt() ?? 0,
+      maxAltGainM: (json['maxAltGainM'] as num?)?.toDouble(),
+      elevationDropM: (json['elevationDropM'] as num?)?.toDouble(),
     ).._restoreMeta(json);
   }
 

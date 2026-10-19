@@ -3983,7 +3983,7 @@ abstract class AppLocalizations {
   /// No description provided for @flightDetailMaxAltGain.
   ///
   /// In en, this message translates to:
-  /// **'Max alt gain'**
+  /// **'Max. alt. gain'**
   String get flightDetailMaxAltGain;
 
   /// No description provided for @flightDetailElevationDrop.

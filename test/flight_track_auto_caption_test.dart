@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/data/flight_data.dart';
+import 'package:parabeacon/data/flight_derived_stats.dart';
 import 'package:parabeacon/data/flight_recorder.dart';
 
 void main() {
@@ -39,6 +40,35 @@ void main() {
         expect(fromSummary?.isAutoFlight, isTrue);
       },
     );
+
+    test('tracks and persists altitude gain and elevation drop', () {
+      final track = FlightTrack(startTime: start)..endTime = end;
+      const altitudes = [1000.0, 900.0, 1300.0, 1050.0];
+      for (var i = 0; i < altitudes.length; i++) {
+        track.add(
+          FlightSample(
+            time: start.add(Duration(seconds: i)),
+            data: FlightData(altitude: altitudes[i]),
+          ),
+        );
+      }
+
+      expect(track.maxAltGainM, 400.0);
+      expect(track.elevationDropM, -50.0);
+      final stats = FlightDerivedStats.compute(track);
+      expect(stats.maxAltGainM, 400.0);
+      expect(stats.elevationDropM, -50.0);
+
+      final fullRestore = FlightTrack.fromJson(track.toJson());
+      expect(fullRestore?.maxAltGainM, 400.0);
+      expect(fullRestore?.elevationDropM, -50.0);
+
+      track.clearSamples();
+      final summaryRestore = FlightTrack.fromJson(track.toJson());
+      expect(summaryRestore?.hasSamples, isFalse);
+      expect(summaryRestore?.maxAltGainM, 400.0);
+      expect(summaryRestore?.elevationDropM, -50.0);
+    });
 
     test('random markers stay unspecified in persisted records', () {
       final randomSample = FlightTrack(startTime: start)

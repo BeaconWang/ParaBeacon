@@ -2066,7 +2066,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailClosing => 'closing';
 
   @override
-  String get flightDetailMaxAltGain => 'Max alt gain';
+  String get flightDetailMaxAltGain => 'Max. alt. gain';
 
   @override
   String get flightDetailElevationDrop => 'Elevation drop';

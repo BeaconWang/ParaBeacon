@@ -929,6 +929,8 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             final stats = FlightDerivedStats.compute(track);
+            final maxAltGainM = track.maxAltGainM;
+            final elevationDropM = track.elevationDropM;
             return Dialog.fullscreen(
               child: Scaffold(
                 appBar: AppBar(
@@ -1292,6 +1294,22 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                               ),
                             ],
                           ),
+                        ],
+                        if (!track.hasSamples &&
+                            (maxAltGainM != null ||
+                                elevationDropM != null)) ...[
+                          const SizedBox(height: 8),
+                          _sectionLabel(theme, l10n.flightDetailPerformance),
+                          if (maxAltGainM != null)
+                            _detailRow(
+                              l10n.flightDetailMaxAltGain,
+                              '${maxAltGainM.toStringAsFixed(0)} m',
+                            ),
+                          if (elevationDropM != null)
+                            _detailRow(
+                              l10n.flightDetailElevationDrop,
+                              '${elevationDropM.toStringAsFixed(0)} m',
+                            ),
                         ],
                       ],
                     ),

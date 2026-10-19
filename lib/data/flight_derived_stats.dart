@@ -143,7 +143,7 @@ class FlightDerivedStats {
   /// local low to a later high over the flight.
   final double maxAltGainM;
 
-  /// Elevation drop (meters): launch altitude minus the lowest altitude seen.
+  /// Elevation drop (meters): first-sample altitude minus last-sample altitude.
   final double elevationDropM;
 
   static const FlightDerivedStats zero = FlightDerivedStats(
@@ -219,12 +219,10 @@ class FlightDerivedStats {
     double gained = 0;
     double lost = 0;
 
-    // Biggest single climb (trough→peak) and the global altitude extremes for
-    // the elevation-drop metric. Seeded with the launch altitude.
+    // Biggest single climb (trough→peak). Seeded with the launch altitude.
     final launchAlt = first.data.altitude;
     double minSoFar = launchAlt;
     double maxAltGain = 0;
-    double globalMin = launchAlt;
 
     // Cruise (glide) speed accumulation.
     double cruiseSpeedSum = 0;
@@ -278,7 +276,6 @@ class FlightDerivedStats {
       final gain = alt - minSoFar;
       if (gain > maxAltGain) maxAltGain = gain;
       if (alt < minSoFar) minSoFar = alt;
-      if (alt < globalMin) globalMin = alt;
 
       final v = b.data.verticalSpeed;
       if (v > 0) {
@@ -365,7 +362,7 @@ class FlightDerivedStats {
       threeTurnpointM: routes.threeTurnpointM,
       threeTurnpointLegsM: routes.threeTurnpointLegsM,
       maxAltGainM: maxAltGain,
-      elevationDropM: (launchAlt - globalMin).clamp(0.0, double.infinity),
+      elevationDropM: launchAlt - last.data.altitude,
     );
   }
 

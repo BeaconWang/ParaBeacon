@@ -30,7 +30,7 @@ void main() {
 
       expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
       expect(data.getUint32(16), 1080);
-      expect(data.getUint32(20), lessThan(2500));
+      expect(data.getUint32(20), lessThan(3000));
     });
 
     test('trims unused space from sparse flight cards', () async {

@@ -37,9 +37,9 @@ class FlightShareCardService {
 
     _paintHeader(canvas, size, track);
     const chartLeft = 60.0;
+    const chartWidth = _w - 120.0;
+    const chartGap = 18.0;
     const chartTop = 220.0;
-    const chartGap = 16.0;
-    const chartWidth = (_w - 120.0 - chartGap) / 2;
     final mapBottom = _paintTrackMap(
       canvas,
       size,
@@ -48,15 +48,15 @@ class FlightShareCardService {
       left: chartLeft,
       top: chartTop,
       width: chartWidth,
-      height: track.samples.where((s) => s.data.hasFix).length >= 2 ? 200 : 90,
+      height: track.samples.where((s) => s.data.hasFix).length >= 2 ? 308 : 90,
     );
     final profileBottom = _paintAltitudeProfile(
       canvas,
       size,
       track,
       l10n,
-      left: chartLeft + chartWidth + chartGap,
-      top: chartTop,
+      left: chartLeft,
+      top: mapBottom + chartGap,
       width: chartWidth,
       height: track.samples.where((s) => s.data.altitude.isFinite).length >= 2
           ? 200
@@ -68,7 +68,7 @@ class FlightShareCardService {
       track,
       stats,
       l10n,
-      top: math.max(mapBottom, profileBottom).toDouble() + 18,
+      top: profileBottom + chartGap,
     );
     final cardHeight = statsBottom.ceil() + 112;
     _paintFooter(canvas, size, track, l10n, cardHeight: cardHeight);
@@ -392,7 +392,7 @@ class FlightShareCardService {
     if (hasProfile) {
       _text(
         canvas,
-        l10n.unitAltitude.toUpperCase(),
+        l10n.flightReportAltitudeProfile.toUpperCase(),
         Offset(left + 22, top + 12),
         fontSize: 18,
         color: const Color(0xFF8FB6CC),

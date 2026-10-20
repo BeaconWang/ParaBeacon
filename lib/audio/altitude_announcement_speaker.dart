@@ -33,6 +33,18 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
   static const _speakTimeout = Duration(seconds: 12);
   static const _maxFailuresBeforeUnavailable = 2;
 
+  /// User-facing speech speed range, as a multiple of the normal speed.
+  static const minRate = 0.5;
+  static const maxRate = 2.0;
+
+  /// Maps a speed multiple (1.0 = normal) to flutter_tts' rate scale, where
+  /// 0.5 is the normal speed on both Android (plugin doubles it to 1.0) and
+  /// iOS (AVSpeechUtteranceDefaultSpeechRate) and 1.0 is the fastest on iOS.
+  static double platformRateFor(double multiple) {
+    final m = multiple.isFinite ? multiple.clamp(minRate, maxRate) : 1.0;
+    return (0.5 * m).clamp(0.1, 1.0);
+  }
+
   static const _chineseTags = ['zh-CN', 'zh-TW', 'zh-HK', 'zh'];
   static const _englishTags = ['en-US', 'en-GB', 'en-AU', 'en-IN', 'en'];
 
@@ -75,6 +87,7 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     required AnnouncementLanguage preferred,
     required String Function(AnnouncementLanguage language) phraseFor,
     bool waitIfBusy = false,
+    double rate = 1.0,
   }) async {
     if (_busy) {
       if (!waitIfBusy) return false;
@@ -94,6 +107,9 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
         return false;
       }
       if (_isIOS) await _configureIosSession();
+      // Applied before every utterance: it is cheap, follows setting changes
+      // immediately and survives Android engine switches (which reset it).
+      await _call<dynamic>(() => _tts.setSpeechRate(platformRateFor(rate)));
 
       final text = phraseFor(language);
       _showCaption(text);
@@ -212,7 +228,7 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     // and an unsuitable voice is better than silence in flight.
     language ??= AnnouncementLanguage.english;
 
-    await _call<dynamic>(() => _tts.setSpeechRate(0.5));
+    await _call<dynamic>(() => _tts.setSpeechRate(platformRateFor(1.0)));
     await _call<dynamic>(() => _tts.setPitch(1.0));
     await _call<dynamic>(() => _tts.setVolume(1.0));
 

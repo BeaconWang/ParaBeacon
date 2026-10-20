@@ -68,6 +68,12 @@ class _AltitudeAnnouncementSettingsSheetState
     _onTemplateChanged('');
   }
 
+  /// 1.0 -> "1.0", 1.25 -> "1.25", 1.1 -> "1.1".
+  static String _formatRate(double rate) {
+    final text = rate.toStringAsFixed(2);
+    return text.endsWith('0') ? text.substring(0, text.length - 1) : text;
+  }
+
   static String _placeholderLabel(
     AppLocalizations l10n,
     AnnouncementPlaceholder placeholder,
@@ -181,6 +187,33 @@ class _AltitudeAnnouncementSettingsSheetState
                       ? (values) =>
                             settings.setLiftSpeedRange(values.start, values.end)
                       : null,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.altitudeAnnouncementSpeechRate(
+                          _formatRate(settings.speechRate),
+                        ),
+                        style: theme.textTheme.titleSmall,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: settings.speechRate == 1.0
+                          ? null
+                          : () => settings.setSpeechRate(1.0),
+                      child: Text(l10n.altitudeAnnouncementSpeechRateNormal),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: settings.speechRate,
+                  min: AltitudeAnnouncementSettings.minSpeechRate,
+                  max: AltitudeAnnouncementSettings.maxSpeechRate,
+                  divisions: 30,
+                  label: '${_formatRate(settings.speechRate)}×',
+                  onChanged: settings.setSpeechRate,
                 ),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,

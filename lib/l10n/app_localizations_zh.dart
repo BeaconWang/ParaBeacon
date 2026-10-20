@@ -2788,6 +2788,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementDuckVario => '播报时降低升降音';
 
   @override
+  String altitudeAnnouncementSpeechRate(String rate) {
+    return '播报语速：$rate×';
+  }
+
+  @override
+  String get altitudeAnnouncementSpeechRateNormal => '正常';
+
+  @override
   String get altitudeAnnouncementDuckVarioDescription =>
       '语音播报期间调低升降音音量，避免升降音过响时听不清播报。';
 

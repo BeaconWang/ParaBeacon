@@ -189,10 +189,12 @@ Future<bool> speakAnnouncement(
   AltitudeAnnouncementSettings? settings,
   bool waitIfBusy = false,
 }) {
-  final template = (settings ?? AltitudeAnnouncementSettings.instance).template;
+  final resolved = settings ?? AltitudeAnnouncementSettings.instance;
+  final template = resolved.template;
   return (speaker ?? AltitudeAnnouncementSpeaker.instance).speak(
     preferred: announcementLanguageFor(template),
     waitIfBusy: waitIfBusy,
+    rate: resolved.speechRate,
     phraseFor: (language) => renderAnnouncement(template, language, values),
   );
 }

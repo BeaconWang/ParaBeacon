@@ -2874,6 +2874,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Lower vario sound while speaking';
 
   @override
+  String altitudeAnnouncementSpeechRate(String rate) {
+    return 'Speaking speed: $rate×';
+  }
+
+  @override
+  String get altitudeAnnouncementSpeechRateNormal => 'Normal';
+
+  @override
   String get altitudeAnnouncementDuckVarioDescription =>
       'Turns the vario tone down during announcements so the voice can be heard over a loud vario.';
 

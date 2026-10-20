@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'altitude_announcement_speaker.dart';
 import 'announcement_template.dart';
 
 /// Persisted preferences for spoken altitude announcements.
@@ -16,6 +17,11 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const _kTemplate = 'pb.altitudeAnnouncements.template';
   static const _kDuckVario = 'pb.altitudeAnnouncements.duckVario';
   static const _kDuckLevel = 'pb.altitudeAnnouncements.duckLevel';
+  static const _kSpeechRate = 'pb.altitudeAnnouncements.speechRate';
+
+  /// Allowed range for [speechRate] (multiple of the normal speaking speed).
+  static const minSpeechRate = AltitudeAnnouncementSpeaker.minRate;
+  static const maxSpeechRate = AltitudeAnnouncementSpeaker.maxRate;
 
   /// Allowed range for [varioDuckLevel] (fraction of normal vario volume kept
   /// while speaking). 0 silences the vario completely during speech.
@@ -28,7 +34,11 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   String? _template;
   bool _duckVario = true;
   double _varioDuckLevel = 0.3;
+  double _speechRate = 1.0;
   bool _loaded = false;
+
+  /// Speaking speed as a multiple of the normal speed (1.0 = normal).
+  double get speechRate => _speechRate;
 
   bool get enabled => _enabled;
   double get minimumLiftSpeed => _minimumLiftSpeed;
@@ -65,6 +75,10 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
       final duckLevel = preferences.getDouble(_kDuckLevel);
       if (duckLevel != null && duckLevel.isFinite) {
         _varioDuckLevel = duckLevel.clamp(minDuckLevel, maxDuckLevel);
+      }
+      final rate = preferences.getDouble(_kSpeechRate);
+      if (rate != null && rate.isFinite) {
+        _speechRate = rate.clamp(minSpeechRate, maxSpeechRate);
       }
     } catch (_) {
       // Keep defaults if local storage is unavailable.
@@ -106,6 +120,17 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
     if (_varioDuckLevel == next) return;
     _varioDuckLevel = next;
     _persistDouble(_kDuckLevel, next);
+    notifyListeners();
+  }
+
+  void setSpeechRate(double rate) {
+    if (!rate.isFinite) return;
+    // Snap to 0.05 steps so persisted values stay tidy.
+    final next = ((rate.clamp(minSpeechRate, maxSpeechRate) * 20).round() / 20)
+        .toDouble();
+    if (_speechRate == next) return;
+    _speechRate = next;
+    _persistDouble(_kSpeechRate, next);
     notifyListeners();
   }
 

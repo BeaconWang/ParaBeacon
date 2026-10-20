@@ -1027,6 +1027,13 @@
   "altitudeAnnouncementPlaceholderGroundSpeed": "地速",
   "altitudeAnnouncementPlaceholderSpeedUnit": "速度单位",
   "altitudeAnnouncementDuckVario": "播报时降低升降音",
+  "altitudeAnnouncementSpeechRate": "播报语速：{rate}×",
+  "@altitudeAnnouncementSpeechRate": {
+    "placeholders": {
+      "rate": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementSpeechRateNormal": "正常",
   "altitudeAnnouncementDuckVarioDescription": "语音播报期间调低升降音音量，避免升降音过响时听不清播报。",
   "altitudeAnnouncementDuckLevel": "播报时升降音音量：{percent}%",
   "@altitudeAnnouncementDuckLevel": {

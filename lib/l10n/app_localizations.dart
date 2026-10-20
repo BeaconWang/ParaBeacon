@@ -5438,6 +5438,18 @@ abstract class AppLocalizations {
   /// **'Lower vario sound while speaking'**
   String get altitudeAnnouncementDuckVario;
 
+  /// No description provided for @altitudeAnnouncementSpeechRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaking speed: {rate}×'**
+  String altitudeAnnouncementSpeechRate(String rate);
+
+  /// No description provided for @altitudeAnnouncementSpeechRateNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get altitudeAnnouncementSpeechRateNormal;
+
   /// No description provided for @altitudeAnnouncementDuckVarioDescription.
   ///
   /// In en, this message translates to:

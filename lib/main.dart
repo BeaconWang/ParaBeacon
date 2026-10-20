@@ -26,6 +26,7 @@ import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
 import 'controls/vario_sound_settings_sheet.dart';
 import 'controls/altitude_announcement_settings_sheet.dart';
+import 'controls/announcement_caption_overlay.dart';
 import 'controls/weather_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
@@ -322,6 +323,14 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
             locale: LocaleController.instance.current.locale,
             supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
+            // Caption with the text of the current voice announcement, shown
+            // above every route (dashboard, sheets, dialogs).
+            builder: (context, child) => Stack(
+              children: [
+                ?child,
+                const Positioned.fill(child: AnnouncementCaptionOverlay()),
+              ],
+            ),
             home: const DashGridPage(),
           );
         },

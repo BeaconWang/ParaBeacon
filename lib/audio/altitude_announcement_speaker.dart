@@ -88,13 +88,17 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     try {
       final language = await _prepare(preferred);
       if (language == null) {
+        // Still show the text so the information is not lost without voice.
+        _showCaption(phraseFor(preferred));
         _setAvailability(SpeechAvailability.unavailable);
         return false;
       }
       if (_isIOS) await _configureIosSession();
 
+      final text = phraseFor(language);
+      _showCaption(text);
       final result = await _call<dynamic>(
-        () => _tts.speak(phraseFor(language)),
+        () => _tts.speak(text),
         _speakTimeout,
       );
       if (_isSuccess(result)) {
@@ -109,7 +113,30 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
       return false;
     } finally {
       _busy = false;
+      _hideCaptionLater();
     }
+  }
+
+  /// Text of the announcement currently being spoken (kept on screen briefly
+  /// after it finishes), or `null` when nothing should be displayed.
+  final ValueNotifier<String?> caption = ValueNotifier<String?>(null);
+  Timer? _captionTimer;
+
+  static const _captionLinger = Duration(seconds: 4);
+
+  void _showCaption(String text) {
+    _captionTimer?.cancel();
+    _captionTimer = null;
+    caption.value = text;
+  }
+
+  void _hideCaptionLater() {
+    if (caption.value == null) return;
+    _captionTimer?.cancel();
+    _captionTimer = Timer(_captionLinger, () {
+      _captionTimer = null;
+      caption.value = null;
+    });
   }
 
   Future<void> stop() async {

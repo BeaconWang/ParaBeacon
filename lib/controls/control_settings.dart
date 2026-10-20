@@ -883,6 +883,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
 /// settings sheet to avoid confusing the user.
 const Set<String> _controlsWithoutTitle = {
   'vario',
+  'climb_avg',
   'debug_sensor',
   'data_monitor',
   'flight_button',
@@ -894,6 +895,7 @@ const Set<String> _controlsWithoutTitle = {
 const Map<String, UnitDimension> _unitDimensions = {
   'vertical_graph': UnitDimension.altitude,
   'vario': UnitDimension.verticalSpeed,
+  'climb_avg': UnitDimension.verticalSpeed,
   'vertical_speed': UnitDimension.verticalSpeed,
   'altitude': UnitDimension.altitude,
   'gps_altitude': UnitDimension.altitude,

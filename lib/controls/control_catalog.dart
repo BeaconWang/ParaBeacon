@@ -121,6 +121,8 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlHeartRate;
     case 'phone_battery':
       return l10n.controlPhoneBattery;
+    case 'climb_avg':
+      return l10n.controlClimbAverage;
     case 'vertical_graph':
       return l10n.controlVerticalGraph;
     case 'vario':
@@ -376,6 +378,14 @@ class ControlCatalog {
     ControlDirectory(
       kind: ControlKind.widget,
       controls: [
+        ControlType(
+          id: 'climb_avg',
+          label: 'Climb Average',
+          icon: Icons.trending_up,
+          kind: ControlKind.widget,
+          defaultCols: 6,
+          defaultRows: 4,
+        ),
         ControlType(
           id: 'vertical_graph',
           label: 'Vertical Graph',

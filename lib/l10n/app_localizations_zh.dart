@@ -1247,6 +1247,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlKindWidget => '组件控件';
 
   @override
+  String get controlClimbAverage => '平均爬升';
+
+  @override
+  String get climbAverageLabel => '平均爬升';
+
+  @override
+  String get peakLabel => '峰值';
+
+  @override
   String get controlVerticalGraph => '垂直图表';
 
   @override

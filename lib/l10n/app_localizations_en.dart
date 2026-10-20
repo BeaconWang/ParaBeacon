@@ -1285,6 +1285,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlKindWidget => 'Widget Control';
 
   @override
+  String get controlClimbAverage => 'Climb Average';
+
+  @override
+  String get climbAverageLabel => 'CLIMB AVG';
+
+  @override
+  String get peakLabel => 'PEAK';
+
+  @override
   String get controlVerticalGraph => 'Vertical Graph';
 
   @override

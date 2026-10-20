@@ -452,6 +452,9 @@
 
   "controlKindData": "数据控件",
   "controlKindWidget": "组件控件",
+  "controlClimbAverage": "平均爬升",
+  "climbAverageLabel": "平均爬升",
+  "peakLabel": "峰值",
   "controlVerticalGraph": "垂直图表",
 
   "controlAltitude": "海拔",

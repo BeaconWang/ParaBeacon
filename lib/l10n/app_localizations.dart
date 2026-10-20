@@ -2498,6 +2498,24 @@ abstract class AppLocalizations {
   /// **'Widget Control'**
   String get controlKindWidget;
 
+  /// No description provided for @controlClimbAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Climb Average'**
+  String get controlClimbAverage;
+
+  /// No description provided for @climbAverageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'CLIMB AVG'**
+  String get climbAverageLabel;
+
+  /// No description provided for @peakLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PEAK'**
+  String get peakLabel;
+
   /// No description provided for @controlVerticalGraph.
   ///
   /// In en, this message translates to:

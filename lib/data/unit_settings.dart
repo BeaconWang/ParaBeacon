@@ -163,6 +163,7 @@ class UnitSettings extends ChangeNotifier {
 UnitDimension? unitDimensionForControl(String typeId) => switch (typeId) {
       'vertical_graph' => UnitDimension.altitude,
       'vario' => UnitDimension.verticalSpeed,
+      'climb_avg' => UnitDimension.verticalSpeed,
       'vertical_speed' => UnitDimension.verticalSpeed,
       'altitude' || 'gps_altitude' || 'baro_altitude' || 'max_altitude' ||
       'altitude_above_takeoff' => UnitDimension.altitude,

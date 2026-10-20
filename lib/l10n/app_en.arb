@@ -505,6 +505,9 @@
 
   "controlKindData": "Data Control",
   "controlKindWidget": "Widget Control",
+  "controlClimbAverage": "Climb Average",
+  "climbAverageLabel": "CLIMB AVG",
+  "peakLabel": "PEAK",
   "controlVerticalGraph": "Vertical Graph",
 
   "controlAltitude": "Altitude",

@@ -132,26 +132,98 @@ class FlightReportService {
                     '${_fmtTime(start)} - ${_fmtTime(end)}'
               : _fmtDate(start);
 
+          final visualWidth = (contentW - 12) / 2;
+          final sensorRows = _telemetryRows(track, l10n);
           return [
-            pw.Text(
-              l10n.flightReportTitle,
-              style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+            pw.Container(
+              width: contentW,
+              padding: const pw.EdgeInsets.all(14),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.blueGrey900,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    l10n.flightReportTitle,
+                    style: pw.TextStyle(
+                      fontSize: 22,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.white,
+                    ),
+                  ),
+                  pw.SizedBox(height: 3),
+                  pw.Text(
+                    '$title  ·  $when',
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.blueGrey100,
+                    ),
+                  ),
+                  if (track.pilotName?.isNotEmpty ?? false) ...[
+                    pw.SizedBox(height: 3),
+                    pw.Text(
+                      track.pilotName!,
+                      style: const pw.TextStyle(
+                        fontSize: 10,
+                        color: PdfColors.blueGrey100,
+                      ),
+                    ),
+                  ],
+                  pw.SizedBox(height: 12),
+                  pw.Row(
+                    children: [
+                      pw.Expanded(
+                        child: _summaryMetric(
+                          l10n.flightDetailDuration,
+                          _fmtDuration(track.duration),
+                        ),
+                      ),
+                      pw.Expanded(
+                        child: _summaryMetric(
+                          l10n.flightDetailDistance,
+                          _km(track.distanceM),
+                        ),
+                      ),
+                      pw.Expanded(
+                        child: _summaryMetric(
+                          l10n.flightDetailMaxAltitude,
+                          '${track.maxAltitude.toStringAsFixed(0)} m',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            pw.SizedBox(height: 2),
-            pw.Text(title, style: const pw.TextStyle(fontSize: 12)),
-            pw.Text(
-              when,
-              style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
-            ),
-            pw.Divider(),
-            pw.SizedBox(height: 4),
+            pw.SizedBox(height: 12),
 
             // ── Visuals ─────────────────────────────────────────────────────
-            _caption(l10n.flightReportTrackMap),
-            _trackMap(track, contentW, l10n),
-            pw.SizedBox(height: 10),
-            _caption(l10n.flightReportAltitudeProfile),
-            _altitudeProfile(track, contentW, l10n),
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _caption(l10n.flightReportTrackMap),
+                      _trackMap(track, visualWidth, l10n),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(width: 12),
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _caption(l10n.flightReportAltitudeProfile),
+                      _altitudeProfile(track, visualWidth, l10n),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             pw.SizedBox(height: 12),
 
             // ── Flight and route details ────────────────────────────────────
@@ -201,6 +273,11 @@ class FlightReportService {
                   '${track.elevationDropM!.toStringAsFixed(0)} m',
                 ],
             ]),
+            if (sensorRows.isNotEmpty) ...[
+              pw.SizedBox(height: 10),
+              _section(l10n.dataMonitorTitle),
+              _table(sensorRows),
+            ],
             if (track.hasSamples) ...[
               pw.SizedBox(height: 12),
               _section(l10n.flightDetailPerformance),
@@ -368,7 +445,7 @@ class FlightReportService {
     AppLocalizations l10n,
   ) {
     final samples = track.samples.where((s) => s.data.hasFix).toList();
-    const height = 220.0;
+    const height = 172.0;
     if (samples.length < 2) {
       return _emptyBox(width, height, l10n.flightShareCardNoTrack);
     }
@@ -385,6 +462,19 @@ class FlightReportService {
   ) {
     final w = size.x, h = size.y;
     _paintFrame(canvas, w, h);
+    for (var i = 1; i < 5; i++) {
+      final x = w * i / 5;
+      final y = h * i / 5;
+      canvas
+        ..setStrokeColor(PdfColors.blueGrey100)
+        ..setLineWidth(0.45)
+        ..moveTo(x, 0)
+        ..lineTo(x, h)
+        ..strokePath()
+        ..moveTo(0, y)
+        ..lineTo(w, y)
+        ..strokePath();
+    }
 
     double minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
     double minAlt = double.infinity, maxAlt = double.negativeInfinity;
@@ -419,7 +509,13 @@ class FlightReportService {
       final b = project(samples[i].data.latitude, samples[i].data.longitude);
       final t = ((samples[i].data.altitude - minAlt) / altSpan).clamp(0.0, 1.0);
       canvas
+        ..setStrokeColor(PdfColors.white)
+        ..setLineWidth(4.6)
+        ..moveTo(a.x, a.y)
+        ..lineTo(b.x, b.y)
+        ..strokePath()
         ..setStrokeColor(_altColor(t))
+        ..setLineWidth(1.8)
         ..moveTo(a.x, a.y)
         ..lineTo(b.x, b.y)
         ..strokePath();
@@ -434,8 +530,14 @@ class FlightReportService {
       samples.last.data.longitude,
     );
     canvas
+      ..setFillColor(PdfColors.white)
+      ..drawEllipse(start.x, start.y, 7, 7)
+      ..fillPath()
       ..setFillColor(const PdfColor(0.29, 0.87, 0.50))
       ..drawEllipse(start.x, start.y, 4.5, 4.5)
+      ..fillPath()
+      ..setFillColor(PdfColors.white)
+      ..drawEllipse(end.x, end.y, 7, 7)
       ..fillPath()
       ..setFillColor(const PdfColor(1.0, 0.42, 0.42))
       ..drawEllipse(end.x, end.y, 4.5, 4.5)
@@ -514,6 +616,16 @@ class FlightReportService {
       plotLeft + (ms - startMs) / spanMs * plotW,
       plotBottom + (alt - minAlt) / altSpan * plotH,
     );
+
+    for (var i = 0; i <= 3; i++) {
+      final y = plotBottom + plotH * i / 3;
+      canvas
+        ..setStrokeColor(PdfColors.blueGrey100)
+        ..setLineWidth(0.45)
+        ..moveTo(plotLeft, y)
+        ..lineTo(plotRight, y)
+        ..strokePath();
+    }
 
     // Filled area under the curve.
     canvas.setFillColor(const PdfColor(0.22, 0.85, 0.54, 0.25));
@@ -594,6 +706,85 @@ class FlightReportService {
 
   // ── Small PDF helpers ─────────────────────────────────────────────────────
 
+  static pw.Widget _summaryMetric(String label, String value) => pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      pw.Text(
+        label,
+        style: const pw.TextStyle(fontSize: 9, color: PdfColors.blueGrey100),
+      ),
+      pw.SizedBox(height: 2),
+      pw.Text(
+        value,
+        style: pw.TextStyle(
+          fontSize: 13,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColors.white,
+        ),
+      ),
+    ],
+  );
+
+  static List<List<String>> _telemetryRows(
+    FlightTrack track,
+    AppLocalizations l10n,
+  ) {
+    final samples = track.samples.map((sample) => sample.data).toList();
+    List<double> doubles(Iterable<double?> source) =>
+        source.whereType<double>().where((value) => value.isFinite).toList();
+    List<int> integers(Iterable<int?> source) =>
+        source.whereType<int>().toList();
+    String range(Iterable<num> source, String unit, {int decimals = 0}) {
+      final values = source.toList();
+      if (values.isEmpty) return '';
+      var min = values.first;
+      var max = values.first;
+      for (final value in values.skip(1)) {
+        if (value < min) min = value;
+        if (value > max) max = value;
+      }
+      String format(num value) => value.toStringAsFixed(decimals);
+      return min == max
+          ? '${format(min)} $unit'
+          : '${format(min)}-${format(max)} $unit';
+    }
+
+    final wind = samples
+        .map((value) => value.windSpeed)
+        .where((value) => value.isFinite && value > 0)
+        .toList();
+    final temperature = doubles(samples.map((value) => value.temperature));
+    final pressure = doubles(samples.map((value) => value.pressure));
+    final accuracy = doubles(samples.map((value) => value.gpsAccuracy));
+    final satellites = integers(samples.map((value) => value.satellites));
+    final battery = integers(samples.map((value) => value.battery));
+    final heartRate = integers(samples.map((value) => value.heartRate));
+    return [
+      if (wind.isNotEmpty)
+        [
+          l10n.dataMonitorWindSpeed,
+          '${(wind.reduce((a, b) => a + b) / wind.length).toStringAsFixed(1)} km/h',
+        ],
+      if (temperature.isNotEmpty)
+        [l10n.dataMonitorTemperature, range(temperature, '°C', decimals: 1)],
+      if (pressure.isNotEmpty)
+        [l10n.dataMonitorPressure, range(pressure, 'hPa')],
+      if (accuracy.isNotEmpty)
+        [
+          l10n.dataMonitorGpsAccuracy,
+          '${(accuracy.reduce((a, b) => a + b) / accuracy.length).toStringAsFixed(0)} m',
+        ],
+      if (satellites.isNotEmpty)
+        [
+          l10n.dataMonitorSatellites,
+          '${satellites.reduce((a, b) => a > b ? a : b)}',
+        ],
+      if (battery.isNotEmpty) [l10n.dataMonitorBattery, range(battery, '%')],
+      if (heartRate.isNotEmpty)
+        [l10n.dataMonitorHeartRate, range(heartRate, 'bpm')],
+    ];
+  }
+
   static pw.Widget _caption(String text) => pw.Padding(
     padding: const pw.EdgeInsets.only(bottom: 3),
     child: pw.Text(
@@ -606,12 +797,19 @@ class FlightReportService {
     ),
   );
 
-  static pw.Widget _section(String title) => pw.Padding(
-    padding: const pw.EdgeInsets.only(bottom: 4),
+  static pw.Widget _section(String title) => pw.Container(
+    margin: const pw.EdgeInsets.only(bottom: 4),
+    padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: pw.BoxDecoration(
+      color: PdfColors.blueGrey50,
+      border: pw.Border(
+        left: pw.BorderSide(color: PdfColors.teal600, width: 2),
+      ),
+    ),
     child: pw.Text(
       title,
       style: pw.TextStyle(
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: pw.FontWeight.bold,
         color: PdfColors.blueGrey800,
       ),
@@ -622,25 +820,34 @@ class FlightReportService {
     return pw.Table(
       columnWidths: const {0: pw.FlexColumnWidth(2), 1: pw.FlexColumnWidth(3)},
       children: [
-        for (final r in rows)
+        for (var i = 0; i < rows.length; i++)
           pw.TableRow(
+            decoration: pw.BoxDecoration(
+              color: i.isEven ? PdfColors.white : PdfColors.blueGrey50,
+            ),
             children: [
               pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 5,
+                  vertical: 3,
+                ),
                 child: pw.Text(
-                  r[0],
+                  rows[i][0],
                   style: const pw.TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     color: PdfColors.grey700,
                   ),
                 ),
               ),
               pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 5,
+                  vertical: 3,
+                ),
                 child: pw.Text(
-                  r[1],
+                  rows[i][1],
                   style: pw.TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),

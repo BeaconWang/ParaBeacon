@@ -21,7 +21,7 @@ void main() {
       expect(String.fromCharCodes(bytes.take(8)), startsWith('%PDF-'));
     });
 
-    test('renders a full-height grouped share card', () async {
+    test('renders a content-sized grouped share card', () async {
       final bytes = await FlightShareCardService.instance.renderPng(
         _completeTrack(),
         AppLocalizationsEn(),
@@ -30,7 +30,7 @@ void main() {
 
       expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
       expect(data.getUint32(16), 1080);
-      expect(data.getUint32(20), 3800);
+      expect(data.getUint32(20), greaterThan(1920));
     });
   });
 }
@@ -66,6 +66,13 @@ FlightTrack _completeTrack() {
           baroAltitude: altitude - 3,
           verticalSpeed: 0.4,
           groundSpeed: 27 + i.toDouble(),
+          windSpeed: 12 + i.toDouble(),
+          gpsAccuracy: 3.2,
+          satellites: 8 + i,
+          pressure: 1012 - i.toDouble(),
+          temperature: 19 + i * 0.2,
+          battery: 90 - i,
+          heartRate: 120 + i,
           latitude: 22.8 + i * 0.002,
           longitude: 114.7 + i * 0.003,
           hasFix: true,

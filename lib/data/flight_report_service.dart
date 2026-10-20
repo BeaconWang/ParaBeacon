@@ -24,7 +24,7 @@ class FlightReportService {
   FlightReportService._();
   static final FlightReportService instance = FlightReportService._();
 
-  static const double _pageMargin = 24.0;
+  static const double _pageMargin = 32.0;
 
   /// Builds the PDF bytes for [track]. All text is localized through [l10n];
   /// when the app locale needs non-Latin glyphs (e.g. Chinese) a matching
@@ -135,7 +135,7 @@ class FlightReportService {
           return [
             pw.Text(
               l10n.flightReportTitle,
-              style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+              style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
             ),
             pw.SizedBox(height: 2),
             pw.Text(title, style: const pw.TextStyle(fontSize: 12)),
@@ -152,7 +152,7 @@ class FlightReportService {
             pw.SizedBox(height: 10),
             _caption(l10n.flightReportAltitudeProfile),
             _altitudeProfile(track, contentW, l10n),
-            pw.SizedBox(height: 8),
+            pw.SizedBox(height: 12),
 
             // ── Flight and route details ────────────────────────────────────
             _section(l10n.flightDetailFlight),
@@ -168,10 +168,10 @@ class FlightReportService {
               if (track.pilotName?.isNotEmpty ?? false)
                 [l10n.flightDetailPilot, track.pilotName!],
             ]),
-            pw.SizedBox(height: 8),
+            pw.SizedBox(height: 12),
             _section(l10n.flightDetailRoute),
             _table(routeRows),
-            pw.SizedBox(height: 8),
+            pw.SizedBox(height: 12),
             _section(l10n.flightDetailAltitude),
             _table([
               [
@@ -202,7 +202,7 @@ class FlightReportService {
                 ],
             ]),
             if (track.hasSamples) ...[
-              pw.SizedBox(height: 8),
+              pw.SizedBox(height: 12),
               _section(l10n.flightDetailPerformance),
               _caption(l10n.flightDetailRouteMetrics),
               _table([
@@ -310,12 +310,12 @@ class FlightReportService {
               ]),
             ],
             if (equipRows.isNotEmpty) ...[
-              pw.SizedBox(height: 8),
+              pw.SizedBox(height: 12),
               _section(l10n.equipment),
               _table(equipRows),
             ],
             if (aircraftRows.isNotEmpty) ...[
-              pw.SizedBox(height: 8),
+              pw.SizedBox(height: 12),
               _section(l10n.flightDetailAircraft),
               _table(aircraftRows),
             ],
@@ -368,7 +368,7 @@ class FlightReportService {
     AppLocalizations l10n,
   ) {
     final samples = track.samples.where((s) => s.data.hasFix).toList();
-    const height = 170.0;
+    const height = 220.0;
     if (samples.length < 2) {
       return _emptyBox(width, height, l10n.flightShareCardNoTrack);
     }
@@ -451,7 +451,7 @@ class FlightReportService {
     final samples = track.samples
         .where((s) => s.data.altitude.isFinite)
         .toList();
-    const height = 110.0;
+    const height = 150.0;
     if (samples.length < 2) {
       return _emptyBox(width, height, l10n.flightShareCardNoAltitude);
     }
@@ -599,7 +599,7 @@ class FlightReportService {
     child: pw.Text(
       text,
       style: pw.TextStyle(
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: pw.FontWeight.bold,
         color: PdfColors.blueGrey600,
       ),
@@ -611,7 +611,7 @@ class FlightReportService {
     child: pw.Text(
       title,
       style: pw.TextStyle(
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: pw.FontWeight.bold,
         color: PdfColors.blueGrey800,
       ),
@@ -626,7 +626,7 @@ class FlightReportService {
           pw.TableRow(
             children: [
               pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(vertical: 1),
+                padding: const pw.EdgeInsets.symmetric(vertical: 2),
                 child: pw.Text(
                   r[0],
                   style: const pw.TextStyle(
@@ -636,7 +636,7 @@ class FlightReportService {
                 ),
               ),
               pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(vertical: 1),
+                padding: const pw.EdgeInsets.symmetric(vertical: 2),
                 child: pw.Text(
                   r[1],
                   style: pw.TextStyle(

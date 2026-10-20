@@ -45,6 +45,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferences => '偏好设置';
 
   @override
+  String get interfaceConfiguration => '仪表盘布局';
+
+  @override
+  String get interfaceConfigurationImport => '导入仪表盘布局';
+
+  @override
+  String get interfaceConfigurationExport => '导出仪表盘布局';
+
+  @override
+  String get interfaceConfigurationImportTitle => '替换仪表盘布局？';
+
+  @override
+  String get interfaceConfigurationImportConfirmation =>
+      '导入的布局将替换所有仪表盘页面和控件；不会更改主题、语言、账户设置或飞行记录。';
+
+  @override
+  String get interfaceConfigurationImported => '仪表盘布局已导入。';
+
+  @override
+  String get interfaceConfigurationImportFailed => '无法导入此仪表盘布局，请检查文件是否有效且兼容。';
+
+  @override
+  String get interfaceConfigurationExported => '仪表盘布局已准备好分享。';
+
+  @override
+  String get interfaceConfigurationExportFailed => '无法导出仪表盘布局。';
+
+  @override
   String get units => '单位';
 
   @override

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,7 @@ import 'data/takeoff_reference.dart';
 import 'data/gps_flight_data_bridge.dart';
 import 'data/sensors/internal_sensor_service.dart';
 import 'data/sensors/internal_sensor_bridge.dart';
+import 'data/layout_config_io.dart';
 import 'data/layout_store.dart';
 import 'data/offline_tiles_service.dart';
 import 'data/raw_flight_data_source.dart';
@@ -423,43 +425,8 @@ class _DashGridPageState extends State<DashGridPage> {
   /// last-viewed page) if any.
   Future<void> _loadLayout() async {
     final saved = await LayoutStore.instance.load();
-    if (!mounted) {
-      return;
-    }
-    if (saved != null) {
-      setState(() {
-        _pages
-          ..clear()
-          ..addAll(saved.pages);
-        _gridSize = saved.gridSize;
-        // Restore the page the user was last viewing (already clamped by the
-        // store to a valid index).
-        _currentPage = saved.currentPage;
-        _selectedControlId = null;
-
-        // Advance the id sequences past any restored ids so new pages/controls
-        // never collide with loaded ones.
-        _pageSeq = _pages.length;
-        _controlSeq = 0;
-        for (final page in _pages) {
-          for (final c in page.controls) {
-            final n = _seqFromId(c.instanceId, 'ctrl_');
-            if (n != null && n >= _controlSeq) _controlSeq = n + 1;
-          }
-          final pn = _seqFromId(page.id, 'page_');
-          if (pn != null && pn >= _pageSeq) _pageSeq = pn + 1;
-        }
-      });
-      // Sync the PageView to the restored page once it exists. Using jumpTo
-      // (not animateTo) so the initial navigation isn't visible to the user.
-      if (_currentPage != 0) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _pageController.hasClients) {
-            _pageController.jumpToPage(_currentPage);
-          }
-        });
-      }
-    }
+    if (!mounted) return;
+    if (saved != null) _applyLayout(saved);
 
     // Empty-dashboard bootstrap: if no page has any control (first launch, or
     // the user cleared everything), drop straight into edit mode so the edit
@@ -469,6 +436,52 @@ class _DashGridPageState extends State<DashGridPage> {
     if (!hasAnyControl && !_isEditMode) {
       setState(() => _isEditMode = true);
     }
+  }
+
+  /// Replaces the live dashboard and resets transient state after an import or
+  /// restore.
+  void _applyLayout(SavedLayout saved) {
+    _pageIndicatorHideTimer?.cancel();
+    setState(() {
+      _pages
+        ..clear()
+        ..addAll(saved.pages);
+      _gridSize = saved.gridSize;
+      _currentPage = saved.currentPage;
+      _selectedControlId = null;
+      _activeControlId = null;
+      _controlKeys.clear();
+      _pageIndicatorVisible = false;
+      _verticalGraphPointers.clear();
+      _verticalGraphGestureControlId = null;
+      _verticalGraphTwoFingerCenter = null;
+      _verticalGraphTwoFingerRemainder = 0.0;
+      _isEditMode = !_pages.any((page) => page.controls.isNotEmpty);
+
+      // Advance the id sequences past any restored ids so new pages/controls
+      // never collide with loaded ones.
+      _pageSeq = _pages.length;
+      _controlSeq = 0;
+      for (final page in _pages) {
+        for (final control in page.controls) {
+          final n = _seqFromId(control.instanceId, 'ctrl_');
+          if (n != null && n >= _controlSeq) _controlSeq = n + 1;
+        }
+        final pageNumber = _seqFromId(page.id, 'page_');
+        if (pageNumber != null && pageNumber >= _pageSeq) {
+          _pageSeq = pageNumber + 1;
+        }
+      }
+    });
+
+    // Always sync: after importing, the PageView can still be on an index from
+    // the previous layout even when the imported current page is zero.
+    final pageIndex = _currentPage;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _pageController.hasClients) {
+        _pageController.jumpToPage(pageIndex);
+      }
+    });
   }
 
   /// Extracts the numeric suffix of an id like `ctrl_12` / `page_3`.
@@ -484,6 +497,79 @@ class _DashGridPageState extends State<DashGridPage> {
       gridSize: _gridSize,
       currentPage: _currentPage,
     );
+  }
+
+  Future<void> _exportDashboardConfiguration() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await LayoutConfigIO.instance.exportAndShare(
+        SavedLayout(
+          pages: List<DashPage>.from(_pages),
+          gridSize: _gridSize,
+          currentPage: _currentPage,
+        ),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.interfaceConfigurationExported)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.interfaceConfigurationExportFailed)),
+      );
+    }
+  }
+
+  Future<void> _importDashboardConfiguration() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: [LayoutConfigIO.extension],
+        withData: false,
+      );
+      if (!mounted || result == null || result.files.isEmpty) return;
+      final path = result.files.single.path;
+      if (path == null) throw const FormatException();
+      final imported = await LayoutConfigIO.instance.importFile(path);
+      if (!mounted) return;
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.interfaceConfigurationImportTitle),
+          content: Text(l10n.interfaceConfigurationImportConfirmation),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.interfaceConfigurationImport),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || confirmed != true) return;
+
+      _applyLayout(imported);
+      await LayoutStore.instance.flush(
+        pages: _pages,
+        gridSize: _gridSize,
+        currentPage: _currentPage,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.interfaceConfigurationImported)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.interfaceConfigurationImportFailed)),
+      );
+    }
   }
 
   @override
@@ -822,6 +908,32 @@ class _DashGridPageState extends State<DashGridPage> {
                             // sheet so it reflects the newly-selected language.
                             setSheetState(() {});
                           },
+                        ),
+                        const Divider(height: 1),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12, bottom: 4),
+                          child: Text(
+                            l10n.interfaceConfiguration,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.file_download_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.interfaceConfigurationImport),
+                          onTap: _importDashboardConfiguration,
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.file_upload_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.interfaceConfigurationExport),
+                          onTap: _exportDashboardConfiguration,
                         ),
                         const Divider(height: 1),
                         ListTile(

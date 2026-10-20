@@ -170,6 +170,60 @@ abstract class AppLocalizations {
   /// **'Preferences'**
   String get preferences;
 
+  /// No description provided for @interfaceConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard layout'**
+  String get interfaceConfiguration;
+
+  /// No description provided for @interfaceConfigurationImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import dashboard layout'**
+  String get interfaceConfigurationImport;
+
+  /// No description provided for @interfaceConfigurationExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export dashboard layout'**
+  String get interfaceConfigurationExport;
+
+  /// No description provided for @interfaceConfigurationImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace dashboard layout?'**
+  String get interfaceConfigurationImportTitle;
+
+  /// No description provided for @interfaceConfigurationImportConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This replaces all dashboard pages and controls with the imported layout. Theme, language, account settings and flight records are not changed.'**
+  String get interfaceConfigurationImportConfirmation;
+
+  /// No description provided for @interfaceConfigurationImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard layout imported.'**
+  String get interfaceConfigurationImported;
+
+  /// No description provided for @interfaceConfigurationImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to import this dashboard layout. Check that the file is valid and compatible.'**
+  String get interfaceConfigurationImportFailed;
+
+  /// No description provided for @interfaceConfigurationExported.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard layout is ready to share.'**
+  String get interfaceConfigurationExported;
+
+  /// No description provided for @interfaceConfigurationExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to export the dashboard layout.'**
+  String get interfaceConfigurationExportFailed;
+
   /// No description provided for @units.
   ///
   /// In en, this message translates to:

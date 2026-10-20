@@ -45,6 +45,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferences => 'Preferences';
 
   @override
+  String get interfaceConfiguration => 'Dashboard layout';
+
+  @override
+  String get interfaceConfigurationImport => 'Import dashboard layout';
+
+  @override
+  String get interfaceConfigurationExport => 'Export dashboard layout';
+
+  @override
+  String get interfaceConfigurationImportTitle => 'Replace dashboard layout?';
+
+  @override
+  String get interfaceConfigurationImportConfirmation =>
+      'This replaces all dashboard pages and controls with the imported layout. Theme, language, account settings and flight records are not changed.';
+
+  @override
+  String get interfaceConfigurationImported => 'Dashboard layout imported.';
+
+  @override
+  String get interfaceConfigurationImportFailed =>
+      'Unable to import this dashboard layout. Check that the file is valid and compatible.';
+
+  @override
+  String get interfaceConfigurationExported =>
+      'Dashboard layout is ready to share.';
+
+  @override
+  String get interfaceConfigurationExportFailed =>
+      'Unable to export the dashboard layout.';
+
+  @override
   String get units => 'Units';
 
   @override

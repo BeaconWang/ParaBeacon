@@ -2826,6 +2826,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get altitudeAnnouncementTest => 'Test announcement';
+
+  @override
+  String get altitudeAnnouncementTestSuccess =>
+      'Voice announcement is working.';
+
+  @override
+  String get altitudeAnnouncementUnavailable =>
+      'No text-to-speech voice is available. Install or enable a speech engine with an English or Chinese voice in the system settings, check the media volume, then test again.';
+
+  @override
   String get varioSoundTitle => 'Vario Sound Settings';
 
   @override

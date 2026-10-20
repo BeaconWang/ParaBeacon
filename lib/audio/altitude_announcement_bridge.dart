@@ -1,25 +1,25 @@
 import 'dart:async';
 
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/widgets.dart';
 
 import '../data/flight_data.dart';
 import '../data/unit_settings.dart';
 import '../theme/locale_controller.dart';
 import 'altitude_announcement_settings.dart';
+import 'altitude_announcement_speaker.dart';
 
 /// Announces the current altitude once when climb rate enters the configured
 /// range and remains there briefly. A sustained drop below the range rearms it.
 class AltitudeAnnouncementBridge {
   AltitudeAnnouncementBridge({
     required this.source,
-    FlutterTts? speech,
+    AltitudeAnnouncementSpeaker? speaker,
     AltitudeAnnouncementSettings? settings,
-  }) : _speech = speech ?? FlutterTts(),
+  }) : _speaker = speaker ?? AltitudeAnnouncementSpeaker.instance,
        _settings = settings ?? AltitudeAnnouncementSettings.instance;
 
   final FlightDataView source;
-  final FlutterTts _speech;
+  final AltitudeAnnouncementSpeaker _speaker;
   final AltitudeAnnouncementSettings _settings;
 
   static const _entryDelay = Duration(milliseconds: 900);
@@ -49,6 +49,8 @@ class AltitudeAnnouncementBridge {
       _armed = true;
       return;
     }
+    // Bind the engine and pick a voice before the first announcement is due.
+    unawaited(_speaker.warmUp(preferredAnnouncementLanguage()));
     _onData();
   }
 
@@ -101,50 +103,38 @@ class AltitudeAnnouncementBridge {
     if (_speaking || !data.altitude.isFinite) return;
     _speaking = true;
     try {
-      var language = _usesChineseSpeech ? 'zh-CN' : 'en-US';
-      if (language == 'zh-CN') {
-        try {
-          if (await _speech.isLanguageAvailable(language) != true) {
-            language = 'en-US';
-          }
-        } catch (_) {
-          language = 'en-US';
-        }
+      final spoken = await _speaker.speak(
+        preferred: preferredAnnouncementLanguage(),
+        phraseFor: (language) => _altitudePhrase(language, data.altitude),
+      );
+      // A failed attempt (engine still binding, busy, transient error) is
+      // retried while lift persists, unless speech is known to be unavailable.
+      if (!spoken &&
+          _attached &&
+          _speaker.availability != SpeechAvailability.unavailable) {
+        _armed = true;
       }
-      try {
-        await _speech.setLanguage(language);
-      } catch (_) {
-        language = 'en-US';
-        await _speech.setLanguage(language);
-      }
-      await _speech.setSpeechRate(0.48);
-      await _speech.setPitch(1.0);
-      await _speech.awaitSpeakCompletion(true);
-
-      final unit = UnitSettings.instance.defaultUnit(UnitDimension.altitude);
-      final isFeet = unit == 'ft';
-      final altitude = UnitValues.convert(
-        data.altitude,
-        UnitDimension.altitude,
-        unit,
-      ).round();
-      final phrase = language == 'zh-CN'
-          ? '当前高度，$altitude${isFeet ? '英尺' : '米'}'
-          : 'Altitude $altitude ${isFeet ? 'feet' : 'meters'}';
-      await _speech.speak(phrase);
     } catch (_) {
-      // Speech engines and voices are platform-dependent; fail silently so
-      // unavailable TTS never interrupts flight-data processing.
+      // Never let speech problems interrupt flight-data processing.
     } finally {
       _speaking = false;
     }
   }
 
-  bool get _usesChineseSpeech {
-    final selectedLocale = LocaleController.instance.current.locale;
-    final locale =
-        selectedLocale ?? WidgetsBinding.instance.platformDispatcher.locale;
-    return locale.languageCode.toLowerCase() == 'zh';
+  static String _altitudePhrase(
+    AnnouncementLanguage language,
+    double altitudeMeters,
+  ) {
+    final unit = UnitSettings.instance.defaultUnit(UnitDimension.altitude);
+    final isFeet = unit == 'ft';
+    final altitude = UnitValues.convert(
+      altitudeMeters,
+      UnitDimension.altitude,
+      unit,
+    ).round();
+    return language == AnnouncementLanguage.chinese
+        ? '当前高度，$altitude${isFeet ? '英尺' : '米'}'
+        : 'Altitude $altitude ${isFeet ? 'feet' : 'meters'}';
   }
 
   void dispose() {
@@ -154,6 +144,28 @@ class AltitudeAnnouncementBridge {
     _entryTimer = null;
     source.removeListener(_onData);
     _settings.removeListener(_onSettingsChanged);
-    unawaited(_speech.stop().catchError((_) {}));
+    unawaited(_speaker.stop());
   }
+}
+
+/// Speech language matching the selected UI locale (or the system locale).
+AnnouncementLanguage preferredAnnouncementLanguage() {
+  final selectedLocale = LocaleController.instance.current.locale;
+  final locale =
+      selectedLocale ?? WidgetsBinding.instance.platformDispatcher.locale;
+  return locale.languageCode.toLowerCase() == 'zh'
+      ? AnnouncementLanguage.chinese
+      : AnnouncementLanguage.english;
+}
+
+/// Speaks a short sample so the user can verify announcements work.
+Future<bool> speakAltitudeAnnouncementTest() {
+  return AltitudeAnnouncementSpeaker.instance.speak(
+    preferred: preferredAnnouncementLanguage(),
+    waitIfBusy: true,
+    phraseFor: (language) => language == AnnouncementLanguage.chinese
+        ? '语音播报测试，${AltitudeAnnouncementBridge._altitudePhrase(language, 1000)}'
+        : 'Voice announcement test. '
+              '${AltitudeAnnouncementBridge._altitudePhrase(language, 1000)}',
+  );
 }

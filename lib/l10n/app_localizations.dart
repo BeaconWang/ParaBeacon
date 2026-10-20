@@ -5354,6 +5354,24 @@ abstract class AppLocalizations {
   /// **'Announce between {minimum} and {maximum} m/s'**
   String altitudeAnnouncementRangeDescription(String minimum, String maximum);
 
+  /// No description provided for @altitudeAnnouncementTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Test announcement'**
+  String get altitudeAnnouncementTest;
+
+  /// No description provided for @altitudeAnnouncementTestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice announcement is working.'**
+  String get altitudeAnnouncementTestSuccess;
+
+  /// No description provided for @altitudeAnnouncementUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No text-to-speech voice is available. Install or enable a speech engine with an English or Chinese voice in the system settings, check the media volume, then test again.'**
+  String get altitudeAnnouncementUnavailable;
+
   /// No description provided for @varioSoundTitle.
   ///
   /// In en, this message translates to:

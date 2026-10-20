@@ -2742,6 +2742,16 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get altitudeAnnouncementTest => '试听播报';
+
+  @override
+  String get altitudeAnnouncementTestSuccess => '语音播报工作正常。';
+
+  @override
+  String get altitudeAnnouncementUnavailable =>
+      '没有可用的语音合成（TTS）声音。请在系统设置中安装或启用带中文或英文语音的语音引擎，并检查媒体音量，然后重新试听。';
+
+  @override
   String get varioSoundTitle => '升降音设置';
 
   @override

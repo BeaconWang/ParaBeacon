@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../audio/altitude_announcement_bridge.dart';
 import '../audio/altitude_announcement_settings.dart';
+import '../audio/altitude_announcement_speaker.dart';
 import '../l10n/app_localizations.dart';
 
 Future<void> showAltitudeAnnouncementSettingsSheet(BuildContext context) {
@@ -15,20 +17,49 @@ Future<void> showAltitudeAnnouncementSettingsSheet(BuildContext context) {
   );
 }
 
-class _AltitudeAnnouncementSettingsSheet extends StatelessWidget {
+class _AltitudeAnnouncementSettingsSheet extends StatefulWidget {
   const _AltitudeAnnouncementSettingsSheet();
+
+  @override
+  State<_AltitudeAnnouncementSettingsSheet> createState() =>
+      _AltitudeAnnouncementSettingsSheetState();
+}
+
+class _AltitudeAnnouncementSettingsSheetState
+    extends State<_AltitudeAnnouncementSettingsSheet> {
+  bool _testing = false;
+  bool? _lastTestSucceeded;
+
+  Future<void> _runTest() async {
+    if (_testing) return;
+    setState(() {
+      _testing = true;
+      _lastTestSucceeded = null;
+    });
+    final ok = await speakAltitudeAnnouncementTest();
+    if (!mounted) return;
+    setState(() {
+      _testing = false;
+      _lastTestSucceeded = ok;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final settings = AltitudeAnnouncementSettings.instance;
+    final speaker = AltitudeAnnouncementSpeaker.instance;
     final l10n = AppLocalizations.of(context);
 
     return AnimatedBuilder(
-      animation: settings,
+      animation: Listenable.merge([settings, speaker]),
       builder: (context, _) {
         final theme = Theme.of(context);
         final minimum = settings.minimumLiftSpeed;
         final maximum = settings.maximumLiftSpeed;
+        final unavailable =
+            _lastTestSucceeded == false ||
+            (_lastTestSucceeded == null &&
+                speaker.availability == SpeechAvailability.unavailable);
         return SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -91,6 +122,47 @@ class _AltitudeAnnouncementSettingsSheet extends StatelessWidget {
                             settings.setLiftSpeedRange(values.start, values.end)
                       : null,
                 ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _testing ? null : _runTest,
+                  icon: _testing
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.volume_up),
+                  label: Text(l10n.altitudeAnnouncementTest),
+                ),
+                if (_lastTestSucceeded == true) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.altitudeAnnouncementTestSuccess,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ] else if (unavailable) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 18,
+                        color: theme.colorScheme.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          l10n.altitudeAnnouncementUnavailable,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

@@ -232,6 +232,12 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowVerticalAcceleration;
     case 'verticalAccelerationFillOpacity':
       return l10n.settingVerticalAccelerationFillOpacity;
+    case 'interval':
+      return l10n.settingVerticalGraphInterval;
+    case 'verticalStep':
+      return l10n.settingVerticalGraphStep;
+    case 'dotSize':
+      return l10n.settingVerticalGraphDotSize;
     // `format` is shared by the heading and wind-direction controls; both use
     // the same label and option set.
     case 'format':
@@ -491,7 +497,8 @@ const List<ControlSetting> _commonSettings = [
 ControlSetting _unitSetting(UnitDimension dimension) {
   final options = <Object, String>{
     'default': 'Default',
-    for (final unit in dimension.choices) unit: UnitValues.label(dimension, unit),
+    for (final unit in dimension.choices)
+      unit: UnitValues.label(dimension, unit),
   };
   return ControlSetting.choice(
     key: 'displayUnit',

@@ -2,8 +2,11 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../l10n/app_localizations.dart';
+import '../theme/locale_controller.dart';
 import 'flight_state.dart';
 import 'raw_flight_data_source.dart';
 
@@ -238,18 +241,29 @@ class GpsFlightDataBridge {
   ///     pausing, and shows the background-location indicator. This requires
   ///     the `location` UIBackgroundMode (declared in Info.plist) and, for
   ///     screen-locked delivery, "Always" authorization.
+  AppLocalizations _notificationLocalizations() {
+    final selectedLocale = LocaleController.instance.current.locale;
+    final locale =
+        selectedLocale ??
+        basicLocaleListResolution(
+          WidgetsBinding.instance.platformDispatcher.locales,
+          AppLocalizations.supportedLocales,
+        );
+    return lookupAppLocalizations(locale);
+  }
+
   LocationSettings _buildLocationSettings({required bool background}) {
     if (Platform.isAndroid) {
+      final l10n = _notificationLocalizations();
       return AndroidSettings(
         accuracy: accuracy,
         distanceFilter: distanceFilterMeters,
         intervalDuration: updateInterval,
         foregroundNotificationConfig: background
-            ? const ForegroundNotificationConfig(
-                notificationTitle: 'ParaBeacon — recording flight',
-                notificationText:
-                    'Logging your track with the screen off. Tap to return.',
-                notificationChannelName: 'Flight recording',
+            ? ForegroundNotificationConfig(
+                notificationTitle: l10n.gpsNotificationTitle,
+                notificationText: l10n.gpsNotificationText,
+                notificationChannelName: l10n.gpsNotificationChannel,
                 notificationIcon: AndroidResource(
                   name: 'ic_launcher',
                   defType: 'mipmap',

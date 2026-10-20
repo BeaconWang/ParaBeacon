@@ -1444,6 +1444,77 @@ class AppLocalizationsZh extends AppLocalizations {
   String get locationNoFix => '无 GPS 定位';
 
   @override
+  String get mapNoBasemap => '无底图';
+
+  @override
+  String mapOffline(String filename) {
+    return '离线 · $filename';
+  }
+
+  @override
+  String get mapOfflineNoFilename => '离线';
+
+  @override
+  String get mapRecenterTooltip => '重新居中';
+
+  @override
+  String get mapZoomInTooltip => '放大';
+
+  @override
+  String get mapZoomOutTooltip => '缩小';
+
+  @override
+  String get mapHeading => '航向';
+
+  @override
+  String get mapAltitude => '高度';
+
+  @override
+  String get mapRequiredGlideRatio => '所需滑翔比';
+
+  @override
+  String get varioLegendSink => '下沉';
+
+  @override
+  String get varioLegendNeutral => '中性';
+
+  @override
+  String get varioLegendLift => '上升';
+
+  @override
+  String get gpsNotificationTitle => 'ParaBeacon — 正在记录飞行';
+
+  @override
+  String get gpsNotificationText => '屏幕关闭时仍在记录飞行轨迹。点按以返回。';
+
+  @override
+  String get gpsNotificationChannel => '飞行记录';
+
+  @override
+  String get debugSensorTitle => '传感器调试';
+
+  @override
+  String get debugSensorReset => '重置';
+
+  @override
+  String get debugSensorVerticalSpeed => '垂直速度';
+
+  @override
+  String get debugSensorAltitude => '高度';
+
+  @override
+  String get debugSensorGroundSpeed => '地速';
+
+  @override
+  String get debugSensorHeading => '航向';
+
+  @override
+  String get debugSensorWindSpeed => '风速';
+
+  @override
+  String get debugSensorWindDirection => '风向';
+
+  @override
   String get flightButtonStart => '开始';
 
   @override
@@ -1525,6 +1596,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingVerticalAccelerationFillOpacity => '加速度填充不透明度';
+
+  @override
+  String get settingVerticalGraphInterval => '显示时间范围';
+
+  @override
+  String get settingVerticalGraphStep => '垂直刻度';
+
+  @override
+  String get settingVerticalGraphDotSize => '点大小';
 
   @override
   String get settingTextColor => '文字颜色';

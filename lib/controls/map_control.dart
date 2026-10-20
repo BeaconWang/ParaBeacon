@@ -17,6 +17,7 @@ import '../data/solar_position.dart';
 import '../data/thermal_detector.dart';
 import '../data/vario_color_scale.dart';
 import '../data/wind_estimator.dart';
+import '../l10n/app_localizations.dart';
 
 /// A raster map tile source available to the [MapControl].
 @immutable
@@ -61,7 +62,7 @@ class MapTileSources {
       id: 'none',
       label: 'None (no basemap)',
       urlTemplate: '',
-      attribution: 'No basemap',
+      attribution: '',
       isNone: true,
     ),
     MapTileSource(
@@ -471,6 +472,8 @@ class _MapControlState extends State<MapControl> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final offlineFileName = OfflineTilesService.instance.activeFileName;
     final data = FlightDataProvider.of(context);
     final src = MapTileSources.byId(widget.tileSource);
 
@@ -497,8 +500,11 @@ class _MapControlState extends State<MapControl> {
         lon: wgs.longitude,
         climbMps: climb,
       );
-      AirspaceStore.instance
-          .updatePosition(wgs.latitude, wgs.longitude, altMsl);
+      AirspaceStore.instance.updatePosition(
+        wgs.latitude,
+        wgs.longitude,
+        altMsl,
+      );
       // Wind is resolved centrally in the flight-data pipeline (a real sensor
       // reading when available, otherwise a GPS circling estimate), so the map
       // just mirrors the shared value and stays consistent with other controls.
@@ -586,12 +592,14 @@ class _MapControlState extends State<MapControl> {
 
                 // Straight line from the current position back to take-off.
                 if (widget.showTakeoffLine && hasFix)
-                  Builder(builder: (context) {
-                    final line = _buildTakeoffLine(renderPos);
-                    return line == null
-                        ? const SizedBox.shrink()
-                        : PolylineLayer(polylines: [line]);
-                  }),
+                  Builder(
+                    builder: (context) {
+                      final line = _buildTakeoffLine(renderPos);
+                      return line == null
+                          ? const SizedBox.shrink()
+                          : PolylineLayer(polylines: [line]);
+                    },
+                  ),
 
                 // Recorded flight track coloured by vertical speed.
                 if (widget.showTrack)
@@ -640,8 +648,11 @@ class _MapControlState extends State<MapControl> {
             Positioned(
               left: 8,
               top: 8,
-              child:
-                  _glassChip(theme, icon: Icons.gps_off, label: 'No GPS fix'),
+              child: _glassChip(
+                theme,
+                icon: Icons.gps_off,
+                label: l10n.locationNoFix,
+              ),
             ),
 
           // Top-left: HDG / ALT readout (only with a fix).
@@ -651,7 +662,8 @@ class _MapControlState extends State<MapControl> {
               top: 8,
               child: _glassChip(
                 theme,
-                label: 'HDG ${heading.round()}°  ·  ALT ${altMsl.round()}m',
+                label:
+                    '${l10n.mapHeading} ${heading.round()}°  ·  ${l10n.mapAltitude} ${altMsl.round()}m',
                 small: true,
               ),
             ),
@@ -680,7 +692,7 @@ class _MapControlState extends State<MapControl> {
             child: _glassChip(
               theme,
               icon: Icons.trending_down,
-              label: 'L/D REQ ${_ldReqStr(data)}',
+              label: '${l10n.mapRequiredGlideRatio} ${_ldReqStr(data)}',
               small: true,
             ),
           ),
@@ -720,15 +732,22 @@ class _MapControlState extends State<MapControl> {
                     const SizedBox(height: 4),
                   ],
                   if (widget.showZoomLevel)
-                    _glassChip(theme, label: 'Z ${_zoom.toStringAsFixed(1)}',
-                        small: true),
+                    _glassChip(
+                      theme,
+                      label: 'Z ${_zoom.toStringAsFixed(1)}',
+                      small: true,
+                    ),
                   if (widget.showZoomLevel && widget.showAttribution)
                     const SizedBox(height: 4),
                   if (widget.showAttribution)
                     _glassChip(
                       theme,
                       label: _offlineActive
-                          ? 'Offline · ${OfflineTilesService.instance.activeFileName}'
+                          ? offlineFileName == null || offlineFileName.isEmpty
+                                ? l10n.mapOfflineNoFilename
+                                : l10n.mapOffline(offlineFileName)
+                          : src.isNone
+                          ? l10n.mapNoBasemap
                           : src.attribution,
                       small: true,
                     ),
@@ -771,13 +790,15 @@ class _MapControlState extends State<MapControl> {
                   if (!_follow) ...[
                     _MapButton(
                       icon: Icons.my_location,
-                      tooltip: 'Re-center',
+                      tooltip: l10n.mapRecenterTooltip,
                       onTap: () {
                         setState(() => _follow = true);
                         final p = _lastWgs;
                         if (p != null && _ready) {
                           _map.move(
-                              _shift(p, widget.tileSource), _map.camera.zoom);
+                            _shift(p, widget.tileSource),
+                            _map.camera.zoom,
+                          );
                         }
                       },
                     ),
@@ -786,13 +807,13 @@ class _MapControlState extends State<MapControl> {
                   // Zoom in / out buttons (feature 15).
                   _MapButton(
                     icon: Icons.add,
-                    tooltip: 'Zoom in',
+                    tooltip: l10n.mapZoomInTooltip,
                     onTap: () => _zoomBy(1),
                   ),
                   const SizedBox(height: 8),
                   _MapButton(
                     icon: Icons.remove,
-                    tooltip: 'Zoom out',
+                    tooltip: l10n.mapZoomOutTooltip,
                     onTap: () => _zoomBy(-1),
                   ),
                 ],
@@ -811,7 +832,8 @@ class _MapControlState extends State<MapControl> {
       if (tp != null) {
         return TileLayer(
           key: ValueKey(
-              'offline-${OfflineTilesService.instance.activeFileName}-r$_tileRetryGen'),
+            'offline-${OfflineTilesService.instance.activeFileName}-r$_tileRetryGen',
+          ),
           tileProvider: tp,
           maxNativeZoom: 19,
           userAgentPackageName: 'com.beacon.parabeacon',
@@ -819,7 +841,8 @@ class _MapControlState extends State<MapControl> {
           // same retry path as online tiles so we recover instead of leaving
           // permanent blanks.
           errorTileCallback: _onTileLoadError,
-          evictErrorTileStrategy: EvictErrorTileStrategy.notVisibleRespectMargin,
+          evictErrorTileStrategy:
+              EvictErrorTileStrategy.notVisibleRespectMargin,
           reset: _tileResetCtrl.stream,
         );
       }
@@ -893,8 +916,9 @@ class _MapControlState extends State<MapControl> {
     // (0 == draw the whole track). Mirrors XCTrack's "Tracklog length".
     final List<dynamic> samples;
     if (widget.tracklogMinutes > 0) {
-      final cutoff = DateTime.now()
-          .subtract(Duration(seconds: (widget.tracklogMinutes * 60).round()));
+      final cutoff = DateTime.now().subtract(
+        Duration(seconds: (widget.tracklogMinutes * 60).round()),
+      );
       final start = all.indexWhere((s) => s.time.isAfter(cutoff));
       samples = start <= 0 ? all : all.sublist(math.max(0, start - 1));
     } else {
@@ -931,11 +955,13 @@ class _MapControlState extends State<MapControl> {
 
     void flush(int endExclusive) {
       if (endExclusive - runStart < 2) return;
-      out.add(Polyline(
-        points: [for (int i = runStart; i < endExclusive; i++) at(i)],
-        strokeWidth: strokeWidth,
-        color: runColor,
-      ));
+      out.add(
+        Polyline(
+          points: [for (int i = runStart; i < endExclusive; i++) at(i)],
+          strokeWidth: strokeWidth,
+          color: runColor,
+        ),
+      );
     }
 
     for (int i = 2; i < pts.length; i++) {
@@ -964,8 +990,8 @@ class _MapControlState extends State<MapControl> {
     // In tile space we've already GCJ-shifted `from`; project the endpoint in
     // the same (shifted) frame so the line stays anchored to the marker.
     final dLat = (meters * math.cos(rad)) / mPerDegLat;
-    final dLon = (meters * math.sin(rad)) /
-        (mPerDegLon < 1e-6 ? 1e-6 : mPerDegLon);
+    final dLon =
+        (meters * math.sin(rad)) / (mPerDegLon < 1e-6 ? 1e-6 : mPerDegLon);
     final to = LatLng(from.latitude + dLat, from.longitude + dLon);
     return Polyline(
       points: [from, to],
@@ -1044,9 +1070,16 @@ class _MapControlState extends State<MapControl> {
     final f = fade.clamp(0.0, 1.0);
     final outlineAlpha = (255 - f * 200).clamp(0.0, 255.0).round();
     return [
-      CircleMarker(point: pos, radius: 8, color: Color.fromARGB(outlineAlpha, 0, 0, 0)),
       CircleMarker(
-          point: pos, radius: 6, color: Color.fromARGB(outlineAlpha, 255, 255, 255)),
+        point: pos,
+        radius: 8,
+        color: Color.fromARGB(outlineAlpha, 0, 0, 0),
+      ),
+      CircleMarker(
+        point: pos,
+        radius: 6,
+        color: Color.fromARGB(outlineAlpha, 255, 255, 255),
+      ),
       CircleMarker(point: pos, radius: 4, color: _xcThermalColor(climbMps, f)),
     ];
   }
@@ -1070,11 +1103,13 @@ class _MapControlState extends State<MapControl> {
         final age = take <= 0 ? 1.0 : (i - start) / take; // 0 oldest..~1 newest
         final fade = (1.0 - age).clamp(0.0, 0.7);
         final drifted = _applyWindDrift(t.centerLat, t.centerLon);
-        out.addAll(_buildCoreDot(
-          _shift(LatLng(drifted[0], drifted[1]), widget.tileSource),
-          t.avgClimbMps,
-          fade,
-        ));
+        out.addAll(
+          _buildCoreDot(
+            _shift(LatLng(drifted[0], drifted[1]), widget.tileSource),
+            t.avgClimbMps,
+            fade,
+          ),
+        );
       }
     }
 
@@ -1084,11 +1119,13 @@ class _MapControlState extends State<MapControl> {
     if (cur != null) {
       out.add(_buildThermalCircle(cur));
       final drifted = _applyWindDrift(cur.centerLat, cur.centerLon);
-      out.addAll(_buildCoreDot(
-        _shift(LatLng(drifted[0], drifted[1]), widget.tileSource),
-        cur.avgClimbMps,
-        0.0,
-      ));
+      out.addAll(
+        _buildCoreDot(
+          _shift(LatLng(drifted[0], drifted[1]), widget.tileSource),
+          cur.avgClimbMps,
+          0.0,
+        ),
+      );
     }
     return out;
   }
@@ -1151,8 +1188,10 @@ class _MapControlState extends State<MapControl> {
     final dLat = (meters * math.cos(rad)) / mPerDegLat;
     final dLon =
         (meters * math.sin(rad)) / (mPerDegLon < 1e-6 ? 1e-6 : mPerDegLon);
-    final sunPos =
-        LatLng(renderPos.latitude + dLat, renderPos.longitude + dLon);
+    final sunPos = LatLng(
+      renderPos.latitude + dLat,
+      renderPos.longitude + dLon,
+    );
     return [
       Marker(
         point: sunPos,
@@ -1171,14 +1210,16 @@ class _MapControlState extends State<MapControl> {
     for (final a in airspaces.take(80)) {
       if (a.polygon.length < 3) continue;
       final color = _airspaceColor(a);
-      out.add(Polygon(
-        points: a.polygon
-            .map((pt) => _shift(LatLng(pt[0], pt[1]), widget.tileSource))
-            .toList(growable: false),
-        borderColor: color,
-        borderStrokeWidth: a.severity == AirspaceSeverity.high ? 2 : 1,
-        color: color.withAlpha(20),
-      ));
+      out.add(
+        Polygon(
+          points: a.polygon
+              .map((pt) => _shift(LatLng(pt[0], pt[1]), widget.tileSource))
+              .toList(growable: false),
+          borderColor: color,
+          borderStrokeWidth: a.severity == AirspaceSeverity.high ? 2 : 1,
+          color: color.withAlpha(20),
+        ),
+      );
     }
     return out;
   }
@@ -1237,10 +1278,11 @@ class _MapControlState extends State<MapControl> {
           ],
           Text(
             label,
-            style: (small
-                    ? theme.textTheme.labelSmall
-                    : theme.textTheme.labelMedium)
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style:
+                (small
+                        ? theme.textTheme.labelSmall
+                        : theme.textTheme.labelMedium)
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -1368,10 +1410,7 @@ class _GridScaleLabel extends StatelessWidget {
         children: [
           Icon(Icons.grid_4x4, size: 14, color: color),
           const SizedBox(width: 4),
-          Text(
-            text,
-            style: theme.textTheme.labelSmall?.copyWith(color: color),
-          ),
+          Text(text, style: theme.textTheme.labelSmall?.copyWith(color: color)),
         ],
       ),
     );
@@ -1470,10 +1509,8 @@ class _SuppressPageSwipe extends StatelessWidget {
       gestures: {
         _AlwaysWinHorizontalDragRecognizer:
             GestureRecognizerFactoryWithHandlers<
-                _AlwaysWinHorizontalDragRecognizer>(
-          () => _AlwaysWinHorizontalDragRecognizer(),
-          (instance) {},
-        ),
+              _AlwaysWinHorizontalDragRecognizer
+            >(() => _AlwaysWinHorizontalDragRecognizer(), (instance) {}),
       },
       child: child,
     );
@@ -1570,6 +1607,7 @@ class _VarioLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final labelStyle = theme.textTheme.labelSmall?.copyWith(
       color: textColor,
       fontSize: 9,
@@ -1590,8 +1628,10 @@ class _VarioLegend extends StatelessWidget {
     // Fractions (0..1 over the visualisation range) at which the threshold
     // ticks sit, so the labels line up with the gradient bar.
     double frac(double mps) =>
-        ((mps - scale.colorMin) / (scale.colorMax - scale.colorMin))
-            .clamp(0.0, 1.0);
+        ((mps - scale.colorMin) / (scale.colorMax - scale.colorMin)).clamp(
+          0.0,
+          1.0,
+        );
 
     const barWidth = 220.0;
 
@@ -1610,9 +1650,9 @@ class _VarioLegend extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('SINK', style: captionStyle),
-                Text('NEUTRAL', style: captionStyle),
-                Text('LIFT', style: captionStyle),
+                Text(l10n.varioLegendSink, style: captionStyle),
+                Text(l10n.varioLegendNeutral, style: captionStyle),
+                Text(l10n.varioLegendLift, style: captionStyle),
               ],
             ),
           ),
@@ -1624,9 +1664,7 @@ class _VarioLegend extends StatelessWidget {
               width: barWidth,
               height: 8,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: scale.sampleGradient(24),
-                ),
+                gradient: LinearGradient(colors: scale.sampleGradient(24)),
               ),
             ),
           ),
@@ -1640,17 +1678,35 @@ class _VarioLegend extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                _tick(0.0, fmt(scale.colorMin), labelStyle, barWidth,
-                    Alignment.centerLeft),
-                _tick(frac(scale.effectiveSinkThreshold),
-                    fmt(scale.effectiveSinkThreshold), labelStyle, barWidth,
-                    Alignment.center),
+                _tick(
+                  0.0,
+                  fmt(scale.colorMin),
+                  labelStyle,
+                  barWidth,
+                  Alignment.centerLeft,
+                ),
+                _tick(
+                  frac(scale.effectiveSinkThreshold),
+                  fmt(scale.effectiveSinkThreshold),
+                  labelStyle,
+                  barWidth,
+                  Alignment.center,
+                ),
                 _tick(frac(0), '0', labelStyle, barWidth, Alignment.center),
-                _tick(frac(scale.effectiveLiftThreshold),
-                    fmt(scale.effectiveLiftThreshold), labelStyle, barWidth,
-                    Alignment.center),
-                _tick(1.0, fmt(scale.colorMax), labelStyle, barWidth,
-                    Alignment.centerRight),
+                _tick(
+                  frac(scale.effectiveLiftThreshold),
+                  fmt(scale.effectiveLiftThreshold),
+                  labelStyle,
+                  barWidth,
+                  Alignment.center,
+                ),
+                _tick(
+                  1.0,
+                  fmt(scale.colorMax),
+                  labelStyle,
+                  barWidth,
+                  Alignment.centerRight,
+                ),
               ],
             ),
           ),
@@ -1844,7 +1900,8 @@ class _ScaleBarLayer extends StatelessWidget {
 
     // Metres per screen pixel at the view centre (Web-Mercator ground
     // resolution): 156543.03 * cos(lat) / 2^zoom.
-    final metersPerPixel = 156543.03392 *
+    final metersPerPixel =
+        156543.03392 *
         math.cos(center.latitude * math.pi / 180.0).abs() /
         math.pow(2, camera.zoom);
     if (!metersPerPixel.isFinite || metersPerPixel <= 0) {
@@ -1939,8 +1996,7 @@ class _WindIndicator extends StatelessWidget {
     // counter-rotate by the map rotation (CCW) so it stays true on a rotated
     // (track-up) map.
     final blowToDeg = (wind.fromDirectionDeg + 180.0) % 360.0;
-    final angleRad =
-        (blowToDeg - mapRotationDeg) * math.pi / 180.0;
+    final angleRad = (blowToDeg - mapRotationDeg) * math.pi / 180.0;
     final dim = wind.confident ? 1.0 : 0.55;
     return Opacity(
       opacity: dim,
@@ -1994,9 +2050,7 @@ class _SunMarker extends StatelessWidget {
       Icons.wb_sunny,
       size: 26,
       color: color,
-      shadows: const [
-        Shadow(color: Colors.black45, blurRadius: 3),
-      ],
+      shadows: const [Shadow(color: Colors.black45, blurRadius: 3)],
     );
   }
 }

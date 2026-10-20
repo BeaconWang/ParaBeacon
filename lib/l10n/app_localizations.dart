@@ -2882,6 +2882,144 @@ abstract class AppLocalizations {
   /// **'No GPS fix'**
   String get locationNoFix;
 
+  /// No description provided for @mapNoBasemap.
+  ///
+  /// In en, this message translates to:
+  /// **'No basemap'**
+  String get mapNoBasemap;
+
+  /// No description provided for @mapOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline · {filename}'**
+  String mapOffline(String filename);
+
+  /// No description provided for @mapOfflineNoFilename.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get mapOfflineNoFilename;
+
+  /// No description provided for @mapRecenterTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-center'**
+  String get mapRecenterTooltip;
+
+  /// No description provided for @mapZoomInTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get mapZoomInTooltip;
+
+  /// No description provided for @mapZoomOutTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get mapZoomOutTooltip;
+
+  /// No description provided for @mapHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'HDG'**
+  String get mapHeading;
+
+  /// No description provided for @mapAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'ALT'**
+  String get mapAltitude;
+
+  /// No description provided for @mapRequiredGlideRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'L/D REQ'**
+  String get mapRequiredGlideRatio;
+
+  /// No description provided for @varioLegendSink.
+  ///
+  /// In en, this message translates to:
+  /// **'SINK'**
+  String get varioLegendSink;
+
+  /// No description provided for @varioLegendNeutral.
+  ///
+  /// In en, this message translates to:
+  /// **'NEUTRAL'**
+  String get varioLegendNeutral;
+
+  /// No description provided for @varioLegendLift.
+  ///
+  /// In en, this message translates to:
+  /// **'LIFT'**
+  String get varioLegendLift;
+
+  /// No description provided for @gpsNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ParaBeacon — recording flight'**
+  String get gpsNotificationTitle;
+
+  /// No description provided for @gpsNotificationText.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging your track with the screen off. Tap to return.'**
+  String get gpsNotificationText;
+
+  /// No description provided for @gpsNotificationChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight recording'**
+  String get gpsNotificationChannel;
+
+  /// No description provided for @debugSensorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug Sensor'**
+  String get debugSensorTitle;
+
+  /// No description provided for @debugSensorReset.
+  ///
+  /// In en, this message translates to:
+  /// **'RESET'**
+  String get debugSensorReset;
+
+  /// No description provided for @debugSensorVerticalSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical speed'**
+  String get debugSensorVerticalSpeed;
+
+  /// No description provided for @debugSensorAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get debugSensorAltitude;
+
+  /// No description provided for @debugSensorGroundSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground speed'**
+  String get debugSensorGroundSpeed;
+
+  /// No description provided for @debugSensorHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get debugSensorHeading;
+
+  /// No description provided for @debugSensorWindSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind speed'**
+  String get debugSensorWindSpeed;
+
+  /// No description provided for @debugSensorWindDirection.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind direction'**
+  String get debugSensorWindDirection;
+
   /// No description provided for @flightButtonStart.
   ///
   /// In en, this message translates to:
@@ -3043,6 +3181,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Acceleration fill opacity'**
   String get settingVerticalAccelerationFillOpacity;
+
+  /// No description provided for @settingVerticalGraphInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown interval'**
+  String get settingVerticalGraphInterval;
+
+  /// No description provided for @settingVerticalGraphStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical step'**
+  String get settingVerticalGraphStep;
+
+  /// No description provided for @settingVerticalGraphDotSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Dot size'**
+  String get settingVerticalGraphDotSize;
 
   /// No description provided for @settingTextColor.
   ///

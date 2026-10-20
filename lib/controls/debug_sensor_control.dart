@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/flight_data_provider.dart';
 import '../data/raw_flight_data_source.dart';
+import '../l10n/app_localizations.dart';
 
 /// A debug control that lets you manually drive the shared flight data with a
 /// stack of sliders — one per sensor field.
@@ -23,27 +24,44 @@ class DebugSensorControl extends StatefulWidget {
 /// Static description of one adjustable sensor field.
 class _Field {
   final String key;
-  final String label;
   final String unit;
   final double min;
   final double max;
 
   const _Field({
     required this.key,
-    required this.label,
     required this.unit,
     required this.min,
     required this.max,
   });
+
+  String labelOf(AppLocalizations l10n) {
+    switch (key) {
+      case 'verticalSpeed':
+        return l10n.debugSensorVerticalSpeed;
+      case 'altitude':
+        return l10n.debugSensorAltitude;
+      case 'groundSpeed':
+        return l10n.debugSensorGroundSpeed;
+      case 'heading':
+        return l10n.debugSensorHeading;
+      case 'windSpeed':
+        return l10n.debugSensorWindSpeed;
+      case 'windDirection':
+        return l10n.debugSensorWindDirection;
+      default:
+        return key;
+    }
+  }
 }
 
 const List<_Field> _fields = [
-  _Field(key: 'verticalSpeed', label: 'Vertical speed', unit: 'm/s', min: -10, max: 10),
-  _Field(key: 'altitude', label: 'Altitude', unit: 'm', min: 0, max: 5000),
-  _Field(key: 'groundSpeed', label: 'Ground speed', unit: 'km/h', min: 0, max: 120),
-  _Field(key: 'heading', label: 'Heading', unit: '°', min: 0, max: 360),
-  _Field(key: 'windSpeed', label: 'Wind speed', unit: 'km/h', min: 0, max: 80),
-  _Field(key: 'windDirection', label: 'Wind dir', unit: '°', min: 0, max: 360),
+  _Field(key: 'verticalSpeed', unit: 'm/s', min: -10, max: 10),
+  _Field(key: 'altitude', unit: 'm', min: 0, max: 5000),
+  _Field(key: 'groundSpeed', unit: 'km/h', min: 0, max: 120),
+  _Field(key: 'heading', unit: '°', min: 0, max: 360),
+  _Field(key: 'windSpeed', unit: 'km/h', min: 0, max: 80),
+  _Field(key: 'windDirection', unit: '°', min: 0, max: 360),
 ];
 
 class _DebugSensorControlState extends State<DebugSensorControl> {
@@ -100,14 +118,16 @@ class _DebugSensorControlState extends State<DebugSensorControl> {
 
     double? v(String key) => (_enabled[key] ?? false) ? _values[key] : null;
 
-    source.setOverride(FlightDataOverride(
-      verticalSpeed: v('verticalSpeed'),
-      altitude: v('altitude'),
-      groundSpeed: v('groundSpeed'),
-      heading: v('heading'),
-      windSpeed: v('windSpeed'),
-      windDirection: v('windDirection'),
-    ));
+    source.setOverride(
+      FlightDataOverride(
+        verticalSpeed: v('verticalSpeed'),
+        altitude: v('altitude'),
+        groundSpeed: v('groundSpeed'),
+        heading: v('heading'),
+        windSpeed: v('windSpeed'),
+        windDirection: v('windDirection'),
+      ),
+    );
   }
 
   void _toggle(String key, bool on) {
@@ -124,6 +144,7 @@ class _DebugSensorControlState extends State<DebugSensorControl> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final anyActive = _enabled.values.any((e) => e);
 
     return Column(
@@ -131,12 +152,15 @@ class _DebugSensorControlState extends State<DebugSensorControl> {
       children: [
         Row(
           children: [
-            Icon(Icons.bluetooth_searching,
-                size: 16, color: theme.colorScheme.primary),
+            Icon(
+              Icons.bluetooth_searching,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                'Debug Sensor',
+                l10n.debugSensorTitle,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -154,14 +178,16 @@ class _DebugSensorControlState extends State<DebugSensorControl> {
                   _source?.clearOverride();
                 },
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.errorContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    'RESET',
+                    l10n.debugSensorReset,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.onErrorContainer,
                       fontWeight: FontWeight.bold,
@@ -177,19 +203,25 @@ class _DebugSensorControlState extends State<DebugSensorControl> {
             padding: EdgeInsets.zero,
             itemCount: _fields.length,
             itemBuilder: (context, index) =>
-                _buildFieldRow(context, theme, _fields[index]),
+                _buildFieldRow(context, theme, l10n, _fields[index]),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildFieldRow(BuildContext context, ThemeData theme, _Field field) {
+  Widget _buildFieldRow(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+    _Field field,
+  ) {
     final on = _enabled[field.key] ?? false;
     final value = (_values[field.key] ?? field.min).clamp(field.min, field.max);
     final decimals = (field.max - field.min) <= 30 ? 1 : 0;
-    final valueColor =
-        on ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant;
+    final valueColor = on
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -209,7 +241,7 @@ class _DebugSensorControlState extends State<DebugSensorControl> {
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                field.label,
+                field.labelOf(l10n),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -232,10 +264,8 @@ class _DebugSensorControlState extends State<DebugSensorControl> {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             trackHeight: 2,
-            overlayShape:
-                const RoundSliderOverlayShape(overlayRadius: 12),
-            thumbShape:
-                const RoundSliderThumbShape(enabledThumbRadius: 7),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
           ),
           child: Slider(
             value: value.toDouble(),

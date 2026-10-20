@@ -1485,6 +1485,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationNoFix => 'No GPS fix';
 
   @override
+  String get mapNoBasemap => 'No basemap';
+
+  @override
+  String mapOffline(String filename) {
+    return 'Offline · $filename';
+  }
+
+  @override
+  String get mapOfflineNoFilename => 'Offline';
+
+  @override
+  String get mapRecenterTooltip => 'Re-center';
+
+  @override
+  String get mapZoomInTooltip => 'Zoom in';
+
+  @override
+  String get mapZoomOutTooltip => 'Zoom out';
+
+  @override
+  String get mapHeading => 'HDG';
+
+  @override
+  String get mapAltitude => 'ALT';
+
+  @override
+  String get mapRequiredGlideRatio => 'L/D REQ';
+
+  @override
+  String get varioLegendSink => 'SINK';
+
+  @override
+  String get varioLegendNeutral => 'NEUTRAL';
+
+  @override
+  String get varioLegendLift => 'LIFT';
+
+  @override
+  String get gpsNotificationTitle => 'ParaBeacon — recording flight';
+
+  @override
+  String get gpsNotificationText =>
+      'Logging your track with the screen off. Tap to return.';
+
+  @override
+  String get gpsNotificationChannel => 'Flight recording';
+
+  @override
+  String get debugSensorTitle => 'Debug Sensor';
+
+  @override
+  String get debugSensorReset => 'RESET';
+
+  @override
+  String get debugSensorVerticalSpeed => 'Vertical speed';
+
+  @override
+  String get debugSensorAltitude => 'Altitude';
+
+  @override
+  String get debugSensorGroundSpeed => 'Ground speed';
+
+  @override
+  String get debugSensorHeading => 'Heading';
+
+  @override
+  String get debugSensorWindSpeed => 'Wind speed';
+
+  @override
+  String get debugSensorWindDirection => 'Wind direction';
+
+  @override
   String get flightButtonStart => 'START';
 
   @override
@@ -1572,6 +1644,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingVerticalAccelerationFillOpacity =>
       'Acceleration fill opacity';
+
+  @override
+  String get settingVerticalGraphInterval => 'Shown interval';
+
+  @override
+  String get settingVerticalGraphStep => 'Vertical step';
+
+  @override
+  String get settingVerticalGraphDotSize => 'Dot size';
 
   @override
   String get settingTextColor => 'Text color';

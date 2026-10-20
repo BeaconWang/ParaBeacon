@@ -823,6 +823,17 @@
   },
   "statsNoData": "没有可统计的飞行",
   "statsNoDataHint": "记录或选择飞行后即可查看统计数据。",
+  "statsPrioritySummary": "优先显示摘要",
+  "statsPriorityDetailed": "详细统计",
+  "statsComputingDetailed": "正在计算详细统计 · {completed} / {total} 次飞行",
+  "@statsComputingDetailed": {
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "statsNoDetailedTracks": "没有可用的已记录航迹详情。",
+  "statsCalculationFailed": "无法计算详细统计，摘要数据仍可查看。",
   "statsNotEnoughData": "数据不足",
   "statsRecordOn": "于 {date}",
   "@statsRecordOn": {

@@ -71,6 +71,9 @@ class FlightData {
   /// Compass heading in degrees (0..360, 0 = North).
   final double heading;
 
+  /// Whether [heading] is a measured GPS course suitable for wind estimation.
+  final bool hasHeading;
+
   /// Bearing to the current target in degrees (0..360), or null if none.
   final double? bearing;
 
@@ -126,6 +129,7 @@ class FlightData {
     this.latitude = 0.0,
     this.longitude = 0.0,
     this.heading = 0.0,
+    this.hasHeading = true,
     this.bearing,
     this.gpsAccuracy,
     this.satellites,
@@ -154,6 +158,7 @@ class FlightData {
     double? latitude,
     double? longitude,
     double? heading,
+    bool? hasHeading,
     double? bearing,
     double? gpsAccuracy,
     int? satellites,
@@ -179,6 +184,7 @@ class FlightData {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       heading: heading ?? this.heading,
+      hasHeading: hasHeading ?? this.hasHeading,
       bearing: bearing ?? this.bearing,
       gpsAccuracy: gpsAccuracy ?? this.gpsAccuracy,
       satellites: satellites ?? this.satellites,
@@ -214,6 +220,7 @@ class FlightData {
         'lat': latitude,
         'lng': longitude,
         'hdg': heading,
+        'hasHdg': hasHeading,
         'fix': hasFix,
         'mock': isMockLocation,
       };
@@ -232,6 +239,7 @@ class FlightData {
       'lat': latitude,
       'lng': longitude,
       'hdg': heading,
+      'hasHdg': hasHeading,
       'fix': hasFix,
       'mock': isMockLocation,
       'ws': windSpeed,
@@ -267,6 +275,7 @@ class FlightData {
       latitude: d('lat') ?? 0.0,
       longitude: d('lng') ?? 0.0,
       heading: d('hdg') ?? 0.0,
+      hasHeading: json['hasHdg'] as bool? ?? true,
       bearing: d('brg'),
       gpsAccuracy: d('acc'),
       satellites: i('sat'),

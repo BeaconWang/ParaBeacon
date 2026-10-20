@@ -302,6 +302,7 @@ class GpsFlightDataBridge {
       // NaN when unknown (e.g. stationary). Fall back to 0 in that case so
       // downstream consumers get a valid angle.
       heading: (pos.heading.isFinite && pos.heading >= 0) ? pos.heading : 0.0,
+      hasHeading: pos.heading.isFinite && pos.heading >= 0,
       // Geolocator reports speed in m/s; the app-wide model uses km/h.
       groundSpeedKmh: (pos.speed.isFinite && pos.speed >= 0)
           ? pos.speed * 3.6

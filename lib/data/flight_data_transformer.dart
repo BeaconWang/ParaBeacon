@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'aircraft_settings.dart';
 import 'flight_data.dart';
 import 'raw_flight_data_source.dart';
 import 'wind_estimator.dart';
@@ -39,11 +40,11 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
   /// [verticalSpeedWindow], oldest first.
   final List<_VsSample> _vsSamples = <_VsSample>[];
 
-  /// Derives a wind estimate from GPS ground-velocity while circling, used to
-  /// populate [FlightData.windSpeed] / [FlightData.windDirection] when the raw
-  /// feed carries no sensor wind reading. Fed once per raw update (never from a
-  /// widget's build), so the trailing window tracks real GPS cadence.
-  final WindEstimator _windEstimator = WindEstimator();
+  /// Derives a wind estimate from fresh GPS ground-velocity fixes when the raw
+  /// feed carries no sensor wind reading.
+  late final WindEstimator _windEstimator;
+
+  final AircraftSettings _aircraftSettings = AircraftSettings.instance;
 
   /// The latest transformed snapshot exposed to controls.
   FlightData _data = FlightData.empty;
@@ -59,7 +60,18 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
     required this.rawSource,
     this.verticalSpeedWindow = const Duration(seconds: 2),
   }) {
+    _windEstimator = WindEstimator(
+      trimSpeedKmh: _aircraftSettings.trimSpeedKmh,
+    );
+    _aircraftSettings.addListener(_onAircraftSettingsChanged);
     _attach();
+  }
+
+  void _onAircraftSettingsChanged() {
+    final trimSpeedKmh = _aircraftSettings.trimSpeedKmh;
+    if (trimSpeedKmh.isFinite && trimSpeedKmh > 0.0) {
+      _windEstimator.trimSpeedKmh = trimSpeedKmh;
+    }
   }
 
   /// The latest transformed [FlightData] (raw data with derived values applied,
@@ -95,8 +107,9 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
     // timestamp, which would corrupt trailing-window eviction and time weights.
     // Debug-override input in particular is a live "now" user action.
     final avgVs = _averagedVerticalSpeed(raw.verticalSpeed, DateTime.now());
-    var next =
-        raw.verticalSpeed == avgVs ? raw : raw.copyWith(verticalSpeed: avgVs);
+    var next = raw.verticalSpeed == avgVs
+        ? raw
+        : raw.copyWith(verticalSpeed: avgVs);
 
     // Wind: prefer a real sensor reading. When the feed carries none, derive it
     // from GPS ground-velocity while circling so every control (compass, map,
@@ -109,10 +122,10 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
   }
 
   /// Returns [snapshot] with a derived wind reading applied when it has a GPS
-  /// fix but no sensor-provided wind. The estimate comes from fitting ground
-  /// speed vs heading over a trailing window (see [WindEstimator]); it is only
-  /// published once confident. A sensor wind (windSpeed > 0.1) is left intact,
-  /// and the estimator is reset so it does not blend stale pre-sensor samples.
+  /// fix but no sensor-provided wind. Valid GPS course and speed samples are
+  /// processed at their fix timestamps, matching XCTrack's rolling velocity
+  /// circle. A sensor wind (windSpeed > 0.1) is left intact and resets the
+  /// estimator so it does not blend stale pre-sensor samples.
   FlightData _withDerivedWind(FlightData snapshot) {
     if (snapshot.windSpeed > 0.1) {
       _windEstimator.reset();
@@ -122,11 +135,14 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
       _windEstimator.reset();
       return snapshot;
     }
-    final est = _windEstimator.add(
-      groundSpeedMps: snapshot.groundSpeed / 3.6,
-      headingDeg: snapshot.heading,
-      time: DateTime.now(),
-    );
+
+    final est = snapshot.hasGroundSpeed && snapshot.hasHeading
+        ? _windEstimator.add(
+            groundSpeedMps: snapshot.groundSpeed / 3.6,
+            headingDeg: snapshot.heading,
+            time: snapshot.gpsTimestamp ?? snapshot.timestamp ?? DateTime.now(),
+          )
+        : _windEstimator.latestEstimate;
     if (est == null || !est.confident) return snapshot;
     return snapshot.copyWith(
       windSpeed: est.speedKmh,
@@ -166,8 +182,7 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
     var totalWeight = 0.0;
     for (var i = 0; i < _vsSamples.length; i++) {
       final current = _vsSamples[i];
-      final until =
-          i + 1 < _vsSamples.length ? _vsSamples[i + 1].time : now;
+      final until = i + 1 < _vsSamples.length ? _vsSamples[i + 1].time : now;
       var dtMicros = until.difference(current.time).inMicroseconds;
       if (dtMicros < 0) dtMicros = 0; // guard against out-of-order timestamps
       final w = dtMicros.toDouble();
@@ -182,6 +197,7 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
 
   @override
   void dispose() {
+    _aircraftSettings.removeListener(_onAircraftSettingsChanged);
     if (_attached) {
       rawSource.removeListener(_onRawData);
       _attached = false;

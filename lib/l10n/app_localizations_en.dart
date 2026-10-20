@@ -2318,6 +2318,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statsNoDataHint => 'Record or select flights to see statistics.';
 
   @override
+  String get statsPrioritySummary => 'Summary first';
+
+  @override
+  String get statsPriorityDetailed => 'Detailed stats';
+
+  @override
+  String statsComputingDetailed(int completed, int total) {
+    return 'Calculating detailed stats · $completed / $total flights';
+  }
+
+  @override
+  String get statsNoDetailedTracks =>
+      'No recorded track details are available.';
+
+  @override
+  String get statsCalculationFailed =>
+      'Detailed statistics could not be calculated. Your summary is still available.';
+
+  @override
   String get statsNotEnoughData => 'Not enough data';
 
   @override

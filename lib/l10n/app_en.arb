@@ -930,6 +930,17 @@
   },
   "statsNoData": "No flights to analyze",
   "statsNoDataHint": "Record or select flights to see statistics.",
+  "statsPrioritySummary": "Summary first",
+  "statsPriorityDetailed": "Detailed stats",
+  "statsComputingDetailed": "Calculating detailed stats · {completed} / {total} flights",
+  "@statsComputingDetailed": {
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "statsNoDetailedTracks": "No recorded track details are available.",
+  "statsCalculationFailed": "Detailed statistics could not be calculated. Your summary is still available.",
   "statsNotEnoughData": "Not enough data",
   "statsRecordOn": "on {date}",
   "@statsRecordOn": {

@@ -4442,6 +4442,36 @@ abstract class AppLocalizations {
   /// **'Record or select flights to see statistics.'**
   String get statsNoDataHint;
 
+  /// No description provided for @statsPrioritySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary first'**
+  String get statsPrioritySummary;
+
+  /// No description provided for @statsPriorityDetailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed stats'**
+  String get statsPriorityDetailed;
+
+  /// No description provided for @statsComputingDetailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating detailed stats · {completed} / {total} flights'**
+  String statsComputingDetailed(int completed, int total);
+
+  /// No description provided for @statsNoDetailedTracks.
+  ///
+  /// In en, this message translates to:
+  /// **'No recorded track details are available.'**
+  String get statsNoDetailedTracks;
+
+  /// No description provided for @statsCalculationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed statistics could not be calculated. Your summary is still available.'**
+  String get statsCalculationFailed;
+
   /// No description provided for @statsNotEnoughData.
   ///
   /// In en, this message translates to:

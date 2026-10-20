@@ -2260,6 +2260,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statsNoDataHint => '记录或选择飞行后即可查看统计数据。';
 
   @override
+  String get statsPrioritySummary => '优先显示摘要';
+
+  @override
+  String get statsPriorityDetailed => '详细统计';
+
+  @override
+  String statsComputingDetailed(int completed, int total) {
+    return '正在计算详细统计 · $completed / $total 次飞行';
+  }
+
+  @override
+  String get statsNoDetailedTracks => '没有可用的已记录航迹详情。';
+
+  @override
+  String get statsCalculationFailed => '无法计算详细统计，摘要数据仍可查看。';
+
+  @override
   String get statsNotEnoughData => '数据不足';
 
   @override

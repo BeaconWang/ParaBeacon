@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:isolate';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../data/flight_derived_stats.dart';
 import '../data/flight_recorder.dart';
 import '../data/flight_statistics.dart';
 import '../l10n/app_localizations.dart';
@@ -26,17 +31,220 @@ Future<void> showFlightStatisticsSheet(
   );
 }
 
-class _FlightStatisticsSheet extends StatelessWidget {
+enum _StatsPriority { summary, detailed }
+
+class _FlightStatisticsSheet extends StatefulWidget {
   const _FlightStatisticsSheet({required this.tracks, required this.selected});
 
   final List<FlightTrack> tracks;
   final bool selected;
 
   @override
+  State<_FlightStatisticsSheet> createState() => _FlightStatisticsSheetState();
+}
+
+class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
+  late FlightStatistics _stats;
+  _StatsPriority _priority = _StatsPriority.summary;
+  bool _isComputing = false;
+  bool _showProgress = false;
+  bool _detailsComplete = false;
+  String? _detailsError;
+  int _completedFlights = 0;
+  int _detailedFlights = 0;
+  int _jobId = 0;
+
+  Isolate? _worker;
+  ReceivePort? _resultsPort;
+  ReceivePort? _errorsPort;
+  ReceivePort? _exitPort;
+  Timer? _progressTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _stats = FlightStatistics.compute(widget.tracks, includeDetailed: false);
+  }
+
+  @override
+  void dispose() {
+    _stopDetailedWork();
+    super.dispose();
+  }
+
+  void _selectPriority(_StatsPriority priority) {
+    if (priority == _priority &&
+        (priority == _StatsPriority.summary ||
+            _isComputing ||
+            _detailsComplete)) {
+      return;
+    }
+    if (priority == _StatsPriority.summary) {
+      _stopDetailedWork();
+      setState(() {
+        _priority = priority;
+        _stats = FlightStatistics.compute(
+          widget.tracks,
+          includeDetailed: false,
+        );
+        _detailsComplete = false;
+        _detailsError = null;
+        _completedFlights = 0;
+        _detailedFlights = 0;
+      });
+      return;
+    }
+    setState(() => _priority = priority);
+    _startDetailedWork();
+  }
+
+  Future<void> _startDetailedWork() async {
+    _stopDetailedWork();
+    final jobId = _jobId;
+    _stats = FlightStatistics.compute(widget.tracks, includeDetailed: false);
+    _completedFlights = 0;
+    _detailedFlights = widget.tracks.where((track) => track.hasSamples).length;
+    _detailsComplete = false;
+    _detailsError = null;
+
+    if (mounted) setState(() => _isComputing = _detailedFlights > 0);
+    if (_detailedFlights == 0) {
+      if (mounted) setState(() => _detailsComplete = true);
+      return;
+    }
+
+    _progressTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted && _jobId == jobId && _isComputing) {
+        setState(() => _showProgress = true);
+      }
+    });
+
+    if (kIsWeb) {
+      await _computeDetailedOnWeb(jobId);
+      return;
+    }
+
+    final resultsPort = ReceivePort();
+    final errorsPort = ReceivePort();
+    final exitPort = ReceivePort();
+    _resultsPort = resultsPort;
+    _errorsPort = errorsPort;
+    _exitPort = exitPort;
+    resultsPort.listen((message) => _onWorkerMessage(jobId, message));
+    errorsPort.listen((message) {
+      if (_jobId == jobId) {
+        _finishDetailedWork(jobId, error: '$message');
+      }
+    });
+    exitPort.listen((_) {
+      if (_jobId == jobId && _isComputing) {
+        _finishDetailedWork(jobId, error: 'worker exited before completion');
+      }
+    });
+
+    try {
+      final worker = await Isolate.spawn<List<Object?>>(
+        _computeFlightDetailsInWorker,
+        <Object?>[widget.tracks, resultsPort.sendPort],
+        onError: errorsPort.sendPort,
+        onExit: exitPort.sendPort,
+        errorsAreFatal: true,
+      );
+      if (!mounted || _jobId != jobId || !_isComputing) {
+        worker.kill(priority: Isolate.immediate);
+        return;
+      }
+      _worker = worker;
+    } catch (error) {
+      _finishDetailedWork(jobId, error: '$error');
+    }
+  }
+
+  Future<void> _computeDetailedOnWeb(int jobId) async {
+    try {
+      for (var i = 0; i < widget.tracks.length; i++) {
+        if (!mounted || _jobId != jobId || !_isComputing) return;
+        final track = widget.tracks[i];
+        if (!track.hasSamples) continue;
+        final details = FlightDerivedStats.compute(track);
+        if (!mounted || _jobId != jobId || !_isComputing) return;
+        setState(() {
+          _stats.addDetailedTrackStats(track, details);
+          _completedFlights++;
+        });
+        await Future<void>.delayed(Duration.zero);
+      }
+      _finishDetailedWork(jobId);
+    } catch (error) {
+      _finishDetailedWork(jobId, error: '$error');
+    }
+  }
+
+  void _onWorkerMessage(int jobId, Object? message) {
+    if (!mounted || _jobId != jobId || message is! List || message.isEmpty) {
+      return;
+    }
+    final index = message[0];
+    if (index is! int) return;
+    if (index == -1) {
+      _finishDetailedWork(jobId);
+    } else if (index == -2) {
+      _finishDetailedWork(
+        jobId,
+        error: message.length > 1 ? '${message[1]}' : 'calculation failed',
+      );
+    } else if (index >= 0 &&
+        index < widget.tracks.length &&
+        message.length > 1 &&
+        message[1] is FlightDerivedStats) {
+      setState(() {
+        _stats.addDetailedTrackStats(
+          widget.tracks[index],
+          message[1] as FlightDerivedStats,
+        );
+        _completedFlights++;
+      });
+    }
+  }
+
+  void _finishDetailedWork(int jobId, {String? error}) {
+    if (!mounted || _jobId != jobId) return;
+    _progressTimer?.cancel();
+    _progressTimer = null;
+    _worker = null;
+    _closeWorkerPorts();
+    setState(() {
+      _isComputing = false;
+      _showProgress = false;
+      _detailsComplete = error == null;
+      _detailsError = error;
+    });
+  }
+
+  void _stopDetailedWork() {
+    _jobId++;
+    _progressTimer?.cancel();
+    _progressTimer = null;
+    _worker?.kill(priority: Isolate.immediate);
+    _worker = null;
+    _closeWorkerPorts();
+    _isComputing = false;
+    _showProgress = false;
+  }
+
+  void _closeWorkerPorts() {
+    _resultsPort?.close();
+    _errorsPort?.close();
+    _exitPort?.close();
+    _resultsPort = null;
+    _errorsPort = null;
+    _exitPort = null;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final stats = FlightStatistics.compute(tracks);
     final locale = Localizations.localeOf(context).toString();
 
     return Scaffold(
@@ -52,9 +260,9 @@ class _FlightStatisticsSheet extends StatelessWidget {
           children: [
             Text(l10n.statsTitle),
             Text(
-              selected
-                  ? l10n.statsScopeSelected(stats.flightCount)
-                  : l10n.statsScopeAll(stats.flightCount),
+              widget.selected
+                  ? l10n.statsScopeSelected(_stats.flightCount)
+                  : l10n.statsScopeAll(_stats.flightCount),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -64,9 +272,98 @@ class _FlightStatisticsSheet extends StatelessWidget {
       ),
       body: SafeArea(
         top: false,
-        child: stats.isEmpty
-            ? _empty(context, theme, l10n)
-            : _StatsBody(stats: stats, locale: locale),
+        child: Column(
+          children: [
+            if (!_stats.isEmpty) _priorityPicker(l10n),
+            if (_showProgress) _progressPanel(theme, l10n),
+            if (_detailsError != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(
+                  l10n.statsCalculationFailed,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ),
+            if (_priority == _StatsPriority.detailed &&
+                !_isComputing &&
+                _detailedFlights == 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(
+                  l10n.statsNoDetailedTracks,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            Expanded(
+              child: _stats.isEmpty
+                  ? _empty(context, theme, l10n)
+                  : _StatsBody(stats: _stats, locale: locale),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _priorityPicker(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: SegmentedButton<_StatsPriority>(
+          segments: [
+            ButtonSegment(
+              value: _StatsPriority.summary,
+              label: Text(l10n.statsPrioritySummary),
+              icon: const Icon(Icons.summarize_outlined),
+            ),
+            ButtonSegment(
+              value: _StatsPriority.detailed,
+              label: Text(l10n.statsPriorityDetailed),
+              icon: const Icon(Icons.analytics_outlined),
+            ),
+          ],
+          selected: {_priority},
+          onSelectionChanged: (selection) => _selectPriority(selection.first),
+        ),
+      ),
+    );
+  }
+
+  Widget _progressPanel(ThemeData theme, AppLocalizations l10n) {
+    final progress = _detailedFlights == 0
+        ? null
+        : (_completedFlights / _detailedFlights).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LinearProgressIndicator(value: progress),
+                const SizedBox(height: 6),
+                Text(
+                  l10n.statsComputingDetailed(
+                    _completedFlights,
+                    _detailedFlights,
+                  ),
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          TextButton(
+            onPressed: () => _selectPriority(_StatsPriority.summary),
+            child: Text(l10n.cancel),
+          ),
+        ],
       ),
     );
   }
@@ -98,6 +395,23 @@ class _FlightStatisticsSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+@pragma('vm:entry-point')
+void _computeFlightDetailsInWorker(List<Object?> args) {
+  final tracks = args[0] as List<FlightTrack>;
+  final sendPort = args[1] as SendPort;
+  try {
+    for (var i = 0; i < tracks.length; i++) {
+      final track = tracks[i];
+      if (track.hasSamples) {
+        sendPort.send(<Object?>[i, FlightDerivedStats.compute(track)]);
+      }
+    }
+    sendPort.send(const <Object?>[-1, null]);
+  } catch (error) {
+    sendPort.send(<Object?>[-2, error.toString()]);
   }
 }
 
@@ -248,7 +562,11 @@ class _StatsBody extends StatelessWidget {
           child: Column(
             children: [
               _kv(theme, l10n.statsAvgDuration, _hms(stats.avgDuration)),
-              _kv(theme, l10n.statsAvgDistance, _km(stats.avgTrackDistanceM, 2)),
+              _kv(
+                theme,
+                l10n.statsAvgDistance,
+                _km(stats.avgTrackDistanceM, 2),
+              ),
               _kv(
                 theme,
                 l10n.statsAvgXcDistance,
@@ -334,7 +652,11 @@ class _StatsBody extends StatelessWidget {
   }
 
   // ── Hero cards ───────────────────────────────────────────────────────────
-  Widget _heroGrid(BuildContext context, ThemeData theme, AppLocalizations l10n) {
+  Widget _heroGrid(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     final cards = <Widget>[
       _HeroCard(
         icon: Icons.flight_takeoff,
@@ -365,9 +687,7 @@ class _StatsBody extends StatelessWidget {
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
-          children: [
-            for (final c in cards) SizedBox(width: width, child: c),
-          ],
+          children: [for (final c in cards) SizedBox(width: width, child: c)],
         );
       },
     );
@@ -429,7 +749,9 @@ class _StatsBody extends StatelessWidget {
                 value ?? '—',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: value == null ? theme.colorScheme.onSurfaceVariant : null,
+                  color: value == null
+                      ? theme.colorScheme.onSurfaceVariant
+                      : null,
                 ),
               ),
               if (value != null && track != null)
@@ -463,9 +785,7 @@ class _StatsBody extends StatelessWidget {
 
   List<String> _monthLabels() {
     final fmt = DateFormat.MMM(locale);
-    return [
-      for (var m = 1; m <= 12; m++) fmt.format(DateTime(2020, m)),
-    ];
+    return [for (var m = 1; m <= 12; m++) fmt.format(DateTime(2020, m))];
   }
 
   /// Kilometres with [digits] decimals. The caller appends the unit except for
@@ -484,7 +804,11 @@ class _StatsBody extends StatelessWidget {
 
 /// A titled card section with an icon and a soft surface background.
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.icon, required this.child});
+  const _Section({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
 
   final String title;
   final IconData icon;
@@ -604,13 +928,11 @@ class _BarChart extends StatelessWidget {
         ),
       );
     }
-    final maxCount = shown.map((b) => b.count).fold<int>(0, (a, b) => a > b ? a : b);
+    final maxCount = shown
+        .map((b) => b.count)
+        .fold<int>(0, (a, b) => a > b ? a : b);
 
-    return Column(
-      children: [
-        for (final b in shown) _row(theme, b, maxCount),
-      ],
-    );
+    return Column(children: [for (final b in shown) _row(theme, b, maxCount)]);
   }
 
   Widget _row(ThemeData theme, FlightBucket b, int maxCount) {

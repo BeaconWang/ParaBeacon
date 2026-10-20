@@ -146,8 +146,13 @@ class FlightStatistics {
   ///
   /// [unknownAircraftLabel] is used to bucket flights with no recorded
   /// glider / aircraft name; [monthLabels] (length 12, Jan..Dec) label the
-  /// month distribution.
-  factory FlightStatistics.compute(Iterable<FlightTrack> tracks) {
+  /// month distribution. Set [includeDetailed] to false to build the summary
+  /// without scanning flight samples; detailed results can then be added with
+  /// [addDetailedTrackStats].
+  factory FlightStatistics.compute(
+    Iterable<FlightTrack> tracks, {
+    bool includeDetailed = true,
+  }) {
     final stats = FlightStatistics._();
     final days = <String>{};
 
@@ -170,9 +175,9 @@ class FlightStatistics {
 
       // Year / month distributions.
       (stats._byYear[start.year] ??= FlightBucket('${start.year}')).add(track);
-      (stats._byMonth[start.month] ??= FlightBucket('${start.month}')).add(
-        track,
-      );
+      (stats._byMonth[start.month] ??= FlightBucket(
+        '${start.month}',
+      )).add(track);
 
       // Aircraft / site distributions.
       final aircraft = _aircraftLabel(track);
@@ -213,46 +218,8 @@ class FlightStatistics {
       // Sample-derived figures (skip summary-only tracks).
       if (track.hasSamples) {
         stats.flightsWithSamples++;
-        final d = FlightDerivedStats.compute(track);
-        stats.totalStraightDistanceM += d.straightDistanceM;
-        stats.totalAltitudeGainedM += d.altitudeGainedM;
-        stats.totalAltitudeLostM += d.altitudeLostM;
-        stats.totalAirtimeMoving += d.movingTime;
-        stats.totalThermals += d.thermalCount;
-
-        if (d.avgGroundSpeedKph > 0) {
-          stats._speedSum += d.avgGroundSpeedKph;
-          stats._speedCount++;
-        }
-        if (d.avgGlideRatio > 0) {
-          stats._glideSum += d.avgGlideRatio;
-          stats._glideCount++;
-        }
-
-        stats.longestStraightDistanceM = _maxNum(
-          stats.longestStraightDistanceM,
-          d.straightDistanceM,
-          track,
-        );
-        stats.maxDistanceFromStartM = _maxNum(
-          stats.maxDistanceFromStartM,
-          d.maxDistanceFromStartM,
-          track,
-        );
-        stats.maxSpeedKph = _maxNum(stats.maxSpeedKph, d.maxSpeedKph, track);
-        if (d.avgGlideRatio > 0) {
-          stats.bestGlideRatio = _maxNum(
-            stats.bestGlideRatio,
-            d.avgGlideRatio,
-            track,
-          );
-        }
-        if (d.faiTriangleM > 0) {
-          stats.bestFaiTriangleM = _maxNum(
-            stats.bestFaiTriangleM,
-            d.faiTriangleM,
-            track,
-          );
+        if (includeDetailed) {
+          stats.addDetailedTrackStats(track, FlightDerivedStats.compute(track));
         }
       }
     }
@@ -261,7 +228,45 @@ class FlightStatistics {
     return stats;
   }
 
-  /// Glider / aircraft label used to bucket a flight, or null when unknown.
+  /// Adds sample-derived metrics for one track to a summary computed with
+  /// `includeDetailed: false`.
+  void addDetailedTrackStats(FlightTrack track, FlightDerivedStats details) {
+    if (!track.hasSamples) return;
+    totalStraightDistanceM += details.straightDistanceM;
+    totalAltitudeGainedM += details.altitudeGainedM;
+    totalAltitudeLostM += details.altitudeLostM;
+    totalAirtimeMoving += details.movingTime;
+    totalThermals += details.thermalCount;
+
+    if (details.avgGroundSpeedKph > 0) {
+      _speedSum += details.avgGroundSpeedKph;
+      _speedCount++;
+    }
+    if (details.avgGlideRatio > 0) {
+      _glideSum += details.avgGlideRatio;
+      _glideCount++;
+    }
+
+    longestStraightDistanceM = _maxNum(
+      longestStraightDistanceM,
+      details.straightDistanceM,
+      track,
+    );
+    maxDistanceFromStartM = _maxNum(
+      maxDistanceFromStartM,
+      details.maxDistanceFromStartM,
+      track,
+    );
+    maxSpeedKph = _maxNum(maxSpeedKph, details.maxSpeedKph, track);
+    if (details.avgGlideRatio > 0) {
+      bestGlideRatio = _maxNum(bestGlideRatio, details.avgGlideRatio, track);
+    }
+    if (details.faiTriangleM > 0) {
+      bestFaiTriangleM = _maxNum(bestFaiTriangleM, details.faiTriangleM, track);
+    }
+  }
+
+  /// Glider / aircraft label used to bucket flights, or null when unknown.
   static String? _aircraftLabel(FlightTrack track) {
     final glider = track.gliderName?.trim();
     if (glider != null && glider.isNotEmpty) return glider;

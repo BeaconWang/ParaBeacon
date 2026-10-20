@@ -30,157 +30,225 @@ class WindEstimate {
   /// Wind speed in metres per second.
   final double speedMps;
 
-  /// Whether the estimate is based on enough varied-heading data to be
-  /// trustworthy (a full-ish circle). Low-confidence estimates should be shown
-  /// dimmed or hidden.
+  /// Whether XCTrack's turn-rate and airspeed checks accepted this estimate.
   final bool confident;
 
   double get speedKmh => speedMps * 3.6;
 }
 
-/// A tiny, self-contained wind estimator derived purely from GPS ground
-/// velocity while circling.
+/// XCTrack-compatible wind estimator based on GPS ground-velocity vectors.
 ///
-/// Principle: in still air a pilot flying at constant airspeed traces a circle
-/// whose ground speed is constant. In wind, ground speed peaks when flying
-/// downwind and troughs when flying upwind, varying sinusoidally with heading.
-/// Fitting that sinusoid (least-squares over the trailing window) yields the
-/// wind vector: the wind blows *towards* the heading of maximum ground speed,
-/// with speed equal to half the (max − min) ground-speed swing.
-///
-/// This mirrors the *intent* of XCTrack's wind estimation without its heavy
-/// air-model; when the device/BLE feed already provides a wind reading the map
-/// prefers that and this estimator is a fallback.
+/// For each fix, ground speed and course are converted to east/north velocity
+/// components. In a steady turn those points lie on a circle whose center is
+/// the wind vector. XCTrack fits the center through the middle three of its
+/// rolling five-fix buffer, checks turn rate and circle radius against the
+/// configured trim speed, then applies its 90-second Gaussian smoothing.
 class WindEstimator {
-  WindEstimator({
-    this.window = const Duration(seconds: 30),
-    this.minSamples = 12,
-  });
+  WindEstimator({this.trimSpeedKmh = 38.0});
 
-  /// Trailing window over which the sinusoid is fitted.
-  final Duration window;
+  /// XCTrack's Glider.TrimSpeed, used for the circle-radius check.
+  double trimSpeedKmh;
 
-  /// Minimum buffered fixes before an estimate is produced.
-  final int minSamples;
+  static const int _sampleCapacity = 5;
+  static const Duration _maximumSampleGap = Duration(seconds: 10);
+  static const Duration _minimumFullBufferInterval = Duration(
+    milliseconds: 2900,
+  );
+  static const double _minimumTurnRateDegPerSec = 8.0;
+  static const double _smoothingTimeMs = 90000.0;
+  static const double _radiusTolerance = 0.3;
+  static const double _xcTrackRadiusFactor = 0.85;
 
-  final List<_V> _fixes = [];
+  final List<_VelocityFix> _fixes = <_VelocityFix>[];
+  double _windEastMps = 0.0;
+  double _windNorthMps = 0.0;
+  double _weight = 0.0;
+  DateTime? _lastAcceptedTime;
+  WindEstimate? _latestEstimate;
 
-  /// Feeds one ground-velocity fix ([groundSpeedMps] and [headingDeg]) and
-  /// returns the current [WindEstimate], or null when there isn't enough
-  /// varied-heading data yet.
+  /// Most recent accepted estimate, retained while new candidates are rejected.
+  WindEstimate? get latestEstimate => _latestEstimate;
+
+  /// Feeds one ground-velocity fix and returns the latest accepted estimate.
+  ///
+  /// The buffer and candidate checks follow XCTrack: a 10-second gap clears
+  /// only the five-fix window, and once full, a new sample is admitted at most
+  /// once every 2.9 seconds relative to the oldest buffered fix.
   WindEstimate? add({
     required double groundSpeedMps,
     required double headingDeg,
     DateTime? time,
   }) {
     final now = time ?? DateTime.now();
-    _fixes.add(_V(now, groundSpeedMps, headingDeg));
-    final cutoff = now.subtract(window);
-    while (_fixes.length > 1 && _fixes.first.time.isBefore(cutoff)) {
-      _fixes.removeAt(0);
-    }
-    return _estimate();
-  }
-
-  void reset() => _fixes.clear();
-
-  /// Least-squares fit of ground speed vs heading:
-  ///   v(θ) ≈ a + b·cos(θ) + c·sin(θ)
-  /// The wind vector is (b, c); its magnitude is the wind speed and its
-  /// direction is the heading of maximum ground speed (i.e. the downwind
-  /// heading), which we convert to the meteorological "from" direction.
-  WindEstimate? _estimate() {
-    final n = _fixes.length;
-    if (n < minSamples) return null;
-
-    double sA = 0, sB = 0, sC = 0; // sums for the normal equations
-    double sAA = 0, sAB = 0, sAC = 0, sBB = 0, sBC = 0, sCC = 0;
-    double headingSpread = 0;
-    double prevSin = 0, prevCos = 0;
-    for (int i = 0; i < n; i++) {
-      final f = _fixes[i];
-      final r = f.headingDeg * math.pi / 180.0;
-      final co = math.cos(r);
-      final si = math.sin(r);
-      final v = f.groundSpeedMps;
-      sA += v;
-      sB += v * co;
-      sC += v * si;
-      sAA += 1;
-      sAB += co;
-      sAC += si;
-      sBB += co * co;
-      sBC += co * si;
-      sCC += si * si;
-      if (i > 0) {
-        // Accumulate absolute heading change to gauge how much of a circle we
-        // covered (confidence).
-        headingSpread +=
-            (math.atan2(si - prevSin, co - prevCos)).abs();
-      }
-      prevSin = si;
-      prevCos = co;
+    if (!groundSpeedMps.isFinite ||
+        groundSpeedMps < 0 ||
+        !headingDeg.isFinite) {
+      return _latestEstimate;
     }
 
-    // Solve the 3x3 symmetric system [ [sAA sAB sAC] [sAB sBB sBC] [sAC sBC sCC] ]·x = [sA sB sC].
-    final sol = _solve3(
-      sAA, sAB, sAC,
-      sAB, sBB, sBC,
-      sAC, sBC, sCC,
-      sA, sB, sC,
+    final oldest = _fixes.isEmpty ? null : _fixes.first.time;
+    if (oldest != null &&
+        (now.isBefore(oldest) || now.difference(oldest) > _maximumSampleGap)) {
+      _fixes.clear();
+    }
+
+    if (_fixes.isNotEmpty && now.isAtSameMomentAs(_fixes.last.time)) {
+      return _latestEstimate;
+    }
+    if (_fixes.length == _sampleCapacity &&
+        now.difference(_fixes.first.time) < _minimumFullBufferInterval) {
+      return _latestEstimate;
+    }
+
+    final radians = headingDeg * math.pi / 180.0;
+    _fixes.add(
+      _VelocityFix(
+        time: now,
+        eastMps: groundSpeedMps * math.sin(radians),
+        northMps: -groundSpeedMps * math.cos(radians),
+      ),
     );
-    if (sol == null) return null;
-    final b = sol[1];
-    final c = sol[2];
+    if (_fixes.length > _sampleCapacity) _fixes.removeAt(0);
 
-    final windSpeed = math.sqrt(b * b + c * c);
-    // Heading (from north, clockwise) of maximum ground speed = downwind dir.
-    final downwind = math.atan2(c, b) * 180.0 / math.pi;
-    // Wind "from" direction is opposite the downwind heading.
-    final fromDir = (downwind + 180.0) % 360.0;
+    if (_fixes.length == _sampleCapacity) _updateEstimate();
+    return _latestEstimate;
+  }
 
-    // Confidence: need a decent chunk of a full circle and a sane speed.
-    // `headingSpread` accumulates absolute heading change (radians); ~pi means
-    // roughly half a circle covered, enough to separate up/down-wind legs.
-    final confident = _fixes.length >= minSamples &&
-        headingSpread > math.pi &&
-        windSpeed.isFinite &&
-        windSpeed < 30.0;
+  /// Drops both the buffered fixes and the smoothed wind state.
+  void reset() {
+    _fixes.clear();
+    _windEastMps = 0.0;
+    _windNorthMps = 0.0;
+    _weight = 0.0;
+    _lastAcceptedTime = null;
+    _latestEstimate = null;
+  }
 
-    return WindEstimate(
-      fromDirectionDeg: fromDir < 0 ? fromDir + 360.0 : fromDir,
-      speedMps: windSpeed.isFinite ? windSpeed.clamp(0.0, 40.0) : 0.0,
-      confident: confident,
+  void _updateEstimate() {
+    final p1 = _fixes[1];
+    final p2 = _fixes[2];
+    final p3 = _fixes[3];
+    final center = _circumcenter(p1, p2, p3);
+    if (center == null) return;
+
+    // XCTrack rejects candidates unless every segment is turning in the same
+    // direction at a minimum rate of 8 degrees per second.
+    var minimumRate = double.infinity;
+    var maximumRate = double.negativeInfinity;
+    for (var i = 1; i < _fixes.length; i++) {
+      final previous = _fixes[i - 1];
+      final current = _fixes[i];
+      final elapsedMs = current.time.difference(previous.time).inMilliseconds;
+      if (elapsedMs <= 0) return;
+
+      final previousAngle = math.atan2(
+        previous.northMps - center.northMps,
+        previous.eastMps - center.eastMps,
+      );
+      final currentAngle = math.atan2(
+        current.northMps - center.northMps,
+        current.eastMps - center.eastMps,
+      );
+      var delta = (currentAngle - previousAngle) * 180.0 / math.pi;
+      if (delta > 180.0) delta -= 360.0;
+      if (delta < -180.0) delta += 360.0;
+      final rate = delta * 1000.0 / elapsedMs;
+      minimumRate = math.min(minimumRate, rate);
+      maximumRate = math.max(maximumRate, rate);
+    }
+    if (minimumRate < 0.0) {
+      final oldMinimum = minimumRate;
+      minimumRate = -maximumRate;
+      maximumRate = -oldMinimum;
+    }
+    if (minimumRate < _minimumTurnRateDegPerSec) return;
+
+    final expectedRadius = trimSpeedKmh / 3.6 * _xcTrackRadiusFactor;
+    if (!expectedRadius.isFinite || expectedRadius <= 0.0) return;
+    final radius = _distance(p2, center);
+    final candidateWeight =
+        1.0 - ((radius / expectedRadius - 1.0).abs() / _radiusTolerance);
+    if (candidateWeight <= 0.0) return;
+
+    final now = _fixes.last.time;
+    final previousWeight = _lastAcceptedTime == null
+        ? 0.0
+        : _weight *
+              _decayFor(now.difference(_lastAcceptedTime!).inMilliseconds);
+    final totalWeight = previousWeight + candidateWeight;
+    if (!totalWeight.isFinite || totalWeight <= 0.0) return;
+
+    _windEastMps =
+        (center.eastMps * candidateWeight + _windEastMps * previousWeight) /
+        totalWeight;
+    _windNorthMps =
+        (center.northMps * candidateWeight + _windNorthMps * previousWeight) /
+        totalWeight;
+    _weight = totalWeight;
+    _lastAcceptedTime = now;
+
+    final speed = math.sqrt(
+      _windEastMps * _windEastMps + _windNorthMps * _windNorthMps,
+    );
+    final fromDirection =
+        math.atan2(_windEastMps, -_windNorthMps) * 180.0 / math.pi + 180.0;
+    if (!speed.isFinite || !fromDirection.isFinite) return;
+    _latestEstimate = WindEstimate(
+      fromDirectionDeg: fromDirection,
+      speedMps: speed,
+      confident: true,
     );
   }
 
-  /// Solves a 3x3 linear system by Cramer's rule; returns null if singular.
-  static List<double>? _solve3(
-    double a11, double a12, double a13,
-    double a21, double a22, double a23,
-    double a31, double a32, double a33,
-    double b1, double b2, double b3,
+  double _decayFor(int elapsedMs) {
+    final normalizedElapsed = elapsedMs / _smoothingTimeMs;
+    return math.exp(-normalizedElapsed * normalizedElapsed);
+  }
+
+  static _VelocityFix? _circumcenter(
+    _VelocityFix p1,
+    _VelocityFix p2,
+    _VelocityFix p3,
   ) {
-    final det = a11 * (a22 * a33 - a23 * a32) -
-        a12 * (a21 * a33 - a23 * a31) +
-        a13 * (a21 * a32 - a22 * a31);
-    if (det.abs() < 1e-9) return null;
-    final dx = b1 * (a22 * a33 - a23 * a32) -
-        a12 * (b2 * a33 - a23 * b3) +
-        a13 * (b2 * a32 - a22 * b3);
-    final dy = a11 * (b2 * a33 - a23 * b3) -
-        b1 * (a21 * a33 - a23 * a31) +
-        a13 * (a21 * b3 - b2 * a31);
-    final dz = a11 * (a22 * b3 - b2 * a32) -
-        a12 * (a21 * b3 - b2 * a31) +
-        b1 * (a21 * a32 - a22 * a31);
-    return [dx / det, dy / det, dz / det];
+    final determinant =
+        2.0 *
+        (p1.eastMps * (p2.northMps - p3.northMps) +
+            p2.eastMps * (p3.northMps - p1.northMps) +
+            p3.eastMps * (p1.northMps - p2.northMps));
+    if (!determinant.isFinite || determinant.abs() < 1e-4) return null;
+
+    final p1Norm = p1.eastMps * p1.eastMps + p1.northMps * p1.northMps;
+    final p2Norm = p2.eastMps * p2.eastMps + p2.northMps * p2.northMps;
+    final p3Norm = p3.eastMps * p3.eastMps + p3.northMps * p3.northMps;
+    final east =
+        (p1Norm * (p2.northMps - p3.northMps) +
+            p2Norm * (p3.northMps - p1.northMps) +
+            p3Norm * (p1.northMps - p2.northMps)) /
+        determinant;
+    final north =
+        (p1Norm * (p3.eastMps - p2.eastMps) +
+            p2Norm * (p1.eastMps - p3.eastMps) +
+            p3Norm * (p2.eastMps - p1.eastMps)) /
+        determinant;
+    if (!east.isFinite || !north.isFinite) return null;
+    return _VelocityFix(time: p2.time, eastMps: east, northMps: north);
+  }
+
+  static double _distance(_VelocityFix point, _VelocityFix center) {
+    final east = point.eastMps - center.eastMps;
+    final north = point.northMps - center.northMps;
+    return math.sqrt(east * east + north * north);
   }
 }
 
-class _V {
-  const _V(this.time, this.groundSpeedMps, this.headingDeg);
+class _VelocityFix {
+  const _VelocityFix({
+    required this.time,
+    required this.eastMps,
+    required this.northMps,
+  });
+
   final DateTime time;
-  final double groundSpeedMps;
-  final double headingDeg;
+  final double eastMps;
+  final double northMps;
 }

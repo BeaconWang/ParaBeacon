@@ -37,6 +37,8 @@ enum _IgcPickMode {
   files,
 }
 
+enum _ExportDestination { downloads, share }
+
 /// Opens the Flights screen (all recorded flights) as a full-screen sheet.
 Future<void> showFlightsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -411,6 +413,21 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<void> _saveShareCard(FlightTrack track) async {
     final l10n = AppLocalizations.of(context);
     try {
+      final isAndroid =
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      if (isAndroid) {
+        final destination = await _chooseExportDestination(l10n);
+        if (destination == null || !mounted) return;
+        if (destination == _ExportDestination.downloads) {
+          await _saveExport(
+            () => FlightShareCardService.instance.saveToDownloads(track, l10n),
+          );
+        } else {
+          await FlightShareCardService.instance.shareCard(track, l10n);
+          if (mounted) _snack(l10n.flightsShareCardSharedFile);
+        }
+        return;
+      }
       final saved = await FlightShareCardService.instance.saveToGallery(
         track,
         l10n,
@@ -557,22 +574,94 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
   // ── Per-flight export ──────────────────────────────────────────────────
 
-  Future<void> _exportGpx(FlightTrack track) =>
-      _runExport(() => FlightExportService.instance.shareGpx(track), 'GPX');
+  Future<void> _exportGpx(FlightTrack track) async {
+    final destination = await _chooseExportDestination(
+      AppLocalizations.of(context),
+    );
+    if (destination == null || !mounted) return;
+    final service = FlightExportService.instance;
+    await _runExport(
+      () => destination == _ExportDestination.downloads
+          ? _saveExport(() => service.saveGpxToDownloads(track))
+          : service.shareGpx(track),
+      'GPX',
+    );
+  }
 
-  Future<void> _exportIgc(FlightTrack track) =>
-      _runExport(() => FlightExportService.instance.shareIgc(track), 'IGC');
+  Future<void> _exportIgc(FlightTrack track) async {
+    final destination = await _chooseExportDestination(
+      AppLocalizations.of(context),
+    );
+    if (destination == null || !mounted) return;
+    final service = FlightExportService.instance;
+    await _runExport(
+      () => destination == _ExportDestination.downloads
+          ? _saveExport(() => service.saveIgcToDownloads(track))
+          : service.shareIgc(track),
+      'IGC',
+    );
+  }
 
-  Future<void> _exportPdf(FlightTrack track) {
+  Future<void> _exportPdf(FlightTrack track) async {
     final l10n = AppLocalizations.of(context);
-    return _runExport(
-      () => FlightReportService.instance.sharePdf(track, l10n),
+    final destination = await _chooseExportDestination(l10n);
+    if (destination == null || !mounted) return;
+    final service = FlightReportService.instance;
+    await _runExport(
+      () => destination == _ExportDestination.downloads
+          ? _saveExport(() => service.savePdfToDownloads(track, l10n))
+          : service.sharePdf(track, l10n),
       'PDF',
     );
   }
 
+  Future<_ExportDestination?> _chooseExportDestination(AppLocalizations l10n) {
+    final isAndroid =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    if (!isAndroid) return Future.value(_ExportDestination.share);
+    return showModalBottomSheet<_ExportDestination>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.flightsExportDestinationTitle,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: Text(l10n.flightsExportDestinationDownloads),
+              onTap: () =>
+                  Navigator.of(context).pop(_ExportDestination.downloads),
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: Text(l10n.flightsExportDestinationShare),
+              onTap: () => Navigator.of(context).pop(_ExportDestination.share),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _saveExport(Future<String?> Function() action) async {
+    final destination = await action();
+    if (destination != null && mounted) {
+      _snack(AppLocalizations.of(context).flightsExportSavedToDownloads);
+    }
+    return destination;
+  }
+
   Future<void> _runExport(
-    Future<String> Function() action,
+    Future<String?> Function() action,
     String label,
   ) async {
     final l10n = AppLocalizations.of(context);
@@ -690,16 +779,16 @@ class _FlightsSheetState extends State<_FlightsSheet> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.folder_open_outlined),
-              title: Text(l10n.flightsImportModeFolder),
-              subtitle: Text(l10n.flightsImportModeFolderNote),
-              onTap: () => Navigator.of(context).pop(_IgcPickMode.folder),
-            ),
-            ListTile(
               leading: const Icon(Icons.insert_drive_file_outlined),
               title: Text(l10n.flightsImportModeFiles),
               subtitle: Text(l10n.flightsImportModeFilesNote),
               onTap: () => Navigator.of(context).pop(_IgcPickMode.files),
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_open_outlined),
+              title: Text(l10n.flightsImportModeFolder),
+              subtitle: Text(l10n.flightsImportModeFolderNote),
+              onTap: () => Navigator.of(context).pop(_IgcPickMode.folder),
             ),
           ],
         ),
@@ -725,7 +814,8 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<FlightImportResult?> _importXcTrackFiles(AppLocalizations l10n) async {
     final picked = await FilePicker.platform.pickFiles(
       dialogTitle: l10n.flightsImportXcTrack,
-      type: FileType.any,
+      type: FileType.custom,
+      allowedExtensions: [IgcImportService.extension],
       allowMultiple: true,
       withData: true,
     );
@@ -761,7 +851,12 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   Future<void> _exportLibrary(List<FlightTrack> tracks) async {
     final l10n = AppLocalizations.of(context);
     try {
-      final result = await FlightLibraryIO.instance.exportAndShare(tracks);
+      final destination = await _chooseExportDestination(l10n);
+      if (destination == null || !mounted) return;
+      final result = await FlightLibraryIO.instance.exportAndShare(
+        tracks,
+        shareDirectly: destination == _ExportDestination.share,
+      );
       if (result == null) return;
       if (_selectionMode) _leaveSelectionMode();
       await _showExportResultDialog(result);
@@ -882,13 +977,23 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     final l10n = AppLocalizations.of(context);
     try {
       final picked = await FilePicker.platform.pickFiles(
+        dialogTitle: l10n.flightsImportLibrary,
         type: FileType.custom,
         allowedExtensions: [FlightLibraryIO.extension, 'zip'],
-        withData: false,
+        withData: true,
       );
-      final path = picked?.files.single.path;
-      if (path == null) return;
-      final result = await FlightLibraryIO.instance.importFile(path);
+      final files = picked?.files;
+      if (files == null || files.isEmpty || !mounted) return;
+      final file = files.first;
+      final bytes = file.bytes;
+      final path = file.path;
+      if (bytes == null && path == null) {
+        _snack(l10n.flightsImportFileUnreadable);
+        return;
+      }
+      final result = bytes != null
+          ? await FlightLibraryIO.instance.importBytes(bytes)
+          : await FlightLibraryIO.instance.importFile(path!);
       _snack(
         result.failed > 0
             ? l10n.flightsImportResultFailed(

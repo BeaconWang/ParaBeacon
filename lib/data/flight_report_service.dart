@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
 import 'flight_derived_stats.dart';
+import 'flight_file_output_service.dart';
 import 'flight_recorder.dart';
 
 /// Generates a multi-page PDF summary report for a completed [FlightTrack] and
@@ -402,6 +403,18 @@ class FlightReportService {
     );
 
     return doc.save();
+  }
+
+  Future<String?> savePdfToDownloads(
+    FlightTrack track,
+    AppLocalizations l10n,
+  ) async {
+    final bytes = await buildPdf(track, l10n);
+    return FlightFileOutputService.instance.saveToDownloads(
+      bytes: bytes,
+      fileName: '${flightSlug(track)}.pdf',
+      mimeType: 'application/pdf',
+    );
   }
 
   /// Builds the report and shares it as a `.pdf` file. Returns the temp path.

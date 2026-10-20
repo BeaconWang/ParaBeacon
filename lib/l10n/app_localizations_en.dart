@@ -1876,6 +1876,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsImportXcTrack => 'Import XCTrack flights (.igc)';
 
   @override
+  String get flightsImportFileUnreadable => 'Unable to read the selected file.';
+
+  @override
+  String get flightsExportDestinationTitle => 'Where should the export go?';
+
+  @override
+  String get flightsExportDestinationDownloads => 'Save to Downloads';
+
+  @override
+  String get flightsExportDestinationShare => 'Share directly';
+
+  @override
+  String get flightsExportSavedToDownloads =>
+      'Export saved to Downloads/ParaBeacon.';
+
+  @override
   String get flightsImportXcTrackPickMode =>
       'How do you want to select the tracklogs?';
 

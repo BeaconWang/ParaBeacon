@@ -3644,6 +3644,36 @@ abstract class AppLocalizations {
   /// **'Import XCTrack flights (.igc)'**
   String get flightsImportXcTrack;
 
+  /// No description provided for @flightsImportFileUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to read the selected file.'**
+  String get flightsImportFileUnreadable;
+
+  /// No description provided for @flightsExportDestinationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should the export go?'**
+  String get flightsExportDestinationTitle;
+
+  /// No description provided for @flightsExportDestinationDownloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Downloads'**
+  String get flightsExportDestinationDownloads;
+
+  /// No description provided for @flightsExportDestinationShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share directly'**
+  String get flightsExportDestinationShare;
+
+  /// No description provided for @flightsExportSavedToDownloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Export saved to Downloads/ParaBeacon.'**
+  String get flightsExportSavedToDownloads;
+
   /// No description provided for @flightsImportXcTrackPickMode.
   ///
   /// In en, this message translates to:

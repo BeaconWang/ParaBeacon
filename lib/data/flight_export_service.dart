@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'aircraft_settings.dart';
 import 'flight_derived_stats.dart';
+import 'flight_file_output_service.dart';
 import 'flight_recorder.dart';
 
 /// Builds and shares standard track exports (GPX and signed IGC) from a
@@ -172,6 +173,24 @@ class FlightExportService {
       XFile(path, mimeType: mimeType, name: fileName),
     ], subject: subject);
     return path;
+  }
+
+  Future<String?> saveGpxToDownloads(FlightTrack track) {
+    final fileName = '${flightSlug(track)}.gpx';
+    return FlightFileOutputService.instance.saveToDownloads(
+      bytes: utf8.encode(buildGpx(track)),
+      fileName: fileName,
+      mimeType: 'application/gpx+xml',
+    );
+  }
+
+  Future<String?> saveIgcToDownloads(FlightTrack track) {
+    final fileName = '${flightSlug(track)}.igc';
+    return FlightFileOutputService.instance.saveToDownloads(
+      bytes: utf8.encode(buildIgc(track)),
+      fileName: fileName,
+      mimeType: 'text/plain',
+    );
   }
 
   /// Exports [track] as a `.gpx` file and shares it.

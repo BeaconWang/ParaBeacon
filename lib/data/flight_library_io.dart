@@ -102,21 +102,23 @@ class FlightLibraryIO {
     return encoded ?? const <int>[];
   }
 
-  /// Exports flight records. Android saves the bundle to the public
-  /// `Downloads/ParaBeacon` folder on Android 10+, and uses the system document
-  /// picker on older versions. Other platforms share a temporary `.pbflights`
+  /// Exports flight records. Android saves to `Downloads/ParaBeacon` unless
+  /// [shareDirectly] is true. Other platforms share a temporary `.pbflights`
   /// file.
   ///
   /// Returns a [FlightExportResult] describing the written bundle, or null when
   /// the Android save picker is cancelled.
-  Future<FlightExportResult?> exportAndShare(List<FlightTrack> tracks) async {
+  Future<FlightExportResult?> exportAndShare(
+    List<FlightTrack> tracks, {
+    bool shareDirectly = false,
+  }) async {
     final bytes = buildBundle(tracks);
     String two(int n) => n.toString().padLeft(2, '0');
     final now = DateTime.now();
     final fileName =
         'parabeacon_${now.year}${two(now.month)}${two(now.day)}_${two(now.hour)}${two(now.minute)}${two(now.second)}.$_ext';
 
-    if (Platform.isAndroid) {
+    if (Platform.isAndroid && !shareDirectly) {
       final destination = await _saveAndroidDocument(bytes, fileName);
       if (destination == null) return null;
       return FlightExportResult(

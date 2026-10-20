@@ -1829,6 +1829,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsImportXcTrack => '导入 XCTrack 飞行（.igc）';
 
   @override
+  String get flightsImportFileUnreadable => '无法读取所选文件。';
+
+  @override
+  String get flightsExportDestinationTitle => '请选择导出方式';
+
+  @override
+  String get flightsExportDestinationDownloads => '保存到下载目录';
+
+  @override
+  String get flightsExportDestinationShare => '直接分享';
+
+  @override
+  String get flightsExportSavedToDownloads => '已保存到 Downloads/ParaBeacon。';
+
+  @override
   String get flightsImportXcTrackPickMode => '你想如何选择航迹文件？';
 
   @override

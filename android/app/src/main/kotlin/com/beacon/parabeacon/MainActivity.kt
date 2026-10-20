@@ -22,6 +22,7 @@ class MainActivity : FlutterActivity() {
 
     private var pendingSaveResult: MethodChannel.Result? = null
     private var pendingSaveBytes: ByteArray? = null
+    private var pendingSaveMimeType: String? = null
     private var pendingImportResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -32,6 +33,7 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "saveFlightBundle" -> handleSaveFlightBundle(call, result)
+                "saveFlightFile" -> handleSaveFlightFile(call, result)
                 "importIgcFolder" -> handleImportIgcFolder(result)
                 else -> result.notImplemented()
             }
@@ -54,10 +56,37 @@ class MainActivity : FlutterActivity() {
             return
         }
 
+        handleSaveFile(fileName, ZIP_MIME_TYPE, bytes, result)
+    }
+
+    private fun handleSaveFlightFile(
+        call: io.flutter.plugin.common.MethodCall,
+        result: MethodChannel.Result,
+    ) {
+        if (pendingSaveResult != null) {
+            result.error("SAVE_IN_PROGRESS", "A flight export is already being saved.", null)
+            return
+        }
+        val fileName = call.argument<String>("fileName")
+        val mimeType = call.argument<String>("mimeType")
+        val bytes = call.argument<ByteArray>("bytes")
+        if (fileName.isNullOrBlank() || mimeType.isNullOrBlank() || bytes == null) {
+            result.error("INVALID_EXPORT", "The flight export data is invalid.", null)
+            return
+        }
+        handleSaveFile(fileName, mimeType, bytes, result)
+    }
+
+    private fun handleSaveFile(
+        fileName: String,
+        mimeType: String,
+        bytes: ByteArray,
+        result: MethodChannel.Result,
+    ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            saveToDownloads(fileName, bytes, result)
+            saveToDownloads(fileName, mimeType, bytes, result)
         } else {
-            chooseSaveLocation(fileName, bytes, result)
+            chooseSaveLocation(fileName, mimeType, bytes, result)
         }
     }
 
@@ -140,12 +169,13 @@ class MainActivity : FlutterActivity() {
 
     private fun saveToDownloads(
         fileName: String,
+        mimeType: String,
         bytes: ByteArray,
         result: MethodChannel.Result,
     ) {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, ZIP_MIME_TYPE)
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
             put(
                 MediaStore.MediaColumns.RELATIVE_PATH,
                 "${Environment.DIRECTORY_DOWNLOADS}/ParaBeacon",
@@ -174,21 +204,30 @@ class MainActivity : FlutterActivity() {
 
     private fun chooseSaveLocation(
         fileName: String,
+        mimeType: String,
         bytes: ByteArray,
         result: MethodChannel.Result,
     ) {
         pendingSaveResult = result
         pendingSaveBytes = bytes
+        pendingSaveMimeType = mimeType
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = ZIP_MIME_TYPE
+            type = mimeType
             putExtra(Intent.EXTRA_TITLE, fileName)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                putExtra(
+                    DocumentsContract.EXTRA_INITIAL_URI,
+                    Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload"),
+                )
+            }
         }
         try {
             startActivityForResult(intent, CREATE_DOCUMENT_REQUEST)
         } catch (error: Exception) {
             pendingSaveResult = null
             pendingSaveBytes = null
+            pendingSaveMimeType = null
             result.error("SAVE_PICKER_FAILED", error.message, null)
         }
     }
@@ -211,8 +250,10 @@ class MainActivity : FlutterActivity() {
 
         val result = pendingSaveResult ?: return
         val bytes = pendingSaveBytes
+        val mimeType = pendingSaveMimeType
         pendingSaveResult = null
         pendingSaveBytes = null
+        pendingSaveMimeType = null
 
         if (resultCode != Activity.RESULT_OK || data?.data == null) {
             result.success(null)
@@ -221,7 +262,7 @@ class MainActivity : FlutterActivity() {
 
         val uri: Uri = data.data!!
         try {
-            if (bytes == null) {
+            if (bytes == null || mimeType.isNullOrBlank()) {
                 result.error("INVALID_EXPORT", "The flight export data is missing.", null)
                 return
             }

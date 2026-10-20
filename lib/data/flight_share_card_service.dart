@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
 import 'flight_derived_stats.dart';
+import 'flight_file_output_service.dart';
 import 'flight_recorder.dart';
 
 /// Renders a portrait, content-sized 1080px-wide PNG "share card" and saves it
@@ -86,6 +87,28 @@ class FlightShareCardService {
       await _share(path, fileName);
       return false;
     }
+  }
+
+  Future<String?> saveToDownloads(
+    FlightTrack track,
+    AppLocalizations l10n,
+  ) async {
+    final bytes = await renderPng(track, l10n);
+    return FlightFileOutputService.instance.saveToDownloads(
+      bytes: bytes,
+      fileName: '${flightSlug(track)}.png',
+      mimeType: 'image/png',
+    );
+  }
+
+  Future<String> shareCard(FlightTrack track, AppLocalizations l10n) async {
+    final bytes = await renderPng(track, l10n);
+    final fileName = '${flightSlug(track)}.png';
+    final dir = await getTemporaryDirectory();
+    final path = p.join(dir.path, fileName);
+    await File(path).writeAsBytes(bytes, flush: true);
+    await _share(path, fileName);
+    return path;
   }
 
   Future<void> _share(String path, String fileName) async {

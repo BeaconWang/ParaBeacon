@@ -2048,6 +2048,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightDetailTrimApply => '裁剪';
 
   @override
+  String get flightDetailTrimApplied => '航迹已裁剪。';
+
+  @override
+  String get replayTrimUnavailable => '航迹已更改或不可用，请关闭并重新打开回放后再裁剪。';
+
+  @override
   String get flightDetailFlight => '飞行概况';
 
   @override

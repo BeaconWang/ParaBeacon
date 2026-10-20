@@ -846,6 +846,8 @@
     }
   },
   "flightDetailTrimApply": "Trim",
+  "flightDetailTrimApplied": "Flight log trimmed.",
+  "replayTrimUnavailable": "This flight log changed or is no longer available. Close and reopen replay before trimming.",
   "flightDetailFlight": "Flight",
   "flightDetailRoute": "Route",
   "flightDetailAltitude": "Altitude",

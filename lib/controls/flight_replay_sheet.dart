@@ -58,6 +58,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   /// Playback cursor in **track-relative milliseconds** (0 == first sample).
   double _cursorMs = 0.0;
 
+  bool _trimMode = false;
+  late RangeValues _trimRange;
+
   /// Total track span in milliseconds (>= 1 to avoid divide-by-zero).
   late final double _spanMs;
 
@@ -85,6 +88,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   void initState() {
     super.initState();
     _samples = List<FlightSample>.of(widget.track.samples);
+    _trimRange = RangeValues(0, math.max(0, _samples.length - 1).toDouble());
     final first = _samples.isNotEmpty ? _samples.first.time : DateTime.now();
     final last = _samples.isNotEmpty ? _samples.last.time : first;
     _spanMs = math.max(1.0, last.difference(first).inMilliseconds.toDouble());
@@ -181,6 +185,68 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     } else {
       _stopAudio();
     }
+  }
+
+  void _toggleTrimMode() {
+    if (_trimMode) {
+      setState(() {
+        _trimMode = false;
+        _trimRange = RangeValues(0, (_samples.length - 1).toDouble());
+      });
+      return;
+    }
+    if (_playing) _pause();
+    setState(() {
+      _trimMode = true;
+      _trimRange = RangeValues(0, (_samples.length - 1).toDouble());
+    });
+  }
+
+  void _applyReplayTrim() {
+    if (!_trimMode || _samples.length < 3) return;
+    final startIndex = _trimRange.start.round();
+    final endIndex = _trimRange.end.round();
+    if (endIndex - startIndex < 1 ||
+        (startIndex == 0 && endIndex == _samples.length - 1)) {
+      return;
+    }
+
+    final sourceMatchesSnapshot =
+        widget.track.samples.length == _samples.length &&
+        List<int>.generate(_samples.length, (index) => index).every(
+          (index) => identical(widget.track.samples[index], _samples[index]),
+        );
+    if (!sourceMatchesSnapshot) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).replayTrimUnavailable),
+        ),
+      );
+      return;
+    }
+
+    _pause();
+    final trimmed = FlightRecorder.instance.trimTrackSamples(
+      widget.track,
+      startIndex: startIndex,
+      endIndex: endIndex,
+    );
+    if (!trimmed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).replayTrimUnavailable),
+        ),
+      );
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context).flightDetailTrimApplied),
+      ),
+    );
+    Navigator.of(context).pop();
   }
 
   /// Moves the cursor and feeds the vario-audio preview (when syncing).
@@ -287,8 +353,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   LatLng? _firstFix() {
     for (final s in _samples) {
-      if (s.data.hasFix)
+      if (s.data.hasFix) {
         return _shift(LatLng(s.data.latitude, s.data.longitude));
+      }
     }
     return null;
   }
@@ -388,7 +455,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                     children: [
                       if (!_src.isNone)
                         TileLayer(
-                          key: ValueKey<String>('replay-tile-${_tileSourceId}'),
+                          key: ValueKey<String>('replay-tile-$_tileSourceId'),
                           urlTemplate: _src.urlTemplate,
                           maxNativeZoom: _src.maxZoom.round(),
                           // Rely on flutter_map's own User-Agent (formatted from
@@ -815,81 +882,173 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     return '$hour:$minute:$second';
   }
 
+  void _updateTrimRange(RangeValues value) {
+    final maxIndex = _samples.length - 1;
+    var startIndex = value.start.round().clamp(0, maxIndex);
+    var endIndex = value.end.round().clamp(0, maxIndex);
+    if (endIndex - startIndex < 1) {
+      final movingStart =
+          (value.start - _trimRange.start).abs() >
+          (value.end - _trimRange.end).abs();
+      if (movingStart) {
+        endIndex = (startIndex + 1).clamp(1, maxIndex);
+        startIndex = endIndex - 1;
+      } else {
+        startIndex = (endIndex - 1).clamp(0, maxIndex - 1);
+        endIndex = startIndex + 1;
+      }
+    }
+    setState(() {
+      _trimRange = RangeValues(startIndex.toDouble(), endIndex.toDouble());
+    });
+  }
+
   Widget _buildControls(ThemeData theme) {
     final l10n = AppLocalizations.of(context);
     final elapsed = Duration(milliseconds: _cursorMs.round());
     final total = Duration(milliseconds: _spanMs.round());
     final canReplay = _samples.length >= 2;
+    final canTrim = _samples.length > 2;
+    final maxSampleIndex = math.max(0, _samples.length - 1);
+    final firstIndex = _trimRange.start.round().clamp(0, maxSampleIndex);
+    final lastIndex = _trimRange.end.round().clamp(0, maxSampleIndex);
+    final keptCount = lastIndex - firstIndex + 1;
+    final removedCount = _samples.length - keptCount;
+    final canApplyTrim =
+        canTrim && removedCount > 0 && lastIndex - firstIndex >= 1;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Text(_fmt(elapsed), style: theme.textTheme.labelMedium),
-              Expanded(
-                child: Slider(
-                  value: _spanMs <= 0 ? 0 : _cursorMs.clamp(0.0, _spanMs),
-                  max: _spanMs,
-                  onChanged: canReplay
-                      ? (v) {
-                          // Scrubbing pauses playback for precise positioning.
-                          if (_playing) _pause();
-                          _setCursor(v);
+          if (_trimMode) ...[
+            Text(
+              l10n.flightDetailTrimDescription,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                l10n.flightDetailTrimFrom(
+                  _formatSampleTime(_samples[firstIndex].time),
+                ),
+                style: theme.textTheme.labelMedium,
+              ),
+            ),
+            RangeSlider(
+              values: _trimRange,
+              min: 0,
+              max: (_samples.length - 1).toDouble(),
+              labels: RangeLabels('${firstIndex + 1}', '${lastIndex + 1}'),
+              onChanged: canTrim ? _updateTrimRange : null,
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                l10n.flightDetailTrimThrough(
+                  _formatSampleTime(_samples[lastIndex].time),
+                ),
+                style: theme.textTheme.labelMedium,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 8),
+              child: Text(
+                l10n.flightDetailTrimCounts(keptCount, removedCount),
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _toggleTrimMode,
+                  child: Text(l10n.cancel),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: canApplyTrim ? _applyReplayTrim : null,
+                  icon: const Icon(Icons.content_cut, size: 18),
+                  label: Text(l10n.flightDetailTrimApply),
+                ),
+              ],
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Text(_fmt(elapsed), style: theme.textTheme.labelMedium),
+                Expanded(
+                  child: Slider(
+                    value: _spanMs <= 0 ? 0 : _cursorMs.clamp(0.0, _spanMs),
+                    max: _spanMs,
+                    onChanged: canReplay
+                        ? (v) {
+                            // Scrubbing pauses playback for precise positioning.
+                            if (_playing) _pause();
+                            _setCursor(v);
+                          }
+                        : null,
+                  ),
+                ),
+                Text(_fmt(total), style: theme.textTheme.labelMedium),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.replay),
+                  tooltip: l10n.replayRestart,
+                  onPressed: canReplay
+                      ? () {
+                          _pause();
+                          _setCursor(0);
                         }
                       : null,
                 ),
-              ),
-              Text(_fmt(total), style: theme.textTheme.labelMedium),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.replay),
-                tooltip: l10n.replayRestart,
-                onPressed: canReplay
-                    ? () {
-                        _pause();
-                        _setCursor(0);
-                      }
-                    : null,
-              ),
-              IconButton.filled(
-                iconSize: 32,
-                icon: Icon(_playing ? Icons.pause : Icons.play_arrow),
-                tooltip: _playing ? l10n.replayPause : l10n.replayPlay,
-                onPressed: canReplay ? _togglePlay : null,
-              ),
-              TextButton(
-                onPressed: canReplay ? _cycleSpeed : null,
-                child: Text(
-                  '${_speed.toStringAsFixed(_speed % 1 == 0 ? 0 : 1)}×',
+                IconButton.filled(
+                  iconSize: 32,
+                  icon: Icon(_playing ? Icons.pause : Icons.play_arrow),
+                  tooltip: _playing ? l10n.replayPause : l10n.replayPlay,
+                  onPressed: canReplay ? _togglePlay : null,
                 ),
-              ),
-              IconButton(
-                icon: Icon(_audioSync ? Icons.volume_up : Icons.volume_off),
-                tooltip: _audioSync
-                    ? l10n.replayVarioSoundOn
-                    : l10n.replayVarioSoundOff,
-                color: _audioSync ? theme.colorScheme.primary : null,
-                onPressed: canReplay ? _toggleAudioSync : null,
-              ),
-            ],
-          ),
-          if (!canReplay)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                l10n.replayNoPointsMessage,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                TextButton(
+                  onPressed: canReplay ? _cycleSpeed : null,
+                  child: Text(
+                    '${_speed.toStringAsFixed(_speed % 1 == 0 ? 0 : 1)}×',
+                  ),
                 ),
-              ),
+                IconButton(
+                  icon: Icon(_audioSync ? Icons.volume_up : Icons.volume_off),
+                  tooltip: _audioSync
+                      ? l10n.replayVarioSoundOn
+                      : l10n.replayVarioSoundOff,
+                  color: _audioSync ? theme.colorScheme.primary : null,
+                  onPressed: canReplay ? _toggleAudioSync : null,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.content_cut),
+                  tooltip: l10n.flightDetailTrimLog,
+                  color: canTrim ? theme.colorScheme.primary : null,
+                  onPressed: canTrim ? _toggleTrimMode : null,
+                ),
+              ],
             ),
+            if (!canReplay)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  l10n.replayNoPointsMessage,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
         ],
       ),
     );

@@ -2105,6 +2105,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailTrimApply => 'Trim';
 
   @override
+  String get flightDetailTrimApplied => 'Flight log trimmed.';
+
+  @override
+  String get replayTrimUnavailable =>
+      'This flight log changed or is no longer available. Close and reopen replay before trimming.';
+
+  @override
   String get flightDetailFlight => 'Flight';
 
   @override

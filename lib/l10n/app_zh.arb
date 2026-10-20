@@ -739,6 +739,8 @@
     }
   },
   "flightDetailTrimApply": "裁剪",
+  "flightDetailTrimApplied": "航迹已裁剪。",
+  "replayTrimUnavailable": "航迹已更改或不可用，请关闭并重新打开回放后再裁剪。",
   "flightDetailFlight": "飞行概况",
   "flightDetailRoute": "航线",
   "flightDetailAltitude": "海拔",

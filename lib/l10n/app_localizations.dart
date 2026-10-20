@@ -4034,6 +4034,18 @@ abstract class AppLocalizations {
   /// **'Trim'**
   String get flightDetailTrimApply;
 
+  /// No description provided for @flightDetailTrimApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight log trimmed.'**
+  String get flightDetailTrimApplied;
+
+  /// No description provided for @replayTrimUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This flight log changed or is no longer available. Close and reopen replay before trimming.'**
+  String get replayTrimUnavailable;
+
   /// No description provided for @flightDetailFlight.
   ///
   /// In en, this message translates to:

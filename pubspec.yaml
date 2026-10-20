@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.1.3+3
+version: 0.1.7+7
 
 environment:
   sdk: ^3.12.2
@@ -70,7 +70,11 @@ dependencies:
   # Runtime permission requests for BLE scanning/connecting on mobile.
   permission_handler: ^11.3.1
 
-  # Device barometer stream used by the internal altitude/vario service.
+  # Device built-in motion/environment sensors. Used to read the phone/tablet's
+  # internal barometric pressure sensor (when present) so the app can derive a
+  # vario/altitude feed from the device itself and prefer it over an external
+  # BLE sensor. On hardware without a barometer the stream simply never emits
+  # (or errors) and the feature stays inactive — degrades gracefully.
   sensors_plus: ^6.1.0
 
   # Persist the selected sensor so it can auto-reconnect on next launch.

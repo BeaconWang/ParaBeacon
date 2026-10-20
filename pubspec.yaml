@@ -70,6 +70,9 @@ dependencies:
   # Runtime permission requests for BLE scanning/connecting on mobile.
   permission_handler: ^11.3.1
 
+  # Device barometer stream used by the internal altitude/vario service.
+  sensors_plus: ^6.1.0
+
   # Persist the selected sensor so it can auto-reconnect on next launch.
   shared_preferences: ^2.3.2
 

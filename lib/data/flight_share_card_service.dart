@@ -36,31 +36,13 @@ class FlightShareCardService {
     final size = const Size(_w * 1.0, _layoutHeight * 1.0);
 
     _paintHeader(canvas, size, track);
-    const chartLeft = 60.0;
-    const chartWidth = _w - 120.0;
-    const chartGap = 18.0;
-    const chartTop = 220.0;
-    final mapBottom = _paintTrackMap(
-      canvas,
-      size,
-      track,
-      l10n,
-      left: chartLeft,
-      top: chartTop,
-      width: chartWidth,
-      height: track.samples.where((s) => s.data.hasFix).length >= 2 ? 308 : 90,
-    );
+    final mapBottom = _paintTrackMap(canvas, size, track, l10n);
     final profileBottom = _paintAltitudeProfile(
       canvas,
       size,
       track,
       l10n,
-      left: chartLeft,
-      top: mapBottom + chartGap,
-      width: chartWidth,
-      height: track.samples.where((s) => s.data.altitude.isFinite).length >= 2
-          ? 200
-          : 90,
+      top: mapBottom + 28,
     );
     final statsBottom = _paintStats(
       canvas,
@@ -68,7 +50,7 @@ class FlightShareCardService {
       track,
       stats,
       l10n,
-      top: profileBottom + chartGap,
+      top: profileBottom + 36,
     );
     final cardHeight = statsBottom.ceil() + 112;
     _paintFooter(canvas, size, track, l10n, cardHeight: cardHeight);
@@ -181,43 +163,21 @@ class FlightShareCardService {
     Canvas canvas,
     Size size,
     FlightTrack track,
-    AppLocalizations l10n, {
-    required double left,
-    required double top,
-    required double width,
-    required double height,
-  }) {
-    final boxW = width;
-    final samples = track.samples.where((s) => s.data.hasFix).toList();
-    final hasTrack = samples.length >= 2;
-    final boxH = height.toDouble();
+    AppLocalizations l10n,
+  ) {
+    const left = 60.0;
+    const top = 230.0;
+    final boxW = _w - 120.0;
+    const boxH = 470.0;
     final rect = Rect.fromLTWH(left, top, boxW, boxH);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, const [
-          Color(0xFF102B3B),
-          Color(0xFF163C50),
-        ]),
-    );
+    canvas.drawRRect(rrect, Paint()..color = const Color(0x22000000));
     canvas.save();
     canvas.clipRRect(rrect);
 
-    if (hasTrack) {
-      final gridPaint = Paint()
-        ..color = const Color(0x223F7894)
-        ..strokeWidth = 1;
-      for (var i = 1; i < 5; i++) {
-        final x = left + boxW * i / 5;
-        final y = top + boxH * i / 5;
-        canvas.drawLine(Offset(x, top), Offset(x, top + boxH), gridPaint);
-        canvas.drawLine(Offset(left, y), Offset(left + boxW, y), gridPaint);
-      }
-    }
-
-    if (hasTrack) {
+    final samples = track.samples.where((s) => s.data.hasFix).toList();
+    if (samples.length >= 2) {
       double minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
       for (final s in samples) {
         minLat = math.min(minLat, s.data.latitude);
@@ -226,63 +186,17 @@ class FlightShareCardService {
         maxLon = math.max(maxLon, s.data.longitude);
       }
       final spanLat = math.max(1e-6, maxLat - minLat);
-      final lonScale = math
-          .cos((minLat + maxLat) * 0.5 * math.pi / 180)
-          .abs()
-          .clamp(0.01, 1.0)
-          .toDouble();
-      final spanLon = math.max(1e-6, (maxLon - minLon) * lonScale);
-      const pad = 42.0;
-      const chartHeaderHeight = 34.0;
-      final plotTop = top + chartHeaderHeight;
-      final plotHeight = boxH - chartHeaderHeight;
+      final spanLon = math.max(1e-6, maxLon - minLon);
+      const pad = 48.0;
       final scale = math.min(
         (boxW - pad * 2) / spanLon,
-        (plotHeight - pad * 2) / spanLat,
+        (boxH - pad * 2) / spanLat,
       );
       final offX = left + (boxW - spanLon * scale) / 2;
-      final offY = plotTop + (plotHeight - spanLat * scale) / 2;
-      _text(
-        canvas,
-        l10n.flightReportTrackMap.toUpperCase(),
-        Offset(left + 22, top + 10),
-        fontSize: 18,
-        color: const Color(0xFF8FB6CC),
-        weight: FontWeight.w700,
-        maxWidth: 115,
-      );
-      canvas
-        ..drawCircle(
-          Offset(left + 148, top + 20),
-          6,
-          Paint()..color = const Color(0xFF4ADE80),
-        )
-        ..drawCircle(
-          Offset(left + 294, top + 20),
-          6,
-          Paint()..color = const Color(0xFFFF6B6B),
-        );
-      _text(
-        canvas,
-        l10n.flightDetailTakeoff,
-        Offset(left + 160, top + 10),
-        fontSize: 17,
-        color: const Color(0xFFCDEFD8),
-        maxWidth: 120,
-        maxLines: 1,
-      );
-      _text(
-        canvas,
-        l10n.flightDetailLanding,
-        Offset(left + 306, top + 10),
-        fontSize: 17,
-        color: const Color(0xFFFFD2D2),
-        maxWidth: boxW - 318,
-        maxLines: 1,
-      );
+      final offY = top + (boxH - spanLat * scale) / 2;
 
       Offset project(double lat, double lon) => Offset(
-        offX + (lon - minLon) * lonScale * scale,
+        offX + (lon - minLon) * scale,
         offY + (maxLat - lat) * scale,
       );
 
@@ -294,15 +208,9 @@ class FlightShareCardService {
       }
       final altSpan = math.max(1.0, maxAlt - minAlt);
 
-      final casingPaint = Paint()
-        ..color = const Color(0xCC0B1E2D)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 13
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round;
       final segPaint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 7
+        ..strokeWidth = 5
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
       for (var i = 1; i < samples.length; i++) {
@@ -311,7 +219,6 @@ class FlightShareCardService {
           samples[i - 1].data.longitude,
         );
         final b = project(samples[i].data.latitude, samples[i].data.longitude);
-        canvas.drawLine(a, b, casingPaint);
         final t = ((samples[i].data.altitude - minAlt) / altSpan).clamp(
           0.0,
           1.0,
@@ -328,15 +235,24 @@ class FlightShareCardService {
         samples.last.data.latitude,
         samples.last.data.longitude,
       );
-      final markerOutline = Paint()
-        ..color = const Color(0xFFEAF7FF)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4;
-      canvas
-        ..drawCircle(start, 12, markerOutline)
-        ..drawCircle(end, 12, markerOutline)
-        ..drawCircle(start, 9, Paint()..color = const Color(0xFF4ADE80))
-        ..drawCircle(end, 9, Paint()..color = const Color(0xFFFF6B6B));
+      canvas.drawCircle(start, 13, Paint()..color = const Color(0xFF4ADE80));
+      canvas.drawCircle(end, 13, Paint()..color = const Color(0xFFFF6B6B));
+      _text(
+        canvas,
+        l10n.flightDetailTakeoff,
+        Offset(start.dx + 18, start.dy - 16),
+        fontSize: 22,
+        color: const Color(0xFFCDEFD8),
+        weight: FontWeight.w600,
+      );
+      _text(
+        canvas,
+        l10n.flightDetailLanding,
+        Offset(end.dx + 18, end.dy - 16),
+        fontSize: 22,
+        color: const Color(0xFFFFD2D2),
+        weight: FontWeight.w600,
+      );
     } else {
       _text(
         canvas,
@@ -366,43 +282,29 @@ class FlightShareCardService {
     Size size,
     FlightTrack track,
     AppLocalizations l10n, {
-    required double left,
     required double top,
-    required double width,
-    required double height,
   }) {
-    final boxW = width;
-    final samples = track.samples
-        .where((s) => s.data.altitude.isFinite)
-        .toList();
-    final hasProfile = samples.length >= 2;
-    final boxH = height.toDouble();
+    const left = 60.0;
+    final boxW = _w - 120.0;
+    const boxH = 230.0;
     final rect = Rect.fromLTWH(left, top, boxW, boxH);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, const [
-          Color(0xFF102B3B),
-          Color(0xFF163C50),
-        ]),
+    canvas.drawRRect(rrect, Paint()..color = const Color(0x22000000));
+
+    _text(
+      canvas,
+      l10n.unitAltitude,
+      Offset(left + 28, top + 18),
+      fontSize: 24,
+      color: const Color(0xFF8FB6CC),
+      weight: FontWeight.w600,
     );
 
-    if (hasProfile) {
-      _text(
-        canvas,
-        l10n.flightReportAltitudeProfile.toUpperCase(),
-        Offset(left + 22, top + 12),
-        fontSize: 18,
-        color: const Color(0xFF8FB6CC),
-        weight: FontWeight.w600,
-        maxWidth: boxW - 150,
-        maxLines: 1,
-      );
-    }
-
-    if (hasProfile) {
+    final samples = track.samples
+        .where((s) => s.data.altitude.isFinite)
+        .toList();
+    if (samples.length >= 2) {
       final startMs = samples.first.time.millisecondsSinceEpoch;
       final spanMs = math.max(
         1,
@@ -416,8 +318,8 @@ class FlightShareCardService {
       final altSpan = math.max(1.0, maxAlt - minAlt);
 
       const padX = 40.0;
-      const padTop = 42.0;
-      const padBottom = 20.0;
+      const padTop = 64.0;
+      const padBottom = 36.0;
       final plotLeft = left + padX;
       final plotRight = left + boxW - padX;
       final plotTop = top + padTop;
@@ -432,18 +334,6 @@ class FlightShareCardService {
 
       canvas.save();
       canvas.clipRRect(rrect);
-
-      final guidePaint = Paint()
-        ..color = const Color(0x334A829C)
-        ..strokeWidth = 1;
-      for (var i = 1; i <= 3; i++) {
-        final y = plotTop + plotH * i / 4;
-        canvas.drawLine(Offset(plotLeft, y), Offset(plotRight, y), guidePaint);
-      }
-      for (var i = 1; i <= 4; i++) {
-        final x = plotLeft + plotW * i / 5;
-        canvas.drawLine(Offset(x, plotTop), Offset(x, plotBottom), guidePaint);
-      }
 
       final line = Path();
       for (var i = 0; i < samples.length; i++) {
@@ -475,47 +365,26 @@ class FlightShareCardService {
         line,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 9
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round
-          ..color = const Color(0xAA0B1E2D),
-      );
-      canvas.drawPath(
-        line,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 5
+          ..strokeWidth = 4
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
           ..color = const Color(0xFF7FD1FF),
       );
-      final firstPoint = project(
-        samples.first.time.millisecondsSinceEpoch,
-        samples.first.data.altitude,
-      );
-      final lastPoint = project(
-        samples.last.time.millisecondsSinceEpoch,
-        samples.last.data.altitude,
-      );
-      canvas
-        ..drawCircle(firstPoint, 7, Paint()..color = const Color(0xFF4ADE80))
-        ..drawCircle(lastPoint, 7, Paint()..color = const Color(0xFFFF6B6B));
 
       canvas.restore();
 
       _text(
         canvas,
         '${maxAlt.toStringAsFixed(0)} m',
-        Offset(plotRight - 100, top + 12),
-        fontSize: 18,
+        Offset(plotLeft, plotTop - 30),
+        fontSize: 22,
         color: const Color(0xFFB9D4E3),
-        maxWidth: 90,
       );
       _text(
         canvas,
         '${minAlt.toStringAsFixed(0)} m',
-        Offset(plotLeft, plotBottom + 2),
-        fontSize: 18,
+        Offset(plotLeft, plotBottom + 4),
+        fontSize: 22,
         color: const Color(0xFFB9D4E3),
       );
     } else {

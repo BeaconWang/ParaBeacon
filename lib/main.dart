@@ -37,6 +37,7 @@ import 'data/flight_data_provider.dart';
 import 'data/flight_data_transformer.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
+import 'data/takeoff_reference.dart';
 import 'data/gps_flight_data_bridge.dart';
 import 'data/sensors/internal_sensor_service.dart';
 import 'data/sensors/internal_sensor_bridge.dart';
@@ -159,6 +160,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // (controls, recorder, vario audio) reads the transformed feed so they all
     // see the same derived values (e.g. the averaged vertical speed).
     _transformer = FlightDataTransformer(rawSource: _dataSource);
+    TakeoffReference.instance.bind(_transformer);
 
     // Bring up the BLE sensor service (best-effort; no-op on desktop/web) and
     // bridge its readings into the unified data source. When a sensor connects,
@@ -234,6 +236,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _internalBridge.dispose();
     _bleBridge.dispose();
     _varioAudio.dispose();
+    TakeoffReference.instance.unbind();
     _transformer.dispose();
     _dataSource.dispose();
     super.dispose();

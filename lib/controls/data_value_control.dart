@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../data/device_battery_service.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_state.dart';
+import '../data/geo_math.dart';
+import '../data/takeoff_reference.dart';
 import '../data/sun_times.dart';
 import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
@@ -1019,10 +1020,8 @@ class _AirTimeControlState extends State<AirTimeControl> {
 /// point, in kilometers (switching to meters when close). Inspired by
 /// XCTrack's "Distance to takeoff" field.
 ///
-/// The take-off reference is captured locally: the first valid GPS fix seen
-/// after a flight starts is stored as the launch point, and reset when the
-/// flight stops. This keeps the control self-contained (no coupling to the
-/// recorder) while still giving a live "how far from launch" readout.
+/// Reads the session-wide takeoff point shared with the Takeoff Waypoint
+/// widget so both controls calculate distance from the same origin.
 class DistanceToTakeoffControl extends StatefulWidget {
   final bool showTitle;
 
@@ -1034,92 +1033,51 @@ class DistanceToTakeoffControl extends StatefulWidget {
 }
 
 class _DistanceToTakeoffControlState extends State<DistanceToTakeoffControl> {
-  double? _takeoffLat;
-  double? _takeoffLon;
-
-  @override
-  void initState() {
-    super.initState();
-    FlightState.instance.addListener(_onFlightStateChanged);
-  }
-
-  void _onFlightStateChanged() {
-    if (!mounted) return;
-    // Clear the captured launch point when a flight ends so the next flight
-    // re-captures its own take-off.
-    if (!FlightState.instance.isFlying) {
-      _takeoffLat = null;
-      _takeoffLon = null;
-      setState(() {});
-    }
-  }
-
-  @override
-  void dispose() {
-    FlightState.instance.removeListener(_onFlightStateChanged);
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final flying = FlightState.instance.isFlying;
-    final data = FlightDataProvider.of(context);
+    return ListenableBuilder(
+      listenable: TakeoffReference.instance,
+      builder: (context, _) {
+        final flying = FlightState.instance.isFlying;
+        final data = FlightDataProvider.of(context);
+        final point = flying ? TakeoffReference.instance.point : null;
+        final hasCurrentFix = data.hasFix &&
+            data.latitude.isFinite &&
+            data.longitude.isFinite &&
+            data.latitude >= -90 &&
+            data.latitude <= 90 &&
+            data.longitude >= -180 &&
+            data.longitude <= 180;
+        final meters = point?.latitude != null &&
+                point?.longitude != null &&
+                hasCurrentFix
+            ? GeoMath.distanceMeters(
+                point!.latitude!,
+                point.longitude!,
+                data.latitude,
+                data.longitude,
+              )
+            : null;
+        final selected = selectedUnit(context, UnitDimension.distance);
+        final value = meters == null
+            ? '--'
+            : UnitValues.formatDistance(meters, selected);
+        final unit = meters == null
+            ? UnitValues.symbol(UnitDimension.distance, selected)
+            : selected == 'auto'
+                ? (meters < 1000 ? 'm' : 'km')
+                : UnitValues.symbol(UnitDimension.distance, selected);
 
-    // Capture the launch point on the first fixed sample after take-off.
-    if (flying && data.hasFix && _takeoffLat == null) {
-      _takeoffLat = data.latitude;
-      _takeoffLon = data.longitude;
-    }
-
-    final lat0 = _takeoffLat;
-    final lon0 = _takeoffLon;
-    final selected = selectedUnit(context, UnitDimension.distance);
-    String value;
-    String unit;
-    if (!flying || lat0 == null || lon0 == null || !data.hasFix) {
-      value = '--';
-      unit = UnitValues.symbol(UnitDimension.distance, selected);
-    } else {
-      final meters = _haversineM(lat0, lon0, data.latitude, data.longitude);
-      if (selected == 'auto') {
-        if (meters < 1000) {
-          value = meters.toStringAsFixed(0);
-          unit = 'm';
-        } else {
-          final km = meters / 1000.0;
-          value = km.toStringAsFixed(km >= 100 ? 0 : 1);
-          unit = 'km';
-        }
-      } else {
-        value = _displayNumber(meters, UnitDimension.distance, selected);
-        unit = UnitValues.symbol(UnitDimension.distance, selected);
-      }
-    }
-
-    return DataValueControl(
-      title: AppLocalizations.of(context).controlDistanceToTakeoff,
-      value: value,
-      unit: unit,
-      state: ValueState.neutral,
-      showTitle: widget.showTitle,
+        return DataValueControl(
+          title: AppLocalizations.of(context).controlDistanceToTakeoff,
+          value: value,
+          unit: unit,
+          state: ValueState.neutral,
+          showTitle: widget.showTitle,
+        );
+      },
     );
   }
-}
-
-/// Great-circle distance in meters between two lat/lon points.
-double _haversineM(double lat1, double lon1, double lat2, double lon2) {
-  const r = 6371000.0;
-  double rad(double d) => d * (math.pi / 180.0);
-  final dLat = rad(lat2 - lat1);
-  final dLon = rad(lon2 - lon1);
-  final a =
-      math.sin(dLat / 2) * math.sin(dLat / 2) +
-      math.cos(rad(lat1)) *
-          math.cos(rad(lat2)) *
-          math.sin(dLon / 2) *
-          math.sin(dLon / 2);
-  final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-  return r * c;
 }
 
 /// Whether a sun-times control shows sunrise or sunset.
@@ -1336,53 +1294,36 @@ class AltitudeAboveTakeoffControl extends StatefulWidget {
 
 class _AltitudeAboveTakeoffControlState
     extends State<AltitudeAboveTakeoffControl> {
-  double? _takeoffAltitude;
-
-  @override
-  void initState() {
-    super.initState();
-    FlightState.instance.addListener(_onFlightStateChanged);
-  }
-
-  void _onFlightStateChanged() {
-    if (!mounted) return;
-    if (!FlightState.instance.isFlying) {
-      _takeoffAltitude = null;
-      setState(() {});
-    }
-  }
-
-  @override
-  void dispose() {
-    FlightState.instance.removeListener(_onFlightStateChanged);
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final data = FlightDataProvider.of(context);
-    final flying = FlightState.instance.isFlying;
-    if (flying &&
-        _takeoffAltitude == null &&
-        (data.hasFix || data.baroAltitude != null)) {
-      _takeoffAltitude = data.altitude;
-    }
-    final unit = selectedUnit(context, UnitDimension.altitude);
-    final value = !flying || _takeoffAltitude == null
-        ? '--'
-        : _displayNumber(
-            data.altitude - _takeoffAltitude!,
-            UnitDimension.altitude,
-            unit,
-          );
-    return DataValueControl(
-      title: AppLocalizations.of(context).controlAltitudeAboveTakeoff,
-      value: value,
-      unit: UnitValues.symbol(UnitDimension.altitude, unit),
-      state: value != '--' && value.startsWith('-')
-          ? ValueState.bad
-          : ValueState.neutral,
-      showTitle: widget.showTitle,
+    return ListenableBuilder(
+      listenable: TakeoffReference.instance,
+      builder: (context, _) {
+        final data = FlightDataProvider.of(context);
+        final flying = FlightState.instance.isFlying;
+        final point = flying ? TakeoffReference.instance.point : null;
+        final altitudeDifference = point?.altitude != null &&
+                data.altitude.isFinite
+            ? data.altitude - point!.altitude!
+            : null;
+        final unit = selectedUnit(context, UnitDimension.altitude);
+        final value = altitudeDifference == null
+            ? '--'
+            : UnitValues.formatAltitudeDifference(altitudeDifference, unit);
+        final state = altitudeDifference == null
+            ? ValueState.neutral
+            : altitudeDifference >= 0
+                ? ValueState.good
+                : ValueState.bad;
+
+        return DataValueControl(
+          title: AppLocalizations.of(context).controlAltitudeAboveTakeoff,
+          value: value,
+          unit: UnitValues.symbol(UnitDimension.altitude, unit),
+          state: state,
+          showTitle: widget.showTitle,
+        );
+      },
     );
   }
 }

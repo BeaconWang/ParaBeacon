@@ -1,10 +1,10 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_state.dart';
+import '../data/geo_math.dart';
+import '../data/takeoff_reference.dart';
 import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
 
@@ -17,32 +17,26 @@ class TakeoffWaypointControl extends StatefulWidget {
 }
 
 class _TakeoffWaypointControlState extends State<TakeoffWaypointControl> {
-  double? _homeLatitude;
-  double? _homeLongitude;
-  double? _homeAltitude;
-
   @override
   void initState() {
     super.initState();
     FlightState.instance.addListener(_onFlightStateChanged);
+    TakeoffReference.instance.addListener(_onTakeoffReferenceChanged);
   }
 
   @override
   void dispose() {
     FlightState.instance.removeListener(_onFlightStateChanged);
+    TakeoffReference.instance.removeListener(_onTakeoffReferenceChanged);
     super.dispose();
   }
 
   void _onFlightStateChanged() {
-    if (!FlightState.instance.isFlying && _homeLatitude != null) {
-      setState(() {
-        _homeLatitude = null;
-        _homeLongitude = null;
-        _homeAltitude = null;
-      });
-    } else if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
+  }
+
+  void _onTakeoffReferenceChanged() {
+    if (mounted) setState(() {});
   }
 
   bool _hasValidPosition(FlightData data) =>
@@ -58,52 +52,54 @@ class _TakeoffWaypointControlState extends State<TakeoffWaypointControl> {
   Widget build(BuildContext context) {
     final data = FlightDataProvider.of(context);
     final flying = FlightState.instance.isFlying;
-    if (flying && _homeLatitude == null && _hasValidPosition(data)) {
-      _homeLatitude = data.latitude;
-      _homeLongitude = data.longitude;
-      _homeAltitude = data.altitude;
-    }
-
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    final canCalculate =
-        flying &&
-        _homeLatitude != null &&
-        _homeLongitude != null &&
-        _homeAltitude != null &&
-        _hasValidPosition(data);
-    final distanceMeters = canCalculate
-        ? _distanceMeters(
-            _homeLatitude!,
-            _homeLongitude!,
+    final point = flying ? TakeoffReference.instance.point : null;
+    final hasCurrentFix = _hasValidPosition(data);
+    final distanceMeters = point?.latitude != null &&
+            point?.longitude != null &&
+            hasCurrentFix
+        ? GeoMath.distanceMeters(
+            point!.latitude!,
+            point.longitude!,
             data.latitude,
             data.longitude,
           )
         : null;
-    final bearing = canCalculate
-        ? _bearing(
-            _homeLatitude!,
-            _homeLongitude!,
+    final bearing = point?.latitude != null &&
+            point?.longitude != null &&
+            hasCurrentFix
+        ? GeoMath.bearingDegrees(
+            point!.latitude!,
+            point.longitude!,
             data.latitude,
             data.longitude,
           )
         : null;
-    final altitudeDifference = canCalculate
-        ? data.altitude - _homeAltitude!
+    final altitudeDifference = point?.altitude != null && data.altitude.isFinite
+        ? data.altitude - point!.altitude!
         : null;
 
     final distanceUnit = selectedUnit(context, UnitDimension.distance);
     final distanceText = distanceMeters == null
         ? '--'
-        : _formatDistance(distanceMeters, distanceUnit);
+        : UnitValues.formatDistance(distanceMeters, distanceUnit);
     final distanceUnitLabel = distanceMeters == null
         ? UnitValues.symbol(UnitDimension.distance, distanceUnit)
-        : _distanceUnitLabel(distanceMeters, distanceUnit);
+        : distanceUnit == 'auto'
+            ? (distanceMeters < 1000 ? 'M' : 'KM')
+            : UnitValues.symbol(
+                UnitDimension.distance,
+                distanceUnit,
+              ).toUpperCase();
     final altitudeUnit = selectedUnit(context, UnitDimension.altitude);
     final altitudeText = altitudeDifference == null
         ? '--'
-        : _formatAltitudeDifference(altitudeDifference, altitudeUnit);
+        : UnitValues.formatAltitudeDifference(
+            altitudeDifference,
+            altitudeUnit,
+          );
     final headingText = bearing == null ? '--°' : '${bearing.round()}°';
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -201,68 +197,6 @@ class _TakeoffWaypointControlState extends State<TakeoffWaypointControl> {
     );
   }
 
-  static String _formatDistance(double meters, String unit) {
-    if (unit == 'auto') {
-      if (meters < 1000) return meters.round().toString();
-      final kilometers = meters / 1000;
-      return kilometers.toStringAsFixed(kilometers >= 100 ? 0 : 1);
-    }
-    final value = UnitValues.convert(meters, UnitDimension.distance, unit);
-    final decimals = switch (unit) {
-      'km' || 'mi' => value >= 100 ? 0 : 1,
-      _ => 0,
-    };
-    return value.toStringAsFixed(decimals);
-  }
-
-  static String _distanceUnitLabel(double meters, String unit) {
-    if (unit == 'auto') return meters < 1000 ? 'M' : 'KM';
-    return UnitValues.symbol(UnitDimension.distance, unit).toUpperCase();
-  }
-
-  static String _formatAltitudeDifference(double meters, String unit) {
-    final value = UnitValues.convert(meters, UnitDimension.altitude, unit);
-    final rounded = value.round();
-    return rounded >= 0 ? '+$rounded' : '$rounded';
-  }
-
-  static double _distanceMeters(
-    double latitude1,
-    double longitude1,
-    double latitude2,
-    double longitude2,
-  ) {
-    const earthRadiusMeters = 6371000.0;
-    double radians(double degrees) => degrees * math.pi / 180;
-
-    final deltaLatitude = radians(latitude2 - latitude1);
-    final deltaLongitude = radians(longitude2 - longitude1);
-    final a =
-        math.sin(deltaLatitude / 2) * math.sin(deltaLatitude / 2) +
-        math.cos(radians(latitude1)) *
-            math.cos(radians(latitude2)) *
-            math.sin(deltaLongitude / 2) *
-            math.sin(deltaLongitude / 2);
-    return 2 * earthRadiusMeters * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-  }
-
-  static double _bearing(
-    double latitude1,
-    double longitude1,
-    double latitude2,
-    double longitude2,
-  ) {
-    double radians(double degrees) => degrees * math.pi / 180;
-
-    final deltaLongitude = radians(longitude2 - longitude1);
-    final y = math.sin(deltaLongitude) * math.cos(radians(latitude2));
-    final x =
-        math.cos(radians(latitude1)) * math.sin(radians(latitude2)) -
-        math.sin(radians(latitude1)) *
-            math.cos(radians(latitude2)) *
-            math.cos(deltaLongitude);
-    return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
-  }
 }
 
 class _WaypointValue extends StatelessWidget {

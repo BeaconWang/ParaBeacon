@@ -906,6 +906,7 @@ const Map<String, UnitDimension> _unitDimensions = {
   'ground_speed': UnitDimension.speed,
   'wind_speed': UnitDimension.speed,
   'distance_to_takeoff': UnitDimension.distance,
+  'takeoff_waypoint': UnitDimension.distance,
   'gps_accuracy': UnitDimension.altitude,
   'pressure': UnitDimension.pressure,
   'temperature': UnitDimension.temperature,

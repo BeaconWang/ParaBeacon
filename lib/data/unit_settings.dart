@@ -70,6 +70,21 @@ class UnitValues {
     }
   }
 
+  static String formatDistance(double meters, String unit) {
+    if (unit == 'auto') {
+      if (meters < 1000) return meters.toStringAsFixed(0);
+      final kilometers = meters / 1000.0;
+      return kilometers.toStringAsFixed(kilometers >= 100 ? 0 : 1);
+    }
+    final converted = convert(meters, UnitDimension.distance, unit);
+    return converted.toStringAsFixed(converted >= 100 ? 0 : 1);
+  }
+
+  static String formatAltitudeDifference(double meters, String unit) {
+    final value = convert(meters, UnitDimension.altitude, unit).round();
+    return value >= 0 ? '+$value' : '$value';
+  }
+
   static String symbol(UnitDimension dimension, String unit) {
     switch (dimension) {
       case UnitDimension.altitude:
@@ -168,7 +183,7 @@ UnitDimension? unitDimensionForControl(String typeId) => switch (typeId) {
       'altitude' || 'gps_altitude' || 'baro_altitude' || 'max_altitude' ||
       'altitude_above_takeoff' => UnitDimension.altitude,
       'ground_speed' || 'wind_speed' => UnitDimension.speed,
-      'distance_to_takeoff' => UnitDimension.distance,
+      'distance_to_takeoff' || 'takeoff_waypoint' => UnitDimension.distance,
       'gps_accuracy' => UnitDimension.altitude,
       'pressure' => UnitDimension.pressure,
       'temperature' => UnitDimension.temperature,

@@ -301,9 +301,8 @@ class FlightTrack {
   DateTime get firstRecordedTime =>
       samples.isNotEmpty ? samples.first.time : startTime;
 
-  DateTime get lastRecordedTime => samples.isNotEmpty
-      ? samples.last.time
-      : (endTime ?? DateTime.now());
+  DateTime get lastRecordedTime =>
+      samples.isNotEmpty ? samples.last.time : (endTime ?? DateTime.now());
 
   Duration get duration => samples.isNotEmpty
       ? samples.last.time.difference(samples.first.time)
@@ -328,11 +327,7 @@ class FlightTrack {
     if (alt > _maxAltitude) _maxAltitude = alt;
     if (alt < _minAltitude) _minAltitude = alt;
 
-    _foldVarioWindow(
-      time: s.time,
-      altitude: alt,
-      barometric: false,
-    );
+    _foldVarioWindow(time: s.time, altitude: alt, barometric: false);
     final baroAlt = s.data.baroAltitude;
     _hasBaroData = baroAlt != null && baroAlt != 0;
     if (baroAlt != null && baroAlt != 0) {
@@ -400,9 +395,7 @@ class FlightTrack {
 
     final elapsed = time.difference(start);
     if (elapsed < const Duration(seconds: 30)) return;
-    final change = barometric
-        ? _baroVarioWindowChange
-        : _gpsVarioWindowChange;
+    final change = barometric ? _baroVarioWindowChange : _gpsVarioWindowChange;
     final rate = change / (elapsed.inMilliseconds / 1000.0);
     if (barometric) {
       final maxClimb = _baroMaxClimb ?? 0.0;
@@ -654,6 +647,10 @@ class FlightRecorder extends ChangeNotifier {
   FlightTrack? _quickRelaunchTrack;
   DateTime? _quickRelaunchAt;
 
+  /// True when [_quickRelaunchTrack] was a short record discarded at landing:
+  /// it is kept off the log but can still be resumed by a quick relaunch.
+  bool _quickRelaunchTrackDiscarded = false;
+
   FlightSample? _lastStored;
 
   /// The most recently completed track (available after landing/stop).
@@ -666,13 +663,53 @@ class FlightRecorder extends ChangeNotifier {
 
   /// Removes a completed track from the log.
   void deleteTrack(FlightTrack track) {
-    if (_tracks.remove(track)) {
-      if (identical(_lastCompleted, track)) {
-        _lastCompleted = _tracks.isNotEmpty ? _tracks.first : null;
+    deleteTracks([track]);
+  }
+
+  /// Removes several completed tracks from the log with a single save and
+  /// notification. Returns how many tracks were actually removed.
+  int deleteTracks(Iterable<FlightTrack> tracks) {
+    var removed = 0;
+    for (final track in tracks.toList()) {
+      if (!_tracks.remove(track)) continue;
+      removed++;
+      if (identical(_quickRelaunchTrack, track)) {
+        _quickRelaunchTrack = null;
+        _quickRelaunchAt = null;
+        _quickRelaunchTrackDiscarded = false;
       }
-      FlightStore.instance.save(_tracks);
-      notifyListeners();
     }
+    if (removed == 0) return 0;
+    if (_lastCompleted != null && !_tracks.contains(_lastCompleted)) {
+      _lastCompleted = _tracks.isNotEmpty ? _tracks.first : null;
+    }
+    FlightStore.instance.save(_tracks);
+    notifyListeners();
+    return removed;
+  }
+
+  /// Whether [track]'s recorded session lasted less than [threshold].
+  static bool isShorterThan(FlightTrack track, Duration threshold) {
+    final end = track.endTime;
+    final duration = end != null
+        ? end.difference(track.startTime)
+        : track.duration;
+    return !duration.isNegative && duration < threshold;
+  }
+
+  /// Logged flights whose recorded session lasted less than [threshold].
+  List<FlightTrack> tracksShorterThan(Duration threshold) =>
+      _tracks.where((track) => isShorterThan(track, threshold)).toList();
+
+  /// Whether a just-completed recording should be discarded silently because
+  /// short-flight cleanup is enabled and it falls below the threshold.
+  bool _shouldDiscardNewRecord(FlightTrack track) {
+    final settings = RecordingSettings.instance;
+    return settings.autoDeleteShortFlights &&
+        isShorterThan(
+          track,
+          Duration(seconds: settings.shortFlightThresholdSeconds),
+        );
   }
 
   /// Drops the per-sample data of a logged track while keeping the flight in
@@ -705,6 +742,9 @@ class FlightRecorder extends ChangeNotifier {
 
   /// Clears the entire flight log.
   void clearTracks() {
+    _quickRelaunchTrack = null;
+    _quickRelaunchAt = null;
+    _quickRelaunchTrackDiscarded = false;
     if (_tracks.isEmpty) return;
     _tracks.clear();
     _lastCompleted = null;
@@ -908,13 +948,17 @@ class FlightRecorder extends ChangeNotifier {
       final automaticLanding = _automaticLandingTransition;
       _automaticLandingTransition = false;
       final completed = _current;
-      _finishRecording(automaticLanding: automaticLanding);
+      final logged = _finishRecording(automaticLanding: automaticLanding);
       if (automaticLanding && completed != null) {
+        // A discarded short record stays resumable (off the log) during the
+        // quick-relaunch window so a brief touch-and-go is not split.
         _quickRelaunchTrack = completed;
         _quickRelaunchAt = transitionPointTime;
+        _quickRelaunchTrackDiscarded = !logged;
       } else {
         _quickRelaunchTrack = null;
         _quickRelaunchAt = null;
+        _quickRelaunchTrackDiscarded = false;
       }
     }
     notifyListeners();
@@ -936,7 +980,8 @@ class FlightRecorder extends ChangeNotifier {
         relaunchDelta != null &&
         !relaunchDelta.isNegative &&
         relaunchDelta < AutoFlightDetector.quickRelaunchWindow &&
-        _tracks.remove(relaunchTrack)) {
+        (_quickRelaunchTrackDiscarded || _tracks.remove(relaunchTrack))) {
+      _quickRelaunchTrackDiscarded = false;
       relaunchTrack.endTime = null;
       relaunchTrack.endedAutomatically = false;
       _current = relaunchTrack;
@@ -952,6 +997,7 @@ class FlightRecorder extends ChangeNotifier {
 
     _quickRelaunchTrack = null;
     _quickRelaunchAt = null;
+    _quickRelaunchTrackDiscarded = false;
     final aircraft = AircraftSettings.instance;
     _current = FlightTrack(startTime: DateTime.now())
       ..aircraftFaiClass = aircraft.faiClass
@@ -974,18 +1020,21 @@ class FlightRecorder extends ChangeNotifier {
     _lastStored = null;
   }
 
-  void _finishRecording({bool automaticLanding = false}) {
+  /// Completes the current recording. Returns true when it was added to the
+  /// log, false when there was none or it was silently discarded as short.
+  bool _finishRecording({bool automaticLanding = false}) {
     final t = _current;
-    if (t != null) {
-      t.endedAutomatically = automaticLanding;
-      t.endTime = DateTime.now();
-      _lastCompleted = t;
-      // Keep empty-but-valid sessions visible even if no sensor sample arrived.
-      _tracks.insert(0, t);
-      FlightStore.instance.save(_tracks);
-    }
     _current = null;
     _lastStored = null;
+    if (t == null) return false;
+    t.endedAutomatically = automaticLanding;
+    t.endTime = DateTime.now();
+    if (_shouldDiscardNewRecord(t)) return false;
+    _lastCompleted = t;
+    // Keep empty-but-valid sessions visible even if no sensor sample arrived.
+    _tracks.insert(0, t);
+    FlightStore.instance.save(_tracks);
+    return true;
   }
 
   void _onData() {

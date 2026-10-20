@@ -43,10 +43,19 @@ class RecordingSettings extends ChangeNotifier {
   // ── Persistence keys ──────────────────────────────────────────────────────
   static const _kIntervalMode = 'pb.recording.intervalMode';
   static const _kDetail = 'pb.recording.detail';
+  static const _kAutoDeleteShortFlights = 'pb.recording.autoDeleteShortFlights';
+  static const _kShortFlightThresholdSeconds =
+      'pb.recording.shortFlightThresholdSeconds';
+
+  /// Supported automatic-deletion thresholds, in seconds.
+  static const List<int> shortFlightThresholdOptions = [30, 60, 120, 300];
+  static const int defaultShortFlightThresholdSeconds = 60;
 
   // ── Current values (defaults) ─────────────────────────────────────────────
   RecordingIntervalMode _intervalMode = RecordingIntervalMode.fixed1s;
   RecordingDetail _detail = RecordingDetail.full;
+  bool _autoDeleteShortFlights = false;
+  int _shortFlightThresholdSeconds = defaultShortFlightThresholdSeconds;
 
   /// The active recording interval mode. Defaults to
   /// [RecordingIntervalMode.fixed1s] (one point every second).
@@ -59,6 +68,14 @@ class RecordingSettings extends ChangeNotifier {
   /// Convenience: whether track points should be stored in the compact,
   /// XCTrack/IGC-style field set instead of the full snapshot.
   bool get compactSamples => _detail == RecordingDetail.xctrack;
+
+  /// Whether completed flights shorter than the configured threshold are
+  /// automatically removed. Defaults to off to avoid unexpected data loss.
+  bool get autoDeleteShortFlights => _autoDeleteShortFlights;
+
+  /// Minimum duration to keep a completed flight when short-flight cleanup is
+  /// enabled. Defaults to one minute.
+  int get shortFlightThresholdSeconds => _shortFlightThresholdSeconds;
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -77,6 +94,13 @@ class RecordingSettings extends ChangeNotifier {
       final storedDetail = sp.getString(_kDetail);
       if (storedDetail != null) {
         _detail = _decodeDetail(storedDetail);
+      }
+      _autoDeleteShortFlights =
+          sp.getBool(_kAutoDeleteShortFlights) ?? _autoDeleteShortFlights;
+      final storedThreshold = sp.getInt(_kShortFlightThresholdSeconds);
+      if (storedThreshold != null &&
+          shortFlightThresholdOptions.contains(storedThreshold)) {
+        _shortFlightThresholdSeconds = storedThreshold;
       }
     } catch (_) {
       // Storage unavailable: keep defaults.
@@ -97,6 +121,25 @@ class RecordingSettings extends ChangeNotifier {
     if (_detail == detail) return;
     _detail = detail;
     _persistString(_kDetail, _encodeDetail(detail));
+    notifyListeners();
+  }
+
+  /// Enables or disables automatic removal of short completed flights.
+  void setAutoDeleteShortFlights(bool enabled) {
+    if (_autoDeleteShortFlights == enabled) return;
+    _autoDeleteShortFlights = enabled;
+    _persistBool(_kAutoDeleteShortFlights, enabled);
+    notifyListeners();
+  }
+
+  /// Selects a supported minimum duration for keeping completed flight logs.
+  void setShortFlightThresholdSeconds(int seconds) {
+    if (!shortFlightThresholdOptions.contains(seconds) ||
+        _shortFlightThresholdSeconds == seconds) {
+      return;
+    }
+    _shortFlightThresholdSeconds = seconds;
+    _persistInt(_kShortFlightThresholdSeconds, seconds);
     notifyListeners();
   }
 
@@ -142,6 +185,20 @@ class RecordingSettings extends ChangeNotifier {
     try {
       final sp = await SharedPreferences.getInstance();
       await sp.setString(key, value);
+    } catch (_) {}
+  }
+
+  void _persistBool(String key, bool value) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setBool(key, value);
+    } catch (_) {}
+  }
+
+  void _persistInt(String key, int value) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setInt(key, value);
     } catch (_) {}
   }
 }

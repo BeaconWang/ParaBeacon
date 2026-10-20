@@ -1147,81 +1147,147 @@ class _DashGridPageState extends State<DashGridPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final mode = RecordingSettings.instance.intervalMode;
+            final settings = RecordingSettings.instance;
+            final mode = settings.intervalMode;
+            String thresholdLabel(int seconds) {
+              switch (seconds) {
+                case 30:
+                  return l10n.shortFlightThreshold30Seconds;
+                case 120:
+                  return l10n.shortFlightThreshold2Minutes;
+                case 300:
+                  return l10n.shortFlightThreshold5Minutes;
+                case 60:
+                default:
+                  return l10n.shortFlightThreshold1Minute;
+              }
+            }
+
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.timeline, color: theme.colorScheme.primary),
-                        const SizedBox(width: 10),
-                        Text(
-                          l10n.trackRecording,
-                          style: theme.textTheme.titleLarge,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.timeline,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            l10n.trackRecording,
+                            style: theme.textTheme.titleLarge,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.trackRecordingChooseHint,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.trackRecordingChooseHint,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    RadioListTile<RecordingIntervalMode>(
-                      contentPadding: EdgeInsets.zero,
-                      value: RecordingIntervalMode.smart,
-                      groupValue: mode,
-                      title: Text(l10n.trackRecordingSmart),
-                      subtitle: Text(l10n.trackRecordingSmartSubtitle),
-                      onChanged: (v) {
-                        if (v == null) return;
-                        RecordingSettings.instance.setIntervalMode(v);
-                        setSheetState(() {});
-                      },
-                    ),
-                    RadioListTile<RecordingIntervalMode>(
-                      contentPadding: EdgeInsets.zero,
-                      value: RecordingIntervalMode.fixed1s,
-                      groupValue: mode,
-                      title: Text(l10n.trackRecordingEverySecond),
-                      subtitle: Text(l10n.trackRecordingEverySecondSubtitle),
-                      onChanged: (v) {
-                        if (v == null) return;
-                        RecordingSettings.instance.setIntervalMode(v);
-                        setSheetState(() {});
-                      },
-                    ),
-                    const Divider(height: 24),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      secondary: Icon(
-                        Icons.dataset_outlined,
-                        color: theme.colorScheme.primary,
+                      const SizedBox(height: 12),
+                      RadioListTile<RecordingIntervalMode>(
+                        contentPadding: EdgeInsets.zero,
+                        value: RecordingIntervalMode.smart,
+                        groupValue: mode,
+                        title: Text(l10n.trackRecordingSmart),
+                        subtitle: Text(l10n.trackRecordingSmartSubtitle),
+                        onChanged: (v) {
+                          if (v == null) return;
+                          RecordingSettings.instance.setIntervalMode(v);
+                          setSheetState(() {});
+                        },
                       ),
-                      title: Text(l10n.recordMoreInformation),
-                      subtitle: Text(
-                        RecordingSettings.instance.detail ==
-                                RecordingDetail.full
-                            ? l10n.recordMoreInformationFull
-                            : l10n.recordMoreInformationXcTrack,
+                      RadioListTile<RecordingIntervalMode>(
+                        contentPadding: EdgeInsets.zero,
+                        value: RecordingIntervalMode.fixed1s,
+                        groupValue: mode,
+                        title: Text(l10n.trackRecordingEverySecond),
+                        subtitle: Text(l10n.trackRecordingEverySecondSubtitle),
+                        onChanged: (v) {
+                          if (v == null) return;
+                          RecordingSettings.instance.setIntervalMode(v);
+                          setSheetState(() {});
+                        },
                       ),
-                      value:
+                      const Divider(height: 24),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        secondary: Icon(
+                          Icons.dataset_outlined,
+                          color: theme.colorScheme.primary,
+                        ),
+                        title: Text(l10n.recordMoreInformation),
+                        subtitle: Text(
                           RecordingSettings.instance.detail ==
-                          RecordingDetail.full,
-                      onChanged: (on) {
-                        RecordingSettings.instance.setDetail(
-                          on ? RecordingDetail.full : RecordingDetail.xctrack,
-                        );
-                        setSheetState(() {});
-                      },
-                    ),
-                  ],
+                                  RecordingDetail.full
+                              ? l10n.recordMoreInformationFull
+                              : l10n.recordMoreInformationXcTrack,
+                        ),
+                        value:
+                            RecordingSettings.instance.detail ==
+                            RecordingDetail.full,
+                        onChanged: (on) {
+                          RecordingSettings.instance.setDetail(
+                            on ? RecordingDetail.full : RecordingDetail.xctrack,
+                          );
+                          setSheetState(() {});
+                        },
+                      ),
+                      const Divider(height: 24),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        secondary: Icon(
+                          Icons.delete_sweep_outlined,
+                          color: theme.colorScheme.primary,
+                        ),
+                        title: Text(l10n.autoDeleteShortFlights),
+                        subtitle: Text(l10n.autoDeleteShortFlightsSubtitle),
+                        value: settings.autoDeleteShortFlights,
+                        onChanged: (enabled) async {
+                          settings.setAutoDeleteShortFlights(enabled);
+                          setSheetState(() {});
+                          if (!enabled) return;
+                          final seconds = settings.shortFlightThresholdSeconds;
+                          await _promptDeleteExistingShortFlights(
+                            context,
+                            threshold: Duration(seconds: seconds),
+                            durationLabel: thresholdLabel(seconds),
+                          );
+                        },
+                      ),
+                      if (settings.autoDeleteShortFlights)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 56, right: 8),
+                          child: DropdownButtonFormField<int>(
+                            initialValue: settings.shortFlightThresholdSeconds,
+                            decoration: InputDecoration(
+                              labelText: l10n.shortFlightThreshold,
+                            ),
+                            items: [
+                              for (final seconds
+                                  in RecordingSettings
+                                      .shortFlightThresholdOptions)
+                                DropdownMenuItem<int>(
+                                  value: seconds,
+                                  child: Text(thresholdLabel(seconds)),
+                                ),
+                            ],
+                            onChanged: (seconds) {
+                              if (seconds == null) return;
+                              settings.setShortFlightThresholdSeconds(seconds);
+                              setSheetState(() {});
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -1229,6 +1295,45 @@ class _DashGridPageState extends State<DashGridPage> {
         );
       },
     );
+  }
+
+  /// Counts logged flights shorter than [threshold] and, if any exist, asks
+  /// the user whether to delete them. New short records are discarded
+  /// silently by the recorder; this prompt only covers pre-existing ones.
+  Future<void> _promptDeleteExistingShortFlights(
+    BuildContext context, {
+    required Duration threshold,
+    required String durationLabel,
+  }) async {
+    final recorder = FlightRecorder.instance;
+    final matches = recorder.tracksShorterThan(threshold);
+    if (matches.isEmpty) return;
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.delete_sweep_outlined),
+        title: Text(l10n.deleteExistingShortFlightsTitle),
+        content: Text(
+          l10n.deleteExistingShortFlightsMessage(matches.length, durationLabel),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.keep),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) recorder.deleteTracks(matches);
   }
 
   /// Confirms with the user, then removes every control from the current

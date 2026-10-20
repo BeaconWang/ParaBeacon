@@ -1250,6 +1250,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlClimbAverage => '平均爬升';
 
   @override
+  String get controlTakeoffWaypoint => '起飞点导航';
+
+  @override
+  String get takeoffPointLabel => '起飞点';
+
+  @override
+  String get takeoffDistanceLabel => '距离';
+
+  @override
+  String get takeoffAltitudeDifferenceLabel => '高度差';
+
+  @override
   String get climbAverageLabel => '平均爬升';
 
   @override

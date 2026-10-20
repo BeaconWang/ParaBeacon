@@ -1288,6 +1288,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlClimbAverage => 'Climb Average';
 
   @override
+  String get controlTakeoffWaypoint => 'Takeoff Waypoint';
+
+  @override
+  String get takeoffPointLabel => 'HOME';
+
+  @override
+  String get takeoffDistanceLabel => 'DIST';
+
+  @override
+  String get takeoffAltitudeDifferenceLabel => 'ALT DIFF';
+
+  @override
   String get climbAverageLabel => 'CLIMB AVG';
 
   @override

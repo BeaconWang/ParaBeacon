@@ -884,6 +884,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
 const Set<String> _controlsWithoutTitle = {
   'vario',
   'climb_avg',
+  'takeoff_waypoint',
   'debug_sensor',
   'data_monitor',
   'flight_button',

@@ -379,6 +379,14 @@ class ControlCatalog {
       kind: ControlKind.widget,
       controls: [
         ControlType(
+          id: 'takeoff_waypoint',
+          label: 'Takeoff Waypoint',
+          icon: Icons.home_outlined,
+          kind: ControlKind.widget,
+          defaultCols: 6,
+          defaultRows: 2,
+        ),
+        ControlType(
           id: 'climb_avg',
           label: 'Climb Average',
           icon: Icons.trending_up,

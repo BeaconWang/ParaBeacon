@@ -2504,6 +2504,30 @@ abstract class AppLocalizations {
   /// **'Climb Average'**
   String get controlClimbAverage;
 
+  /// No description provided for @controlTakeoffWaypoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeoff Waypoint'**
+  String get controlTakeoffWaypoint;
+
+  /// No description provided for @takeoffPointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'HOME'**
+  String get takeoffPointLabel;
+
+  /// No description provided for @takeoffDistanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'DIST'**
+  String get takeoffDistanceLabel;
+
+  /// No description provided for @takeoffAltitudeDifferenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ALT DIFF'**
+  String get takeoffAltitudeDifferenceLabel;
+
   /// No description provided for @climbAverageLabel.
   ///
   /// In en, this message translates to:

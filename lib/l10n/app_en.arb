@@ -292,6 +292,22 @@
   "recordMoreInformation": "Record more information",
   "recordMoreInformationFull": "Full data per point: vario, wind, pressure, temperature, GPS accuracy, satellites, battery, heart rate",
   "recordMoreInformationXcTrack": "XCTrack style: position, baro/GPS altitude, heading, speed and time only",
+  "autoDeleteShortFlights": "Automatically delete short flights",
+  "autoDeleteShortFlightsSubtitle": "Remove completed flight records shorter than the selected duration",
+  "shortFlightThreshold": "Minimum duration to keep",
+  "shortFlightThreshold30Seconds": "30 seconds",
+  "shortFlightThreshold1Minute": "1 minute",
+  "shortFlightThreshold2Minutes": "2 minutes",
+  "shortFlightThreshold5Minutes": "5 minutes",
+  "deleteExistingShortFlightsTitle": "Delete short flights?",
+  "deleteExistingShortFlightsMessage": "{count, plural, =1{1 existing flight record is} other{{count} existing flight records are}} shorter than {duration}. Delete {count, plural, =1{it} other{them}} now? This cannot be undone.",
+  "@deleteExistingShortFlightsMessage": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "duration": { "type": "String" }
+    }
+  },
+  "keep": "Keep",
 
   "clearAllControlsTitle": "Clear all controls?",
   "clearAllControlsMessage": "This removes every control from the dashboard. This cannot be undone.",

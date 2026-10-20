@@ -832,6 +832,38 @@ class AppLocalizationsZh extends AppLocalizations {
       'XCTrack 风格：仅位置、气压/GPS 高度、航向、速度与时间';
 
   @override
+  String get autoDeleteShortFlights => '自动删除短时飞行记录';
+
+  @override
+  String get autoDeleteShortFlightsSubtitle => '删除飞行时长短于所选时间的已完成记录';
+
+  @override
+  String get shortFlightThreshold => '保留记录的最短飞行时长';
+
+  @override
+  String get shortFlightThreshold30Seconds => '30 秒';
+
+  @override
+  String get shortFlightThreshold1Minute => '1 分钟';
+
+  @override
+  String get shortFlightThreshold2Minutes => '2 分钟';
+
+  @override
+  String get shortFlightThreshold5Minutes => '5 分钟';
+
+  @override
+  String get deleteExistingShortFlightsTitle => '删除短时飞行记录？';
+
+  @override
+  String deleteExistingShortFlightsMessage(int count, String duration) {
+    return '现有 $count 条飞行记录的时长短于 $duration。是否立即删除？此操作无法撤销。';
+  }
+
+  @override
+  String get keep => '保留';
+
+  @override
   String get clearAllControlsTitle => '清除所有控件？';
 
   @override

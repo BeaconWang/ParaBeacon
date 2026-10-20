@@ -861,6 +861,51 @@ class AppLocalizationsEn extends AppLocalizations {
       'XCTrack style: position, baro/GPS altitude, heading, speed and time only';
 
   @override
+  String get autoDeleteShortFlights => 'Automatically delete short flights';
+
+  @override
+  String get autoDeleteShortFlightsSubtitle =>
+      'Remove completed flight records shorter than the selected duration';
+
+  @override
+  String get shortFlightThreshold => 'Minimum duration to keep';
+
+  @override
+  String get shortFlightThreshold30Seconds => '30 seconds';
+
+  @override
+  String get shortFlightThreshold1Minute => '1 minute';
+
+  @override
+  String get shortFlightThreshold2Minutes => '2 minutes';
+
+  @override
+  String get shortFlightThreshold5Minutes => '5 minutes';
+
+  @override
+  String get deleteExistingShortFlightsTitle => 'Delete short flights?';
+
+  @override
+  String deleteExistingShortFlightsMessage(int count, String duration) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count existing flight records are',
+      one: '1 existing flight record is',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'them',
+      one: 'it',
+    );
+    return '$_temp0 shorter than $duration. Delete $_temp1 now? This cannot be undone.';
+  }
+
+  @override
+  String get keep => 'Keep';
+
+  @override
   String get clearAllControlsTitle => 'Clear all controls?';
 
   @override

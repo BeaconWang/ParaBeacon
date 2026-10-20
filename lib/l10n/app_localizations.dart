@@ -1724,6 +1724,66 @@ abstract class AppLocalizations {
   /// **'XCTrack style: position, baro/GPS altitude, heading, speed and time only'**
   String get recordMoreInformationXcTrack;
 
+  /// No description provided for @autoDeleteShortFlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically delete short flights'**
+  String get autoDeleteShortFlights;
+
+  /// No description provided for @autoDeleteShortFlightsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove completed flight records shorter than the selected duration'**
+  String get autoDeleteShortFlightsSubtitle;
+
+  /// No description provided for @shortFlightThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum duration to keep'**
+  String get shortFlightThreshold;
+
+  /// No description provided for @shortFlightThreshold30Seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'30 seconds'**
+  String get shortFlightThreshold30Seconds;
+
+  /// No description provided for @shortFlightThreshold1Minute.
+  ///
+  /// In en, this message translates to:
+  /// **'1 minute'**
+  String get shortFlightThreshold1Minute;
+
+  /// No description provided for @shortFlightThreshold2Minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'2 minutes'**
+  String get shortFlightThreshold2Minutes;
+
+  /// No description provided for @shortFlightThreshold5Minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'5 minutes'**
+  String get shortFlightThreshold5Minutes;
+
+  /// No description provided for @deleteExistingShortFlightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete short flights?'**
+  String get deleteExistingShortFlightsTitle;
+
+  /// No description provided for @deleteExistingShortFlightsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 existing flight record is} other{{count} existing flight records are}} shorter than {duration}. Delete {count, plural, =1{it} other{them}} now? This cannot be undone.'**
+  String deleteExistingShortFlightsMessage(int count, String duration);
+
+  /// No description provided for @keep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get keep;
+
   /// No description provided for @clearAllControlsTitle.
   ///
   /// In en, this message translates to:

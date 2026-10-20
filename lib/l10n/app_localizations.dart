@@ -5372,6 +5372,66 @@ abstract class AppLocalizations {
   /// **'No text-to-speech voice is available. Install or enable a speech engine with an English or Chinese voice in the system settings, check the media volume, then test again.'**
   String get altitudeAnnouncementUnavailable;
 
+  /// No description provided for @altitudeAnnouncementTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement text'**
+  String get altitudeAnnouncementTemplate;
+
+  /// No description provided for @altitudeAnnouncementTemplateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Write what should be spoken and tap a value to insert it. Text containing Chinese is spoken with a Chinese voice, other text with an English voice. Leave empty to use the default.'**
+  String get altitudeAnnouncementTemplateDescription;
+
+  /// No description provided for @altitudeAnnouncementTemplateReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore default'**
+  String get altitudeAnnouncementTemplateReset;
+
+  /// No description provided for @altitudeAnnouncementTemplatePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview: {text}'**
+  String altitudeAnnouncementTemplatePreview(String text);
+
+  /// No description provided for @altitudeAnnouncementPlaceholderAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get altitudeAnnouncementPlaceholderAltitude;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderAltitudeUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude unit'**
+  String get altitudeAnnouncementPlaceholderAltitudeUnit;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderClimb.
+  ///
+  /// In en, this message translates to:
+  /// **'Climb rate'**
+  String get altitudeAnnouncementPlaceholderClimb;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderClimbUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Climb unit'**
+  String get altitudeAnnouncementPlaceholderClimbUnit;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderGroundSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground speed'**
+  String get altitudeAnnouncementPlaceholderGroundSpeed;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderSpeedUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed unit'**
+  String get altitudeAnnouncementPlaceholderSpeedUnit;
+
   /// No description provided for @varioSoundTitle.
   ///
   /// In en, this message translates to:

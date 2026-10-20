@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import '../data/flight_data.dart';
-import '../data/unit_settings.dart';
 import '../theme/locale_controller.dart';
 import 'altitude_announcement_settings.dart';
 import 'altitude_announcement_speaker.dart';
+import 'announcement_template.dart';
 
 /// Announces the current altitude once when climb rate enters the configured
 /// range and remains there briefly. A sustained drop below the range rearms it.
@@ -50,7 +50,7 @@ class AltitudeAnnouncementBridge {
       return;
     }
     // Bind the engine and pick a voice before the first announcement is due.
-    unawaited(_speaker.warmUp(preferredAnnouncementLanguage()));
+    unawaited(_speaker.warmUp(announcementLanguageFor(_settings.template)));
     _onData();
   }
 
@@ -103,9 +103,14 @@ class AltitudeAnnouncementBridge {
     if (_speaking || !data.altitude.isFinite) return;
     _speaking = true;
     try {
-      final spoken = await _speaker.speak(
-        preferred: preferredAnnouncementLanguage(),
-        phraseFor: (language) => _altitudePhrase(language, data.altitude),
+      final spoken = await speakAnnouncement(
+        AnnouncementValues(
+          altitudeMeters: data.altitude,
+          climbMetersPerSecond: data.verticalSpeed,
+          groundSpeedKmh: data.hasGroundSpeed ? data.groundSpeed : double.nan,
+        ),
+        speaker: _speaker,
+        settings: _settings,
       );
       // A failed attempt (engine still binding, busy, transient error) is
       // retried while lift persists, unless speech is known to be unavailable.
@@ -119,22 +124,6 @@ class AltitudeAnnouncementBridge {
     } finally {
       _speaking = false;
     }
-  }
-
-  static String _altitudePhrase(
-    AnnouncementLanguage language,
-    double altitudeMeters,
-  ) {
-    final unit = UnitSettings.instance.defaultUnit(UnitDimension.altitude);
-    final isFeet = unit == 'ft';
-    final altitude = UnitValues.convert(
-      altitudeMeters,
-      UnitDimension.altitude,
-      unit,
-    ).round();
-    return language == AnnouncementLanguage.chinese
-        ? '当前高度，$altitude${isFeet ? '英尺' : '米'}'
-        : 'Altitude $altitude ${isFeet ? 'feet' : 'meters'}';
   }
 
   void dispose() {
@@ -158,14 +147,46 @@ AnnouncementLanguage preferredAnnouncementLanguage() {
       : AnnouncementLanguage.english;
 }
 
-/// Speaks a short sample so the user can verify announcements work.
-Future<bool> speakAltitudeAnnouncementTest() {
-  return AltitudeAnnouncementSpeaker.instance.speak(
-    preferred: preferredAnnouncementLanguage(),
-    waitIfBusy: true,
-    phraseFor: (language) => language == AnnouncementLanguage.chinese
-        ? '语音播报测试，${AltitudeAnnouncementBridge._altitudePhrase(language, 1000)}'
-        : 'Voice announcement test. '
-              '${AltitudeAnnouncementBridge._altitudePhrase(language, 1000)}',
+/// Language a template should be spoken in: a custom template picks its voice
+/// from its own text, the built-in default follows the UI language.
+AnnouncementLanguage announcementLanguageFor(String? customTemplate) {
+  final uiLanguage = preferredAnnouncementLanguage();
+  return customTemplate == null
+      ? uiLanguage
+      : AnnouncementTemplate.languageOf(customTemplate, uiLanguage);
+}
+
+/// Renders the announcement text the way it will be spoken for [template]
+/// (`null` = built-in default) and [language].
+String renderAnnouncement(
+  String? template,
+  AnnouncementLanguage language,
+  AnnouncementValues values,
+) {
+  return AnnouncementTemplate.render(
+    template ?? AnnouncementTemplate.defaultFor(language),
+    language,
+    values,
   );
+}
+
+/// Speaks [values] using the configured template.
+Future<bool> speakAnnouncement(
+  AnnouncementValues values, {
+  AltitudeAnnouncementSpeaker? speaker,
+  AltitudeAnnouncementSettings? settings,
+  bool waitIfBusy = false,
+}) {
+  final template = (settings ?? AltitudeAnnouncementSettings.instance).template;
+  return (speaker ?? AltitudeAnnouncementSpeaker.instance).speak(
+    preferred: announcementLanguageFor(template),
+    waitIfBusy: waitIfBusy,
+    phraseFor: (language) => renderAnnouncement(template, language, values),
+  );
+}
+
+/// Speaks the configured template with sample values so the user can verify
+/// that announcements work and hear how the template sounds.
+Future<bool> speakAltitudeAnnouncementTest() {
+  return speakAnnouncement(AnnouncementValues.sample, waitIfBusy: true);
 }

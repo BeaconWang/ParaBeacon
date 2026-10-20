@@ -1141,6 +1141,21 @@
   "altitudeAnnouncementTest": "Test announcement",
   "altitudeAnnouncementTestSuccess": "Voice announcement is working.",
   "altitudeAnnouncementUnavailable": "No text-to-speech voice is available. Install or enable a speech engine with an English or Chinese voice in the system settings, check the media volume, then test again.",
+  "altitudeAnnouncementTemplate": "Announcement text",
+  "altitudeAnnouncementTemplateDescription": "Write what should be spoken and tap a value to insert it. Text containing Chinese is spoken with a Chinese voice, other text with an English voice. Leave empty to use the default.",
+  "altitudeAnnouncementTemplateReset": "Restore default",
+  "altitudeAnnouncementTemplatePreview": "Preview: {text}",
+  "@altitudeAnnouncementTemplatePreview": {
+    "placeholders": {
+      "text": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementPlaceholderAltitude": "Altitude",
+  "altitudeAnnouncementPlaceholderAltitudeUnit": "Altitude unit",
+  "altitudeAnnouncementPlaceholderClimb": "Climb rate",
+  "altitudeAnnouncementPlaceholderClimbUnit": "Climb unit",
+  "altitudeAnnouncementPlaceholderGroundSpeed": "Ground speed",
+  "altitudeAnnouncementPlaceholderSpeedUnit": "Speed unit",
 
   "varioSoundTitle": "Vario Sound Settings",
   "varioSoundResetTooltip": "Reset to defaults",

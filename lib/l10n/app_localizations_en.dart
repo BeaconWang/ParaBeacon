@@ -2837,6 +2837,39 @@ class AppLocalizationsEn extends AppLocalizations {
       'No text-to-speech voice is available. Install or enable a speech engine with an English or Chinese voice in the system settings, check the media volume, then test again.';
 
   @override
+  String get altitudeAnnouncementTemplate => 'Announcement text';
+
+  @override
+  String get altitudeAnnouncementTemplateDescription =>
+      'Write what should be spoken and tap a value to insert it. Text containing Chinese is spoken with a Chinese voice, other text with an English voice. Leave empty to use the default.';
+
+  @override
+  String get altitudeAnnouncementTemplateReset => 'Restore default';
+
+  @override
+  String altitudeAnnouncementTemplatePreview(String text) {
+    return 'Preview: $text';
+  }
+
+  @override
+  String get altitudeAnnouncementPlaceholderAltitude => 'Altitude';
+
+  @override
+  String get altitudeAnnouncementPlaceholderAltitudeUnit => 'Altitude unit';
+
+  @override
+  String get altitudeAnnouncementPlaceholderClimb => 'Climb rate';
+
+  @override
+  String get altitudeAnnouncementPlaceholderClimbUnit => 'Climb unit';
+
+  @override
+  String get altitudeAnnouncementPlaceholderGroundSpeed => 'Ground speed';
+
+  @override
+  String get altitudeAnnouncementPlaceholderSpeedUnit => 'Speed unit';
+
+  @override
   String get varioSoundTitle => 'Vario Sound Settings';
 
   @override

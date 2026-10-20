@@ -2752,6 +2752,39 @@ class AppLocalizationsZh extends AppLocalizations {
       '没有可用的语音合成（TTS）声音。请在系统设置中安装或启用带中文或英文语音的语音引擎，并检查媒体音量，然后重新试听。';
 
   @override
+  String get altitudeAnnouncementTemplate => '播报内容';
+
+  @override
+  String get altitudeAnnouncementTemplateDescription =>
+      '填写要播报的文字，点击下方数值即可插入。包含中文的内容使用中文语音播报，否则使用英文语音。留空则使用默认内容。';
+
+  @override
+  String get altitudeAnnouncementTemplateReset => '恢复默认';
+
+  @override
+  String altitudeAnnouncementTemplatePreview(String text) {
+    return '预览：$text';
+  }
+
+  @override
+  String get altitudeAnnouncementPlaceholderAltitude => '高度';
+
+  @override
+  String get altitudeAnnouncementPlaceholderAltitudeUnit => '高度单位';
+
+  @override
+  String get altitudeAnnouncementPlaceholderClimb => '爬升速度';
+
+  @override
+  String get altitudeAnnouncementPlaceholderClimbUnit => '爬升速度单位';
+
+  @override
+  String get altitudeAnnouncementPlaceholderGroundSpeed => '地速';
+
+  @override
+  String get altitudeAnnouncementPlaceholderSpeedUnit => '速度单位';
+
+  @override
   String get varioSoundTitle => '升降音设置';
 
   @override

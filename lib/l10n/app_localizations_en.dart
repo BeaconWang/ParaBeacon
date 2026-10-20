@@ -2755,6 +2755,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'Bluetooth sensors are only available on iOS and Android.';
 
   @override
+  String get altitudeAnnouncementTitle => 'Altitude voice announcements';
+
+  @override
+  String get altitudeAnnouncementSubtitle =>
+      'Speak the current altitude when climb rate enters a chosen range';
+
+  @override
+  String get altitudeAnnouncementDescription =>
+      'Announces once after climb rate remains in the selected range briefly. It rearms after climb rate stays below the range.';
+
+  @override
+  String get altitudeAnnouncementEnabled => 'Voice announcements';
+
+  @override
+  String get altitudeAnnouncementEnabledDescription =>
+      'Speak altitude when lift enters the selected range';
+
+  @override
+  String get altitudeAnnouncementLiftRange => 'Lift-speed range (m/s)';
+
+  @override
+  String altitudeAnnouncementRangeDescription(String minimum, String maximum) {
+    return 'Announce between $minimum and $maximum m/s';
+  }
+
+  @override
   String get varioSoundTitle => 'Vario Sound Settings';
 
   @override

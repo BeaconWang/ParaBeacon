@@ -5252,6 +5252,48 @@ abstract class AppLocalizations {
   /// **'Bluetooth sensors are only available on iOS and Android.'**
   String get sensorUnsupported;
 
+  /// No description provided for @altitudeAnnouncementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude voice announcements'**
+  String get altitudeAnnouncementTitle;
+
+  /// No description provided for @altitudeAnnouncementSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak the current altitude when climb rate enters a chosen range'**
+  String get altitudeAnnouncementSubtitle;
+
+  /// No description provided for @altitudeAnnouncementDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Announces once after climb rate remains in the selected range briefly. It rearms after climb rate stays below the range.'**
+  String get altitudeAnnouncementDescription;
+
+  /// No description provided for @altitudeAnnouncementEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice announcements'**
+  String get altitudeAnnouncementEnabled;
+
+  /// No description provided for @altitudeAnnouncementEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak altitude when lift enters the selected range'**
+  String get altitudeAnnouncementEnabledDescription;
+
+  /// No description provided for @altitudeAnnouncementLiftRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift-speed range (m/s)'**
+  String get altitudeAnnouncementLiftRange;
+
+  /// No description provided for @altitudeAnnouncementRangeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Announce between {minimum} and {maximum} m/s'**
+  String altitudeAnnouncementRangeDescription(String minimum, String maximum);
+
   /// No description provided for @varioSoundTitle.
   ///
   /// In en, this message translates to:

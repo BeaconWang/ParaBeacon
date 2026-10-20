@@ -1109,6 +1109,20 @@
   },
   "sensorUnsupported": "Bluetooth sensors are only available on iOS and Android.",
 
+  "altitudeAnnouncementTitle": "Altitude voice announcements",
+  "altitudeAnnouncementSubtitle": "Speak the current altitude when climb rate enters a chosen range",
+  "altitudeAnnouncementDescription": "Announces once after climb rate remains in the selected range briefly. It rearms after climb rate stays below the range.",
+  "altitudeAnnouncementEnabled": "Voice announcements",
+  "altitudeAnnouncementEnabledDescription": "Speak altitude when lift enters the selected range",
+  "altitudeAnnouncementLiftRange": "Lift-speed range (m/s)",
+  "altitudeAnnouncementRangeDescription": "Announce between {minimum} and {maximum} m/s",
+  "@altitudeAnnouncementRangeDescription": {
+    "placeholders": {
+      "minimum": { "type": "String" },
+      "maximum": { "type": "String" }
+    }
+  },
+
   "varioSoundTitle": "Vario Sound Settings",
   "varioSoundResetTooltip": "Reset to defaults",
   "varioSoundSectionProfile": "Vario sound profile",

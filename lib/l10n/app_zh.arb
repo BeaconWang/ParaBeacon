@@ -985,6 +985,20 @@
   "sensorRssiDbm": "{rssi} dBm",
   "sensorUnsupported": "蓝牙传感器仅在 iOS 和 Android 上可用。",
 
+  "altitudeAnnouncementTitle": "高度语音播报",
+  "altitudeAnnouncementSubtitle": "爬升速度进入所选区间时播报当前高度",
+  "altitudeAnnouncementDescription": "爬升速度在所选区间内短暂停留后播报一次；速度低于区间并保持一段时间后会重新启用。",
+  "altitudeAnnouncementEnabled": "语音播报",
+  "altitudeAnnouncementEnabledDescription": "爬升速度进入所选区间时播报高度",
+  "altitudeAnnouncementLiftRange": "爬升速度区间（m/s）",
+  "altitudeAnnouncementRangeDescription": "在 {minimum} 至 {maximum} m/s 之间播报",
+  "@altitudeAnnouncementRangeDescription": {
+    "placeholders": {
+      "minimum": { "type": "String" },
+      "maximum": { "type": "String" }
+    }
+  },
+
   "varioSoundTitle": "升降音设置",
   "varioSoundResetTooltip": "恢复默认",
   "varioSoundSectionProfile": "升降音配置",

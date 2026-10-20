@@ -25,6 +25,7 @@ import 'controls/unit_settings_sheet.dart';
 import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
 import 'controls/vario_sound_settings_sheet.dart';
+import 'controls/altitude_announcement_settings_sheet.dart';
 import 'controls/weather_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
@@ -52,6 +53,7 @@ import 'data/unit_settings.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
+import 'audio/altitude_announcement_bridge.dart';
 import 'theme/app_themes.dart';
 import 'theme/locale_controller.dart';
 import 'theme/theme_controller.dart';
@@ -95,6 +97,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   // Every FlightData update forwards `verticalSpeed` into the audio engine, so
   // the sound is always a function of the current vertical speed.
   late final VarioAudioBridge _varioAudio;
+  late final AltitudeAnnouncementBridge _altitudeAnnouncements;
 
   // Forwards a connected BLE sensor's readings into [_dataSource] so that,
   // whenever a real sensor is connected, its vertical speed drives the app
@@ -229,6 +232,11 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // Initialize the audio stream and start forwarding vertical speed. Safe to
     // fire-and-forget; forwarding begins as soon as init() completes.
     _varioAudio.attach();
+
+    // Speak the current altitude when the smoothed climb rate enters the
+    // configured lift band. Speech is opt-in and follows the selected UI locale.
+    _altitudeAnnouncements = AltitudeAnnouncementBridge(source: _transformer)
+      ..attach();
   }
 
   @override
@@ -239,6 +247,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _internalBridge.dispose();
     _bleBridge.dispose();
     _varioAudio.dispose();
+    _altitudeAnnouncements.dispose();
     TakeoffReference.instance.unbind();
     _transformer.dispose();
     _dataSource.dispose();
@@ -1014,6 +1023,19 @@ class _DashGridPageState extends State<DashGridPage> {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(
+                            Icons.record_voice_over,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.altitudeAnnouncementTitle),
+                          subtitle: Text(l10n.altitudeAnnouncementSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () =>
+                              showAltitudeAnnouncementSettingsSheet(context),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
                             Icons.bluetooth,
                             color: theme.colorScheme.primary,
                           ),
@@ -1704,10 +1726,9 @@ class _DashGridPageState extends State<DashGridPage> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer
-                                  .withAlpha(220),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primaryContainer.withAlpha(220),
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
                                 color: Theme.of(context).colorScheme.primary,
@@ -1726,20 +1747,18 @@ class _DashGridPageState extends State<DashGridPage> {
                                 Icon(
                                   Icons.edit_outlined,
                                   size: 18,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onPrimaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   AppLocalizations.of(context).editMode,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelLarge
+                                  style: Theme.of(context).textTheme.labelLarge
                                       ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onPrimaryContainer,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onPrimaryContainer,
                                         fontWeight: FontWeight.w700,
                                       ),
                                 ),

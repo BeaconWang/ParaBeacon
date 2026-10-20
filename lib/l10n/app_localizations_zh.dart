@@ -2686,6 +2686,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sensorUnsupported => '蓝牙传感器仅在 iOS 和 Android 上可用。';
 
   @override
+  String get altitudeAnnouncementTitle => '高度语音播报';
+
+  @override
+  String get altitudeAnnouncementSubtitle => '爬升速度进入所选区间时播报当前高度';
+
+  @override
+  String get altitudeAnnouncementDescription =>
+      '爬升速度在所选区间内短暂停留后播报一次；速度低于区间并保持一段时间后会重新启用。';
+
+  @override
+  String get altitudeAnnouncementEnabled => '语音播报';
+
+  @override
+  String get altitudeAnnouncementEnabledDescription => '爬升速度进入所选区间时播报高度';
+
+  @override
+  String get altitudeAnnouncementLiftRange => '爬升速度区间（m/s）';
+
+  @override
+  String altitudeAnnouncementRangeDescription(String minimum, String maximum) {
+    return '在 $minimum 至 $maximum m/s 之间播报';
+  }
+
+  @override
   String get varioSoundTitle => '升降音设置';
 
   @override

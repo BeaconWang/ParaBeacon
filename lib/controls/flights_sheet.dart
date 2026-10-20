@@ -924,7 +924,6 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   }
 
   void _showDetail(FlightTrack track) {
-    final stats = FlightDerivedStats.compute(track);
     showDialog<void>(
       context: context,
       builder: (context) {
@@ -932,6 +931,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         final l10n = AppLocalizations.of(context);
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final stats = FlightDerivedStats.compute(track);
             final maxAltGainM = track.maxAltGainM;
             final elevationDropM = track.elevationDropM;
             return Dialog.fullscreen(
@@ -953,6 +953,22 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           final confirmed = await _confirmDeleteSamples();
                           if (confirmed != true) return;
                           _recorder.deleteTrackSamples(track);
+                          setDialogState(() {});
+                        },
+                      ),
+                    if (track.samples.length > 2)
+                      IconButton(
+                        icon: const Icon(Icons.content_cut),
+                        tooltip: l10n.flightDetailTrimLog,
+                        color: theme.colorScheme.primary,
+                        onPressed: () async {
+                          final range = await _chooseTrimRange(track);
+                          if (range == null) return;
+                          _recorder.trimTrackSamples(
+                            track,
+                            startIndex: range.start.round(),
+                            endIndex: range.end.round(),
+                          );
                           setDialogState(() {});
                         },
                       ),
@@ -1326,6 +1342,86 @@ class _FlightsSheetState extends State<_FlightsSheet> {
           },
         );
       },
+    );
+  }
+
+  Future<RangeValues?> _chooseTrimRange(FlightTrack track) {
+    final l10n = AppLocalizations.of(context);
+    final maxIndex = track.samples.length - 1;
+    var range = RangeValues(0, maxIndex.toDouble());
+    return showDialog<RangeValues>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final firstIndex = range.start.round();
+          final lastIndex = range.end.round();
+          final keptCount = lastIndex - firstIndex + 1;
+          final removedCount = track.samples.length - keptCount;
+          return AlertDialog(
+            title: Text(l10n.flightDetailTrimLog),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.flightDetailTrimDescription),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.flightDetailTrimFrom(
+                    _fmtDateTime(track.samples[firstIndex].time),
+                  ),
+                ),
+                RangeSlider(
+                  values: range,
+                  min: 0,
+                  max: maxIndex.toDouble(),
+                  labels: RangeLabels('${firstIndex + 1}', '${lastIndex + 1}'),
+                  onChanged: (value) {
+                    var nextStart = value.start.round().clamp(0, maxIndex);
+                    var nextEnd = value.end.round().clamp(0, maxIndex);
+                    if (nextEnd - nextStart < 1) {
+                      final movingStart =
+                          (value.start - range.start).abs() >
+                          (value.end - range.end).abs();
+                      if (movingStart) {
+                        nextEnd = (nextStart + 1).clamp(1, maxIndex);
+                        nextStart = nextEnd - 1;
+                      } else {
+                        nextStart = (nextEnd - 1).clamp(0, maxIndex - 1);
+                        nextEnd = nextStart + 1;
+                      }
+                    }
+                    setDialogState(() {
+                      range = RangeValues(
+                        nextStart.toDouble(),
+                        nextEnd.toDouble(),
+                      );
+                    });
+                  },
+                ),
+                Text(
+                  l10n.flightDetailTrimThrough(
+                    _fmtDateTime(track.samples[lastIndex].time),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(l10n.flightDetailTrimCounts(keptCount, removedCount)),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: removedCount == 0
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(range),
+                child: Text(l10n.flightDetailTrimApply),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 

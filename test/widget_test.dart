@@ -59,17 +59,21 @@ void main() {
 
       // A partial pull is released without opening the menu.
       final gestureTarget = find.byType(GestureDetector).first;
+      final editModeMenuLabel = find.descendant(
+        of: find.byType(SwitchListTile),
+        matching: find.text('Edit Mode'),
+      );
       await tester.drag(gestureTarget, const Offset(0, 100));
       await tester.pump();
-      expect(tester.getTopLeft(find.text('Edit Mode')).dy, lessThan(0));
+      expect(tester.getTopLeft(editModeMenuLabel).dy, lessThan(0));
 
       // Pulling past the panel height clamps at the fully-open position and
       // keeps the menu open without a snap animation.
       await tester.drag(gestureTarget, const Offset(0, 600));
       await tester.pump();
 
-      expect(tester.getTopLeft(find.text('Edit Mode')).dy,
-          greaterThanOrEqualTo(0));
+      expect(tester.getTopLeft(editModeMenuLabel).dy, greaterThanOrEqualTo(0));
+      expect(editModeMenuLabel, findsOneWidget);
       expect(find.byType(SwitchListTile), findsOneWidget);
     });
   });

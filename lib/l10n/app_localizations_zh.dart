@@ -2009,6 +2009,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightDetailDeleteSamples => '删除采样数据';
 
   @override
+  String get flightDetailTrimLog => '裁剪航迹';
+
+  @override
+  String get flightDetailTrimDescription => '选择要保留的首尾采样点。至少保留两个点；移除的采样点无法恢复。';
+
+  @override
+  String flightDetailTrimFrom(String time) {
+    return '保留起始时间：$time';
+  }
+
+  @override
+  String flightDetailTrimThrough(String time) {
+    return '保留结束时间：$time';
+  }
+
+  @override
+  String flightDetailTrimCounts(int kept, int removed) {
+    return '保留 $kept 个采样点 · 移除 $removed 个';
+  }
+
+  @override
+  String get flightDetailTrimApply => '裁剪';
+
+  @override
   String get flightDetailFlight => '飞行概况';
 
   @override

@@ -2064,6 +2064,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailDeleteSamples => 'Delete samples';
 
   @override
+  String get flightDetailTrimLog => 'Trim flight log';
+
+  @override
+  String get flightDetailTrimDescription =>
+      'Choose the first and last samples to keep. Keep at least two points; removed samples cannot be restored.';
+
+  @override
+  String flightDetailTrimFrom(String time) {
+    return 'Keep from $time';
+  }
+
+  @override
+  String flightDetailTrimThrough(String time) {
+    return 'Keep through $time';
+  }
+
+  @override
+  String flightDetailTrimCounts(int kept, int removed) {
+    return 'Keep $kept samples · remove $removed';
+  }
+
+  @override
+  String get flightDetailTrimApply => 'Trim';
+
+  @override
   String get flightDetailFlight => 'Flight';
 
   @override

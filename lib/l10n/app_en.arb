@@ -823,6 +823,24 @@
 
   "flightDetailsTitle": "Flight details",
   "flightDetailDeleteSamples": "Delete samples",
+  "flightDetailTrimLog": "Trim flight log",
+  "flightDetailTrimDescription": "Choose the first and last samples to keep. Keep at least two points; removed samples cannot be restored.",
+  "flightDetailTrimFrom": "Keep from {time}",
+  "@flightDetailTrimFrom": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "flightDetailTrimThrough": "Keep through {time}",
+  "@flightDetailTrimThrough": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "flightDetailTrimCounts": "Keep {kept} samples · remove {removed}",
+  "@flightDetailTrimCounts": {
+    "placeholders": {
+      "kept": { "type": "int" },
+      "removed": { "type": "int" }
+    }
+  },
+  "flightDetailTrimApply": "Trim",
   "flightDetailFlight": "Flight",
   "flightDetailRoute": "Route",
   "flightDetailAltitude": "Altitude",

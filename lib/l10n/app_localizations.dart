@@ -3968,6 +3968,42 @@ abstract class AppLocalizations {
   /// **'Delete samples'**
   String get flightDetailDeleteSamples;
 
+  /// No description provided for @flightDetailTrimLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim flight log'**
+  String get flightDetailTrimLog;
+
+  /// No description provided for @flightDetailTrimDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the first and last samples to keep. Keep at least two points; removed samples cannot be restored.'**
+  String get flightDetailTrimDescription;
+
+  /// No description provided for @flightDetailTrimFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep from {time}'**
+  String flightDetailTrimFrom(String time);
+
+  /// No description provided for @flightDetailTrimThrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep through {time}'**
+  String flightDetailTrimThrough(String time);
+
+  /// No description provided for @flightDetailTrimCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep {kept} samples · remove {removed}'**
+  String flightDetailTrimCounts(int kept, int removed);
+
+  /// No description provided for @flightDetailTrimApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim'**
+  String get flightDetailTrimApply;
+
   /// No description provided for @flightDetailFlight.
   ///
   /// In en, this message translates to:

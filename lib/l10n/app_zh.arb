@@ -716,6 +716,24 @@
 
   "flightDetailsTitle": "飞行详情",
   "flightDetailDeleteSamples": "删除采样数据",
+  "flightDetailTrimLog": "裁剪航迹",
+  "flightDetailTrimDescription": "选择要保留的首尾采样点。至少保留两个点；移除的采样点无法恢复。",
+  "flightDetailTrimFrom": "保留起始时间：{time}",
+  "@flightDetailTrimFrom": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "flightDetailTrimThrough": "保留结束时间：{time}",
+  "@flightDetailTrimThrough": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "flightDetailTrimCounts": "保留 {kept} 个采样点 · 移除 {removed} 个",
+  "@flightDetailTrimCounts": {
+    "placeholders": {
+      "kept": { "type": "int" },
+      "removed": { "type": "int" }
+    }
+  },
+  "flightDetailTrimApply": "裁剪",
   "flightDetailFlight": "飞行概况",
   "flightDetailRoute": "航线",
   "flightDetailAltitude": "海拔",

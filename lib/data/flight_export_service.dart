@@ -35,7 +35,9 @@ class FlightExportService {
     );
     b.writeln('  <metadata>');
     b.writeln('    <name>${_xml(flightSlug(track))}</name>');
-    b.writeln('    <time>${track.startTime.toUtc().toIso8601String()}</time>');
+    b.writeln(
+      '    <time>${track.firstRecordedTime.toUtc().toIso8601String()}</time>',
+    );
     b.writeln('  </metadata>');
     b.writeln('  <trk>');
     b.writeln('    <name>${_xml(flightSlug(track))}</name>');
@@ -71,7 +73,7 @@ class FlightExportService {
 
   String _buildIgcBody(FlightTrack track) {
     final b = StringBuffer();
-    final start = track.startTime.toUtc();
+    final start = track.firstRecordedTime.toUtc();
     String two(int n) => n.toString().padLeft(2, '0');
 
     // A record: manufacturer + unique id.

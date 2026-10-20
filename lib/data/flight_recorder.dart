@@ -243,6 +243,61 @@ class FlightTrack {
     _lastFixSample = null;
   }
 
+  /// Removes samples before [startIndex] and after [endIndex] (both inclusive
+  /// retained indices), then rebuilds the summary from the remaining samples.
+  /// At least two samples must remain so the flight stays replayable.
+  bool trimSamples({required int startIndex, required int endIndex}) {
+    if (samples.length < 2 ||
+        startIndex < 0 ||
+        endIndex >= samples.length ||
+        endIndex - startIndex < 1) {
+      return false;
+    }
+    if (startIndex == 0 && endIndex == samples.length - 1) return false;
+
+    final trimmedBeginning = startIndex > 0;
+    final trimmedEnd = endIndex < samples.length - 1;
+    final retained = List<FlightSample>.of(
+      samples.sublist(startIndex, endIndex + 1),
+    );
+    samples.clear();
+    _distanceM = 0.0;
+    _maxAltitude = double.negativeInfinity;
+    _minAltitude = double.infinity;
+    _maxClimb = 0.0;
+    _maxSink = 0.0;
+    _gpsMaxClimb = null;
+    _gpsMaxSink = null;
+    _baroMaxClimb = null;
+    _baroMaxSink = null;
+    _hasBaroData = null;
+    _gpsVarioWindowStart = null;
+    _gpsVarioWindowPreviousAltitude = null;
+    _gpsVarioWindowChange = 0.0;
+    _baroVarioWindowStart = null;
+    _baroVarioWindowPreviousAltitude = null;
+    _baroVarioWindowChange = 0.0;
+    _maxAltGainM = null;
+    _elevationDropM = null;
+    _firstSampleAltitude = null;
+    _takeoffLat = null;
+    _takeoffLon = null;
+    _landingLat = null;
+    _landingLon = null;
+    _takeoffAltitude = null;
+    _landingAltitude = null;
+    _lastFixSample = null;
+    _persistedPointCount = null;
+    if (trimmedBeginning) takeoffSite = null;
+    if (trimmedEnd) landingSite = null;
+
+    for (final sample in retained) {
+      add(sample);
+    }
+    if (trimmedEnd) endTime = retained.last.time;
+    return true;
+  }
+
   DateTime get firstRecordedTime =>
       samples.isNotEmpty ? samples.first.time : startTime;
 
@@ -630,6 +685,22 @@ class FlightRecorder extends ChangeNotifier {
     // Samples are persisted, so re-save to make the deletion durable.
     FlightStore.instance.save(_tracks);
     notifyListeners();
+  }
+
+  /// Trims a logged track to the inclusive sample range and persists the
+  /// rebuilt summary. At least two samples must remain.
+  bool trimTrackSamples(
+    FlightTrack track, {
+    required int startIndex,
+    required int endIndex,
+  }) {
+    if (!_tracks.contains(track)) return false;
+    if (!track.trimSamples(startIndex: startIndex, endIndex: endIndex)) {
+      return false;
+    }
+    FlightStore.instance.save(_tracks);
+    notifyListeners();
+    return true;
   }
 
   /// Clears the entire flight log.

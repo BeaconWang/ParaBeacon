@@ -28,15 +28,17 @@ void main() {
 
     await tester.tap(find.byTooltip('Trim flight log'));
     await tester.pump();
-    expect(find.byType(RangeSlider), findsOneWidget);
+    final timeline = find.byKey(const ValueKey<String>('replay-trim-timeline'));
+    expect(timeline, findsOneWidget);
+    expect(find.byType(RangeSlider), findsNothing);
     expect(find.text('Keep 5 samples · remove 0'), findsOneWidget);
     await tester.tap(find.byTooltip('Restore data monitor'));
     await tester.pump();
 
-    final sliderRect = tester.getRect(find.byType(RangeSlider));
+    final timelineRect = tester.getRect(timeline);
     await tester.dragFrom(
-      Offset(sliderRect.left + 12, sliderRect.center.dy),
-      Offset(sliderRect.width * 0.22, 0),
+      Offset(timelineRect.left + 9, timelineRect.center.dy),
+      Offset(timelineRect.width * 0.22, 0),
     );
     await tester.pump();
     expect(find.text('Keep 4 samples · remove 1'), findsOneWidget);
@@ -47,6 +49,22 @@ void main() {
         '${cursorTime.second.toString().padLeft(2, '0')}';
     expect(find.text(expectedCursorTime), findsOneWidget);
 
+    await tester.dragFrom(
+      Offset(
+        timelineRect.left + timelineRect.width * 0.5,
+        timelineRect.center.dy,
+      ),
+      const Offset(12, 0),
+    );
+    await tester.pump();
+    final playheadTime = DateTime.utc(2026, 10, 1, 9, 0, 30).toLocal();
+    final expectedPlayheadTime =
+        '${playheadTime.hour.toString().padLeft(2, '0')}:'
+        '${playheadTime.minute.toString().padLeft(2, '0')}:'
+        '${playheadTime.second.toString().padLeft(2, '0')}';
+    expect(find.text(expectedPlayheadTime), findsOneWidget);
+    expect(find.text('Keep 4 samples · remove 1'), findsOneWidget);
+
     await tester.tap(find.widgetWithText(FilledButton, 'Trim'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -54,7 +72,7 @@ void main() {
     expect(track.samples, hasLength(4));
     expect(track.firstRecordedTime, DateTime.utc(2026, 10, 1, 9, 0, 15));
     expect(track.lastRecordedTime, DateTime.utc(2026, 10, 1, 9, 1));
-    expect(find.byType(RangeSlider), findsNothing);
+    expect(timeline, findsNothing);
     await FlightStore.instance.flush(FlightRecorder.instance.tracks);
   });
 }

@@ -135,6 +135,18 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   // ── Playback engine ─────────────────────────────────────────────────────
 
+  double _sampleOffsetMs(int index) {
+    if (_samples.isEmpty) return 0.0;
+    final safeIndex = index.clamp(0, _samples.length - 1).toInt();
+    return _samples[safeIndex].time
+        .difference(_samples.first.time)
+        .inMilliseconds
+        .toDouble();
+  }
+
+  double get _trimStartMs => _sampleOffsetMs(_trimRange.start.round());
+  double get _trimEndMs => _sampleOffsetMs(_trimRange.end.round());
+
   void _onTick(Duration elapsed) {
     final last = _lastTick;
     _lastTick = elapsed;
@@ -142,11 +154,13 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     final dtMs = (elapsed - last).inMicroseconds / 1000.0;
     if (dtMs <= 0) return;
 
+    final startMs = _trimMode ? _trimStartMs : 0.0;
+    final endMs = _trimMode ? _trimEndMs : _spanMs;
     var next = _cursorMs + dtMs * _speed;
-    if (next >= _spanMs) {
-      next = _spanMs;
-      _setCursor(next);
-      _pause(); // reached the end
+    if (_trimMode && next < startMs) next = startMs;
+    if (next >= endMs) {
+      _setCursor(endMs);
+      _pause();
       return;
     }
     _setCursor(next);
@@ -154,8 +168,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   void _play() {
     if (_playing || _samples.length < 2) return;
-    // Restart from the beginning if we're parked at the end.
-    if (_cursorMs >= _spanMs) _cursorMs = 0.0;
+    final startMs = _trimMode ? _trimStartMs : 0.0;
+    final endMs = _trimMode ? _trimEndMs : _spanMs;
+    if (_cursorMs < startMs || _cursorMs >= endMs) _setCursor(startMs);
     setState(() => _playing = true);
     _lastTick = null;
     _ticker.start();
@@ -188,6 +203,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   }
 
   void _toggleTrimMode() {
+    if (_playing) _pause();
     if (_trimMode) {
       setState(() {
         _trimMode = false;
@@ -195,7 +211,6 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
       });
       return;
     }
-    if (_playing) _pause();
     setState(() {
       _trimMode = true;
       _trimRange = RangeValues(0, (_samples.length - 1).toDouble());
@@ -937,30 +952,70 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                l10n.flightDetailTrimFrom(
-                  _formatSampleTime(_samples[firstIndex].time),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                IconButton.filledTonal(
+                  tooltip: _playing ? l10n.replayPause : l10n.replayPlay,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: canReplay ? _togglePlay : null,
+                  icon: Icon(_playing ? Icons.pause : Icons.play_arrow),
                 ),
-                style: theme.textTheme.labelMedium,
-              ),
-            ),
-            RangeSlider(
-              values: _trimRange,
-              min: 0,
-              max: (_samples.length - 1).toDouble(),
-              labels: RangeLabels('${firstIndex + 1}', '${lastIndex + 1}'),
-              onChanged: canTrim ? _updateTrimRange : null,
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                l10n.flightDetailTrimThrough(
-                  _formatSampleTime(_samples[lastIndex].time),
+                Expanded(
+                  child: Text(
+                    '${_fmt(elapsed)}  |  ${_fmt(total)}',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
                 ),
-                style: theme.textTheme.labelMedium,
+                const SizedBox(width: 48),
+              ],
+            ),
+            _ReplayTrimTimeline(
+              samples: _samples,
+              trimRange: _trimRange,
+              cursorFraction: (_cursorMs / _spanMs).clamp(0.0, 1.0),
+              spanMs: _spanMs,
+              minAlt: _minAlt,
+              maxAlt: _maxAlt,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              profileColor: theme.colorScheme.primary,
+              selectionColor: const Color(0xFFFFC107),
+              onTrimChanged: canTrim ? _updateTrimRange : null,
+              onSeek: (fraction) {
+                if (_playing) _pause();
+                _setCursor(fraction * _spanMs);
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.flightDetailTrimFrom(
+                        _formatSampleTime(_samples[firstIndex].time),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.flightDetailTrimThrough(
+                        _formatSampleTime(_samples[lastIndex].time),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: theme.textTheme.labelSmall,
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
@@ -1356,5 +1411,360 @@ class _AltitudeProfilePainter extends CustomPainter {
         old.minAlt != minAlt ||
         old.maxAlt != maxAlt ||
         old.lineColor != lineColor;
+  }
+}
+
+enum _TrimDragTarget { start, end, cursor }
+
+class _ReplayTrimTimeline extends StatefulWidget {
+  const _ReplayTrimTimeline({
+    super.key,
+    required this.samples,
+    required this.trimRange,
+    required this.cursorFraction,
+    required this.spanMs,
+    required this.minAlt,
+    required this.maxAlt,
+    required this.backgroundColor,
+    required this.profileColor,
+    required this.selectionColor,
+    required this.onTrimChanged,
+    required this.onSeek,
+  });
+
+  final List<FlightSample> samples;
+  final RangeValues trimRange;
+  final double cursorFraction;
+  final double spanMs;
+  final double minAlt;
+  final double maxAlt;
+  final Color backgroundColor;
+  final Color profileColor;
+  final Color selectionColor;
+  final ValueChanged<RangeValues>? onTrimChanged;
+  final ValueChanged<double> onSeek;
+
+  @override
+  State<_ReplayTrimTimeline> createState() => _ReplayTrimTimelineState();
+}
+
+class _ReplayTrimTimelineState extends State<_ReplayTrimTimeline> {
+  static const double _horizontalInset = 9;
+  _TrimDragTarget _dragTarget = _TrimDragTarget.cursor;
+
+  double _fractionForIndex(double index) {
+    if (widget.samples.length < 2 || widget.spanMs <= 0) return 0;
+    final safeIndex = index.round().clamp(0, widget.samples.length - 1);
+    final elapsed = widget.samples[safeIndex].time
+        .difference(widget.samples.first.time)
+        .inMilliseconds
+        .toDouble();
+    return (elapsed / widget.spanMs).clamp(0.0, 1.0);
+  }
+
+  double _fractionAtX(double x, double width) {
+    final usableWidth = math.max(1.0, width - 2 * _horizontalInset);
+    return ((x - _horizontalInset) / usableWidth).clamp(0.0, 1.0);
+  }
+
+  double _xForFraction(double fraction, double width) {
+    return _horizontalInset +
+        fraction.clamp(0.0, 1.0) * (width - 2 * _horizontalInset);
+  }
+
+  int _nearestSampleIndex(double fraction) {
+    final targetMs = fraction.clamp(0.0, 1.0) * widget.spanMs;
+    var nearest = 0;
+    var nearestDistance = double.infinity;
+    for (var i = 0; i < widget.samples.length; i++) {
+      final sampleMs = widget.samples[i].time
+          .difference(widget.samples.first.time)
+          .inMilliseconds
+          .toDouble();
+      final distance = (sampleMs - targetMs).abs();
+      if (distance < nearestDistance) {
+        nearest = i;
+        nearestDistance = distance;
+      }
+    }
+    return nearest;
+  }
+
+  void _startDrag(DragStartDetails details, double width) {
+    final x = details.localPosition.dx;
+    final startX = _xForFraction(
+      _fractionForIndex(widget.trimRange.start),
+      width,
+    );
+    final endX = _xForFraction(_fractionForIndex(widget.trimRange.end), width);
+    final startDistance = (x - startX).abs();
+    final endDistance = (x - endX).abs();
+    if (startDistance <= 24 && startDistance <= endDistance) {
+      _dragTarget = _TrimDragTarget.start;
+    } else if (endDistance <= 24) {
+      _dragTarget = _TrimDragTarget.end;
+    } else {
+      _dragTarget = _TrimDragTarget.cursor;
+      widget.onSeek(_fractionAtX(x, width));
+    }
+  }
+
+  void _updateDrag(DragUpdateDetails details, double width) {
+    final fraction = _fractionAtX(details.localPosition.dx, width);
+    if (_dragTarget == _TrimDragTarget.cursor) {
+      widget.onSeek(fraction);
+      return;
+    }
+
+    final onTrimChanged = widget.onTrimChanged;
+    if (onTrimChanged == null) return;
+    final index = _nearestSampleIndex(fraction);
+    final start = widget.trimRange.start.round();
+    final end = widget.trimRange.end.round();
+    if (_dragTarget == _TrimDragTarget.start) {
+      final nextStart = index.clamp(0, end - 1).toDouble();
+      onTrimChanged(RangeValues(nextStart, end.toDouble()));
+    } else {
+      final nextEnd = index
+          .clamp(start + 1, widget.samples.length - 1)
+          .toDouble();
+      onTrimChanged(RangeValues(start.toDouble(), nextEnd));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      key: const ValueKey<String>('replay-trim-timeline'),
+      height: 76,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final cursorX = _xForFraction(widget.cursorFraction, width);
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapUp: (details) => widget.onSeek(
+                    _fractionAtX(details.localPosition.dx, width),
+                  ),
+                  onHorizontalDragStart: (details) =>
+                      _startDrag(details, width),
+                  onHorizontalDragUpdate: (details) =>
+                      _updateDrag(details, width),
+                  child: CustomPaint(
+                    painter: _ReplayTrimTimelinePainter(
+                      samples: widget.samples,
+                      trimRange: widget.trimRange,
+                      spanMs: widget.spanMs,
+                      minAlt: widget.minAlt,
+                      maxAlt: widget.maxAlt,
+                      backgroundColor: widget.backgroundColor,
+                      profileColor: widget.profileColor,
+                      selectionColor: widget.selectionColor,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: cursorX - 1,
+                top: -12,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 2,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(100),
+                          blurRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ReplayTrimTimelinePainter extends CustomPainter {
+  _ReplayTrimTimelinePainter({
+    required this.samples,
+    required this.trimRange,
+    required this.spanMs,
+    required this.minAlt,
+    required this.maxAlt,
+    required this.backgroundColor,
+    required this.profileColor,
+    required this.selectionColor,
+  });
+
+  final List<FlightSample> samples;
+  final RangeValues trimRange;
+  final double spanMs;
+  final double minAlt;
+  final double maxAlt;
+  final Color backgroundColor;
+  final Color profileColor;
+  final Color selectionColor;
+
+  double _fractionForIndex(int index) {
+    if (samples.length < 2 || spanMs <= 0) return 0;
+    final elapsed = samples[index].time
+        .difference(samples.first.time)
+        .inMilliseconds
+        .toDouble();
+    return (elapsed / spanMs).clamp(0.0, 1.0);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (samples.length < 2 || size.width <= 0 || size.height <= 0) return;
+    const inset = 9.0;
+    final timeline = Rect.fromLTRB(
+      inset,
+      2,
+      size.width - inset,
+      size.height - 2,
+    );
+    final roundedTimeline = RRect.fromRectAndRadius(
+      timeline,
+      const Radius.circular(10),
+    );
+    canvas.drawRRect(roundedTimeline, Paint()..color = backgroundColor);
+    canvas.save();
+    canvas.clipRRect(roundedTimeline);
+
+    final width = timeline.width;
+    final height = timeline.height;
+    double xForFraction(double fraction) =>
+        timeline.left + fraction.clamp(0.0, 1.0) * width;
+    final startX = xForFraction(_fractionForIndex(trimRange.start.round()));
+    final endX = xForFraction(_fractionForIndex(trimRange.end.round()));
+
+    final divisions = math.min(8, math.max(1, samples.length - 1));
+    for (var i = 1; i < divisions; i++) {
+      final x = timeline.left + width * i / divisions;
+      canvas.drawLine(
+        Offset(x, timeline.top),
+        Offset(x, timeline.bottom),
+        Paint()
+          ..color = Colors.white.withAlpha(20)
+          ..strokeWidth = 1,
+      );
+    }
+
+    final altitudeSpan = (maxAlt - minAlt).abs() < 1e-6 ? 1.0 : maxAlt - minAlt;
+    final points = <Offset>[];
+    for (var i = 0; i < samples.length; i++) {
+      final fraction = _fractionForIndex(i);
+      final normalized = ((samples[i].data.altitude - minAlt) / altitudeSpan)
+          .clamp(0.0, 1.0);
+      points.add(
+        Offset(
+          xForFraction(fraction),
+          timeline.top + 8 + (height - 16) * (1 - normalized),
+        ),
+      );
+    }
+
+    final area = Path()..moveTo(points.first.dx, timeline.bottom);
+    for (final point in points) {
+      area.lineTo(point.dx, point.dy);
+    }
+    area
+      ..lineTo(points.last.dx, timeline.bottom)
+      ..close();
+    canvas.drawPath(area, Paint()..color = profileColor.withAlpha(65));
+
+    final profile = Path()..moveTo(points.first.dx, points.first.dy);
+    for (final point in points.skip(1)) {
+      profile.lineTo(point.dx, point.dy);
+    }
+    canvas.drawPath(
+      profile,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = profileColor,
+    );
+
+    final outsidePaint = Paint()..color = Colors.black.withAlpha(92);
+    if (startX > timeline.left) {
+      canvas.drawRect(
+        Rect.fromLTRB(timeline.left, timeline.top, startX, timeline.bottom),
+        outsidePaint,
+      );
+    }
+    if (endX < timeline.right) {
+      canvas.drawRect(
+        Rect.fromLTRB(endX, timeline.top, timeline.right, timeline.bottom),
+        outsidePaint,
+      );
+    }
+    canvas.drawRect(
+      Rect.fromLTRB(startX, timeline.top, endX, timeline.bottom),
+      Paint()..color = selectionColor.withAlpha(28),
+    );
+
+    final handlePaint = Paint()..color = selectionColor;
+    for (final x in [startX, endX]) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(x, timeline.center.dy),
+            width: 6,
+            height: 34,
+          ),
+          const Radius.circular(3),
+        ),
+        handlePaint,
+      );
+      canvas.drawLine(
+        Offset(x - 1.5, timeline.center.dy - 4),
+        Offset(x + 1.5, timeline.center.dy - 4),
+        Paint()
+          ..color = Colors.black.withAlpha(100)
+          ..strokeWidth = 1,
+      );
+      canvas.drawLine(
+        Offset(x - 1.5, timeline.center.dy + 4),
+        Offset(x + 1.5, timeline.center.dy + 4),
+        Paint()
+          ..color = Colors.black.withAlpha(100)
+          ..strokeWidth = 1,
+      );
+    }
+
+    canvas.drawRRect(
+      roundedTimeline,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = selectionColor,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _ReplayTrimTimelinePainter old) {
+    return old.samples != samples ||
+        old.trimRange != trimRange ||
+        old.spanMs != spanMs ||
+        old.minAlt != minAlt ||
+        old.maxAlt != maxAlt ||
+        old.backgroundColor != backgroundColor ||
+        old.profileColor != profileColor ||
+        old.selectionColor != selectionColor;
   }
 }

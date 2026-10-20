@@ -1286,6 +1286,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlMaxAltitude => '最高海拔';
 
   @override
+  String get controlThermalGain => '热气流爬升';
+
+  @override
+  String get controlLastThermalGain => '上次热气流爬升';
+
+  @override
   String get controlVerticalSpeed => '升降速率';
 
   @override

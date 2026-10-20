@@ -519,6 +519,8 @@
   "controlBaroAltitude": "Baro Altitude",
   "controlAltitudeAboveTakeoff": "Altitude Above Takeoff",
   "controlMaxAltitude": "Max Altitude",
+  "controlThermalGain": "Thermal Gain",
+  "controlLastThermalGain": "Last Thermal Gain",
   "controlVerticalSpeed": "Vertical Speed",
   "controlGroundSpeed": "Ground Speed",
   "controlGlide": "Glide",

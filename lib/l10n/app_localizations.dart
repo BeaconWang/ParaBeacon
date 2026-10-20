@@ -2576,6 +2576,18 @@ abstract class AppLocalizations {
   /// **'Max Altitude'**
   String get controlMaxAltitude;
 
+  /// No description provided for @controlThermalGain.
+  ///
+  /// In en, this message translates to:
+  /// **'Thermal Gain'**
+  String get controlThermalGain;
+
+  /// No description provided for @controlLastThermalGain.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Thermal Gain'**
+  String get controlLastThermalGain;
+
   /// No description provided for @controlVerticalSpeed.
   ///
   /// In en, this message translates to:

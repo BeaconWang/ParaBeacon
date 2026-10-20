@@ -13,6 +13,7 @@ import 'flight_button_control.dart';
 import 'map_control.dart';
 import 'vario_control.dart';
 import 'vertical_graph_control.dart';
+import 'thermal_gain_widget.dart';
 
 /// Visual representation of a [PlacedControl] on the dashboard.
 ///
@@ -256,6 +257,8 @@ class ControlWidget extends StatelessWidget {
         return AltitudeControl(showTitle: showTitle, source: source);
       case 'max_altitude':
         return MaxAltitudeControl(showTitle: showTitle);
+      case 'thermal_gain':
+        return ThermalGainWidget(showTitle: showTitle);
       case 'ground_speed':
         return GroundSpeedControl(showTitle: showTitle);
       case 'glide_ratio':

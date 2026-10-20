@@ -466,6 +466,8 @@
   "controlBaroAltitude": "气压高度",
   "controlAltitudeAboveTakeoff": "相对起飞点高度",
   "controlMaxAltitude": "最高海拔",
+  "controlThermalGain": "热气流爬升",
+  "controlLastThermalGain": "上次热气流爬升",
   "controlVerticalSpeed": "升降速率",
   "controlGroundSpeed": "地速",
   "controlGlide": "滑翔比",

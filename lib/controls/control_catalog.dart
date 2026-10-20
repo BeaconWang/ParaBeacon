@@ -81,6 +81,8 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlAltitudeAboveTakeoff;
     case 'max_altitude':
       return l10n.controlMaxAltitude;
+    case 'thermal_gain':
+      return l10n.controlThermalGain;
     case 'vertical_speed':
       return l10n.controlVerticalSpeed;
     case 'ground_speed':
@@ -204,6 +206,14 @@ class ControlCatalog {
           id: 'max_altitude',
           label: 'Max Altitude',
           icon: Icons.landscape,
+          kind: ControlKind.data,
+          defaultCols: 3,
+          defaultRows: 2,
+        ),
+        ControlType(
+          id: 'thermal_gain',
+          label: 'Thermal Gain',
+          icon: Icons.thermostat_auto,
           kind: ControlKind.data,
           defaultCols: 3,
           defaultRows: 2,

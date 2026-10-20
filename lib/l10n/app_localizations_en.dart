@@ -1324,6 +1324,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlMaxAltitude => 'Max Altitude';
 
   @override
+  String get controlThermalGain => 'Thermal Gain';
+
+  @override
+  String get controlLastThermalGain => 'Last Thermal Gain';
+
+  @override
   String get controlVerticalSpeed => 'Vertical Speed';
 
   @override

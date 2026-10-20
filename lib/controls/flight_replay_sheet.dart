@@ -884,12 +884,12 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   void _updateTrimRange(RangeValues value) {
     final maxIndex = _samples.length - 1;
+    final movingStart =
+        (value.start - _trimRange.start).abs() >
+        (value.end - _trimRange.end).abs();
     var startIndex = value.start.round().clamp(0, maxIndex);
     var endIndex = value.end.round().clamp(0, maxIndex);
     if (endIndex - startIndex < 1) {
-      final movingStart =
-          (value.start - _trimRange.start).abs() >
-          (value.end - _trimRange.end).abs();
       if (movingStart) {
         endIndex = (startIndex + 1).clamp(1, maxIndex);
         startIndex = endIndex - 1;
@@ -901,6 +901,14 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     setState(() {
       _trimRange = RangeValues(startIndex.toDouble(), endIndex.toDouble());
     });
+
+    if (_playing) _pause();
+    final cursorIndex = movingStart ? startIndex : endIndex;
+    final cursorMs = _samples[cursorIndex].time
+        .difference(_samples.first.time)
+        .inMilliseconds
+        .toDouble();
+    _setCursor(cursorMs);
   }
 
   Widget _buildControls(ThemeData theme) {

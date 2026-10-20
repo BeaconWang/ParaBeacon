@@ -30,22 +30,30 @@ void main() {
     await tester.pump();
     expect(find.byType(RangeSlider), findsOneWidget);
     expect(find.text('Keep 5 samples · remove 0'), findsOneWidget);
+    await tester.tap(find.byTooltip('Restore data monitor'));
+    await tester.pump();
 
     final sliderRect = tester.getRect(find.byType(RangeSlider));
     await tester.dragFrom(
-      Offset(sliderRect.right - 12, sliderRect.center.dy),
-      Offset(-sliderRect.width * 0.45, 0),
+      Offset(sliderRect.left + 12, sliderRect.center.dy),
+      Offset(sliderRect.width * 0.22, 0),
     );
     await tester.pump();
-    expect(find.text('Keep 3 samples · remove 2'), findsOneWidget);
+    expect(find.text('Keep 4 samples · remove 1'), findsOneWidget);
+    final cursorTime = DateTime.utc(2026, 10, 1, 9, 0, 15).toLocal();
+    final expectedCursorTime =
+        '${cursorTime.hour.toString().padLeft(2, '0')}:'
+        '${cursorTime.minute.toString().padLeft(2, '0')}:'
+        '${cursorTime.second.toString().padLeft(2, '0')}';
+    expect(find.text(expectedCursorTime), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Trim'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(track.samples, hasLength(3));
-    expect(track.firstRecordedTime, DateTime.utc(2026, 10, 1, 9));
-    expect(track.lastRecordedTime, DateTime.utc(2026, 10, 1, 9, 0, 30));
+    expect(track.samples, hasLength(4));
+    expect(track.firstRecordedTime, DateTime.utc(2026, 10, 1, 9, 0, 15));
+    expect(track.lastRecordedTime, DateTime.utc(2026, 10, 1, 9, 1));
     expect(find.byType(RangeSlider), findsNothing);
     await FlightStore.instance.flush(FlightRecorder.instance.tracks);
   });

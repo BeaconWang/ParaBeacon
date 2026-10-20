@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../controls/dash_page.dart';
 import '../controls/placed_control.dart';
+import 'flight_file_output_service.dart';
 import 'layout_store.dart';
 
 /// Imports and exports dashboard layouts without including account credentials,
@@ -134,19 +135,38 @@ class LayoutConfigIO {
     }
   }
 
-  /// Shares the serialized configuration as a `.pblayout` file.
-  Future<void> exportAndShare(SavedLayout layout) async {
+  /// Exports the serialized configuration as a `.pblayout` file.
+  ///
+  /// On Android, [saveToDownloads] writes into Downloads/ParaBeacon. Otherwise,
+  /// the file is placed in temporary storage and opened in the share sheet.
+  /// Returns false if the user cancels the Android save picker.
+  Future<bool> exportAndShare(
+    SavedLayout layout, {
+    bool saveToDownloads = false,
+  }) async {
     final bytes = utf8.encode(buildBundle(layout));
     final now = DateTime.now();
     String two(int value) => value.toString().padLeft(2, '0');
     final fileName =
         'parabeacon_layout_${now.year}${two(now.month)}${two(now.day)}_${two(now.hour)}${two(now.minute)}${two(now.second)}.$extension';
+
+    if (saveToDownloads) {
+      final destination = await FlightFileOutputService.instance
+          .saveToDownloads(
+            bytes: bytes,
+            fileName: fileName,
+            mimeType: 'application/json',
+          );
+      return destination != null;
+    }
+
     final directory = await getTemporaryDirectory();
     final file = File(p.join(directory.path, fileName));
     await file.writeAsBytes(bytes, flush: true);
     await Share.shareXFiles([
-      XFile(file.path, name: fileName),
+      XFile(file.path, name: fileName, mimeType: 'application/json'),
     ], subject: 'ParaBeacon dashboard configuration');
+    return true;
   }
 
   void _validateControl(Map<String, dynamic> json, Set<String> controlIds) {

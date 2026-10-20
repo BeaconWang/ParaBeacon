@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kDebugMode, kIsWeb, TargetPlatform;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -499,19 +500,64 @@ class _DashGridPageState extends State<DashGridPage> {
     );
   }
 
+  Future<bool?> _chooseDashboardExportDestination(AppLocalizations l10n) {
+    final isAndroid =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    if (!isAndroid) return Future.value(false);
+    return showModalBottomSheet<bool>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.flightsExportDestinationTitle,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: Text(l10n.flightsExportDestinationDownloads),
+              onTap: () => Navigator.of(context).pop(true),
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: Text(l10n.flightsExportDestinationShare),
+              onTap: () => Navigator.of(context).pop(false),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _exportDashboardConfiguration() async {
     final l10n = AppLocalizations.of(context);
     try {
-      await LayoutConfigIO.instance.exportAndShare(
+      final saveToDownloads = await _chooseDashboardExportDestination(l10n);
+      if (!mounted || saveToDownloads == null) return;
+      final exported = await LayoutConfigIO.instance.exportAndShare(
         SavedLayout(
           pages: List<DashPage>.from(_pages),
           gridSize: _gridSize,
           currentPage: _currentPage,
         ),
+        saveToDownloads: saveToDownloads,
       );
-      if (!mounted) return;
+      if (!mounted || !exported) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.interfaceConfigurationExported)),
+        SnackBar(
+          content: Text(
+            saveToDownloads
+                ? l10n.flightsExportSavedToDownloads
+                : l10n.interfaceConfigurationExported,
+          ),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
@@ -524,15 +570,22 @@ class _DashGridPageState extends State<DashGridPage> {
   Future<void> _importDashboardConfiguration() async {
     final l10n = AppLocalizations.of(context);
     try {
+      final isAndroid =
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: [LayoutConfigIO.extension],
-        withData: false,
+        dialogTitle: l10n.interfaceConfigurationImport,
+        type: isAndroid ? FileType.any : FileType.custom,
+        allowedExtensions: isAndroid ? null : [LayoutConfigIO.extension],
+        withData: true,
       );
       if (!mounted || result == null || result.files.isEmpty) return;
-      final path = result.files.single.path;
-      if (path == null) throw const FormatException();
-      final imported = await LayoutConfigIO.instance.importFile(path);
+      final file = result.files.single;
+      final bytes = file.bytes;
+      final path = file.path;
+      if (bytes == null && path == null) throw const FormatException();
+      final imported = bytes != null
+          ? LayoutConfigIO.instance.parseBundle(bytes)
+          : await LayoutConfigIO.instance.importFile(path!);
       if (!mounted) return;
 
       final confirmed = await showDialog<bool>(
@@ -566,8 +619,18 @@ class _DashGridPageState extends State<DashGridPage> {
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.interfaceConfigurationImportFailed)),
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.interfaceConfigurationImport),
+          content: Text(l10n.interfaceConfigurationImportFailed),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.cancel),
+            ),
+          ],
+        ),
       );
     }
   }

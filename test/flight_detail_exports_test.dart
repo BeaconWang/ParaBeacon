@@ -21,7 +21,7 @@ void main() {
       expect(String.fromCharCodes(bytes.take(8)), startsWith('%PDF-'));
     });
 
-    test('renders a full-height grouped share card', () async {
+    test('renders a compact grouped share card', () async {
       final bytes = await FlightShareCardService.instance.renderPng(
         _completeTrack(),
         AppLocalizationsEn(),
@@ -30,7 +30,19 @@ void main() {
 
       expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
       expect(data.getUint32(16), 1080);
-      expect(data.getUint32(20), 3800);
+      expect(data.getUint32(20), lessThan(2500));
+    });
+
+    test('trims unused space from sparse flight cards', () async {
+      final bytes = await FlightShareCardService.instance.renderPng(
+        FlightTrack(startTime: DateTime.utc(2026, 10, 1, 9)),
+        AppLocalizationsEn(),
+      );
+      final data = ByteData.sublistView(Uint8List.fromList(bytes));
+
+      expect(data.getUint32(16), 1080);
+      expect(data.getUint32(20), greaterThan(800));
+      expect(data.getUint32(20), lessThan(1200));
     });
   });
 }

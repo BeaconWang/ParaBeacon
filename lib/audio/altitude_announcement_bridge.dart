@@ -7,6 +7,7 @@ import '../theme/locale_controller.dart';
 import 'altitude_announcement_settings.dart';
 import 'altitude_announcement_speaker.dart';
 import 'announcement_template.dart';
+import 'vario_ducking.dart';
 
 /// Announces the current altitude once when climb rate enters the configured
 /// range and remains there briefly. A sustained drop below the range rearms it.
@@ -15,12 +16,15 @@ class AltitudeAnnouncementBridge {
     required this.source,
     AltitudeAnnouncementSpeaker? speaker,
     AltitudeAnnouncementSettings? settings,
+    VarioDuckingController? ducking,
   }) : _speaker = speaker ?? AltitudeAnnouncementSpeaker.instance,
-       _settings = settings ?? AltitudeAnnouncementSettings.instance;
+       _settings = settings ?? AltitudeAnnouncementSettings.instance,
+       _ducking = ducking ?? VarioDuckingController();
 
   final FlightDataView source;
   final AltitudeAnnouncementSpeaker _speaker;
   final AltitudeAnnouncementSettings _settings;
+  final VarioDuckingController _ducking;
 
   static const _entryDelay = Duration(milliseconds: 900);
   static const _rearmDelay = Duration(seconds: 3);
@@ -31,6 +35,7 @@ class AltitudeAnnouncementBridge {
   bool _armed = true;
   bool _attached = false;
   bool _speaking = false;
+  bool? _wasEnabled;
 
   void attach() {
     if (_attached) return;
@@ -38,10 +43,14 @@ class AltitudeAnnouncementBridge {
     _settings.load();
     _settings.addListener(_onSettingsChanged);
     source.addListener(_onData);
+    // Also covers the test announcement, which goes through the same speaker.
+    _ducking.attach();
     _onData();
   }
 
   void _onSettingsChanged() {
+    final becameEnabled = _settings.enabled && _wasEnabled != true;
+    _wasEnabled = _settings.enabled;
     if (!_settings.enabled) {
       _entryTimer?.cancel();
       _entryTimer = null;
@@ -49,8 +58,10 @@ class AltitudeAnnouncementBridge {
       _armed = true;
       return;
     }
-    // Bind the engine and pick a voice before the first announcement is due.
-    unawaited(_speaker.warmUp(announcementLanguageFor(_settings.template)));
+    if (becameEnabled) {
+      // Bind the engine and pick a voice before the first announcement is due.
+      unawaited(_speaker.warmUp(announcementLanguageFor(_settings.template)));
+    }
     _onData();
   }
 
@@ -133,6 +144,7 @@ class AltitudeAnnouncementBridge {
     _entryTimer = null;
     source.removeListener(_onData);
     _settings.removeListener(_onSettingsChanged);
+    _ducking.dispose();
     unawaited(_speaker.stop());
   }
 }

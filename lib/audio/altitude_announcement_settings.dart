@@ -14,16 +14,31 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const _kMinimumLiftSpeed = 'pb.altitudeAnnouncements.minimumLiftSpeed';
   static const _kMaximumLiftSpeed = 'pb.altitudeAnnouncements.maximumLiftSpeed';
   static const _kTemplate = 'pb.altitudeAnnouncements.template';
+  static const _kDuckVario = 'pb.altitudeAnnouncements.duckVario';
+  static const _kDuckLevel = 'pb.altitudeAnnouncements.duckLevel';
+
+  /// Allowed range for [varioDuckLevel] (fraction of normal vario volume kept
+  /// while speaking). 0 silences the vario completely during speech.
+  static const minDuckLevel = 0.0;
+  static const maxDuckLevel = 0.9;
 
   bool _enabled = false;
   double _minimumLiftSpeed = 0.5;
   double _maximumLiftSpeed = 2.0;
   String? _template;
+  bool _duckVario = true;
+  double _varioDuckLevel = 0.3;
   bool _loaded = false;
 
   bool get enabled => _enabled;
   double get minimumLiftSpeed => _minimumLiftSpeed;
   double get maximumLiftSpeed => _maximumLiftSpeed;
+
+  /// Whether the vario tone is lowered while an announcement is spoken.
+  bool get duckVario => _duckVario;
+
+  /// Fraction (0..0.9) of the normal vario volume kept while speaking.
+  double get varioDuckLevel => _varioDuckLevel;
 
   /// User-defined announcement template, or `null` to use the built-in
   /// default for the current language.
@@ -46,6 +61,11 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
       _template = AnnouncementTemplate.sanitize(
         preferences.getString(_kTemplate),
       );
+      _duckVario = preferences.getBool(_kDuckVario) ?? _duckVario;
+      final duckLevel = preferences.getDouble(_kDuckLevel);
+      if (duckLevel != null && duckLevel.isFinite) {
+        _varioDuckLevel = duckLevel.clamp(minDuckLevel, maxDuckLevel);
+      }
     } catch (_) {
       // Keep defaults if local storage is unavailable.
     }
@@ -70,6 +90,22 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
     _maximumLiftSpeed = nextMaximum;
     _persistDouble(_kMinimumLiftSpeed, nextMinimum);
     _persistDouble(_kMaximumLiftSpeed, nextMaximum);
+    notifyListeners();
+  }
+
+  void setDuckVario(bool value) {
+    if (_duckVario == value) return;
+    _duckVario = value;
+    _persistBool(_kDuckVario, value);
+    notifyListeners();
+  }
+
+  void setVarioDuckLevel(double level) {
+    if (!level.isFinite) return;
+    final next = level.clamp(minDuckLevel, maxDuckLevel);
+    if (_varioDuckLevel == next) return;
+    _varioDuckLevel = next;
+    _persistDouble(_kDuckLevel, next);
     notifyListeners();
   }
 

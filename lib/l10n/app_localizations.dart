@@ -5432,6 +5432,24 @@ abstract class AppLocalizations {
   /// **'Speed unit'**
   String get altitudeAnnouncementPlaceholderSpeedUnit;
 
+  /// No description provided for @altitudeAnnouncementDuckVario.
+  ///
+  /// In en, this message translates to:
+  /// **'Lower vario sound while speaking'**
+  String get altitudeAnnouncementDuckVario;
+
+  /// No description provided for @altitudeAnnouncementDuckVarioDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Turns the vario tone down during announcements so the voice can be heard over a loud vario.'**
+  String get altitudeAnnouncementDuckVarioDescription;
+
+  /// No description provided for @altitudeAnnouncementDuckLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario volume while speaking: {percent}%'**
+  String altitudeAnnouncementDuckLevel(String percent);
+
   /// No description provided for @varioSoundTitle.
   ///
   /// In en, this message translates to:

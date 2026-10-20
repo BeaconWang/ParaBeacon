@@ -98,6 +98,14 @@ class VarioAudioService {
   bool get isMuted => _muted;
   double get volume => _volume;
 
+  double _duckLevel = 1.0;
+
+  void setDuckLevel(double level) {
+    _duckLevel = level.isFinite ? level.clamp(0.0, 1.0) : 1.0;
+  }
+
+  double get duckLevel => _duckLevel;
+
   void dispose() {
     // Nothing to release on web.
   }

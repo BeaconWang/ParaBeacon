@@ -2870,6 +2870,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementPlaceholderSpeedUnit => 'Speed unit';
 
   @override
+  String get altitudeAnnouncementDuckVario =>
+      'Lower vario sound while speaking';
+
+  @override
+  String get altitudeAnnouncementDuckVarioDescription =>
+      'Turns the vario tone down during announcements so the voice can be heard over a loud vario.';
+
+  @override
+  String altitudeAnnouncementDuckLevel(String percent) {
+    return 'Vario volume while speaking: $percent%';
+  }
+
+  @override
   String get varioSoundTitle => 'Vario Sound Settings';
 
   @override

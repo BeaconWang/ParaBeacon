@@ -182,6 +182,29 @@ class _AltitudeAnnouncementSettingsSheetState
                             settings.setLiftSpeedRange(values.start, values.end)
                       : null,
                 ),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.altitudeAnnouncementDuckVario),
+                  subtitle: Text(l10n.altitudeAnnouncementDuckVarioDescription),
+                  value: settings.duckVario,
+                  onChanged: settings.setDuckVario,
+                ),
+                Text(
+                  l10n.altitudeAnnouncementDuckLevel(
+                    (settings.varioDuckLevel * 100).round().toString(),
+                  ),
+                  style: theme.textTheme.bodySmall,
+                ),
+                Slider(
+                  value: settings.varioDuckLevel,
+                  min: AltitudeAnnouncementSettings.minDuckLevel,
+                  max: AltitudeAnnouncementSettings.maxDuckLevel,
+                  divisions: 9,
+                  label: '${(settings.varioDuckLevel * 100).round()}%',
+                  onChanged: settings.duckVario
+                      ? settings.setVarioDuckLevel
+                      : null,
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [

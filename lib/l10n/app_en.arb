@@ -1156,6 +1156,14 @@
   "altitudeAnnouncementPlaceholderClimbUnit": "Climb unit",
   "altitudeAnnouncementPlaceholderGroundSpeed": "Ground speed",
   "altitudeAnnouncementPlaceholderSpeedUnit": "Speed unit",
+  "altitudeAnnouncementDuckVario": "Lower vario sound while speaking",
+  "altitudeAnnouncementDuckVarioDescription": "Turns the vario tone down during announcements so the voice can be heard over a loud vario.",
+  "altitudeAnnouncementDuckLevel": "Vario volume while speaking: {percent}%",
+  "@altitudeAnnouncementDuckLevel": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
 
   "varioSoundTitle": "Vario Sound Settings",
   "varioSoundResetTooltip": "Reset to defaults",

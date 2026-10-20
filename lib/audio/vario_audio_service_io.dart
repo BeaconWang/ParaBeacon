@@ -164,6 +164,14 @@ class VarioAudioService {
   bool get isMuted => _muted;
   double get volume => _volume;
 
+  /// Temporarily lowers the output to [level] (0..1) of the current volume,
+  /// independent of the user volume (which is left untouched). 1.0 = normal.
+  void setDuckLevel(double level) {
+    _synth.duckGain = level.isFinite ? level.clamp(0.0, 1.0) : 1.0;
+  }
+
+  double get duckLevel => _synth.duckGain;
+
   /// Opens/closes the independent output gate (used to enforce "sound only when
   /// flying"). When closed, the *live* feed is ramped to silence even if a
   /// non-zero speed is driven. Does not affect an unmuted preview audition.
@@ -269,12 +277,19 @@ class _VarioSynth {
   double _dt = 1.0 / 22050.0;
   double _speedSmoothing = 0.02;
   double _gainSmoothing = 0.02;
+  double _duckSmoothing = 0.001;
+
+  /// Temporary attenuation (0..1) applied on top of the volume, e.g. while a
+  /// voice announcement is playing. Faded smoothly (~120 ms) to avoid clicks.
+  double duckGain = 1.0;
+  double _appliedDuck = 1.0;
 
   void _recompute() {
     _sr = _config.sampleRate.toDouble();
     _dt = 1.0 / _sr;
     _speedSmoothing = 1.0 - math.exp(-1.0 / (0.030 * _sr));
     _gainSmoothing = 1.0 - math.exp(-1.0 / (0.005 * _sr));
+    _duckSmoothing = 1.0 - math.exp(-1.0 / (0.040 * _sr));
   }
 
   _VarioState _stateFor(double speed) {
@@ -318,7 +333,10 @@ class _VarioSynth {
       // available digital headroom more effectively than hard clipping, making
       // the vario noticeably louder at the same system volume while keeping
       // peaks bounded to the signed 16-bit range.
-      final shaped = _softClip(value);
+      // Ducking is applied after saturation so the requested level is the
+      // real output attenuation (before the soft clip it would be compressed).
+      _appliedDuck += (duckGain - _appliedDuck) * _duckSmoothing;
+      final shaped = _softClip(value) * _appliedDuck;
       final s16 = (shaped.clamp(-1.0, 1.0) * 32767.0).round();
       final base = i * channels;
       for (var c = 0; c < channels; c++) {

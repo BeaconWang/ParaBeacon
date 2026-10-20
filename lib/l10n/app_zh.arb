@@ -1026,6 +1026,14 @@
   "altitudeAnnouncementPlaceholderClimbUnit": "爬升速度单位",
   "altitudeAnnouncementPlaceholderGroundSpeed": "地速",
   "altitudeAnnouncementPlaceholderSpeedUnit": "速度单位",
+  "altitudeAnnouncementDuckVario": "播报时降低升降音",
+  "altitudeAnnouncementDuckVarioDescription": "语音播报期间调低升降音音量，避免升降音过响时听不清播报。",
+  "altitudeAnnouncementDuckLevel": "播报时升降音音量：{percent}%",
+  "@altitudeAnnouncementDuckLevel": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
 
   "varioSoundTitle": "升降音设置",
   "varioSoundResetTooltip": "恢复默认",

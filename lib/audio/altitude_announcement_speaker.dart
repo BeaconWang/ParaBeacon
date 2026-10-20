@@ -97,10 +97,12 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
 
       final text = phraseFor(language);
       _showCaption(text);
+      speaking.value = true;
       final result = await _call<dynamic>(
         () => _tts.speak(text),
         _speakTimeout,
       );
+      speaking.value = false;
       if (_isSuccess(result)) {
         _failures = 0;
         _setAvailability(SpeechAvailability.available);
@@ -112,10 +114,14 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
       await _onSpeakFailure();
       return false;
     } finally {
+      speaking.value = false;
       _busy = false;
       _hideCaptionLater();
     }
   }
+
+  /// `true` while an utterance is being spoken (used to duck the vario).
+  final ValueNotifier<bool> speaking = ValueNotifier<bool>(false);
 
   /// Text of the announcement currently being spoken (kept on screen briefly
   /// after it finishes), or `null` when nothing should be displayed.

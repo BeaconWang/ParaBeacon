@@ -2785,6 +2785,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementPlaceholderSpeedUnit => '速度单位';
 
   @override
+  String get altitudeAnnouncementDuckVario => '播报时降低升降音';
+
+  @override
+  String get altitudeAnnouncementDuckVarioDescription =>
+      '语音播报期间调低升降音音量，避免升降音过响时听不清播报。';
+
+  @override
+  String altitudeAnnouncementDuckLevel(String percent) {
+    return '播报时升降音音量：$percent%';
+  }
+
+  @override
   String get varioSoundTitle => '升降音设置';
 
   @override

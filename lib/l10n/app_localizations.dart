@@ -4916,6 +4916,12 @@ abstract class AppLocalizations {
   /// **'By glider / aircraft'**
   String get statsSectionByAircraft;
 
+  /// No description provided for @statsUnknownType.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown type'**
+  String get statsUnknownType;
+
   /// No description provided for @statsSectionBySite.
   ///
   /// In en, this message translates to:

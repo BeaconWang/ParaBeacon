@@ -920,6 +920,7 @@
   "statsSectionByYear": "按年份统计",
   "statsSectionByMonth": "季节分布（按月）",
   "statsSectionByAircraft": "按翼伞 / 飞行器",
+  "statsUnknownType": "未知类型",
   "statsSectionBySite": "按起飞地点",
 
   "statsFlights": "飞行次数",

@@ -786,7 +786,11 @@ class _StatsBody extends StatelessWidget {
           _Section(
             title: l10n.statsSectionByAircraft,
             icon: Icons.paragliding_outlined,
-            child: _BarChart(buckets: stats.byAircraft, locale: locale),
+            child: _BarChart(
+              buckets: stats.byAircraft,
+              locale: locale,
+              labelOnOwnLine: true,
+            ),
           ),
         if (stats.byTakeoffSite.isNotEmpty)
           _Section(
@@ -978,11 +982,15 @@ class _Section extends StatelessWidget {
               children: [
                 Icon(icon, size: 18, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+                Flexible(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -1054,11 +1062,13 @@ class _BarChart extends StatelessWidget {
     required this.buckets,
     required this.locale,
     this.hideEmpty = true,
+    this.labelOnOwnLine = false,
   });
 
   final List<FlightBucket> buckets;
   final String locale;
   final bool hideEmpty;
+  final bool labelOnOwnLine;
 
   @override
   Widget build(BuildContext context) {
@@ -1079,64 +1089,104 @@ class _BarChart extends StatelessWidget {
         .map((b) => b.count)
         .fold<int>(0, (a, b) => a > b ? a : b);
 
-    return Column(children: [for (final b in shown) _row(theme, b, maxCount)]);
+    return Column(
+      children: [
+        for (final b in shown)
+          _row(theme, b, maxCount, unknownTypeLabel: l10n.statsUnknownType),
+      ],
+    );
   }
 
-  Widget _row(ThemeData theme, FlightBucket b, int maxCount) {
+  Widget _row(
+    ThemeData theme,
+    FlightBucket b,
+    int maxCount, {
+    required String unknownTypeLabel,
+  }) {
     final fraction = maxCount == 0 ? 0.0 : b.count / maxCount;
     final h = b.duration.inHours;
     final m = b.duration.inMinutes % 60;
     final airtime = h > 0 ? '${h}h ${m}m' : '${m}m';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 52,
-            child: Text(
-              b.label,
-              style: theme.textTheme.bodySmall,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Stack(
-              children: [
-                Container(
+    final label = b.isUnknownType ? unknownTypeLabel : b.label;
+    final barAndCount = Row(
+      children: [
+        Expanded(
+          child: Stack(
+            children: [
+              Container(
+                height: 20,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              FractionallySizedBox(
+                widthFactor: fraction.clamp(0.0, 1.0),
+                child: Container(
                   height: 20,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
+                    color: theme.colorScheme.primary,
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
-                FractionallySizedBox(
-                  widthFactor: fraction.clamp(0.0, 1.0),
-                  child: Container(
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
-                      borderRadius: BorderRadius.circular(6),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 92,
+          child: Text(
+            b.count == 0 ? '—' : '${b.count} · $airtime',
+            textAlign: TextAlign.end,
+            style: theme.textTheme.labelSmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: labelOnOwnLine
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (b.subtitle?.isNotEmpty ?? false)
+                  Text(
+                    b.subtitle!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                const SizedBox(height: 4),
+                barAndCount,
+              ],
+            )
+          : Row(
+              children: [
+                SizedBox(
+                  width: 52,
+                  child: Text(
+                    label,
+                    style: theme.textTheme.bodySmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
+                Expanded(child: barAndCount),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 92,
-            child: Text(
-              b.count == 0 ? '—' : '${b.count} · $airtime',
-              textAlign: TextAlign.end,
-              style: theme.textTheme.labelSmall,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

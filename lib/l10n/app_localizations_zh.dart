@@ -2513,6 +2513,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statsSectionByAircraft => '按翼伞 / 飞行器';
 
   @override
+  String get statsUnknownType => '未知类型';
+
+  @override
   String get statsSectionBySite => '按起飞地点';
 
   @override

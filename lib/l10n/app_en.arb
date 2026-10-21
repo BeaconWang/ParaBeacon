@@ -1033,6 +1033,7 @@
   "statsSectionByYear": "Flights by year",
   "statsSectionByMonth": "Seasonality (by month)",
   "statsSectionByAircraft": "By glider / aircraft",
+  "statsUnknownType": "Unknown type",
   "statsSectionBySite": "By takeoff site",
 
   "statsFlights": "Flights",

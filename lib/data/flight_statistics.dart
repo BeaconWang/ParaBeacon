@@ -16,9 +16,11 @@ class FlightRecordValue<T> {
 /// takeoff site, per year, …). Carries the aggregate airtime so the UI can
 /// show flights *and* hours per bucket.
 class FlightBucket {
-  FlightBucket(this.label);
+  FlightBucket(this.label, {this.subtitle, this.isUnknownType = false});
 
   String label;
+  final String? subtitle;
+  final bool isUnknownType;
   int count = 0;
   Duration duration = Duration.zero;
   double distanceM = 0;
@@ -109,7 +111,7 @@ class FlightStatistics {
   /// soaring season.
   final Map<int, FlightBucket> _byMonth = {};
 
-  final Map<String, FlightBucket> _byAircraft = {};
+  final Map<(String?, String?), FlightBucket> _byAircraft = {};
   final Map<String, FlightBucket> _byTakeoffSite = {};
 
   List<FlightBucket> get byYear {
@@ -130,7 +132,7 @@ class FlightStatistics {
   List<FlightBucket> get byAircraft => _sortedBuckets(_byAircraft);
   List<FlightBucket> get byTakeoffSite => _sortedBuckets(_byTakeoffSite);
 
-  static List<FlightBucket> _sortedBuckets(Map<String, FlightBucket> m) {
+  static List<FlightBucket> _sortedBuckets<K>(Map<K, FlightBucket> m) {
     final list = m.values.toList()
       ..sort((a, b) {
         final byCount = b.count.compareTo(a.count);
@@ -144,9 +146,9 @@ class FlightStatistics {
 
   /// Computes aggregate statistics over [tracks].
   ///
-  /// Aircraft distribution groups paraglider flights by manufacturer and
-  /// category; flights missing either value are omitted. Set [includeDetailed]
-  /// to false to build the summary without scanning flight samples; detailed
+  /// Aircraft distribution groups by manufacturer and model, falling back to
+  /// an unknown-type bucket when neither is recorded. Set [includeDetailed] to
+  /// false to build the summary without scanning flight samples; detailed
   /// results can then be added with [addDetailedTrackStats].
   factory FlightStatistics.compute(
     Iterable<FlightTrack> tracks, {
@@ -181,11 +183,17 @@ class FlightStatistics {
         '${localStart.month}',
       )).add(track);
 
-      // Aircraft / site distributions.
-      final aircraft = _aircraftLabel(track);
-      if (aircraft != null) {
-        (stats._byAircraft[aircraft] ??= FlightBucket(aircraft)).add(track);
-      }
+      // Aircraft buckets use a manufacturer/model pair as their identity.
+      final aircraft = _aircraftParts(track);
+      final aircraftKey = (aircraft.manufacturer, aircraft.model);
+      final aircraftLabel = aircraft.isUnknown
+          ? 'Unknown type'
+          : aircraft.manufacturer ?? aircraft.model!;
+      (stats._byAircraft[aircraftKey] ??= FlightBucket(
+        aircraftLabel,
+        subtitle: aircraft.manufacturer == null ? null : aircraft.model,
+        isUnknownType: aircraft.isUnknown,
+      )).add(track);
       final site = track.takeoffSite?.trim();
       if (site != null && site.isNotEmpty) {
         (stats._byTakeoffSite[site] ??= FlightBucket(site)).add(track);
@@ -268,16 +276,21 @@ class FlightStatistics {
     }
   }
 
-  /// Paraglider manufacturer/category label used for WVO buckets.
-  static String? _aircraftLabel(FlightTrack track) {
-    if (!const {'3', '11', '12'}.contains(track.aircraftFaiClass?.trim())) {
-      return null;
-    }
-    final manufacturer = track.aircraftManufacturer?.trim();
-    final category = track.aircraftCategory?.trim();
-    if (manufacturer == null || manufacturer.isEmpty) return null;
-    if (category == null || category.isEmpty) return null;
-    return '$manufacturer · $category';
+  static ({String? manufacturer, String? model, bool isUnknown}) _aircraftParts(
+    FlightTrack track,
+  ) {
+    final manufacturer = _nonEmpty(track.aircraftManufacturer);
+    final model = _nonEmpty(track.aircraftModel);
+    return (
+      manufacturer: manufacturer,
+      model: model,
+      isUnknown: manufacturer == null && model == null,
+    );
+  }
+
+  static String? _nonEmpty(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   /// Keeps the larger of the current record and a candidate numeric value.

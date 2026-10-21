@@ -2597,6 +2597,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statsSectionByAircraft => 'By glider / aircraft';
 
   @override
+  String get statsUnknownType => 'Unknown type';
+
+  @override
   String get statsSectionBySite => 'By takeoff site';
 
   @override

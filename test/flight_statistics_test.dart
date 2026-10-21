@@ -73,67 +73,100 @@ void main() {
         expect(find.text('1.1 km'), findsWidgets);
       },
     );
+
+    testWidgets('shows aircraft manufacturer and model on separate lines', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      final track = _aircraftTrack(manufacturer: 'Ozone', model: 'Zeno');
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showFlightStatisticsSheet(
+                    context,
+                    tracks: [track],
+                    selected: false,
+                  ),
+                  child: const Text('Open stats'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open stats'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Ozone'),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.text('Ozone'), findsOneWidget);
+      expect(find.text('Zeno'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('Flight statistics aircraft grouping', () {
-    test('groups only by paraglider manufacturer and category', () {
+    test('groups by manufacturer/model with missing-data fallbacks', () {
       final stats = FlightStatistics.compute([
-        _aircraftTrack(
-          faiClass: '3',
-          manufacturer: ' Ozone ',
-          model: 'Zeno',
-          category: 'EN-B',
-          gliderName: 'Ozone Zeno',
-        ),
-        _aircraftTrack(
-          faiClass: '3',
-          manufacturer: 'Ozone',
-          model: 'Mantra',
-          category: 'EN-B',
-          gliderName: 'Ozone Mantra',
-        ),
-        _aircraftTrack(
-          faiClass: '11',
-          manufacturer: 'Ozone',
-          model: 'Paramotor',
-          category: 'EN-C',
-        ),
-        _aircraftTrack(
-          faiClass: '1',
-          manufacturer: 'Wills Wing',
-          model: 'Sport 2',
-          category: 'Class 1',
-        ),
-        _aircraftTrack(faiClass: '3', manufacturer: 'Advance', model: 'Sigma'),
+        _aircraftTrack(manufacturer: ' Ozone ', model: 'Zeno'),
+        _aircraftTrack(manufacturer: 'Ozone', model: 'Mantra'),
+        _aircraftTrack(manufacturer: 'Ozone'),
+        _aircraftTrack(manufacturer: ' Ozone '),
+        _aircraftTrack(),
+        _aircraftTrack(manufacturer: ' ', model: ' '),
+        _aircraftTrack(model: 'Solo model'),
       ], includeDetailed: false);
 
-      expect(stats.byAircraft.map((bucket) => bucket.label).toList(), [
-        'Ozone · EN-B',
-        'Ozone · EN-C',
-      ]);
-      expect(stats.byAircraft.first.count, 2);
+      final buckets = stats.byAircraft;
+      final manufacturerOnly = buckets.singleWhere(
+        (bucket) => bucket.label == 'Ozone' && bucket.subtitle == null,
+      );
+      final zeno = buckets.singleWhere((bucket) => bucket.subtitle == 'Zeno');
+      final mantra = buckets.singleWhere(
+        (bucket) => bucket.subtitle == 'Mantra',
+      );
+      final modelOnly = buckets.singleWhere(
+        (bucket) => bucket.label == 'Solo model',
+      );
+      final unknown = buckets.singleWhere((bucket) => bucket.isUnknownType);
+
+      expect(manufacturerOnly.count, 2);
+      expect(zeno.label, 'Ozone');
+      expect(mantra.label, 'Ozone');
+      expect(modelOnly.subtitle, isNull);
+      expect(unknown.label, 'Unknown type');
+      expect(unknown.count, 2);
     });
   });
 }
 
-FlightTrack _aircraftTrack({
-  required String faiClass,
-  required String manufacturer,
-  required String model,
-  String? category,
-  String? gliderName,
-}) {
+FlightTrack _aircraftTrack({String? manufacturer, String? model}) {
   return FlightTrack(startTime: DateTime.utc(2026, 10, 20))
-    ..aircraftFaiClass = faiClass
     ..aircraftManufacturer = manufacturer
-    ..aircraftModel = model
-    ..aircraftCategory = category
-    ..gliderName = gliderName;
+    ..aircraftModel = model;
 }
 
 FlightTrack _track() {
   final start = DateTime.utc(2026, 10, 20, 10);
-  final track = FlightTrack(startTime: start);
+  final track = FlightTrack(startTime: start)
+    ..aircraftManufacturer = 'Ozone'
+    ..aircraftModel = 'Zeno';
   track.add(
     FlightSample(
       time: start,

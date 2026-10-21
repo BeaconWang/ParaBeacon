@@ -979,7 +979,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       final picked = await FilePicker.platform.pickFiles(
         dialogTitle: l10n.flightsImportLibrary,
         type: FileType.custom,
-        allowedExtensions: [FlightLibraryIO.extension, 'zip'],
+        allowedExtensions: [FlightLibraryIO.extension],
         withData: true,
       );
       final files = picked?.files;

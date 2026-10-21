@@ -125,11 +125,15 @@ class VarioAudioConfig {
   // Deadband cue — double-beep pattern played between sink and lift thresholds.
   // ---------------------------------------------------------------------------
 
-  /// Whether the deadband double-beep cue is enabled. When true it plays for
-  /// `sinkThreshold < v < liftThreshold` (i.e. the whole deadband, when there
-  /// is neither a lift beep nor a sink alarm). Set false to keep the deadband
-  /// silent.
+  /// Whether the deadband double-beep cue is enabled for
+  /// `0.0 <= v < liftThreshold` (just below a usable climb). Set false to keep
+  /// that range silent.
   final bool nearLiftEnabled;
+
+  /// Sink notification zone: when true, the same deadband double-beep cue is
+  /// also played for `sinkThreshold < v < 0.0`, the range that is otherwise
+  /// silent (between the sink alarm and zero). Off by default (XCTrack).
+  final bool sinkZoneCueEnabled;
 
   /// Pitch of the deadband double-beep cue, Hz (default 400). Independent of
   /// the climb/sink pitches so the deadband cue reads as its own distinct tone.
@@ -222,6 +226,7 @@ class VarioAudioConfig {
     this.classicTickThreshold = 0.5,
     this.classicTickAverageSeconds = 3.0,
     this.nearLiftEnabled = true,
+    this.sinkZoneCueEnabled = false,
     this.nearLiftFreq = 300,
     this.nearLiftToneSeconds = 0.2,
     this.nearLiftBeepGapSeconds = 0.08,
@@ -261,6 +266,7 @@ class VarioAudioConfig {
     double? classicTickThreshold,
     double? classicTickAverageSeconds,
     bool? nearLiftEnabled,
+    bool? sinkZoneCueEnabled,
     double? nearLiftFreq,
     double? nearLiftToneSeconds,
     double? nearLiftBeepGapSeconds,
@@ -297,6 +303,7 @@ class VarioAudioConfig {
       classicTickAverageSeconds:
           classicTickAverageSeconds ?? this.classicTickAverageSeconds,
       nearLiftEnabled: nearLiftEnabled ?? this.nearLiftEnabled,
+      sinkZoneCueEnabled: sinkZoneCueEnabled ?? this.sinkZoneCueEnabled,
       nearLiftFreq: nearLiftFreq ?? this.nearLiftFreq,
       nearLiftToneSeconds: nearLiftToneSeconds ?? this.nearLiftToneSeconds,
       nearLiftBeepGapSeconds:

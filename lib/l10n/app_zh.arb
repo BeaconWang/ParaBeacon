@@ -995,6 +995,96 @@
   "sensorRssiDbm": "{rssi} dBm",
   "sensorUnsupported": "蓝牙传感器仅在 iOS 和 Android 上可用。",
 
+  "altitudeAnnouncementTitle": "语音播报",
+  "altitudeAnnouncementSubtitle": "起飞降落、滑翔死区及刷新高度播报",
+  "altitudeAnnouncementDescription": "选择需要语音播报的飞行事件，每条播报内容均可自定义并预览。",
+  "altitudeAnnouncementSectionVoice": "语音",
+  "altitudeAnnouncementSectionTakeoffLanding": "起飞与降落",
+  "altitudeAnnouncementSectionGlide": "滑翔死区",
+  "altitudeAnnouncementSectionRecord": "最高高度",
+  "altitudeAnnouncementTakeoffLandingEnabled": "起飞/降落播报",
+  "altitudeAnnouncementTakeoffLandingDescription": "先播放一声“叮”提示音，再在飞行开始或结束时播报。开启自动起降检测后，如果再次起飞合并了上一条飞行记录，则改为播报“继续飞行”。",
+  "altitudeAnnouncementAutoDetectOff": "自动起降检测已关闭，不会播报“继续飞行”。",
+  "altitudeAnnouncementEventTakeoff": "起飞",
+  "altitudeAnnouncementEventContinueFlight": "继续飞行",
+  "altitudeAnnouncementEventLanding": "降落",
+  "altitudeAnnouncementEventGlide": "死区",
+  "altitudeAnnouncementEventAltitudeRecord": "新的最高高度",
+  "altitudeAnnouncementGlideEnabled": "死区播报",
+  "altitudeAnnouncementGlideDescription": "垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定的延时后播报，之后只要仍在死区内，就按设定的间隔重复播报。",
+  "altitudeAnnouncementGlideRange": "死区范围：{minimum} 至 {maximum} m/s",
+  "@altitudeAnnouncementGlideRange": {
+    "placeholders": {
+      "minimum": { "type": "String" },
+      "maximum": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementGlideDelay": "进入死区 {seconds} 秒后播报",
+  "altitudeAnnouncementGlideRepeat": "停留在死区内时每 {seconds} 秒重复播报",
+  "@altitudeAnnouncementGlideRepeat": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
+  "@altitudeAnnouncementGlideDelay": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementRecordEnabled": "新的最高高度播报",
+  "altitudeAnnouncementRecordDescription": "飞行中高度超过此前记录的最高高度时立即播报。连续刷新最高高度时，两次播报之间至少间隔下方设定的时间。",
+  "altitudeAnnouncementRecordInterval": "两次播报最小间隔：{seconds} 秒",
+  "@altitudeAnnouncementRecordInterval": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementRecordScopeFlight": "本次飞行",
+  "altitudeAnnouncementRecordScopeAll": "全部飞行记录",
+  "altitudeAnnouncementCustomize": "自定义内容",
+  "altitudeAnnouncementPlaceholderAgl": "离地高度",
+  "altitudeAnnouncementPlaceholderTakeoffHeight": "相对起飞点高度",
+  "altitudeAnnouncementPlaceholderMaxAltitude": "最高高度",
+  "altitudeAnnouncementPlaceholderGlideRatio": "滑翔比",
+  "altitudeAnnouncementPlaceholderWindSpeed": "风速",
+  "altitudeAnnouncementPlaceholderFlightTime": "飞行时间",
+  "altitudeAnnouncementPlaceholderDistance": "飞行距离",
+  "altitudeAnnouncementPlaceholderDistanceUnit": "距离单位",
+  "altitudeAnnouncementPlaceholderTime": "当前时间",
+  "altitudeAnnouncementTest": "试听播报",
+  "altitudeAnnouncementTestSuccess": "语音播报工作正常。",
+  "altitudeAnnouncementUnavailable": "没有可用的语音合成（TTS）声音。请在系统设置中安装或启用带中文或英文语音的语音引擎，并检查媒体音量，然后重新试听。",
+  "altitudeAnnouncementTemplate": "播报内容",
+  "altitudeAnnouncementTemplateDescription": "填写要播报的文字，点击下方数值即可插入。包含中文的内容使用中文语音播报，否则使用英文语音。留空则使用默认内容。",
+  "altitudeAnnouncementTemplateReset": "恢复默认",
+  "altitudeAnnouncementTemplatePreview": "预览：{text}",
+  "@altitudeAnnouncementTemplatePreview": {
+    "placeholders": {
+      "text": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementPlaceholderAltitude": "高度",
+  "altitudeAnnouncementPlaceholderAltitudeUnit": "高度单位",
+  "altitudeAnnouncementPlaceholderClimb": "爬升速度",
+  "altitudeAnnouncementPlaceholderClimbUnit": "爬升速度单位",
+  "altitudeAnnouncementPlaceholderGroundSpeed": "地速",
+  "altitudeAnnouncementPlaceholderSpeedUnit": "速度单位",
+  "altitudeAnnouncementDuckVario": "播报时降低升降音",
+  "altitudeAnnouncementSpeechRate": "播报语速：{rate}×",
+  "@altitudeAnnouncementSpeechRate": {
+    "placeholders": {
+      "rate": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementSpeechRateNormal": "正常",
+  "altitudeAnnouncementDuckVarioDescription": "语音播报期间调低升降音音量，避免升降音过响时听不清播报。",
+  "altitudeAnnouncementDuckLevel": "播报时升降音音量：{percent}%",
+  "@altitudeAnnouncementDuckLevel": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
+
   "varioSoundTitle": "升降音设置",
   "varioSoundResetTooltip": "恢复默认",
   "varioSoundSectionProfile": "升降音配置",
@@ -1045,6 +1135,13 @@
   "varioSoundOnlyWhenFlyingDescription": "开始飞行前保持静音，之后正常发声。",
   "varioSoundOnlyWhenSensorConnected": "仅在传感器连接时发声",
   "varioSoundOnlyWhenSensorConnectedDescription": "未连接蓝牙传感器时保持静音。",
+  "varioSoundSinkZoneCue": "下沉提示区",
+  "varioSoundSinkZoneCueDescription": "在下沉阈值（{sink} m/s）到 0.0 m/s 之间播放静区提示音，而不是保持静音。",
+  "@varioSoundSinkZoneCueDescription": {
+    "placeholders": {
+      "sink": { "type": "String" }
+    }
+  },
   "varioWaveformTick": "滴答",
   "varioWaveformTack": "嗒嗒",
   "varioWaveformSquare": "方波",

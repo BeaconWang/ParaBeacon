@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart'
     show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,6 +12,21 @@ void main() {
   // which would leave the async layout load (and the edit-mode bootstrap)
   // hanging forever. Mock in-memory values instead.
   SharedPreferences.setMockInitialValues({});
+
+  // Voice announcements are on by default and warm up the text-to-speech
+  // engine at startup. Answer its channel immediately so no call is left
+  // waiting on its timeout after the test ends.
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('flutter_tts'),
+          (call) async => call.method == 'getEngines' ? <String>[] : 1,
+        );
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('flutter_tts'), null);
+  });
 
   /// Overrides the target platform to Windows for the duration of a test.
   ///

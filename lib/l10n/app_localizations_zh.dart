@@ -2718,6 +2718,185 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sensorUnsupported => '蓝牙传感器仅在 iOS 和 Android 上可用。';
 
   @override
+  String get altitudeAnnouncementTitle => '语音播报';
+
+  @override
+  String get altitudeAnnouncementSubtitle => '起飞降落、滑翔死区及刷新高度播报';
+
+  @override
+  String get altitudeAnnouncementDescription => '选择需要语音播报的飞行事件，每条播报内容均可自定义并预览。';
+
+  @override
+  String get altitudeAnnouncementSectionVoice => '语音';
+
+  @override
+  String get altitudeAnnouncementSectionTakeoffLanding => '起飞与降落';
+
+  @override
+  String get altitudeAnnouncementSectionGlide => '滑翔死区';
+
+  @override
+  String get altitudeAnnouncementSectionRecord => '最高高度';
+
+  @override
+  String get altitudeAnnouncementTakeoffLandingEnabled => '起飞/降落播报';
+
+  @override
+  String get altitudeAnnouncementTakeoffLandingDescription =>
+      '先播放一声“叮”提示音，再在飞行开始或结束时播报。开启自动起降检测后，如果再次起飞合并了上一条飞行记录，则改为播报“继续飞行”。';
+
+  @override
+  String get altitudeAnnouncementAutoDetectOff => '自动起降检测已关闭，不会播报“继续飞行”。';
+
+  @override
+  String get altitudeAnnouncementEventTakeoff => '起飞';
+
+  @override
+  String get altitudeAnnouncementEventContinueFlight => '继续飞行';
+
+  @override
+  String get altitudeAnnouncementEventLanding => '降落';
+
+  @override
+  String get altitudeAnnouncementEventGlide => '死区';
+
+  @override
+  String get altitudeAnnouncementEventAltitudeRecord => '新的最高高度';
+
+  @override
+  String get altitudeAnnouncementGlideEnabled => '死区播报';
+
+  @override
+  String get altitudeAnnouncementGlideDescription =>
+      '垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定的延时后播报，之后只要仍在死区内，就按设定的间隔重复播报。';
+
+  @override
+  String altitudeAnnouncementGlideRange(String minimum, String maximum) {
+    return '死区范围：$minimum 至 $maximum m/s';
+  }
+
+  @override
+  String altitudeAnnouncementGlideDelay(String seconds) {
+    return '进入死区 $seconds 秒后播报';
+  }
+
+  @override
+  String altitudeAnnouncementGlideRepeat(String seconds) {
+    return '停留在死区内时每 $seconds 秒重复播报';
+  }
+
+  @override
+  String get altitudeAnnouncementRecordEnabled => '新的最高高度播报';
+
+  @override
+  String get altitudeAnnouncementRecordDescription =>
+      '飞行中高度超过此前记录的最高高度时立即播报。连续刷新最高高度时，两次播报之间至少间隔下方设定的时间。';
+
+  @override
+  String altitudeAnnouncementRecordInterval(String seconds) {
+    return '两次播报最小间隔：$seconds 秒';
+  }
+
+  @override
+  String get altitudeAnnouncementRecordScopeFlight => '本次飞行';
+
+  @override
+  String get altitudeAnnouncementRecordScopeAll => '全部飞行记录';
+
+  @override
+  String get altitudeAnnouncementCustomize => '自定义内容';
+
+  @override
+  String get altitudeAnnouncementPlaceholderAgl => '离地高度';
+
+  @override
+  String get altitudeAnnouncementPlaceholderTakeoffHeight => '相对起飞点高度';
+
+  @override
+  String get altitudeAnnouncementPlaceholderMaxAltitude => '最高高度';
+
+  @override
+  String get altitudeAnnouncementPlaceholderGlideRatio => '滑翔比';
+
+  @override
+  String get altitudeAnnouncementPlaceholderWindSpeed => '风速';
+
+  @override
+  String get altitudeAnnouncementPlaceholderFlightTime => '飞行时间';
+
+  @override
+  String get altitudeAnnouncementPlaceholderDistance => '飞行距离';
+
+  @override
+  String get altitudeAnnouncementPlaceholderDistanceUnit => '距离单位';
+
+  @override
+  String get altitudeAnnouncementPlaceholderTime => '当前时间';
+
+  @override
+  String get altitudeAnnouncementTest => '试听播报';
+
+  @override
+  String get altitudeAnnouncementTestSuccess => '语音播报工作正常。';
+
+  @override
+  String get altitudeAnnouncementUnavailable =>
+      '没有可用的语音合成（TTS）声音。请在系统设置中安装或启用带中文或英文语音的语音引擎，并检查媒体音量，然后重新试听。';
+
+  @override
+  String get altitudeAnnouncementTemplate => '播报内容';
+
+  @override
+  String get altitudeAnnouncementTemplateDescription =>
+      '填写要播报的文字，点击下方数值即可插入。包含中文的内容使用中文语音播报，否则使用英文语音。留空则使用默认内容。';
+
+  @override
+  String get altitudeAnnouncementTemplateReset => '恢复默认';
+
+  @override
+  String altitudeAnnouncementTemplatePreview(String text) {
+    return '预览：$text';
+  }
+
+  @override
+  String get altitudeAnnouncementPlaceholderAltitude => '高度';
+
+  @override
+  String get altitudeAnnouncementPlaceholderAltitudeUnit => '高度单位';
+
+  @override
+  String get altitudeAnnouncementPlaceholderClimb => '爬升速度';
+
+  @override
+  String get altitudeAnnouncementPlaceholderClimbUnit => '爬升速度单位';
+
+  @override
+  String get altitudeAnnouncementPlaceholderGroundSpeed => '地速';
+
+  @override
+  String get altitudeAnnouncementPlaceholderSpeedUnit => '速度单位';
+
+  @override
+  String get altitudeAnnouncementDuckVario => '播报时降低升降音';
+
+  @override
+  String altitudeAnnouncementSpeechRate(String rate) {
+    return '播报语速：$rate×';
+  }
+
+  @override
+  String get altitudeAnnouncementSpeechRateNormal => '正常';
+
+  @override
+  String get altitudeAnnouncementDuckVarioDescription =>
+      '语音播报期间调低升降音音量，避免升降音过响时听不清播报。';
+
+  @override
+  String altitudeAnnouncementDuckLevel(String percent) {
+    return '播报时升降音音量：$percent%';
+  }
+
+  @override
   String get varioSoundTitle => '升降音设置';
 
   @override
@@ -2854,6 +3033,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get varioSoundOnlyWhenSensorConnectedDescription => '未连接蓝牙传感器时保持静音。';
+
+  @override
+  String get varioSoundSinkZoneCue => '下沉提示区';
+
+  @override
+  String varioSoundSinkZoneCueDescription(String sink) {
+    return '在下沉阈值（$sink m/s）到 0.0 m/s 之间播放静区提示音，而不是保持静音。';
+  }
 
   @override
   String get varioWaveformTick => '滴答';

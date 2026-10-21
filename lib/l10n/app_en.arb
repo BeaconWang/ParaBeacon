@@ -1125,6 +1125,96 @@
   },
   "sensorUnsupported": "Bluetooth sensors are only available on iOS and Android.",
 
+  "altitudeAnnouncementTitle": "Voice announcements",
+  "altitudeAnnouncementSubtitle": "Takeoff/landing, glide dead zone and altitude record",
+  "altitudeAnnouncementDescription": "Choose which flight events are spoken. Every announcement text can be customized and previewed.",
+  "altitudeAnnouncementSectionVoice": "Voice",
+  "altitudeAnnouncementSectionTakeoffLanding": "Takeoff & landing",
+  "altitudeAnnouncementSectionGlide": "Glide dead zone",
+  "altitudeAnnouncementSectionRecord": "Altitude record",
+  "altitudeAnnouncementTakeoffLandingEnabled": "Takeoff & landing announcements",
+  "altitudeAnnouncementTakeoffLandingDescription": "Plays a notification ding, then speaks when a flight starts or ends. With automatic takeoff/landing detection on, a takeoff that merges into the previous flight record announces \"continue flight\" instead.",
+  "altitudeAnnouncementAutoDetectOff": "Automatic takeoff/landing detection is off, so \"continue flight\" is never announced.",
+  "altitudeAnnouncementEventTakeoff": "Takeoff",
+  "altitudeAnnouncementEventContinueFlight": "Continue flight",
+  "altitudeAnnouncementEventLanding": "Landing",
+  "altitudeAnnouncementEventGlide": "Dead zone",
+  "altitudeAnnouncementEventAltitudeRecord": "New altitude record",
+  "altitudeAnnouncementGlideEnabled": "Dead-zone announcement",
+  "altitudeAnnouncementGlideDescription": "The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks after the vertical speed has stayed in the zone for the set delay, then repeats at the set interval while it stays there.",
+  "altitudeAnnouncementGlideRange": "Dead zone: {minimum} to {maximum} m/s",
+  "@altitudeAnnouncementGlideRange": {
+    "placeholders": {
+      "minimum": { "type": "String" },
+      "maximum": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementGlideDelay": "Announce after {seconds} s in the zone",
+  "altitudeAnnouncementGlideRepeat": "Repeat every {seconds} s while in the zone",
+  "@altitudeAnnouncementGlideRepeat": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
+  "@altitudeAnnouncementGlideDelay": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementRecordEnabled": "New altitude record announcement",
+  "altitudeAnnouncementRecordDescription": "During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. While records keep being broken, announcements are spaced by at least the interval below.",
+  "altitudeAnnouncementRecordInterval": "Minimum interval between announcements: {seconds} s",
+  "@altitudeAnnouncementRecordInterval": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementRecordScopeFlight": "This flight",
+  "altitudeAnnouncementRecordScopeAll": "All flights",
+  "altitudeAnnouncementCustomize": "Customize text",
+  "altitudeAnnouncementPlaceholderAgl": "Height above ground",
+  "altitudeAnnouncementPlaceholderTakeoffHeight": "Height above takeoff",
+  "altitudeAnnouncementPlaceholderMaxAltitude": "Max altitude",
+  "altitudeAnnouncementPlaceholderGlideRatio": "Glide ratio",
+  "altitudeAnnouncementPlaceholderWindSpeed": "Wind speed",
+  "altitudeAnnouncementPlaceholderFlightTime": "Flight time",
+  "altitudeAnnouncementPlaceholderDistance": "Distance flown",
+  "altitudeAnnouncementPlaceholderDistanceUnit": "Distance unit",
+  "altitudeAnnouncementPlaceholderTime": "Clock time",
+  "altitudeAnnouncementTest": "Test announcement",
+  "altitudeAnnouncementTestSuccess": "Voice announcement is working.",
+  "altitudeAnnouncementUnavailable": "No text-to-speech voice is available. Install or enable a speech engine with an English or Chinese voice in the system settings, check the media volume, then test again.",
+  "altitudeAnnouncementTemplate": "Announcement text",
+  "altitudeAnnouncementTemplateDescription": "Write what should be spoken and tap a value to insert it. Text containing Chinese is spoken with a Chinese voice, other text with an English voice. Leave empty to use the default.",
+  "altitudeAnnouncementTemplateReset": "Restore default",
+  "altitudeAnnouncementTemplatePreview": "Preview: {text}",
+  "@altitudeAnnouncementTemplatePreview": {
+    "placeholders": {
+      "text": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementPlaceholderAltitude": "Altitude",
+  "altitudeAnnouncementPlaceholderAltitudeUnit": "Altitude unit",
+  "altitudeAnnouncementPlaceholderClimb": "Climb rate",
+  "altitudeAnnouncementPlaceholderClimbUnit": "Climb unit",
+  "altitudeAnnouncementPlaceholderGroundSpeed": "Ground speed",
+  "altitudeAnnouncementPlaceholderSpeedUnit": "Speed unit",
+  "altitudeAnnouncementDuckVario": "Lower vario sound while speaking",
+  "altitudeAnnouncementSpeechRate": "Speaking speed: {rate}×",
+  "@altitudeAnnouncementSpeechRate": {
+    "placeholders": {
+      "rate": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementSpeechRateNormal": "Normal",
+  "altitudeAnnouncementDuckVarioDescription": "Turns the vario tone down during announcements so the voice can be heard over a loud vario.",
+  "altitudeAnnouncementDuckLevel": "Vario volume while speaking: {percent}%",
+  "@altitudeAnnouncementDuckLevel": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
+
   "varioSoundTitle": "Vario Sound Settings",
   "varioSoundResetTooltip": "Reset to defaults",
   "varioSoundSectionProfile": "Vario sound profile",
@@ -1175,6 +1265,13 @@
   "varioSoundOnlyWhenFlyingDescription": "Stay silent until a flight is started, then beep normally.",
   "varioSoundOnlyWhenSensorConnected": "Sound only when sensor connected",
   "varioSoundOnlyWhenSensorConnectedDescription": "Stay silent unless a Bluetooth sensor is connected.",
+  "varioSoundSinkZoneCue": "Sink notification zone",
+  "varioSoundSinkZoneCueDescription": "Play the deadband cue between the sink threshold ({sink} m/s) and 0.0 m/s instead of staying silent.",
+  "@varioSoundSinkZoneCueDescription": {
+    "placeholders": {
+      "sink": { "type": "String" }
+    }
+  },
   "varioWaveformTick": "Tick",
   "varioWaveformTack": "Tack",
   "varioWaveformSquare": "Square",

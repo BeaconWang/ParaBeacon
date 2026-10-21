@@ -47,6 +47,7 @@ class VarioSoundSettings extends ChangeNotifier {
       'pb.vario.soundOnlyWhenSensorConnected';
   static const _kMuted = 'pb.vario.muted';
   static const _kVolume = 'pb.vario.volume';
+  static const _kSinkZoneCue = 'pb.vario.sinkZoneCue';
 
   // ── Legacy keys (pre-"climb → lift" rename) read once for migration ───────
   static const _kLegacyClimbThreshold = 'pb.vario.climbThreshold';
@@ -88,6 +89,11 @@ class VarioSoundSettings extends ChangeNotifier {
   /// Output volume, 0..1. Mirrors [VarioAudioService.volume] and is persisted.
   double _volume = 1.0;
 
+  /// Sink notification zone: plays the deadband cue between the sink
+  /// threshold and 0.0 m/s, a range that is otherwise silent. Applies to both
+  /// profiles (it is a behaviour option, not sound shaping). Off by default.
+  bool _sinkZoneCue = false;
+
   /// The selected top-level sound profile.
   VarioSoundProfile get profile => _profile;
 
@@ -114,6 +120,7 @@ class VarioSoundSettings extends ChangeNotifier {
   bool get soundOnlyWhenSensorConnected => _soundOnlyWhenSensorConnected;
   bool get muted => _muted;
   double get volume => _volume;
+  bool get sinkZoneCue => _sinkZoneCue;
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -124,7 +131,10 @@ class VarioSoundSettings extends ChangeNotifier {
   /// it is an output-headroom control rather than a sound-shaping knob).
   VarioAudioConfig get config {
     if (_profile == VarioSoundProfile.xcTrack) {
-      return _base.copyWith(masterGain: _masterGain);
+      return _base.copyWith(
+        masterGain: _masterGain,
+        sinkZoneCueEnabled: _sinkZoneCue,
+      );
     }
     return _base.copyWith(
       liftThreshold: _liftThreshold,
@@ -136,6 +146,7 @@ class VarioSoundSettings extends ChangeNotifier {
       sinkWaveform: _sinkWaveform,
       keypoints: _keypoints,
       masterGain: _masterGain,
+      sinkZoneCueEnabled: _sinkZoneCue,
       // Custom profile pins one fixed waveform per speed: disable the XCTrack
       // periodic TICK accent so the chosen lift waveform never auto-switches.
       classicTickEnabled: false,
@@ -186,6 +197,7 @@ class VarioSoundSettings extends ChangeNotifier {
           _soundOnlyWhenSensorConnected;
       _muted = sp.getBool(_kMuted) ?? _muted;
       _volume = sp.getDouble(_kVolume) ?? _volume;
+      _sinkZoneCue = sp.getBool(_kSinkZoneCue) ?? _sinkZoneCue;
 
       await _migrateLegacyKeys(sp);
     } catch (_) {
@@ -325,6 +337,15 @@ class VarioSoundSettings extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Enables/disables the sink notification zone (deadband cue between the
+  /// sink threshold and 0.0 m/s) and applies it live.
+  void setSinkZoneCue(bool v) {
+    if (_sinkZoneCue == v) return;
+    _sinkZoneCue = v;
+    _persistBool(_kSinkZoneCue, v);
+    _applyAndNotify();
+  }
+
   /// Mutes/unmutes the vario beeper and applies it live.
   void setMuted(bool v) {
     if (_muted == v) return;
@@ -356,6 +377,7 @@ class VarioSoundSettings extends ChangeNotifier {
     _soundOnlyWhenSensorConnected = true;
     _muted = false;
     _volume = 1.0;
+    _sinkZoneCue = false;
     try {
       final sp = await SharedPreferences.getInstance();
       await Future.wait([
@@ -373,6 +395,7 @@ class VarioSoundSettings extends ChangeNotifier {
         sp.remove(_kSoundOnlyWhenSensorConnected),
         sp.remove(_kMuted),
         sp.remove(_kVolume),
+        sp.remove(_kSinkZoneCue),
         // Also clear any leftover legacy keys.
         sp.remove(_kLegacyClimbThreshold),
         sp.remove(_kLegacyClimbBaseFreq),

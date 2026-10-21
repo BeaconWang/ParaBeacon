@@ -5312,6 +5312,324 @@ abstract class AppLocalizations {
   /// **'Bluetooth sensors are only available on iOS and Android.'**
   String get sensorUnsupported;
 
+  /// No description provided for @altitudeAnnouncementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice announcements'**
+  String get altitudeAnnouncementTitle;
+
+  /// No description provided for @altitudeAnnouncementSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeoff/landing, glide dead zone and altitude record'**
+  String get altitudeAnnouncementSubtitle;
+
+  /// No description provided for @altitudeAnnouncementDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which flight events are spoken. Every announcement text can be customized and previewed.'**
+  String get altitudeAnnouncementDescription;
+
+  /// No description provided for @altitudeAnnouncementSectionVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get altitudeAnnouncementSectionVoice;
+
+  /// No description provided for @altitudeAnnouncementSectionTakeoffLanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeoff & landing'**
+  String get altitudeAnnouncementSectionTakeoffLanding;
+
+  /// No description provided for @altitudeAnnouncementSectionGlide.
+  ///
+  /// In en, this message translates to:
+  /// **'Glide dead zone'**
+  String get altitudeAnnouncementSectionGlide;
+
+  /// No description provided for @altitudeAnnouncementSectionRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude record'**
+  String get altitudeAnnouncementSectionRecord;
+
+  /// No description provided for @altitudeAnnouncementTakeoffLandingEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeoff & landing announcements'**
+  String get altitudeAnnouncementTakeoffLandingEnabled;
+
+  /// No description provided for @altitudeAnnouncementTakeoffLandingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Plays a notification ding, then speaks when a flight starts or ends. With automatic takeoff/landing detection on, a takeoff that merges into the previous flight record announces \"continue flight\" instead.'**
+  String get altitudeAnnouncementTakeoffLandingDescription;
+
+  /// No description provided for @altitudeAnnouncementAutoDetectOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic takeoff/landing detection is off, so \"continue flight\" is never announced.'**
+  String get altitudeAnnouncementAutoDetectOff;
+
+  /// No description provided for @altitudeAnnouncementEventTakeoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeoff'**
+  String get altitudeAnnouncementEventTakeoff;
+
+  /// No description provided for @altitudeAnnouncementEventContinueFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue flight'**
+  String get altitudeAnnouncementEventContinueFlight;
+
+  /// No description provided for @altitudeAnnouncementEventLanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing'**
+  String get altitudeAnnouncementEventLanding;
+
+  /// No description provided for @altitudeAnnouncementEventGlide.
+  ///
+  /// In en, this message translates to:
+  /// **'Dead zone'**
+  String get altitudeAnnouncementEventGlide;
+
+  /// No description provided for @altitudeAnnouncementEventAltitudeRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'New altitude record'**
+  String get altitudeAnnouncementEventAltitudeRecord;
+
+  /// No description provided for @altitudeAnnouncementGlideEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Dead-zone announcement'**
+  String get altitudeAnnouncementGlideEnabled;
+
+  /// No description provided for @altitudeAnnouncementGlideDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks after the vertical speed has stayed in the zone for the set delay, then repeats at the set interval while it stays there.'**
+  String get altitudeAnnouncementGlideDescription;
+
+  /// No description provided for @altitudeAnnouncementGlideRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Dead zone: {minimum} to {maximum} m/s'**
+  String altitudeAnnouncementGlideRange(String minimum, String maximum);
+
+  /// No description provided for @altitudeAnnouncementGlideDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Announce after {seconds} s in the zone'**
+  String altitudeAnnouncementGlideDelay(String seconds);
+
+  /// No description provided for @altitudeAnnouncementGlideRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat every {seconds} s while in the zone'**
+  String altitudeAnnouncementGlideRepeat(String seconds);
+
+  /// No description provided for @altitudeAnnouncementRecordEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'New altitude record announcement'**
+  String get altitudeAnnouncementRecordEnabled;
+
+  /// No description provided for @altitudeAnnouncementRecordDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. While records keep being broken, announcements are spaced by at least the interval below.'**
+  String get altitudeAnnouncementRecordDescription;
+
+  /// No description provided for @altitudeAnnouncementRecordInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum interval between announcements: {seconds} s'**
+  String altitudeAnnouncementRecordInterval(String seconds);
+
+  /// No description provided for @altitudeAnnouncementRecordScopeFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'This flight'**
+  String get altitudeAnnouncementRecordScopeFlight;
+
+  /// No description provided for @altitudeAnnouncementRecordScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All flights'**
+  String get altitudeAnnouncementRecordScopeAll;
+
+  /// No description provided for @altitudeAnnouncementCustomize.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize text'**
+  String get altitudeAnnouncementCustomize;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderAgl.
+  ///
+  /// In en, this message translates to:
+  /// **'Height above ground'**
+  String get altitudeAnnouncementPlaceholderAgl;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderTakeoffHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Height above takeoff'**
+  String get altitudeAnnouncementPlaceholderTakeoffHeight;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderMaxAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Max altitude'**
+  String get altitudeAnnouncementPlaceholderMaxAltitude;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderGlideRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'Glide ratio'**
+  String get altitudeAnnouncementPlaceholderGlideRatio;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderWindSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind speed'**
+  String get altitudeAnnouncementPlaceholderWindSpeed;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderFlightTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight time'**
+  String get altitudeAnnouncementPlaceholderFlightTime;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance flown'**
+  String get altitudeAnnouncementPlaceholderDistance;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderDistanceUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance unit'**
+  String get altitudeAnnouncementPlaceholderDistanceUnit;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock time'**
+  String get altitudeAnnouncementPlaceholderTime;
+
+  /// No description provided for @altitudeAnnouncementTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Test announcement'**
+  String get altitudeAnnouncementTest;
+
+  /// No description provided for @altitudeAnnouncementTestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice announcement is working.'**
+  String get altitudeAnnouncementTestSuccess;
+
+  /// No description provided for @altitudeAnnouncementUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No text-to-speech voice is available. Install or enable a speech engine with an English or Chinese voice in the system settings, check the media volume, then test again.'**
+  String get altitudeAnnouncementUnavailable;
+
+  /// No description provided for @altitudeAnnouncementTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement text'**
+  String get altitudeAnnouncementTemplate;
+
+  /// No description provided for @altitudeAnnouncementTemplateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Write what should be spoken and tap a value to insert it. Text containing Chinese is spoken with a Chinese voice, other text with an English voice. Leave empty to use the default.'**
+  String get altitudeAnnouncementTemplateDescription;
+
+  /// No description provided for @altitudeAnnouncementTemplateReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore default'**
+  String get altitudeAnnouncementTemplateReset;
+
+  /// No description provided for @altitudeAnnouncementTemplatePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview: {text}'**
+  String altitudeAnnouncementTemplatePreview(String text);
+
+  /// No description provided for @altitudeAnnouncementPlaceholderAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get altitudeAnnouncementPlaceholderAltitude;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderAltitudeUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude unit'**
+  String get altitudeAnnouncementPlaceholderAltitudeUnit;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderClimb.
+  ///
+  /// In en, this message translates to:
+  /// **'Climb rate'**
+  String get altitudeAnnouncementPlaceholderClimb;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderClimbUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Climb unit'**
+  String get altitudeAnnouncementPlaceholderClimbUnit;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderGroundSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground speed'**
+  String get altitudeAnnouncementPlaceholderGroundSpeed;
+
+  /// No description provided for @altitudeAnnouncementPlaceholderSpeedUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed unit'**
+  String get altitudeAnnouncementPlaceholderSpeedUnit;
+
+  /// No description provided for @altitudeAnnouncementDuckVario.
+  ///
+  /// In en, this message translates to:
+  /// **'Lower vario sound while speaking'**
+  String get altitudeAnnouncementDuckVario;
+
+  /// No description provided for @altitudeAnnouncementSpeechRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaking speed: {rate}×'**
+  String altitudeAnnouncementSpeechRate(String rate);
+
+  /// No description provided for @altitudeAnnouncementSpeechRateNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get altitudeAnnouncementSpeechRateNormal;
+
+  /// No description provided for @altitudeAnnouncementDuckVarioDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Turns the vario tone down during announcements so the voice can be heard over a loud vario.'**
+  String get altitudeAnnouncementDuckVarioDescription;
+
+  /// No description provided for @altitudeAnnouncementDuckLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario volume while speaking: {percent}%'**
+  String altitudeAnnouncementDuckLevel(String percent);
+
   /// No description provided for @varioSoundTitle.
   ///
   /// In en, this message translates to:
@@ -5581,6 +5899,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stay silent unless a Bluetooth sensor is connected.'**
   String get varioSoundOnlyWhenSensorConnectedDescription;
+
+  /// No description provided for @varioSoundSinkZoneCue.
+  ///
+  /// In en, this message translates to:
+  /// **'Sink notification zone'**
+  String get varioSoundSinkZoneCue;
+
+  /// No description provided for @varioSoundSinkZoneCueDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Play the deadband cue between the sink threshold ({sink} m/s) and 0.0 m/s instead of staying silent.'**
+  String varioSoundSinkZoneCueDescription(String sink);
 
   /// No description provided for @varioWaveformTick.
   ///

@@ -2625,6 +2625,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsDeleteMessage => '此飞行记录将被永久删除，此操作无法撤销。';
 
   @override
+  String flightsDeleteSelectedTitle(int count) {
+    return '删除选中的 $count 条飞行记录？';
+  }
+
+  @override
+  String get flightsDeleteSelectedMessage => '选中的飞行记录将被永久删除，此操作无法撤销。';
+
+  @override
   String get replayTitle => '回放';
 
   @override

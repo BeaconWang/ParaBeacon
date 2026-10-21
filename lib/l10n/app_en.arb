@@ -1075,6 +1075,16 @@
   "flightsClearAllMessage": "This removes every recorded flight.",
   "flightsDeleteTitle": "Delete flight?",
   "flightsDeleteMessage": "This flight record will be permanently deleted. This cannot be undone.",
+  "flightsDeleteSelectedTitle": "Delete {count} selected flight records?",
+  "@flightsDeleteSelectedTitle": {
+    "description": "Confirmation title for deleting selected flight records.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "flightsDeleteSelectedMessage": "The selected flight records will be permanently deleted. This cannot be undone.",
 
   "replayTitle": "Replay",
   "replayColorBy": "Color by",

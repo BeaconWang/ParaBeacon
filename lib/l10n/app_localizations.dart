@@ -5138,6 +5138,18 @@ abstract class AppLocalizations {
   /// **'This flight record will be permanently deleted. This cannot be undone.'**
   String get flightsDeleteMessage;
 
+  /// Confirmation title for deleting selected flight records.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} selected flight records?'**
+  String flightsDeleteSelectedTitle(int count);
+
+  /// No description provided for @flightsDeleteSelectedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected flight records will be permanently deleted. This cannot be undone.'**
+  String get flightsDeleteSelectedMessage;
+
   /// No description provided for @replayTitle.
   ///
   /// In en, this message translates to:

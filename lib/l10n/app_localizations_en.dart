@@ -2134,7 +2134,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsSelectRecords => 'Select flights to export';
 
   @override
-  String get flightsExportSelected => 'Export selected flights (.pbflights.zip)';
+  String get flightsExportSelected =>
+      'Export selected flights (.pbflights.zip)';
 
   @override
   String get flightsClearAll => 'Clear all';
@@ -2703,6 +2704,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get flightsDeleteMessage =>
       'This flight record will be permanently deleted. This cannot be undone.';
+
+  @override
+  String flightsDeleteSelectedTitle(int count) {
+    return 'Delete $count selected flight records?';
+  }
+
+  @override
+  String get flightsDeleteSelectedMessage =>
+      'The selected flight records will be permanently deleted. This cannot be undone.';
 
   @override
   String get replayTitle => 'Replay';

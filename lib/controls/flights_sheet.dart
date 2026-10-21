@@ -204,6 +204,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
               : () => _exportLibrary(_selectedTracks.toList()),
         ),
         IconButton(
+          icon: const Icon(Icons.delete_outline),
+          tooltip: l10n.delete,
+          onPressed: _selectedTracks.isEmpty ? null : _confirmDeleteSelectedTracks,
+        ),
+        IconButton(
           icon: const Icon(Icons.close),
           tooltip: l10n.cancel,
           onPressed: _leaveSelectionMode,
@@ -1503,6 +1508,34 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       ),
     );
     if (confirmed == true) _recorder.clearTracks();
+  }
+
+  Future<void> _confirmDeleteSelectedTracks() async {
+    final selectedTracks = _selectedTracks.toList();
+    if (selectedTracks.isEmpty) return;
+
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.flightsDeleteSelectedTitle(selectedTracks.length)),
+        content: Text(l10n.flightsDeleteSelectedMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    _recorder.deleteTracks(selectedTracks);
+    if (mounted) _leaveSelectionMode();
   }
 
   Future<void> _confirmDeleteTrack(FlightTrack track) async {

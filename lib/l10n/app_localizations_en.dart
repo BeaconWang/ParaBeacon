@@ -216,29 +216,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aircraftFaiClass => 'FAI class';
 
   @override
-  String get aircraftFaiParaglider => 'Paraglider';
+  String get aircraftFaiParaglider => 'Paraglider (FAI-3)';
 
   @override
-  String get aircraftFaiHangGlider => 'Hang glider';
+  String get aircraftFaiHangGlider => 'Hangglider (FAI-1)';
 
   @override
-  String get aircraftFaiRigidWing => 'Rigid wing';
+  String get aircraftFaiRigidWing => 'Rigid Wing (FAI-5)';
+
+  @override
+  String get aircraftFaiRigidWingFai2 => 'Rigid Wing (FAI-2)';
 
   @override
   String get aircraftFaiPoweredParagliderFoot =>
-      'Powered paraglider (foot launch)';
+      'RPF (Paramotor - foot launched)';
 
   @override
-  String get aircraftFaiPoweredParagliderTrike => 'Powered paraglider (trike)';
+  String get aircraftFaiPoweredParagliderTrike =>
+      'RPL (Paramotor - landplane/trike)';
 
   @override
-  String get aircraftFaiPoweredAircraft => 'Powered aircraft';
+  String get aircraftFaiPoweredAircraft =>
+      'RAL (Landplane/Movable aerodynamic control)';
 
   @override
-  String get aircraftFaiRigidWingPowered => 'Rigid wing (powered)';
+  String get aircraftFaiRigidWingPowered =>
+      'RWL (Landplane/Weight-shift control)';
 
   @override
-  String get aircraftFaiRigidGlider => 'Rigid glider';
+  String get aircraftFaiRigidWingFootLaunched =>
+      'RWF (Foot-launched/Weight-shift control)';
+
+  @override
+  String get aircraftFaiRigidGlider => 'RGL (Landplane/autogyro)';
 
   @override
   String get aircraftCategoryStandard => 'Standard';

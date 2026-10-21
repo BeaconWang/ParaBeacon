@@ -908,9 +908,6 @@ class _DashGridPageState extends State<DashGridPage> {
                                         .isEmpty &&
                                     AircraftSettings.instance.model
                                         .trim()
-                                        .isEmpty &&
-                                    AircraftSettings.instance.name
-                                        .trim()
                                         .isEmpty
                                 ? l10n.aircraftSubtitle
                                 : AircraftSettings.instance.displayName,

@@ -144,11 +144,10 @@ class FlightStatistics {
 
   /// Computes aggregate statistics over [tracks].
   ///
-  /// [unknownAircraftLabel] is used to bucket flights with no recorded
-  /// glider / aircraft name; [monthLabels] (length 12, Jan..Dec) label the
-  /// month distribution. Set [includeDetailed] to false to build the summary
-  /// without scanning flight samples; detailed results can then be added with
-  /// [addDetailedTrackStats].
+  /// Aircraft distribution groups paraglider flights by manufacturer and
+  /// category; flights missing either value are omitted. Set [includeDetailed]
+  /// to false to build the summary without scanning flight samples; detailed
+  /// results can then be added with [addDetailedTrackStats].
   factory FlightStatistics.compute(
     Iterable<FlightTrack> tracks, {
     bool includeDetailed = true,
@@ -269,18 +268,16 @@ class FlightStatistics {
     }
   }
 
-  /// Glider / aircraft label used to bucket flights, or null when unknown.
+  /// Paraglider manufacturer/category label used for WVO buckets.
   static String? _aircraftLabel(FlightTrack track) {
-    final glider = track.gliderName?.trim();
-    if (glider != null && glider.isNotEmpty) return glider;
-    final parts = [
-      track.aircraftManufacturer?.trim(),
-      track.aircraftModel?.trim(),
-    ].where((e) => e != null && e.isNotEmpty).cast<String>();
-    if (parts.isNotEmpty) return parts.join(' ');
-    final name = track.aircraftName?.trim();
-    if (name != null && name.isNotEmpty) return name;
-    return null;
+    if (!const {'3', '11', '12'}.contains(track.aircraftFaiClass?.trim())) {
+      return null;
+    }
+    final manufacturer = track.aircraftManufacturer?.trim();
+    final category = track.aircraftCategory?.trim();
+    if (manufacturer == null || manufacturer.isEmpty) return null;
+    if (category == null || category.isEmpty) return null;
+    return '$manufacturer · $category';
   }
 
   /// Keeps the larger of the current record and a candidate numeric value.

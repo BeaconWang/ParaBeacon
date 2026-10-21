@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/aircraft_settings.dart';
 import '../data/equipment_store.dart';
+import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
 
 Future<void> showAircraftSettingsSheet(BuildContext context) async {
@@ -24,14 +25,12 @@ class _AircraftSettingsSheet extends StatefulWidget {
 
 class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
   String _manufacturer = AircraftSettings.instance.manufacturer;
   String _model = AircraftSettings.instance.model;
   late final TextEditingController _trimSpeedController;
   late final TextEditingController _goalGlideRatioController;
 
   String _faiClass = AircraftSettings.instance.faiClass;
-  String _paragliderCategory = AircraftSettings.instance.paragliderCategory;
   String _hangGliderCategory = AircraftSettings.instance.hangGliderCategory;
   bool _tandem = AircraftSettings.instance.tandem;
   String _engineType = AircraftSettings.instance.engineType;
@@ -41,7 +40,6 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
   void initState() {
     super.initState();
     final settings = AircraftSettings.instance;
-    _nameController = TextEditingController(text: settings.name);
     _trimSpeedController = TextEditingController(
       text: settings.trimSpeedKmh.toStringAsFixed(1),
     );
@@ -55,11 +53,9 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
         _faiClass = settings.faiClass;
         _manufacturer = settings.manufacturer;
         _model = settings.model;
-        _paragliderCategory = settings.paragliderCategory;
         _hangGliderCategory = settings.hangGliderCategory;
         _tandem = settings.tandem;
         _engineType = settings.engineType;
-        _nameController.text = settings.name;
         _trimSpeedController.text = settings.trimSpeedKmh.toStringAsFixed(1);
         _goalGlideRatioController.text = settings.goalGlideRatio
             .toStringAsFixed(2);
@@ -70,7 +66,6 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     _trimSpeedController.dispose();
     _goalGlideRatioController.dispose();
     super.dispose();
@@ -87,8 +82,8 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
       faiClass: _faiClass,
       manufacturer: _manufacturer,
       model: _model,
-      name: _nameController.text,
-      paragliderCategory: _paragliderCategory,
+      name: '',
+      paragliderCategory: settings.paragliderCategory,
       hangGliderCategory: _hangGliderCategory,
       tandem: _tandem,
       engineType: _engineType,
@@ -133,7 +128,6 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final settings = AircraftSettings.instance;
-    final isParaglider = const {'3', '11', '12'}.contains(_faiClass);
     final isHangGlider = const {
       '1',
       '2',
@@ -209,7 +203,9 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
                             .map(
                               (entry) => DropdownMenuItem<String>(
                                 value: entry.key,
-                                child: Text(_faiClassLabel(l10n, entry.key)),
+                                child: Text(
+                                  aircraftFaiClassLabel(l10n, entry.key),
+                                ),
                               ),
                             )
                             .toList(),
@@ -277,46 +273,7 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
                             : (value) => setState(() => _model = value ?? ''),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _nameController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: _decoration(
-                          l10n.aircraftName,
-                          Icons.label_outline,
-                        ),
-                      ),
-                      if (isParaglider) ...[
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          key: ValueKey('paraglider-$_paragliderCategory'),
-                          initialValue:
-                              AircraftSettings.paragliderCategories.contains(
-                                _paragliderCategory,
-                              )
-                              ? _paragliderCategory
-                              : null,
-                          decoration: _decoration(
-                            l10n.aircraftParagliderCategory,
-                            Icons.waves_outlined,
-                          ),
-                          items: [
-                            DropdownMenuItem<String>(
-                              value: '',
-                              child: Text(l10n.notSet),
-                            ),
-                            ...AircraftSettings.paragliderCategories.map(
-                              (value) => DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(_categoryLabel(l10n, value)),
-                              ),
-                            ),
-                          ],
-                          onChanged: (value) =>
-                              setState(() => _paragliderCategory = value ?? ''),
-                        ),
-                      ],
                       if (isHangGlider) ...[
-                        const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
                           key: ValueKey('hang-glider-$_hangGliderCategory'),
                           initialValue:
@@ -435,31 +392,6 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
         ),
       ),
     );
-  }
-
-  String _faiClassLabel(AppLocalizations l10n, String value) {
-    switch (value) {
-      case '1':
-        return l10n.aircraftFaiHangGlider;
-      case '2':
-      case '5':
-        return l10n.aircraftFaiRigidWing;
-      case '3':
-        return l10n.aircraftFaiParaglider;
-      case '11':
-        return l10n.aircraftFaiPoweredParagliderFoot;
-      case '12':
-        return l10n.aircraftFaiPoweredParagliderTrike;
-      case '13':
-        return l10n.aircraftFaiPoweredAircraft;
-      case '14':
-      case '15':
-        return l10n.aircraftFaiRigidWingPowered;
-      case '16':
-        return l10n.aircraftFaiRigidGlider;
-      default:
-        return value;
-    }
   }
 
   String _categoryLabel(AppLocalizations l10n, String value) {

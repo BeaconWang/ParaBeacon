@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'aircraft_settings.dart';
 import 'flight_recorder.dart';
+import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
 
 Future<FlightAircraftDraft?> showFlightAircraftEditor(
@@ -25,7 +26,6 @@ class FlightAircraftDraft {
     required this.faiClass,
     required this.manufacturer,
     required this.model,
-    required this.name,
     required this.category,
     required this.tandem,
     required this.engineType,
@@ -36,7 +36,6 @@ class FlightAircraftDraft {
   final String faiClass;
   final String manufacturer;
   final String model;
-  final String name;
   final String category;
   final bool tandem;
   final String engineType;
@@ -59,7 +58,6 @@ class FlightAircraftDraft {
       faiClass: faiClass,
       manufacturer: track.aircraftManufacturer ?? settings.manufacturer,
       model: track.aircraftModel ?? settings.model,
-      name: track.aircraftName ?? settings.name,
       category: category,
       tandem: track.aircraftTandem ?? settings.tandem,
       engineType: track.aircraftEngineType ?? settings.engineType,
@@ -82,7 +80,6 @@ class _FlightAircraftEditorState extends State<_FlightAircraftEditor> {
   final _formKey = GlobalKey<FormState>();
   late String _manufacturer;
   late String _model;
-  late final TextEditingController _nameController;
   late final TextEditingController _categoryController;
   late final TextEditingController _trimSpeedController;
   late final TextEditingController _goalGlideRatioController;
@@ -102,7 +99,6 @@ class _FlightAircraftEditorState extends State<_FlightAircraftEditor> {
     _tandem = initial.tandem;
     _manufacturer = initial.manufacturer;
     _model = initial.model;
-    _nameController = TextEditingController(text: initial.name);
     _categoryController = TextEditingController(text: initial.category);
     _trimSpeedController = TextEditingController(
       text: initial.trimSpeedKmh.toStringAsFixed(1),
@@ -114,7 +110,6 @@ class _FlightAircraftEditorState extends State<_FlightAircraftEditor> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     _categoryController.dispose();
     _trimSpeedController.dispose();
     _goalGlideRatioController.dispose();
@@ -133,11 +128,9 @@ class _FlightAircraftEditorState extends State<_FlightAircraftEditor> {
   }
 
   List<String> _categoryOptions() {
-    final options = _isParaglider
-        ? [...AircraftSettings.paragliderCategories]
-        : _isHangGlider
+    final options = _isHangGlider
         ? [...AircraftSettings.hangGliderCategories]
-        : <String>[];
+        : [...AircraftSettings.paragliderCategories];
     if (_category.isNotEmpty && !options.contains(_category)) {
       options.add(_category);
     }
@@ -174,10 +167,7 @@ class _FlightAircraftEditorState extends State<_FlightAircraftEditor> {
         faiClass: _faiClass,
         manufacturer: _manufacturer,
         model: _model,
-        name: _nameController.text,
-        category: _isParaglider || _isHangGlider
-            ? _category
-            : _categoryController.text,
+        category: _category,
         tandem: _tandem,
         engineType: _engineType,
         trimSpeedKmh: trimSpeed,
@@ -236,7 +226,7 @@ class _FlightAircraftEditorState extends State<_FlightAircraftEditor> {
                       .map(
                         (value) => DropdownMenuItem<String>(
                           value: value,
-                          child: Text(_faiClassLabel(l10n, value)),
+                          child: Text(aircraftFaiClassLabel(l10n, value)),
                         ),
                       )
                       .toList(),
@@ -298,24 +288,12 @@ class _FlightAircraftEditorState extends State<_FlightAircraftEditor> {
                       ? null
                       : (value) => setState(() => _model = value ?? ''),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _nameController,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: _decoration(
-                    l10n.aircraftName,
-                    Icons.label_outline,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (_isParaglider || _isHangGlider)
+                if (_isHangGlider)
                   DropdownButtonFormField<String>(
                     key: ValueKey('flight-category-$_faiClass-$_category'),
                     initialValue: _category,
                     decoration: _decoration(
-                      _isParaglider
-                          ? l10n.aircraftParagliderCategory
-                          : l10n.aircraftHangGliderCategory,
+                      l10n.aircraftHangGliderCategory,
                       Icons.waves_outlined,
                     ),
                     items: [
@@ -333,7 +311,7 @@ class _FlightAircraftEditorState extends State<_FlightAircraftEditor> {
                     onChanged: (value) =>
                         setState(() => _category = value ?? ''),
                   )
-                else
+                else if (!_isParaglider)
                   TextFormField(
                     controller: _categoryController,
                     textCapitalization: TextCapitalization.words,
@@ -403,31 +381,6 @@ class _FlightAircraftEditorState extends State<_FlightAircraftEditor> {
         ),
       ),
     );
-  }
-
-  String _faiClassLabel(AppLocalizations l10n, String value) {
-    switch (value) {
-      case '1':
-        return l10n.aircraftFaiHangGlider;
-      case '2':
-      case '5':
-        return l10n.aircraftFaiRigidWing;
-      case '3':
-        return l10n.aircraftFaiParaglider;
-      case '11':
-        return l10n.aircraftFaiPoweredParagliderFoot;
-      case '12':
-        return l10n.aircraftFaiPoweredParagliderTrike;
-      case '13':
-        return l10n.aircraftFaiPoweredAircraft;
-      case '14':
-      case '15':
-        return l10n.aircraftFaiRigidWingPowered;
-      case '16':
-        return l10n.aircraftFaiRigidGlider;
-      default:
-        return value;
-    }
   }
 
   String _categoryLabel(AppLocalizations l10n, String value) {

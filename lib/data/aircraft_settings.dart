@@ -12,16 +12,16 @@ class AircraftSettings extends ChangeNotifier {
   static final AircraftSettings instance = AircraftSettings._();
 
   static const faiClasses = <String, String>{
-    '3': 'Paraglider',
-    '1': 'Hang glider',
-    '5': 'Rigid wing',
-    '2': 'Rigid wing',
-    '11': 'Powered paraglider (foot launch)',
-    '12': 'Powered paraglider (trike)',
-    '13': 'Powered aircraft',
-    '14': 'Rigid wing (powered)',
-    '15': 'Rigid wing (powered)',
-    '16': 'Rigid glider',
+    '3': 'Paraglider (FAI-3)',
+    '1': 'Hangglider (FAI-1)',
+    '5': 'Rigid Wing (FAI-5)',
+    '2': 'Rigid Wing (FAI-2)',
+    '11': 'RPF (Paramotor - foot launched)',
+    '12': 'RPL (Paramotor - landplane/trike)',
+    '13': 'RAL (Landplane/Movable aerodynamic control)',
+    '14': 'RWL (Landplane/Weight-shift control)',
+    '15': 'RWF (Foot-launched/Weight-shift control)',
+    '16': 'RGL (Landplane/autogyro)',
   };
 
   static const paragliderCategories = <String>[
@@ -87,8 +87,6 @@ class AircraftSettings extends ChangeNotifier {
 
   /// The compact name used in flight metadata and IGC headers.
   String get displayName {
-    final explicit = name.trim();
-    if (explicit.isNotEmpty) return explicit;
     final makeAndModel = [
       manufacturer.trim(),
       model.trim(),

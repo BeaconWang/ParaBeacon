@@ -74,6 +74,61 @@ void main() {
       },
     );
   });
+
+  group('Flight statistics aircraft grouping', () {
+    test('groups only by paraglider manufacturer and category', () {
+      final stats = FlightStatistics.compute([
+        _aircraftTrack(
+          faiClass: '3',
+          manufacturer: ' Ozone ',
+          model: 'Zeno',
+          category: 'EN-B',
+          gliderName: 'Ozone Zeno',
+        ),
+        _aircraftTrack(
+          faiClass: '3',
+          manufacturer: 'Ozone',
+          model: 'Mantra',
+          category: 'EN-B',
+          gliderName: 'Ozone Mantra',
+        ),
+        _aircraftTrack(
+          faiClass: '11',
+          manufacturer: 'Ozone',
+          model: 'Paramotor',
+          category: 'EN-C',
+        ),
+        _aircraftTrack(
+          faiClass: '1',
+          manufacturer: 'Wills Wing',
+          model: 'Sport 2',
+          category: 'Class 1',
+        ),
+        _aircraftTrack(faiClass: '3', manufacturer: 'Advance', model: 'Sigma'),
+      ], includeDetailed: false);
+
+      expect(stats.byAircraft.map((bucket) => bucket.label).toList(), [
+        'Ozone · EN-B',
+        'Ozone · EN-C',
+      ]);
+      expect(stats.byAircraft.first.count, 2);
+    });
+  });
+}
+
+FlightTrack _aircraftTrack({
+  required String faiClass,
+  required String manufacturer,
+  required String model,
+  String? category,
+  String? gliderName,
+}) {
+  return FlightTrack(startTime: DateTime.utc(2026, 10, 20))
+    ..aircraftFaiClass = faiClass
+    ..aircraftManufacturer = manufacturer
+    ..aircraftModel = model
+    ..aircraftCategory = category
+    ..gliderName = gliderName;
 }
 
 FlightTrack _track() {

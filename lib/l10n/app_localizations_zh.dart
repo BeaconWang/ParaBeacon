@@ -202,31 +202,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingReady => '实时追踪已配置并准备就绪。';
 
   @override
-  String get aircraftFaiClass => 'FAI 类别';
+  String get aircraftFaiClass => 'FAI级别';
 
   @override
-  String get aircraftFaiParaglider => '滑翔伞';
+  String get aircraftFaiParaglider => '滑翔伞(FAI-3)';
 
   @override
-  String get aircraftFaiHangGlider => '滑翔翼';
+  String get aircraftFaiHangGlider => '滑翔翼(FAI-1)';
 
   @override
-  String get aircraftFaiRigidWing => '刚性翼';
+  String get aircraftFaiRigidWing => '硬翼（FAI-5）';
 
   @override
-  String get aircraftFaiPoweredParagliderFoot => '动力伞（助跑起飞）';
+  String get aircraftFaiRigidWingFai2 => '硬翼（FAI-2）';
 
   @override
-  String get aircraftFaiPoweredParagliderTrike => '动力伞（三轮车起飞）';
+  String get aircraftFaiPoweredParagliderFoot => '动力伞 - 助跑起飞(RPF)';
 
   @override
-  String get aircraftFaiPoweredAircraft => '动力飞行器';
+  String get aircraftFaiPoweredParagliderTrike => '动力伞 - 三轮式启动(RPL)';
 
   @override
-  String get aircraftFaiRigidWingPowered => '动力刚性翼';
+  String get aircraftFaiPoweredAircraft => 'RAL（飞机/操纵杆控制）';
 
   @override
-  String get aircraftFaiRigidGlider => '刚性滑翔机';
+  String get aircraftFaiRigidWingPowered => 'RWL（飞机/移动重心控制）';
+
+  @override
+  String get aircraftFaiRigidWingFootLaunched => 'RWF（助跑起飞/移动重心控制）';
+
+  @override
+  String get aircraftFaiRigidGlider => 'RGL（飞机/旋翼机）';
 
   @override
   String get aircraftCategoryStandard => '标准级';
@@ -307,7 +313,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightDetailAircraftEdit => '编辑飞行器';
 
   @override
-  String get flightDetailAircraftClass => 'FAI 类别';
+  String get flightDetailAircraftClass => 'FAI级别';
 
   @override
   String get flightDetailAircraftManufacturer => '制造商';

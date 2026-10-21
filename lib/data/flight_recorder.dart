@@ -1060,7 +1060,6 @@ class FlightRecorder extends ChangeNotifier {
       ..aircraftFaiClass = aircraft.faiClass
       ..aircraftManufacturer = aircraft.manufacturer
       ..aircraftModel = aircraft.model
-      ..aircraftName = aircraft.name
       ..aircraftCategory = aircraft.isParagliderClass
           ? aircraft.paragliderCategory
           : aircraft.isHangGliderClass

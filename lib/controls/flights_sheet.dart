@@ -13,6 +13,7 @@ import '../data/flight_share_card_service.dart';
 import '../data/geo_name_settings.dart';
 import '../data/igc_import_service.dart';
 import '../data/reverse_geocoder_service.dart';
+import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
 import 'flight_replay_sheet.dart';
 import 'flight_statistics_sheet.dart';
@@ -206,7 +207,9 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         IconButton(
           icon: const Icon(Icons.delete_outline),
           tooltip: l10n.delete,
-          onPressed: _selectedTracks.isEmpty ? null : _confirmDeleteSelectedTracks,
+          onPressed: _selectedTracks.isEmpty
+              ? null
+              : _confirmDeleteSelectedTracks,
         ),
         IconButton(
           icon: const Icon(Icons.close),
@@ -568,7 +571,6 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       ..aircraftFaiClass = draft.faiClass
       ..aircraftManufacturer = normalize(draft.manufacturer)
       ..aircraftModel = normalize(draft.model)
-      ..aircraftName = normalize(draft.name)
       ..aircraftCategory = normalize(draft.category)
       ..aircraftTandem = draft.tandem
       ..aircraftEngineType = draft.engineType
@@ -1175,7 +1177,10 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           if (track.aircraftFaiClass?.isNotEmpty ?? false)
                             _detailRow(
                               l10n.flightDetailAircraftClass,
-                              track.aircraftFaiClass!,
+                              aircraftFaiClassLabel(
+                                l10n,
+                                track.aircraftFaiClass!,
+                              ),
                             ),
                           if (track.aircraftManufacturer?.isNotEmpty ?? false)
                             _detailRow(
@@ -1187,12 +1192,12 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                               l10n.flightDetailAircraftModel,
                               track.aircraftModel!,
                             ),
-                          if (track.aircraftName?.isNotEmpty ?? false)
-                            _detailRow(
-                              l10n.flightDetailAircraftName,
-                              track.aircraftName!,
-                            ),
-                          if (track.aircraftCategory?.isNotEmpty ?? false)
+                          if (!const {
+                                '3',
+                                '11',
+                                '12',
+                              }.contains(track.aircraftFaiClass?.trim()) &&
+                              (track.aircraftCategory?.isNotEmpty ?? false))
                             _detailRow(
                               l10n.flightDetailAircraftCategory,
                               track.aircraftCategory!,

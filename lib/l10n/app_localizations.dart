@@ -491,49 +491,61 @@ abstract class AppLocalizations {
   /// No description provided for @aircraftFaiParaglider.
   ///
   /// In en, this message translates to:
-  /// **'Paraglider'**
+  /// **'Paraglider (FAI-3)'**
   String get aircraftFaiParaglider;
 
   /// No description provided for @aircraftFaiHangGlider.
   ///
   /// In en, this message translates to:
-  /// **'Hang glider'**
+  /// **'Hangglider (FAI-1)'**
   String get aircraftFaiHangGlider;
 
   /// No description provided for @aircraftFaiRigidWing.
   ///
   /// In en, this message translates to:
-  /// **'Rigid wing'**
+  /// **'Rigid Wing (FAI-5)'**
   String get aircraftFaiRigidWing;
+
+  /// No description provided for @aircraftFaiRigidWingFai2.
+  ///
+  /// In en, this message translates to:
+  /// **'Rigid Wing (FAI-2)'**
+  String get aircraftFaiRigidWingFai2;
 
   /// No description provided for @aircraftFaiPoweredParagliderFoot.
   ///
   /// In en, this message translates to:
-  /// **'Powered paraglider (foot launch)'**
+  /// **'RPF (Paramotor - foot launched)'**
   String get aircraftFaiPoweredParagliderFoot;
 
   /// No description provided for @aircraftFaiPoweredParagliderTrike.
   ///
   /// In en, this message translates to:
-  /// **'Powered paraglider (trike)'**
+  /// **'RPL (Paramotor - landplane/trike)'**
   String get aircraftFaiPoweredParagliderTrike;
 
   /// No description provided for @aircraftFaiPoweredAircraft.
   ///
   /// In en, this message translates to:
-  /// **'Powered aircraft'**
+  /// **'RAL (Landplane/Movable aerodynamic control)'**
   String get aircraftFaiPoweredAircraft;
 
   /// No description provided for @aircraftFaiRigidWingPowered.
   ///
   /// In en, this message translates to:
-  /// **'Rigid wing (powered)'**
+  /// **'RWL (Landplane/Weight-shift control)'**
   String get aircraftFaiRigidWingPowered;
+
+  /// No description provided for @aircraftFaiRigidWingFootLaunched.
+  ///
+  /// In en, this message translates to:
+  /// **'RWF (Foot-launched/Weight-shift control)'**
+  String get aircraftFaiRigidWingFootLaunched;
 
   /// No description provided for @aircraftFaiRigidGlider.
   ///
   /// In en, this message translates to:
-  /// **'Rigid glider'**
+  /// **'RGL (Landplane/autogyro)'**
   String get aircraftFaiRigidGlider;
 
   /// No description provided for @aircraftCategoryStandard.

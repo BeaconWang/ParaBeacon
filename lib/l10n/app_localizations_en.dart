@@ -2800,22 +2800,130 @@ class AppLocalizationsEn extends AppLocalizations {
       'Bluetooth sensors are only available on iOS and Android.';
 
   @override
-  String get altitudeAnnouncementTitle => 'Altitude voice announcements';
+  String get altitudeAnnouncementTitle => 'Voice announcements';
 
   @override
   String get altitudeAnnouncementSubtitle =>
-      'Speak the current altitude when climb rate enters a chosen range';
+      'Takeoff/landing, glide dead zone, altitude record and climb';
 
   @override
   String get altitudeAnnouncementDescription =>
-      'Announces once after climb rate remains in the selected range briefly. It rearms after climb rate stays below the range.';
+      'Choose which flight events are spoken. Every announcement text can be customized and previewed.';
 
   @override
-  String get altitudeAnnouncementEnabled => 'Voice announcements';
+  String get altitudeAnnouncementEnabled => 'Climb announcement';
 
   @override
   String get altitudeAnnouncementEnabledDescription =>
-      'Speak altitude when lift enters the selected range';
+      'Speaks once after the climb rate stays in the selected range briefly; rearms after it stays below the range.';
+
+  @override
+  String get altitudeAnnouncementSectionVoice => 'Voice';
+
+  @override
+  String get altitudeAnnouncementSectionTakeoffLanding => 'Takeoff & landing';
+
+  @override
+  String get altitudeAnnouncementSectionGlide => 'Glide dead zone';
+
+  @override
+  String get altitudeAnnouncementSectionRecord => 'Altitude record';
+
+  @override
+  String get altitudeAnnouncementSectionClimb => 'Climb';
+
+  @override
+  String get altitudeAnnouncementTakeoffLandingEnabled =>
+      'Takeoff & landing announcements';
+
+  @override
+  String get altitudeAnnouncementTakeoffLandingDescription =>
+      'Plays a notification ding, then speaks when a flight starts or ends. With automatic takeoff/landing detection on, a takeoff that merges into the previous flight record announces \"continue flight\" instead.';
+
+  @override
+  String get altitudeAnnouncementAutoDetectOff =>
+      'Automatic takeoff/landing detection is off, so \"continue flight\" is never announced.';
+
+  @override
+  String get altitudeAnnouncementEventTakeoff => 'Takeoff';
+
+  @override
+  String get altitudeAnnouncementEventContinueFlight => 'Continue flight';
+
+  @override
+  String get altitudeAnnouncementEventLanding => 'Landing';
+
+  @override
+  String get altitudeAnnouncementEventGlide => 'Dead zone';
+
+  @override
+  String get altitudeAnnouncementEventAltitudeRecord => 'New altitude record';
+
+  @override
+  String get altitudeAnnouncementEventClimb => 'Climb';
+
+  @override
+  String get altitudeAnnouncementGlideEnabled => 'Dead-zone announcement';
+
+  @override
+  String get altitudeAnnouncementGlideDescription =>
+      'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set time, and rearms after it has left the zone for 3 s.';
+
+  @override
+  String altitudeAnnouncementGlideRange(String minimum, String maximum) {
+    return 'Dead zone: $minimum to $maximum m/s';
+  }
+
+  @override
+  String altitudeAnnouncementGlideDelay(String seconds) {
+    return 'Announce after $seconds s in the zone';
+  }
+
+  @override
+  String get altitudeAnnouncementRecordEnabled =>
+      'New altitude record announcement';
+
+  @override
+  String altitudeAnnouncementRecordDescription(String drop) {
+    return 'During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. After a record, the altitude must drop $drop m below it before the next record is announced.';
+  }
+
+  @override
+  String get altitudeAnnouncementRecordScopeFlight => 'This flight';
+
+  @override
+  String get altitudeAnnouncementRecordScopeAll => 'All flights';
+
+  @override
+  String get altitudeAnnouncementCustomize => 'Customize text';
+
+  @override
+  String get altitudeAnnouncementPlaceholderAgl => 'Height above ground';
+
+  @override
+  String get altitudeAnnouncementPlaceholderTakeoffHeight =>
+      'Height above takeoff';
+
+  @override
+  String get altitudeAnnouncementPlaceholderMaxAltitude => 'Max altitude';
+
+  @override
+  String get altitudeAnnouncementPlaceholderGlideRatio => 'Glide ratio';
+
+  @override
+  String get altitudeAnnouncementPlaceholderWindSpeed => 'Wind speed';
+
+  @override
+  String get altitudeAnnouncementPlaceholderFlightTime => 'Flight time';
+
+  @override
+  String get altitudeAnnouncementPlaceholderDistance => 'Distance flown';
+
+  @override
+  String get altitudeAnnouncementPlaceholderDistanceUnit => 'Distance unit';
+
+  @override
+  String get altitudeAnnouncementPlaceholderTime => 'Clock time';
 
   @override
   String get altitudeAnnouncementLiftRange => 'Lift-speed range (m/s)';
@@ -3035,6 +3143,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get varioSoundOnlyWhenSensorConnectedDescription =>
       'Stay silent unless a Bluetooth sensor is connected.';
+
+  @override
+  String get varioSoundSinkZoneCue => 'Sink notification zone';
+
+  @override
+  String varioSoundSinkZoneCueDescription(String sink) {
+    return 'Play the deadband cue between the sink threshold ($sink m/s) and 0.0 m/s instead of staying silent.';
+  }
 
   @override
   String get varioWaveformTick => 'Tick';

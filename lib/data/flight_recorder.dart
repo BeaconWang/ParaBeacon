@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -618,9 +619,47 @@ class FlightTrack {
 ///    the flight state. Landing can be automatic, manually confirmed, or
 ///    disabled; a take-off point within 65 seconds reopens the same track.
 
+/// Kind of a flight start / end handled by the [FlightRecorder].
+enum FlightTransitionKind {
+  /// A new flight record was started.
+  takeoff,
+
+  /// An automatic takeoff within the quick-relaunch window reopened (merged
+  /// into) the previous flight record.
+  resumedTakeoff,
+
+  /// The current flight record was completed.
+  landing,
+}
+
+/// A flight start / end, emitted after the recorder has processed it.
+@immutable
+class FlightTransition {
+  const FlightTransition({
+    required this.kind,
+    required this.automatic,
+    this.track,
+  });
+
+  final FlightTransitionKind kind;
+
+  /// Whether automatic detection (rather than the user) triggered it.
+  final bool automatic;
+
+  /// The track that was started / resumed / completed, if any.
+  final FlightTrack? track;
+}
+
 class FlightRecorder extends ChangeNotifier {
   FlightRecorder._();
   static final FlightRecorder instance = FlightRecorder._();
+
+  final StreamController<FlightTransition> _transitions =
+      StreamController<FlightTransition>.broadcast();
+
+  /// Flight starts / ends (including quick relaunches that resume the
+  /// previous record), e.g. for voice announcements.
+  Stream<FlightTransition> get transitions => _transitions.stream;
 
   // ── Tunables ────────────────────────────────────────────────────────────
   /// Minimum time between stored samples.
@@ -939,16 +978,32 @@ class FlightRecorder extends ChangeNotifier {
     if (flying) {
       final automaticTakeoff = _automaticTakeoffTransition;
       _automaticTakeoffTransition = false;
-      _beginRecording(
+      final resumed = _beginRecording(
         allowQuickRelaunch: automaticTakeoff,
         automaticTakeoff: automaticTakeoff,
         at: transitionPointTime,
+      );
+      _transitions.add(
+        FlightTransition(
+          kind: resumed
+              ? FlightTransitionKind.resumedTakeoff
+              : FlightTransitionKind.takeoff,
+          automatic: automaticTakeoff,
+          track: _current,
+        ),
       );
     } else {
       final automaticLanding = _automaticLandingTransition;
       _automaticLandingTransition = false;
       final completed = _current;
       final logged = _finishRecording(automaticLanding: automaticLanding);
+      _transitions.add(
+        FlightTransition(
+          kind: FlightTransitionKind.landing,
+          automatic: automaticLanding,
+          track: completed,
+        ),
+      );
       if (automaticLanding && completed != null) {
         // A discarded short record stays resumable (off the log) during the
         // quick-relaunch window so a brief touch-and-go is not split.
@@ -964,7 +1019,9 @@ class FlightRecorder extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _beginRecording({
+  /// Starts (or, for a quick relaunch, resumes) the current track. Returns
+  /// true when the previous track was resumed instead of starting a new one.
+  bool _beginRecording({
     bool allowQuickRelaunch = false,
     bool automaticTakeoff = false,
     DateTime? at,
@@ -992,7 +1049,7 @@ class FlightRecorder extends ChangeNotifier {
       _quickRelaunchAt = null;
       _lastCompleted = _tracks.isNotEmpty ? _tracks.first : null;
       FlightStore.instance.save(_tracks);
-      return;
+      return true;
     }
 
     _quickRelaunchTrack = null;
@@ -1018,6 +1075,7 @@ class FlightRecorder extends ChangeNotifier {
       // Keep the legacy equipment field aligned with the same takeoff snapshot.
       ..gliderName = aircraft.displayName;
     _lastStored = null;
+    return false;
   }
 
   /// Completes the current recording. Returns true when it was added to the

@@ -2718,20 +2718,124 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sensorUnsupported => '蓝牙传感器仅在 iOS 和 Android 上可用。';
 
   @override
-  String get altitudeAnnouncementTitle => '高度语音播报';
+  String get altitudeAnnouncementTitle => '语音播报';
 
   @override
-  String get altitudeAnnouncementSubtitle => '爬升速度进入所选区间时播报当前高度';
+  String get altitudeAnnouncementSubtitle => '起飞降落、滑翔死区、最高高度及爬升播报';
 
   @override
-  String get altitudeAnnouncementDescription =>
-      '爬升速度在所选区间内短暂停留后播报一次；速度低于区间并保持一段时间后会重新启用。';
+  String get altitudeAnnouncementDescription => '选择需要语音播报的飞行事件，每条播报内容均可自定义并预览。';
 
   @override
-  String get altitudeAnnouncementEnabled => '语音播报';
+  String get altitudeAnnouncementEnabled => '爬升播报';
 
   @override
-  String get altitudeAnnouncementEnabledDescription => '爬升速度进入所选区间时播报高度';
+  String get altitudeAnnouncementEnabledDescription =>
+      '爬升速度在所选区间内短暂停留后播报一次；速度低于区间并保持一段时间后重新启用。';
+
+  @override
+  String get altitudeAnnouncementSectionVoice => '语音';
+
+  @override
+  String get altitudeAnnouncementSectionTakeoffLanding => '起飞与降落';
+
+  @override
+  String get altitudeAnnouncementSectionGlide => '滑翔死区';
+
+  @override
+  String get altitudeAnnouncementSectionRecord => '最高高度';
+
+  @override
+  String get altitudeAnnouncementSectionClimb => '爬升';
+
+  @override
+  String get altitudeAnnouncementTakeoffLandingEnabled => '起飞/降落播报';
+
+  @override
+  String get altitudeAnnouncementTakeoffLandingDescription =>
+      '先播放一声“叮”提示音，再在飞行开始或结束时播报。开启自动起降检测后，如果再次起飞合并了上一条飞行记录，则改为播报“继续飞行”。';
+
+  @override
+  String get altitudeAnnouncementAutoDetectOff => '自动起降检测已关闭，不会播报“继续飞行”。';
+
+  @override
+  String get altitudeAnnouncementEventTakeoff => '起飞';
+
+  @override
+  String get altitudeAnnouncementEventContinueFlight => '继续飞行';
+
+  @override
+  String get altitudeAnnouncementEventLanding => '降落';
+
+  @override
+  String get altitudeAnnouncementEventGlide => '死区';
+
+  @override
+  String get altitudeAnnouncementEventAltitudeRecord => '新的最高高度';
+
+  @override
+  String get altitudeAnnouncementEventClimb => '爬升';
+
+  @override
+  String get altitudeAnnouncementGlideEnabled => '死区播报';
+
+  @override
+  String get altitudeAnnouncementGlideDescription =>
+      '垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定时间后播报一次；离开死区 3 秒后重新启用。';
+
+  @override
+  String altitudeAnnouncementGlideRange(String minimum, String maximum) {
+    return '死区范围：$minimum 至 $maximum m/s';
+  }
+
+  @override
+  String altitudeAnnouncementGlideDelay(String seconds) {
+    return '进入死区 $seconds 秒后播报';
+  }
+
+  @override
+  String get altitudeAnnouncementRecordEnabled => '新的最高高度播报';
+
+  @override
+  String altitudeAnnouncementRecordDescription(String drop) {
+    return '飞行中高度超过此前记录的最高高度时立即播报。播报后需下降 $drop 米以上，再次突破时才会重新播报。';
+  }
+
+  @override
+  String get altitudeAnnouncementRecordScopeFlight => '本次飞行';
+
+  @override
+  String get altitudeAnnouncementRecordScopeAll => '全部飞行记录';
+
+  @override
+  String get altitudeAnnouncementCustomize => '自定义内容';
+
+  @override
+  String get altitudeAnnouncementPlaceholderAgl => '离地高度';
+
+  @override
+  String get altitudeAnnouncementPlaceholderTakeoffHeight => '相对起飞点高度';
+
+  @override
+  String get altitudeAnnouncementPlaceholderMaxAltitude => '最高高度';
+
+  @override
+  String get altitudeAnnouncementPlaceholderGlideRatio => '滑翔比';
+
+  @override
+  String get altitudeAnnouncementPlaceholderWindSpeed => '风速';
+
+  @override
+  String get altitudeAnnouncementPlaceholderFlightTime => '飞行时间';
+
+  @override
+  String get altitudeAnnouncementPlaceholderDistance => '飞行距离';
+
+  @override
+  String get altitudeAnnouncementPlaceholderDistanceUnit => '距离单位';
+
+  @override
+  String get altitudeAnnouncementPlaceholderTime => '当前时间';
 
   @override
   String get altitudeAnnouncementLiftRange => '爬升速度区间（m/s）';
@@ -2941,6 +3045,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get varioSoundOnlyWhenSensorConnectedDescription => '未连接蓝牙传感器时保持静音。';
+
+  @override
+  String get varioSoundSinkZoneCue => '下沉提示区';
+
+  @override
+  String varioSoundSinkZoneCueDescription(String sink) {
+    return '在下沉阈值（$sink m/s）到 0.0 m/s 之间播放静区提示音，而不是保持静音。';
+  }
 
   @override
   String get varioWaveformTick => '滴答';

@@ -84,6 +84,84 @@ void main() {
     );
   });
 
+  test('event defaults: takeoff, continue flight, landing, altitude', () {
+    const zh = AnnouncementLanguage.chinese;
+    const en = AnnouncementLanguage.english;
+    expect(
+      AnnouncementTemplate.defaultFor(zh, AnnouncementEvent.takeoff),
+      '起飞',
+    );
+    expect(
+      AnnouncementTemplate.defaultFor(zh, AnnouncementEvent.continueFlight),
+      '继续飞行',
+    );
+    expect(
+      AnnouncementTemplate.defaultFor(zh, AnnouncementEvent.landing),
+      '降落',
+    );
+    expect(
+      AnnouncementTemplate.defaultFor(en, AnnouncementEvent.continueFlight),
+      'Continue flight',
+    );
+    for (final event in [
+      AnnouncementEvent.glide,
+      AnnouncementEvent.altitudeRecord,
+      AnnouncementEvent.climb,
+    ]) {
+      expect(
+        AnnouncementTemplate.render(
+          AnnouncementTemplate.defaultFor(zh, event),
+          zh,
+          values,
+        ),
+        '当前高度，1250米',
+      );
+    }
+  });
+
+  test('renders the extended placeholders', () {
+    final extended = AnnouncementValues(
+      altitudeMeters: 1250,
+      climbMetersPerSecond: -1.2,
+      groundSpeedKmh: 36,
+      heightAboveGroundMeters: 830.4,
+      heightAboveTakeoffMeters: 420,
+      maxAltitudeMeters: 1310,
+      distanceMeters: 12400,
+      windSpeedKmh: 12,
+      flightDuration: const Duration(hours: 1, minutes: 5),
+      clockTime: DateTime(2026, 1, 1, 14, 5),
+    );
+    expect(
+      AnnouncementTemplate.render(
+        '{agl} {takeoffHeight} {maxAltitude} {glideRatio} {windSpeed} '
+        '{flightTime} {distance} {distanceUnit} {time}',
+        AnnouncementLanguage.english,
+        extended,
+      ),
+      '830 420 1310 8.3 12 1 hour 5 minutes 12.4 kilometers 14:05',
+    );
+    expect(
+      AnnouncementTemplate.render(
+        '{flightTime}，{distance}{distanceUnit}，{time}',
+        AnnouncementLanguage.chinese,
+        extended.copyWith(distanceMeters: 640),
+      ),
+      '1小时5分钟，640米，14点05分',
+    );
+  });
+
+  test('glide ratio is unknown while not sinking', () {
+    expect(
+      AnnouncementTemplate.render(
+        '{glideRatio}',
+        AnnouncementLanguage.english,
+        values,
+      ),
+      'unknown',
+    );
+  });
+
   test('sanitize trims, strips control chars, limits length', () {
     expect(AnnouncementTemplate.sanitize('   '), isNull);
     expect(AnnouncementTemplate.sanitize(null), isNull);

@@ -35,14 +35,23 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
 
   /// User-facing speech speed range, as a multiple of the normal speed.
   static const minRate = 0.5;
-  static const maxRate = 2.0;
+  static const maxRate = 4.0;
 
   /// Maps a speed multiple (1.0 = normal) to flutter_tts' rate scale, where
-  /// 0.5 is the normal speed on both Android (plugin doubles it to 1.0) and
-  /// iOS (AVSpeechUtteranceDefaultSpeechRate) and 1.0 is the fastest on iOS.
-  static double platformRateFor(double multiple) {
+  /// 0.5 is the normal speed on every platform.
+  ///
+  /// * Android (default): the plugin doubles the value into
+  ///   `TextToSpeech.setSpeechRate`, which is linear, so `0.5 * multiple`
+  ///   yields the exact multiple (4.0x -> 2.0).
+  /// * Apple ([apple]): `AVSpeechUtterance.rate` is limited to 0..1 with the
+  ///   normal speed at 0.5, so speeds above normal are spread over 0.5..1.0
+  ///   (4.0x -> 1.0, the fastest voice).
+  static double platformRateFor(double multiple, {bool apple = false}) {
     final m = multiple.isFinite ? multiple.clamp(minRate, maxRate) : 1.0;
-    return (0.5 * m).clamp(0.1, 1.0);
+    if (apple && m > 1.0) {
+      return (0.5 + 0.5 * (m - 1.0) / (maxRate - 1.0)).clamp(0.5, 1.0);
+    }
+    return (0.5 * m).clamp(0.1, 2.0);
   }
 
   static const _chineseTags = ['zh-CN', 'zh-TW', 'zh-HK', 'zh'];
@@ -64,6 +73,15 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
 
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
   bool get _isIOS => !kIsWeb && Platform.isIOS;
+  bool get _isApple => !kIsWeb && (Platform.isIOS || Platform.isMacOS);
+
+  /// Plays an optional cue; a failing or hanging cue never blocks speech.
+  static Future<void> _runPrelude(Future<void> Function()? prelude) async {
+    if (prelude == null) return;
+    try {
+      await prelude().timeout(const Duration(seconds: 2));
+    } catch (_) {}
+  }
 
   /// Prepares the engine ahead of time so the first in-flight announcement
   /// does not pay for engine binding / voice selection.
@@ -82,16 +100,22 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
   /// Speaks the phrase produced by [phraseFor] for the language that could be
   /// prepared. Returns `true` once the utterance completed successfully.
   /// Concurrent requests are dropped (a stale altitude is useless) unless
-  /// [waitIfBusy] is set, e.g. for a user-initiated test.
+  /// [waitIfBusy] is set (e.g. for a user-initiated test or a takeoff /
+  /// landing event), in which case the request waits up to [busyTimeout].
+  ///
+  /// [prelude] (e.g. a notification ding) is played right before the
+  /// utterance, while [speaking] is already set so the vario is ducked.
   Future<bool> speak({
     required AnnouncementLanguage preferred,
     required String Function(AnnouncementLanguage language) phraseFor,
     bool waitIfBusy = false,
+    Duration busyTimeout = const Duration(seconds: 45),
     double rate = 1.0,
+    Future<void> Function()? prelude,
   }) async {
     if (_busy) {
       if (!waitIfBusy) return false;
-      final deadline = DateTime.now().add(const Duration(seconds: 45));
+      final deadline = DateTime.now().add(busyTimeout);
       while (_busy) {
         if (DateTime.now().isAfter(deadline)) return false;
         await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -101,19 +125,24 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     try {
       final language = await _prepare(preferred);
       if (language == null) {
-        // Still show the text so the information is not lost without voice.
+        // Still show the text (and play the cue) so the information is not
+        // lost without voice.
         _showCaption(phraseFor(preferred));
+        await _runPrelude(prelude);
         _setAvailability(SpeechAvailability.unavailable);
         return false;
       }
       if (_isIOS) await _configureIosSession();
       // Applied before every utterance: it is cheap, follows setting changes
       // immediately and survives Android engine switches (which reset it).
-      await _call<dynamic>(() => _tts.setSpeechRate(platformRateFor(rate)));
+      await _call<dynamic>(
+        () => _tts.setSpeechRate(platformRateFor(rate, apple: _isApple)),
+      );
 
       final text = phraseFor(language);
       _showCaption(text);
       speaking.value = true;
+      await _runPrelude(prelude);
       final result = await _call<dynamic>(
         () => _tts.speak(text),
         _speakTimeout,
@@ -189,10 +218,7 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     if (!_baseConfigured) {
       // On Android the first call is queued until the engine has bound, so
       // allow for a slower start.
-      await _call<dynamic>(
-        () => _tts.awaitSpeakCompletion(true),
-        _initTimeout,
-      );
+      await _call<dynamic>(() => _tts.awaitSpeakCompletion(true), _initTimeout);
       if (_isIOS) {
         await _call<dynamic>(() => _tts.autoStopSharedSession(false));
       }

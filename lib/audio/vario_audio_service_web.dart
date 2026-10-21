@@ -30,7 +30,7 @@ class VarioAudioService {
   static final VarioAudioService instance = VarioAudioService();
 
   VarioAudioService({VarioAudioConfig config = VarioAudioConfig.xcTrack})
-      : _config = config;
+    : _config = config;
 
   VarioAudioConfig _config;
   bool _muted = false;
@@ -94,6 +94,9 @@ class VarioAudioService {
   }
 
   bool get isGateOpen => _gateOpen;
+
+  /// Notification ding before announcements; silent on web.
+  Future<void> playChime() async {}
 
   bool get isMuted => _muted;
   double get volume => _volume;

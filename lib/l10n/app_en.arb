@@ -1125,11 +1125,59 @@
   },
   "sensorUnsupported": "Bluetooth sensors are only available on iOS and Android.",
 
-  "altitudeAnnouncementTitle": "Altitude voice announcements",
-  "altitudeAnnouncementSubtitle": "Speak the current altitude when climb rate enters a chosen range",
-  "altitudeAnnouncementDescription": "Announces once after climb rate remains in the selected range briefly. It rearms after climb rate stays below the range.",
-  "altitudeAnnouncementEnabled": "Voice announcements",
-  "altitudeAnnouncementEnabledDescription": "Speak altitude when lift enters the selected range",
+  "altitudeAnnouncementTitle": "Voice announcements",
+  "altitudeAnnouncementSubtitle": "Takeoff/landing, glide dead zone, altitude record and climb",
+  "altitudeAnnouncementDescription": "Choose which flight events are spoken. Every announcement text can be customized and previewed.",
+  "altitudeAnnouncementEnabled": "Climb announcement",
+  "altitudeAnnouncementEnabledDescription": "Speaks once after the climb rate stays in the selected range briefly; rearms after it stays below the range.",
+  "altitudeAnnouncementSectionVoice": "Voice",
+  "altitudeAnnouncementSectionTakeoffLanding": "Takeoff & landing",
+  "altitudeAnnouncementSectionGlide": "Glide dead zone",
+  "altitudeAnnouncementSectionRecord": "Altitude record",
+  "altitudeAnnouncementSectionClimb": "Climb",
+  "altitudeAnnouncementTakeoffLandingEnabled": "Takeoff & landing announcements",
+  "altitudeAnnouncementTakeoffLandingDescription": "Plays a notification ding, then speaks when a flight starts or ends. With automatic takeoff/landing detection on, a takeoff that merges into the previous flight record announces \"continue flight\" instead.",
+  "altitudeAnnouncementAutoDetectOff": "Automatic takeoff/landing detection is off, so \"continue flight\" is never announced.",
+  "altitudeAnnouncementEventTakeoff": "Takeoff",
+  "altitudeAnnouncementEventContinueFlight": "Continue flight",
+  "altitudeAnnouncementEventLanding": "Landing",
+  "altitudeAnnouncementEventGlide": "Dead zone",
+  "altitudeAnnouncementEventAltitudeRecord": "New altitude record",
+  "altitudeAnnouncementEventClimb": "Climb",
+  "altitudeAnnouncementGlideEnabled": "Dead-zone announcement",
+  "altitudeAnnouncementGlideDescription": "The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set time, and rearms after it has left the zone for 3 s.",
+  "altitudeAnnouncementGlideRange": "Dead zone: {minimum} to {maximum} m/s",
+  "@altitudeAnnouncementGlideRange": {
+    "placeholders": {
+      "minimum": { "type": "String" },
+      "maximum": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementGlideDelay": "Announce after {seconds} s in the zone",
+  "@altitudeAnnouncementGlideDelay": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementRecordEnabled": "New altitude record announcement",
+  "altitudeAnnouncementRecordDescription": "During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. After a record, the altitude must drop {drop} m below it before the next record is announced.",
+  "@altitudeAnnouncementRecordDescription": {
+    "placeholders": {
+      "drop": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementRecordScopeFlight": "This flight",
+  "altitudeAnnouncementRecordScopeAll": "All flights",
+  "altitudeAnnouncementCustomize": "Customize text",
+  "altitudeAnnouncementPlaceholderAgl": "Height above ground",
+  "altitudeAnnouncementPlaceholderTakeoffHeight": "Height above takeoff",
+  "altitudeAnnouncementPlaceholderMaxAltitude": "Max altitude",
+  "altitudeAnnouncementPlaceholderGlideRatio": "Glide ratio",
+  "altitudeAnnouncementPlaceholderWindSpeed": "Wind speed",
+  "altitudeAnnouncementPlaceholderFlightTime": "Flight time",
+  "altitudeAnnouncementPlaceholderDistance": "Distance flown",
+  "altitudeAnnouncementPlaceholderDistanceUnit": "Distance unit",
+  "altitudeAnnouncementPlaceholderTime": "Clock time",
   "altitudeAnnouncementLiftRange": "Lift-speed range (m/s)",
   "altitudeAnnouncementRangeDescription": "Announce between {minimum} and {maximum} m/s",
   "@altitudeAnnouncementRangeDescription": {
@@ -1222,6 +1270,13 @@
   "varioSoundOnlyWhenFlyingDescription": "Stay silent until a flight is started, then beep normally.",
   "varioSoundOnlyWhenSensorConnected": "Sound only when sensor connected",
   "varioSoundOnlyWhenSensorConnectedDescription": "Stay silent unless a Bluetooth sensor is connected.",
+  "varioSoundSinkZoneCue": "Sink notification zone",
+  "varioSoundSinkZoneCueDescription": "Play the deadband cue between the sink threshold ({sink} m/s) and 0.0 m/s instead of staying silent.",
+  "@varioSoundSinkZoneCueDescription": {
+    "placeholders": {
+      "sink": { "type": "String" }
+    }
+  },
   "varioWaveformTick": "Tick",
   "varioWaveformTack": "Tack",
   "varioWaveformSquare": "Square",

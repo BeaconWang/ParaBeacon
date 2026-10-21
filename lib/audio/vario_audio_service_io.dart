@@ -183,6 +183,18 @@ class VarioAudioService {
 
   bool get isGateOpen => _gateOpen;
 
+  /// Plays a short XCTrack-style notification "ding" mixed over the vario
+  /// output. It is independent of the vario mute/volume/gate and ducking, so
+  /// it is heard before a voice announcement even while the vario is silent.
+  /// Completes once the ding has mostly decayed; no-op until [init] ran.
+  Future<void> playChime() async {
+    if (!_initialized) return;
+    _synth.startChime();
+    await Future<void>.delayed(
+      Duration(milliseconds: 420 + config.lookAheadMs.round()),
+    );
+  }
+
   /// Central decision point for what the engine plays and whether it is heard.
   ///
   /// Logic:
@@ -217,6 +229,28 @@ class VarioAudioService {
 // =============================================================================
 
 enum _VarioState { deadband, nearLift, lift, sink, keypoint }
+
+/// Renders [frames] PCM frames of the vario engine held at [verticalSpeed]
+/// with full output gain, without opening an audio device. Test-only.
+@visibleForTesting
+Int16List debugRenderVario(
+  VarioAudioConfig config,
+  double verticalSpeed,
+  int frames,
+) {
+  final synth = _VarioSynth(config)
+    ..outputGain = 1.0
+    ..setTargetSpeed(verticalSpeed);
+  return synth.render(frames);
+}
+
+/// Renders [frames] PCM frames of the notification ding with the vario
+/// output silenced, without opening an audio device. Test-only.
+@visibleForTesting
+Int16List debugRenderChime(VarioAudioConfig config, int frames) {
+  final synth = _VarioSynth(config)..startChime();
+  return synth.render(frames);
+}
 
 class _VarioSynth {
   _VarioSynth(this._config) {
@@ -299,9 +333,16 @@ class _VarioSynth {
     if (speed <= _config.sinkThreshold) return _VarioState.sink;
 
     // Custom deadband split:
-    //   * sinkThreshold < v < 0.0      -> silent
+    //   * sinkThreshold < v < 0.0      -> silent, or the deadband cue when the
+    //                                     sink notification zone is enabled
     //   * 0.0 <= v < liftThreshold     -> near-lift cue (softened)
-    if (speed < 0.0) return _VarioState.deadband;
+    // Both cue zones share one state so the beep pattern continues seamlessly
+    // when the speed crosses 0.0 m/s.
+    if (speed < 0.0) {
+      return _config.sinkZoneCueEnabled
+          ? _VarioState.nearLift
+          : _VarioState.deadband;
+    }
     if (_config.nearLiftEnabled) return _VarioState.nearLift;
     return _VarioState.deadband;
   }
@@ -336,7 +377,9 @@ class _VarioSynth {
       // Ducking is applied after saturation so the requested level is the
       // real output attenuation (before the soft clip it would be compressed).
       _appliedDuck += (duckGain - _appliedDuck) * _duckSmoothing;
-      final shaped = _softClip(value) * _appliedDuck;
+      // The notification ding is mixed last: it ignores the vario gate,
+      // volume and ducking.
+      final shaped = _softClip(value) * _appliedDuck + _chimeSample();
       final s16 = (shaped.clamp(-1.0, 1.0) * 32767.0).round();
       final base = i * channels;
       for (var c = 0; c < channels; c++) {
@@ -344,6 +387,48 @@ class _VarioSynth {
       }
     }
     return out;
+  }
+
+  // ── Notification ding ───────────────────────────────────────────────────
+  // A bell-like "ding" in the spirit of XCTrack's notification sound: a high
+  // sine partial with a quick attack and exponential decay, plus an octave
+  // and an inharmonic (x2.76) partial that die away faster for the metallic
+  // strike. Total length ~0.9 s with a short fade so it never clicks.
+  static const double _chimeSeconds = 0.9;
+  static const double _chimeFreq = 1568.0; // G6
+  static const double _chimeLevel = 0.7;
+  double _chimeTime = -1.0; // < 0 = inactive
+  double _chimePhase1 = 0.0;
+  double _chimePhase2 = 0.0;
+  double _chimePhase3 = 0.0;
+
+  void startChime() {
+    _chimeTime = 0.0;
+    _chimePhase1 = 0.0;
+    _chimePhase2 = 0.0;
+    _chimePhase3 = 0.0;
+  }
+
+  double _chimeSample() {
+    final t = _chimeTime;
+    if (t < 0.0) return 0.0;
+    if (t >= _chimeSeconds) {
+      _chimeTime = -1.0;
+      return 0.0;
+    }
+    _chimeTime = t + _dt;
+    _chimePhase1 = (_chimePhase1 + _chimeFreq * _dt) % 1.0;
+    _chimePhase2 = (_chimePhase2 + _chimeFreq * 2.0 * _dt) % 1.0;
+    _chimePhase3 = (_chimePhase3 + _chimeFreq * 2.76 * _dt) % 1.0;
+    const twoPi = 2.0 * math.pi;
+    final strike =
+        math.sin(twoPi * _chimePhase1) * math.exp(-t / 0.22) +
+        0.35 * math.sin(twoPi * _chimePhase2) * math.exp(-t / 0.12) +
+        0.15 * math.sin(twoPi * _chimePhase3) * math.exp(-t / 0.05);
+    final attack = t < 0.004 ? t / 0.004 : 1.0;
+    const fade = 0.06;
+    final release = t > _chimeSeconds - fade ? (_chimeSeconds - t) / fade : 1.0;
+    return strike / 1.5 * attack * release * _chimeLevel;
   }
 
   double _softClip(double value) {

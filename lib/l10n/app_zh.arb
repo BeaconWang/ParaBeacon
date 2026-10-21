@@ -995,11 +995,59 @@
   "sensorRssiDbm": "{rssi} dBm",
   "sensorUnsupported": "蓝牙传感器仅在 iOS 和 Android 上可用。",
 
-  "altitudeAnnouncementTitle": "高度语音播报",
-  "altitudeAnnouncementSubtitle": "爬升速度进入所选区间时播报当前高度",
-  "altitudeAnnouncementDescription": "爬升速度在所选区间内短暂停留后播报一次；速度低于区间并保持一段时间后会重新启用。",
-  "altitudeAnnouncementEnabled": "语音播报",
-  "altitudeAnnouncementEnabledDescription": "爬升速度进入所选区间时播报高度",
+  "altitudeAnnouncementTitle": "语音播报",
+  "altitudeAnnouncementSubtitle": "起飞降落、滑翔死区、最高高度及爬升播报",
+  "altitudeAnnouncementDescription": "选择需要语音播报的飞行事件，每条播报内容均可自定义并预览。",
+  "altitudeAnnouncementEnabled": "爬升播报",
+  "altitudeAnnouncementEnabledDescription": "爬升速度在所选区间内短暂停留后播报一次；速度低于区间并保持一段时间后重新启用。",
+  "altitudeAnnouncementSectionVoice": "语音",
+  "altitudeAnnouncementSectionTakeoffLanding": "起飞与降落",
+  "altitudeAnnouncementSectionGlide": "滑翔死区",
+  "altitudeAnnouncementSectionRecord": "最高高度",
+  "altitudeAnnouncementSectionClimb": "爬升",
+  "altitudeAnnouncementTakeoffLandingEnabled": "起飞/降落播报",
+  "altitudeAnnouncementTakeoffLandingDescription": "先播放一声“叮”提示音，再在飞行开始或结束时播报。开启自动起降检测后，如果再次起飞合并了上一条飞行记录，则改为播报“继续飞行”。",
+  "altitudeAnnouncementAutoDetectOff": "自动起降检测已关闭，不会播报“继续飞行”。",
+  "altitudeAnnouncementEventTakeoff": "起飞",
+  "altitudeAnnouncementEventContinueFlight": "继续飞行",
+  "altitudeAnnouncementEventLanding": "降落",
+  "altitudeAnnouncementEventGlide": "死区",
+  "altitudeAnnouncementEventAltitudeRecord": "新的最高高度",
+  "altitudeAnnouncementEventClimb": "爬升",
+  "altitudeAnnouncementGlideEnabled": "死区播报",
+  "altitudeAnnouncementGlideDescription": "垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定时间后播报一次；离开死区 3 秒后重新启用。",
+  "altitudeAnnouncementGlideRange": "死区范围：{minimum} 至 {maximum} m/s",
+  "@altitudeAnnouncementGlideRange": {
+    "placeholders": {
+      "minimum": { "type": "String" },
+      "maximum": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementGlideDelay": "进入死区 {seconds} 秒后播报",
+  "@altitudeAnnouncementGlideDelay": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementRecordEnabled": "新的最高高度播报",
+  "altitudeAnnouncementRecordDescription": "飞行中高度超过此前记录的最高高度时立即播报。播报后需下降 {drop} 米以上，再次突破时才会重新播报。",
+  "@altitudeAnnouncementRecordDescription": {
+    "placeholders": {
+      "drop": { "type": "String" }
+    }
+  },
+  "altitudeAnnouncementRecordScopeFlight": "本次飞行",
+  "altitudeAnnouncementRecordScopeAll": "全部飞行记录",
+  "altitudeAnnouncementCustomize": "自定义内容",
+  "altitudeAnnouncementPlaceholderAgl": "离地高度",
+  "altitudeAnnouncementPlaceholderTakeoffHeight": "相对起飞点高度",
+  "altitudeAnnouncementPlaceholderMaxAltitude": "最高高度",
+  "altitudeAnnouncementPlaceholderGlideRatio": "滑翔比",
+  "altitudeAnnouncementPlaceholderWindSpeed": "风速",
+  "altitudeAnnouncementPlaceholderFlightTime": "飞行时间",
+  "altitudeAnnouncementPlaceholderDistance": "飞行距离",
+  "altitudeAnnouncementPlaceholderDistanceUnit": "距离单位",
+  "altitudeAnnouncementPlaceholderTime": "当前时间",
   "altitudeAnnouncementLiftRange": "爬升速度区间（m/s）",
   "altitudeAnnouncementRangeDescription": "在 {minimum} 至 {maximum} m/s 之间播报",
   "@altitudeAnnouncementRangeDescription": {
@@ -1092,6 +1140,13 @@
   "varioSoundOnlyWhenFlyingDescription": "开始飞行前保持静音，之后正常发声。",
   "varioSoundOnlyWhenSensorConnected": "仅在传感器连接时发声",
   "varioSoundOnlyWhenSensorConnectedDescription": "未连接蓝牙传感器时保持静音。",
+  "varioSoundSinkZoneCue": "下沉提示区",
+  "varioSoundSinkZoneCueDescription": "在下沉阈值（{sink} m/s）到 0.0 m/s 之间播放静区提示音，而不是保持静音。",
+  "@varioSoundSinkZoneCueDescription": {
+    "placeholders": {
+      "sink": { "type": "String" }
+    }
+  },
   "varioWaveformTick": "滴答",
   "varioWaveformTack": "嗒嗒",
   "varioWaveformSquare": "方波",

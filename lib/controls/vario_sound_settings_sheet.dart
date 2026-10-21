@@ -235,6 +235,17 @@ class _VarioSoundSettingsSheetState extends State<_VarioSoundSettingsSheet> {
                         value: _settings.soundOnlyWhenSensorConnected,
                         onChanged: _settings.setSoundOnlyWhenSensorConnected,
                       ),
+                      const SizedBox(height: 8),
+                      _switchCard(
+                        theme,
+                        icon: Icons.notifications_active_outlined,
+                        label: l10n.varioSoundSinkZoneCue,
+                        description: l10n.varioSoundSinkZoneCueDescription(
+                          _settings.config.sinkThreshold.toStringAsFixed(1),
+                        ),
+                        value: _settings.sinkZoneCue,
+                        onChanged: _settings.setSinkZoneCue,
+                      ),
                     ],
                   );
                 },

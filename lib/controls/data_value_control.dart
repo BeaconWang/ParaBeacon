@@ -465,12 +465,10 @@ class AltitudeControl extends StatelessWidget {
   }
 }
 
-/// Highest [FlightData.altitude] observed since this control was mounted.
+/// Highest [FlightData.altitude] observed since this control was mounted, or
+/// since the current flight started.
 ///
 /// Tracked locally (per-widget) so different pages can reset independently.
-/// A full app-wide "max altitude for the current flight" would need to hook
-/// into [FlightRecorder]; keeping it widget-local avoids that coupling while
-/// still giving pilots a useful readout during a flight.
 class MaxAltitudeControl extends StatefulWidget {
   final bool showTitle;
 
@@ -482,6 +480,28 @@ class MaxAltitudeControl extends StatefulWidget {
 
 class _MaxAltitudeControlState extends State<MaxAltitudeControl> {
   double _max = double.negativeInfinity;
+  late bool _wasFlying;
+
+  @override
+  void initState() {
+    super.initState();
+    _wasFlying = FlightState.instance.isFlying;
+    FlightState.instance.addListener(_onFlightStateChanged);
+  }
+
+  void _onFlightStateChanged() {
+    if (!mounted) return;
+    final isFlying = FlightState.instance.isFlying;
+    if (isFlying && !_wasFlying) _max = double.negativeInfinity;
+    _wasFlying = isFlying;
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    FlightState.instance.removeListener(_onFlightStateChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -79,6 +79,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get unitsSubtitle => '选择仪表控件的默认单位';
 
   @override
+  String get otherSettings => '其他设置';
+
+  @override
+  String get otherSettingsSubtitle => '更多偏好设置';
+
+  @override
+  String get shareCardFlatDesign => '扁平风格分享卡片';
+
+  @override
+  String get shareCardFlatDesignSubtitle => '使用扁平设计，而不是玻璃风格';
+
+  @override
   String get unitAltitude => '高度';
 
   @override

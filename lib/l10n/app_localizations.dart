@@ -236,6 +236,30 @@ abstract class AppLocalizations {
   /// **'Choose default units for dashboard controls'**
   String get unitsSubtitle;
 
+  /// No description provided for @otherSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Other settings'**
+  String get otherSettings;
+
+  /// No description provided for @otherSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional preferences'**
+  String get otherSettingsSubtitle;
+
+  /// No description provided for @shareCardFlatDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Flat share cards'**
+  String get shareCardFlatDesign;
+
+  /// No description provided for @shareCardFlatDesignSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a flat design instead of the glass style'**
+  String get shareCardFlatDesignSubtitle;
+
   /// No description provided for @unitAltitude.
   ///
   /// In en, this message translates to:

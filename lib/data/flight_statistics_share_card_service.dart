@@ -12,6 +12,7 @@ import '../l10n/app_localizations.dart';
 import 'flight_file_output_service.dart';
 import 'flight_recorder.dart';
 import 'flight_statistics.dart';
+import 'share_card_settings.dart';
 
 class FlightStatisticsShareCardService {
   FlightStatisticsShareCardService._();
@@ -33,6 +34,7 @@ class FlightStatisticsShareCardService {
       selected: selected,
       locale: locale,
       colorScheme: colorScheme,
+      flatDesign: ShareCardSettings.instance.flatDesign,
     );
     final picture = painter.paint();
     final image = await picture.toImage(_width, painter.height);
@@ -143,6 +145,7 @@ class _StatisticsCardPainter {
     required this.selected,
     required this.locale,
     required this.colorScheme,
+    required this.flatDesign,
   }) {
     _prepareSections();
   }
@@ -155,6 +158,7 @@ class _StatisticsCardPainter {
   final bool selected;
   final String locale;
   final ColorScheme colorScheme;
+  final bool flatDesign;
   Color get _surfaceAlt => colorScheme.surfaceContainerHigh;
   List<Color> get _groupAccents => [
     colorScheme.primary,
@@ -387,6 +391,10 @@ class _StatisticsCardPainter {
   }
 
   void _paintBackground(Canvas canvas, Size size) {
+    if (flatDesign) {
+      canvas.drawRect(Offset.zero & size, Paint()..color = colorScheme.surface);
+      return;
+    }
     final isDark = colorScheme.brightness == Brightness.dark;
     final accentMix = isDark ? 0.3 : 0.13;
     final secondaryMix = isDark ? 0.2 : 0.09;
@@ -476,6 +484,20 @@ class _StatisticsCardPainter {
     final borderColor = accentColor == null
         ? colorScheme.outlineVariant
         : Color.lerp(colorScheme.outlineVariant, accentColor, 0.18)!;
+    if (flatDesign) {
+      final flatTinted = accentColor == null
+          ? startColor
+          : Color.lerp(startColor, accentColor, isDark ? 0.14 : 0.08)!;
+      canvas.drawRRect(rrect, Paint()..color = flatTinted);
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = borderColor,
+      );
+      return;
+    }
     canvas.drawRRect(
       rrect,
       Paint()

@@ -82,6 +82,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unitsSubtitle => 'Choose default units for dashboard controls';
 
   @override
+  String get otherSettings => 'Other settings';
+
+  @override
+  String get otherSettingsSubtitle => 'Additional preferences';
+
+  @override
+  String get shareCardFlatDesign => 'Flat share cards';
+
+  @override
+  String get shareCardFlatDesignSubtitle =>
+      'Use a flat design instead of the glass style';
+
+  @override
   String get unitAltitude => 'Altitude';
 
   @override

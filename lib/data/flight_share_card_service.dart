@@ -12,6 +12,7 @@ import '../l10n/app_localizations.dart';
 import 'flight_derived_stats.dart';
 import 'flight_file_output_service.dart';
 import 'flight_recorder.dart';
+import 'share_card_settings.dart';
 
 /// Renders a portrait, content-sized 1080px-wide PNG "share card" and saves it
 /// it to the device photo gallery (falling back to the share sheet when the
@@ -142,6 +143,10 @@ class FlightShareCardService {
   // ── Painting ───────────────────────────────────────────────────────────
 
   void _paintBackground(Canvas canvas, Size size, ColorScheme colorScheme) {
+    if (ShareCardSettings.instance.flatDesign) {
+      canvas.drawRect(Offset.zero & size, Paint()..color = colorScheme.surface);
+      return;
+    }
     final isDark = colorScheme.brightness == Brightness.dark;
     final accentMix = isDark ? 0.3 : 0.13;
     final secondaryMix = isDark ? 0.2 : 0.09;
@@ -229,6 +234,20 @@ class FlightShareCardService {
     final borderColor = accentColor == null
         ? colorScheme.outlineVariant
         : Color.lerp(colorScheme.outlineVariant, accentColor, 0.18)!;
+    if (ShareCardSettings.instance.flatDesign) {
+      final flatTinted = accentColor == null
+          ? startColor
+          : Color.lerp(startColor, accentColor, isDark ? 0.14 : 0.08)!;
+      canvas.drawRRect(rrect, Paint()..color = flatTinted);
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = borderColor,
+      );
+      return;
+    }
     canvas.drawRRect(
       rrect,
       Paint()

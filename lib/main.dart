@@ -27,6 +27,7 @@ import 'controls/placed_control.dart';
 import 'controls/vario_sound_settings_sheet.dart';
 import 'controls/altitude_announcement_settings_sheet.dart';
 import 'controls/announcement_caption_overlay.dart';
+import 'controls/other_settings_sheet.dart';
 import 'controls/weather_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
@@ -50,6 +51,7 @@ import 'data/layout_store.dart';
 import 'data/offline_tiles_service.dart';
 import 'data/raw_flight_data_source.dart';
 import 'data/recording_settings.dart';
+import 'data/share_card_settings.dart';
 import 'data/unit_settings.dart';
 import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
@@ -148,6 +150,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     FlightState.instance.loadSettings();
     // Load the persisted default units before dashboard controls render.
     UnitSettings.instance.load();
+    ShareCardSettings.instance.load();
     // Load the persisted theme preset before the first frame paints. The
     // MaterialApp below listens to ThemeController so setTheme(...) at any
     // later time rebuilds the whole tree with the new palette.
@@ -984,6 +987,20 @@ class _DashGridPageState extends State<DashGridPage> {
                             await showLanguageSettingsSheet(context);
                             // Refresh the subtitle in the still-open Preferences
                             // sheet so it reflects the newly-selected language.
+                            setSheetState(() {});
+                          },
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.more_horiz,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.otherSettings),
+                          subtitle: Text(l10n.otherSettingsSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showOtherSettingsSheet(context);
                             setSheetState(() {});
                           },
                         ),

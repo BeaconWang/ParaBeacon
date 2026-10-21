@@ -114,6 +114,8 @@ class FlightExportService {
   String _igcBRecord(FlightSample s) {
     final t = s.time.toUtc();
     String two(int n) => n.toString().padLeft(2, '0');
+    // Standard IGC B-records carry whole seconds only; GPX and library JSON
+    // retain the millisecond timestamps available in the flight database.
     final time = '${two(t.hour)}${two(t.minute)}${two(t.second)}';
 
     final lat = _igcLat(s.data.latitude);

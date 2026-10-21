@@ -29,7 +29,7 @@ class FlightSample {
   /// snapshot by default, or the compact XCTrack/IGC-style field set when the
   /// user selected [RecordingDetail.xctrack].
   Map<String, dynamic> toJson() => {
-    't': flightTimestampSeconds(time),
+    't': flightTimestampMilliseconds(time),
     'd': data.toJson(compact: RecordingSettings.instance.compactSamples),
   };
 
@@ -424,8 +424,8 @@ class FlightTrack {
   /// restart.
   Map<String, dynamic> toSummaryJson() {
     return {
-      'startTime': flightTimestampSeconds(startTime),
-      'endTime': endTime == null ? null : flightTimestampSeconds(endTime!),
+      'startTime': flightTimestampMilliseconds(startTime),
+      'endTime': endTime == null ? null : flightTimestampMilliseconds(endTime!),
       'distanceM': _distanceM,
       'maxAltitude': _maxAltitude == double.negativeInfinity
           ? 0.0

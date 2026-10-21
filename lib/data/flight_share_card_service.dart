@@ -148,8 +148,8 @@ class FlightShareCardService {
     final start = track.firstRecordedTime;
     final end = track.endTime != null ? track.lastRecordedTime : null;
     final when = end != null
-        ? '${_fmtDateOnly(start)}  ·  ${_fmtTime(start)} – ${_fmtTime(end)}'
-        : '${_fmtDateOnly(start)}  ·  ${_fmtTime(start)}';
+        ? '${_fmtDateOnly(start)}  ·  ${_fmtClock(start)} – ${_fmtClock(end)}'
+        : '${_fmtDateOnly(start)}  ·  ${_fmtClock(start)}';
     _text(
       canvas,
       when,
@@ -1006,8 +1006,13 @@ class FlightShareCardService {
 
   static String _fmtTime(DateTime t) {
     final local = t.toLocal();
+    return '${_fmtClock(local)}.${local.millisecond.toString().padLeft(3, '0')}';
+  }
+
+  static String _fmtClock(DateTime t) {
+    final local = t.toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(local.hour)}:${two(local.minute)}';
+    return '${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
   }
 
   static String _fmtDuration(Duration d) {

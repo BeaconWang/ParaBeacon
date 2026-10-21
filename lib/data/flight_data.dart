@@ -229,9 +229,11 @@ class FlightData {
       if (baroAltitude != null) map['balt'] = baroAltitude;
       if (gpsAltitude != null) map['galt'] = gpsAltitude;
       if (terrainElevationM != null) map['terrain'] = terrainElevationM;
-      if (timestamp != null) map['ts'] = flightTimestampSeconds(timestamp!);
+      if (timestamp != null) {
+        map['ts'] = flightTimestampMilliseconds(timestamp!);
+      }
       if (gpsTimestamp != null) {
-        map['gpsTs'] = flightTimestampSeconds(gpsTimestamp!);
+        map['gpsTs'] = flightTimestampMilliseconds(gpsTimestamp!);
       }
       return map;
     }
@@ -259,9 +261,9 @@ class FlightData {
     if (temperature != null) map['tmp'] = temperature;
     if (battery != null) map['bat'] = battery;
     if (heartRate != null) map['hr'] = heartRate;
-    if (timestamp != null) map['ts'] = flightTimestampSeconds(timestamp!);
+    if (timestamp != null) map['ts'] = flightTimestampMilliseconds(timestamp!);
     if (gpsTimestamp != null) {
-      map['gpsTs'] = flightTimestampSeconds(gpsTimestamp!);
+      map['gpsTs'] = flightTimestampMilliseconds(gpsTimestamp!);
     }
     return map;
   }

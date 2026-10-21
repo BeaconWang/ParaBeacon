@@ -36,7 +36,7 @@ void main() {
 }
 
 FlightTrack _completeTrack() {
-  final start = DateTime.utc(2026, 10, 1, 9);
+  final start = DateTime.utc(2026, 10, 1, 9, 0, 0, 321);
   final track = FlightTrack(startTime: start)
     ..endTime = start.add(const Duration(minutes: 2))
     ..pilotName = 'Test Pilot'

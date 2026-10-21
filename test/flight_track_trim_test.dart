@@ -96,13 +96,13 @@ void main() {
     );
 
     test('exports dates from the first retained sample', () {
-      final track = _track(DateTime.utc(2026, 9, 19, 23, 59, 50));
+      final track = _track(DateTime.utc(2026, 9, 19, 23, 59, 50, 123));
       expect(track.trimSamples(startIndex: 1, endIndex: 3), isTrue);
 
       final gpx = FlightExportService.instance.buildGpx(track);
       final igc = FlightExportService.instance.buildIgc(track);
 
-      expect(gpx, contains('<time>2026-09-20T00:00:00.000Z</time>'));
+      expect(gpx, contains('<time>2026-09-20T00:00:00.123Z</time>'));
       expect(igc, startsWith('AXXXParaBeacon\nHFDTE200926\n'));
     });
 

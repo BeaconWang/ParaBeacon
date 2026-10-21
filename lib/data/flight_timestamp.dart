@@ -1,18 +1,20 @@
-/// Converts a flight timestamp to Unix epoch seconds (UTC).
-///
-/// Flight-log JSON uses integer seconds, matching the `time(NULL)` convention.
-int flightTimestampSeconds(DateTime time) =>
-    time.toUtc().millisecondsSinceEpoch ~/ Duration.millisecondsPerSecond;
+/// Converts a flight timestamp to integer Unix epoch milliseconds (UTC).
+int flightTimestampMilliseconds(DateTime time) =>
+    time.toUtc().millisecondsSinceEpoch;
 
-/// Parses a Unix epoch-seconds value or a legacy ISO-8601 timestamp.
+/// Parses a Unix epoch-seconds/milliseconds value or a legacy ISO-8601 timestamp.
 ///
-/// Zone-less legacy strings were written as local wall time, so Dart interprets
-/// them in the current local zone before this function normalizes the instant to
-/// UTC. New numeric values are unambiguous across timezone changes.
+/// Numeric values below 100 billion are treated as legacy seconds; larger values
+/// are epoch milliseconds. This keeps existing second-based records readable
+/// while preserving millisecond timestamps for current records. Zone-less
+/// legacy strings are interpreted in the local zone before conversion to UTC.
 DateTime? parseFlightTimestamp(Object? value) {
   if (value is num) {
     if (!value.isFinite) return null;
-    final milliseconds = value * Duration.millisecondsPerSecond;
+    final isMilliseconds = value.abs() >= 100000000000;
+    final milliseconds = isMilliseconds
+        ? value
+        : value * Duration.millisecondsPerSecond;
     if (!milliseconds.isFinite || milliseconds.abs() > 8640000000000000) {
       return null;
     }

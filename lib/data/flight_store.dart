@@ -20,10 +20,10 @@ class FlightStore {
   // existing users' saved flights still load after the rename.
   static const _kTracksKey = 'pb.tracks.v1';
 
-  /// Current serialized shape. v2 adds per-sample track data and v3 stores
-  /// timestamps as Unix epoch seconds. Earlier ISO-string payloads remain
-  /// readable through the legacy-compatible timestamp parsers.
-  static const _schemaVersion = 3;
+  /// Current serialized shape. v2 adds per-sample track data, v3 stores
+  /// timestamps as Unix epoch seconds, and v4 stores them as milliseconds.
+  /// Earlier payloads remain readable through the compatible timestamp parser.
+  static const _schemaVersion = 4;
 
   Timer? _debounce;
 
@@ -40,8 +40,8 @@ class FlightStore {
       if (decoded is! Map<String, dynamic>) return const [];
       final version = (decoded['version'] as num?)?.toInt() ?? 0;
       // Accept current and older schemas: v1 stored summaries, v2 added the
-      // `samples` array, and v3 changed timestamps to Unix seconds. Track
-      // parsing handles both summary/full records and legacy ISO strings.
+      // `samples` array, v3 used Unix seconds, and v4 uses Unix milliseconds.
+      // Track parsing handles both numeric precisions and legacy ISO strings.
       if (version < 1 || version > _schemaVersion) {
         return const [];
       }

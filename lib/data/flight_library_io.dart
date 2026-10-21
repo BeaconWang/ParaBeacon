@@ -74,7 +74,7 @@ class FlightLibraryIO {
   static final FlightLibraryIO instance = FlightLibraryIO._();
 
   static const String _formatId = 'parabeacon.flights';
-  static const int _formatVersion = 2;
+  static const int _formatVersion = 3;
   static const String _ext = 'pbflights.zip';
   static const MethodChannel _androidExportChannel = MethodChannel(
     'com.beacon.parabeacon/flight_library',
@@ -89,7 +89,7 @@ class FlightLibraryIO {
     final manifest = <String, dynamic>{
       'format': _formatId,
       'version': _formatVersion,
-      'exportedAt': flightTimestampSeconds(DateTime.now()),
+      'exportedAt': flightTimestampMilliseconds(DateTime.now()),
       'count': tracks.length,
     };
     _addJson(archive, 'manifest.json', manifest);

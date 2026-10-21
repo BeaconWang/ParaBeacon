@@ -130,7 +130,7 @@ class FlightReportService {
           final start = track.firstRecordedTime;
           final when = end != null
               ? '${_fmtDate(start)}  ·  '
-                    '${_fmtTime(start)} - ${_fmtTime(end)}'
+                    '${_fmtClock(start)} - ${_fmtClock(end)}'
               : _fmtDate(start);
 
           final visualWidth = (contentW - 12) / 2;
@@ -936,7 +936,12 @@ class FlightReportService {
 
   static String _fmtTime(DateTime t) {
     final local = t.toLocal();
-    return '${_two(local.hour)}:${_two(local.minute)}';
+    return '${_fmtClock(local)}.${local.millisecond.toString().padLeft(3, '0')}';
+  }
+
+  static String _fmtClock(DateTime t) {
+    final local = t.toLocal();
+    return '${_two(local.hour)}:${_two(local.minute)}:${_two(local.second)}';
   }
 
   static String _fmtDuration(Duration d) {

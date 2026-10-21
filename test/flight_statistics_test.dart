@@ -63,6 +63,7 @@ void main() {
         await tester.tap(find.text('Open stats'));
         await tester.pumpAndSettle();
         expect(find.text('Summary first'), findsOneWidget);
+        expect(find.byTooltip('Share card'), findsOneWidget);
         expect(find.text('0.0 km'), findsOneWidget);
 
         await tester.tap(find.text('Detailed stats'));

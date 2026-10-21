@@ -1,14 +1,18 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:parabeacon/data/flight_data.dart';
 import 'package:parabeacon/data/flight_recorder.dart';
 import 'package:parabeacon/data/flight_report_service.dart';
 import 'package:parabeacon/data/flight_share_card_service.dart';
+import 'package:parabeacon/data/flight_statistics.dart';
+import 'package:parabeacon/data/flight_statistics_share_card_service.dart';
 import 'package:parabeacon/l10n/app_localizations_en.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() => initializeDateFormatting('en'));
 
   group('Flight detail exports', () {
     test('builds a PDF report with a full grouped flight record', () async {
@@ -25,6 +29,21 @@ void main() {
       final bytes = await FlightShareCardService.instance.renderPng(
         _completeTrack(),
         AppLocalizationsEn(),
+      );
+      final data = ByteData.sublistView(Uint8List.fromList(bytes));
+
+      expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
+      expect(data.getUint32(16), 1080);
+      expect(data.getUint32(20), greaterThan(1920));
+    });
+
+    test('renders a detailed statistics share image', () async {
+      final stats = FlightStatistics.compute([_completeTrack()]);
+      final bytes = await FlightStatisticsShareCardService.instance.renderPng(
+        stats,
+        AppLocalizationsEn(),
+        selected: false,
+        locale: 'en',
       );
       final data = ByteData.sublistView(Uint8List.fromList(bytes));
 

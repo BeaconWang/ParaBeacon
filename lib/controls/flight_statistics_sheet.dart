@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../data/flight_derived_stats.dart';
 import '../data/flight_recorder.dart';
 import '../data/flight_statistics.dart';
+import '../data/flight_statistics_share_card_service.dart';
 import '../l10n/app_localizations.dart';
 
 /// Opens the flight Statistics screen for [tracks] as a full-screen sheet.
@@ -33,6 +34,8 @@ Future<void> showFlightStatisticsSheet(
 
 enum _StatsPriority { summary, detailed }
 
+enum _StatisticsExportDestination { downloads, share }
+
 class _FlightStatisticsSheet extends StatefulWidget {
   const _FlightStatisticsSheet({required this.tracks, required this.selected});
 
@@ -53,6 +56,8 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
   int _completedFlights = 0;
   int _detailedFlights = 0;
   int _jobId = 0;
+  bool _shareWhenDetailedReady = false;
+  bool _isSharingCard = false;
 
   Isolate? _worker;
   ReceivePort? _resultsPort;
@@ -80,6 +85,7 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
       return;
     }
     if (priority == _StatsPriority.summary) {
+      _shareWhenDetailedReady = false;
       _stopDetailedWork();
       setState(() {
         _priority = priority;
@@ -109,7 +115,10 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
 
     if (mounted) setState(() => _isComputing = _detailedFlights > 0);
     if (_detailedFlights == 0) {
-      if (mounted) setState(() => _detailsComplete = true);
+      if (mounted) {
+        setState(() => _detailsComplete = true);
+        _shareAfterDetailsReady(jobId);
+      }
       return;
     }
 
@@ -219,6 +228,130 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
       _detailsComplete = error == null;
       _detailsError = error;
     });
+    _shareAfterDetailsReady(jobId);
+  }
+
+  void _shareAfterDetailsReady(int jobId) {
+    if (!mounted || _jobId != jobId || !_shareWhenDetailedReady) return;
+    _shareWhenDetailedReady = false;
+    if (!_detailsComplete) {
+      _showSnack(AppLocalizations.of(context).statsCalculationFailed);
+      return;
+    }
+    unawaited(_exportStatisticsCard());
+  }
+
+  void _requestStatisticsShareCard() {
+    if (_isSharingCard || _stats.isEmpty) return;
+    if (_isComputing) {
+      setState(() => _shareWhenDetailedReady = true);
+      return;
+    }
+    if (!_detailsComplete) {
+      _shareWhenDetailedReady = true;
+      if (_priority == _StatsPriority.detailed) {
+        unawaited(_startDetailedWork());
+      } else {
+        _selectPriority(_StatsPriority.detailed);
+      }
+      return;
+    }
+    unawaited(_exportStatisticsCard());
+  }
+
+  Future<void> _exportStatisticsCard() async {
+    if (!mounted || _isSharingCard || _stats.isEmpty) return;
+    setState(() => _isSharingCard = true);
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
+    final service = FlightStatisticsShareCardService.instance;
+    try {
+      final isAndroid =
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      if (isAndroid) {
+        final destination = await _chooseStatisticsExportDestination(l10n);
+        if (destination == null || !mounted) return;
+        if (destination == _StatisticsExportDestination.downloads) {
+          final path = await service.saveToDownloads(
+            _stats,
+            l10n,
+            selected: widget.selected,
+            locale: locale,
+          );
+          if (path != null && mounted) {
+            _showSnack(l10n.flightsExportSavedToDownloads);
+          }
+        } else {
+          await service.shareCard(
+            _stats,
+            l10n,
+            selected: widget.selected,
+            locale: locale,
+          );
+          if (mounted) _showSnack(l10n.flightsShareCardSharedFile);
+        }
+        return;
+      }
+      final saved = await service.saveToGallery(
+        _stats,
+        l10n,
+        selected: widget.selected,
+        locale: locale,
+      );
+      if (mounted) {
+        _showSnack(
+          saved ? l10n.flightsShareCardSaved : l10n.flightsShareCardSharedFile,
+        );
+      }
+    } catch (error) {
+      if (mounted) _showSnack(l10n.flightsShareCardFailed('$error'));
+    } finally {
+      if (mounted) setState(() => _isSharingCard = false);
+    }
+  }
+
+  Future<_StatisticsExportDestination?> _chooseStatisticsExportDestination(
+    AppLocalizations l10n,
+  ) {
+    return showModalBottomSheet<_StatisticsExportDestination>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.flightsExportDestinationTitle,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: Text(l10n.flightsExportDestinationDownloads),
+              onTap: () => Navigator.of(
+                context,
+              ).pop(_StatisticsExportDestination.downloads),
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: Text(l10n.flightsExportDestinationShare),
+              onTap: () =>
+                  Navigator.of(context).pop(_StatisticsExportDestination.share),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _stopDetailedWork() {
@@ -269,6 +402,20 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: l10n.flightExportShareCard,
+            onPressed: _stats.isEmpty || _isSharingCard
+                ? null
+                : _requestStatisticsShareCard,
+            icon: _isSharingCard
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.image_outlined),
+          ),
+        ],
       ),
       body: SafeArea(
         top: false,

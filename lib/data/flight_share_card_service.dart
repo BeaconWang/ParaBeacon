@@ -142,18 +142,82 @@ class FlightShareCardService {
   // ── Painting ───────────────────────────────────────────────────────────
 
   void _paintBackground(Canvas canvas, Size size, ColorScheme colorScheme) {
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final accentMix = isDark ? 0.22 : 0.1;
+    final secondaryMix = isDark ? 0.15 : 0.07;
+    final glowAlpha = isDark ? 0.18 : 0.1;
     final rect = Offset.zero & size;
     final gradient = ui.Gradient.linear(
-      rect.topCenter,
-      rect.bottomCenter,
+      rect.topLeft,
+      Offset(size.width * 0.32, size.height),
       [
-        colorScheme.surface,
-        colorScheme.surfaceContainerLow,
-        colorScheme.surfaceContainer,
+        Color.lerp(colorScheme.surface, colorScheme.primary, accentMix)!,
+        Color.lerp(colorScheme.surface, colorScheme.surfaceContainerLow, 0.55)!,
+        Color.lerp(
+          colorScheme.surfaceContainer,
+          colorScheme.secondary,
+          secondaryMix,
+        )!,
       ],
-      const [0.0, 0.55, 1.0],
+      const [0.0, 0.52, 1.0],
     );
     canvas.drawRect(rect, Paint()..shader = gradient);
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(size.width * 0.94, size.height * 0.04),
+          size.width * 1.1,
+          [
+            colorScheme.primary.withValues(alpha: glowAlpha),
+            colorScheme.primary.withValues(alpha: 0),
+          ],
+          const [0, 1],
+        ),
+    );
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(size.width * 0.04, size.height * 0.98),
+          size.width * 0.85,
+          [
+            colorScheme.tertiary.withValues(alpha: glowAlpha * 0.55),
+            colorScheme.tertiary.withValues(alpha: 0),
+          ],
+          const [0, 1],
+        ),
+    );
+  }
+
+  void _paintSurface(
+    Canvas canvas,
+    RRect rrect,
+    ColorScheme colorScheme, {
+    bool elevated = false,
+  }) {
+    final rect = rrect.outerRect;
+    final startColor = elevated
+        ? colorScheme.surfaceContainerHigh
+        : colorScheme.surfaceContainerLow;
+    final endColor = elevated
+        ? colorScheme.surfaceContainerHighest
+        : colorScheme.surfaceContainer;
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
+          startColor,
+          endColor,
+        ]),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = colorScheme.outlineVariant.withValues(alpha: 0.48),
+    );
   }
 
   void _paintHeader(
@@ -217,7 +281,7 @@ class FlightShareCardService {
     final rect = Rect.fromLTWH(left, top, boxW, boxH);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
-    canvas.drawRRect(rrect, Paint()..color = colorScheme.surfaceContainerLow);
+    _paintSurface(canvas, rrect, colorScheme);
     canvas.save();
     canvas.clipRRect(rrect);
     final gridPaint = Paint()
@@ -334,13 +398,6 @@ class FlightShareCardService {
     }
 
     canvas.restore();
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = colorScheme.outlineVariant,
-    );
     return top + boxH;
   }
 
@@ -361,7 +418,7 @@ class FlightShareCardService {
     final rect = Rect.fromLTWH(left, top, boxW, boxH);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
-    canvas.drawRRect(rrect, Paint()..color = colorScheme.surfaceContainerLow);
+    _paintSurface(canvas, rrect, colorScheme);
 
     _text(
       canvas,
@@ -478,13 +535,6 @@ class FlightShareCardService {
       );
     }
 
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = colorScheme.outlineVariant,
-    );
     return top + boxH;
   }
 
@@ -913,10 +963,7 @@ class FlightShareCardService {
         Rect.fromLTWH(x, y, cellWidth - 10, cellHeight),
         const Radius.circular(14),
       );
-      canvas.drawRRect(
-        cellRect,
-        Paint()..color = colorScheme.surfaceContainerLow,
-      );
+      _paintSurface(canvas, cellRect, colorScheme, elevated: true);
       _text(
         canvas,
         entries[i].$1,

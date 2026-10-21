@@ -155,10 +155,6 @@ class _StatisticsCardPainter {
   final bool selected;
   final String locale;
   final ColorScheme colorScheme;
-  Color get _backgroundTop => colorScheme.surface;
-  Color get _backgroundMiddle => colorScheme.surfaceContainerLow;
-  Color get _backgroundBottom => colorScheme.surfaceContainer;
-  Color get _surface => colorScheme.surfaceContainerLow;
   Color get _surfaceAlt => colorScheme.surfaceContainerHigh;
   Color get _accent => colorScheme.primary;
   Color get _muted => colorScheme.onSurfaceVariant;
@@ -379,15 +375,83 @@ class _StatisticsCardPainter {
   }
 
   void _paintBackground(Canvas canvas, Size size) {
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final accentMix = isDark ? 0.22 : 0.1;
+    final secondaryMix = isDark ? 0.15 : 0.07;
+    final glowAlpha = isDark ? 0.18 : 0.1;
+    final rect = Offset.zero & size;
     canvas.drawRect(
-      Offset.zero & size,
+      rect,
       Paint()
         ..shader = ui.Gradient.linear(
           Offset.zero,
-          Offset(0, size.height),
-          [_backgroundTop, _backgroundMiddle, _backgroundBottom],
-          const [0, 0.55, 1],
+          Offset(size.width * 0.3, size.height),
+          [
+            Color.lerp(colorScheme.surface, colorScheme.primary, accentMix)!,
+            Color.lerp(
+              colorScheme.surface,
+              colorScheme.surfaceContainerLow,
+              0.55,
+            )!,
+            Color.lerp(
+              colorScheme.surfaceContainer,
+              colorScheme.secondary,
+              secondaryMix,
+            )!,
+          ],
+          const [0, 0.52, 1],
         ),
+    );
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(size.width * 0.94, size.height * 0.04),
+          size.width * 1.1,
+          [
+            colorScheme.primary.withValues(alpha: glowAlpha),
+            colorScheme.primary.withValues(alpha: 0),
+          ],
+          const [0, 1],
+        ),
+    );
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          Offset(size.width * 0.04, size.height * 0.98),
+          size.width * 0.85,
+          [
+            colorScheme.tertiary.withValues(alpha: glowAlpha * 0.55),
+            colorScheme.tertiary.withValues(alpha: 0),
+          ],
+          const [0, 1],
+        ),
+    );
+  }
+
+  void _paintCardSurface(
+    Canvas canvas,
+    Rect rect, {
+    required double radius,
+    required Color startColor,
+    required Color endColor,
+  }) {
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
+          startColor,
+          endColor,
+        ]),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = colorScheme.outlineVariant.withValues(alpha: 0.45),
     );
   }
 
@@ -447,9 +511,12 @@ class _StatisticsCardPainter {
       final left = _margin + column * (cardWidth + gap);
       final y = top + row * (cardHeight + gap);
       final rect = Rect.fromLTWH(left, y, cardWidth, cardHeight);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, const Radius.circular(20)),
-        Paint()..color = _surfaceAlt,
+      _paintCardSurface(
+        canvas,
+        rect,
+        radius: 20,
+        startColor: colorScheme.surfaceContainerHigh,
+        endColor: colorScheme.surfaceContainer,
       );
       _text(
         canvas,
@@ -478,9 +545,12 @@ class _StatisticsCardPainter {
     final bodyRows = rowCount == 0 ? 1 : rowCount;
     final cardHeight = 78 + bodyRows * section.rowHeight + 20;
     final rect = Rect.fromLTWH(_margin, top, _contentWidth, cardHeight);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, const Radius.circular(20)),
-      Paint()..color = _surface.withValues(alpha: 0.92),
+    _paintCardSurface(
+      canvas,
+      rect,
+      radius: 20,
+      startColor: colorScheme.surfaceContainerLow,
+      endColor: colorScheme.surfaceContainerHigh,
     );
     _text(
       canvas,
@@ -571,7 +641,7 @@ class _StatisticsCardPainter {
       canvas.drawLine(
         Offset(_margin + 24, top + rowHeight - 1),
         Offset(_margin + _contentWidth - 24, top + rowHeight - 1),
-        Paint()..color = _white.withValues(alpha: 0.08),
+        Paint()..color = colorScheme.outlineVariant.withValues(alpha: 0.4),
       );
     }
   }
@@ -640,7 +710,7 @@ class _StatisticsCardPainter {
     canvas.drawLine(
       Offset(_margin + 24, top + rowHeight - 1),
       Offset(_margin + _contentWidth - 24, top + rowHeight - 1),
-      Paint()..color = _white.withValues(alpha: 0.08),
+      Paint()..color = colorScheme.outlineVariant.withValues(alpha: 0.4),
     );
   }
 

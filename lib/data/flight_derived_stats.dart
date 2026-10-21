@@ -10,7 +10,7 @@ String flightId(FlightTrack track) =>
 
 /// A short, filename-safe label like `2026-09-09_1435`.
 String flightSlug(FlightTrack track) {
-  final t = track.startTime;
+  final t = track.startTime.toLocal();
   String two(int n) => n.toString().padLeft(2, '0');
   return '${t.year}-${two(t.month)}-${two(t.day)}_'
       '${two(t.hour)}${two(t.minute)}';
@@ -320,8 +320,7 @@ class FlightDerivedStats {
     final routes = _bestRoutes(s);
     final straight = routes.vp2M;
 
-    final totalSec =
-        last.time.difference(first.time).inMilliseconds / 1000.0;
+    final totalSec = last.time.difference(first.time).inMilliseconds / 1000.0;
     final avgGs = totalSec > 0 ? (trackDist / totalSec) * 3.6 : 0.0;
 
     return FlightDerivedStats(
@@ -329,13 +328,16 @@ class FlightDerivedStats {
       trackDistanceM: trackDist,
       maxDistanceFromStartM: maxFromStart,
       avgGroundSpeedKph: avgGs,
-      avgCruiseSpeedKph:
-          cruiseSpeedCount > 0 ? cruiseSpeedSum / cruiseSpeedCount : 0.0,
+      avgCruiseSpeedKph: cruiseSpeedCount > 0
+          ? cruiseSpeedSum / cruiseSpeedCount
+          : 0.0,
       maxSpeedKph: maxSpeed,
       avgClimbMs: climbCount > 0 ? climbSum / climbCount : 0.0,
       avgSinkMs: sinkCount > 0 ? sinkSum / sinkCount : 0.0,
       avgGlideRatio: glideVert > 0.5 ? glideHoriz / glideVert : 0.0,
-      trackEfficiency: trackDist > 0 ? (straight / trackDist).clamp(0.0, 1.0) : 0.0,
+      trackEfficiency: trackDist > 0
+          ? (straight / trackDist).clamp(0.0, 1.0)
+          : 0.0,
       thermalCount: thermalCount,
       altitudeGainedM: gained,
       altitudeLostM: lost,
@@ -540,13 +542,14 @@ class FlightDerivedStats {
     for (var segment = 0; segment < anchors.length - 1; segment++) {
       final rawStart = anchors[segment];
       final rawEnd = anchors[segment + 1];
-      final outputEnd =
-          ((_routeMaxPoints - 1) * rawEnd / (samples.length - 1)).floor();
+      final outputEnd = ((_routeMaxPoints - 1) * rawEnd / (samples.length - 1))
+          .floor();
       sampled[outputStart] = samples[rawStart];
       final outputSpan = outputEnd - outputStart;
       if (outputSpan > 0) {
         for (var output = outputStart + 1; output < outputEnd; output++) {
-          final raw = rawStart +
+          final raw =
+              rawStart +
               ((output - outputStart) * (rawEnd - rawStart) ~/ outputSpan);
           sampled[output] = samples[raw];
         }
@@ -566,11 +569,13 @@ class FlightDerivedStats {
     final cosLatitude = math.cos(
       _rad((start.data.latitude + end.data.latitude) / 2),
     );
-    final dx = (end.data.longitude - start.data.longitude) *
+    final dx =
+        (end.data.longitude - start.data.longitude) *
         metersPerDegree *
         cosLatitude;
     final dy = (end.data.latitude - start.data.latitude) * metersPerDegree;
-    final px = (point.data.longitude - start.data.longitude) *
+    final px =
+        (point.data.longitude - start.data.longitude) *
         metersPerDegree *
         cosLatitude;
     final py = (point.data.latitude - start.data.latitude) * metersPerDegree;
@@ -591,11 +596,17 @@ class FlightDerivedStats {
   static double _xctrackAltitude(FlightSample sample) =>
       sample.data.gpsAltitude ?? sample.data.altitude;
 
-  static double _haversineM(double lat1, double lon1, double lat2, double lon2) {
+  static double _haversineM(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const r = 6371000.0;
     final dLat = _rad(lat2 - lat1);
     final dLon = _rad(lon2 - lon1);
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_rad(lat1)) *
             math.cos(_rad(lat2)) *
             math.sin(dLon / 2) *

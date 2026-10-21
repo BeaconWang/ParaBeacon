@@ -20,10 +20,10 @@ class FlightStore {
   // existing users' saved flights still load after the rename.
   static const _kTracksKey = 'pb.tracks.v1';
 
-  /// Current serialized shape. v2 adds per-sample track data; v1 payloads
-  /// (summary-only) are still readable via [FlightTrack.fromJson], which
-  /// transparently falls back when no `samples` array is present.
-  static const _schemaVersion = 2;
+  /// Current serialized shape. v2 adds per-sample track data and v3 stores
+  /// timestamps as Unix epoch seconds. Earlier ISO-string payloads remain
+  /// readable through the legacy-compatible timestamp parsers.
+  static const _schemaVersion = 3;
 
   Timer? _debounce;
 
@@ -39,9 +39,9 @@ class FlightStore {
       final decoded = jsonDecode(raw);
       if (decoded is! Map<String, dynamic>) return const [];
       final version = (decoded['version'] as num?)?.toInt() ?? 0;
-      // Accept the current schema and any older, forward-compatible one. v1
-      // stored summaries only; v2 adds an optional per-sample `samples` array.
-      // [FlightTrack.fromJson] handles both shapes.
+      // Accept current and older schemas: v1 stored summaries, v2 added the
+      // `samples` array, and v3 changed timestamps to Unix seconds. Track
+      // parsing handles both summary/full records and legacy ISO strings.
       if (version < 1 || version > _schemaVersion) {
         return const [];
       }
@@ -50,11 +50,21 @@ class FlightStore {
       if (tracksJson is! List) return const [];
 
       final tracks = <FlightTrack>[];
+      var allTracksRestored = true;
       for (final t in tracksJson) {
-        if (t is Map<String, dynamic>) {
-          final track = FlightTrack.fromJson(t);
-          if (track != null) tracks.add(track);
+        if (t is! Map<String, dynamic>) {
+          allTracksRestored = false;
+          continue;
         }
+        final track = FlightTrack.fromJson(t);
+        if (track == null) {
+          allTracksRestored = false;
+          continue;
+        }
+        tracks.add(track);
+      }
+      if (version < _schemaVersion && allTracksRestored) {
+        await _writeNow(tracks);
       }
       return tracks;
     } catch (_) {

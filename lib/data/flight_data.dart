@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'flight_timestamp.dart';
+
 /// A read-only, observable view of the latest [FlightData].
 ///
 /// Both the *raw data layer* (`RawFlightDataSource`) and the *data-transform
@@ -227,8 +229,10 @@ class FlightData {
       if (baroAltitude != null) map['balt'] = baroAltitude;
       if (gpsAltitude != null) map['galt'] = gpsAltitude;
       if (terrainElevationM != null) map['terrain'] = terrainElevationM;
-      if (timestamp != null) map['ts'] = timestamp!.toIso8601String();
-      if (gpsTimestamp != null) map['gpsTs'] = gpsTimestamp!.toIso8601String();
+      if (timestamp != null) map['ts'] = flightTimestampSeconds(timestamp!);
+      if (gpsTimestamp != null) {
+        map['gpsTs'] = flightTimestampSeconds(gpsTimestamp!);
+      }
       return map;
     }
     final map = <String, dynamic>{
@@ -255,8 +259,10 @@ class FlightData {
     if (temperature != null) map['tmp'] = temperature;
     if (battery != null) map['bat'] = battery;
     if (heartRate != null) map['hr'] = heartRate;
-    if (timestamp != null) map['ts'] = timestamp!.toIso8601String();
-    if (gpsTimestamp != null) map['gpsTs'] = gpsTimestamp!.toIso8601String();
+    if (timestamp != null) map['ts'] = flightTimestampSeconds(timestamp!);
+    if (gpsTimestamp != null) {
+      map['gpsTs'] = flightTimestampSeconds(gpsTimestamp!);
+    }
     return map;
   }
 
@@ -287,8 +293,8 @@ class FlightData {
       temperature: d('tmp'),
       battery: i('bat'),
       heartRate: i('hr'),
-      timestamp: DateTime.tryParse(json['ts'] as String? ?? ''),
-      gpsTimestamp: DateTime.tryParse(json['gpsTs'] as String? ?? ''),
+      timestamp: parseFlightTimestamp(json['ts']),
+      gpsTimestamp: parseFlightTimestamp(json['gpsTs']),
     );
   }
 }

@@ -21,11 +21,16 @@ class DataMonitorControl extends StatelessWidget {
     final d = FlightDataProvider.of(context);
 
     final rows = <_Row>[
-      _Row(l10n.dataMonitorFix,
-          d.hasFix ? l10n.dataMonitorYes : l10n.dataMonitorNo,
-          highlight: d.hasFix),
-      _Row(l10n.dataMonitorVerticalSpeed, _fmt(d.verticalSpeed, 2),
-          unit: 'm/s'),
+      _Row(
+        l10n.dataMonitorFix,
+        d.hasFix ? l10n.dataMonitorYes : l10n.dataMonitorNo,
+        highlight: d.hasFix,
+      ),
+      _Row(
+        l10n.dataMonitorVerticalSpeed,
+        _fmt(d.verticalSpeed, 2),
+        unit: 'm/s',
+      ),
       _Row(l10n.dataMonitorGroundSpeed, _fmt(d.groundSpeed, 1), unit: 'km/h'),
       _Row(l10n.dataMonitorAltitude, _fmt(d.altitude, 1), unit: 'm'),
       _Row(l10n.dataMonitorBaroAltitude, _fmtN(d.baroAltitude, 1), unit: 'm'),
@@ -40,11 +45,16 @@ class DataMonitorControl extends StatelessWidget {
       _Row(l10n.dataMonitorWindDirection, _fmt(d.windDirection, 0), unit: '°'),
       _Row(l10n.dataMonitorPressure, _fmtN(d.pressure, 1), unit: 'hPa'),
       _Row(l10n.dataMonitorTemperature, _fmtN(d.temperature, 1), unit: '°C'),
-      _Row(l10n.dataMonitorBattery, d.battery != null ? '${d.battery}' : '—',
-          unit: '%'),
-      _Row(l10n.dataMonitorHeartRate,
-          d.heartRate != null ? '${d.heartRate}' : '—',
-          unit: 'bpm'),
+      _Row(
+        l10n.dataMonitorBattery,
+        d.battery != null ? '${d.battery}' : '—',
+        unit: '%',
+      ),
+      _Row(
+        l10n.dataMonitorHeartRate,
+        d.heartRate != null ? '${d.heartRate}' : '—',
+        unit: 'bpm',
+      ),
       _Row(l10n.dataMonitorTimestamp, _fmtTime(d.timestamp)),
 
       // ── Derived (computed from the fields above, no extra sensors) ────────
@@ -162,8 +172,9 @@ class DataMonitorControl extends StatelessWidget {
 
   static String _fmtTime(DateTime? t) {
     if (t == null) return '—';
+    final local = t.toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(t.hour)}:${two(t.minute)}:${two(t.second)}';
+    return '${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
   }
 
   /// Instantaneous glide ratio (L/D): horizontal speed / sink rate. Only

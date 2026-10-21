@@ -171,12 +171,15 @@ class FlightStatistics {
       if (stats.lastFlight == null || start.isAfter(stats.lastFlight!)) {
         stats.lastFlight = start;
       }
-      days.add('${start.year}-${start.month}-${start.day}');
+      final localStart = start.toLocal();
+      days.add('${localStart.year}-${localStart.month}-${localStart.day}');
 
-      // Year / month distributions.
-      (stats._byYear[start.year] ??= FlightBucket('${start.year}')).add(track);
-      (stats._byMonth[start.month] ??= FlightBucket(
-        '${start.month}',
+      // Calendar distributions follow the date shown in the current timezone.
+      (stats._byYear[localStart.year] ??= FlightBucket(
+        '${localStart.year}',
+      )).add(track);
+      (stats._byMonth[localStart.month] ??= FlightBucket(
+        '${localStart.month}',
       )).add(track);
 
       // Aircraft / site distributions.

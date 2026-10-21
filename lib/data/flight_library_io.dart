@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'flight_derived_stats.dart';
 import 'flight_recorder.dart';
+import 'flight_timestamp.dart';
 
 /// Result of importing a `.pbflights` bundle.
 class FlightImportResult {
@@ -73,7 +74,7 @@ class FlightLibraryIO {
   static final FlightLibraryIO instance = FlightLibraryIO._();
 
   static const String _formatId = 'parabeacon.flights';
-  static const int _formatVersion = 1;
+  static const int _formatVersion = 2;
   static const String _ext = 'pbflights';
   static const MethodChannel _androidExportChannel = MethodChannel(
     'com.beacon.parabeacon/flight_library',
@@ -88,7 +89,7 @@ class FlightLibraryIO {
     final manifest = <String, dynamic>{
       'format': _formatId,
       'version': _formatVersion,
-      'exportedAt': DateTime.now().toUtc().toIso8601String(),
+      'exportedAt': flightTimestampSeconds(DateTime.now()),
       'count': tracks.length,
     };
     _addJson(archive, 'manifest.json', manifest);

@@ -241,10 +241,9 @@ class IgcImportService {
     final baroPresent = fixes.where((f) => f.baroAltitude != 0).length;
     final useBaro = baroPresent >= fixes.length * 0.9;
 
-    // IGC times are UTC; present them in local wall-clock time so a flight
-    // shows at the hour the pilot actually flew (same convention as live
-    // recording, which stamps samples with the local clock).
-    final track = FlightTrack(startTime: fixes.first.time.toLocal());
+    // Keep IGC fixes as UTC instants; display layers convert to the current
+    // local timezone, just as they do for live-recorded flights.
+    final track = FlightTrack(startTime: fixes.first.time);
 
     // Effective altitude for one fix from the chosen source, carrying the last
     // valid value forward across isolated dropouts (a 0 in the chosen source)
@@ -266,7 +265,7 @@ class IgcImportService {
     _IgcFix? prev;
     double? prevAlt;
     for (final f in fixes) {
-      final time = f.time.toLocal();
+      final time = f.time;
       final effectiveAlt = altOf(f);
 
       double verticalSpeed = 0;
@@ -276,12 +275,7 @@ class IgcImportService {
         final dtSec = f.time.difference(prev.time).inMilliseconds / 1000.0;
         if (dtSec > 0) {
           verticalSpeed = (effectiveAlt - prevAlt) / dtSec;
-          final distM = _haversineM(
-            prev.lat,
-            prev.lon,
-            f.lat,
-            f.lon,
-          );
+          final distM = _haversineM(prev.lat, prev.lon, f.lat, f.lon);
           groundSpeed = (distM / dtSec) * 3.6; // km/h
           heading = _bearingDeg(prev.lat, prev.lon, f.lat, f.lon);
         }
@@ -294,7 +288,9 @@ class IgcImportService {
             verticalSpeed: verticalSpeed,
             groundSpeed: groundSpeed,
             altitude: effectiveAlt,
-            baroAltitude: f.baroAltitude != 0 ? f.baroAltitude.toDouble() : null,
+            baroAltitude: f.baroAltitude != 0
+                ? f.baroAltitude.toDouble()
+                : null,
             gpsAltitude: f.gnssAltitude.toDouble(),
             latitude: f.lat,
             longitude: f.lon,
@@ -308,7 +304,7 @@ class IgcImportService {
       prevAlt = effectiveAlt;
     }
 
-    track.endTime = fixes.last.time.toLocal();
+    track.endTime = fixes.last.time;
     if (gliderType != null) track.gliderName = gliderType;
     if (pilot != null) track.pilotName = pilot;
     if (takeoffSite != null) track.takeoffSite = takeoffSite;
@@ -407,11 +403,17 @@ class IgcImportService {
 
   // ── Geo helpers ───────────────────────────────────────────────────────────
 
-  static double _haversineM(double lat1, double lon1, double lat2, double lon2) {
+  static double _haversineM(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const r = 6371000.0;
     final dLat = _rad(lat2 - lat1);
     final dLon = _rad(lon2 - lon1);
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_rad(lat1)) *
             math.cos(_rad(lat2)) *
             math.sin(dLon / 2) *
@@ -420,10 +422,16 @@ class IgcImportService {
     return r * c;
   }
 
-  static double _bearingDeg(double lat1, double lon1, double lat2, double lon2) {
+  static double _bearingDeg(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     final dLon = _rad(lon2 - lon1);
     final y = math.sin(dLon) * math.cos(_rad(lat2));
-    final x = math.cos(_rad(lat1)) * math.sin(_rad(lat2)) -
+    final x =
+        math.cos(_rad(lat1)) * math.sin(_rad(lat2)) -
         math.sin(_rad(lat1)) * math.cos(_rad(lat2)) * math.cos(dLon);
     final brng = math.atan2(y, x) * 180.0 / math.pi;
     return (brng + 360.0) % 360.0;

@@ -7,6 +7,7 @@ import 'auto_flight_detector.dart';
 import 'flight_data.dart';
 import 'flight_state.dart';
 import 'flight_store.dart';
+import 'flight_timestamp.dart';
 import 'recording_settings.dart';
 
 /// One recorded sample of the full flight-data snapshot at a moment in time.
@@ -27,13 +28,13 @@ class FlightSample {
   /// snapshot by default, or the compact XCTrack/IGC-style field set when the
   /// user selected [RecordingDetail.xctrack].
   Map<String, dynamic> toJson() => {
-    't': time.toIso8601String(),
+    't': flightTimestampSeconds(time),
     'd': data.toJson(compact: RecordingSettings.instance.compactSamples),
   };
 
   /// Inverse of [toJson]. Returns null when the timestamp is missing/invalid.
   static FlightSample? fromJson(Map<String, dynamic> json) {
-    final t = DateTime.tryParse(json['t'] as String? ?? '');
+    final t = parseFlightTimestamp(json['t']);
     if (t == null) return null;
     final d = json['d'];
     final data = d is Map<String, dynamic>
@@ -422,8 +423,8 @@ class FlightTrack {
   /// restart.
   Map<String, dynamic> toSummaryJson() {
     return {
-      'startTime': startTime.toIso8601String(),
-      'endTime': endTime?.toIso8601String(),
+      'startTime': flightTimestampSeconds(startTime),
+      'endTime': endTime == null ? null : flightTimestampSeconds(endTime!),
       'distanceM': _distanceM,
       'maxAltitude': _maxAltitude == double.negativeInfinity
           ? 0.0
@@ -506,9 +507,9 @@ class FlightTrack {
   /// Inverse of [toSummaryJson]. Returns null if the payload is malformed
   /// (missing/unparseable start/end times).
   static FlightTrack? fromSummaryJson(Map<String, dynamic> json) {
-    final start = DateTime.tryParse(json['startTime'] as String? ?? '');
+    final start = parseFlightTimestamp(json['startTime']);
     if (start == null) return null;
-    final end = DateTime.tryParse(json['endTime'] as String? ?? '');
+    final end = parseFlightTimestamp(json['endTime']);
     if (end == null) return null;
     return FlightTrack._fromSummary(
       startTime: start,
@@ -552,7 +553,7 @@ class FlightTrack {
       return fromSummaryJson(json);
     }
 
-    final start = DateTime.tryParse(json['startTime'] as String? ?? '');
+    final start = parseFlightTimestamp(json['startTime']);
     if (start == null) return null;
 
     final track = FlightTrack(startTime: start);

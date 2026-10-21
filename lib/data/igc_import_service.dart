@@ -73,7 +73,7 @@ class IgcImportService {
   /// read this way — use [importContents] with the picker's file bytes instead.
   ///
   /// Duplicates — against the existing library *and* within this batch — are
-  /// skipped using the same rule as the `.pbflights` importer (start time
+  /// skipped using the same rule as the `.pbflights.zip` importer (start time
   /// within ±5 s and matching point count). Files that cannot be parsed are
   /// counted as failures. Returns a summary.
   Future<FlightImportResult> importDirectory(String dirPath) async {

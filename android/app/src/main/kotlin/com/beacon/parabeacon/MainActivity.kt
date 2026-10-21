@@ -17,7 +17,7 @@ class MainActivity : FlutterActivity() {
         private const val FLIGHT_LIBRARY_CHANNEL = "com.beacon.parabeacon/flight_library"
         private const val CREATE_DOCUMENT_REQUEST = 4107
         private const val OPEN_IGC_TREE_REQUEST = 4108
-        private const val FLIGHT_BUNDLE_MIME_TYPE = "application/vnd.parabeacon.flights"
+        private const val FLIGHT_BUNDLE_MIME_TYPE = "application/zip"
     }
 
     private var pendingSaveResult: MethodChannel.Result? = null

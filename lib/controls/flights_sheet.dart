@@ -20,7 +20,7 @@ import 'track_3d_sheet.dart';
 
 /// Where imported flights come from (see [_FlightsSheetState._showImportMenu]).
 enum _ImportSource {
-  /// A `.pbflights` library bundle exported by this app.
+  /// A `.pbflights.zip` library bundle exported by this app.
   library,
 
   /// A folder of XCTrack `.igc` tracklogs.
@@ -674,7 +674,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
   // ── Library import / export ────────────────────────────────────────────
 
-  /// Presents the import-source chooser: a `.pbflights` bundle, or a folder of
+  /// Presents the import-source chooser: a `.pbflights.zip` bundle, or a folder of
   /// XCTrack `.igc` tracklogs.
   Future<void> _showImportMenu() async {
     final l10n = AppLocalizations.of(context);
@@ -979,7 +979,9 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       final picked = await FilePicker.platform.pickFiles(
         dialogTitle: l10n.flightsImportLibrary,
         type: FileType.custom,
-        allowedExtensions: [FlightLibraryIO.extension],
+        // The importer accepts ZIP archives; filtering by the outer .zip
+        // extension works with compound .pbflights.zip names on every platform.
+        allowedExtensions: ['zip'],
         withData: true,
       );
       final files = picked?.files;

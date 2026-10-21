@@ -11,7 +11,7 @@ import 'flight_derived_stats.dart';
 import 'flight_recorder.dart';
 import 'flight_timestamp.dart';
 
-/// Result of importing a `.pbflights` bundle.
+/// Result of importing a `.pbflights.zip` bundle.
 class FlightImportResult {
   const FlightImportResult({
     required this.added,
@@ -41,7 +41,7 @@ class FlightExportResult {
     this.destination,
   });
 
-  /// Name of the generated `.pbflights` bundle.
+  /// Name of the generated `.pbflights.zip` bundle.
   final String fileName;
 
   /// Number of flights written into the bundle.
@@ -59,7 +59,7 @@ class FlightExportResult {
   final String? destination;
 }
 
-/// Exports the whole flight library to a single `.pbflights` bundle and imports
+/// Exports the whole flight library to a single `.pbflights.zip` bundle and imports
 /// it back, with duplicate detection.
 ///
 /// The bundle is a zip archive containing:
@@ -75,14 +75,14 @@ class FlightLibraryIO {
 
   static const String _formatId = 'parabeacon.flights';
   static const int _formatVersion = 2;
-  static const String _ext = 'pbflights';
+  static const String _ext = 'pbflights.zip';
   static const MethodChannel _androidExportChannel = MethodChannel(
     'com.beacon.parabeacon/flight_library',
   );
 
   // ── Export ─────────────────────────────────────────────────────────────
 
-  /// Builds the `.pbflights` archive bytes for [tracks].
+  /// Builds the `.pbflights.zip` archive bytes for [tracks].
   List<int> buildBundle(List<FlightTrack> tracks) {
     final archive = Archive();
 
@@ -104,7 +104,7 @@ class FlightLibraryIO {
   }
 
   /// Exports flight records. Android saves to `Downloads/ParaBeacon` unless
-  /// [shareDirectly] is true. Other platforms share a temporary `.pbflights`
+  /// [shareDirectly] is true. Other platforms share a temporary `.pbflights.zip`
   /// file.
   ///
   /// Returns a [FlightExportResult] describing the written bundle, or null when
@@ -155,7 +155,7 @@ class FlightLibraryIO {
 
   // ── Import ─────────────────────────────────────────────────────────────
 
-  /// Imports a `.pbflights` (or plain `.zip`) bundle at [path] into the
+  /// Imports a `.pbflights.zip` (or plain `.zip`) bundle at [path] into the
   /// [FlightRecorder], skipping duplicates. Returns a summary.
   Future<FlightImportResult> importFile(String path) async {
     final bytes = await File(path).readAsBytes();

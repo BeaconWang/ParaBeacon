@@ -791,7 +791,7 @@ class FlightRecorder extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Merges externally-sourced [tracks] (e.g. imported from a `.pbflights`
+  /// Merges externally-sourced [tracks] (e.g. imported from a `.pbflights.zip`
   /// bundle) into the log, then re-sorts newest-first, persists and notifies.
   /// Callers are responsible for duplicate filtering.
   void importTracks(List<FlightTrack> tracks) {

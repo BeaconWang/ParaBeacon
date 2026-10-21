@@ -4007,7 +4007,7 @@ abstract class AppLocalizations {
   /// No description provided for @flightsImportLibrary.
   ///
   /// In en, this message translates to:
-  /// **'Import library (.pbflights)'**
+  /// **'Import library (.pbflights.zip)'**
   String get flightsImportLibrary;
 
   /// No description provided for @flightsImportXcTrack.
@@ -4097,7 +4097,7 @@ abstract class AppLocalizations {
   /// No description provided for @flightsExportLibrary.
   ///
   /// In en, this message translates to:
-  /// **'Export library (.pbflights)'**
+  /// **'Export library (.pbflights.zip)'**
   String get flightsExportLibrary;
 
   /// No description provided for @flightsSelectRecords.
@@ -4109,7 +4109,7 @@ abstract class AppLocalizations {
   /// No description provided for @flightsExportSelected.
   ///
   /// In en, this message translates to:
-  /// **'Export selected flights (.pbflights)'**
+  /// **'Export selected flights (.pbflights.zip)'**
   String get flightsExportSelected;
 
   /// No description provided for @flightsClearAll.

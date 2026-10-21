@@ -2078,7 +2078,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsImport => 'Import flights';
 
   @override
-  String get flightsImportLibrary => 'Import library (.pbflights)';
+  String get flightsImportLibrary => 'Import library (.pbflights.zip)';
 
   @override
   String get flightsImportXcTrack => 'Import XCTrack flights (.igc)';
@@ -2128,13 +2128,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsImportNoIgc => 'No .igc files were found in that folder.';
 
   @override
-  String get flightsExportLibrary => 'Export library (.pbflights)';
+  String get flightsExportLibrary => 'Export library (.pbflights.zip)';
 
   @override
   String get flightsSelectRecords => 'Select flights to export';
 
   @override
-  String get flightsExportSelected => 'Export selected flights (.pbflights)';
+  String get flightsExportSelected => 'Export selected flights (.pbflights.zip)';
 
   @override
   String get flightsClearAll => 'Clear all';

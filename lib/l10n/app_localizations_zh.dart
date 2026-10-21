@@ -2013,7 +2013,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsImport => '导入飞行';
 
   @override
-  String get flightsImportLibrary => '导入库（.pbflights）';
+  String get flightsImportLibrary => '导入库（.pbflights.zip）';
 
   @override
   String get flightsImportXcTrack => '导入 XCTrack 飞行（.igc）';
@@ -2059,13 +2059,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsImportNoIgc => '该文件夹中未找到 .igc 文件。';
 
   @override
-  String get flightsExportLibrary => '导出库（.pbflights）';
+  String get flightsExportLibrary => '导出库（.pbflights.zip）';
 
   @override
   String get flightsSelectRecords => '选择要导出的飞行';
 
   @override
-  String get flightsExportSelected => '导出所选飞行（.pbflights）';
+  String get flightsExportSelected => '导出所选飞行（.pbflights.zip）';
 
   @override
   String get flightsClearAll => '全部清除';

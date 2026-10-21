@@ -56,41 +56,78 @@ void main() {
   });
 
   group('AltitudeRecordTrigger', () {
-    test('continuous climb from launch is not a record', () {
+    const interval = Duration(seconds: 5);
+    bool feed(AltitudeRecordTrigger trigger, int ms, double altitude) =>
+        trigger.update(altitude, at(ms), minInterval: interval);
+
+    test('first altitude of the flight is the reference', () {
       final trigger = AltitudeRecordTrigger();
-      for (var altitude = 800.0; altitude < 1500; altitude += 5) {
-        expect(trigger.update(altitude), isFalse);
-      }
-      expect(trigger.peak, 1495);
+      expect(feed(trigger, 0, 800), isFalse);
+      expect(feed(trigger, 1000, 800.5), isFalse); // < 1 m gain
+      expect(feed(trigger, 2000, 801), isTrue);
+      expect(trigger.peak, 801);
     });
 
-    test('announces when exceeding the peak after dropping below it', () {
+    test('consecutive records are at least the interval apart', () {
       final trigger = AltitudeRecordTrigger();
-      trigger.update(1000);
-      trigger.update(1500);
-      trigger.update(1490); // noise, not enough to rearm
-      expect(trigger.update(1501), isFalse);
-      trigger.update(1450); // dropped > 20 m: armed
-      expect(trigger.armed, isTrue);
-      expect(trigger.update(1500), isFalse);
-      expect(trigger.update(1502), isTrue);
-      // Keeps climbing: no repeated announcements.
-      expect(trigger.update(1520), isFalse);
-      expect(trigger.update(1600), isFalse);
+      feed(trigger, 0, 1000);
+      expect(feed(trigger, 1000, 1002), isTrue);
+      // Climbing on: new records, but within 5 s of the last announcement.
+      expect(feed(trigger, 2000, 1004), isFalse);
+      expect(feed(trigger, 4000, 1008), isFalse);
+      expect(
+        trigger.pendingFor(at(4000), interval),
+        const Duration(seconds: 2),
+      );
+      // Interval over: the highest value reached is announced, even after
+      // a small descent.
+      expect(feed(trigger, 6000, 1007), isTrue);
+      expect(trigger.peak, 1008);
+      // No new record since: nothing pending.
+      expect(feed(trigger, 20000, 1008), isFalse);
+      expect(trigger.pendingFor(at(20000), interval), isNull);
+      // A later record is announced immediately.
+      expect(feed(trigger, 21000, 1010), isTrue);
+    });
+
+    test('interval is adjustable', () {
+      final trigger = AltitudeRecordTrigger();
+      bool feedLong(int ms, double altitude) => trigger.update(
+        altitude,
+        at(ms),
+        minInterval: const Duration(seconds: 15),
+      );
+      feedLong(0, 1000);
+      expect(feedLong(1000, 1005), isTrue);
+      expect(feedLong(10000, 1050), isFalse);
+      expect(feedLong(16000, 1060), isTrue);
+    });
+
+    test('a failed announcement is retried', () {
+      final trigger = AltitudeRecordTrigger();
+      feed(trigger, 0, 1000);
+      expect(feed(trigger, 1000, 1005), isTrue);
+      trigger.undoLastAnnouncement();
+      expect(feed(trigger, 1100, 1005), isTrue);
+    });
+
+    test('peak is tracked while announcements are off', () {
+      final trigger = AltitudeRecordTrigger();
+      feed(trigger, 0, 1000);
+      expect(
+        trigger.update(1200, at(1000), minInterval: interval, announce: false),
+        isFalse,
+      );
+      expect(trigger.peak, 1200);
     });
 
     test('all-flights baseline is the record to beat', () {
       final trigger = AltitudeRecordTrigger()..reset(baseline: 2000);
-      expect(trigger.update(900), isFalse);
-      expect(trigger.update(1999), isFalse);
-      expect(trigger.update(2001), isTrue);
-      expect(trigger.update(2100), isFalse);
-    });
-
-    test('a launch above the baseline is not announced', () {
-      final trigger = AltitudeRecordTrigger()..reset(baseline: 1000);
-      expect(trigger.update(1200), isFalse);
-      expect(trigger.update(1300), isFalse);
+      expect(feed(trigger, 0, 900), isFalse);
+      expect(feed(trigger, 1000, 2000.5), isFalse);
+      expect(feed(trigger, 2000, 2001), isTrue);
+      expect(feed(trigger, 3000, 2100), isFalse);
+      expect(feed(trigger, 7000, 2100), isTrue);
     });
   });
 }

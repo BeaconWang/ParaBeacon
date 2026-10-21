@@ -1126,15 +1126,12 @@
   "sensorUnsupported": "Bluetooth sensors are only available on iOS and Android.",
 
   "altitudeAnnouncementTitle": "Voice announcements",
-  "altitudeAnnouncementSubtitle": "Takeoff/landing, glide dead zone, altitude record and climb",
+  "altitudeAnnouncementSubtitle": "Takeoff/landing, glide dead zone and altitude record",
   "altitudeAnnouncementDescription": "Choose which flight events are spoken. Every announcement text can be customized and previewed.",
-  "altitudeAnnouncementEnabled": "Climb announcement",
-  "altitudeAnnouncementEnabledDescription": "Speaks once after the climb rate stays in the selected range briefly; rearms after it stays below the range.",
   "altitudeAnnouncementSectionVoice": "Voice",
   "altitudeAnnouncementSectionTakeoffLanding": "Takeoff & landing",
   "altitudeAnnouncementSectionGlide": "Glide dead zone",
   "altitudeAnnouncementSectionRecord": "Altitude record",
-  "altitudeAnnouncementSectionClimb": "Climb",
   "altitudeAnnouncementTakeoffLandingEnabled": "Takeoff & landing announcements",
   "altitudeAnnouncementTakeoffLandingDescription": "Plays a notification ding, then speaks when a flight starts or ends. With automatic takeoff/landing detection on, a takeoff that merges into the previous flight record announces \"continue flight\" instead.",
   "altitudeAnnouncementAutoDetectOff": "Automatic takeoff/landing detection is off, so \"continue flight\" is never announced.",
@@ -1143,9 +1140,8 @@
   "altitudeAnnouncementEventLanding": "Landing",
   "altitudeAnnouncementEventGlide": "Dead zone",
   "altitudeAnnouncementEventAltitudeRecord": "New altitude record",
-  "altitudeAnnouncementEventClimb": "Climb",
   "altitudeAnnouncementGlideEnabled": "Dead-zone announcement",
-  "altitudeAnnouncementGlideDescription": "The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set time, and rearms after it has left the zone for 3 s.",
+  "altitudeAnnouncementGlideDescription": "The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set delay, and rearms after it has left the zone for 3 s.",
   "altitudeAnnouncementGlideRange": "Dead zone: {minimum} to {maximum} m/s",
   "@altitudeAnnouncementGlideRange": {
     "placeholders": {
@@ -1160,10 +1156,11 @@
     }
   },
   "altitudeAnnouncementRecordEnabled": "New altitude record announcement",
-  "altitudeAnnouncementRecordDescription": "During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. After a record, the altitude must drop {drop} m below it before the next record is announced.",
-  "@altitudeAnnouncementRecordDescription": {
+  "altitudeAnnouncementRecordDescription": "During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. While records keep being broken, announcements are spaced by at least the interval below.",
+  "altitudeAnnouncementRecordInterval": "Minimum interval between announcements: {seconds} s",
+  "@altitudeAnnouncementRecordInterval": {
     "placeholders": {
-      "drop": { "type": "String" }
+      "seconds": { "type": "String" }
     }
   },
   "altitudeAnnouncementRecordScopeFlight": "This flight",
@@ -1178,14 +1175,6 @@
   "altitudeAnnouncementPlaceholderDistance": "Distance flown",
   "altitudeAnnouncementPlaceholderDistanceUnit": "Distance unit",
   "altitudeAnnouncementPlaceholderTime": "Clock time",
-  "altitudeAnnouncementLiftRange": "Lift-speed range (m/s)",
-  "altitudeAnnouncementRangeDescription": "Announce between {minimum} and {maximum} m/s",
-  "@altitudeAnnouncementRangeDescription": {
-    "placeholders": {
-      "minimum": { "type": "String" },
-      "maximum": { "type": "String" }
-    }
-  },
   "altitudeAnnouncementTest": "Test announcement",
   "altitudeAnnouncementTestSuccess": "Voice announcement is working.",
   "altitudeAnnouncementUnavailable": "No text-to-speech voice is available. Install or enable a speech engine with an English or Chinese voice in the system settings, check the media volume, then test again.",

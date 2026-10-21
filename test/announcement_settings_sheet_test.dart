@@ -35,9 +35,10 @@ void main() {
     expect(find.text('新的最高高度播报'), findsOneWidget);
     expect(find.textContaining('继续飞行'), findsWidgets);
     // One preview per announcement: takeoff, continue flight, landing, dead
-    // zone, altitude record, climb. (Default texts follow LocaleController,
-    // which is not set here, so only the custom text below is asserted.)
-    expect(find.textContaining('预览：'), findsNWidgets(6));
+    // zone, altitude record. (Default texts follow LocaleController, which is
+    // not set here, so only the custom text below is asserted.)
+    expect(find.textContaining('预览：'), findsNWidgets(5));
+    expect(find.text('爬升播报'), findsNothing);
 
     // Customizing a text updates its preview.
     AltitudeAnnouncementSettings.instance.setTemplateFor(

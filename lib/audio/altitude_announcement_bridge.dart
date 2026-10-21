@@ -23,9 +23,8 @@ import 'vario_ducking.dart';
 ///    speed has stayed in the (silent) dead zone for the configured time;
 ///    rearms after it has stayed outside the zone for a few seconds.
 ///  * **Altitude record** — during a flight, spoken immediately when the
-///    altitude exceeds the highest altitude recorded so far.
-///  * **Climb** — spoken once when the climb rate enters the configured lift
-///    range briefly; a sustained drop below the range rearms it.
+///    altitude exceeds the highest altitude recorded so far; consecutive
+///    records are spaced by at least the configured interval.
 class AltitudeAnnouncementBridge {
   AltitudeAnnouncementBridge({
     required this.source,
@@ -50,17 +49,9 @@ class AltitudeAnnouncementBridge {
   final FlightRecorder _recorder;
   final Future<void> Function() _chime;
 
-  static const _climbDwell = Duration(milliseconds: 900);
-  static const _climbRearmHysteresis = 0.2;
-
   /// How long a takeoff / landing announcement may wait for a running one.
   static const _transitionBusyTimeout = Duration(seconds: 10);
 
-  /// How long a new altitude record keeps being retried while the voice is
-  /// busy with another announcement.
-  static const _recordRetryWindow = Duration(seconds: 5);
-
-  final DwellTrigger _climb = DwellTrigger();
   final DwellTrigger _glide = DwellTrigger();
   final AltitudeRecordTrigger _record = AltitudeRecordTrigger();
   final Map<AnnouncementEvent, Timer> _timers = {};
@@ -69,7 +60,6 @@ class AltitudeAnnouncementBridge {
 
   /// Highest altitude of the current (or just completed) flight.
   double _flightMaxAltitude = double.nan;
-  DateTime? _recordPendingSince;
   bool _attached = false;
   bool? _wasEnabled;
   bool? _wasRecordEnabled;
@@ -94,9 +84,10 @@ class AltitudeAnnouncementBridge {
     final becameEnabled = anyEnabled && _wasEnabled != true;
     _wasEnabled = anyEnabled;
 
-    if (!_settings.enabled) _resetDwell(AnnouncementEvent.climb, _climb);
     if (!_settings.glideEnabled) _resetDwell(AnnouncementEvent.glide, _glide);
-    if (!_settings.recordEnabled) _recordPendingSince = null;
+    if (!_settings.recordEnabled) {
+      _cancelTimer(AnnouncementEvent.altitudeRecord);
+    }
 
     final recordTurnedOn = _settings.recordEnabled && _wasRecordEnabled != true;
     final scopeChanged = _settings.recordScope != _lastRecordScope;
@@ -137,7 +128,7 @@ class AltitudeAnnouncementBridge {
         event = AnnouncementEvent.continueFlight;
       case FlightTransitionKind.landing:
         _resetDwell(AnnouncementEvent.glide, _glide);
-        _recordPendingSince = null;
+        _cancelTimer(AnnouncementEvent.altitudeRecord);
         event = AnnouncementEvent.landing;
     }
     if (!_settings.takeoffLandingEnabled) return;
@@ -161,35 +152,8 @@ class AltitudeAnnouncementBridge {
     if (flying && hasAltitude && !(_flightMaxAltitude >= data.altitude)) {
       _flightMaxAltitude = data.altitude;
     }
-    _evaluateClimb(now, data);
     _evaluateGlide(now, data, flying);
     _evaluateRecord(now, data, flying && hasAltitude);
-  }
-
-  void _evaluateClimb(DateTime now, FlightData data) {
-    if (!_settings.enabled) return;
-    final speed = data.verticalSpeed;
-    if (!speed.isFinite) return;
-    final minimum = _settings.minimumLiftSpeed;
-    final due = _climb.update(
-      now,
-      inside: speed >= minimum && speed <= _settings.maximumLiftSpeed,
-      rearming: speed < minimum - _climbRearmHysteresis,
-      dwell: _climbDwell,
-    );
-    if (due) {
-      _cancelTimer(AnnouncementEvent.climb);
-      if (!data.altitude.isFinite) return;
-      unawaited(
-        _announce(
-          AnnouncementEvent.climb,
-          _valuesFor(data),
-          onDone: (spoken) => _rearmAfterFailure(_climb, spoken),
-        ),
-      );
-      return;
-    }
-    _scheduleRecheck(AnnouncementEvent.climb, _climb, now, _climbDwell);
   }
 
   void _evaluateGlide(DateTime now, FlightData data, bool flying) {
@@ -223,31 +187,37 @@ class AltitudeAnnouncementBridge {
 
   void _evaluateRecord(DateTime now, FlightData data, bool track) {
     if (!track) return;
-    // Tracked even while the announcement is off, so enabling it mid-flight
-    // compares against the whole flight so far.
-    final isRecord = _record.update(data.altitude);
-    if (!_settings.recordEnabled) {
-      _recordPendingSince = null;
+    // The peak is tracked even while the announcement is off, so enabling it
+    // mid-flight compares against the whole flight so far.
+    final enabled = _settings.recordEnabled;
+    final interval = _settings.recordInterval;
+    final due = _record.update(
+      data.altitude,
+      now,
+      minInterval: interval,
+      announce:
+          enabled && !_inProgress.contains(AnnouncementEvent.altitudeRecord),
+    );
+    if (!enabled) return;
+    if (!due) {
+      // A record broken during the minimum interval is announced as soon as
+      // the interval is over, even if no new sample arrives by then.
+      _scheduleRecheckIn(
+        AnnouncementEvent.altitudeRecord,
+        _record.pendingFor(now, interval),
+      );
       return;
     }
-    if (isRecord) _recordPendingSince = now;
-    final pendingSince = _recordPendingSince;
-    if (pendingSince == null ||
-        _inProgress.contains(AnnouncementEvent.altitudeRecord)) {
-      return;
-    }
-    if (now.difference(pendingSince) > _recordRetryWindow) {
-      _recordPendingSince = null;
-      return;
-    }
+    _cancelTimer(AnnouncementEvent.altitudeRecord);
     unawaited(
       _announce(
         AnnouncementEvent.altitudeRecord,
-        _valuesFor(data),
+        _valuesFor(data).copyWith(maxAltitudeMeters: _record.peak),
         onDone: (spoken) {
-          if (spoken ||
-              _speaker.availability == SpeechAvailability.unavailable) {
-            _recordPendingSince = null;
+          // Retried on the next sample unless speech is unavailable.
+          if (!spoken &&
+              _speaker.availability != SpeechAvailability.unavailable) {
+            _record.undoLastAnnouncement();
           }
         },
       ),
@@ -272,7 +242,7 @@ class AltitudeAnnouncementBridge {
       baseline = _flightMaxAltitude;
     }
     _record.reset(baseline: baseline);
-    _recordPendingSince = null;
+    _cancelTimer(AnnouncementEvent.altitudeRecord);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -294,13 +264,17 @@ class AltitudeAnnouncementBridge {
     DwellTrigger trigger,
     DateTime now,
     Duration dwell,
-  ) {
-    final left = trigger.pendingFor(now, dwell);
+  ) => _scheduleRecheckIn(event, trigger.pendingFor(now, dwell));
+
+  /// Re-evaluates after [left]; null cancels. Nothing is scheduled for a zero
+  /// delay (the announcement is only blocked by one in progress), the next
+  /// sample takes care of it.
+  void _scheduleRecheckIn(AnnouncementEvent event, Duration? left) {
     if (left == null) {
       _cancelTimer(event);
       return;
     }
-    if (_timers.containsKey(event)) return;
+    if (left == Duration.zero || _timers.containsKey(event)) return;
     _timers[event] = Timer(left + const Duration(milliseconds: 20), () {
       _timers.remove(event);
       _onData();

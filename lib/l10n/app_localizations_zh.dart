@@ -2721,17 +2721,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementTitle => '语音播报';
 
   @override
-  String get altitudeAnnouncementSubtitle => '起飞降落、滑翔死区、最高高度及爬升播报';
+  String get altitudeAnnouncementSubtitle => '起飞降落、滑翔死区及刷新高度播报';
 
   @override
   String get altitudeAnnouncementDescription => '选择需要语音播报的飞行事件，每条播报内容均可自定义并预览。';
-
-  @override
-  String get altitudeAnnouncementEnabled => '爬升播报';
-
-  @override
-  String get altitudeAnnouncementEnabledDescription =>
-      '爬升速度在所选区间内短暂停留后播报一次；速度低于区间并保持一段时间后重新启用。';
 
   @override
   String get altitudeAnnouncementSectionVoice => '语音';
@@ -2744,9 +2737,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get altitudeAnnouncementSectionRecord => '最高高度';
-
-  @override
-  String get altitudeAnnouncementSectionClimb => '爬升';
 
   @override
   String get altitudeAnnouncementTakeoffLandingEnabled => '起飞/降落播报';
@@ -2774,14 +2764,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementEventAltitudeRecord => '新的最高高度';
 
   @override
-  String get altitudeAnnouncementEventClimb => '爬升';
-
-  @override
   String get altitudeAnnouncementGlideEnabled => '死区播报';
 
   @override
   String get altitudeAnnouncementGlideDescription =>
-      '垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定时间后播报一次；离开死区 3 秒后重新启用。';
+      '垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定的延时后播报一次；离开死区 3 秒后重新启用。';
 
   @override
   String altitudeAnnouncementGlideRange(String minimum, String maximum) {
@@ -2797,8 +2784,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementRecordEnabled => '新的最高高度播报';
 
   @override
-  String altitudeAnnouncementRecordDescription(String drop) {
-    return '飞行中高度超过此前记录的最高高度时立即播报。播报后需下降 $drop 米以上，再次突破时才会重新播报。';
+  String get altitudeAnnouncementRecordDescription =>
+      '飞行中高度超过此前记录的最高高度时立即播报。连续刷新最高高度时，两次播报之间至少间隔下方设定的时间。';
+
+  @override
+  String altitudeAnnouncementRecordInterval(String seconds) {
+    return '两次播报最小间隔：$seconds 秒';
   }
 
   @override
@@ -2836,14 +2827,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get altitudeAnnouncementPlaceholderTime => '当前时间';
-
-  @override
-  String get altitudeAnnouncementLiftRange => '爬升速度区间（m/s）';
-
-  @override
-  String altitudeAnnouncementRangeDescription(String minimum, String maximum) {
-    return '在 $minimum 至 $maximum m/s 之间播报';
-  }
 
   @override
   String get altitudeAnnouncementTest => '试听播报';

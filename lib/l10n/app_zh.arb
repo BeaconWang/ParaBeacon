@@ -996,15 +996,12 @@
   "sensorUnsupported": "蓝牙传感器仅在 iOS 和 Android 上可用。",
 
   "altitudeAnnouncementTitle": "语音播报",
-  "altitudeAnnouncementSubtitle": "起飞降落、滑翔死区、最高高度及爬升播报",
+  "altitudeAnnouncementSubtitle": "起飞降落、滑翔死区及刷新高度播报",
   "altitudeAnnouncementDescription": "选择需要语音播报的飞行事件，每条播报内容均可自定义并预览。",
-  "altitudeAnnouncementEnabled": "爬升播报",
-  "altitudeAnnouncementEnabledDescription": "爬升速度在所选区间内短暂停留后播报一次；速度低于区间并保持一段时间后重新启用。",
   "altitudeAnnouncementSectionVoice": "语音",
   "altitudeAnnouncementSectionTakeoffLanding": "起飞与降落",
   "altitudeAnnouncementSectionGlide": "滑翔死区",
   "altitudeAnnouncementSectionRecord": "最高高度",
-  "altitudeAnnouncementSectionClimb": "爬升",
   "altitudeAnnouncementTakeoffLandingEnabled": "起飞/降落播报",
   "altitudeAnnouncementTakeoffLandingDescription": "先播放一声“叮”提示音，再在飞行开始或结束时播报。开启自动起降检测后，如果再次起飞合并了上一条飞行记录，则改为播报“继续飞行”。",
   "altitudeAnnouncementAutoDetectOff": "自动起降检测已关闭，不会播报“继续飞行”。",
@@ -1013,9 +1010,8 @@
   "altitudeAnnouncementEventLanding": "降落",
   "altitudeAnnouncementEventGlide": "死区",
   "altitudeAnnouncementEventAltitudeRecord": "新的最高高度",
-  "altitudeAnnouncementEventClimb": "爬升",
   "altitudeAnnouncementGlideEnabled": "死区播报",
-  "altitudeAnnouncementGlideDescription": "垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定时间后播报一次；离开死区 3 秒后重新启用。",
+  "altitudeAnnouncementGlideDescription": "垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定的延时后播报一次；离开死区 3 秒后重新启用。",
   "altitudeAnnouncementGlideRange": "死区范围：{minimum} 至 {maximum} m/s",
   "@altitudeAnnouncementGlideRange": {
     "placeholders": {
@@ -1030,10 +1026,11 @@
     }
   },
   "altitudeAnnouncementRecordEnabled": "新的最高高度播报",
-  "altitudeAnnouncementRecordDescription": "飞行中高度超过此前记录的最高高度时立即播报。播报后需下降 {drop} 米以上，再次突破时才会重新播报。",
-  "@altitudeAnnouncementRecordDescription": {
+  "altitudeAnnouncementRecordDescription": "飞行中高度超过此前记录的最高高度时立即播报。连续刷新最高高度时，两次播报之间至少间隔下方设定的时间。",
+  "altitudeAnnouncementRecordInterval": "两次播报最小间隔：{seconds} 秒",
+  "@altitudeAnnouncementRecordInterval": {
     "placeholders": {
-      "drop": { "type": "String" }
+      "seconds": { "type": "String" }
     }
   },
   "altitudeAnnouncementRecordScopeFlight": "本次飞行",
@@ -1048,14 +1045,6 @@
   "altitudeAnnouncementPlaceholderDistance": "飞行距离",
   "altitudeAnnouncementPlaceholderDistanceUnit": "距离单位",
   "altitudeAnnouncementPlaceholderTime": "当前时间",
-  "altitudeAnnouncementLiftRange": "爬升速度区间（m/s）",
-  "altitudeAnnouncementRangeDescription": "在 {minimum} 至 {maximum} m/s 之间播报",
-  "@altitudeAnnouncementRangeDescription": {
-    "placeholders": {
-      "minimum": { "type": "String" },
-      "maximum": { "type": "String" }
-    }
-  },
   "altitudeAnnouncementTest": "试听播报",
   "altitudeAnnouncementTestSuccess": "语音播报工作正常。",
   "altitudeAnnouncementUnavailable": "没有可用的语音合成（TTS）声音。请在系统设置中安装或启用带中文或英文语音的语音引擎，并检查媒体音量，然后重新试听。",

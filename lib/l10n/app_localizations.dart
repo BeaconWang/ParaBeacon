@@ -5321,7 +5321,7 @@ abstract class AppLocalizations {
   /// No description provided for @altitudeAnnouncementSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Takeoff/landing, glide dead zone, altitude record and climb'**
+  /// **'Takeoff/landing, glide dead zone and altitude record'**
   String get altitudeAnnouncementSubtitle;
 
   /// No description provided for @altitudeAnnouncementDescription.
@@ -5329,18 +5329,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose which flight events are spoken. Every announcement text can be customized and previewed.'**
   String get altitudeAnnouncementDescription;
-
-  /// No description provided for @altitudeAnnouncementEnabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Climb announcement'**
-  String get altitudeAnnouncementEnabled;
-
-  /// No description provided for @altitudeAnnouncementEnabledDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Speaks once after the climb rate stays in the selected range briefly; rearms after it stays below the range.'**
-  String get altitudeAnnouncementEnabledDescription;
 
   /// No description provided for @altitudeAnnouncementSectionVoice.
   ///
@@ -5365,12 +5353,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Altitude record'**
   String get altitudeAnnouncementSectionRecord;
-
-  /// No description provided for @altitudeAnnouncementSectionClimb.
-  ///
-  /// In en, this message translates to:
-  /// **'Climb'**
-  String get altitudeAnnouncementSectionClimb;
 
   /// No description provided for @altitudeAnnouncementTakeoffLandingEnabled.
   ///
@@ -5420,12 +5402,6 @@ abstract class AppLocalizations {
   /// **'New altitude record'**
   String get altitudeAnnouncementEventAltitudeRecord;
 
-  /// No description provided for @altitudeAnnouncementEventClimb.
-  ///
-  /// In en, this message translates to:
-  /// **'Climb'**
-  String get altitudeAnnouncementEventClimb;
-
   /// No description provided for @altitudeAnnouncementGlideEnabled.
   ///
   /// In en, this message translates to:
@@ -5435,7 +5411,7 @@ abstract class AppLocalizations {
   /// No description provided for @altitudeAnnouncementGlideDescription.
   ///
   /// In en, this message translates to:
-  /// **'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set time, and rearms after it has left the zone for 3 s.'**
+  /// **'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set delay, and rearms after it has left the zone for 3 s.'**
   String get altitudeAnnouncementGlideDescription;
 
   /// No description provided for @altitudeAnnouncementGlideRange.
@@ -5459,8 +5435,14 @@ abstract class AppLocalizations {
   /// No description provided for @altitudeAnnouncementRecordDescription.
   ///
   /// In en, this message translates to:
-  /// **'During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. After a record, the altitude must drop {drop} m below it before the next record is announced.'**
-  String altitudeAnnouncementRecordDescription(String drop);
+  /// **'During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. While records keep being broken, announcements are spaced by at least the interval below.'**
+  String get altitudeAnnouncementRecordDescription;
+
+  /// No description provided for @altitudeAnnouncementRecordInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum interval between announcements: {seconds} s'**
+  String altitudeAnnouncementRecordInterval(String seconds);
 
   /// No description provided for @altitudeAnnouncementRecordScopeFlight.
   ///
@@ -5533,18 +5515,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clock time'**
   String get altitudeAnnouncementPlaceholderTime;
-
-  /// No description provided for @altitudeAnnouncementLiftRange.
-  ///
-  /// In en, this message translates to:
-  /// **'Lift-speed range (m/s)'**
-  String get altitudeAnnouncementLiftRange;
-
-  /// No description provided for @altitudeAnnouncementRangeDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Announce between {minimum} and {maximum} m/s'**
-  String altitudeAnnouncementRangeDescription(String minimum, String maximum);
 
   /// No description provided for @altitudeAnnouncementTest.
   ///

@@ -9,28 +9,6 @@ void main() {
     groundSpeedKmh: 32.2,
   );
 
-  test('renders default English template with metric units', () {
-    expect(
-      AnnouncementTemplate.render(
-        AnnouncementTemplate.defaultEnglish,
-        AnnouncementLanguage.english,
-        values,
-      ),
-      'Altitude 1250 meters',
-    );
-  });
-
-  test('renders default Chinese template', () {
-    expect(
-      AnnouncementTemplate.render(
-        AnnouncementTemplate.defaultChinese,
-        AnnouncementLanguage.chinese,
-        values,
-      ),
-      '当前高度，1250米',
-    );
-  });
-
   test('renders all placeholders and keeps unknown tokens', () {
     expect(
       AnnouncementTemplate.render(
@@ -103,20 +81,39 @@ void main() {
       AnnouncementTemplate.defaultFor(en, AnnouncementEvent.continueFlight),
       'Continue flight',
     );
-    for (final event in [
-      AnnouncementEvent.glide,
-      AnnouncementEvent.altitudeRecord,
-      AnnouncementEvent.climb,
-    ]) {
-      expect(
-        AnnouncementTemplate.render(
-          AnnouncementTemplate.defaultFor(zh, event),
-          zh,
-          values,
-        ),
-        '当前高度，1250米',
-      );
-    }
+    expect(
+      AnnouncementTemplate.render(
+        AnnouncementTemplate.defaultFor(zh, AnnouncementEvent.glide),
+        zh,
+        values,
+      ),
+      '高度：1250',
+    );
+    expect(
+      AnnouncementTemplate.render(
+        AnnouncementTemplate.defaultFor(en, AnnouncementEvent.glide),
+        en,
+        values,
+      ),
+      'Height: 1250',
+    );
+    final record = values.copyWith(maxAltitudeMeters: 1310.4);
+    expect(
+      AnnouncementTemplate.render(
+        AnnouncementTemplate.defaultFor(zh, AnnouncementEvent.altitudeRecord),
+        zh,
+        record,
+      ),
+      '刷新高度：1310',
+    );
+    expect(
+      AnnouncementTemplate.render(
+        AnnouncementTemplate.defaultFor(en, AnnouncementEvent.altitudeRecord),
+        en,
+        record,
+      ),
+      'Refresh height: 1310',
+    );
   });
 
   test('renders the extended placeholders', () {

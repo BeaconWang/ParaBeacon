@@ -18,8 +18,7 @@ enum AltitudeRecordScope {
 /// Features (each independently switchable, each with its own text):
 ///  * takeoff / landing / continue flight (quick relaunch),
 ///  * glide dead zone,
-///  * new altitude record,
-///  * climb (lift range) — [enabled] for backward compatibility.
+///  * new altitude record.
 class AltitudeAnnouncementSettings extends ChangeNotifier {
   AltitudeAnnouncementSettings._();
 
@@ -27,9 +26,6 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
       AltitudeAnnouncementSettings._();
 
   static const _prefix = 'pb.altitudeAnnouncements';
-  static const _kEnabled = '$_prefix.enabled';
-  static const _kMinimumLiftSpeed = '$_prefix.minimumLiftSpeed';
-  static const _kMaximumLiftSpeed = '$_prefix.maximumLiftSpeed';
   static const _kTemplate = '$_prefix.template';
   static const _kDuckVario = '$_prefix.duckVario';
   static const _kDuckLevel = '$_prefix.duckLevel';
@@ -41,13 +37,19 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const _kGlideDelay = '$_prefix.glide.delaySeconds';
   static const _kRecordEnabled = '$_prefix.record.enabled';
   static const _kRecordScope = '$_prefix.record.scope';
+  static const _kRecordInterval = '$_prefix.record.intervalSeconds';
 
-  /// Storage key of the custom text for [event]. The climb text keeps the
-  /// original key so existing customizations survive the upgrade.
+  /// Keys of the removed climb (lift range) announcement, deleted on load.
+  static const _obsoleteKeys = [
+    '$_prefix.enabled',
+    '$_prefix.minimumLiftSpeed',
+    '$_prefix.maximumLiftSpeed',
+    _kTemplate,
+  ];
+
+  /// Storage key of the custom text for [event].
   static String _templateKey(AnnouncementEvent event) =>
-      event == AnnouncementEvent.climb
-      ? _kTemplate
-      : '$_kTemplate.${event.name}';
+      '$_kTemplate.${event.name}';
 
   /// Allowed range for [speechRate] (multiple of the normal speaking speed).
   static const minSpeechRate = AltitudeAnnouncementSpeaker.minRate;
@@ -65,13 +67,16 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const defaultGlideMaximum = 0.0;
 
   /// Limits of the time spent in the dead zone before announcing (seconds).
-  static const minGlideDelay = 0.5;
-  static const maxGlideDelay = 10.0;
-  static const defaultGlideDelay = 0.5;
+  static const minGlideDelay = 0.0;
+  static const maxGlideDelay = 2.0;
+  static const defaultGlideDelay = 0.1;
 
-  bool _enabled = false;
-  double _minimumLiftSpeed = 0.5;
-  double _maximumLiftSpeed = 2.0;
+  /// Limits of the minimum time between two altitude record announcements
+  /// while records keep being broken (seconds).
+  static const minRecordInterval = 1.0;
+  static const maxRecordInterval = 60.0;
+  static const defaultRecordInterval = 5.0;
+
   final Map<AnnouncementEvent, String> _templates = {};
   bool _duckVario = true;
   double _varioDuckLevel = 0.3;
@@ -83,15 +88,11 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   double _glideDelaySeconds = defaultGlideDelay;
   bool _recordEnabled = false;
   AltitudeRecordScope _recordScope = AltitudeRecordScope.flight;
+  double _recordIntervalSeconds = defaultRecordInterval;
   bool _loaded = false;
 
   /// Speaking speed as a multiple of the normal speed (1.0 = normal).
   double get speechRate => _speechRate;
-
-  /// Climb (lift range) announcement switch.
-  bool get enabled => _enabled;
-  double get minimumLiftSpeed => _minimumLiftSpeed;
-  double get maximumLiftSpeed => _maximumLiftSpeed;
 
   /// Takeoff / landing / continue-flight announcements.
   bool get takeoffLandingEnabled => _takeoffLandingEnabled;
@@ -110,18 +111,21 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   bool get recordEnabled => _recordEnabled;
   AltitudeRecordScope get recordScope => _recordScope;
 
+  /// Minimum time between two record announcements while records keep
+  /// being broken.
+  double get recordIntervalSeconds => _recordIntervalSeconds;
+  Duration get recordInterval =>
+      Duration(milliseconds: (_recordIntervalSeconds * 1000).round());
+
   /// Whether any announcement can currently be triggered.
   bool get anyEnabled =>
-      _enabled || _takeoffLandingEnabled || _glideEnabled || _recordEnabled;
+      _takeoffLandingEnabled || _glideEnabled || _recordEnabled;
 
   /// Whether the vario tone is lowered while an announcement is spoken.
   bool get duckVario => _duckVario;
 
   /// Fraction (0..0.9) of the normal vario volume kept while speaking.
   double get varioDuckLevel => _varioDuckLevel;
-
-  /// User-defined climb announcement template, or `null` for the default.
-  String? get template => templateFor(AnnouncementEvent.climb);
 
   /// User-defined template for [event], or `null` to use the built-in
   /// default for the current language.
@@ -132,14 +136,8 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
     _loaded = true;
     try {
       final preferences = await SharedPreferences.getInstance();
-      _enabled = preferences.getBool(_kEnabled) ?? _enabled;
-      final minimum = preferences.getDouble(_kMinimumLiftSpeed);
-      final maximum = preferences.getDouble(_kMaximumLiftSpeed);
-      if (minimum != null && minimum.isFinite) {
-        _minimumLiftSpeed = minimum.clamp(0.1, 5.9);
-      }
-      if (maximum != null && maximum.isFinite) {
-        _maximumLiftSpeed = maximum.clamp(_minimumLiftSpeed + 0.1, 6.0);
+      for (final key in _obsoleteKeys) {
+        if (preferences.containsKey(key)) await preferences.remove(key);
       }
       for (final event in AnnouncementEvent.values) {
         final value = AnnouncementTemplate.sanitize(
@@ -184,16 +182,16 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
         (value) => value.name == scope,
         orElse: () => AltitudeRecordScope.flight,
       );
+      final recordInterval = preferences.getDouble(_kRecordInterval);
+      if (recordInterval != null && recordInterval.isFinite) {
+        _recordIntervalSeconds = recordInterval.clamp(
+          minRecordInterval,
+          maxRecordInterval,
+        );
+      }
     } catch (_) {
       // Keep defaults if local storage is unavailable.
     }
-    notifyListeners();
-  }
-
-  void setEnabled(bool enabled) {
-    if (_enabled == enabled) return;
-    _enabled = enabled;
-    _persistBool(_kEnabled, enabled);
     notifyListeners();
   }
 
@@ -225,17 +223,12 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setLiftSpeedRange(double minimum, double maximum) {
-    if (!minimum.isFinite || !maximum.isFinite) return;
-    final nextMinimum = minimum.clamp(0.1, 5.9);
-    final nextMaximum = maximum.clamp(nextMinimum + 0.1, 6.0);
-    if (_minimumLiftSpeed == nextMinimum && _maximumLiftSpeed == nextMaximum) {
-      return;
-    }
-    _minimumLiftSpeed = nextMinimum;
-    _maximumLiftSpeed = nextMaximum;
-    _persistDouble(_kMinimumLiftSpeed, nextMinimum);
-    _persistDouble(_kMaximumLiftSpeed, nextMaximum);
+  void setRecordIntervalSeconds(double seconds) {
+    if (!seconds.isFinite) return;
+    final next = _snap(seconds.clamp(minRecordInterval, maxRecordInterval), 1);
+    if (_recordIntervalSeconds == next) return;
+    _recordIntervalSeconds = next;
+    _persistDouble(_kRecordInterval, next);
     notifyListeners();
   }
 
@@ -259,7 +252,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
 
   void setGlideDelaySeconds(double seconds) {
     if (!seconds.isFinite) return;
-    final next = _snap(seconds.clamp(minGlideDelay, maxGlideDelay), 2);
+    final next = _snap(seconds.clamp(minGlideDelay, maxGlideDelay), 10);
     if (_glideDelaySeconds == next) return;
     _glideDelaySeconds = next;
     _persistDouble(_kGlideDelay, next);
@@ -291,10 +284,6 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
     _persistDouble(_kSpeechRate, next);
     notifyListeners();
   }
-
-  /// Sets the custom climb template; a blank value restores the default.
-  void setTemplate(String? template) =>
-      setTemplateFor(AnnouncementEvent.climb, template);
 
   /// Sets the custom template of [event]; a blank value restores the default.
   void setTemplateFor(AnnouncementEvent event, String? template) {

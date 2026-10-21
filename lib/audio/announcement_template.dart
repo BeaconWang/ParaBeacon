@@ -19,10 +19,7 @@ enum AnnouncementEvent {
   glide,
 
   /// The altitude exceeded the highest altitude recorded so far.
-  altitudeRecord,
-
-  /// Climb rate entered the configured lift range.
-  climb;
+  altitudeRecord;
 
   /// Takeoff / landing events are preceded by a notification ding.
   bool get isFlightTransition =>
@@ -86,7 +83,7 @@ class AnnouncementValues {
           altitudeMeters: 1310,
           climbMetersPerSecond: 1.2,
         ),
-        AnnouncementEvent.continueFlight || AnnouncementEvent.climb => sample,
+        AnnouncementEvent.continueFlight => sample,
       };
 
   final double altitudeMeters;
@@ -178,25 +175,22 @@ class AnnouncementTemplate {
 
   static const maxLength = 200;
 
-  static const defaultChinese = '当前高度，{altitude}{altitudeUnit}';
-  static const defaultEnglish = 'Altitude {altitude} {altitudeUnit}';
-
   static final _tokenPattern = RegExp(r'\{(\w+)\}');
   static final _cjkPattern = RegExp(r'[\u3400-\u9fff\uf900-\ufaff]');
 
   /// Built-in announcement text for [event] in [language].
   static String defaultFor(
-    AnnouncementLanguage language, [
-    AnnouncementEvent event = AnnouncementEvent.climb,
-  ]) {
+    AnnouncementLanguage language,
+    AnnouncementEvent event,
+  ) {
     final zh = language == AnnouncementLanguage.chinese;
     return switch (event) {
       AnnouncementEvent.takeoff => zh ? '起飞' : 'Takeoff',
       AnnouncementEvent.continueFlight => zh ? '继续飞行' : 'Continue flight',
       AnnouncementEvent.landing => zh ? '降落' : 'Landing',
-      AnnouncementEvent.glide ||
-      AnnouncementEvent.altitudeRecord ||
-      AnnouncementEvent.climb => zh ? defaultChinese : defaultEnglish,
+      AnnouncementEvent.glide => zh ? '高度：{altitude}' : 'Height: {altitude}',
+      AnnouncementEvent.altitudeRecord =>
+        zh ? '刷新高度：{maxAltitude}' : 'Refresh height: {maxAltitude}',
     };
   }
 

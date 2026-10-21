@@ -60,43 +60,85 @@ class DwellTrigger {
   }
 }
 
-/// Detects a new altitude record: fires as soon as the altitude exceeds the
-/// highest altitude seen so far, but only after it has dropped at least
-/// [rearmDrop] meters below that peak since the last record (or since the
-/// start). This keeps a continuous climb from announcing every meter and
-/// sensor noise from producing false records.
+/// Detects new altitude records.
+///
+/// A record is the altitude exceeding the highest altitude seen so far (the
+/// baseline included). It is announced immediately, except that while
+/// records keep being broken (e.g. during a climb) announcements are at
+/// least `minInterval` apart; a record broken during that pause is
+/// announced as soon as the pause is over, with the highest value reached.
+///
+/// A record must exceed the last announced one by at least [minimumGain]
+/// meters, so sensor noise around the peak never repeats the same number.
 class AltitudeRecordTrigger {
-  AltitudeRecordTrigger({this.rearmDrop = defaultRearmDrop});
+  AltitudeRecordTrigger({this.minimumGain = 1.0});
 
-  /// Default drop (m) below the record required before the next one.
-  static const defaultRearmDrop = 20.0;
-
-  final double rearmDrop;
+  final double minimumGain;
 
   double _peak = double.negativeInfinity;
-  bool _armed = false;
+  double _announced = double.negativeInfinity;
+  DateTime? _lastAnnouncedAt;
+  double _previousAnnounced = double.negativeInfinity;
+  DateTime? _previousAnnouncedAt;
 
   /// Highest altitude known (baseline included), or -infinity.
   double get peak => _peak;
-  bool get armed => _armed;
+
+  /// Whether a record is waiting for the end of the minimum interval.
+  bool get hasPendingRecord =>
+      _announced.isFinite && _peak >= _announced + minimumGain;
 
   /// Starts over with [baseline] (e.g. the highest altitude of all logged
-  /// flights) as the record to beat.
+  /// flights) as the record to beat. Without a baseline the first altitude
+  /// fed becomes the reference.
   void reset({double baseline = double.negativeInfinity}) {
     _peak = baseline.isFinite ? baseline : double.negativeInfinity;
-    _armed = false;
+    _announced = _peak;
+    _lastAnnouncedAt = null;
+    _previousAnnounced = _announced;
+    _previousAnnouncedAt = null;
   }
 
-  /// Feeds an altitude (m); returns true when it sets a new record.
-  bool update(double altitude) {
+  /// Feeds an altitude (m) observed at [now]. Returns true when a record is
+  /// due to be announced now; [peak] is then the record to announce. With
+  /// [announce] false the peak is still tracked but nothing becomes due.
+  bool update(
+    double altitude,
+    DateTime now, {
+    required Duration minInterval,
+    bool announce = true,
+  }) {
     if (!altitude.isFinite) return false;
-    if (altitude > _peak) {
-      final record = _armed;
+    if (!_peak.isFinite) {
       _peak = altitude;
-      _armed = false;
-      return record;
+      _announced = altitude;
+      return false;
     }
-    if (!_armed && altitude <= _peak - rearmDrop) _armed = true;
-    return false;
+    if (altitude > _peak) _peak = altitude;
+    if (!announce || !hasPendingRecord) return false;
+    final last = _lastAnnouncedAt;
+    if (last != null && now.difference(last) < minInterval) return false;
+    _previousAnnounced = _announced;
+    _previousAnnouncedAt = last;
+    _announced = _peak;
+    _lastAnnouncedAt = now;
+    return true;
+  }
+
+  /// Time left until a pending record may be announced, or null when no
+  /// record is pending.
+  Duration? pendingFor(DateTime now, Duration minInterval) {
+    if (!hasPendingRecord) return null;
+    final last = _lastAnnouncedAt;
+    if (last == null) return Duration.zero;
+    final left = minInterval - now.difference(last);
+    return left.isNegative ? Duration.zero : left;
+  }
+
+  /// Reverts the last announcement (it could not be spoken) so the record
+  /// is announced again on the next update.
+  void undoLastAnnouncement() {
+    _announced = _previousAnnounced;
+    _lastAnnouncedAt = _previousAnnouncedAt;
   }
 }

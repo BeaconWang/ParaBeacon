@@ -2804,18 +2804,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get altitudeAnnouncementSubtitle =>
-      'Takeoff/landing, glide dead zone, altitude record and climb';
+      'Takeoff/landing, glide dead zone and altitude record';
 
   @override
   String get altitudeAnnouncementDescription =>
       'Choose which flight events are spoken. Every announcement text can be customized and previewed.';
-
-  @override
-  String get altitudeAnnouncementEnabled => 'Climb announcement';
-
-  @override
-  String get altitudeAnnouncementEnabledDescription =>
-      'Speaks once after the climb rate stays in the selected range briefly; rearms after it stays below the range.';
 
   @override
   String get altitudeAnnouncementSectionVoice => 'Voice';
@@ -2828,9 +2821,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get altitudeAnnouncementSectionRecord => 'Altitude record';
-
-  @override
-  String get altitudeAnnouncementSectionClimb => 'Climb';
 
   @override
   String get altitudeAnnouncementTakeoffLandingEnabled =>
@@ -2860,14 +2850,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementEventAltitudeRecord => 'New altitude record';
 
   @override
-  String get altitudeAnnouncementEventClimb => 'Climb';
-
-  @override
   String get altitudeAnnouncementGlideEnabled => 'Dead-zone announcement';
 
   @override
   String get altitudeAnnouncementGlideDescription =>
-      'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set time, and rearms after it has left the zone for 3 s.';
+      'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set delay, and rearms after it has left the zone for 3 s.';
 
   @override
   String altitudeAnnouncementGlideRange(String minimum, String maximum) {
@@ -2884,8 +2871,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'New altitude record announcement';
 
   @override
-  String altitudeAnnouncementRecordDescription(String drop) {
-    return 'During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. After a record, the altitude must drop $drop m below it before the next record is announced.';
+  String get altitudeAnnouncementRecordDescription =>
+      'During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. While records keep being broken, announcements are spaced by at least the interval below.';
+
+  @override
+  String altitudeAnnouncementRecordInterval(String seconds) {
+    return 'Minimum interval between announcements: $seconds s';
   }
 
   @override
@@ -2924,14 +2915,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get altitudeAnnouncementPlaceholderTime => 'Clock time';
-
-  @override
-  String get altitudeAnnouncementLiftRange => 'Lift-speed range (m/s)';
-
-  @override
-  String altitudeAnnouncementRangeDescription(String minimum, String maximum) {
-    return 'Announce between $minimum and $maximum m/s';
-  }
 
   @override
   String get altitudeAnnouncementTest => 'Test announcement';

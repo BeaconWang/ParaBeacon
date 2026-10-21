@@ -4,7 +4,6 @@ import '../audio/altitude_announcement_bridge.dart';
 import '../audio/altitude_announcement_settings.dart';
 import '../audio/altitude_announcement_speaker.dart';
 import '../audio/announcement_template.dart';
-import '../audio/announcement_triggers.dart';
 import '../data/flight_state.dart';
 import '../l10n/app_localizations.dart';
 
@@ -35,7 +34,6 @@ String _eventLabel(AppLocalizations l10n, AnnouncementEvent event) =>
       AnnouncementEvent.glide => l10n.altitudeAnnouncementEventGlide,
       AnnouncementEvent.altitudeRecord =>
         l10n.altitudeAnnouncementEventAltitudeRecord,
-      AnnouncementEvent.climb => l10n.altitudeAnnouncementEventClimb,
     };
 
 String _placeholderLabel(
@@ -230,7 +228,7 @@ class _AltitudeAnnouncementSettingsSheetState
                   value: settings.glideDelaySeconds,
                   min: AltitudeAnnouncementSettings.minGlideDelay,
                   max: AltitudeAnnouncementSettings.maxGlideDelay,
-                  divisions: 19,
+                  divisions: 20,
                   label: '${settings.glideDelaySeconds.toStringAsFixed(1)} s',
                   onChanged: settings.glideEnabled
                       ? settings.setGlideDelaySeconds
@@ -246,11 +244,7 @@ class _AltitudeAnnouncementSettingsSheetState
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: Text(l10n.altitudeAnnouncementRecordEnabled),
-                  subtitle: Text(
-                    l10n.altitudeAnnouncementRecordDescription(
-                      AltitudeRecordTrigger.defaultRearmDrop.round().toString(),
-                    ),
-                  ),
+                  subtitle: Text(l10n.altitudeAnnouncementRecordDescription),
                   value: settings.recordEnabled,
                   onChanged: settings.setRecordEnabled,
                 ),
@@ -274,46 +268,24 @@ class _AltitudeAnnouncementSettingsSheetState
                         : null,
                   ),
                 ),
-                const SizedBox(height: 4),
-                _textTile(AnnouncementEvent.altitudeRecord),
-
-                // ── Climb (lift range) ────────────────────────────────────
-                _SectionHeader(
-                  icon: Icons.trending_up,
-                  title: l10n.altitudeAnnouncementSectionClimb,
-                ),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.altitudeAnnouncementEnabled),
-                  subtitle: Text(l10n.altitudeAnnouncementEnabledDescription),
-                  value: settings.enabled,
-                  onChanged: settings.setEnabled,
-                ),
+                const SizedBox(height: 8),
                 Text(
-                  l10n.altitudeAnnouncementRangeDescription(
-                    settings.minimumLiftSpeed.toStringAsFixed(1),
-                    settings.maximumLiftSpeed.toStringAsFixed(1),
+                  l10n.altitudeAnnouncementRecordInterval(
+                    settings.recordIntervalSeconds.round().toString(),
                   ),
                   style: theme.textTheme.bodySmall,
                 ),
-                RangeSlider(
-                  values: RangeValues(
-                    settings.minimumLiftSpeed,
-                    settings.maximumLiftSpeed,
-                  ),
-                  min: 0.1,
-                  max: 6.0,
+                Slider(
+                  value: settings.recordIntervalSeconds,
+                  min: AltitudeAnnouncementSettings.minRecordInterval,
+                  max: AltitudeAnnouncementSettings.maxRecordInterval,
                   divisions: 59,
-                  labels: RangeLabels(
-                    settings.minimumLiftSpeed.toStringAsFixed(1),
-                    settings.maximumLiftSpeed.toStringAsFixed(1),
-                  ),
-                  onChanged: settings.enabled
-                      ? (values) =>
-                            settings.setLiftSpeedRange(values.start, values.end)
+                  label: '${settings.recordIntervalSeconds.round()} s',
+                  onChanged: settings.recordEnabled
+                      ? settings.setRecordIntervalSeconds
                       : null,
                 ),
-                _textTile(AnnouncementEvent.climb),
+                _textTile(AnnouncementEvent.altitudeRecord),
 
                 // ── Voice ─────────────────────────────────────────────────
                 _SectionHeader(

@@ -92,7 +92,7 @@ class FlightTrack {
     _persistedPointCount = pointCount;
   }
 
-  final DateTime startTime;
+  DateTime startTime;
   DateTime? endTime;
 
   /// Whether this flight was started by automatic take-off detection. Null is
@@ -294,7 +294,7 @@ class FlightTrack {
     for (final sample in retained) {
       add(sample);
     }
-    if (trimmedEnd) endTime = retained.last.time;
+    if (endTime != null || trimmedEnd) endTime = retained.last.time;
     return true;
   }
 
@@ -312,6 +312,7 @@ class FlightTrack {
   void add(FlightSample s) {
     final prev = samples.isNotEmpty ? samples.last : null;
     samples.add(s);
+    if (prev == null) startTime = s.time;
 
     final chronological = prev == null || s.time.isAfter(prev.time);
     if (!chronological) return;
@@ -568,9 +569,7 @@ class FlightTrack {
     // persisted summary rather than returning an empty track.
     if (track.samples.isEmpty) return fromSummaryJson(json);
 
-    track.endTime =
-        DateTime.tryParse(json['endTime'] as String? ?? '') ??
-        track.samples.last.time;
+    track.endTime = track.samples.last.time;
     track._restoreMeta(json);
     return track;
   }
@@ -999,7 +998,7 @@ class FlightRecorder extends ChangeNotifier {
     _quickRelaunchAt = null;
     _quickRelaunchTrackDiscarded = false;
     final aircraft = AircraftSettings.instance;
-    _current = FlightTrack(startTime: DateTime.now())
+    _current = FlightTrack(startTime: at?.toUtc() ?? DateTime.now().toUtc())
       ..aircraftFaiClass = aircraft.faiClass
       ..aircraftManufacturer = aircraft.manufacturer
       ..aircraftModel = aircraft.model
@@ -1028,7 +1027,12 @@ class FlightRecorder extends ChangeNotifier {
     _lastStored = null;
     if (t == null) return false;
     t.endedAutomatically = automaticLanding;
-    t.endTime = DateTime.now();
+    if (t.samples.isNotEmpty) {
+      t.startTime = t.firstRecordedTime;
+      t.endTime = t.lastRecordedTime;
+    } else {
+      t.endTime = DateTime.now().toUtc();
+    }
     if (_shouldDiscardNewRecord(t)) return false;
     _lastCompleted = t;
     // Keep empty-but-valid sessions visible even if no sensor sample arrived.
@@ -1043,7 +1047,8 @@ class FlightRecorder extends ChangeNotifier {
     if (source == null || fs == null) return;
     final data = source.data;
     final observedAt = DateTime.now();
-    final sampleTime = data.gpsTimestamp ?? data.timestamp ?? observedAt;
+    final sampleTime = (data.gpsTimestamp ?? data.timestamp ?? observedAt)
+        .toUtc();
     final action = _autoFlightDetector.update(
       data: data,
       observedAt: observedAt,

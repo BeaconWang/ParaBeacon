@@ -1052,8 +1052,10 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                     if (track.hasSamples)
                       IconButton(
                         icon: const Icon(Icons.data_array),
+                        iconSize: 20,
                         tooltip: l10n.flightDetailDeleteSamples,
                         color: theme.colorScheme.error,
+                        visualDensity: VisualDensity.compact,
                         onPressed: () async {
                           final confirmed = await _confirmDeleteSamples();
                           if (confirmed != true) return;
@@ -1061,27 +1063,13 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           setDialogState(() {});
                         },
                       ),
-                    if (track.samples.length > 2)
-                      IconButton(
-                        icon: const Icon(Icons.content_cut),
-                        tooltip: l10n.flightDetailTrimLog,
-                        color: theme.colorScheme.primary,
-                        onPressed: () async {
-                          final range = await _chooseTrimRange(track);
-                          if (range == null) return;
-                          _recorder.trimTrackSamples(
-                            track,
-                            startIndex: range.start.round(),
-                            endIndex: range.end.round(),
-                          );
-                          setDialogState(() {});
-                        },
-                      ),
                     if (track.hasSamples)
                       IconButton(
                         icon: const Icon(Icons.threed_rotation),
+                        iconSize: 20,
                         tooltip: l10n.flights3dReplay,
                         color: theme.colorScheme.primary,
+                        visualDensity: VisualDensity.compact,
                         onPressed: () {
                           Navigator.of(context).pop();
                           _replay3D(track);
@@ -1090,8 +1078,10 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                     if (track.samples.length >= 2)
                       IconButton(
                         icon: const Icon(Icons.play_circle_outline),
+                        iconSize: 20,
                         tooltip: l10n.flightsReplay,
                         color: theme.colorScheme.primary,
+                        visualDensity: VisualDensity.compact,
                         onPressed: () {
                           Navigator.of(context).pop();
                           _replay(track);
@@ -1450,86 +1440,6 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     );
   }
 
-  Future<RangeValues?> _chooseTrimRange(FlightTrack track) {
-    final l10n = AppLocalizations.of(context);
-    final maxIndex = track.samples.length - 1;
-    var range = RangeValues(0, maxIndex.toDouble());
-    return showDialog<RangeValues>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final firstIndex = range.start.round();
-          final lastIndex = range.end.round();
-          final keptCount = lastIndex - firstIndex + 1;
-          final removedCount = track.samples.length - keptCount;
-          return AlertDialog(
-            title: Text(l10n.flightDetailTrimLog),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.flightDetailTrimDescription),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.flightDetailTrimFrom(
-                    _fmtDateTime(track.samples[firstIndex].time),
-                  ),
-                ),
-                RangeSlider(
-                  values: range,
-                  min: 0,
-                  max: maxIndex.toDouble(),
-                  labels: RangeLabels('${firstIndex + 1}', '${lastIndex + 1}'),
-                  onChanged: (value) {
-                    var nextStart = value.start.round().clamp(0, maxIndex);
-                    var nextEnd = value.end.round().clamp(0, maxIndex);
-                    if (nextEnd - nextStart < 1) {
-                      final movingStart =
-                          (value.start - range.start).abs() >
-                          (value.end - range.end).abs();
-                      if (movingStart) {
-                        nextEnd = (nextStart + 1).clamp(1, maxIndex);
-                        nextStart = nextEnd - 1;
-                      } else {
-                        nextStart = (nextEnd - 1).clamp(0, maxIndex - 1);
-                        nextEnd = nextStart + 1;
-                      }
-                    }
-                    setDialogState(() {
-                      range = RangeValues(
-                        nextStart.toDouble(),
-                        nextEnd.toDouble(),
-                      );
-                    });
-                  },
-                ),
-                Text(
-                  l10n.flightDetailTrimThrough(
-                    _fmtDateTime(track.samples[lastIndex].time),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(l10n.flightDetailTrimCounts(keptCount, removedCount)),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(l10n.cancel),
-              ),
-              FilledButton(
-                onPressed: removedCount == 0
-                    ? null
-                    : () => Navigator.of(dialogContext).pop(range),
-                child: Text(l10n.flightDetailTrimApply),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
   Future<bool?> _confirmDeleteSamples() {
     final l10n = AppLocalizations.of(context);
     return showDialog<bool>(
@@ -1610,9 +1520,10 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   }
 
   static String _fmtDateTime(DateTime t) {
+    final local = t.toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
-    return '${t.year}-${two(t.month)}-${two(t.day)} '
-        '${two(t.hour)}:${two(t.minute)}';
+    return '${local.year}-${two(local.month)}-${two(local.day)} '
+        '${two(local.hour)}:${two(local.minute)}';
   }
 
   static String _fmtDuration(Duration d) {

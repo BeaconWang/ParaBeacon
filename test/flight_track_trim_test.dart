@@ -48,7 +48,12 @@ void main() {
       expect(beginningTrimmed.trimSamples(startIndex: 2, endIndex: 4), isTrue);
       expect(beginningTrimmed.takeoffSite, isNull);
       expect(beginningTrimmed.landingSite, 'Landing');
-      expect(beginningTrimmed.endTime, originalEndTime);
+      expect(
+        beginningTrimmed.startTime,
+        start.add(const Duration(seconds: 20)),
+      );
+      expect(beginningTrimmed.endTime, start.add(const Duration(seconds: 40)));
+      expect(beginningTrimmed.endTime, isNot(originalEndTime));
       expect(
         beginningTrimmed.firstRecordedTime,
         start.add(const Duration(seconds: 20)),
@@ -73,6 +78,22 @@ void main() {
       );
       expect(endTrimmed.samples, hasLength(3));
     });
+
+    test(
+      'restores bounds from recorded points instead of stale session times',
+      () {
+        final track = _track(start)
+          ..startTime = start.subtract(const Duration(minutes: 5))
+          ..endTime = start.add(const Duration(minutes: 5));
+
+        final restored = FlightTrack.fromJson(track.toJson())!;
+
+        expect(restored.startTime, restored.samples.first.time);
+        expect(restored.endTime, restored.samples.last.time);
+        expect(restored.startTime.isUtc, isTrue);
+        expect(restored.endTime!.isUtc, isTrue);
+      },
+    );
 
     test('exports dates from the first retained sample', () {
       final track = _track(DateTime.utc(2026, 9, 19, 23, 59, 50));

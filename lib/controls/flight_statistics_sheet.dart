@@ -780,7 +780,7 @@ class _StatsBody extends StatelessWidget {
 
   String _date(DateTime? t) {
     if (t == null) return '—';
-    return DateFormat.yMMMd(locale).format(t);
+    return DateFormat.yMMMd(locale).format(t.toLocal());
   }
 
   List<String> _monthLabels() {

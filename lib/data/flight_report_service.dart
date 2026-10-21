@@ -929,10 +929,15 @@ class FlightReportService {
         '${longitude.abs().toStringAsFixed(4)}°$eastWest';
   }
 
-  static String _fmtDate(DateTime t) =>
-      '${t.year}-${_two(t.month)}-${_two(t.day)}';
+  static String _fmtDate(DateTime t) {
+    final local = t.toLocal();
+    return '${local.year}-${_two(local.month)}-${_two(local.day)}';
+  }
 
-  static String _fmtTime(DateTime t) => '${_two(t.hour)}:${_two(t.minute)}';
+  static String _fmtTime(DateTime t) {
+    final local = t.toLocal();
+    return '${_two(local.hour)}:${_two(local.minute)}';
+  }
 
   static String _fmtDuration(Duration d) {
     final h = d.inHours;

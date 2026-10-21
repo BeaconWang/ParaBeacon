@@ -941,8 +941,9 @@ class FlightShareCardService {
   }
 
   static String _fmtDateOnly(DateTime t) {
+    final local = t.toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
-    return '${t.year}-${two(t.month)}-${two(t.day)}';
+    return '${local.year}-${two(local.month)}-${two(local.day)}';
   }
 
   static String _routeText(
@@ -1004,8 +1005,9 @@ class FlightShareCardService {
   }
 
   static String _fmtTime(DateTime t) {
+    final local = t.toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(t.hour)}:${two(t.minute)}';
+    return '${two(local.hour)}:${two(local.minute)}';
   }
 
   static String _fmtDuration(Duration d) {

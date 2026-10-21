@@ -1718,6 +1718,88 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingCoordinateDms => 'Deg / min / sec';
 
   @override
+  String get settingDecimalPlaces => 'Decimal places';
+
+  @override
+  String get settingDecimalPlacesAuto => 'Auto';
+
+  @override
+  String get settingLatitudeDecimals => 'Latitude decimal places';
+
+  @override
+  String get settingLongitudeDecimals => 'Longitude decimal places';
+
+  @override
+  String get settingDmsSecondsDecimals => 'DMS seconds decimal places';
+
+  @override
+  String get settingAverageDecimals => 'Average decimal places';
+
+  @override
+  String get settingPeakDecimals => 'Peak decimal places';
+
+  @override
+  String get settingRatioDecimals => 'Glide ratio decimal places';
+
+  @override
+  String get settingVarioDecimals => 'Vario decimal places';
+
+  @override
+  String get settingHeadingDecimals => 'Heading decimal places';
+
+  @override
+  String get settingWindSpeedDecimals => 'Wind speed decimal places';
+
+  @override
+  String get settingGroundSpeedDecimals => 'Ground speed decimal places';
+
+  @override
+  String get settingWindDirectionDecimals => 'Wind direction decimal places';
+
+  @override
+  String get settingZoomLevelDecimals => 'Zoom level decimal places';
+
+  @override
+  String get settingGridDistanceDecimals => 'Grid distance decimal places';
+
+  @override
+  String get settingMapScaleDistanceDecimals =>
+      'Map scale distance decimal places';
+
+  @override
+  String get settingVarioMinimumDecimals =>
+      'Vario scale minimum decimal places';
+
+  @override
+  String get settingSinkThresholdDecimals => 'Sink threshold decimal places';
+
+  @override
+  String get settingLiftThresholdDecimals => 'Lift threshold decimal places';
+
+  @override
+  String get settingVarioMaximumDecimals =>
+      'Vario scale maximum decimal places';
+
+  @override
+  String get settingAltitudeDecimals => 'Altitude decimal places';
+
+  @override
+  String get settingAccelerationDecimals => 'Acceleration decimal places';
+
+  @override
+  String get settingDistanceDecimals => 'Distance decimal places';
+
+  @override
+  String get settingAltitudeDifferenceDecimals =>
+      'Altitude difference decimal places';
+
+  @override
+  String get settingBearingDecimals => 'Bearing decimal places';
+
+  @override
+  String get settingAccuracyDecimals => 'Accuracy decimal places';
+
+  @override
   String get settingAltitudeSource => 'Altitude source';
 
   @override

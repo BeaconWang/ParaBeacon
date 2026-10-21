@@ -7,6 +7,7 @@ import '../data/geo_math.dart';
 import '../data/takeoff_reference.dart';
 import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
+import 'decimal_places.dart';
 
 /// Shows distance, bearing, and altitude difference from the takeoff point.
 class TakeoffWaypointControl extends StatefulWidget {
@@ -54,9 +55,8 @@ class _TakeoffWaypointControlState extends State<TakeoffWaypointControl> {
     final flying = FlightState.instance.isFlying;
     final point = flying ? TakeoffReference.instance.point : null;
     final hasCurrentFix = _hasValidPosition(data);
-    final distanceMeters = point?.latitude != null &&
-            point?.longitude != null &&
-            hasCurrentFix
+    final distanceMeters =
+        point?.latitude != null && point?.longitude != null && hasCurrentFix
         ? GeoMath.distanceMeters(
             point!.latitude!,
             point.longitude!,
@@ -64,9 +64,8 @@ class _TakeoffWaypointControlState extends State<TakeoffWaypointControl> {
             data.longitude,
           )
         : null;
-    final bearing = point?.latitude != null &&
-            point?.longitude != null &&
-            hasCurrentFix
+    final bearing =
+        point?.latitude != null && point?.longitude != null && hasCurrentFix
         ? GeoMath.bearingDegrees(
             point!.latitude!,
             point.longitude!,
@@ -81,23 +80,30 @@ class _TakeoffWaypointControlState extends State<TakeoffWaypointControl> {
     final distanceUnit = selectedUnit(context, UnitDimension.distance);
     final distanceText = distanceMeters == null
         ? '--'
-        : UnitValues.formatDistance(distanceMeters, distanceUnit);
+        : UnitValues.formatDistance(
+            distanceMeters,
+            distanceUnit,
+            precision: DecimalPlacesScope.rangeOf(context, 'distanceDecimals'),
+          );
     final distanceUnitLabel = distanceMeters == null
         ? UnitValues.symbol(UnitDimension.distance, distanceUnit)
         : distanceUnit == 'auto'
-            ? (distanceMeters < 1000 ? 'M' : 'KM')
-            : UnitValues.symbol(
-                UnitDimension.distance,
-                distanceUnit,
-              ).toUpperCase();
+        ? (distanceMeters < 1000 ? 'M' : 'KM')
+        : UnitValues.symbol(UnitDimension.distance, distanceUnit).toUpperCase();
     final altitudeUnit = selectedUnit(context, UnitDimension.altitude);
     final altitudeText = altitudeDifference == null
         ? '--'
         : UnitValues.formatAltitudeDifference(
             altitudeDifference,
             altitudeUnit,
+            precision: DecimalPlacesScope.rangeOf(
+              context,
+              'altitudeDifferenceDecimals',
+            ),
           );
-    final headingText = bearing == null ? '--°' : '${bearing.round()}°';
+    final headingText = bearing == null
+        ? '--°'
+        : '${formatDecimalValue(bearing, autoDecimals: 0, range: DecimalPlacesScope.rangeOf(context, 'bearingDecimals'))}°';
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
 
@@ -196,7 +202,6 @@ class _TakeoffWaypointControlState extends State<TakeoffWaypointControl> {
       },
     );
   }
-
 }
 
 class _WaypointValue extends StatelessWidget {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/flight_data_provider.dart';
+import 'decimal_places.dart';
 
 /// A vertical Vario column gauge, inspired by XCTrack's `WVarioColumn`.
 ///
@@ -20,20 +21,16 @@ class VarioControl extends StatelessWidget {
   /// Absolute scale limit in m/s for the column extent.
   final double maxScale;
 
-  const VarioControl({
-    super.key,
-    this.verticalSpeed,
-    this.maxScale = 8.0,
-  });
+  const VarioControl({super.key, this.verticalSpeed, this.maxScale = 8.0});
 
   @override
   Widget build(BuildContext context) {
-    final value =
-        verticalSpeed ?? FlightDataProvider.of(context).verticalSpeed;
+    final value = verticalSpeed ?? FlightDataProvider.of(context).verticalSpeed;
     return CustomPaint(
       painter: _VarioPainter(
         value: value,
         maxScale: maxScale,
+        precision: DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
         theme: Theme.of(context),
       ),
       child: const SizedBox.expand(),
@@ -57,11 +54,13 @@ Color varioColorFor(double v) {
 class _VarioPainter extends CustomPainter {
   final double value;
   final double maxScale;
+  final DecimalPlaceRange? precision;
   final ThemeData theme;
 
   _VarioPainter({
     required this.value,
     required this.maxScale,
+    required this.precision,
     required this.theme,
   });
 
@@ -94,8 +93,11 @@ class _VarioPainter extends CustomPainter {
       final y = centerY - (i / maxScale) * (size.height / 2);
       final tickLen = (i % 5 == 0) ? size.width * 0.35 : size.width * 0.18;
       canvas.drawLine(Offset(0, y), Offset(tickLen, y), tickPaint);
-      canvas.drawLine(Offset(size.width - tickLen, y), Offset(size.width, y),
-          tickPaint);
+      canvas.drawLine(
+        Offset(size.width - tickLen, y),
+        Offset(size.width, y),
+        tickPaint,
+      );
     }
 
     // Center baseline.
@@ -107,7 +109,8 @@ class _VarioPainter extends CustomPainter {
     // Numeric readout.
     final tp = TextPainter(
       text: TextSpan(
-        text: '${value >= 0 ? '+' : ''}${value.toStringAsFixed(1)}',
+        text:
+            '${value >= 0 ? '+' : ''}${formatDecimalValue(value, autoDecimals: 1, range: precision)}',
         style: theme.textTheme.titleMedium?.copyWith(
           color: theme.colorScheme.onSurface,
           fontWeight: FontWeight.bold,
@@ -138,6 +141,8 @@ class _VarioPainter extends CustomPainter {
   bool shouldRepaint(_VarioPainter oldDelegate) {
     return value != oldDelegate.value ||
         maxScale != oldDelegate.maxScale ||
+        precision?.min != oldDelegate.precision?.min ||
+        precision?.max != oldDelegate.precision?.max ||
         theme != oldDelegate.theme;
   }
 }

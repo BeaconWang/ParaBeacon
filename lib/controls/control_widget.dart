@@ -14,6 +14,7 @@ import 'map_control.dart';
 import 'vario_control.dart';
 import 'vertical_graph_control.dart';
 import 'thermal_gain_widget.dart';
+import 'decimal_places.dart';
 
 /// Visual representation of a [PlacedControl] on the dashboard.
 ///
@@ -55,7 +56,10 @@ class ControlWidget extends StatelessWidget {
         customUnit: control.setting('displayUnit') is String
             ? control.setting('displayUnit') as String
             : null,
-        child: _buildBody(context),
+        child: DecimalPlacesScope(
+          settings: Map<String, dynamic>.from(control.settings),
+          child: _buildBody(context),
+        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/flight_data_provider.dart';
 import '../data/raw_flight_data_source.dart';
 import '../l10n/app_localizations.dart';
+import 'decimal_places.dart';
 
 /// A debug control that lets you manually drive the shared flight data with a
 /// stack of sliders — one per sensor field.
@@ -218,7 +219,11 @@ class _DebugSensorControlState extends State<DebugSensorControl> {
   ) {
     final on = _enabled[field.key] ?? false;
     final value = (_values[field.key] ?? field.min).clamp(field.min, field.max);
-    final decimals = (field.max - field.min) <= 30 ? 1 : 0;
+    final autoDecimals = (field.max - field.min) <= 30 ? 1 : 0;
+    final precision = DecimalPlacesScope.rangeOf(
+      context,
+      '${field.key}Decimals',
+    );
     final valueColor = on
         ? theme.colorScheme.primary
         : theme.colorScheme.onSurfaceVariant;
@@ -252,7 +257,7 @@ class _DebugSensorControlState extends State<DebugSensorControl> {
               ),
             ),
             Text(
-              '${value.toStringAsFixed(decimals)} ${field.unit}',
+              '${formatDecimalValue(value.toDouble(), autoDecimals: autoDecimals, range: precision)} ${field.unit}',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: valueColor,
                 fontWeight: on ? FontWeight.bold : FontWeight.normal,

@@ -4,7 +4,7 @@ import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
 
 /// The kind of UI editor a setting uses.
-enum SettingKind { toggle, slider, choice, color }
+enum SettingKind { toggle, slider, choice, color, decimalRange }
 
 /// Definition of a single configurable setting for a control.
 ///
@@ -41,6 +41,22 @@ class ControlSetting {
   /// automatic outline color.
   final List<int> palette;
 
+  /// Highest supported digit count for a decimal-range setting.
+  final int maxDecimalPlaces;
+
+  const ControlSetting.decimalRange({
+    required this.key,
+    required this.label,
+    this.defaultValue = 'auto',
+    this.maxDecimalPlaces = 8,
+  }) : kind = SettingKind.decimalRange,
+       min = 0,
+       max = 1,
+       divisions = null,
+       unit = '',
+       options = const {},
+       palette = const [];
+
   const ControlSetting.toggle({
     required this.key,
     required this.label,
@@ -51,7 +67,8 @@ class ControlSetting {
        divisions = null,
        unit = '',
        options = const {},
-       palette = const [];
+       palette = const [],
+       maxDecimalPlaces = 0;
 
   const ControlSetting.slider({
     required this.key,
@@ -63,7 +80,8 @@ class ControlSetting {
     this.unit = '',
   }) : kind = SettingKind.slider,
        options = const {},
-       palette = const [];
+       palette = const [],
+       maxDecimalPlaces = 0;
 
   const ControlSetting.choice({
     required this.key,
@@ -75,7 +93,8 @@ class ControlSetting {
        max = 1,
        divisions = null,
        unit = '',
-       palette = const [];
+       palette = const [],
+       maxDecimalPlaces = 0;
 
   /// A color setting. [defaultValue] and every entry in [palette] must be an
   /// ARGB int (e.g. `0xFF2196F3`). A value of `0` in the palette means
@@ -90,7 +109,8 @@ class ControlSetting {
        max = 1,
        divisions = null,
        unit = '',
-       options = const {};
+       options = const {},
+       maxDecimalPlaces = 0;
 
   /// Localized label for this setting, resolved from the current [l10n] by the
   /// stable [key]. Falls back to the hardcoded English [label] for any key not
@@ -106,7 +126,11 @@ class ControlSetting {
     if (key == 'format' && options.containsKey('decimal')) {
       return l10n.settingCoordinateFormat;
     }
-    return _settingLabel(l10n, key) ?? label;
+    final resolved = _settingLabel(l10n, key) ?? label;
+    if (kind == SettingKind.decimalRange && key.startsWith('monitor')) {
+      return '$resolved · ${l10n.settingDecimalPlaces}';
+    }
+    return resolved;
   }
 
   /// Localized label for one of this setting's [choice] [options], resolved by
@@ -232,6 +256,100 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowVerticalAcceleration;
     case 'verticalAccelerationFillOpacity':
       return l10n.settingVerticalAccelerationFillOpacity;
+    case 'valueDecimals':
+      return l10n.settingDecimalPlaces;
+    case 'verticalSpeedDecimals':
+      return l10n.settingVarioDecimals;
+    case 'groundSpeedDecimals':
+      return l10n.settingGroundSpeedDecimals;
+    case 'windDirectionDecimals':
+      return l10n.settingWindDirectionDecimals;
+    case 'latitudeDecimals':
+      return l10n.settingLatitudeDecimals;
+    case 'longitudeDecimals':
+      return l10n.settingLongitudeDecimals;
+    case 'dmsSecondsDecimals':
+      return l10n.settingDmsSecondsDecimals;
+    case 'averageDecimals':
+      return l10n.settingAverageDecimals;
+    case 'peakDecimals':
+      return l10n.settingPeakDecimals;
+    case 'ratioDecimals':
+      return l10n.settingRatioDecimals;
+    case 'varioDecimals':
+      return l10n.settingVarioDecimals;
+    case 'headingDecimals':
+      return l10n.settingHeadingDecimals;
+    case 'windSpeedDecimals':
+      return l10n.settingWindSpeedDecimals;
+    case 'altitudeDecimals':
+      return l10n.settingAltitudeDecimals;
+    case 'accelerationDecimals':
+      return l10n.settingAccelerationDecimals;
+    case 'distanceDecimals':
+      return l10n.settingDistanceDecimals;
+    case 'altitudeDifferenceDecimals':
+      return l10n.settingAltitudeDifferenceDecimals;
+    case 'bearingDecimals':
+      return l10n.settingBearingDecimals;
+    case 'accuracyDecimals':
+      return l10n.settingAccuracyDecimals;
+    case 'monitorVerticalSpeedDecimals':
+      return l10n.dataMonitorVerticalSpeed;
+    case 'monitorGroundSpeedDecimals':
+      return l10n.dataMonitorGroundSpeed;
+    case 'monitorAltitudeDecimals':
+      return l10n.dataMonitorAltitude;
+    case 'monitorBaroAltitudeDecimals':
+      return l10n.dataMonitorBaroAltitude;
+    case 'monitorGpsAltitudeDecimals':
+      return l10n.dataMonitorGpsAltitude;
+    case 'monitorLatitudeDecimals':
+      return l10n.dataMonitorLatitude;
+    case 'monitorLongitudeDecimals':
+      return l10n.dataMonitorLongitude;
+    case 'monitorHeadingDecimals':
+      return l10n.dataMonitorHeading;
+    case 'monitorBearingDecimals':
+      return l10n.dataMonitorBearing;
+    case 'monitorGpsAccuracyDecimals':
+      return l10n.dataMonitorGpsAccuracy;
+    case 'monitorWindSpeedDecimals':
+      return l10n.dataMonitorWindSpeed;
+    case 'monitorWindDirectionDecimals':
+      return l10n.dataMonitorWindDirection;
+    case 'monitorPressureDecimals':
+      return l10n.dataMonitorPressure;
+    case 'monitorTemperatureDecimals':
+      return l10n.dataMonitorTemperature;
+    case 'monitorGlideRatioDecimals':
+      return l10n.dataMonitorGlideRatio;
+    case 'monitorAltitudeDeltaDecimals':
+      return l10n.dataMonitorBaroGpsDelta;
+    case 'monitorTotalEnergyDecimals':
+      return l10n.dataMonitorTotalEnergy;
+    case 'mapRequiredGlideRatioDecimals':
+      return l10n.settingRatioDecimals;
+    case 'mapHeadingDecimals':
+      return l10n.settingHeadingDecimals;
+    case 'mapAltitudeDecimals':
+      return l10n.settingAltitudeDecimals;
+    case 'mapWindSpeedDecimals':
+      return l10n.settingWindSpeedDecimals;
+    case 'mapZoomDecimals':
+      return l10n.settingZoomLevelDecimals;
+    case 'mapGridDistanceDecimals':
+      return l10n.settingGridDistanceDecimals;
+    case 'mapScaleDistanceDecimals':
+      return l10n.settingMapScaleDistanceDecimals;
+    case 'mapVarioColorMinDecimals':
+      return l10n.settingVarioMinimumDecimals;
+    case 'mapVarioSinkDecimals':
+      return l10n.settingSinkThresholdDecimals;
+    case 'mapVarioLiftDecimals':
+      return l10n.settingLiftThresholdDecimals;
+    case 'mapVarioColorMaxDecimals':
+      return l10n.settingVarioMaximumDecimals;
     case 'interval':
       return l10n.settingVerticalGraphInterval;
     case 'verticalStep':
@@ -882,6 +1000,227 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       label: 'Show HDG/ALT & GPS status',
       defaultValue: true,
     ),
+    ControlSetting.decimalRange(
+      key: 'mapRequiredGlideRatioDecimals',
+      label: 'Required glide ratio',
+    ),
+    ControlSetting.decimalRange(key: 'mapHeadingDecimals', label: 'Heading'),
+    ControlSetting.decimalRange(key: 'mapAltitudeDecimals', label: 'Altitude'),
+    ControlSetting.decimalRange(
+      key: 'mapWindSpeedDecimals',
+      label: 'Wind speed',
+    ),
+    ControlSetting.decimalRange(key: 'mapZoomDecimals', label: 'Zoom level'),
+    ControlSetting.decimalRange(
+      key: 'mapGridDistanceDecimals',
+      label: 'Grid distance',
+    ),
+    ControlSetting.decimalRange(
+      key: 'mapScaleDistanceDecimals',
+      label: 'Map scale distance',
+    ),
+    ControlSetting.decimalRange(
+      key: 'mapVarioColorMinDecimals',
+      label: 'Vario scale minimum',
+    ),
+    ControlSetting.decimalRange(
+      key: 'mapVarioSinkDecimals',
+      label: 'Sink threshold',
+    ),
+    ControlSetting.decimalRange(
+      key: 'mapVarioLiftDecimals',
+      label: 'Lift threshold',
+    ),
+    ControlSetting.decimalRange(
+      key: 'mapVarioColorMaxDecimals',
+      label: 'Vario scale maximum',
+    ),
+  ],
+};
+
+const Map<String, List<ControlSetting>> _decimalSettings = {
+  'vertical_graph': [
+    ControlSetting.decimalRange(key: 'altitudeDecimals', label: 'Altitude'),
+    ControlSetting.decimalRange(
+      key: 'accelerationDecimals',
+      label: 'Acceleration',
+    ),
+  ],
+  'vario': [ControlSetting.decimalRange(key: 'valueDecimals', label: 'Vario')],
+  'vertical_speed': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Vertical speed'),
+  ],
+  'altitude': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Altitude'),
+  ],
+  'gps_altitude': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'GPS altitude'),
+  ],
+  'baro_altitude': [
+    ControlSetting.decimalRange(
+      key: 'valueDecimals',
+      label: 'Barometric altitude',
+    ),
+  ],
+  'max_altitude': [
+    ControlSetting.decimalRange(
+      key: 'valueDecimals',
+      label: 'Maximum altitude',
+    ),
+  ],
+  'altitude_above_takeoff': [
+    ControlSetting.decimalRange(
+      key: 'valueDecimals',
+      label: 'Altitude above takeoff',
+    ),
+  ],
+  'thermal_gain': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Thermal gain'),
+  ],
+  'ground_speed': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Ground speed'),
+  ],
+  'glide_ratio': [
+    ControlSetting.decimalRange(key: 'ratioDecimals', label: 'Glide ratio'),
+    ControlSetting.decimalRange(key: 'varioDecimals', label: 'Vario'),
+  ],
+  'heading': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Heading'),
+  ],
+  'bearing': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Bearing'),
+  ],
+  'gps_accuracy': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'GPS accuracy'),
+  ],
+  'location': [
+    ControlSetting.decimalRange(key: 'latitudeDecimals', label: 'Latitude'),
+    ControlSetting.decimalRange(key: 'longitudeDecimals', label: 'Longitude'),
+    ControlSetting.decimalRange(
+      key: 'dmsSecondsDecimals',
+      label: 'DMS seconds',
+    ),
+  ],
+  'wind_speed': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Wind speed'),
+  ],
+  'wind_direction': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Wind direction'),
+  ],
+  'pressure': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Pressure'),
+  ],
+  'temperature': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Temperature'),
+  ],
+  'distance_to_takeoff': [
+    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Distance'),
+  ],
+  'climb_avg': [
+    ControlSetting.decimalRange(key: 'averageDecimals', label: 'Average'),
+    ControlSetting.decimalRange(key: 'peakDecimals', label: 'Peak'),
+  ],
+  'takeoff_waypoint': [
+    ControlSetting.decimalRange(key: 'distanceDecimals', label: 'Distance'),
+    ControlSetting.decimalRange(
+      key: 'altitudeDifferenceDecimals',
+      label: 'Altitude difference',
+    ),
+    ControlSetting.decimalRange(key: 'bearingDecimals', label: 'Bearing'),
+  ],
+  'status_line': [
+    ControlSetting.decimalRange(key: 'accuracyDecimals', label: 'GPS accuracy'),
+  ],
+  'compass_wind': [
+    ControlSetting.decimalRange(key: 'headingDecimals', label: 'Heading'),
+    ControlSetting.decimalRange(key: 'windSpeedDecimals', label: 'Wind speed'),
+  ],
+  'data_monitor': [
+    ControlSetting.decimalRange(
+      key: 'monitorVerticalSpeedDecimals',
+      label: 'Vertical speed',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorGroundSpeedDecimals',
+      label: 'Ground speed',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorAltitudeDecimals',
+      label: 'Altitude',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorBaroAltitudeDecimals',
+      label: 'Barometric altitude',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorGpsAltitudeDecimals',
+      label: 'GPS altitude',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorLatitudeDecimals',
+      label: 'Latitude',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorLongitudeDecimals',
+      label: 'Longitude',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorHeadingDecimals',
+      label: 'Heading',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorBearingDecimals',
+      label: 'Bearing',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorGpsAccuracyDecimals',
+      label: 'GPS accuracy',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorWindSpeedDecimals',
+      label: 'Wind speed',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorWindDirectionDecimals',
+      label: 'Wind direction',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorPressureDecimals',
+      label: 'Pressure',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorTemperatureDecimals',
+      label: 'Temperature',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorGlideRatioDecimals',
+      label: 'Glide ratio',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorAltitudeDeltaDecimals',
+      label: 'Baro/GPS difference',
+    ),
+    ControlSetting.decimalRange(
+      key: 'monitorTotalEnergyDecimals',
+      label: 'Total energy altitude',
+    ),
+  ],
+  'debug_sensor': [
+    ControlSetting.decimalRange(
+      key: 'verticalSpeedDecimals',
+      label: 'Vertical speed',
+    ),
+    ControlSetting.decimalRange(key: 'altitudeDecimals', label: 'Altitude'),
+    ControlSetting.decimalRange(
+      key: 'groundSpeedDecimals',
+      label: 'Ground speed',
+    ),
+    ControlSetting.decimalRange(key: 'headingDecimals', label: 'Heading'),
+    ControlSetting.decimalRange(key: 'windSpeedDecimals', label: 'Wind speed'),
+    ControlSetting.decimalRange(
+      key: 'windDirectionDecimals',
+      label: 'Wind direction',
+    ),
   ],
 };
 
@@ -929,6 +1268,7 @@ List<ControlSetting> settingsSchemaFor(String typeId) {
     for (final setting in _commonSettings)
       if (!(hidesTitle && setting.key == 'showTitle')) setting,
     ...(_typeSettings[typeId] ?? const []),
+    ...(_decimalSettings[typeId] ?? const []),
     if (dimension != null) _unitSetting(dimension),
   ];
 }

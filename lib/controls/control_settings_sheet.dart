@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import 'decimal_places.dart';
 import 'control_settings.dart';
 import 'placed_control.dart';
 
@@ -24,10 +25,8 @@ Future<void> showControlSettingsSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => _ControlSettingsSheet(
-      control: control,
-      onChanged: onChanged,
-    ),
+    builder: (context) =>
+        _ControlSettingsSheet(control: control, onChanged: onChanged),
   );
 }
 
@@ -35,18 +34,16 @@ class _ControlSettingsSheet extends StatefulWidget {
   final PlacedControl control;
   final VoidCallback onChanged;
 
-  const _ControlSettingsSheet({
-    required this.control,
-    required this.onChanged,
-  });
+  const _ControlSettingsSheet({required this.control, required this.onChanged});
 
   @override
   State<_ControlSettingsSheet> createState() => _ControlSettingsSheetState();
 }
 
 class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
-  late final List<ControlSetting> _schema =
-      settingsSchemaFor(widget.control.type.id);
+  late final List<ControlSetting> _schema = settingsSchemaFor(
+    widget.control.type.id,
+  );
 
   void _set(String key, dynamic value) {
     setState(() => widget.control.settings[key] = value);
@@ -95,7 +92,8 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: _schema.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
                   itemBuilder: (context, index) =>
                       _buildSettingTile(context, l10n, _schema[index]),
                 ),
@@ -107,7 +105,10 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
   }
 
   Widget _buildSettingTile(
-      BuildContext context, AppLocalizations l10n, ControlSetting setting) {
+    BuildContext context,
+    AppLocalizations l10n,
+    ControlSetting setting,
+  ) {
     final control = widget.control;
 
     // Border color/width only take effect when `showBorder` is on. Grey out
@@ -123,7 +124,10 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
   }
 
   Widget _buildSettingTileBody(
-      BuildContext context, AppLocalizations l10n, ControlSetting setting) {
+    BuildContext context,
+    AppLocalizations l10n,
+    ControlSetting setting,
+  ) {
     final theme = Theme.of(context);
     final control = widget.control;
     final label = setting.labelOf(l10n);
@@ -198,6 +202,57 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
           ),
         );
 
+      case SettingKind.decimalRange:
+        final range = DecimalPlaceRange.parse(control.setting(setting.key));
+        final maxPlaces = setting.maxDecimalPlaces
+            .clamp(1, DecimalPlaceRange.maxSupportedPlaces)
+            .toInt();
+        final selectedRange = range ?? DecimalPlaceRange(0, maxPlaces);
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: Text(label)),
+                  Text(
+                    '${selectedRange.min}–${selectedRange.max}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              RangeSlider(
+                values: RangeValues(
+                  selectedRange.min.toDouble(),
+                  selectedRange.max.toDouble(),
+                ),
+                min: 0,
+                max: maxPlaces.toDouble(),
+                divisions: maxPlaces,
+                labels: RangeLabels(
+                  selectedRange.min.toString(),
+                  selectedRange.max.toString(),
+                ),
+                onChanged: (values) => _set(
+                  setting.key,
+                  DecimalPlaceRange(
+                    values.start.round(),
+                    values.end.round(),
+                  ).encode(),
+                ),
+              ),
+              ChoiceChip(
+                label: Text(l10n.settingDecimalPlacesAuto),
+                selected: range == null,
+                onSelected: (_) => _set(setting.key, 'auto'),
+              ),
+            ],
+          ),
+        );
+
       case SettingKind.color:
         final value = control.intSetting(
           setting.key,
@@ -214,11 +269,13 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
                 spacing: 8,
                 runSpacing: 8,
                 children: setting.palette
-                    .map((argb) => _ColorSwatch(
-                          argb: argb,
-                          selected: argb == value,
-                          onTap: () => _set(setting.key, argb),
-                        ))
+                    .map(
+                      (argb) => _ColorSwatch(
+                        argb: argb,
+                        selected: argb == value,
+                        onTap: () => _set(setting.key, argb),
+                      ),
+                    )
                     .toList(),
               ),
             ],
@@ -246,9 +303,12 @@ class _ColorSwatch extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isAuto = argb == 0;
-    final color = isAuto ? theme.colorScheme.surfaceContainerHighest : Color(argb);
-    final ringColor =
-        selected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant;
+    final color = isAuto
+        ? theme.colorScheme.surfaceContainerHighest
+        : Color(argb);
+    final ringColor = selected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.outlineVariant;
     return Semantics(
       button: true,
       selected: selected,
@@ -262,10 +322,7 @@ class _ColorSwatch extends StatelessWidget {
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: ringColor,
-              width: selected ? 3 : 1,
-            ),
+            border: Border.all(color: ringColor, width: selected ? 3 : 1),
           ),
           alignment: Alignment.center,
           child: isAuto

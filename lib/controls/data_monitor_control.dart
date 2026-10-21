@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../l10n/app_localizations.dart';
+import 'decimal_places.dart';
 
 /// A debug control that displays every field of the unified [FlightData]
 /// snapshot coming out of the data layer.
@@ -28,23 +29,75 @@ class DataMonitorControl extends StatelessWidget {
       ),
       _Row(
         l10n.dataMonitorVerticalSpeed,
-        _fmt(d.verticalSpeed, 2),
+        _fmt(context, d.verticalSpeed, 2, 'monitorVerticalSpeedDecimals'),
         unit: 'm/s',
       ),
-      _Row(l10n.dataMonitorGroundSpeed, _fmt(d.groundSpeed, 1), unit: 'km/h'),
-      _Row(l10n.dataMonitorAltitude, _fmt(d.altitude, 1), unit: 'm'),
-      _Row(l10n.dataMonitorBaroAltitude, _fmtN(d.baroAltitude, 1), unit: 'm'),
-      _Row(l10n.dataMonitorGpsAltitude, _fmtN(d.gpsAltitude, 1), unit: 'm'),
-      _Row(l10n.dataMonitorLatitude, _fmt(d.latitude, 6), unit: '°'),
-      _Row(l10n.dataMonitorLongitude, _fmt(d.longitude, 6), unit: '°'),
-      _Row(l10n.dataMonitorHeading, _fmt(d.heading, 0), unit: '°'),
-      _Row(l10n.dataMonitorBearing, _fmtN(d.bearing, 0), unit: '°'),
-      _Row(l10n.dataMonitorGpsAccuracy, _fmtN(d.gpsAccuracy, 1), unit: 'm'),
+      _Row(
+        l10n.dataMonitorGroundSpeed,
+        _fmt(context, d.groundSpeed, 1, 'monitorGroundSpeedDecimals'),
+        unit: 'km/h',
+      ),
+      _Row(
+        l10n.dataMonitorAltitude,
+        _fmt(context, d.altitude, 1, 'monitorAltitudeDecimals'),
+        unit: 'm',
+      ),
+      _Row(
+        l10n.dataMonitorBaroAltitude,
+        _fmtN(context, d.baroAltitude, 1, 'monitorBaroAltitudeDecimals'),
+        unit: 'm',
+      ),
+      _Row(
+        l10n.dataMonitorGpsAltitude,
+        _fmtN(context, d.gpsAltitude, 1, 'monitorGpsAltitudeDecimals'),
+        unit: 'm',
+      ),
+      _Row(
+        l10n.dataMonitorLatitude,
+        _fmt(context, d.latitude, 6, 'monitorLatitudeDecimals'),
+        unit: '°',
+      ),
+      _Row(
+        l10n.dataMonitorLongitude,
+        _fmt(context, d.longitude, 6, 'monitorLongitudeDecimals'),
+        unit: '°',
+      ),
+      _Row(
+        l10n.dataMonitorHeading,
+        _fmt(context, d.heading, 0, 'monitorHeadingDecimals'),
+        unit: '°',
+      ),
+      _Row(
+        l10n.dataMonitorBearing,
+        _fmtN(context, d.bearing, 0, 'monitorBearingDecimals'),
+        unit: '°',
+      ),
+      _Row(
+        l10n.dataMonitorGpsAccuracy,
+        _fmtN(context, d.gpsAccuracy, 1, 'monitorGpsAccuracyDecimals'),
+        unit: 'm',
+      ),
       _Row(l10n.dataMonitorSatellites, d.satellites?.toString() ?? '—'),
-      _Row(l10n.dataMonitorWindSpeed, _fmt(d.windSpeed, 1), unit: 'km/h'),
-      _Row(l10n.dataMonitorWindDirection, _fmt(d.windDirection, 0), unit: '°'),
-      _Row(l10n.dataMonitorPressure, _fmtN(d.pressure, 1), unit: 'hPa'),
-      _Row(l10n.dataMonitorTemperature, _fmtN(d.temperature, 1), unit: '°C'),
+      _Row(
+        l10n.dataMonitorWindSpeed,
+        _fmt(context, d.windSpeed, 1, 'monitorWindSpeedDecimals'),
+        unit: 'km/h',
+      ),
+      _Row(
+        l10n.dataMonitorWindDirection,
+        _fmt(context, d.windDirection, 0, 'monitorWindDirectionDecimals'),
+        unit: '°',
+      ),
+      _Row(
+        l10n.dataMonitorPressure,
+        _fmtN(context, d.pressure, 1, 'monitorPressureDecimals'),
+        unit: 'hPa',
+      ),
+      _Row(
+        l10n.dataMonitorTemperature,
+        _fmtN(context, d.temperature, 1, 'monitorTemperatureDecimals'),
+        unit: '°C',
+      ),
       _Row(
         l10n.dataMonitorBattery,
         d.battery != null ? '${d.battery}' : '—',
@@ -59,11 +112,31 @@ class DataMonitorControl extends StatelessWidget {
 
       // ── Derived (computed from the fields above, no extra sensors) ────────
       _Section(l10n.dataMonitorDerived),
-      _Row(l10n.dataMonitorGlideRatio, _glideRatio(d)),
+      _Row(
+        l10n.dataMonitorGlideRatio,
+        _glideRatio(
+          d,
+          DecimalPlacesScope.rangeOf(context, 'monitorGlideRatioDecimals'),
+        ),
+      ),
       _Row(l10n.dataMonitorHeading, _cardinal8(d.heading)),
       _Row(l10n.dataMonitorWindDir, _cardinal8(d.windDirection)),
-      _Row(l10n.dataMonitorBaroGpsDelta, _altitudeDelta(d), unit: 'm'),
-      _Row(l10n.dataMonitorTotalEnergy, _totalEnergyAltitude(d), unit: 'm'),
+      _Row(
+        l10n.dataMonitorBaroGpsDelta,
+        _altitudeDelta(
+          d,
+          DecimalPlacesScope.rangeOf(context, 'monitorAltitudeDeltaDecimals'),
+        ),
+        unit: 'm',
+      ),
+      _Row(
+        l10n.dataMonitorTotalEnergy,
+        _totalEnergyAltitude(
+          d,
+          DecimalPlacesScope.rangeOf(context, 'monitorTotalEnergyDecimals'),
+        ),
+        unit: 'm',
+      ),
     ];
 
     return Column(
@@ -165,10 +238,23 @@ class DataMonitorControl extends StatelessWidget {
     );
   }
 
-  static String _fmt(double v, int decimals) => v.toStringAsFixed(decimals);
+  static String _fmt(
+    BuildContext context,
+    double value,
+    int decimals,
+    String precisionKey,
+  ) => formatDecimalValue(
+    value,
+    autoDecimals: decimals,
+    range: DecimalPlacesScope.rangeOf(context, precisionKey),
+  );
 
-  static String _fmtN(double? v, int decimals) =>
-      v == null ? '—' : v.toStringAsFixed(decimals);
+  static String _fmtN(
+    BuildContext context,
+    double? value,
+    int decimals,
+    String precisionKey,
+  ) => value == null ? '—' : _fmt(context, value, decimals, precisionKey);
 
   static String _fmtTime(DateTime? t) {
     if (t == null) return '—';
@@ -180,35 +266,38 @@ class DataMonitorControl extends StatelessWidget {
   /// Instantaneous glide ratio (L/D): horizontal speed / sink rate. Only
   /// meaningful while sinking; climbs / near-level flight and no-fix render "—".
   /// Matches the logic used by the standalone glide-ratio control.
-  static String _glideRatio(FlightData d) {
+  static String _glideRatio(FlightData d, DecimalPlaceRange? precision) {
     final vsMs = d.verticalSpeed; // m/s (+climb / -sink)
     final gsMs = d.groundSpeed / 3.6; // km/h -> m/s
     if (!d.hasFix || vsMs.isNaN || gsMs.isNaN || vsMs >= -0.1) return '—';
     final ratio = gsMs / -vsMs;
     if (!ratio.isFinite || ratio <= 0) return '—';
     if (ratio >= 100) return '99+';
-    return ratio.toStringAsFixed(1);
+    return formatDecimalValue(ratio, autoDecimals: 1, range: precision);
   }
 
   /// Difference between the barometric and GPS altitudes, in meters. Requires
   /// both to be present, otherwise "—".
-  static String _altitudeDelta(FlightData d) {
+  static String _altitudeDelta(FlightData d, DecimalPlaceRange? precision) {
     final baro = d.baroAltitude;
     final gps = d.gpsAltitude;
     if (baro == null || gps == null) return '—';
     final delta = baro - gps;
     final sign = delta >= 0 ? '+' : '';
-    return '$sign${delta.toStringAsFixed(1)}';
+    return '$sign${formatDecimalValue(delta, autoDecimals: 1, range: precision)}';
   }
 
   /// Total-energy altitude: the altitude plus the kinetic-energy equivalent
   /// height (v² / 2g) from the ground speed. Gives a speed-compensated height
   /// that is less sensitive to pull-ups/dives.
-  static String _totalEnergyAltitude(FlightData d) {
+  static String _totalEnergyAltitude(
+    FlightData d,
+    DecimalPlaceRange? precision,
+  ) {
     final vMs = d.groundSpeed / 3.6; // km/h -> m/s
     const g = 9.80665;
     final te = d.altitude + (vMs * vMs) / (2 * g);
-    return te.toStringAsFixed(1);
+    return formatDecimalValue(te, autoDecimals: 1, range: precision);
   }
 
   /// 8-point compass label for a bearing in degrees.

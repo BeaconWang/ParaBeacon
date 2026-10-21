@@ -7,6 +7,7 @@ import '../data/device_battery_service.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_state.dart';
 import 'data_value_control.dart' show formatWallClock;
+import 'decimal_places.dart';
 
 /// A compact horizontal status bar summarising the live system state, inspired
 /// by XCTrack's "Status line" widget.
@@ -115,12 +116,17 @@ class _StatusLineControlState extends State<StatusLineControl> {
         // e.g. "8 sat · 5m" — drop a part when its value is unknown.
         final parts = <String>[];
         if (sats != null) parts.add('$sats sat');
-        if (acc != null) parts.add('${acc.toStringAsFixed(0)}m');
+        if (acc != null) {
+          parts.add(
+            '${formatDecimalValue(acc, autoDecimals: 0, range: DecimalPlacesScope.rangeOf(context, 'accuracyDecimals'))}m',
+          );
+        }
         gpsValue = parts.isEmpty ? 'Fix' : parts.join(' · ');
       } else if (sats != null) {
         gpsValue = '$sats';
       } else if (acc != null) {
-        gpsValue = '${acc.toStringAsFixed(0)}m';
+        gpsValue =
+            '${formatDecimalValue(acc, autoDecimals: 0, range: DecimalPlacesScope.rangeOf(context, 'accuracyDecimals'))}m';
       } else {
         gpsValue = 'OK';
       }
@@ -207,16 +213,19 @@ class _StatusLineControlState extends State<StatusLineControl> {
 
     // Flight / recording cell.
     final flying = flight.isFlying;
-    final flightIcon =
-        flying ? Icons.flight_takeoff : Icons.flight_land_outlined;
+    final flightIcon = flying
+        ? Icons.flight_takeoff
+        : Icons.flight_land_outlined;
     final flightValue = flying ? _formatHms(flight.elapsed) : '--:--';
     final flightColor = flying
         ? const Color(0xFF4CD964)
         : theme.colorScheme.onSurfaceVariant;
 
     // Clock cell.
-    final clockValue = formatWallClock(DateTime.now(),
-        use24Hour: widget.use24Hour);
+    final clockValue = formatWallClock(
+      DateTime.now(),
+      use24Hour: widget.use24Hour,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -257,8 +266,11 @@ class _StatusLineControlState extends State<StatusLineControl> {
           if (widget.showFlightTimer)
             cell(flightIcon, flightValue, flightColor),
           if (widget.showClock)
-            cell(Icons.access_time, clockValue,
-                theme.colorScheme.onSurfaceVariant),
+            cell(
+              Icons.access_time,
+              clockValue,
+              theme.colorScheme.onSurfaceVariant,
+            ),
         ];
 
         return Row(

@@ -10,8 +10,15 @@ import '../data/takeoff_reference.dart';
 import '../data/sun_times.dart';
 import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
+import 'decimal_places.dart';
 
-String _displayNumber(double value, UnitDimension dimension, String unit) {
+String _displayNumber(
+  BuildContext context,
+  double value,
+  UnitDimension dimension,
+  String unit, {
+  String precisionKey = 'valueDecimals',
+}) {
   final converted = UnitValues.convert(value, dimension, unit);
   final decimals = switch (dimension) {
     UnitDimension.verticalSpeed => unit == 'fpm' ? 0 : 1,
@@ -21,7 +28,11 @@ String _displayNumber(double value, UnitDimension dimension, String unit) {
     UnitDimension.altitude => 0,
     UnitDimension.distance => converted >= 100 ? 0 : 1,
   };
-  return converted.toStringAsFixed(decimals);
+  return formatDecimalValue(
+    converted,
+    autoDecimals: decimals,
+    range: DecimalPlacesScope.rangeOf(context, precisionKey),
+  );
 }
 
 /// Color state of a data value, mirroring XCTrack's value coloring.
@@ -178,10 +189,15 @@ class VerticalSpeedControl extends StatelessWidget {
       state = ValueState.neutral;
     }
     final unit = selectedUnit(context, UnitDimension.verticalSpeed);
-    final displayValue = UnitValues.convert(v, UnitDimension.verticalSpeed, unit);
+    final displayValue = UnitValues.convert(
+      v,
+      UnitDimension.verticalSpeed,
+      unit,
+    );
     return DataValueControl(
       title: AppLocalizations.of(context).controlVerticalSpeed,
-      value: '${displayValue >= 0 ? '+' : ''}${_displayNumber(v, UnitDimension.verticalSpeed, unit)}',
+      value:
+          '${displayValue >= 0 ? '+' : ''}${_displayNumber(context, v, UnitDimension.verticalSpeed, unit)}',
       unit: UnitValues.symbol(UnitDimension.verticalSpeed, unit),
       state: state,
       showTitle: showTitle,
@@ -281,9 +297,9 @@ class LocationControl extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_formatLat(lat), style: valueStyle),
+                          Text(_formatLat(context, lat), style: valueStyle),
                           const SizedBox(height: 2),
-                          Text(_formatLon(lon), style: valueStyle),
+                          Text(_formatLon(context, lon), style: valueStyle),
                         ],
                       )
                     : Row(
@@ -306,33 +322,49 @@ class LocationControl extends StatelessWidget {
     );
   }
 
-  String _formatLat(double lat) {
+  String _formatLat(BuildContext context, double lat) {
     switch (format) {
       case LocationFormat.decimal:
-        return '${lat.toStringAsFixed(5)}°';
+        return '${formatDecimalValue(lat, autoDecimals: 5, range: DecimalPlacesScope.rangeOf(context, 'latitudeDecimals'))}°';
       case LocationFormat.dms:
-        return _toDms(lat, lat >= 0 ? 'N' : 'S');
+        return _toDms(
+          lat,
+          lat >= 0 ? 'N' : 'S',
+          DecimalPlacesScope.rangeOf(context, 'dmsSecondsDecimals'),
+        );
     }
   }
 
-  String _formatLon(double lon) {
+  String _formatLon(BuildContext context, double lon) {
     switch (format) {
       case LocationFormat.decimal:
-        return '${lon.toStringAsFixed(5)}°';
+        return '${formatDecimalValue(lon, autoDecimals: 5, range: DecimalPlacesScope.rangeOf(context, 'longitudeDecimals'))}°';
       case LocationFormat.dms:
-        return _toDms(lon, lon >= 0 ? 'E' : 'W');
+        return _toDms(
+          lon,
+          lon >= 0 ? 'E' : 'W',
+          DecimalPlacesScope.rangeOf(context, 'dmsSecondsDecimals'),
+        );
     }
   }
 
   /// Formats [value] degrees as `D°M'S.s"` followed by the [hemisphere].
-  static String _toDms(double value, String hemisphere) {
+  static String _toDms(
+    double value,
+    String hemisphere,
+    DecimalPlaceRange? precision,
+  ) {
     final abs = value.abs();
     final deg = abs.floor();
     final minFull = (abs - deg) * 60.0;
     final min = minFull.floor();
     final sec = (minFull - min) * 60.0;
+    final seconds = formatDecimalValue(sec, autoDecimals: 1, range: precision);
+    final secondsWidth = seconds.contains('.')
+        ? seconds.length - seconds.indexOf('.')
+        : 0;
     return "$deg°${min.toString().padLeft(2, '0')}'"
-        "${sec.toStringAsFixed(1).padLeft(4, '0')}\"$hemisphere";
+        "${seconds.padLeft(2 + secondsWidth, '0')}\"$hemisphere";
   }
 }
 
@@ -360,6 +392,18 @@ String _cardinal8(double degrees) {
   final normalized = ((degrees % 360) + 360) % 360;
   final index = ((normalized / 45.0).round()) % 8;
   return labels[index];
+}
+
+String _formatDegrees(double degrees, DecimalPlaceRange? precision) {
+  final formatted = formatDecimalValue(
+    degrees,
+    autoDecimals: 0,
+    range: precision,
+  );
+  final dot = formatted.indexOf('.');
+  final integer = dot < 0 ? formatted : formatted.substring(0, dot);
+  final fraction = dot < 0 ? '' : formatted.substring(dot);
+  return '${integer.padLeft(3, '0')}$fraction';
 }
 
 /// Which source to draw the altitude from.
@@ -413,7 +457,7 @@ class AltitudeControl extends StatelessWidget {
       title: title,
       value: raw == null
           ? '--'
-          : _displayNumber(raw, UnitDimension.altitude, unit),
+          : _displayNumber(context, raw, UnitDimension.altitude, unit),
       unit: UnitValues.symbol(UnitDimension.altitude, unit),
       state: ValueState.neutral,
       showTitle: showTitle,
@@ -454,7 +498,7 @@ class _MaxAltitudeControlState extends State<MaxAltitudeControl> {
     return DataValueControl(
       title: AppLocalizations.of(context).controlMaxAltitude,
       value: hasSample
-          ? _displayNumber(_max, UnitDimension.altitude, unit)
+          ? _displayNumber(context, _max, UnitDimension.altitude, unit)
           : '--',
       unit: UnitValues.symbol(UnitDimension.altitude, unit),
       state: ValueState.neutral,
@@ -479,7 +523,7 @@ class GroundSpeedControl extends StatelessWidget {
     return DataValueControl(
       title: AppLocalizations.of(context).controlGroundSpeed,
       value: hasValue
-          ? _displayNumber(data.groundSpeed, UnitDimension.speed, unit)
+          ? _displayNumber(context, data.groundSpeed, UnitDimension.speed, unit)
           : '--',
       unit: UnitValues.symbol(UnitDimension.speed, unit),
       state: ValueState.neutral,
@@ -580,7 +624,8 @@ class _GlideRatioControlState extends State<GlideRatioControl> {
       // Climb or near-level flight: glide ratio is undefined (or absurdly
       // large). Optionally show the vario in lift, otherwise '--'.
       if (widget.showVarioInLift && vsMs > 0.1) {
-        value = '+${vsMs.toStringAsFixed(1)}';
+        value =
+            '+${formatDecimalValue(vsMs, autoDecimals: 1, range: DecimalPlacesScope.rangeOf(context, 'varioDecimals'))}';
         state = ValueState.good;
       } else {
         value = '--';
@@ -592,7 +637,11 @@ class _GlideRatioControlState extends State<GlideRatioControl> {
       } else if (ratio >= 100) {
         value = widget.showLeadingOne ? '1:99+' : '99+';
       } else {
-        final r = ratio.toStringAsFixed(1);
+        final r = formatDecimalValue(
+          ratio,
+          autoDecimals: 1,
+          range: DecimalPlacesScope.rangeOf(context, 'ratioDecimals'),
+        );
         value = widget.showLeadingOne ? '1:$r' : r;
       }
     }
@@ -639,7 +688,10 @@ class HeadingControl extends StatelessWidget {
     } else if (cardinal) {
       value = _cardinal8(data.heading);
     } else {
-      value = data.heading.round().toString().padLeft(3, '0');
+      value = _formatDegrees(
+        data.heading,
+        DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
+      );
     }
     return DataValueControl(
       title: AppLocalizations.of(context).controlHeading,
@@ -663,7 +715,7 @@ class WindSpeedControl extends StatelessWidget {
     final unit = selectedUnit(context, UnitDimension.speed);
     return DataValueControl(
       title: AppLocalizations.of(context).controlWindSpeed,
-      value: _displayNumber(data.windSpeed, UnitDimension.speed, unit),
+      value: _displayNumber(context, data.windSpeed, UnitDimension.speed, unit),
       unit: UnitValues.symbol(UnitDimension.speed, unit),
       state: ValueState.neutral,
       showTitle: showTitle,
@@ -689,7 +741,10 @@ class WindDirectionControl extends StatelessWidget {
     if (cardinal) {
       value = _cardinal8(data.windDirection);
     } else {
-      value = data.windDirection.round().toString().padLeft(3, '0');
+      value = _formatDegrees(
+        data.windDirection,
+        DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
+      );
     }
     return DataValueControl(
       title: AppLocalizations.of(context).controlWindDir,
@@ -715,7 +770,7 @@ class PressureControl extends StatelessWidget {
       title: AppLocalizations.of(context).controlPressure,
       value: p == null
           ? '--'
-          : _displayNumber(p, UnitDimension.pressure, unit),
+          : _displayNumber(context, p, UnitDimension.pressure, unit),
       unit: UnitValues.symbol(UnitDimension.pressure, unit),
       state: ValueState.neutral,
       showTitle: showTitle,
@@ -737,7 +792,7 @@ class TemperatureControl extends StatelessWidget {
       title: AppLocalizations.of(context).controlTemperature,
       value: t == null
           ? '--'
-          : _displayNumber(t, UnitDimension.temperature, unit),
+          : _displayNumber(context, t, UnitDimension.temperature, unit),
       unit: UnitValues.symbol(UnitDimension.temperature, unit),
       state: ValueState.neutral,
       showTitle: showTitle,
@@ -1041,16 +1096,16 @@ class _DistanceToTakeoffControlState extends State<DistanceToTakeoffControl> {
         final flying = FlightState.instance.isFlying;
         final data = FlightDataProvider.of(context);
         final point = flying ? TakeoffReference.instance.point : null;
-        final hasCurrentFix = data.hasFix &&
+        final hasCurrentFix =
+            data.hasFix &&
             data.latitude.isFinite &&
             data.longitude.isFinite &&
             data.latitude >= -90 &&
             data.latitude <= 90 &&
             data.longitude >= -180 &&
             data.longitude <= 180;
-        final meters = point?.latitude != null &&
-                point?.longitude != null &&
-                hasCurrentFix
+        final meters =
+            point?.latitude != null && point?.longitude != null && hasCurrentFix
             ? GeoMath.distanceMeters(
                 point!.latitude!,
                 point.longitude!,
@@ -1061,12 +1116,16 @@ class _DistanceToTakeoffControlState extends State<DistanceToTakeoffControl> {
         final selected = selectedUnit(context, UnitDimension.distance);
         final value = meters == null
             ? '--'
-            : UnitValues.formatDistance(meters, selected);
+            : UnitValues.formatDistance(
+                meters,
+                selected,
+                precision: DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
+              );
         final unit = meters == null
             ? UnitValues.symbol(UnitDimension.distance, selected)
             : selected == 'auto'
-                ? (meters < 1000 ? 'm' : 'km')
-                : UnitValues.symbol(UnitDimension.distance, selected);
+            ? (meters < 1000 ? 'm' : 'km')
+            : UnitValues.symbol(UnitDimension.distance, selected);
 
         return DataValueControl(
           title: AppLocalizations.of(context).controlDistanceToTakeoff,
@@ -1171,7 +1230,12 @@ class GpsAltitudeControl extends StatelessWidget {
       title: AppLocalizations.of(context).controlGpsAltitude,
       value: data.gpsAltitude == null
           ? '--'
-          : _displayNumber(data.gpsAltitude!, UnitDimension.altitude, unit),
+          : _displayNumber(
+              context,
+              data.gpsAltitude!,
+              UnitDimension.altitude,
+              unit,
+            ),
       unit: UnitValues.symbol(UnitDimension.altitude, unit),
       showTitle: showTitle,
     );
@@ -1192,7 +1256,12 @@ class BaroAltitudeControl extends StatelessWidget {
       title: AppLocalizations.of(context).controlBaroAltitude,
       value: data.baroAltitude == null
           ? '--'
-          : _displayNumber(data.baroAltitude!, UnitDimension.altitude, unit),
+          : _displayNumber(
+              context,
+              data.baroAltitude!,
+              UnitDimension.altitude,
+              unit,
+            ),
       unit: UnitValues.symbol(UnitDimension.altitude, unit),
       showTitle: showTitle,
     );
@@ -1218,7 +1287,10 @@ class BearingControl extends StatelessWidget {
         ? '--'
         : cardinal
         ? _cardinal8(bearing)
-        : bearing.round().toString().padLeft(3, '0');
+        : _formatDegrees(
+            bearing,
+            DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
+          );
     return DataValueControl(
       title: AppLocalizations.of(context).controlBearing,
       value: value,
@@ -1242,7 +1314,7 @@ class GpsAccuracyControl extends StatelessWidget {
       title: AppLocalizations.of(context).controlGpsAccuracy,
       value: accuracy == null
           ? '--'
-          : _displayNumber(accuracy, UnitDimension.altitude, unit),
+          : _displayNumber(context, accuracy, UnitDimension.altitude, unit),
       unit: UnitValues.symbol(UnitDimension.altitude, unit),
       showTitle: showTitle,
     );
@@ -1302,19 +1374,23 @@ class _AltitudeAboveTakeoffControlState
         final data = FlightDataProvider.of(context);
         final flying = FlightState.instance.isFlying;
         final point = flying ? TakeoffReference.instance.point : null;
-        final altitudeDifference = point?.altitude != null &&
-                data.altitude.isFinite
+        final altitudeDifference =
+            point?.altitude != null && data.altitude.isFinite
             ? data.altitude - point!.altitude!
             : null;
         final unit = selectedUnit(context, UnitDimension.altitude);
         final value = altitudeDifference == null
             ? '--'
-            : UnitValues.formatAltitudeDifference(altitudeDifference, unit);
+            : UnitValues.formatAltitudeDifference(
+                altitudeDifference,
+                unit,
+                precision: DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
+              );
         final state = altitudeDifference == null
             ? ValueState.neutral
             : altitudeDifference >= 0
-                ? ValueState.good
-                : ValueState.bad;
+            ? ValueState.good
+            : ValueState.bad;
 
         return DataValueControl(
           title: AppLocalizations.of(context).controlAltitudeAboveTakeoff,

@@ -1657,6 +1657,84 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingCoordinateDms => '度 / 分 / 秒';
 
   @override
+  String get settingDecimalPlaces => '小数位数';
+
+  @override
+  String get settingDecimalPlacesAuto => '自动';
+
+  @override
+  String get settingLatitudeDecimals => '纬度小数位数';
+
+  @override
+  String get settingLongitudeDecimals => '经度小数位数';
+
+  @override
+  String get settingDmsSecondsDecimals => '度分秒中的秒小数位数';
+
+  @override
+  String get settingAverageDecimals => '平均值小数位数';
+
+  @override
+  String get settingPeakDecimals => '峰值小数位数';
+
+  @override
+  String get settingRatioDecimals => '滑翔比小数位数';
+
+  @override
+  String get settingVarioDecimals => '升降率小数位数';
+
+  @override
+  String get settingHeadingDecimals => '航向小数位数';
+
+  @override
+  String get settingWindSpeedDecimals => '风速小数位数';
+
+  @override
+  String get settingGroundSpeedDecimals => '地速小数位数';
+
+  @override
+  String get settingWindDirectionDecimals => '风向小数位数';
+
+  @override
+  String get settingZoomLevelDecimals => '缩放级别小数位数';
+
+  @override
+  String get settingGridDistanceDecimals => '网格距离小数位数';
+
+  @override
+  String get settingMapScaleDistanceDecimals => '地图比例尺距离小数位数';
+
+  @override
+  String get settingVarioMinimumDecimals => '升降率量程下限小数位数';
+
+  @override
+  String get settingSinkThresholdDecimals => '下沉阈值小数位数';
+
+  @override
+  String get settingLiftThresholdDecimals => '爬升阈值小数位数';
+
+  @override
+  String get settingVarioMaximumDecimals => '升降率量程上限小数位数';
+
+  @override
+  String get settingAltitudeDecimals => '高度小数位数';
+
+  @override
+  String get settingAccelerationDecimals => '加速度小数位数';
+
+  @override
+  String get settingDistanceDecimals => '距离小数位数';
+
+  @override
+  String get settingAltitudeDifferenceDecimals => '高度差小数位数';
+
+  @override
+  String get settingBearingDecimals => '方位角小数位数';
+
+  @override
+  String get settingAccuracyDecimals => '精度小数位数';
+
+  @override
   String get settingAltitudeSource => '高度来源';
 
   @override

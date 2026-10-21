@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../data/flight_data_provider.dart';
+import 'decimal_places.dart';
 
 /// A round compass rose that shows the current heading together with the wind
 /// direction, inspired by XCTrack's "Compass and wind" widget.
@@ -44,6 +45,14 @@ class CompassWindControl extends StatelessWidget {
         windFromDeg: windDir,
         windSpeedKph: windKph,
         hasFix: fix,
+        headingPrecision: DecimalPlacesScope.rangeOf(
+          context,
+          'headingDecimals',
+        ),
+        windSpeedPrecision: DecimalPlacesScope.rangeOf(
+          context,
+          'windSpeedDecimals',
+        ),
         theme: Theme.of(context),
       ),
       child: const SizedBox.expand(),
@@ -56,6 +65,8 @@ class _CompassWindPainter extends CustomPainter {
   final double windFromDeg;
   final double windSpeedKph;
   final bool hasFix;
+  final DecimalPlaceRange? headingPrecision;
+  final DecimalPlaceRange? windSpeedPrecision;
   final ThemeData theme;
 
   _CompassWindPainter({
@@ -63,6 +74,8 @@ class _CompassWindPainter extends CustomPainter {
     required this.windFromDeg,
     required this.windSpeedKph,
     required this.hasFix,
+    required this.headingPrecision,
+    required this.windSpeedPrecision,
     required this.theme,
   });
 
@@ -173,21 +186,40 @@ class _CompassWindPainter extends CustomPainter {
       final headFill = Paint()..color = windPaint.color;
       final head = Path()
         ..moveTo(tip.dx, tip.dy)
-        ..lineTo(tip.dx + headLen * math.cos(left),
-            tip.dy + headLen * math.sin(left))
-        ..lineTo(tip.dx + headLen * math.cos(right),
-            tip.dy + headLen * math.sin(right))
+        ..lineTo(
+          tip.dx + headLen * math.cos(left),
+          tip.dy + headLen * math.sin(left),
+        )
+        ..lineTo(
+          tip.dx + headLen * math.cos(right),
+          tip.dy + headLen * math.sin(right),
+        )
         ..close();
       canvas.drawPath(head, headFill);
     }
 
     // Center hub.
-    canvas.drawCircle(center, (radius * 0.06).clamp(2.0, 6.0),
-        Paint()..color = cs.onSurface.withAlpha(200));
+    canvas.drawCircle(
+      center,
+      (radius * 0.06).clamp(2.0, 6.0),
+      Paint()..color = cs.onSurface.withAlpha(200),
+    );
 
     // Center readout: heading in degrees + wind speed.
+    final formattedHeading = formatDecimalValue(
+      heading,
+      autoDecimals: 0,
+      range: headingPrecision,
+    );
+    final headingDot = formattedHeading.indexOf('.');
+    final headingInteger = headingDot < 0
+        ? formattedHeading
+        : formattedHeading.substring(0, headingDot);
+    final headingFraction = headingDot < 0
+        ? ''
+        : formattedHeading.substring(headingDot);
     final headingText = hasFix
-        ? '${heading.round().toString().padLeft(3, '0')}°'
+        ? '${headingInteger.padLeft(3, '0')}$headingFraction°'
         : '---°';
     final tpHeading = TextPainter(
       text: TextSpan(
@@ -203,11 +235,14 @@ class _CompassWindPainter extends CustomPainter {
     )..layout();
     tpHeading.paint(
       canvas,
-      Offset(center.dx - tpHeading.width / 2,
-          center.dy + radius * 0.30 - tpHeading.height / 2),
+      Offset(
+        center.dx - tpHeading.width / 2,
+        center.dy + radius * 0.30 - tpHeading.height / 2,
+      ),
     );
 
-    final windText = '${windSpeedKph.toStringAsFixed(0)} km/h';
+    final windText =
+        '${formatDecimalValue(windSpeedKph, autoDecimals: 0, range: windSpeedPrecision)} km/h';
     final tpWind = TextPainter(
       text: TextSpan(
         text: windText,
@@ -220,8 +255,10 @@ class _CompassWindPainter extends CustomPainter {
     )..layout();
     tpWind.paint(
       canvas,
-      Offset(center.dx - tpWind.width / 2,
-          center.dy + radius * 0.52 - tpWind.height / 2),
+      Offset(
+        center.dx - tpWind.width / 2,
+        center.dy + radius * 0.52 - tpWind.height / 2,
+      ),
     );
   }
 
@@ -231,6 +268,10 @@ class _CompassWindPainter extends CustomPainter {
         windFromDeg != old.windFromDeg ||
         windSpeedKph != old.windSpeedKph ||
         hasFix != old.hasFix ||
+        headingPrecision?.min != old.headingPrecision?.min ||
+        headingPrecision?.max != old.headingPrecision?.max ||
+        windSpeedPrecision?.min != old.windSpeedPrecision?.min ||
+        windSpeedPrecision?.max != old.windSpeedPrecision?.max ||
         theme != old.theme;
   }
 }

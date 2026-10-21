@@ -18,6 +18,13 @@ import '../data/thermal_detector.dart';
 import '../data/vario_color_scale.dart';
 import '../data/wind_estimator.dart';
 import '../l10n/app_localizations.dart';
+import 'decimal_places.dart';
+
+String _formatMapNumber(
+  double value,
+  DecimalPlaceRange? precision, {
+  required int autoDecimals,
+}) => formatDecimalValue(value, autoDecimals: autoDecimals, range: precision);
 
 /// A raster map tile source available to the [MapControl].
 @immutable
@@ -474,6 +481,50 @@ class _MapControlState extends State<MapControl> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final offlineFileName = OfflineTilesService.instance.activeFileName;
+    final requiredGlidePrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapRequiredGlideRatioDecimals',
+    );
+    final headingPrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapHeadingDecimals',
+    );
+    final altitudePrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapAltitudeDecimals',
+    );
+    final windSpeedPrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapWindSpeedDecimals',
+    );
+    final zoomPrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapZoomDecimals',
+    );
+    final gridDistancePrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapGridDistanceDecimals',
+    );
+    final scaleDistancePrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapScaleDistanceDecimals',
+    );
+    final varioColorMinPrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapVarioColorMinDecimals',
+    );
+    final varioSinkPrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapVarioSinkDecimals',
+    );
+    final varioLiftPrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapVarioLiftDecimals',
+    );
+    final varioColorMaxPrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'mapVarioColorMaxDecimals',
+    );
     final data = FlightDataProvider.of(context);
     final src = MapTileSources.byId(widget.tileSource);
 
@@ -578,6 +629,7 @@ class _MapControlState extends State<MapControl> {
                   _DashedGridLayer(
                     color: theme.colorScheme.onSurface.withAlpha(90),
                     labelColor: theme.colorScheme.onSurfaceVariant,
+                    distancePrecision: gridDistancePrecision,
                   ),
 
                 // Airspace polygons (below track/markers so labels stay legible).
@@ -639,6 +691,7 @@ class _MapControlState extends State<MapControl> {
                   _ScaleBarLayer(
                     color: theme.colorScheme.onSurface.withAlpha(200),
                     background: theme.colorScheme.surface.withAlpha(150),
+                    distancePrecision: scaleDistancePrecision,
                   ),
               ],
             ),
@@ -663,7 +716,7 @@ class _MapControlState extends State<MapControl> {
               child: _glassChip(
                 theme,
                 label:
-                    '${l10n.mapHeading} ${heading.round()}°  ·  ${l10n.mapAltitude} ${altMsl.round()}m',
+                    '${l10n.mapHeading} ${_formatMapNumber(heading, headingPrecision, autoDecimals: 0)}°  ·  ${l10n.mapAltitude} ${_formatMapNumber(altMsl, altitudePrecision, autoDecimals: 0)}m',
                 small: true,
               ),
             ),
@@ -682,6 +735,7 @@ class _MapControlState extends State<MapControl> {
                 mapRotationDeg: _rotationDeg,
                 color: theme.colorScheme.onSurfaceVariant,
                 background: theme.colorScheme.surface.withAlpha(180),
+                speedPrecision: windSpeedPrecision,
               ),
             ),
 
@@ -692,7 +746,8 @@ class _MapControlState extends State<MapControl> {
             child: _glassChip(
               theme,
               icon: Icons.trending_down,
-              label: '${l10n.mapRequiredGlideRatio} ${_ldReqStr(data)}',
+              label:
+                  '${l10n.mapRequiredGlideRatio} ${_ldReqStr(data, requiredGlidePrecision)}',
               small: true,
             ),
           ),
@@ -710,6 +765,10 @@ class _MapControlState extends State<MapControl> {
                   scale: _varioScale,
                   background: theme.colorScheme.surface.withAlpha(180),
                   textColor: theme.colorScheme.onSurfaceVariant,
+                  colorMinPrecision: varioColorMinPrecision,
+                  sinkPrecision: varioSinkPrecision,
+                  liftPrecision: varioLiftPrecision,
+                  colorMaxPrecision: varioColorMaxPrecision,
                 ),
               ),
             ),
@@ -734,7 +793,8 @@ class _MapControlState extends State<MapControl> {
                   if (widget.showZoomLevel)
                     _glassChip(
                       theme,
-                      label: 'Z ${_zoom.toStringAsFixed(1)}',
+                      label:
+                          'Z ${_formatMapNumber(_zoom, zoomPrecision, autoDecimals: 1)}',
                       small: true,
                     ),
                   if (widget.showZoomLevel && widget.showAttribution)
@@ -1247,14 +1307,14 @@ class _MapControlState extends State<MapControl> {
 
   /// Required glide ratio to sustain the current descent: ground speed / sink.
   /// Only meaningful while sinking (vertical speed < 0).
-  String _ldReqStr(dynamic data) {
+  String _ldReqStr(dynamic data, DecimalPlaceRange? precision) {
     final v = data.verticalSpeed as double; // m/s (+climb / -sink)
     if (v >= -0.1) return '--';
     final groundMps = (data.groundSpeed as double) / 3.6; // km/h -> m/s
     final ld = groundMps / -v;
     if (!ld.isFinite || ld <= 0) return '--';
     if (ld >= 100) return '99+';
-    return ld.toStringAsFixed(1);
+    return formatDecimalValue(ld, autoDecimals: 1, range: precision);
   }
 
   Widget _glassChip(
@@ -1302,10 +1362,15 @@ class _MapControlState extends State<MapControl> {
 /// cell edge represents. Lines are projected through the live [MapCamera] via
 /// `getOffsetFromOrigin`, so the grid pans, zooms and rotates with the map.
 class _DashedGridLayer extends StatelessWidget {
-  const _DashedGridLayer({required this.color, required this.labelColor});
+  const _DashedGridLayer({
+    required this.color,
+    required this.labelColor,
+    required this.distancePrecision,
+  });
 
   final Color color;
   final Color labelColor;
+  final DecimalPlaceRange? distancePrecision;
 
   /// Picks a "nice" ground distance (metres) from a 1-2-5 series such that the
   /// visible span is divided into a comfortable number of cells.
@@ -1329,16 +1394,16 @@ class _DashedGridLayer extends StatelessWidget {
   }
 
   /// Formats a metric [meters] distance for the scale label.
-  static String _formatDistance(double meters) {
+  static String _formatDistance(double meters, DecimalPlaceRange? precision) {
     if (meters >= 1000) {
       final km = meters / 1000.0;
-      final s = km >= 10 ? km.toStringAsFixed(0) : km.toStringAsFixed(1);
+      final s = _formatMapNumber(km, precision, autoDecimals: km >= 10 ? 0 : 1);
       return '$s km';
     }
     if (meters >= 1) {
-      return '${meters.toStringAsFixed(0)} m';
+      return '${_formatMapNumber(meters, precision, autoDecimals: 0)} m';
     }
-    return '${(meters * 100).toStringAsFixed(0)} cm';
+    return '${_formatMapNumber(meters * 100, precision, autoDecimals: 0)} cm';
   }
 
   @override
@@ -1379,7 +1444,7 @@ class _DashedGridLayer extends StatelessWidget {
             left: 8,
             bottom: 34,
             child: _GridScaleLabel(
-              text: 'Grid ${_formatDistance(stepMeters)}',
+              text: 'Grid ${_formatDistance(stepMeters, distancePrecision)}',
               color: labelColor,
             ),
           ),
@@ -1598,11 +1663,19 @@ class _VarioLegend extends StatelessWidget {
     required this.scale,
     required this.background,
     required this.textColor,
+    required this.colorMinPrecision,
+    required this.sinkPrecision,
+    required this.liftPrecision,
+    required this.colorMaxPrecision,
   });
 
   final VarioColorScale scale;
   final Color background;
   final Color textColor;
+  final DecimalPlaceRange? colorMinPrecision;
+  final DecimalPlaceRange? sinkPrecision;
+  final DecimalPlaceRange? liftPrecision;
+  final DecimalPlaceRange? colorMaxPrecision;
 
   @override
   Widget build(BuildContext context) {
@@ -1620,9 +1693,13 @@ class _VarioLegend extends StatelessWidget {
       fontWeight: FontWeight.w600,
     );
 
-    String fmt(double v) {
-      final s = v.toStringAsFixed(1);
-      return v > 0 ? '+$s' : s;
+    String fmt(double value, DecimalPlaceRange? precision) {
+      final formatted = formatDecimalValue(
+        value,
+        autoDecimals: 1,
+        range: precision,
+      );
+      return value > 0 ? '+$formatted' : formatted;
     }
 
     // Fractions (0..1 over the visualisation range) at which the threshold
@@ -1680,14 +1757,14 @@ class _VarioLegend extends StatelessWidget {
               children: [
                 _tick(
                   0.0,
-                  fmt(scale.colorMin),
+                  fmt(scale.colorMin, colorMinPrecision),
                   labelStyle,
                   barWidth,
                   Alignment.centerLeft,
                 ),
                 _tick(
                   frac(scale.effectiveSinkThreshold),
-                  fmt(scale.effectiveSinkThreshold),
+                  fmt(scale.effectiveSinkThreshold, sinkPrecision),
                   labelStyle,
                   barWidth,
                   Alignment.center,
@@ -1695,14 +1772,14 @@ class _VarioLegend extends StatelessWidget {
                 _tick(frac(0), '0', labelStyle, barWidth, Alignment.center),
                 _tick(
                   frac(scale.effectiveLiftThreshold),
-                  fmt(scale.effectiveLiftThreshold),
+                  fmt(scale.effectiveLiftThreshold, liftPrecision),
                   labelStyle,
                   barWidth,
                   Alignment.center,
                 ),
                 _tick(
                   1.0,
-                  fmt(scale.colorMax),
+                  fmt(scale.colorMax, colorMaxPrecision),
                   labelStyle,
                   barWidth,
                   Alignment.centerRight,
@@ -1862,10 +1939,15 @@ class _NorthIndicator extends StatelessWidget {
 /// to a "nice" 1-2-5 series distance for the current zoom. Ported from
 /// XCTrack's "Display map scale" option.
 class _ScaleBarLayer extends StatelessWidget {
-  const _ScaleBarLayer({required this.color, required this.background});
+  const _ScaleBarLayer({
+    required this.color,
+    required this.background,
+    required this.distancePrecision,
+  });
 
   final Color color;
   final Color background;
+  final DecimalPlaceRange? distancePrecision;
 
   /// Picks a "nice" distance (metres) from a 1-2-5 series near [target].
   static double _niceMeters(double target) {
@@ -1885,12 +1967,17 @@ class _ScaleBarLayer extends StatelessWidget {
     return stepNorm * mag;
   }
 
-  static String _fmt(double meters) {
+  static String _fmt(double meters, DecimalPlaceRange? precision) {
     if (meters >= 1000) {
       final km = meters / 1000.0;
-      return '${km >= 10 ? km.toStringAsFixed(0) : km.toStringAsFixed(1)} km';
+      final value = _formatMapNumber(
+        km,
+        precision,
+        autoDecimals: km >= 10 ? 0 : 1,
+      );
+      return '$value km';
     }
-    return '${meters.toStringAsFixed(0)} m';
+    return '${_formatMapNumber(meters, precision, autoDecimals: 0)} m';
   }
 
   @override
@@ -1929,7 +2016,7 @@ class _ScaleBarLayer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _fmt(niceMeters),
+              _fmt(niceMeters, distancePrecision),
               style: TextStyle(
                 fontSize: 9,
                 height: 1.0,
@@ -1983,12 +2070,14 @@ class _WindIndicator extends StatelessWidget {
     required this.mapRotationDeg,
     required this.color,
     required this.background,
+    required this.speedPrecision,
   });
 
   final WindEstimate wind;
   final double mapRotationDeg;
   final Color color;
   final Color background;
+  final DecimalPlaceRange? speedPrecision;
 
   @override
   Widget build(BuildContext context) {
@@ -2015,7 +2104,7 @@ class _WindIndicator extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             Text(
-              '${wind.speedKmh.round()} km/h',
+              '${formatDecimalValue(wind.speedKmh, autoDecimals: 0, range: speedPrecision)} km/h',
               style: TextStyle(
                 fontSize: 10,
                 height: 1.0,

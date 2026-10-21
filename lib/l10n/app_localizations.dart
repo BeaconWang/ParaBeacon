@@ -3296,6 +3296,162 @@ abstract class AppLocalizations {
   /// **'Deg / min / sec'**
   String get settingCoordinateDms;
 
+  /// No description provided for @settingDecimalPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Decimal places'**
+  String get settingDecimalPlaces;
+
+  /// No description provided for @settingDecimalPlacesAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get settingDecimalPlacesAuto;
+
+  /// No description provided for @settingLatitudeDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude decimal places'**
+  String get settingLatitudeDecimals;
+
+  /// No description provided for @settingLongitudeDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude decimal places'**
+  String get settingLongitudeDecimals;
+
+  /// No description provided for @settingDmsSecondsDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'DMS seconds decimal places'**
+  String get settingDmsSecondsDecimals;
+
+  /// No description provided for @settingAverageDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Average decimal places'**
+  String get settingAverageDecimals;
+
+  /// No description provided for @settingPeakDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Peak decimal places'**
+  String get settingPeakDecimals;
+
+  /// No description provided for @settingRatioDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Glide ratio decimal places'**
+  String get settingRatioDecimals;
+
+  /// No description provided for @settingVarioDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario decimal places'**
+  String get settingVarioDecimals;
+
+  /// No description provided for @settingHeadingDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading decimal places'**
+  String get settingHeadingDecimals;
+
+  /// No description provided for @settingWindSpeedDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind speed decimal places'**
+  String get settingWindSpeedDecimals;
+
+  /// No description provided for @settingGroundSpeedDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground speed decimal places'**
+  String get settingGroundSpeedDecimals;
+
+  /// No description provided for @settingWindDirectionDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind direction decimal places'**
+  String get settingWindDirectionDecimals;
+
+  /// No description provided for @settingZoomLevelDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom level decimal places'**
+  String get settingZoomLevelDecimals;
+
+  /// No description provided for @settingGridDistanceDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid distance decimal places'**
+  String get settingGridDistanceDecimals;
+
+  /// No description provided for @settingMapScaleDistanceDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Map scale distance decimal places'**
+  String get settingMapScaleDistanceDecimals;
+
+  /// No description provided for @settingVarioMinimumDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario scale minimum decimal places'**
+  String get settingVarioMinimumDecimals;
+
+  /// No description provided for @settingSinkThresholdDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Sink threshold decimal places'**
+  String get settingSinkThresholdDecimals;
+
+  /// No description provided for @settingLiftThresholdDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Lift threshold decimal places'**
+  String get settingLiftThresholdDecimals;
+
+  /// No description provided for @settingVarioMaximumDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario scale maximum decimal places'**
+  String get settingVarioMaximumDecimals;
+
+  /// No description provided for @settingAltitudeDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude decimal places'**
+  String get settingAltitudeDecimals;
+
+  /// No description provided for @settingAccelerationDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceleration decimal places'**
+  String get settingAccelerationDecimals;
+
+  /// No description provided for @settingDistanceDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance decimal places'**
+  String get settingDistanceDecimals;
+
+  /// No description provided for @settingAltitudeDifferenceDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude difference decimal places'**
+  String get settingAltitudeDifferenceDecimals;
+
+  /// No description provided for @settingBearingDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Bearing decimal places'**
+  String get settingBearingDecimals;
+
+  /// No description provided for @settingAccuracyDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'Accuracy decimal places'**
+  String get settingAccuracyDecimals;
+
   /// No description provided for @settingAltitudeSource.
   ///
   /// In en, this message translates to:

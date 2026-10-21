@@ -7,6 +7,7 @@ import '../data/flight_data_provider.dart';
 import '../data/flight_data_transformer.dart';
 import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
+import 'decimal_places.dart';
 
 /// Rolling 30-second climb average, peak, and recent vertical-speed bars.
 class ClimbAvgControl extends StatefulWidget {
@@ -68,7 +69,12 @@ class _ClimbAvgControlState extends State<ClimbAvgControl> {
     });
   }
 
-  String _formatValue(double value, String unit, {required bool signed}) {
+  String _formatValue(
+    double value,
+    String unit, {
+    required bool signed,
+    required DecimalPlaceRange? precision,
+  }) {
     final converted = UnitValues.convert(
       value,
       UnitDimension.verticalSpeed,
@@ -76,7 +82,7 @@ class _ClimbAvgControlState extends State<ClimbAvgControl> {
     );
     final decimals = unit == 'fpm' ? 0 : 1;
     final sign = signed && converted >= 0 ? '+' : '';
-    return '$sign${converted.toStringAsFixed(decimals)}';
+    return '$sign${formatDecimalValue(converted, autoDecimals: decimals, range: precision)}';
   }
 
   Color _barColor(double value, ColorScheme colors) {
@@ -151,6 +157,10 @@ class _ClimbAvgControlState extends State<ClimbAvgControl> {
                                         average,
                                         unit,
                                         signed: false,
+                                        precision: DecimalPlacesScope.rangeOf(
+                                          context,
+                                          'averageDecimals',
+                                        ),
                                       ),
                                       style: TextStyle(
                                         color: theme.colorScheme.primary,
@@ -210,7 +220,15 @@ class _ClimbAvgControlState extends State<ClimbAvgControl> {
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerRight,
                                 child: Text(
-                                  _formatValue(peak, unit, signed: true),
+                                  _formatValue(
+                                    peak,
+                                    unit,
+                                    signed: true,
+                                    precision: DecimalPlacesScope.rangeOf(
+                                      context,
+                                      'peakDecimals',
+                                    ),
+                                  ),
                                   maxLines: 1,
                                   style: TextStyle(
                                     color: peak >= 0

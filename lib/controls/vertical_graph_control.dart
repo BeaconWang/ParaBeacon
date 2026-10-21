@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
+import 'decimal_places.dart';
 
 /// A live altitude and vertical-acceleration history graph inspired by
 /// XCTrack's Vertical graph widget.
@@ -56,6 +57,14 @@ class VerticalGraphControl extends StatelessWidget {
             dotSize: dotSize,
             showVerticalAcceleration: showVerticalAcceleration,
             verticalAccelerationFillOpacity: verticalAccelerationFillOpacity,
+            altitudePrecision: DecimalPlacesScope.rangeOf(
+              context,
+              'altitudeDecimals',
+            ),
+            accelerationPrecision: DecimalPlacesScope.rangeOf(
+              context,
+              'accelerationDecimals',
+            ),
             theme: Theme.of(context),
           ),
           child: const SizedBox.expand(),
@@ -108,6 +117,8 @@ class _VerticalGraphPainter extends CustomPainter {
   final double dotSize;
   final bool showVerticalAcceleration;
   final double verticalAccelerationFillOpacity;
+  final DecimalPlaceRange? altitudePrecision;
+  final DecimalPlaceRange? accelerationPrecision;
   final ThemeData theme;
 
   _VerticalGraphPainter({
@@ -117,6 +128,8 @@ class _VerticalGraphPainter extends CustomPainter {
     required this.dotSize,
     required this.showVerticalAcceleration,
     required this.verticalAccelerationFillOpacity,
+    required this.altitudePrecision,
+    required this.accelerationPrecision,
     required this.theme,
   });
 
@@ -213,7 +226,11 @@ class _VerticalGraphPainter extends CustomPainter {
           graph.bottom - ((altitude - graphMin) / altitudeSpan) * graph.height;
       canvas.drawLine(Offset(graph.left, y), Offset(graph.right, y), gridPaint);
       labelPaint.text = TextSpan(
-        text: altitude.round().toString(),
+        text: formatDecimalValue(
+          altitude,
+          autoDecimals: 0,
+          range: altitudePrecision,
+        ),
         style: labelStyle,
       );
       labelPaint.layout(maxWidth: left - 4);
@@ -226,18 +243,27 @@ class _VerticalGraphPainter extends CustomPainter {
     if (showVerticalAcceleration) {
       final accelerationMaxLabel = TextPainter(
         text: TextSpan(
-          text: '+${accelerationScale.toStringAsFixed(1)}',
+          text:
+              '+${formatDecimalValue(accelerationScale, autoDecimals: 1, range: accelerationPrecision)}',
           style: accelerationLabelStyle,
         ),
         textDirection: TextDirection.ltr,
       )..layout();
       final accelerationZeroLabel = TextPainter(
-        text: TextSpan(text: '0', style: accelerationLabelStyle),
+        text: TextSpan(
+          text: formatDecimalValue(
+            0,
+            autoDecimals: 0,
+            range: accelerationPrecision,
+          ),
+          style: accelerationLabelStyle,
+        ),
         textDirection: TextDirection.ltr,
       )..layout();
       final accelerationMinLabel = TextPainter(
         text: TextSpan(
-          text: '-${accelerationScale.toStringAsFixed(1)}',
+          text:
+              '-${formatDecimalValue(accelerationScale, autoDecimals: 1, range: accelerationPrecision)}',
           style: accelerationLabelStyle,
         ),
         textDirection: TextDirection.ltr,

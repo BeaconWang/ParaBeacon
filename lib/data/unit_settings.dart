@@ -1,6 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'decimal_places.dart';
 
 /// Physical quantity families supported by dashboard controls.
 enum UnitDimension {
@@ -14,31 +15,31 @@ enum UnitDimension {
 
 extension UnitDimensionLabels on UnitDimension {
   String get storageKey => switch (this) {
-        UnitDimension.altitude => 'altitude',
-        UnitDimension.speed => 'speed',
-        UnitDimension.verticalSpeed => 'vertical_speed',
-        UnitDimension.distance => 'distance',
-        UnitDimension.pressure => 'pressure',
-        UnitDimension.temperature => 'temperature',
-      };
+    UnitDimension.altitude => 'altitude',
+    UnitDimension.speed => 'speed',
+    UnitDimension.verticalSpeed => 'vertical_speed',
+    UnitDimension.distance => 'distance',
+    UnitDimension.pressure => 'pressure',
+    UnitDimension.temperature => 'temperature',
+  };
 
   String get defaultUnit => switch (this) {
-        UnitDimension.altitude => 'm',
-        UnitDimension.speed => 'kmh',
-        UnitDimension.verticalSpeed => 'ms',
-        UnitDimension.distance => 'auto',
-        UnitDimension.pressure => 'hpa',
-        UnitDimension.temperature => 'c',
-      };
+    UnitDimension.altitude => 'm',
+    UnitDimension.speed => 'kmh',
+    UnitDimension.verticalSpeed => 'ms',
+    UnitDimension.distance => 'auto',
+    UnitDimension.pressure => 'hpa',
+    UnitDimension.temperature => 'c',
+  };
 
   List<String> get choices => switch (this) {
-        UnitDimension.altitude => const ['m', 'ft'],
-        UnitDimension.speed => const ['kmh', 'ms', 'mph', 'kn'],
-        UnitDimension.verticalSpeed => const ['ms', 'fpm'],
-        UnitDimension.distance => const ['auto', 'km', 'mi', 'm', 'ft'],
-        UnitDimension.pressure => const ['hpa', 'inhg'],
-        UnitDimension.temperature => const ['c', 'f'],
-      };
+    UnitDimension.altitude => const ['m', 'ft'],
+    UnitDimension.speed => const ['kmh', 'ms', 'mph', 'kn'],
+    UnitDimension.verticalSpeed => const ['ms', 'fpm'],
+    UnitDimension.distance => const ['auto', 'km', 'mi', 'm', 'ft'],
+    UnitDimension.pressure => const ['hpa', 'inhg'],
+    UnitDimension.temperature => const ['c', 'f'],
+  };
 }
 
 /// Converts and labels values for the dashboard's canonical data units.
@@ -70,19 +71,46 @@ class UnitValues {
     }
   }
 
-  static String formatDistance(double meters, String unit) {
+  static String formatDistance(
+    double meters,
+    String unit, {
+    DecimalPlaceRange? precision,
+  }) {
     if (unit == 'auto') {
-      if (meters < 1000) return meters.toStringAsFixed(0);
+      if (meters < 1000) {
+        return formatDecimalValue(meters, autoDecimals: 0, range: precision);
+      }
       final kilometers = meters / 1000.0;
-      return kilometers.toStringAsFixed(kilometers >= 100 ? 0 : 1);
+      return formatDecimalValue(
+        kilometers,
+        autoDecimals: kilometers >= 100 ? 0 : 1,
+        range: precision,
+      );
     }
     final converted = convert(meters, UnitDimension.distance, unit);
-    return converted.toStringAsFixed(converted >= 100 ? 0 : 1);
+    return formatDecimalValue(
+      converted,
+      autoDecimals: converted >= 100 ? 0 : 1,
+      range: precision,
+    );
   }
 
-  static String formatAltitudeDifference(double meters, String unit) {
-    final value = convert(meters, UnitDimension.altitude, unit).round();
-    return value >= 0 ? '+$value' : '$value';
+  static String formatAltitudeDifference(
+    double meters,
+    String unit, {
+    DecimalPlaceRange? precision,
+  }) {
+    final converted = convert(meters, UnitDimension.altitude, unit);
+    if (precision == null) {
+      final rounded = converted.round();
+      return rounded >= 0 ? '+$rounded' : '$rounded';
+    }
+    final value = formatDecimalValue(
+      converted,
+      autoDecimals: 0,
+      range: precision,
+    );
+    return converted >= 0 ? '+$value' : value;
   }
 
   static String symbol(UnitDimension dimension, String unit) {
@@ -128,7 +156,8 @@ class UnitSettings extends ChangeNotifier {
 
   static const _prefix = 'pb.units.default.';
   final Map<UnitDimension, String> _defaults = {
-    for (final dimension in UnitDimension.values) dimension: dimension.defaultUnit,
+    for (final dimension in UnitDimension.values)
+      dimension: dimension.defaultUnit,
   };
   bool _loaded = false;
 
@@ -166,7 +195,8 @@ class UnitSettings extends ChangeNotifier {
   }
 
   String resolve(UnitDimension dimension, String? customUnit) {
-    if (customUnit != null && customUnit != 'default' &&
+    if (customUnit != null &&
+        customUnit != 'default' &&
         dimension.choices.contains(customUnit)) {
       return customUnit;
     }
@@ -176,20 +206,23 @@ class UnitSettings extends ChangeNotifier {
 
 /// Maps a catalog control id to the physical quantity it displays.
 UnitDimension? unitDimensionForControl(String typeId) => switch (typeId) {
-      'vertical_graph' => UnitDimension.altitude,
-      'vario' => UnitDimension.verticalSpeed,
-      'climb_avg' => UnitDimension.verticalSpeed,
-      'vertical_speed' => UnitDimension.verticalSpeed,
-      'altitude' || 'gps_altitude' || 'baro_altitude' || 'max_altitude' ||
-      'altitude_above_takeoff' => UnitDimension.altitude,
-      'ground_speed' || 'wind_speed' => UnitDimension.speed,
-      'distance_to_takeoff' || 'takeoff_waypoint' => UnitDimension.distance,
-      'gps_accuracy' => UnitDimension.altitude,
-      'pressure' => UnitDimension.pressure,
-      'temperature' => UnitDimension.temperature,
-      'compass_wind' => UnitDimension.speed,
-      _ => null,
-    };
+  'vertical_graph' => UnitDimension.altitude,
+  'vario' => UnitDimension.verticalSpeed,
+  'climb_avg' => UnitDimension.verticalSpeed,
+  'vertical_speed' => UnitDimension.verticalSpeed,
+  'altitude' ||
+  'gps_altitude' ||
+  'baro_altitude' ||
+  'max_altitude' ||
+  'altitude_above_takeoff' => UnitDimension.altitude,
+  'ground_speed' || 'wind_speed' => UnitDimension.speed,
+  'distance_to_takeoff' || 'takeoff_waypoint' => UnitDimension.distance,
+  'gps_accuracy' => UnitDimension.altitude,
+  'pressure' => UnitDimension.pressure,
+  'temperature' => UnitDimension.temperature,
+  'compass_wind' => UnitDimension.speed,
+  _ => null,
+};
 
 /// Inherited per-instance override used by controls while rendering a face.
 class UnitDisplayScope extends InheritedWidget {

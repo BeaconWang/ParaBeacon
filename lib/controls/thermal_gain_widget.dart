@@ -5,6 +5,7 @@ import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_data_transformer.dart';
 import '../data/unit_settings.dart';
+import 'decimal_places.dart';
 import '../l10n/app_localizations.dart';
 import 'data_value_control.dart';
 
@@ -237,7 +238,14 @@ class ThermalGainReadout extends StatelessWidget {
               : AppLocalizations.of(context).controlLastThermalGain,
           value: gain == null
               ? '--'
-              : UnitValues.formatAltitudeDifference(gain, altitudeUnit),
+              : UnitValues.formatAltitudeDifference(
+                  gain,
+                  altitudeUnit,
+                  precision: DecimalPlacesScope.rangeOf(
+                    context,
+                    'valueDecimals',
+                  ),
+                ),
           unit: UnitValues.symbol(UnitDimension.altitude, altitudeUnit),
           state: isActive && (gain ?? 0) >= 0
               ? ValueState.good

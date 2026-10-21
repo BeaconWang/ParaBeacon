@@ -87,13 +87,13 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   bool _duckVario = true;
   double _varioDuckLevel = 0.3;
   double _speechRate = 1.0;
-  bool _takeoffLandingEnabled = false;
-  bool _glideEnabled = false;
+  bool _takeoffLandingEnabled = true;
+  bool _glideEnabled = true;
   double _glideMinimum = defaultGlideMinimum;
   double _glideMaximum = defaultGlideMaximum;
   double _glideDelaySeconds = defaultGlideDelay;
   double _glideRepeatSeconds = defaultGlideRepeat;
-  bool _recordEnabled = false;
+  bool _recordEnabled = true;
   AltitudeRecordScope _recordScope = AltitudeRecordScope.flight;
   double _recordIntervalSeconds = defaultRecordInterval;
   bool _loaded = false;

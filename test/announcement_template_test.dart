@@ -95,7 +95,7 @@ void main() {
         en,
         values,
       ),
-      'Height: 1250',
+      'Altitude: 1250',
     );
     final record = values.copyWith(maxAltitudeMeters: 1310.4);
     expect(
@@ -112,7 +112,7 @@ void main() {
         en,
         record,
       ),
-      'Refresh height: 1310',
+      'Refresh altitude: 1310',
     );
   });
 

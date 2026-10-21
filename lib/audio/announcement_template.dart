@@ -188,9 +188,9 @@ class AnnouncementTemplate {
       AnnouncementEvent.takeoff => zh ? '起飞' : 'Takeoff',
       AnnouncementEvent.continueFlight => zh ? '继续飞行' : 'Continue flight',
       AnnouncementEvent.landing => zh ? '降落' : 'Landing',
-      AnnouncementEvent.glide => zh ? '高度：{altitude}' : 'Height: {altitude}',
+      AnnouncementEvent.glide => zh ? '高度：{altitude}' : 'Altitude: {altitude}',
       AnnouncementEvent.altitudeRecord =>
-        zh ? '刷新高度：{maxAltitude}' : 'Refresh height: {maxAltitude}',
+        zh ? '刷新高度：{maxAltitude}' : 'Refresh altitude: {maxAltitude}',
     };
   }
 

@@ -271,12 +271,14 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
       if (isAndroid) {
         final destination = await _chooseStatisticsExportDestination(l10n);
         if (destination == null || !mounted) return;
+        final colorScheme = Theme.of(context).colorScheme;
         if (destination == _StatisticsExportDestination.downloads) {
           final path = await service.saveToDownloads(
             _stats,
             l10n,
             selected: widget.selected,
             locale: locale,
+            colorScheme: colorScheme,
           );
           if (path != null && mounted) {
             _showSnack(l10n.flightsExportSavedToDownloads);
@@ -287,16 +289,19 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
             l10n,
             selected: widget.selected,
             locale: locale,
+            colorScheme: colorScheme,
           );
           if (mounted) _showSnack(l10n.flightsShareCardSharedFile);
         }
         return;
       }
+      final colorScheme = Theme.of(context).colorScheme;
       final saved = await service.saveToGallery(
         _stats,
         l10n,
         selected: widget.selected,
         locale: locale,
+        colorScheme: colorScheme,
       );
       if (mounted) {
         _showSnack(

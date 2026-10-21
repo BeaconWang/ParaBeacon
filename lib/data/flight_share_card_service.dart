@@ -30,7 +30,11 @@ class FlightShareCardService {
   /// Renders the card for [track] and returns the PNG bytes. All on-card text
   /// is localized through [l10n], so the card follows the app's current
   /// language (e.g. Chinese when the app is set to Chinese).
-  Future<List<int>> renderPng(FlightTrack track, AppLocalizations l10n) async {
+  Future<List<int>> renderPng(
+    FlightTrack track,
+    AppLocalizations l10n, {
+    required ColorScheme colorScheme,
+  }) async {
     final stats = FlightDerivedStats.compute(track);
     final cardHeight = math
         .max(
@@ -42,18 +46,27 @@ class FlightShareCardService {
     final canvas = Canvas(recorder);
     final size = Size(_w.toDouble(), cardHeight.toDouble());
 
-    _paintBackground(canvas, size);
-    _paintHeader(canvas, size, track);
-    final mapBottom = _paintTrackMap(canvas, size, track, l10n);
+    _paintBackground(canvas, size, colorScheme);
+    _paintHeader(canvas, size, track, colorScheme);
+    final mapBottom = _paintTrackMap(canvas, size, track, l10n, colorScheme);
     final profileBottom = _paintAltitudeProfile(
       canvas,
       size,
       track,
       l10n,
       top: mapBottom + 28,
+      colorScheme: colorScheme,
     );
-    _paintStats(canvas, size, track, stats, l10n, top: profileBottom + 36);
-    _paintFooter(canvas, size, track, l10n);
+    _paintStats(
+      canvas,
+      size,
+      track,
+      stats,
+      l10n,
+      top: profileBottom + 36,
+      colorScheme: colorScheme,
+    );
+    _paintFooter(canvas, size, track, l10n, colorScheme);
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(_w, cardHeight);
@@ -65,8 +78,12 @@ class FlightShareCardService {
   /// Renders the card and saves it to the gallery. Returns true on success.
   /// On failure (no gallery / permission), writes a temp file and opens the
   /// share sheet instead, returning false.
-  Future<bool> saveToGallery(FlightTrack track, AppLocalizations l10n) async {
-    final bytes = await renderPng(track, l10n);
+  Future<bool> saveToGallery(
+    FlightTrack track,
+    AppLocalizations l10n, {
+    required ColorScheme colorScheme,
+  }) async {
+    final bytes = await renderPng(track, l10n, colorScheme: colorScheme);
     final dir = await getTemporaryDirectory();
     final fileName = '${flightSlug(track)}.png';
     final path = p.join(dir.path, fileName);
@@ -91,9 +108,10 @@ class FlightShareCardService {
 
   Future<String?> saveToDownloads(
     FlightTrack track,
-    AppLocalizations l10n,
-  ) async {
-    final bytes = await renderPng(track, l10n);
+    AppLocalizations l10n, {
+    required ColorScheme colorScheme,
+  }) async {
+    final bytes = await renderPng(track, l10n, colorScheme: colorScheme);
     return FlightFileOutputService.instance.saveToDownloads(
       bytes: bytes,
       fileName: '${flightSlug(track)}.png',
@@ -101,8 +119,12 @@ class FlightShareCardService {
     );
   }
 
-  Future<String> shareCard(FlightTrack track, AppLocalizations l10n) async {
-    final bytes = await renderPng(track, l10n);
+  Future<String> shareCard(
+    FlightTrack track,
+    AppLocalizations l10n, {
+    required ColorScheme colorScheme,
+  }) async {
+    final bytes = await renderPng(track, l10n, colorScheme: colorScheme);
     final fileName = '${flightSlug(track)}.png';
     final dir = await getTemporaryDirectory();
     final path = p.join(dir.path, fileName);
@@ -119,24 +141,33 @@ class FlightShareCardService {
 
   // ── Painting ───────────────────────────────────────────────────────────
 
-  void _paintBackground(Canvas canvas, Size size) {
+  void _paintBackground(Canvas canvas, Size size, ColorScheme colorScheme) {
     final rect = Offset.zero & size;
     final gradient = ui.Gradient.linear(
       rect.topCenter,
       rect.bottomCenter,
-      const [Color(0xFF081521), Color(0xFF102A3D), Color(0xFF173D50)],
+      [
+        colorScheme.surface,
+        colorScheme.surfaceContainerLow,
+        colorScheme.surfaceContainer,
+      ],
       const [0.0, 0.55, 1.0],
     );
     canvas.drawRect(rect, Paint()..shader = gradient);
   }
 
-  void _paintHeader(Canvas canvas, Size size, FlightTrack track) {
+  void _paintHeader(
+    Canvas canvas,
+    Size size,
+    FlightTrack track,
+    ColorScheme colorScheme,
+  ) {
     _text(
       canvas,
       'ParaBeacon',
       Offset(60, 64),
       fontSize: 44,
-      color: const Color(0xFF7FD1FF),
+      color: colorScheme.primary,
       weight: FontWeight.w700,
     );
 
@@ -151,7 +182,7 @@ class FlightShareCardService {
       when,
       Offset(60, 122),
       fontSize: 32,
-      color: Colors.white,
+      color: colorScheme.onSurface,
       weight: FontWeight.w600,
     );
 
@@ -165,7 +196,7 @@ class FlightShareCardService {
         site,
         Offset(60, 170),
         fontSize: 26,
-        color: const Color(0xFFB9D4E3),
+        color: colorScheme.onSurfaceVariant,
         maxWidth: _w - 120.0,
       );
     }
@@ -177,6 +208,7 @@ class FlightShareCardService {
     Size size,
     FlightTrack track,
     AppLocalizations l10n,
+    ColorScheme colorScheme,
   ) {
     const left = 60.0;
     const top = 230.0;
@@ -185,11 +217,11 @@ class FlightShareCardService {
     final rect = Rect.fromLTWH(left, top, boxW, boxH);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
-    canvas.drawRRect(rrect, Paint()..color = const Color(0x22101B26));
+    canvas.drawRRect(rrect, Paint()..color = colorScheme.surfaceContainerLow);
     canvas.save();
     canvas.clipRRect(rrect);
     final gridPaint = Paint()
-      ..color = const Color(0x14FFFFFF)
+      ..color = colorScheme.outlineVariant.withValues(alpha: 0.4)
       ..strokeWidth = 1;
     for (var i = 1; i < 5; i++) {
       final x = left + boxW * i / 5;
@@ -202,7 +234,7 @@ class FlightShareCardService {
       l10n.flightReportTrackMap.toUpperCase(),
       Offset(left + 24, top + 18),
       fontSize: 20,
-      color: const Color(0xFF91AFC0),
+      color: colorScheme.onSurfaceVariant,
       weight: FontWeight.w700,
     );
 
@@ -244,7 +276,7 @@ class FlightShareCardService {
         ..strokeWidth = 11
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
-        ..color = const Color(0x8848D7C0);
+        ..color = colorScheme.primary.withValues(alpha: 0.3);
       final segPaint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 5
@@ -273,14 +305,14 @@ class FlightShareCardService {
         samples.last.data.latitude,
         samples.last.data.longitude,
       );
-      canvas.drawCircle(start, 13, Paint()..color = const Color(0xFF4ADE80));
-      canvas.drawCircle(end, 13, Paint()..color = const Color(0xFFFF6B6B));
+      canvas.drawCircle(start, 13, Paint()..color = colorScheme.secondary);
+      canvas.drawCircle(end, 13, Paint()..color = colorScheme.error);
       _text(
         canvas,
         l10n.flightDetailTakeoff,
         Offset(start.dx + 18, start.dy - 16),
         fontSize: 22,
-        color: const Color(0xFFCDEFD8),
+        color: colorScheme.onSurface,
         weight: FontWeight.w600,
       );
       _text(
@@ -288,7 +320,7 @@ class FlightShareCardService {
         l10n.flightDetailLanding,
         Offset(end.dx + 18, end.dy - 16),
         fontSize: 22,
-        color: const Color(0xFFFFD2D2),
+        color: colorScheme.onSurface,
         weight: FontWeight.w600,
       );
     } else {
@@ -297,7 +329,7 @@ class FlightShareCardService {
         l10n.flightShareCardNoTrack,
         Offset(left + boxW / 2 - 70, top + boxH / 2 - 20),
         fontSize: 32,
-        color: const Color(0x66FFFFFF),
+        color: colorScheme.onSurfaceVariant,
       );
     }
 
@@ -307,7 +339,7 @@ class FlightShareCardService {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
-        ..color = const Color(0x33FFFFFF),
+        ..color = colorScheme.outlineVariant,
     );
     return top + boxH;
   }
@@ -321,6 +353,7 @@ class FlightShareCardService {
     FlightTrack track,
     AppLocalizations l10n, {
     required double top,
+    required ColorScheme colorScheme,
   }) {
     const left = 60.0;
     final boxW = _w - 120.0;
@@ -328,14 +361,14 @@ class FlightShareCardService {
     final rect = Rect.fromLTWH(left, top, boxW, boxH);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
-    canvas.drawRRect(rrect, Paint()..color = const Color(0x22101B26));
+    canvas.drawRRect(rrect, Paint()..color = colorScheme.surfaceContainerLow);
 
     _text(
       canvas,
       l10n.flightReportAltitudeProfile.toUpperCase(),
       Offset(left + 28, top + 18),
       fontSize: 24,
-      color: const Color(0xFF8FB6CC),
+      color: colorScheme.onSurfaceVariant,
       weight: FontWeight.w600,
     );
 
@@ -373,7 +406,7 @@ class FlightShareCardService {
       canvas.save();
       canvas.clipRRect(rrect);
       final gridPaint = Paint()
-        ..color = const Color(0x18FFFFFF)
+        ..color = colorScheme.outlineVariant.withValues(alpha: 0.5)
         ..strokeWidth = 1;
       for (var i = 0; i <= 3; i++) {
         final y = plotTop + plotH * i / 3;
@@ -403,7 +436,10 @@ class FlightShareCardService {
           ..shader = ui.Gradient.linear(
             Offset(plotLeft, plotTop),
             Offset(plotLeft, plotBottom),
-            const [Color(0x5539D98A), Color(0x0039D98A)],
+            [
+              colorScheme.primary.withValues(alpha: 0.3),
+              colorScheme.primary.withValues(alpha: 0),
+            ],
           ),
       );
       canvas.drawPath(
@@ -413,7 +449,7 @@ class FlightShareCardService {
           ..strokeWidth = 4
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
-          ..color = const Color(0xFF7FD1FF),
+          ..color = colorScheme.primary,
       );
 
       canvas.restore();
@@ -423,14 +459,14 @@ class FlightShareCardService {
         '${maxAlt.toStringAsFixed(0)} m',
         Offset(plotLeft, plotTop - 30),
         fontSize: 22,
-        color: const Color(0xFFB9D4E3),
+        color: colorScheme.onSurfaceVariant,
       );
       _text(
         canvas,
         '${minAlt.toStringAsFixed(0)} m',
         Offset(plotLeft, plotBottom + 4),
         fontSize: 22,
-        color: const Color(0xFFB9D4E3),
+        color: colorScheme.onSurfaceVariant,
       );
     } else {
       _text(
@@ -438,7 +474,7 @@ class FlightShareCardService {
         l10n.flightShareCardNoAltitude,
         Offset(left + boxW / 2 - 110, top + boxH / 2 - 10),
         fontSize: 26,
-        color: const Color(0x66FFFFFF),
+        color: colorScheme.onSurfaceVariant,
       );
     }
 
@@ -447,7 +483,7 @@ class FlightShareCardService {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
-        ..color = const Color(0x33FFFFFF),
+        ..color = colorScheme.outlineVariant,
     );
     return top + boxH;
   }
@@ -476,6 +512,7 @@ class FlightShareCardService {
     FlightDerivedStats stats,
     AppLocalizations l10n, {
     required double top,
+    required ColorScheme colorScheme,
   }) {
     String km(double value) => '${(value / 1000).toStringAsFixed(2)} km';
     String m(double value) => '${value.toStringAsFixed(0)} m';
@@ -501,6 +538,7 @@ class FlightShareCardService {
       ],
       left: 60,
       top: top,
+      colorScheme: colorScheme,
     );
 
     final takeoff = _endpointText(
@@ -525,6 +563,7 @@ class FlightShareCardService {
       ],
       left: 60,
       top: y,
+      colorScheme: colorScheme,
     );
 
     y = _paintMetricSection(
@@ -542,6 +581,7 @@ class FlightShareCardService {
       ],
       left: 60,
       top: y,
+      colorScheme: colorScheme,
     );
 
     if (track.hasSamples) {
@@ -587,6 +627,7 @@ class FlightShareCardService {
         ],
         left: 60,
         top: y,
+        colorScheme: colorScheme,
       );
       y = _paintMetricSection(
         canvas,
@@ -604,6 +645,7 @@ class FlightShareCardService {
         ],
         left: 60,
         top: y,
+        colorScheme: colorScheme,
       );
       y = _paintMetricSection(
         canvas,
@@ -625,6 +667,7 @@ class FlightShareCardService {
         ],
         left: 60,
         top: y,
+        colorScheme: colorScheme,
       );
       y = _paintMetricSection(
         canvas,
@@ -637,6 +680,7 @@ class FlightShareCardService {
         ],
         left: 60,
         top: y,
+        colorScheme: colorScheme,
       );
     }
 
@@ -655,6 +699,7 @@ class FlightShareCardService {
         equipment,
         left: 60,
         top: y,
+        colorScheme: colorScheme,
       );
     }
 
@@ -696,6 +741,7 @@ class FlightShareCardService {
         aircraft,
         left: 60,
         top: y,
+        colorScheme: colorScheme,
       );
     }
 
@@ -707,6 +753,7 @@ class FlightShareCardService {
         telemetry,
         left: 60,
         top: y,
+        colorScheme: colorScheme,
       );
     }
     return y;
@@ -834,6 +881,7 @@ class FlightShareCardService {
     List<(String, String)> entries, {
     required double left,
     required double top,
+    required ColorScheme colorScheme,
   }) {
     if (entries.isEmpty) return top;
     _text(
@@ -841,7 +889,7 @@ class FlightShareCardService {
       label.toUpperCase(),
       Offset(left, top),
       fontSize: 22,
-      color: const Color(0xFF5E8198),
+      color: colorScheme.primary,
       weight: FontWeight.w700,
     );
 
@@ -853,7 +901,7 @@ class FlightShareCardService {
       Offset(left, top + 30),
       Offset(left + _w - 120.0, top + 30),
       Paint()
-        ..color = const Color(0x22FFFFFF)
+        ..color = colorScheme.outlineVariant.withValues(alpha: 0.45)
         ..strokeWidth = 1,
     );
     for (var i = 0; i < entries.length; i++) {
@@ -865,13 +913,16 @@ class FlightShareCardService {
         Rect.fromLTWH(x, y, cellWidth - 10, cellHeight),
         const Radius.circular(14),
       );
-      canvas.drawRRect(cellRect, Paint()..color = const Color(0x16FFFFFF));
+      canvas.drawRRect(
+        cellRect,
+        Paint()..color = colorScheme.surfaceContainerLow,
+      );
       _text(
         canvas,
         entries[i].$1,
         Offset(x + 14, y + 9),
         fontSize: 19,
-        color: const Color(0xFFA9C1CE),
+        color: colorScheme.onSurfaceVariant,
         weight: FontWeight.w500,
         maxWidth: cellWidth - 38,
       );
@@ -880,7 +931,7 @@ class FlightShareCardService {
         entries[i].$2,
         Offset(x + 14, y + 37),
         fontSize: entries[i].$2.length > 22 ? 17 : 26,
-        color: Colors.white,
+        color: colorScheme.onSurface,
         weight: FontWeight.w700,
         maxWidth: cellWidth - 38,
         maxLines: 2,
@@ -895,13 +946,14 @@ class FlightShareCardService {
     Size size,
     FlightTrack track,
     AppLocalizations l10n,
+    ColorScheme colorScheme,
   ) {
     final footerY = size.height - 80;
     canvas.drawLine(
       Offset(60, footerY - 28),
       Offset(_w - 60.0, footerY - 28),
       Paint()
-        ..color = const Color(0x22FFFFFF)
+        ..color = colorScheme.outlineVariant.withValues(alpha: 0.45)
         ..strokeWidth = 1,
     );
     _text(
@@ -909,7 +961,7 @@ class FlightShareCardService {
       l10n.flightShareCardFooter(track.pointCount),
       Offset(60, footerY),
       fontSize: 24,
-      color: const Color(0x88FFFFFF),
+      color: colorScheme.onSurfaceVariant,
     );
   }
 

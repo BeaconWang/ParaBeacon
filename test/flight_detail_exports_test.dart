@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:parabeacon/data/flight_data.dart';
@@ -29,7 +30,14 @@ void main() {
       final bytes = await FlightShareCardService.instance.renderPng(
         _completeTrack(),
         AppLocalizationsEn(),
+        colorScheme: ColorScheme.dark(),
       );
+      final lightBytes = await FlightShareCardService.instance.renderPng(
+        _completeTrack(),
+        AppLocalizationsEn(),
+        colorScheme: ColorScheme.light(),
+      );
+      expect(lightBytes, isNot(equals(bytes)));
       final data = ByteData.sublistView(Uint8List.fromList(bytes));
 
       expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
@@ -44,7 +52,17 @@ void main() {
         AppLocalizationsEn(),
         selected: false,
         locale: 'en',
+        colorScheme: ColorScheme.dark(),
       );
+      final lightBytes = await FlightStatisticsShareCardService.instance
+          .renderPng(
+            stats,
+            AppLocalizationsEn(),
+            selected: false,
+            locale: 'en',
+            colorScheme: ColorScheme.light(),
+          );
+      expect(lightBytes, isNot(equals(bytes)));
       final data = ByteData.sublistView(Uint8List.fromList(bytes));
 
       expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);

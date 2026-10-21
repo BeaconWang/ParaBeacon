@@ -25,12 +25,14 @@ class FlightStatisticsShareCardService {
     AppLocalizations l10n, {
     required bool selected,
     required String locale,
+    required ColorScheme colorScheme,
   }) async {
     final painter = _StatisticsCardPainter(
       stats: stats,
       l10n: l10n,
       selected: selected,
       locale: locale,
+      colorScheme: colorScheme,
     );
     final picture = painter.paint();
     final image = await picture.toImage(_width, painter.height);
@@ -46,12 +48,14 @@ class FlightStatisticsShareCardService {
     AppLocalizations l10n, {
     required bool selected,
     required String locale,
+    required ColorScheme colorScheme,
   }) async {
     final bytes = await renderPng(
       stats,
       l10n,
       selected: selected,
       locale: locale,
+      colorScheme: colorScheme,
     );
     final dir = await getTemporaryDirectory();
     final fileName = _fileName(stats);
@@ -76,12 +80,14 @@ class FlightStatisticsShareCardService {
     AppLocalizations l10n, {
     required bool selected,
     required String locale,
+    required ColorScheme colorScheme,
   }) async {
     final bytes = await renderPng(
       stats,
       l10n,
       selected: selected,
       locale: locale,
+      colorScheme: colorScheme,
     );
     return FlightFileOutputService.instance.saveToDownloads(
       bytes: bytes,
@@ -95,12 +101,14 @@ class FlightStatisticsShareCardService {
     AppLocalizations l10n, {
     required bool selected,
     required String locale,
+    required ColorScheme colorScheme,
   }) async {
     final bytes = await renderPng(
       stats,
       l10n,
       selected: selected,
       locale: locale,
+      colorScheme: colorScheme,
     );
     final fileName = _fileName(stats);
     final dir = await getTemporaryDirectory();
@@ -134,6 +142,7 @@ class _StatisticsCardPainter {
     required this.l10n,
     required this.selected,
     required this.locale,
+    required this.colorScheme,
   }) {
     _prepareSections();
   }
@@ -141,18 +150,19 @@ class _StatisticsCardPainter {
   static const double _width = 1080;
   static const double _margin = 56;
   static const double _contentWidth = _width - (_margin * 2);
-  static const Color _backgroundTop = Color(0xFF081521);
-  static const Color _backgroundBottom = Color(0xFF173D50);
-  static const Color _surface = Color(0xFF18364A);
-  static const Color _surfaceAlt = Color(0xFF20475A);
-  static const Color _accent = Color(0xFF48D7C0);
-  static const Color _muted = Color(0xFFADC2D0);
-  static const Color _white = Colors.white;
-
   final FlightStatistics stats;
   final AppLocalizations l10n;
   final bool selected;
   final String locale;
+  final ColorScheme colorScheme;
+  Color get _backgroundTop => colorScheme.surface;
+  Color get _backgroundMiddle => colorScheme.surfaceContainerLow;
+  Color get _backgroundBottom => colorScheme.surfaceContainer;
+  Color get _surface => colorScheme.surfaceContainerLow;
+  Color get _surfaceAlt => colorScheme.surfaceContainerHigh;
+  Color get _accent => colorScheme.primary;
+  Color get _muted => colorScheme.onSurfaceVariant;
+  Color get _white => colorScheme.onSurface;
   final List<_CardSection> _sections = [];
   late final List<String> _months;
   late final String _dateRange;
@@ -375,7 +385,7 @@ class _StatisticsCardPainter {
         ..shader = ui.Gradient.linear(
           Offset.zero,
           Offset(0, size.height),
-          const [_backgroundTop, Color(0xFF102A3D), _backgroundBottom],
+          [_backgroundTop, _backgroundMiddle, _backgroundBottom],
           const [0, 0.55, 1],
         ),
     );
@@ -387,7 +397,7 @@ class _StatisticsCardPainter {
       'ParaBeacon',
       const Offset(_margin, 54),
       fontSize: 44,
-      color: const Color(0xFF7FD1FF),
+      color: colorScheme.primary,
       weight: FontWeight.w700,
       maxWidth: _contentWidth,
     );

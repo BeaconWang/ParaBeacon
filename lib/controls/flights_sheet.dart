@@ -426,19 +426,30 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       if (isAndroid) {
         final destination = await _chooseExportDestination(l10n);
         if (destination == null || !mounted) return;
+        final colorScheme = Theme.of(context).colorScheme;
         if (destination == _ExportDestination.downloads) {
           await _saveExport(
-            () => FlightShareCardService.instance.saveToDownloads(track, l10n),
+            () => FlightShareCardService.instance.saveToDownloads(
+              track,
+              l10n,
+              colorScheme: colorScheme,
+            ),
           );
         } else {
-          await FlightShareCardService.instance.shareCard(track, l10n);
+          await FlightShareCardService.instance.shareCard(
+            track,
+            l10n,
+            colorScheme: colorScheme,
+          );
           if (mounted) _snack(l10n.flightsShareCardSharedFile);
         }
         return;
       }
+      final colorScheme = Theme.of(context).colorScheme;
       final saved = await FlightShareCardService.instance.saveToGallery(
         track,
         l10n,
+        colorScheme: colorScheme,
       );
       _snack(
         saved ? l10n.flightsShareCardSaved : l10n.flightsShareCardSharedFile,

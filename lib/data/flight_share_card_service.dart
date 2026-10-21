@@ -143,9 +143,9 @@ class FlightShareCardService {
 
   void _paintBackground(Canvas canvas, Size size, ColorScheme colorScheme) {
     final isDark = colorScheme.brightness == Brightness.dark;
-    final accentMix = isDark ? 0.22 : 0.1;
-    final secondaryMix = isDark ? 0.15 : 0.07;
-    final glowAlpha = isDark ? 0.18 : 0.1;
+    final accentMix = isDark ? 0.3 : 0.13;
+    final secondaryMix = isDark ? 0.2 : 0.09;
+    final glowAlpha = isDark ? 0.24 : 0.14;
     final rect = Offset.zero & size;
     final gradient = ui.Gradient.linear(
       rect.topLeft,
@@ -179,6 +179,19 @@ class FlightShareCardService {
       rect,
       Paint()
         ..shader = ui.Gradient.radial(
+          Offset(size.width * 0.88, size.height * 0.48),
+          size.width * 0.72,
+          [
+            colorScheme.secondary.withValues(alpha: glowAlpha * 0.65),
+            colorScheme.secondary.withValues(alpha: 0),
+          ],
+          const [0, 1],
+        ),
+    );
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = ui.Gradient.radial(
           Offset(size.width * 0.04, size.height * 0.98),
           size.width * 0.85,
           [
@@ -195,6 +208,7 @@ class FlightShareCardService {
     RRect rrect,
     ColorScheme colorScheme, {
     bool elevated = false,
+    Color? accentColor,
   }) {
     final rect = rrect.outerRect;
     final startColor = elevated
@@ -203,12 +217,22 @@ class FlightShareCardService {
     final endColor = elevated
         ? colorScheme.surfaceContainerHighest
         : colorScheme.surfaceContainer;
+    final tintAmount = colorScheme.brightness == Brightness.dark ? 0.16 : 0.08;
+    final tintedStart = accentColor == null
+        ? startColor
+        : Color.lerp(startColor, accentColor, tintAmount)!;
+    final tintedEnd = accentColor == null
+        ? endColor
+        : Color.lerp(endColor, accentColor, tintAmount * 0.65)!;
+    final borderColor = accentColor == null
+        ? colorScheme.outlineVariant
+        : Color.lerp(colorScheme.outlineVariant, accentColor, 0.4)!;
     canvas.drawRRect(
       rrect,
       Paint()
         ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
-          startColor,
-          endColor,
+          tintedStart,
+          tintedEnd,
         ]),
     );
     canvas.drawRRect(
@@ -216,7 +240,7 @@ class FlightShareCardService {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5
-        ..color = colorScheme.outlineVariant.withValues(alpha: 0.48),
+        ..color = borderColor.withValues(alpha: 0.55),
     );
   }
 
@@ -589,6 +613,7 @@ class FlightShareCardService {
       left: 60,
       top: top,
       colorScheme: colorScheme,
+      accentColor: colorScheme.primary,
     );
 
     final takeoff = _endpointText(
@@ -614,6 +639,7 @@ class FlightShareCardService {
       left: 60,
       top: y,
       colorScheme: colorScheme,
+      accentColor: colorScheme.secondary,
     );
 
     y = _paintMetricSection(
@@ -632,6 +658,7 @@ class FlightShareCardService {
       left: 60,
       top: y,
       colorScheme: colorScheme,
+      accentColor: colorScheme.tertiary,
     );
 
     if (track.hasSamples) {
@@ -696,6 +723,7 @@ class FlightShareCardService {
         left: 60,
         top: y,
         colorScheme: colorScheme,
+        accentColor: colorScheme.secondary,
       );
       y = _paintMetricSection(
         canvas,
@@ -718,6 +746,7 @@ class FlightShareCardService {
         left: 60,
         top: y,
         colorScheme: colorScheme,
+        accentColor: colorScheme.tertiary,
       );
       y = _paintMetricSection(
         canvas,
@@ -932,14 +961,16 @@ class FlightShareCardService {
     required double left,
     required double top,
     required ColorScheme colorScheme,
+    Color? accentColor,
   }) {
     if (entries.isEmpty) return top;
+    final sectionAccent = accentColor ?? colorScheme.primary;
     _text(
       canvas,
       label.toUpperCase(),
       Offset(left, top),
       fontSize: 22,
-      color: colorScheme.primary,
+      color: sectionAccent,
       weight: FontWeight.w700,
     );
 
@@ -947,12 +978,23 @@ class FlightShareCardService {
     const cellHeight = 96.0;
     const rowStride = 104.0;
     final cellWidth = (_w - 120.0) / columns;
+    final dividerStart = Offset(left, top + 30);
+    final dividerEnd = Offset(left + _w - 120.0, top + 30);
     canvas.drawLine(
-      Offset(left, top + 30),
-      Offset(left + _w - 120.0, top + 30),
+      dividerStart,
+      dividerEnd,
       Paint()
-        ..color = colorScheme.outlineVariant.withValues(alpha: 0.45)
-        ..strokeWidth = 1,
+        ..shader = ui.Gradient.linear(
+          dividerStart,
+          dividerEnd,
+          [
+            sectionAccent.withValues(alpha: 0.85),
+            colorScheme.secondary.withValues(alpha: 0.2),
+            colorScheme.tertiary.withValues(alpha: 0.05),
+          ],
+          const [0, 0.58, 1],
+        )
+        ..strokeWidth = 1.5,
     );
     for (var i = 0; i < entries.length; i++) {
       final column = i % columns;
@@ -963,7 +1005,13 @@ class FlightShareCardService {
         Rect.fromLTWH(x, y, cellWidth - 10, cellHeight),
         const Radius.circular(14),
       );
-      _paintSurface(canvas, cellRect, colorScheme, elevated: true);
+      _paintSurface(
+        canvas,
+        cellRect,
+        colorScheme,
+        elevated: true,
+        accentColor: sectionAccent,
+      );
       _text(
         canvas,
         entries[i].$1,

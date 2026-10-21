@@ -156,7 +156,6 @@ class _StatisticsCardPainter {
   final String locale;
   final ColorScheme colorScheme;
   Color get _surfaceAlt => colorScheme.surfaceContainerHigh;
-  Color get _accent => colorScheme.primary;
   Color get _muted => colorScheme.onSurfaceVariant;
   Color get _white => colorScheme.onSurface;
   final List<_CardSection> _sections = [];
@@ -367,8 +366,20 @@ class _StatisticsCardPainter {
     var top = 300.0;
     _paintHeroGrid(canvas, top);
     top += 272;
-    for (final section in _sections) {
-      top = _paintSection(canvas, section, top) + 20;
+    final sectionAccents = [
+      colorScheme.primary,
+      colorScheme.secondary,
+      colorScheme.tertiary,
+    ];
+    for (var index = 0; index < _sections.length; index++) {
+      top =
+          _paintSection(
+            canvas,
+            _sections[index],
+            top,
+            sectionAccents[index % sectionAccents.length],
+          ) +
+          20;
     }
     _paintFooter(canvas, top);
     return recorder.endRecording();
@@ -376,9 +387,9 @@ class _StatisticsCardPainter {
 
   void _paintBackground(Canvas canvas, Size size) {
     final isDark = colorScheme.brightness == Brightness.dark;
-    final accentMix = isDark ? 0.22 : 0.1;
-    final secondaryMix = isDark ? 0.15 : 0.07;
-    final glowAlpha = isDark ? 0.18 : 0.1;
+    final accentMix = isDark ? 0.3 : 0.13;
+    final secondaryMix = isDark ? 0.2 : 0.09;
+    final glowAlpha = isDark ? 0.24 : 0.14;
     final rect = Offset.zero & size;
     canvas.drawRect(
       rect,
@@ -419,6 +430,19 @@ class _StatisticsCardPainter {
       rect,
       Paint()
         ..shader = ui.Gradient.radial(
+          Offset(size.width * 0.88, size.height * 0.48),
+          size.width * 0.72,
+          [
+            colorScheme.secondary.withValues(alpha: glowAlpha * 0.65),
+            colorScheme.secondary.withValues(alpha: 0),
+          ],
+          const [0, 1],
+        ),
+    );
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = ui.Gradient.radial(
           Offset(size.width * 0.04, size.height * 0.98),
           size.width * 0.85,
           [
@@ -436,14 +460,25 @@ class _StatisticsCardPainter {
     required double radius,
     required Color startColor,
     required Color endColor,
+    Color? accentColor,
   }) {
     final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final tintAmount = colorScheme.brightness == Brightness.dark ? 0.2 : 0.1;
+    final tintedStart = accentColor == null
+        ? startColor
+        : Color.lerp(startColor, accentColor, tintAmount)!;
+    final tintedEnd = accentColor == null
+        ? endColor
+        : Color.lerp(endColor, accentColor, tintAmount * 0.65)!;
+    final borderColor = accentColor == null
+        ? colorScheme.outlineVariant
+        : Color.lerp(colorScheme.outlineVariant, accentColor, 0.5)!;
     canvas.drawRRect(
       rrect,
       Paint()
         ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
-          startColor,
-          endColor,
+          tintedStart,
+          tintedEnd,
         ]),
     );
     canvas.drawRRect(
@@ -451,7 +486,7 @@ class _StatisticsCardPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5
-        ..color = colorScheme.outlineVariant.withValues(alpha: 0.45),
+        ..color = borderColor.withValues(alpha: 0.58),
     );
   }
 
@@ -505,7 +540,13 @@ class _StatisticsCardPainter {
     const gap = 16.0;
     final cardWidth = (_contentWidth - gap) / 2;
     const cardHeight = 122.0;
+    final accents = [
+      colorScheme.primary,
+      colorScheme.secondary,
+      colorScheme.tertiary,
+    ];
     for (var i = 0; i < values.length; i++) {
+      final accentColor = accents[i % accents.length];
       final column = i % 2;
       final row = i ~/ 2;
       final left = _margin + column * (cardWidth + gap);
@@ -517,13 +558,14 @@ class _StatisticsCardPainter {
         radius: 20,
         startColor: colorScheme.surfaceContainerHigh,
         endColor: colorScheme.surfaceContainer,
+        accentColor: accentColor,
       );
       _text(
         canvas,
         values[i].$2,
         Offset(left + 24, y + 24),
         fontSize: 38,
-        color: _white,
+        color: accentColor,
         weight: FontWeight.w700,
         maxWidth: cardWidth - 48,
         maxLines: 1,
@@ -540,7 +582,12 @@ class _StatisticsCardPainter {
     }
   }
 
-  double _paintSection(Canvas canvas, _CardSection section, double top) {
+  double _paintSection(
+    Canvas canvas,
+    _CardSection section,
+    double top,
+    Color accentColor,
+  ) {
     final rowCount = section.rows?.length ?? section.buckets?.length ?? 1;
     final bodyRows = rowCount == 0 ? 1 : rowCount;
     final cardHeight = 78 + bodyRows * section.rowHeight + 20;
@@ -551,16 +598,26 @@ class _StatisticsCardPainter {
       radius: 20,
       startColor: colorScheme.surfaceContainerLow,
       endColor: colorScheme.surfaceContainerHigh,
+      accentColor: accentColor,
     );
     _text(
       canvas,
       section.title,
       Offset(_margin + 24, top + 22),
       fontSize: 29,
-      color: _accent,
+      color: accentColor,
       weight: FontWeight.w700,
       maxWidth: _contentWidth - 48,
       maxLines: 1,
+    );
+    final accentRect = Rect.fromLTWH(_margin + 24, top + 58, 72, 4);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(accentRect, const Radius.circular(2)),
+      Paint()
+        ..shader = ui.Gradient.linear(accentRect.topLeft, accentRect.topRight, [
+          accentColor,
+          colorScheme.tertiary,
+        ]),
     );
     final contentTop = top + 72;
     if (section.rows != null) {
@@ -583,6 +640,7 @@ class _StatisticsCardPainter {
           maxCount,
           contentTop + i * section.rowHeight,
           section.rowHeight,
+          accentColor,
         );
       }
     } else {
@@ -652,6 +710,7 @@ class _StatisticsCardPainter {
     int maxCount,
     double top,
     double rowHeight,
+    Color accentColor,
   ) {
     final label = bucket.isUnknownType
         ? l10n.statsUnknownType
@@ -704,7 +763,7 @@ class _StatisticsCardPainter {
       );
       canvas.drawRRect(
         RRect.fromRectAndRadius(filled, const Radius.circular(8)),
-        Paint()..color = _accent,
+        Paint()..color = accentColor,
       );
     }
     canvas.drawLine(

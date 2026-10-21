@@ -2,9 +2,11 @@
 /// They hold no timers so they can be unit-tested with synthetic times.
 library;
 
-/// Fires once after a condition has held continuously for a dwell time, then
-/// stays quiet until a rearm condition has held continuously for
-/// [rearmDelay].
+/// Fires after a condition has held continuously for a dwell time and, when
+/// a repeat interval is given, again every interval while the condition keeps
+/// holding. After firing it stays quiet (apart from the repeats) until a
+/// rearm condition has held continuously for [rearmDelay]; a brief excursion
+/// therefore continues the repeat cadence instead of starting over.
 class DwellTrigger {
   DwellTrigger({this.rearmDelay = const Duration(seconds: 3)});
 
@@ -13,21 +15,27 @@ class DwellTrigger {
   bool _armed = true;
   DateTime? _insideSince;
   DateTime? _rearmSince;
+  DateTime? _lastFiredAt;
 
   bool get armed => _armed;
 
   /// Feeds one observation. [inside] is the firing condition, [rearming] the
-  /// condition that (when sustained) allows the next announcement. Returns
-  /// true when the announcement is due now.
+  /// condition that (when sustained) allows a fresh announcement. With
+  /// [repeatEvery], announcements repeat at that interval (start to start)
+  /// while [inside] holds. Returns true when an announcement is due now.
   bool update(
     DateTime now, {
     required bool inside,
     required bool rearming,
     required Duration dwell,
+    Duration? repeatEvery,
   }) {
     if (rearming) {
       _rearmSince ??= now;
-      if (now.difference(_rearmSince!) >= rearmDelay) _armed = true;
+      if (now.difference(_rearmSince!) >= rearmDelay) {
+        _armed = true;
+        _lastFiredAt = null;
+      }
     } else {
       _rearmSince = null;
     }
@@ -36,17 +44,30 @@ class DwellTrigger {
       return false;
     }
     _insideSince ??= now;
-    if (!_armed || now.difference(_insideSince!) < dwell) return false;
+    final left = _timeLeft(now, dwell, repeatEvery);
+    if (left == null || left > Duration.zero) return false;
     _armed = false;
+    _lastFiredAt = now;
     return true;
   }
 
   /// Time left until a continuous stay inside would fire, or null when no
   /// announcement is pending.
-  Duration? pendingFor(DateTime now, Duration dwell) {
+  Duration? pendingFor(DateTime now, Duration dwell, [Duration? repeatEvery]) {
+    if (_insideSince == null) return null;
+    return _timeLeft(now, dwell, repeatEvery);
+  }
+
+  Duration? _timeLeft(DateTime now, Duration dwell, Duration? repeatEvery) {
     final since = _insideSince;
-    if (!_armed || since == null) return null;
-    final left = dwell - now.difference(since);
+    if (since == null) return null;
+    var left = dwell - now.difference(since);
+    if (!_armed) {
+      final last = _lastFiredAt;
+      if (repeatEvery == null || last == null) return null;
+      final repeatLeft = repeatEvery - now.difference(last);
+      if (repeatLeft > left) left = repeatLeft;
+    }
     return left.isNegative ? Duration.zero : left;
   }
 
@@ -57,6 +78,7 @@ class DwellTrigger {
     _armed = true;
     _insideSince = null;
     _rearmSince = null;
+    _lastFiredAt = null;
   }
 }
 

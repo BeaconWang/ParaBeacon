@@ -53,6 +53,61 @@ void main() {
       trigger.rearm();
       expect(feed(trigger, 600, true), isTrue);
     });
+
+    group('with repeat interval', () {
+      const delay = Duration(milliseconds: 100);
+      const repeat = Duration(seconds: 5);
+      bool feedRepeat(DwellTrigger trigger, int ms, bool inside) =>
+          trigger.update(
+            at(ms),
+            inside: inside,
+            rearming: !inside,
+            dwell: delay,
+            repeatEvery: repeat,
+          );
+
+      test('repeats every interval while staying in the zone', () {
+        final trigger = DwellTrigger();
+        expect(feedRepeat(trigger, 0, true), isFalse);
+        expect(feedRepeat(trigger, 100, true), isTrue);
+        expect(feedRepeat(trigger, 3000, true), isFalse);
+        expect(
+          trigger.pendingFor(at(3000), delay, repeat),
+          const Duration(milliseconds: 2100),
+        );
+        expect(feedRepeat(trigger, 5099, true), isFalse);
+        expect(feedRepeat(trigger, 5100, true), isTrue);
+        expect(feedRepeat(trigger, 10100, true), isTrue);
+      });
+
+      test('a brief excursion keeps the cadence', () {
+        final trigger = DwellTrigger();
+        feedRepeat(trigger, 0, true);
+        expect(feedRepeat(trigger, 100, true), isTrue);
+        feedRepeat(trigger, 1000, false);
+        expect(feedRepeat(trigger, 2000, true), isFalse);
+        expect(feedRepeat(trigger, 5000, true), isFalse);
+        expect(feedRepeat(trigger, 5100, true), isTrue);
+      });
+
+      test('after leaving the zone for 3 s, re-entry starts over', () {
+        final trigger = DwellTrigger();
+        feedRepeat(trigger, 0, true);
+        expect(feedRepeat(trigger, 100, true), isTrue);
+        feedRepeat(trigger, 1000, false);
+        feedRepeat(trigger, 4000, false);
+        expect(feedRepeat(trigger, 4100, true), isFalse);
+        expect(feedRepeat(trigger, 4200, true), isTrue);
+      });
+
+      test('stops repeating outside the zone', () {
+        final trigger = DwellTrigger();
+        feedRepeat(trigger, 0, true);
+        expect(feedRepeat(trigger, 100, true), isTrue);
+        expect(feedRepeat(trigger, 5100, false), isFalse);
+        expect(trigger.pendingFor(at(5100), delay, repeat), isNull);
+      });
+    });
   });
 
   group('AltitudeRecordTrigger', () {

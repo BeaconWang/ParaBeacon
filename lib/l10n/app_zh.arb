@@ -1011,7 +1011,7 @@
   "altitudeAnnouncementEventGlide": "死区",
   "altitudeAnnouncementEventAltitudeRecord": "新的最高高度",
   "altitudeAnnouncementGlideEnabled": "死区播报",
-  "altitudeAnnouncementGlideDescription": "垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定的延时后播报一次；离开死区 3 秒后重新启用。",
+  "altitudeAnnouncementGlideDescription": "垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定的延时后播报，之后只要仍在死区内，就按设定的间隔重复播报。",
   "altitudeAnnouncementGlideRange": "死区范围：{minimum} 至 {maximum} m/s",
   "@altitudeAnnouncementGlideRange": {
     "placeholders": {
@@ -1020,6 +1020,12 @@
     }
   },
   "altitudeAnnouncementGlideDelay": "进入死区 {seconds} 秒后播报",
+  "altitudeAnnouncementGlideRepeat": "停留在死区内时每 {seconds} 秒重复播报",
+  "@altitudeAnnouncementGlideRepeat": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
   "@altitudeAnnouncementGlideDelay": {
     "placeholders": {
       "seconds": { "type": "String" }

@@ -35,6 +35,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const _kGlideMinimum = '$_prefix.glide.minimum';
   static const _kGlideMaximum = '$_prefix.glide.maximum';
   static const _kGlideDelay = '$_prefix.glide.delaySeconds';
+  static const _kGlideRepeat = '$_prefix.glide.repeatSeconds';
   static const _kRecordEnabled = '$_prefix.record.enabled';
   static const _kRecordScope = '$_prefix.record.scope';
   static const _kRecordInterval = '$_prefix.record.intervalSeconds';
@@ -71,6 +72,11 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const maxGlideDelay = 2.0;
   static const defaultGlideDelay = 0.1;
 
+  /// Limits of the repeat interval while staying in the dead zone (seconds).
+  static const minGlideRepeat = 1.0;
+  static const maxGlideRepeat = 10.0;
+  static const defaultGlideRepeat = 5.0;
+
   /// Limits of the minimum time between two altitude record announcements
   /// while records keep being broken (seconds).
   static const minRecordInterval = 1.0;
@@ -86,6 +92,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   double _glideMinimum = defaultGlideMinimum;
   double _glideMaximum = defaultGlideMaximum;
   double _glideDelaySeconds = defaultGlideDelay;
+  double _glideRepeatSeconds = defaultGlideRepeat;
   bool _recordEnabled = false;
   AltitudeRecordScope _recordScope = AltitudeRecordScope.flight;
   double _recordIntervalSeconds = defaultRecordInterval;
@@ -106,6 +113,12 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   double get glideDelaySeconds => _glideDelaySeconds;
   Duration get glideDelay =>
       Duration(milliseconds: (_glideDelaySeconds * 1000).round());
+
+  /// Interval at which the announcement repeats while the vertical speed
+  /// stays in the dead zone.
+  double get glideRepeatSeconds => _glideRepeatSeconds;
+  Duration get glideRepeat =>
+      Duration(milliseconds: (_glideRepeatSeconds * 1000).round());
 
   /// New altitude record announcement.
   bool get recordEnabled => _recordEnabled;
@@ -175,6 +188,10 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
       final glideDelay = preferences.getDouble(_kGlideDelay);
       if (glideDelay != null && glideDelay.isFinite) {
         _glideDelaySeconds = glideDelay.clamp(minGlideDelay, maxGlideDelay);
+      }
+      final glideRepeat = preferences.getDouble(_kGlideRepeat);
+      if (glideRepeat != null && glideRepeat.isFinite) {
+        _glideRepeatSeconds = glideRepeat.clamp(minGlideRepeat, maxGlideRepeat);
       }
       _recordEnabled = preferences.getBool(_kRecordEnabled) ?? _recordEnabled;
       final scope = preferences.getString(_kRecordScope);
@@ -256,6 +273,15 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
     if (_glideDelaySeconds == next) return;
     _glideDelaySeconds = next;
     _persistDouble(_kGlideDelay, next);
+    notifyListeners();
+  }
+
+  void setGlideRepeatSeconds(double seconds) {
+    if (!seconds.isFinite) return;
+    final next = _snap(seconds.clamp(minGlideRepeat, maxGlideRepeat), 1);
+    if (_glideRepeatSeconds == next) return;
+    _glideRepeatSeconds = next;
+    _persistDouble(_kGlideRepeat, next);
     notifyListeners();
   }
 

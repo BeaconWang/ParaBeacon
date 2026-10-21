@@ -19,9 +19,9 @@ import 'vario_ducking.dart';
 ///  * **Takeoff / landing** — spoken after a notification ding when a flight
 ///    starts or ends. An automatic takeoff that resumes the previous record
 ///    (quick relaunch) announces "continue flight" instead of "takeoff".
-///  * **Glide dead zone** — during a flight, spoken once after the vertical
-///    speed has stayed in the (silent) dead zone for the configured time;
-///    rearms after it has stayed outside the zone for a few seconds.
+///  * **Glide dead zone** — during a flight, spoken after the vertical speed
+///    has stayed in the (silent) dead zone for the configured delay, then
+///    repeated at the configured interval while it stays there.
 ///  * **Altitude record** — during a flight, spoken immediately when the
 ///    altitude exceeds the highest altitude recorded so far; consecutive
 ///    records are spaced by at least the configured interval.
@@ -165,14 +165,22 @@ class AltitudeAnnouncementBridge {
     final inside =
         speed >= _settings.glideMinimum && speed <= _settings.glideMaximum;
     final dwell = _settings.glideDelay;
+    final repeat = _settings.glideRepeat;
     final due = _glide.update(
       now,
       inside: inside,
       rearming: !inside,
       dwell: dwell,
+      repeatEvery: repeat,
     );
     if (due) {
       _cancelTimer(AnnouncementEvent.glide);
+      if (_inProgress.contains(AnnouncementEvent.glide)) {
+        // Previous one still speaking (long text / short interval): repeat
+        // as soon as it has finished.
+        _glide.rearm();
+        return;
+      }
       unawaited(
         _announce(
           AnnouncementEvent.glide,
@@ -182,7 +190,10 @@ class AltitudeAnnouncementBridge {
       );
       return;
     }
-    _scheduleRecheck(AnnouncementEvent.glide, _glide, now, dwell);
+    _scheduleRecheckIn(
+      AnnouncementEvent.glide,
+      _glide.pendingFor(now, dwell, repeat),
+    );
   }
 
   void _evaluateRecord(DateTime now, FlightData data, bool track) {
@@ -258,17 +269,9 @@ class AltitudeAnnouncementBridge {
     }
   }
 
-  /// Re-evaluates when a pending dwell is due even if no new sample arrives.
-  void _scheduleRecheck(
-    AnnouncementEvent event,
-    DwellTrigger trigger,
-    DateTime now,
-    Duration dwell,
-  ) => _scheduleRecheckIn(event, trigger.pendingFor(now, dwell));
-
-  /// Re-evaluates after [left]; null cancels. Nothing is scheduled for a zero
-  /// delay (the announcement is only blocked by one in progress), the next
-  /// sample takes care of it.
+  /// Re-evaluates after [left] even if no new sample arrives; null cancels.
+  /// Nothing is scheduled for a zero delay (the announcement is only blocked
+  /// by one in progress), the next sample takes care of it.
   void _scheduleRecheckIn(AnnouncementEvent event, Duration? left) {
     if (left == null) {
       _cancelTimer(event);

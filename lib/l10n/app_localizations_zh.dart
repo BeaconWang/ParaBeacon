@@ -2768,7 +2768,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get altitudeAnnouncementGlideDescription =>
-      '垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定的延时后播报一次；离开死区 3 秒后重新启用。';
+      '垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定的延时后播报，之后只要仍在死区内，就按设定的间隔重复播报。';
 
   @override
   String altitudeAnnouncementGlideRange(String minimum, String maximum) {
@@ -2778,6 +2778,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String altitudeAnnouncementGlideDelay(String seconds) {
     return '进入死区 $seconds 秒后播报';
+  }
+
+  @override
+  String altitudeAnnouncementGlideRepeat(String seconds) {
+    return '停留在死区内时每 $seconds 秒重复播报';
   }
 
   @override

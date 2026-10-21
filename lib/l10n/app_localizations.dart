@@ -5411,7 +5411,7 @@ abstract class AppLocalizations {
   /// No description provided for @altitudeAnnouncementGlideDescription.
   ///
   /// In en, this message translates to:
-  /// **'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set delay, and rearms after it has left the zone for 3 s.'**
+  /// **'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks after the vertical speed has stayed in the zone for the set delay, then repeats at the set interval while it stays there.'**
   String get altitudeAnnouncementGlideDescription;
 
   /// No description provided for @altitudeAnnouncementGlideRange.
@@ -5425,6 +5425,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Announce after {seconds} s in the zone'**
   String altitudeAnnouncementGlideDelay(String seconds);
+
+  /// No description provided for @altitudeAnnouncementGlideRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat every {seconds} s while in the zone'**
+  String altitudeAnnouncementGlideRepeat(String seconds);
 
   /// No description provided for @altitudeAnnouncementRecordEnabled.
   ///

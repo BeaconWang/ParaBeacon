@@ -234,6 +234,22 @@ class _AltitudeAnnouncementSettingsSheetState
                       ? settings.setGlideDelaySeconds
                       : null,
                 ),
+                Text(
+                  l10n.altitudeAnnouncementGlideRepeat(
+                    settings.glideRepeatSeconds.round().toString(),
+                  ),
+                  style: theme.textTheme.bodySmall,
+                ),
+                Slider(
+                  value: settings.glideRepeatSeconds,
+                  min: AltitudeAnnouncementSettings.minGlideRepeat,
+                  max: AltitudeAnnouncementSettings.maxGlideRepeat,
+                  divisions: 9,
+                  label: '${settings.glideRepeatSeconds.round()} s',
+                  onChanged: settings.glideEnabled
+                      ? settings.setGlideRepeatSeconds
+                      : null,
+                ),
                 _textTile(AnnouncementEvent.glide),
 
                 // ── Feature 3: altitude record ────────────────────────────

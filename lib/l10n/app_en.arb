@@ -1141,7 +1141,7 @@
   "altitudeAnnouncementEventGlide": "Dead zone",
   "altitudeAnnouncementEventAltitudeRecord": "New altitude record",
   "altitudeAnnouncementGlideEnabled": "Dead-zone announcement",
-  "altitudeAnnouncementGlideDescription": "The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set delay, and rearms after it has left the zone for 3 s.",
+  "altitudeAnnouncementGlideDescription": "The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks after the vertical speed has stayed in the zone for the set delay, then repeats at the set interval while it stays there.",
   "altitudeAnnouncementGlideRange": "Dead zone: {minimum} to {maximum} m/s",
   "@altitudeAnnouncementGlideRange": {
     "placeholders": {
@@ -1150,6 +1150,12 @@
     }
   },
   "altitudeAnnouncementGlideDelay": "Announce after {seconds} s in the zone",
+  "altitudeAnnouncementGlideRepeat": "Repeat every {seconds} s while in the zone",
+  "@altitudeAnnouncementGlideRepeat": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
   "@altitudeAnnouncementGlideDelay": {
     "placeholders": {
       "seconds": { "type": "String" }

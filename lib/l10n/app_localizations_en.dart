@@ -2854,7 +2854,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get altitudeAnnouncementGlideDescription =>
-      'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks once after the vertical speed has stayed in the zone for the set delay, and rearms after it has left the zone for 3 s.';
+      'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks after the vertical speed has stayed in the zone for the set delay, then repeats at the set interval while it stays there.';
 
   @override
   String altitudeAnnouncementGlideRange(String minimum, String maximum) {
@@ -2864,6 +2864,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String altitudeAnnouncementGlideDelay(String seconds) {
     return 'Announce after $seconds s in the zone';
+  }
+
+  @override
+  String altitudeAnnouncementGlideRepeat(String seconds) {
+    return 'Repeat every $seconds s while in the zone';
   }
 
   @override

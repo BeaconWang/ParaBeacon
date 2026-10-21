@@ -67,6 +67,7 @@ class AircraftSettings extends ChangeNotifier {
   double goalGlideRatio = 9.0;
 
   bool _loaded = false;
+  Future<void>? _loadFuture;
   bool _saving = false;
   bool _presetsLoaded = false;
   Map<String, List<String>> _presets = const {};
@@ -132,9 +133,12 @@ class AircraftSettings extends ChangeNotifier {
     }
   }
 
-  Future<void> load() async {
-    if (_loaded) return;
-    _loaded = true;
+  Future<void> load() {
+    if (_loaded) return Future<void>.value();
+    return _loadFuture ??= _load();
+  }
+
+  Future<void> _load() async {
     try {
       final sp = await SharedPreferences.getInstance();
       faiClass = _string(sp.getString(_kFaiClass), faiClass);
@@ -155,8 +159,11 @@ class AircraftSettings extends ChangeNotifier {
       goalGlideRatio = sp.getDouble(_kGoalGlideRatio) ?? goalGlideRatio;
     } catch (_) {
       // Storage is best-effort; keep safe defaults if unavailable.
+    } finally {
+      _loaded = true;
+      _loadFuture = null;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> save({
@@ -171,6 +178,7 @@ class AircraftSettings extends ChangeNotifier {
     required double trimSpeedKmh,
     required double goalGlideRatio,
   }) async {
+    await load();
     this.faiClass = faiClasses.containsKey(faiClass) ? faiClass : '3';
     this.manufacturer = manufacturer.trim();
     this.model = model.trim();

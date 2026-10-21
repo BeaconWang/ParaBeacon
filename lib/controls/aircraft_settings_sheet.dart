@@ -82,7 +82,7 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
       faiClass: _faiClass,
       manufacturer: _manufacturer,
       model: _model,
-      name: '',
+      name: settings.name,
       paragliderCategory: settings.paragliderCategory,
       hangGliderCategory: _hangGliderCategory,
       tandem: _tandem,

@@ -106,6 +106,7 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
   ///
   /// [prelude] (e.g. a notification ding) is played right before the
   /// utterance, while [speaking] is already set so the vario is ducked.
+  /// [canSpeak] is rechecked after asynchronous setup and before speaking.
   Future<bool> speak({
     required AnnouncementLanguage preferred,
     required String Function(AnnouncementLanguage language) phraseFor,
@@ -113,11 +114,14 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     Duration busyTimeout = const Duration(seconds: 45),
     double rate = 1.0,
     Future<void> Function()? prelude,
+    bool Function()? canSpeak,
   }) async {
+    if (canSpeak != null && !canSpeak()) return false;
     if (_busy) {
       if (!waitIfBusy) return false;
       final deadline = DateTime.now().add(busyTimeout);
       while (_busy) {
+        if (canSpeak != null && !canSpeak()) return false;
         if (DateTime.now().isAfter(deadline)) return false;
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
@@ -125,6 +129,7 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     _busy = true;
     try {
       final language = await _prepare(preferred);
+      if (canSpeak != null && !canSpeak()) return false;
       if (language == null) {
         // Still show the text (and play the cue) so the information is not
         // lost without voice.
@@ -139,11 +144,13 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
       await _call<dynamic>(
         () => _tts.setSpeechRate(platformRateFor(rate, apple: _isApple)),
       );
+      if (canSpeak != null && !canSpeak()) return false;
 
       final text = phraseFor(language);
       _showCaption(text);
       speaking.value = true;
       await _runPrelude(prelude);
+      if (canSpeak != null && !canSpeak()) return false;
       final result = await _call<dynamic>(
         () => _tts.speak(text),
         _speakTimeout,

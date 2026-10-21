@@ -16,9 +16,8 @@ import 'vario_ducking.dart';
 
 /// Turns flight events into voice announcements:
 ///
-///  * **Takeoff / landing** — spoken after a notification ding when a flight
-///    starts or ends. An automatic takeoff that resumes the previous record
-///    (quick relaunch) announces "continue flight" instead of "takeoff".
+///  * **Takeoff / continue flight** — spoken after a notification ding when a
+///    flight starts or resumes. Automatic announcements stop when flying ends.
 ///  * **Glide dead zone** — during a flight, spoken after the vertical speed
 ///    has stayed in the (silent) dead zone for the configured delay, then
 ///    repeated at the configured interval while it stays there.
@@ -49,7 +48,7 @@ class AltitudeAnnouncementBridge {
   final FlightRecorder _recorder;
   final Future<void> Function() _chime;
 
-  /// How long a takeoff / landing announcement may wait for a running one.
+  /// How long a takeoff / continue announcement may wait for a running one.
   static const _transitionBusyTimeout = Duration(seconds: 10);
 
   final DwellTrigger _glide = DwellTrigger();
@@ -61,6 +60,7 @@ class AltitudeAnnouncementBridge {
   /// Highest altitude of the current (or just completed) flight.
   double _flightMaxAltitude = double.nan;
   bool _attached = false;
+  bool _wasFlying = false;
   bool? _wasEnabled;
   bool? _wasRecordEnabled;
   AltitudeRecordScope? _lastRecordScope;
@@ -70,6 +70,8 @@ class AltitudeAnnouncementBridge {
     _attached = true;
     _settings.load();
     _settings.addListener(_onSettingsChanged);
+    _wasFlying = _flightState.isFlying;
+    _flightState.addListener(_onFlightStateChanged);
     source.addListener(_onData);
     _transitionSubscription = _recorder.transitions.listen(_onTransition);
     // Also covers the test announcements, which go through the same speaker.
@@ -77,6 +79,17 @@ class AltitudeAnnouncementBridge {
     _wasRecordEnabled = _settings.recordEnabled;
     _lastRecordScope = _settings.recordScope;
     _onData();
+  }
+
+  void _onFlightStateChanged() {
+    final isFlying = _flightState.isFlying;
+    if (isFlying == _wasFlying) return;
+    _wasFlying = isFlying;
+    if (isFlying) return;
+
+    _resetDwell(AnnouncementEvent.glide, _glide);
+    _cancelTimer(AnnouncementEvent.altitudeRecord);
+    if (_speaker.speaking.value) unawaited(_speaker.stop());
   }
 
   void _onSettingsChanged() {
@@ -330,7 +343,7 @@ class AltitudeAnnouncementBridge {
     bool waitIfBusy = false,
     void Function(bool spoken)? onDone,
   }) async {
-    if (_inProgress.contains(event)) return;
+    if (!_flightState.isFlying || _inProgress.contains(event)) return;
     _inProgress.add(event);
     var spoken = false;
     try {
@@ -342,6 +355,7 @@ class AltitudeAnnouncementBridge {
         waitIfBusy: waitIfBusy,
         busyTimeout: _transitionBusyTimeout,
         chime: event.isFlightTransition ? _chime : null,
+        canSpeak: () => _flightState.isFlying,
       );
     } catch (_) {
       // Never let speech problems interrupt flight-data processing.
@@ -360,6 +374,7 @@ class AltitudeAnnouncementBridge {
     _timers.clear();
     unawaited(_transitionSubscription?.cancel());
     _transitionSubscription = null;
+    _flightState.removeListener(_onFlightStateChanged);
     source.removeListener(_onData);
     _settings.removeListener(_onSettingsChanged);
     _ducking.dispose();
@@ -415,6 +430,7 @@ Future<bool> speakAnnouncement(
   bool waitIfBusy = false,
   Duration busyTimeout = const Duration(seconds: 45),
   Future<void> Function()? chime,
+  bool Function()? canSpeak,
 }) {
   final resolved = settings ?? AltitudeAnnouncementSettings.instance;
   final template = resolved.templateFor(event);
@@ -424,6 +440,7 @@ Future<bool> speakAnnouncement(
     busyTimeout: busyTimeout,
     rate: resolved.speechRate,
     prelude: chime,
+    canSpeak: canSpeak,
     phraseFor: (language) =>
         renderAnnouncement(event, template, language, values),
   );

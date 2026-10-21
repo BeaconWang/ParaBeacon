@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parabeacon/audio/altitude_announcement_settings.dart';
 import 'package:parabeacon/audio/altitude_announcement_speaker.dart';
 
 void main() {
@@ -22,6 +23,11 @@ void main() {
     expect(apple(2.5), closeTo(0.75, 1e-9));
     expect(apple(4.0), 1.0);
     expect(apple(10), 1.0);
+  });
+
+  test('default announcement speech speed is 2x', () {
+    expect(AltitudeAnnouncementSettings.defaultSpeechRate, 2.0);
+    expect(AltitudeAnnouncementSettings.instance.speechRate, 2.0);
   });
 
   test('user range is 0.5x to 4.0x', () {

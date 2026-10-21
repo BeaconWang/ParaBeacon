@@ -16,8 +16,9 @@ enum SpeechAvailability { unknown, available, unavailable }
 /// * Android: the engine may be missing, still binding, lack voice data for
 ///   the requested language, or never answer `speak` (flutter_tts then keeps
 ///   the call pending forever). Every platform call is therefore bounded by a
-///   timeout, other installed engines are tried, and the language falls back
-///   (preferred -> other supported language -> engine default).
+///   timeout and other installed engines are tried. English announcements only
+///   use English voices; Chinese announcements may fall back to English or the
+///   engine default.
 /// * iOS: the audio session is owned by the vario engine (miniaudio), which
 ///   sets PlayAndRecord without mixing. The session is re-asserted before each
 ///   utterance so speech is routed to the speaker, ignores the silent switch,
@@ -250,8 +251,13 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
       language = await _selectLanguage(preferred);
     }
 
-    // Last resort: the engine's default voice. Numbers are still intelligible
-    // and an unsuitable voice is better than silence in flight.
+    // Never speak English text with an unverified engine-default voice: on
+    // Android that default can be Chinese and numbers may then be misread.
+    if (language == null && preferred == AnnouncementLanguage.english) {
+      return null;
+    }
+
+    // For Chinese announcements, retain the engine-default fallback.
     language ??= AnnouncementLanguage.english;
 
     await _call<dynamic>(() => _tts.setSpeechRate(platformRateFor(1.0)));
@@ -270,7 +276,7 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
   ) async {
     final candidates = preferred == AnnouncementLanguage.chinese
         ? [..._chineseTags, ..._englishTags]
-        : [..._englishTags, ..._chineseTags];
+        : _englishTags;
 
     final available = <String>[];
     for (final tag in candidates) {

@@ -217,7 +217,9 @@ class FlightShareCardService {
     final endColor = elevated
         ? colorScheme.surfaceContainerHighest
         : colorScheme.surfaceContainer;
-    final tintAmount = colorScheme.brightness == Brightness.dark ? 0.16 : 0.08;
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final tintAmount = isDark ? 0.07 : 0.035;
+    final glassAlpha = isDark ? 0.82 : 0.76;
     final tintedStart = accentColor == null
         ? startColor
         : Color.lerp(startColor, accentColor, tintAmount)!;
@@ -226,13 +228,21 @@ class FlightShareCardService {
         : Color.lerp(endColor, accentColor, tintAmount * 0.65)!;
     final borderColor = accentColor == null
         ? colorScheme.outlineVariant
-        : Color.lerp(colorScheme.outlineVariant, accentColor, 0.4)!;
+        : Color.lerp(colorScheme.outlineVariant, accentColor, 0.18)!;
     canvas.drawRRect(
       rrect,
       Paint()
         ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
-          tintedStart,
-          tintedEnd,
+          tintedStart.withValues(alpha: glassAlpha),
+          tintedEnd.withValues(alpha: glassAlpha * 0.9),
+        ]),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = ui.Gradient.linear(rect.topCenter, rect.center, [
+          Colors.white.withValues(alpha: isDark ? 0.12 : 0.2),
+          Colors.white.withValues(alpha: 0),
         ]),
     );
     canvas.drawRRect(
@@ -240,7 +250,19 @@ class FlightShareCardService {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5
-        ..color = borderColor.withValues(alpha: 0.55),
+        ..color = borderColor.withValues(alpha: 0.62),
+    );
+    final insetRect = rect.deflate(2);
+    final inset = RRect.fromRectAndRadius(
+      insetRect,
+      Radius.circular(rrect.tlRadiusX - 2),
+    );
+    canvas.drawRRect(
+      inset,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = Colors.white.withValues(alpha: isDark ? 0.12 : 0.34),
     );
   }
 
@@ -964,7 +986,11 @@ class FlightShareCardService {
     Color? accentColor,
   }) {
     if (entries.isEmpty) return top;
-    final sectionAccent = accentColor ?? colorScheme.primary;
+    final sectionAccent = Color.lerp(
+      colorScheme.primary,
+      accentColor ?? colorScheme.primary,
+      0.26,
+    )!;
     _text(
       canvas,
       label.toUpperCase(),

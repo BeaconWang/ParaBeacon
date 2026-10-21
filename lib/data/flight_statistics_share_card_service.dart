@@ -156,6 +156,11 @@ class _StatisticsCardPainter {
   final String locale;
   final ColorScheme colorScheme;
   Color get _surfaceAlt => colorScheme.surfaceContainerHigh;
+  List<Color> get _groupAccents => [
+    colorScheme.primary,
+    Color.lerp(colorScheme.primary, colorScheme.secondary, 0.26)!,
+    Color.lerp(colorScheme.primary, colorScheme.tertiary, 0.26)!,
+  ];
   Color get _muted => colorScheme.onSurfaceVariant;
   Color get _white => colorScheme.onSurface;
   final List<_CardSection> _sections = [];
@@ -366,11 +371,7 @@ class _StatisticsCardPainter {
     var top = 300.0;
     _paintHeroGrid(canvas, top);
     top += 272;
-    final sectionAccents = [
-      colorScheme.primary,
-      colorScheme.secondary,
-      colorScheme.tertiary,
-    ];
+    final sectionAccents = _groupAccents;
     for (var index = 0; index < _sections.length; index++) {
       top =
           _paintSection(
@@ -462,8 +463,10 @@ class _StatisticsCardPainter {
     required Color endColor,
     Color? accentColor,
   }) {
+    final isDark = colorScheme.brightness == Brightness.dark;
     final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-    final tintAmount = colorScheme.brightness == Brightness.dark ? 0.2 : 0.1;
+    final tintAmount = isDark ? 0.08 : 0.04;
+    final glassAlpha = isDark ? 0.8 : 0.76;
     final tintedStart = accentColor == null
         ? startColor
         : Color.lerp(startColor, accentColor, tintAmount)!;
@@ -472,13 +475,21 @@ class _StatisticsCardPainter {
         : Color.lerp(endColor, accentColor, tintAmount * 0.65)!;
     final borderColor = accentColor == null
         ? colorScheme.outlineVariant
-        : Color.lerp(colorScheme.outlineVariant, accentColor, 0.5)!;
+        : Color.lerp(colorScheme.outlineVariant, accentColor, 0.18)!;
     canvas.drawRRect(
       rrect,
       Paint()
         ..shader = ui.Gradient.linear(rect.topLeft, rect.bottomRight, [
-          tintedStart,
-          tintedEnd,
+          tintedStart.withValues(alpha: glassAlpha),
+          tintedEnd.withValues(alpha: glassAlpha * 0.9),
+        ]),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = ui.Gradient.linear(rect.topCenter, rect.center, [
+          Colors.white.withValues(alpha: isDark ? 0.12 : 0.2),
+          Colors.white.withValues(alpha: 0),
         ]),
     );
     canvas.drawRRect(
@@ -486,7 +497,19 @@ class _StatisticsCardPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5
-        ..color = borderColor.withValues(alpha: 0.58),
+        ..color = borderColor.withValues(alpha: 0.62),
+    );
+    final insetRect = rect.deflate(2);
+    final inset = RRect.fromRectAndRadius(
+      insetRect,
+      Radius.circular(radius - 2),
+    );
+    canvas.drawRRect(
+      inset,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = Colors.white.withValues(alpha: isDark ? 0.12 : 0.34),
     );
   }
 
@@ -540,11 +563,7 @@ class _StatisticsCardPainter {
     const gap = 16.0;
     final cardWidth = (_contentWidth - gap) / 2;
     const cardHeight = 122.0;
-    final accents = [
-      colorScheme.primary,
-      colorScheme.secondary,
-      colorScheme.tertiary,
-    ];
+    final accents = _groupAccents;
     for (var i = 0; i < values.length; i++) {
       final accentColor = accents[i % accents.length];
       final column = i % 2;
@@ -616,7 +635,7 @@ class _StatisticsCardPainter {
       Paint()
         ..shader = ui.Gradient.linear(accentRect.topLeft, accentRect.topRight, [
           accentColor,
-          colorScheme.tertiary,
+          accentColor.withValues(alpha: 0.35),
         ]),
     );
     final contentTop = top + 72;

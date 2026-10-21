@@ -1107,7 +1107,7 @@ class _BarChart extends StatelessWidget {
     final h = b.duration.inHours;
     final m = b.duration.inMinutes % 60;
     final airtime = h > 0 ? '${h}h ${m}m' : '${m}m';
-    final label = b.isUnknownType ? unknownTypeLabel : b.label;
+    final label = b.isUnknownType ? unknownTypeLabel : b.displayLabel;
     final barAndCount = Row(
       children: [
         Expanded(
@@ -1159,15 +1159,6 @@ class _BarChart extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (b.subtitle?.isNotEmpty ?? false)
-                  Text(
-                    b.subtitle!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                 const SizedBox(height: 4),
                 barAndCount,
               ],

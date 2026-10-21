@@ -581,8 +581,7 @@ class _StatisticsCardPainter {
         ? l10n.statsUnknownType
         : bucket.label.isEmpty
         ? '—'
-        : bucket.label;
-    final hasSubtitle = bucket.subtitle?.isNotEmpty ?? false;
+        : bucket.displayLabel;
     final hours = bucket.duration.inHours;
     final minutes = bucket.duration.inMinutes % 60;
     final airtime = hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m';
@@ -599,17 +598,6 @@ class _StatisticsCardPainter {
       maxWidth: 390,
       maxLines: 1,
     );
-    if (hasSubtitle) {
-      _text(
-        canvas,
-        bucket.subtitle!,
-        Offset(_margin + 24, top + 28),
-        fontSize: 17,
-        color: _muted,
-        maxWidth: 390,
-        maxLines: 1,
-      );
-    }
     _text(
       canvas,
       metrics,
@@ -622,7 +610,7 @@ class _StatisticsCardPainter {
     );
     final barRect = Rect.fromLTWH(
       _margin + 24,
-      top + (hasSubtitle ? 55 : 37),
+      top + 37,
       _contentWidth - 48,
       16,
     );

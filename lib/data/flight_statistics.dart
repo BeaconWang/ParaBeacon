@@ -21,6 +21,9 @@ class FlightBucket {
   String label;
   final String? subtitle;
   final bool isUnknownType;
+
+  String get displayLabel =>
+      subtitle?.isNotEmpty == true ? '$label $subtitle' : label;
   int count = 0;
   Duration duration = Duration.zero;
   double distanceM = 0;

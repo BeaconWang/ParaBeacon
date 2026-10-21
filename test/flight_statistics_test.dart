@@ -74,7 +74,7 @@ void main() {
       },
     );
 
-    testWidgets('shows aircraft manufacturer and model on separate lines', (
+    testWidgets('shows manufacturer and model on one line on phone width', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(360, 800);
@@ -110,13 +110,14 @@ void main() {
       await tester.tap(find.text('Open stats'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('Ozone'),
+        find.text('Ozone Zeno'),
         120,
         scrollable: find.byType(Scrollable).first,
       );
 
-      expect(find.text('Ozone'), findsOneWidget);
-      expect(find.text('Zeno'), findsOneWidget);
+      expect(find.text('Ozone Zeno'), findsOneWidget);
+      expect(find.text('Ozone'), findsNothing);
+      expect(find.text('Zeno'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });

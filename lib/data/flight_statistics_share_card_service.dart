@@ -379,10 +379,6 @@ class _StatisticsCardPainter {
           const [0, 0.55, 1],
         ),
     );
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, 9, size.height),
-      Paint()..color = _accent,
-    );
   }
 
   void _paintHeader(Canvas canvas) {

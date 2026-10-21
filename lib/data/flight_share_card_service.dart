@@ -128,10 +128,6 @@ class FlightShareCardService {
       const [0.0, 0.55, 1.0],
     );
     canvas.drawRect(rect, Paint()..shader = gradient);
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, 8, size.height),
-      Paint()..color = const Color(0xFF48D7C0),
-    );
   }
 
   void _paintHeader(Canvas canvas, Size size, FlightTrack track) {

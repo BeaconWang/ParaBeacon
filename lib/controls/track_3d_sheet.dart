@@ -41,6 +41,8 @@ class _Track3DSheet extends StatefulWidget {
 class _Track3DSheetState extends State<_Track3DSheet>
     with SingleTickerProviderStateMixin {
   late final List<FlightSample> _samples;
+  late final List<double> _sampleOffsetsMs;
+  late final Track3DGeometryCache _geometryCache;
   late final Ticker _ticker;
 
   // Camera orientation.
@@ -61,8 +63,15 @@ class _Track3DSheetState extends State<_Track3DSheet>
     super.initState();
     _samples = List<FlightSample>.of(widget.track.samples);
     final first = _samples.isNotEmpty ? _samples.first.time : DateTime.now();
-    final last = _samples.isNotEmpty ? _samples.last.time : first;
-    _spanMs = math.max(1.0, last.difference(first).inMilliseconds.toDouble());
+    _sampleOffsetsMs = [
+      for (final sample in _samples)
+        sample.time.difference(first).inMilliseconds.toDouble(),
+    ];
+    _spanMs = math.max(
+      1.0,
+      _sampleOffsetsMs.isEmpty ? 0.0 : _sampleOffsetsMs.last,
+    );
+    _geometryCache = Track3DGeometryCache(_samples);
     _ticker = createTicker(_onTick);
   }
 
@@ -127,45 +136,37 @@ class _Track3DSheetState extends State<_Track3DSheet>
   void _setCursor(double ms) {
     setState(() => _cursorMs = ms.clamp(0.0, _spanMs));
     if (_audioSync && _playing) {
-      VarioAudioService.instance
-          .setPreviewSpeed(_currentSample().data.verticalSpeed);
+      VarioAudioService.instance.setPreviewSpeed(
+        _currentSample().data.verticalSpeed,
+      );
     }
   }
 
-  void _startAudio() =>
-      VarioAudioService.instance.beginPreview(_currentSample().data.verticalSpeed);
+  void _startAudio() => VarioAudioService.instance.beginPreview(
+    _currentSample().data.verticalSpeed,
+  );
   void _stopAudio() => VarioAudioService.instance.endPreview();
 
   FlightSample _currentSample() {
     if (_samples.isEmpty) {
       return FlightSample(time: DateTime.now(), data: FlightData.empty);
     }
-    final t0 = _samples.first.time;
-    var idx = 0;
-    for (var i = 0; i < _samples.length; i++) {
-      final rel = _samples[i].time.difference(t0).inMilliseconds.toDouble();
-      if (rel <= _cursorMs) {
-        idx = i;
-      } else {
-        break;
-      }
-    }
-    return _samples[idx];
+    return _samples[_currentIndex()];
   }
 
   int _currentIndex() {
     if (_samples.isEmpty) return 0;
-    final t0 = _samples.first.time;
-    var idx = 0;
-    for (var i = 0; i < _samples.length; i++) {
-      final rel = _samples[i].time.difference(t0).inMilliseconds.toDouble();
-      if (rel <= _cursorMs) {
-        idx = i;
+    var low = 0;
+    var high = _sampleOffsetsMs.length;
+    while (low < high) {
+      final mid = low + ((high - low) >> 1);
+      if (_sampleOffsetsMs[mid] <= _cursorMs) {
+        low = mid + 1;
       } else {
-        break;
+        high = mid;
       }
     }
-    return idx;
+    return (low - 1).clamp(0, _samples.length - 1).toInt();
   }
 
   // ── Build ────────────────────────────────────────────────────────────────
@@ -187,8 +188,10 @@ class _Track3DSheetState extends State<_Track3DSheet>
                 Icon(Icons.threed_rotation, color: theme.colorScheme.primary),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(l10n.replay3dTitle,
-                      style: theme.textTheme.titleLarge),
+                  child: Text(
+                    l10n.replay3dTitle,
+                    style: theme.textTheme.titleLarge,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.center_focus_strong),
@@ -215,6 +218,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
               zScale: _zScale,
               samples: _samples,
               cursorIndex: _currentIndex(),
+              geometryCache: _geometryCache,
               onOrbit: (dx, dy) => setState(() {
                 _yaw += dx * 0.01;
                 _pitch = (_pitch + dy * 0.01).clamp(0.15, 1.45);
@@ -242,10 +246,16 @@ class _Track3DSheetState extends State<_Track3DSheet>
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _stat(theme, l10n.replay3dStatAlt, '${d.altitude.round()} m'),
-          _stat(theme, l10n.replay3dStatSpd,
-              '${d.groundSpeed.toStringAsFixed(0)} km/h'),
-          _stat(theme, l10n.replay3dStatVario,
-              '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)} m/s'),
+          _stat(
+            theme,
+            l10n.replay3dStatSpd,
+            '${d.groundSpeed.toStringAsFixed(0)} km/h',
+          ),
+          _stat(
+            theme,
+            l10n.replay3dStatVario,
+            '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)} m/s',
+          ),
         ],
       ),
     );
@@ -255,9 +265,12 @@ class _Track3DSheetState extends State<_Track3DSheet>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label,
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
         Text(value, style: theme.textTheme.titleMedium),
       ],
     );
@@ -312,12 +325,14 @@ class _Track3DSheetState extends State<_Track3DSheet>
               TextButton(
                 onPressed: canReplay ? _cycleSpeed : null,
                 child: Text(
-                    '${_speed.toStringAsFixed(_speed % 1 == 0 ? 0 : 1)}×'),
+                  '${_speed.toStringAsFixed(_speed % 1 == 0 ? 0 : 1)}×',
+                ),
               ),
               IconButton(
                 icon: Icon(_audioSync ? Icons.volume_up : Icons.volume_off),
-                tooltip:
-                    _audioSync ? l10n.replayVarioSoundOn : l10n.replayVarioSoundOff,
+                tooltip: _audioSync
+                    ? l10n.replayVarioSoundOn
+                    : l10n.replayVarioSoundOff,
                 color: _audioSync ? theme.colorScheme.primary : null,
                 onPressed: canReplay ? _toggleAudioSync : null,
               ),
@@ -328,8 +343,9 @@ class _Track3DSheetState extends State<_Track3DSheet>
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 'This flight has no recorded track points to replay.',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
         ],
@@ -355,6 +371,7 @@ class _GestureCanvas extends StatefulWidget {
     required this.zScale,
     required this.samples,
     required this.cursorIndex,
+    required this.geometryCache,
     required this.onOrbit,
     required this.onZoom,
   });
@@ -364,6 +381,7 @@ class _GestureCanvas extends StatefulWidget {
   final double zScale;
   final List<FlightSample> samples;
   final int cursorIndex;
+  final Track3DGeometryCache geometryCache;
   final void Function(double dx, double dy) onOrbit;
   final void Function(double factor) onZoom;
 
@@ -395,6 +413,7 @@ class _GestureCanvasState extends State<_GestureCanvas> {
           pitch: widget.pitch,
           zScale: widget.zScale,
           cursorIndex: widget.cursorIndex,
+          geometryCache: widget.geometryCache,
           gridColor: theme.colorScheme.onSurface.withAlpha(64),
           background: theme.colorScheme.surface,
         ),

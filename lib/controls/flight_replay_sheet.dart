@@ -83,6 +83,13 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   /// The samples we replay, captured once so the list can't change under us.
   late final List<FlightSample> _samples;
+  late final List<double> _sampleOffsetsMs;
+  List<LatLng>? _cachedTrackPoints;
+  String? _cachedTrackPointsSourceId;
+  List<Polyline>? _cachedTrackPolylines;
+  int? _cachedPolylineCursorIndex;
+  TrackColorMode? _cachedPolylineColorMode;
+  String? _cachedPolylineSourceId;
 
   @override
   void initState() {
@@ -90,8 +97,14 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     _samples = List<FlightSample>.of(widget.track.samples);
     _trimRange = RangeValues(0, math.max(0, _samples.length - 1).toDouble());
     final first = _samples.isNotEmpty ? _samples.first.time : DateTime.now();
-    final last = _samples.isNotEmpty ? _samples.last.time : first;
-    _spanMs = math.max(1.0, last.difference(first).inMilliseconds.toDouble());
+    _sampleOffsetsMs = [
+      for (final sample in _samples)
+        sample.time.difference(first).inMilliseconds.toDouble(),
+    ];
+    _spanMs = math.max(
+      1.0,
+      _sampleOffsetsMs.isEmpty ? 0.0 : _sampleOffsetsMs.last,
+    );
     _computeExtrema();
     _ticker = createTicker(_onTick);
   }
@@ -138,10 +151,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   double _sampleOffsetMs(int index) {
     if (_samples.isEmpty) return 0.0;
     final safeIndex = index.clamp(0, _samples.length - 1).toInt();
-    return _samples[safeIndex].time
-        .difference(_samples.first.time)
-        .inMilliseconds
-        .toDouble();
+    return _sampleOffsetsMs[safeIndex];
   }
 
   double get _trimStartMs => _sampleOffsetMs(_trimRange.start.round());
@@ -266,13 +276,14 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   /// Moves the cursor and feeds the vario-audio preview (when syncing).
   void _setCursor(double ms) {
+    final previousIndex = _currentIndex();
     setState(() => _cursorMs = ms.clamp(0.0, _spanMs));
     if (_audioSync && _playing) {
       VarioAudioService.instance.setPreviewSpeed(
         _currentSample().data.verticalSpeed,
       );
     }
-    _followCursor();
+    if (_currentIndex() != previousIndex) _followCursor();
   }
 
   // ── Vario audio (preview takeover so it won't fight the live feed) ────────
@@ -294,35 +305,22 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     if (_samples.isEmpty) {
       return FlightSample(time: DateTime.now(), data: FlightData.empty);
     }
-    final t0 = _samples.first.time;
-    final targetMs = _cursorMs;
-    // Linear scan is fine: tracks are decimated and the cursor advances
-    // monotonically; binary search would be premature optimization here.
-    var idx = 0;
-    for (var i = 0; i < _samples.length; i++) {
-      final rel = _samples[i].time.difference(t0).inMilliseconds.toDouble();
-      if (rel <= targetMs) {
-        idx = i;
-      } else {
-        break;
-      }
-    }
-    return _samples[idx];
+    return _samples[_currentIndex()];
   }
 
   int _currentIndex() {
     if (_samples.isEmpty) return 0;
-    final t0 = _samples.first.time;
-    var idx = 0;
-    for (var i = 0; i < _samples.length; i++) {
-      final rel = _samples[i].time.difference(t0).inMilliseconds.toDouble();
-      if (rel <= _cursorMs) {
-        idx = i;
+    var low = 0;
+    var high = _sampleOffsetsMs.length;
+    while (low < high) {
+      final mid = low + ((high - low) >> 1);
+      if (_sampleOffsetsMs[mid] <= _cursorMs) {
+        low = mid + 1;
       } else {
-        break;
+        high = mid;
       }
     }
-    return idx;
+    return (low - 1).clamp(0, _samples.length - 1).toInt();
   }
 
   // ── Map helpers ─────────────────────────────────────────────────────────
@@ -1117,11 +1115,29 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     );
   }
 
+  List<LatLng> _trackPoints() {
+    if (_cachedTrackPoints != null &&
+        _cachedTrackPointsSourceId == _tileSourceId) {
+      return _cachedTrackPoints!;
+    }
+    final points = List<LatLng>.generate(
+      _samples.length,
+      (index) => _shift(
+        LatLng(_samples[index].data.latitude, _samples[index].data.longitude),
+      ),
+      growable: false,
+    );
+    _cachedTrackPoints = points;
+    _cachedTrackPointsSourceId = _tileSourceId;
+    return points;
+  }
+
   /// Fits the map camera to the full track bounds once it's laid out.
   void _fitTrack() {
+    final trackPoints = _trackPoints();
     final pts = <LatLng>[
-      for (final s in _samples)
-        if (s.data.hasFix) _shift(LatLng(s.data.latitude, s.data.longitude)),
+      for (var i = 0; i < _samples.length; i++)
+        if (_samples[i].data.hasFix) trackPoints[i],
     ];
     if (pts.length < 2) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1140,10 +1156,15 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   List<Polyline> _buildTrackPolylines() {
     if (_samples.length < 2) return const [];
     final curIdx = _currentIndex();
+    final cached = _cachedTrackPolylines;
+    if (cached != null &&
+        _cachedPolylineCursorIndex == curIdx &&
+        _cachedPolylineColorMode == _colorMode &&
+        _cachedPolylineSourceId == _tileSourceId) {
+      return cached;
+    }
 
-    LatLng at(int i) =>
-        _shift(LatLng(_samples[i].data.latitude, _samples[i].data.longitude));
-
+    final points = _trackPoints();
     final out = <Polyline>[];
     int runStart = 0;
     Color runColor = _segmentColor(1, dimmed: 1 > curIdx);
@@ -1152,7 +1173,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
       if (endExclusive - runStart < 2) return;
       out.add(
         Polyline(
-          points: [for (int i = runStart; i < endExclusive; i++) at(i)],
+          points: [for (int i = runStart; i < endExclusive; i++) points[i]],
           strokeWidth: 3,
           color: runColor,
         ),
@@ -1168,6 +1189,10 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
       }
     }
     flush(_samples.length);
+    _cachedTrackPolylines = out;
+    _cachedPolylineCursorIndex = curIdx;
+    _cachedPolylineColorMode = _colorMode;
+    _cachedPolylineSourceId = _tileSourceId;
     return out;
   }
 
@@ -1290,18 +1315,31 @@ class _AltitudeProfile extends StatelessWidget {
           return GestureDetector(
             onTapDown: (d) => seek(d.localPosition),
             onHorizontalDragUpdate: (d) => seek(d.localPosition),
-            child: CustomPaint(
-              size: Size.infinite,
-              painter: _AltitudeProfilePainter(
-                samples: samples,
-                cursorIndex: cursorIndex,
-                minAlt: minAlt,
-                maxAlt: maxAlt,
-                lineColor: lineColor,
-                fillColor: fillColor,
-                cursorColor: cursorColor,
-                gridColor: gridColor,
-              ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                RepaintBoundary(
+                  child: CustomPaint(
+                    painter: _AltitudeProfilePainter(
+                      samples: samples,
+                      minAlt: minAlt,
+                      maxAlt: maxAlt,
+                      lineColor: lineColor,
+                      fillColor: fillColor,
+                      gridColor: gridColor,
+                    ),
+                  ),
+                ),
+                CustomPaint(
+                  painter: _AltitudeCursorPainter(
+                    samples: samples,
+                    cursorIndex: cursorIndex,
+                    minAlt: minAlt,
+                    maxAlt: maxAlt,
+                    cursorColor: cursorColor,
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -1313,22 +1351,18 @@ class _AltitudeProfile extends StatelessWidget {
 class _AltitudeProfilePainter extends CustomPainter {
   _AltitudeProfilePainter({
     required this.samples,
-    required this.cursorIndex,
     required this.minAlt,
     required this.maxAlt,
     required this.lineColor,
     required this.fillColor,
-    required this.cursorColor,
     required this.gridColor,
   });
 
   final List<FlightSample> samples;
-  final int cursorIndex;
   final double minAlt;
   final double maxAlt;
   final Color lineColor;
   final Color fillColor;
-  final Color cursorColor;
   final Color gridColor;
 
   @override
@@ -1338,50 +1372,41 @@ class _AltitudeProfilePainter extends CustomPainter {
     const padBottom = 6.0;
     final h = size.height - padTop - padBottom;
     final span = (maxAlt - minAlt).abs() < 1e-6 ? 1.0 : (maxAlt - minAlt);
-
-    // Time span for the X axis.
     final t0 = samples.first.time;
     final totalMs = math
         .max(1, samples.last.time.difference(t0).inMilliseconds)
         .toDouble();
+    final points = <Offset>[
+      for (final sample in samples)
+        Offset(
+          (sample.time.difference(t0).inMilliseconds / totalMs) * size.width,
+          padTop +
+              h *
+                  (1.0 -
+                      ((sample.data.altitude - minAlt) / span).clamp(0.0, 1.0)),
+        ),
+    ];
 
-    Offset pt(int i) {
-      final relMs = samples[i].time.difference(t0).inMilliseconds.toDouble();
-      final x = (relMs / totalMs) * size.width;
-      final norm = (samples[i].data.altitude - minAlt) / span;
-      final y = padTop + h * (1.0 - norm.clamp(0.0, 1.0));
-      return Offset(x, y);
-    }
-
-    // Grid baseline.
-    final grid = Paint()
-      ..color = gridColor
-      ..strokeWidth = 1;
     canvas.drawLine(
       Offset(0, padTop + h),
       Offset(size.width, padTop + h),
-      grid,
+      Paint()
+        ..color = gridColor
+        ..strokeWidth = 1,
     );
 
-    // Filled area under the curve.
     final area = Path()..moveTo(0, padTop + h);
-    for (var i = 0; i < samples.length; i++) {
-      final p = pt(i);
-      area.lineTo(p.dx, p.dy);
+    for (final point in points) {
+      area.lineTo(point.dx, point.dy);
     }
-    area.lineTo(size.width, padTop + h);
-    area.close();
+    area
+      ..lineTo(size.width, padTop + h)
+      ..close();
     canvas.drawPath(area, Paint()..color = fillColor);
 
-    // The altitude line.
-    final line = Path();
-    for (var i = 0; i < samples.length; i++) {
-      final p = pt(i);
-      if (i == 0) {
-        line.moveTo(p.dx, p.dy);
-      } else {
-        line.lineTo(p.dx, p.dy);
-      }
+    final line = Path()..moveTo(points.first.dx, points.first.dy);
+    for (final point in points.skip(1)) {
+      line.lineTo(point.dx, point.dy);
     }
     canvas.drawPath(
       line,
@@ -1390,35 +1415,72 @@ class _AltitudeProfilePainter extends CustomPainter {
         ..strokeWidth = 1.5
         ..color = lineColor,
     );
-
-    // Cursor.
-    final ci = cursorIndex.clamp(0, samples.length - 1);
-    final c = pt(ci);
-    canvas.drawLine(
-      Offset(c.dx, padTop),
-      Offset(c.dx, padTop + h),
-      Paint()
-        ..color = cursorColor
-        ..strokeWidth = 1.5,
-    );
-    canvas.drawCircle(c, 3.5, Paint()..color = cursorColor);
   }
 
   @override
   bool shouldRepaint(covariant _AltitudeProfilePainter old) {
     return old.samples != samples ||
-        old.cursorIndex != cursorIndex ||
         old.minAlt != minAlt ||
         old.maxAlt != maxAlt ||
-        old.lineColor != lineColor;
+        old.lineColor != lineColor ||
+        old.fillColor != fillColor ||
+        old.gridColor != gridColor;
   }
+}
+
+class _AltitudeCursorPainter extends CustomPainter {
+  const _AltitudeCursorPainter({
+    required this.samples,
+    required this.cursorIndex,
+    required this.minAlt,
+    required this.maxAlt,
+    required this.cursorColor,
+  });
+
+  final List<FlightSample> samples;
+  final int cursorIndex;
+  final double minAlt;
+  final double maxAlt;
+  final Color cursorColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (samples.length < 2) return;
+    const padTop = 6.0;
+    const padBottom = 6.0;
+    final h = size.height - padTop - padBottom;
+    final span = (maxAlt - minAlt).abs() < 1e-6 ? 1.0 : (maxAlt - minAlt);
+    final t0 = samples.first.time;
+    final totalMs = math
+        .max(1, samples.last.time.difference(t0).inMilliseconds)
+        .toDouble();
+    final index = cursorIndex.clamp(0, samples.length - 1);
+    final sample = samples[index];
+    final x =
+        (sample.time.difference(t0).inMilliseconds / totalMs) * size.width;
+    final norm = (sample.data.altitude - minAlt) / span;
+    final y = padTop + h * (1.0 - norm.clamp(0.0, 1.0));
+    final point = Offset(x, y);
+    final paint = Paint()
+      ..color = cursorColor
+      ..strokeWidth = 1.5;
+    canvas.drawLine(Offset(x, padTop), Offset(x, padTop + h), paint);
+    canvas.drawCircle(point, 3.5, Paint()..color = cursorColor);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AltitudeCursorPainter old) =>
+      old.samples != samples ||
+      old.cursorIndex != cursorIndex ||
+      old.minAlt != minAlt ||
+      old.maxAlt != maxAlt ||
+      old.cursorColor != cursorColor;
 }
 
 enum _TrimDragTarget { start, end, cursor }
 
 class _ReplayTrimTimeline extends StatefulWidget {
   const _ReplayTrimTimeline({
-    super.key,
     required this.samples,
     required this.trimRange,
     required this.cursorFraction,

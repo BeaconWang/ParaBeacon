@@ -9,6 +9,7 @@ import 'package:latlong2/latlong.dart' show LatLng;
 import '../audio/vario_sound_settings.dart';
 import '../data/airspace_store.dart';
 import '../data/debug_settings.dart';
+import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
@@ -322,6 +323,7 @@ class _MapControlState extends State<MapControl> {
   /// computed in [FlightDataTransformer]). Null when wind is unknown. Used to
   /// draw the wind indicator and to drift-compensate the thermal core.
   WindEstimate? _wind;
+  FlightData? _lastProcessedData;
 
   /// Latest airspace proximity list (drives boundary colouring).
   List<AirspaceProximity> _airspaceProximity = const [];
@@ -357,6 +359,40 @@ class _MapControlState extends State<MapControl> {
     // map should immediately switch to the simulated position (highest
     // priority), and when it turns off fall back to real device GPS / BLE.
     DebugSettings.instance.addListener(_onExternalChange);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final data = FlightDataProvider.of(context);
+    if (identical(data, _lastProcessedData)) return;
+    _lastProcessedData = data;
+    _processFlightData(data);
+  }
+
+  void _processFlightData(FlightData data) {
+    _lastHeading = data.heading;
+    if (data.hasFix) {
+      final wgs = LatLng(data.latitude, data.longitude);
+      _maybeFollow(wgs);
+      _thermal = _thermalDetector.add(
+        lat: wgs.latitude,
+        lon: wgs.longitude,
+        climbMps: data.verticalSpeed,
+      );
+      AirspaceStore.instance.updatePosition(
+        wgs.latitude,
+        wgs.longitude,
+        data.altitude,
+      );
+    }
+    _wind = data.windSpeed > 0.1
+        ? WindEstimate(
+            fromDirectionDeg: data.windDirection,
+            speedMps: data.windSpeed / 3.6,
+            confident: true,
+          )
+        : null;
   }
 
   @override
@@ -534,39 +570,12 @@ class _MapControlState extends State<MapControl> {
     // fields, and the debug simulator (when enabled) supplies its synthetic
     // position. Whatever won inside [FlightDataProvider] is what we render.
     LatLng? wgs;
-    final double climb = data.verticalSpeed;
     final double heading = data.heading;
     final double altMsl = data.altitude;
     if (data.hasFix) {
       wgs = LatLng(data.latitude, data.longitude);
     }
     final hasFix = wgs != null;
-
-    if (hasFix) {
-      _lastHeading = heading;
-      _maybeFollow(wgs);
-      // Feed the thermal detector + airspace proximity from the live fix.
-      _thermal = _thermalDetector.add(
-        lat: wgs.latitude,
-        lon: wgs.longitude,
-        climbMps: climb,
-      );
-      AirspaceStore.instance.updatePosition(
-        wgs.latitude,
-        wgs.longitude,
-        altMsl,
-      );
-      // Wind is resolved centrally in the flight-data pipeline (a real sensor
-      // reading when available, otherwise a GPS circling estimate), so the map
-      // just mirrors the shared value and stays consistent with other controls.
-      _wind = data.windSpeed > 0.1
-          ? WindEstimate(
-              fromDirectionDeg: data.windDirection,
-              speedMps: data.windSpeed / 3.6,
-              confident: true,
-            )
-          : null;
-    }
 
     // Render position in the tile coordinate system (GCJ-shifted if needed).
     final renderPos = hasFix

@@ -17,6 +17,168 @@ import '../data/flight_recorder.dart';
 ///
 /// Self-contained port of the reference project's `Track3DPainter`, adapted to
 /// this project's [FlightSample] model.
+class Track3DGeometryCache {
+  Track3DGeometryCache(this.samples);
+
+  final List<FlightSample> samples;
+  _Track3DGeometry? _cached;
+
+  _Track3DGeometry _geometry({
+    required double yaw,
+    required double pitch,
+    required double zScale,
+    required Size size,
+  }) {
+    final cached = _cached;
+    if (cached != null &&
+        cached.yaw == yaw &&
+        cached.pitch == pitch &&
+        cached.zScale == zScale &&
+        cached.size == size) {
+      return cached;
+    }
+
+    var latitudeSum = 0.0;
+    var longitudeSum = 0.0;
+    var minAltitude = double.infinity;
+    for (final sample in samples) {
+      latitudeSum += sample.data.latitude;
+      longitudeSum += sample.data.longitude;
+      minAltitude = math.min(minAltitude, sample.data.altitude);
+    }
+    final lat0 = latitudeSum / samples.length;
+    final lon0 = longitudeSum / samples.length;
+    const mPerDegLat = 111320.0;
+    final mPerDegLon = 111320.0 * math.cos(lat0 * math.pi / 180.0);
+
+    final points3d = <_V3>[];
+    var minE = double.infinity;
+    var maxE = double.negativeInfinity;
+    var minN = double.infinity;
+    var maxN = double.negativeInfinity;
+    for (final sample in samples) {
+      final e = (sample.data.longitude - lon0) * mPerDegLon;
+      final n = (sample.data.latitude - lat0) * mPerDegLat;
+      points3d.add(_V3(e, n, sample.data.altitude - minAltitude));
+      minE = math.min(minE, e);
+      maxE = math.max(maxE, e);
+      minN = math.min(minN, n);
+      maxN = math.max(maxN, n);
+    }
+
+    final cosY = math.cos(yaw), sinY = math.sin(yaw);
+    final cosP = math.cos(pitch), sinP = math.sin(pitch);
+    final trackSpan = math.max(maxE - minE, maxN - minN);
+    final gridHalf = math.max(50.0, trackSpan * 0.75);
+    final cameraDistance = math.max(100.0, trackSpan * 1.8);
+
+    Offset project(double e, double n, double u) {
+      final x1 = e * cosY - n * sinY;
+      final y1 = e * sinY + n * cosY;
+      final z1 = u * zScale;
+      final depth = y1 * cosP - z1 * sinP;
+      final perspective =
+          cameraDistance / math.max(1.0, cameraDistance + depth);
+      final screenY = (y1 * sinP + z1 * cosP) * perspective;
+      return Offset(x1 * perspective, -screenY);
+    }
+
+    final projected = <Offset>[];
+    final groundProjected = <Offset>[];
+    final gridSegments = <Offset>[];
+    var minX = double.infinity;
+    var maxX = double.negativeInfinity;
+    var minY = double.infinity;
+    var maxY = double.negativeInfinity;
+
+    void include(Offset point) {
+      minX = math.min(minX, point.dx);
+      maxX = math.max(maxX, point.dx);
+      minY = math.min(minY, point.dy);
+      maxY = math.max(maxY, point.dy);
+    }
+
+    for (final point in points3d) {
+      final projectedPoint = project(point.e, point.n, point.u);
+      final groundPoint = project(point.e, point.n, 0);
+      projected.add(projectedPoint);
+      groundProjected.add(groundPoint);
+      include(projectedPoint);
+      include(groundPoint);
+    }
+
+    const gridSteps = 10;
+    for (var i = 0; i <= gridSteps; i++) {
+      final t = -gridHalf + (gridHalf * 2 * i / gridSteps);
+      final acrossStart = project(-gridHalf, t, 0);
+      final acrossEnd = project(gridHalf, t, 0);
+      final alongStart = project(t, -gridHalf, 0);
+      final alongEnd = project(t, gridHalf, 0);
+      gridSegments
+        ..add(acrossStart)
+        ..add(acrossEnd)
+        ..add(alongStart)
+        ..add(alongEnd);
+      include(acrossStart);
+      include(acrossEnd);
+      include(alongStart);
+      include(alongEnd);
+    }
+
+    final spanX = math.max(1.0, maxX - minX);
+    final spanY = math.max(1.0, maxY - minY);
+    const pad = 32.0;
+    final scale = math.min(
+      (size.width - pad * 2) / spanX,
+      (size.height - pad * 2) / spanY,
+    );
+    _cached = _Track3DGeometry(
+      yaw: yaw,
+      pitch: pitch,
+      zScale: zScale,
+      size: size,
+      projected: projected,
+      groundProjected: groundProjected,
+      gridSegments: gridSegments,
+      scale: scale,
+      centerX: (minX + maxX) / 2,
+      centerY: (minY + maxY) / 2,
+    );
+    return _cached!;
+  }
+}
+
+class _Track3DGeometry {
+  const _Track3DGeometry({
+    required this.yaw,
+    required this.pitch,
+    required this.zScale,
+    required this.size,
+    required this.projected,
+    required this.groundProjected,
+    required this.gridSegments,
+    required this.scale,
+    required this.centerX,
+    required this.centerY,
+  });
+
+  final double yaw;
+  final double pitch;
+  final double zScale;
+  final Size size;
+  final List<Offset> projected;
+  final List<Offset> groundProjected;
+  final List<Offset> gridSegments;
+  final double scale;
+  final double centerX;
+  final double centerY;
+
+  Offset toScreen(Offset point) => Offset(
+    size.width / 2 + (point.dx - centerX) * scale,
+    size.height / 2 + (point.dy - centerY) * scale,
+  );
+}
+
 class Track3DPainter extends CustomPainter {
   Track3DPainter({
     required this.samples,
@@ -24,6 +186,7 @@ class Track3DPainter extends CustomPainter {
     required this.pitch,
     required this.zScale,
     required this.cursorIndex,
+    required this.geometryCache,
     required this.gridColor,
     required this.background,
   });
@@ -33,6 +196,7 @@ class Track3DPainter extends CustomPainter {
   final double pitch;
   final double zScale;
   final int cursorIndex;
+  final Track3DGeometryCache geometryCache;
   final Color gridColor;
   final Color background;
 
@@ -41,129 +205,26 @@ class Track3DPainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, Paint()..color = background);
     if (samples.length < 2) return;
 
-    // ── 1. Project each sample to local meters (east, north, up). ─────────
-    final lat0 = samples
-            .map((s) => s.data.latitude)
-            .reduce((a, b) => a + b) /
-        samples.length;
-    final lon0 = samples
-            .map((s) => s.data.longitude)
-            .reduce((a, b) => a + b) /
-        samples.length;
-    final minAlt =
-        samples.map((s) => s.data.altitude).reduce(math.min);
-
-    const mPerDegLat = 111320.0;
-    final mPerDegLon = 111320.0 * math.cos(lat0 * math.pi / 180.0);
-
-    final pts3 = <_V3>[];
-    var minE = double.infinity;
-    var maxE = -double.infinity;
-    var minN = double.infinity;
-    var maxN = -double.infinity;
-    for (final s in samples) {
-      final e = (s.data.longitude - lon0) * mPerDegLon;
-      final n = (s.data.latitude - lat0) * mPerDegLat;
-      final u = s.data.altitude - minAlt;
-      pts3.add(_V3(e, n, u));
-      minE = math.min(minE, e);
-      maxE = math.max(maxE, e);
-      minN = math.min(minN, n);
-      maxN = math.max(maxN, n);
-    }
-
-    // ── 2. Perspective camera: yaw around Z, then pitch toward the ground.
-    // The finite camera distance makes parallel ground lines converge toward
-    // a vanishing point, matching a real 3D map rather than an orthographic
-    // chart. Higher pitch values reveal more of the ground plane.
-    final cosY = math.cos(yaw), sinY = math.sin(yaw);
-    final cosP = math.cos(pitch), sinP = math.sin(pitch);
-    final trackSpan = math.max(maxE - minE, maxN - minN);
-    final gridHalf = math.max(50.0, trackSpan * 0.75);
-    final cameraDistance = math.max(100.0, trackSpan * 1.8);
-    final focalLength = cameraDistance;
-
-    Offset project(double e, double n, double u) {
-      final x1 = e * cosY - n * sinY;
-      final y1 = e * sinY + n * cosY;
-      final z1 = u * zScale;
-      final depth = y1 * cosP - z1 * sinP;
-      final perspective = focalLength /
-          math.max(1.0, cameraDistance + depth);
-      final screenY = (y1 * sinP + z1 * cosP) * perspective;
-      return Offset(x1 * perspective, -screenY);
-    }
-
-    final projected = <Offset>[];
-    final groundProjected = <Offset>[];
-    final gridSegments = <List<Offset>>[];
-    double minX = double.infinity,
-        maxX = -double.infinity,
-        minY = double.infinity,
-        maxY = -double.infinity;
-
-    void include(Offset p) {
-      minX = math.min(minX, p.dx);
-      maxX = math.max(maxX, p.dx);
-      minY = math.min(minY, p.dy);
-      maxY = math.max(maxY, p.dy);
-    }
-
-    for (final v in pts3) {
-      final p = project(v.e, v.n, v.u);
-      final g = project(v.e, v.n, 0);
-      projected.add(p);
-      groundProjected.add(g);
-      include(p);
-      include(g);
-    }
-
-    // Draw a regular ground-plane grid. The perspective projection turns the
-    // cross-plane lines into the trapezoidal wireframe shown in the reference.
-    const gridSteps = 10;
-    for (var i = 0; i <= gridSteps; i++) {
-      final t = -gridHalf + (gridHalf * 2 * i / gridSteps);
-      final across = [
-        project(-gridHalf, t, 0),
-        project(gridHalf, t, 0),
-      ];
-      final along = [
-        project(t, -gridHalf, 0),
-        project(t, gridHalf, 0),
-      ];
-      gridSegments.add(across);
-      gridSegments.add(along);
-      include(across[0]);
-      include(across[1]);
-      include(along[0]);
-      include(along[1]);
-    }
-
-    // ── 3. Fit-to-view transform (uniform scale + center). ────────────────
-    final spanX = math.max(1.0, maxX - minX);
-    final spanY = math.max(1.0, maxY - minY);
-    const pad = 32.0;
-    final scale = math.min(
-      (size.width - pad * 2) / spanX,
-      (size.height - pad * 2) / spanY,
+    final geometry = geometryCache._geometry(
+      yaw: yaw,
+      pitch: pitch,
+      zScale: zScale,
+      size: size,
     );
-    final cx = (minX + maxX) / 2;
-    final cy = (minY + maxY) / 2;
-
-    Offset toScreen(Offset p) => Offset(
-          size.width / 2 + (p.dx - cx) * scale,
-          size.height / 2 + (p.dy - cy) * scale,
-        );
+    final projected = geometry.projected;
+    final groundProjected = geometry.groundProjected;
+    final gridSegments = geometry.gridSegments;
+    Offset toScreen(Offset p) => geometry.toScreen(p);
 
     // ── 4. Perspective ground grid, behind the flight track. ─────────────
     final gridPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
-    for (final segment in gridSegments) {
+    for (var i = 0; i < gridSegments.length; i += 2) {
       canvas.drawLine(
-        toScreen(segment[0]),
-        toScreen(segment[1]),
+        toScreen(gridSegments[i]),
+        toScreen(gridSegments[i + 1]),
         gridPaint,
       );
     }
@@ -221,11 +282,7 @@ class Track3DPainter extends CustomPainter {
 
     final ci = cursorIndex.clamp(0, projected.length - 1);
     final cursor = toScreen(projected[ci]);
-    canvas.drawCircle(
-      cursor,
-      8,
-      Paint()..color = Colors.white.withAlpha(220),
-    );
+    canvas.drawCircle(cursor, 8, Paint()..color = Colors.white.withAlpha(220));
     canvas.drawCircle(cursor, 5, Paint()..color = Colors.blueAccent);
 
     // A single point-mode dot ensures the cursor is crisp on all backends.

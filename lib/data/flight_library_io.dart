@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -113,7 +114,7 @@ class FlightLibraryIO {
     List<FlightTrack> tracks, {
     bool shareDirectly = false,
   }) async {
-    final bytes = buildBundle(tracks);
+    final bytes = await compute(_buildFlightBundleInWorker, tracks);
     String two(int n) => n.toString().padLeft(2, '0');
     final now = DateTime.now();
     final fileName =
@@ -245,3 +246,7 @@ class FlightLibraryIO {
   /// The file extension (no dot) of the library bundle.
   static String get extension => _ext;
 }
+
+@pragma('vm:entry-point')
+List<int> _buildFlightBundleInWorker(List<FlightTrack> tracks) =>
+    FlightLibraryIO.instance.buildBundle(tracks);

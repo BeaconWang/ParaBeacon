@@ -1049,14 +1049,31 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   }
 
   void _showDetail(FlightTrack track) {
-    showDialog<void>(
+    final Future<FlightDerivedStats?> statsFuture = track.hasSamples
+        ? _computeFlightDetails(track)
+        : Future<FlightDerivedStats?>.value(null);
+    FlightDerivedStats? computedStats;
+    var statsFailed = false;
+    StateSetter? updateDialog;
+    statsFuture.then<void>(
+      (result) {
+        computedStats = result;
+        updateDialog?.call(() {});
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        statsFailed = true;
+        updateDialog?.call(() {});
+      },
+    );
+    final dialogFuture = showDialog<void>(
       context: context,
       builder: (context) {
         final theme = Theme.of(context);
         final l10n = AppLocalizations.of(context);
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final stats = FlightDerivedStats.compute(track);
+            updateDialog = setDialogState;
+            final stats = computedStats;
             final maxAltGainM = track.maxAltGainM;
             final elevationDropM = track.elevationDropM;
             return Dialog.fullscreen(
@@ -1275,7 +1292,18 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                             ),
                           ),
                         ),
-                        if (track.hasSamples) ...[
+                        if (track.hasSamples && stats == null && !statsFailed)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
+                          ),
+                        if (track.hasSamples && stats != null) ...[
                           const SizedBox(height: 8),
                           _sectionLabel(theme, l10n.flightDetailPerformance),
                           _sectionLabel(theme, l10n.flightDetailRouteMetrics),
@@ -1461,6 +1489,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         );
       },
     );
+    dialogFuture.whenComplete(() => updateDialog = null);
   }
 
   Future<bool?> _confirmDeleteSamples() {
@@ -1656,3 +1685,15 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     return detail.isNotEmpty ? detail : null;
   }
 }
+
+Future<FlightDerivedStats> _computeFlightDetails(FlightTrack track) async {
+  if (kIsWeb) {
+    await Future<void>.delayed(Duration.zero);
+    return FlightDerivedStats.compute(track);
+  }
+  return compute(_flightDerivedStatsWorker, track);
+}
+
+@pragma('vm:entry-point')
+FlightDerivedStats _flightDerivedStatsWorker(FlightTrack track) =>
+    FlightDerivedStats.compute(track);

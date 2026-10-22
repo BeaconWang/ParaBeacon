@@ -99,6 +99,10 @@ class AirspaceStore extends ChangeNotifier {
   List<AirspaceProximity> _lastProximity = const [];
   List<AirspaceProximity> get lastProximity => _lastProximity;
 
+  double? _lastPositionLat;
+  double? _lastPositionLon;
+  List<double?> _horizontalDistances = const [];
+
   bool _loaded = false;
 
   /// Loads airspace from `<app-documents>/airspace/airspace.txt` if present.
@@ -124,6 +128,9 @@ class AirspaceStore extends ChangeNotifier {
     _all
       ..clear()
       ..addAll(parsed);
+    _lastPositionLat = null;
+    _lastPositionLon = null;
+    _horizontalDistances = const [];
     notifyListeners();
   }
 
@@ -134,12 +141,30 @@ class AirspaceStore extends ChangeNotifier {
         _lastProximity = const [];
         _proximity.add(_lastProximity);
       }
+      _lastPositionLat = null;
+      _lastPositionLon = null;
+      _horizontalDistances = const [];
       return;
     }
+
+    if (_lastPositionLat != lat ||
+        _lastPositionLon != lon ||
+        _horizontalDistances.length != _all.length) {
+      _lastPositionLat = lat;
+      _lastPositionLon = lon;
+      _horizontalDistances = List<double?>.generate(_all.length, (index) {
+        final polygon = _all[index].polygon;
+        return polygon.length < 3
+            ? null
+            : _distanceToPolygonM(lat, lon, polygon);
+      }, growable: false);
+    }
+
     final out = <AirspaceProximity>[];
-    for (final a in _all) {
-      if (a.polygon.length < 3) continue;
-      final horiz = _distanceToPolygonM(lat, lon, a.polygon);
+    for (var i = 0; i < _all.length; i++) {
+      final a = _all[i];
+      final horiz = _horizontalDistances[i];
+      if (horiz == null) continue;
       final insideHoriz = horiz <= 0;
       final withinBand = a.containsAltitude(altMslM);
       double vert;
@@ -152,13 +177,27 @@ class AirspaceStore extends ChangeNotifier {
       } else {
         vert = 0;
       }
-      out.add(AirspaceProximity(
-        airspace: a,
-        horizontalM: insideHoriz ? 0 : horiz,
-        verticalM: vert,
-        inside: insideHoriz && withinBand,
-      ));
+      out.add(
+        AirspaceProximity(
+          airspace: a,
+          horizontalM: insideHoriz ? 0 : horiz,
+          verticalM: vert,
+          inside: insideHoriz && withinBand,
+        ),
+      );
     }
+
+    var unchanged = out.length == _lastProximity.length;
+    for (var i = 0; unchanged && i < out.length; i++) {
+      final next = out[i];
+      final previous = _lastProximity[i];
+      unchanged =
+          identical(next.airspace, previous.airspace) &&
+          next.horizontalM == previous.horizontalM &&
+          next.verticalM == previous.verticalM &&
+          next.inside == previous.inside;
+    }
+    if (unchanged) return;
     _lastProximity = out;
     _proximity.add(out);
   }
@@ -184,13 +223,15 @@ class AirspaceStore extends ChangeNotifier {
 
     void flush() {
       if (poly.length >= 3) {
-        out.add(Airspace(
-          name: name ?? klass,
-          polygon: poly,
-          severity: _severityForClass(klass),
-          floorM: floor,
-          ceilingM: ceil,
-        ));
+        out.add(
+          Airspace(
+            name: name ?? klass,
+            polygon: poly,
+            severity: _severityForClass(klass),
+            floorM: floor,
+            ceilingM: ceil,
+          ),
+        );
       }
       name = null;
       klass = '';
@@ -300,7 +341,10 @@ class AirspaceStore extends ChangeNotifier {
   /// nearest edge. Uses an equirectangular local projection (fine for the
   /// small distances relevant to airspace proximity).
   static double _distanceToPolygonM(
-      double lat, double lon, List<List<double>> poly) {
+    double lat,
+    double lon,
+    List<List<double>> poly,
+  ) {
     if (_pointInPolygon(lat, lon, poly)) return 0;
     var best = double.infinity;
     const mPerDegLat = 111320.0;
@@ -323,7 +367,8 @@ class AirspaceStore extends ChangeNotifier {
     for (int i = 0, j = poly.length - 1; i < poly.length; j = i++) {
       final yi = poly[i][0], xi = poly[i][1];
       final yj = poly[j][0], xj = poly[j][1];
-      final intersect = ((yi > lat) != (yj > lat)) &&
+      final intersect =
+          ((yi > lat) != (yj > lat)) &&
           (lon < (xj - xi) * (lat - yi) / ((yj - yi) + 1e-12) + xi);
       if (intersect) inside = !inside;
     }
@@ -331,7 +376,13 @@ class AirspaceStore extends ChangeNotifier {
   }
 
   static double _segDist(
-      double px, double py, double ax, double ay, double bx, double by) {
+    double px,
+    double py,
+    double ax,
+    double ay,
+    double bx,
+    double by,
+  ) {
     final dx = bx - ax, dy = by - ay;
     final len2 = dx * dx + dy * dy;
     double t = len2 == 0 ? 0 : ((px - ax) * dx + (py - ay) * dy) / len2;

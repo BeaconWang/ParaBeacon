@@ -45,6 +45,81 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferences => '偏好设置';
 
   @override
+  String get about => '关于';
+
+  @override
+  String get aboutSubtitle => '应用详情、版本与许可证';
+
+  @override
+  String get aboutDescription => '一款跨平台滑翔伞飞行助手，提供实时升降音、蓝牙低功耗传感器、地图和飞行记录功能。';
+
+  @override
+  String get aboutApplicationDetails => '应用详情';
+
+  @override
+  String get aboutVersion => '版本';
+
+  @override
+  String get aboutBuildNumber => '构建号';
+
+  @override
+  String get aboutPackageId => '应用包名';
+
+  @override
+  String get aboutPlatform => '运行平台';
+
+  @override
+  String get aboutPlatformWeb => '网页';
+
+  @override
+  String get aboutPlatformAndroid => 'Android';
+
+  @override
+  String get aboutPlatformIos => 'iOS';
+
+  @override
+  String get aboutPlatformLinux => 'Linux';
+
+  @override
+  String get aboutPlatformMacos => 'macOS';
+
+  @override
+  String get aboutPlatformWindows => 'Windows';
+
+  @override
+  String get aboutPlatformFuchsia => 'Fuchsia';
+
+  @override
+  String get aboutCapabilities => '功能';
+
+  @override
+  String get aboutCapabilityDashboard => '可自定义的飞行仪表盘';
+
+  @override
+  String get aboutCapabilityVario => '实时升降音与高度播报';
+
+  @override
+  String get aboutCapabilitySensors => '蓝牙与设备内置传感器数据';
+
+  @override
+  String get aboutCapabilityMapping => 'GPS 地图、离线地图与空域显示';
+
+  @override
+  String get aboutCapabilityFlights => '飞行记录、分析、分享与导出';
+
+  @override
+  String get aboutCapabilityIntegrations => '可选的 XContest 实时追踪与 ASFC 账户支持';
+
+  @override
+  String get aboutOpenSourceLicenses => '开源许可证';
+
+  @override
+  String get aboutOpenSourceLicensesSubtitle => '查看本应用及其依赖项的许可证';
+
+  @override
+  String get aboutLoading => '正在加载应用详情…';
+
+  @override
   String get preferencesSectionAccountFlight => '账户与飞行';
 
   @override

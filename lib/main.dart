@@ -12,6 +12,7 @@ import 'dart:ui' as ui;
 import 'l10n/app_localizations.dart';
 
 import 'controls/accounts_sheet.dart';
+import 'controls/about_sheet.dart';
 import 'controls/aircraft_settings_sheet.dart';
 import 'controls/auto_flight_settings_sheet.dart';
 import 'controls/live_tracking_settings_sheet.dart';
@@ -1165,6 +1166,18 @@ class _DashGridPageState extends State<DashGridPage> {
                                 : null,
                           ),
                         ],
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.info_outline,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.about),
+                          subtitle: Text(l10n.aboutSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () => showAboutSheet(context),
+                        ),
                       ],
                     ),
                   ),

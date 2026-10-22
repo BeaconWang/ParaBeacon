@@ -170,6 +170,156 @@ abstract class AppLocalizations {
   /// **'Preferences'**
   String get preferences;
 
+  /// No description provided for @about.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get about;
+
+  /// No description provided for @aboutSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App details, version, and licenses'**
+  String get aboutSubtitle;
+
+  /// No description provided for @aboutDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A cross-platform paraglider flight assistant with live vario audio, BLE sensors, mapping, and flight logging.'**
+  String get aboutDescription;
+
+  /// No description provided for @aboutApplicationDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Application details'**
+  String get aboutApplicationDetails;
+
+  /// No description provided for @aboutVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get aboutVersion;
+
+  /// No description provided for @aboutBuildNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Build number'**
+  String get aboutBuildNumber;
+
+  /// No description provided for @aboutPackageId.
+  ///
+  /// In en, this message translates to:
+  /// **'Package ID'**
+  String get aboutPackageId;
+
+  /// No description provided for @aboutPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform'**
+  String get aboutPlatform;
+
+  /// No description provided for @aboutPlatformWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Web'**
+  String get aboutPlatformWeb;
+
+  /// No description provided for @aboutPlatformAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Android'**
+  String get aboutPlatformAndroid;
+
+  /// No description provided for @aboutPlatformIos.
+  ///
+  /// In en, this message translates to:
+  /// **'iOS'**
+  String get aboutPlatformIos;
+
+  /// No description provided for @aboutPlatformLinux.
+  ///
+  /// In en, this message translates to:
+  /// **'Linux'**
+  String get aboutPlatformLinux;
+
+  /// No description provided for @aboutPlatformMacos.
+  ///
+  /// In en, this message translates to:
+  /// **'macOS'**
+  String get aboutPlatformMacos;
+
+  /// No description provided for @aboutPlatformWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows'**
+  String get aboutPlatformWindows;
+
+  /// No description provided for @aboutPlatformFuchsia.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuchsia'**
+  String get aboutPlatformFuchsia;
+
+  /// No description provided for @aboutCapabilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Capabilities'**
+  String get aboutCapabilities;
+
+  /// No description provided for @aboutCapabilityDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Customizable flight instrument dashboard'**
+  String get aboutCapabilityDashboard;
+
+  /// No description provided for @aboutCapabilityVario.
+  ///
+  /// In en, this message translates to:
+  /// **'Live vario audio and altitude announcements'**
+  String get aboutCapabilityVario;
+
+  /// No description provided for @aboutCapabilitySensors.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth and built-in sensor input'**
+  String get aboutCapabilitySensors;
+
+  /// No description provided for @aboutCapabilityMapping.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS mapping, offline maps, and airspace'**
+  String get aboutCapabilityMapping;
+
+  /// No description provided for @aboutCapabilityFlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight recording, analysis, sharing, and export'**
+  String get aboutCapabilityFlights;
+
+  /// No description provided for @aboutCapabilityIntegrations.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional XContest live tracking and ASFC account support'**
+  String get aboutCapabilityIntegrations;
+
+  /// No description provided for @aboutOpenSourceLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-source licenses'**
+  String get aboutOpenSourceLicenses;
+
+  /// No description provided for @aboutOpenSourceLicensesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View licenses for this app and its dependencies'**
+  String get aboutOpenSourceLicensesSubtitle;
+
+  /// No description provided for @aboutLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading app details…'**
+  String get aboutLoading;
+
   /// No description provided for @preferencesSectionAccountFlight.
   ///
   /// In en, this message translates to:

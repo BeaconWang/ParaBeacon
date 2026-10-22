@@ -45,6 +45,88 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferences => 'Preferences';
 
   @override
+  String get about => 'About';
+
+  @override
+  String get aboutSubtitle => 'App details, version, and licenses';
+
+  @override
+  String get aboutDescription =>
+      'A cross-platform paraglider flight assistant with live vario audio, BLE sensors, mapping, and flight logging.';
+
+  @override
+  String get aboutApplicationDetails => 'Application details';
+
+  @override
+  String get aboutVersion => 'Version';
+
+  @override
+  String get aboutBuildNumber => 'Build number';
+
+  @override
+  String get aboutPackageId => 'Package ID';
+
+  @override
+  String get aboutPlatform => 'Platform';
+
+  @override
+  String get aboutPlatformWeb => 'Web';
+
+  @override
+  String get aboutPlatformAndroid => 'Android';
+
+  @override
+  String get aboutPlatformIos => 'iOS';
+
+  @override
+  String get aboutPlatformLinux => 'Linux';
+
+  @override
+  String get aboutPlatformMacos => 'macOS';
+
+  @override
+  String get aboutPlatformWindows => 'Windows';
+
+  @override
+  String get aboutPlatformFuchsia => 'Fuchsia';
+
+  @override
+  String get aboutCapabilities => 'Capabilities';
+
+  @override
+  String get aboutCapabilityDashboard =>
+      'Customizable flight instrument dashboard';
+
+  @override
+  String get aboutCapabilityVario =>
+      'Live vario audio and altitude announcements';
+
+  @override
+  String get aboutCapabilitySensors => 'Bluetooth and built-in sensor input';
+
+  @override
+  String get aboutCapabilityMapping =>
+      'GPS mapping, offline maps, and airspace';
+
+  @override
+  String get aboutCapabilityFlights =>
+      'Flight recording, analysis, sharing, and export';
+
+  @override
+  String get aboutCapabilityIntegrations =>
+      'Optional XContest live tracking and ASFC account support';
+
+  @override
+  String get aboutOpenSourceLicenses => 'Open-source licenses';
+
+  @override
+  String get aboutOpenSourceLicensesSubtitle =>
+      'View licenses for this app and its dependencies';
+
+  @override
+  String get aboutLoading => 'Loading app details…';
+
+  @override
   String get preferencesSectionAccountFlight => 'Accounts & flight';
 
   @override

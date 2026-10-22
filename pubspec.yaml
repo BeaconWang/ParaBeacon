@@ -114,6 +114,9 @@ dependencies:
   # Status Line widget. Degrades gracefully on platforms without a battery.
   battery_plus: ^6.0.1
 
+  # Read the installed app's name, version, build number, and package ID for About.
+  package_info_plus: ^9.0.1
+
   # Flights feature — export / import / reporting.
   # share_plus: share exported files (GPX / IGC / PDF / .pbflights.zip) via the
   #   platform share sheet. archive: zip the whole flight library into a single

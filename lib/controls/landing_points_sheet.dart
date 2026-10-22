@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/landing_point_store.dart';
 import '../l10n/app_localizations.dart';
 import 'landing_point_editor.dart';
+import 'map_control.dart';
 
 Future<void> showLandingPointsSheet(BuildContext context) async {
   await LandingPointStore.instance.load();
@@ -38,7 +40,85 @@ class _LandingPointsSheet extends StatelessWidget {
       gpsAccuracyM: data.gpsAccuracy,
       capturedAt: data.gpsTimestamp ?? data.timestamp,
     );
-    if (point != null) await LandingPointStore.instance.add(point);
+    if (point == null || !context.mounted) return;
+    await _savePoint(context, point);
+  }
+
+  Future<void> _addFromMap(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final position = await showDialog<LatLng>(
+      context: context,
+      builder: (dialogContext) {
+        final size = MediaQuery.sizeOf(dialogContext);
+        return AlertDialog(
+          title: Text(l10n.landingPointPickMapTitle),
+          content: SizedBox(
+            width: size.width * 0.8,
+            height: size.height * 0.58,
+            child: Column(
+              children: [
+                Text(l10n.landingPointPickPrompt),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: MapControl(
+                      active: true,
+                      follow: false,
+                      initialZoom: 13,
+                      showTrack: false,
+                      showThermal: false,
+                      showAirspace: false,
+                      showWind: false,
+                      showSun: false,
+                      showBearing: false,
+                      showTakeoffLine: false,
+                      showTakeoffPoint: false,
+                      showLandingPoints: false,
+                      showDefaultLandingLine: false,
+                      showLastLandingLine: false,
+                      showScale: false,
+                      showLegend: false,
+                      showZoomLevel: false,
+                      showAttribution: false,
+                      showStatus: false,
+                      onMapTap: (point) =>
+                          Navigator.of(dialogContext).pop(point),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.cancel),
+            ),
+          ],
+        );
+      },
+    );
+    if (position == null || !context.mounted) return;
+    final point = await showLandingPointEditorDialog(
+      context,
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+    if (point == null || !context.mounted) return;
+    await _savePoint(context, point);
+  }
+
+  Future<void> _savePoint(BuildContext context, LandingPoint point) async {
+    await LandingPointStore.instance.add(point);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${point.name} · ${AppLocalizations.of(context).landingPointSaved}',
+        ),
+      ),
+    );
   }
 
   bool _hasValidFix(FlightData data) =>
@@ -81,6 +161,15 @@ class _LandingPointsSheet extends StatelessWidget {
                   onPressed: () => _addCurrent(context),
                   icon: const Icon(Icons.my_location),
                   label: Text(l10n.landingPointAddCurrent),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _addFromMap(context),
+                  icon: const Icon(Icons.map_outlined),
+                  label: Text(l10n.landingPointPickMapTitle),
                 ),
               ),
               const SizedBox(height: 8),

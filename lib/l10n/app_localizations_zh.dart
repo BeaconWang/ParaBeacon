@@ -2150,6 +2150,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingPointDelete => '删除降落点';
 
   @override
+  String get landingPointPickMapTitle => '在地图上选择位置';
+
+  @override
   String get landingPointPickPrompt => '请在地图上点选降落点位置。';
 
   @override
@@ -2157,9 +2160,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mapTakeoffLabel => '起飞点';
-
-  @override
-  String get mapAddLandingPointTooltip => '在地图上添加降落点';
 
   @override
   String get dataMonitorTitle => '数据监视器';

@@ -773,10 +773,10 @@
   "landingPointSetDefault": "设为默认降落点",
   "landingPointUseAsLast": "设为最近降落点",
   "landingPointDelete": "删除降落点",
+  "landingPointPickMapTitle": "在地图上选择位置",
   "landingPointPickPrompt": "请在地图上点选降落点位置。",
   "landingPointSaved": "降落点已保存",
   "mapTakeoffLabel": "起飞点",
-  "mapAddLandingPointTooltip": "在地图上添加降落点",
 
   "dataMonitorTitle": "数据监视器",
   "dataMonitorMinimize": "最小化数据监视器",

@@ -2232,6 +2232,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointDelete => 'Delete landing point';
 
   @override
+  String get landingPointPickMapTitle => 'Choose location on map';
+
+  @override
   String get landingPointPickPrompt =>
       'Tap the map to choose a landing point location.';
 
@@ -2240,9 +2243,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapTakeoffLabel => 'Take-off';
-
-  @override
-  String get mapAddLandingPointTooltip => 'Add a landing point from the map';
 
   @override
   String get dataMonitorTitle => 'Data Monitor';

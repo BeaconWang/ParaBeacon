@@ -23,7 +23,6 @@ import '../data/vario_color_scale.dart';
 import '../data/wind_estimator.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
-import 'landing_point_editor.dart';
 
 String _formatMapNumber(
   double value,
@@ -241,6 +240,10 @@ class MapControl extends StatefulWidget {
   /// controls, matching the rest of the dashboard.
   final bool active;
 
+  /// Reports a tapped map location in WGS-84. Consumers decide how to use it;
+  /// MapControl never creates or persists landing points.
+  final ValueChanged<LatLng>? onMapTap;
+
   const MapControl({
     super.key,
     this.initialZoom = 17.0,
@@ -276,6 +279,7 @@ class MapControl extends StatefulWidget {
     this.showAttribution = true,
     this.showStatus = true,
     this.active = false,
+    this.onMapTap,
   });
 
   @override
@@ -323,7 +327,6 @@ class _MapControlState extends State<MapControl> {
   /// Whether the map is currently following the aircraft. Turned off when the
   /// user pans/zooms manually, restored by the re-center button.
   late bool _follow = widget.follow;
-  bool _pickingLandingPoint = false;
 
   /// Whether the map widget has been laid out and is ready for programmatic
   /// moves (calling [MapController.move] before the first frame throws).
@@ -543,40 +546,16 @@ class _MapControlState extends State<MapControl> {
     return LatLng(p[0], p[1]);
   }
 
-  bool get _offlineActive => OfflineTilesService.instance.isActive;
-
-  Future<void> _savePickedLandingPoint(
-    LatLng tilePosition,
-    FlightData data,
-  ) async {
-    setState(() => _pickingLandingPoint = false);
-    final source = MapTileSources.byId(widget.tileSource);
-    final converted = _offlineActive || !source.requiresGcjShift
-        ? null
-        : Gcj02.gcjToWgs(tilePosition.latitude, tilePosition.longitude);
-    final wgs = converted == null
-        ? tilePosition
-        : LatLng(converted[0], converted[1]);
-    final altitude =
-        data.gpsAltitude ??
-        data.baroAltitude ??
-        (data.hasFix ? data.altitude : null);
-    final point = await showLandingPointEditorDialog(
-      context,
-      latitude: wgs.latitude,
-      longitude: wgs.longitude,
-      altitudeM: altitude,
-      gpsAccuracyM: data.gpsAccuracy,
-      capturedAt: data.gpsTimestamp ?? data.timestamp,
-    );
-    if (point == null || !mounted) return;
-    await LandingPointStore.instance.add(point);
-    if (!mounted) return;
-    final savedLabel = AppLocalizations.of(context).landingPointSaved;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('${point.name} · $savedLabel')));
+  /// Converts a tapped tile coordinate back to WGS-84 for the caller.
+  LatLng _unshift(LatLng mapPosition, String sourceId) {
+    if (_offlineActive) return mapPosition;
+    final source = MapTileSources.byId(sourceId);
+    if (!source.requiresGcjShift) return mapPosition;
+    final wgs = Gcj02.gcjToWgs(mapPosition.latitude, mapPosition.longitude);
+    return LatLng(wgs[0], wgs[1]);
   }
+
+  bool get _offlineActive => OfflineTilesService.instance.isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -745,11 +724,10 @@ class _MapControlState extends State<MapControl> {
                 initialZoom: widget.initialZoom,
                 minZoom: 2,
                 maxZoom: src.maxZoom,
-                onTap: (tapPosition, point) {
-                  if (_pickingLandingPoint) {
-                    _savePickedLandingPoint(point, data);
-                  }
-                },
+                onTap: widget.onMapTap == null
+                    ? null
+                    : (tapPosition, point) =>
+                          widget.onMapTap!(_unshift(point, widget.tileSource)),
                 // Transparent when there is no basemap so the grid overlay
                 // floats over the dashboard; otherwise keep flutter_map's
                 // default opaque grey tile backdrop.
@@ -995,25 +973,6 @@ class _MapControlState extends State<MapControl> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _MapButton(
-                    icon: _pickingLandingPoint
-                        ? Icons.close
-                        : Icons.add_location_alt_outlined,
-                    tooltip: _pickingLandingPoint
-                        ? l10n.cancel
-                        : l10n.mapAddLandingPointTooltip,
-                    onTap: () {
-                      setState(
-                        () => _pickingLandingPoint = !_pickingLandingPoint,
-                      );
-                      if (_pickingLandingPoint) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(l10n.landingPointPickPrompt)),
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 8),
                   if (_rotationDeg.abs() > 0.5) ...[
                     _CompassButton(
                       rotationDeg: _rotationDeg,

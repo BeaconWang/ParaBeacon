@@ -848,10 +848,10 @@
   "landingPointSetDefault": "Set as default landing point",
   "landingPointUseAsLast": "Use as last landing point",
   "landingPointDelete": "Delete landing point",
+  "landingPointPickMapTitle": "Choose location on map",
   "landingPointPickPrompt": "Tap the map to choose a landing point location.",
   "landingPointSaved": "Landing point saved",
   "mapTakeoffLabel": "Take-off",
-  "mapAddLandingPointTooltip": "Add a landing point from the map",
 
   "dataMonitorTitle": "Data Monitor",
   "dataMonitorMinimize": "Minimize data monitor",

@@ -4274,6 +4274,12 @@ abstract class AppLocalizations {
   /// **'Delete landing point'**
   String get landingPointDelete;
 
+  /// No description provided for @landingPointPickMapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose location on map'**
+  String get landingPointPickMapTitle;
+
   /// No description provided for @landingPointPickPrompt.
   ///
   /// In en, this message translates to:
@@ -4291,12 +4297,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Take-off'**
   String get mapTakeoffLabel;
-
-  /// No description provided for @mapAddLandingPointTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a landing point from the map'**
-  String get mapAddLandingPointTooltip;
 
   /// No description provided for @dataMonitorTitle.
   ///

@@ -120,6 +120,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutLoading => '正在加载应用详情…';
 
   @override
+  String get aboutSphereTitle => '交互式信息球体';
+
+  @override
+  String get aboutSphereHint => '拖动即可旋转 · 球体也会缓慢自动转动';
+
+  @override
+  String get aboutSphereSemantics => '可交互的 3D 信息球体。';
+
+  @override
   String get preferencesSectionAccountFlight => '账户与飞行';
 
   @override

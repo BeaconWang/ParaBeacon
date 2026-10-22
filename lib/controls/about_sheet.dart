@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../l10n/app_localizations.dart';
+import 'about_info_sphere.dart';
 
 Future<void> showAboutSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -110,6 +111,32 @@ class _AboutSheetState extends State<_AboutSheet> {
                       l10n.aboutDescription,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      l10n.aboutSphereTitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    AboutInfoSphere(
+                      labels: const [
+                        '师父：炉头',
+                        '涂君',
+                        '刘登科',
+                        '李永林',
+                        '中奇',
+                        '十一',
+                      ],
+                      semanticsLabel: l10n.aboutSphereSemantics,
+                      dragHint: l10n.aboutSphereHint,
+                    ),
+                    Text(
+                      l10n.aboutSphereHint,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),

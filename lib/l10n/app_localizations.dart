@@ -320,6 +320,24 @@ abstract class AppLocalizations {
   /// **'Loading app details…'**
   String get aboutLoading;
 
+  /// No description provided for @aboutSphereTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Interactive information sphere'**
+  String get aboutSphereTitle;
+
+  /// No description provided for @aboutSphereHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to rotate · it spins slowly on its own'**
+  String get aboutSphereHint;
+
+  /// No description provided for @aboutSphereSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Interactive 3D sphere displaying information.'**
+  String get aboutSphereSemantics;
+
   /// No description provided for @preferencesSectionAccountFlight.
   ///
   /// In en, this message translates to:

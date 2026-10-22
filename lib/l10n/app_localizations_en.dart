@@ -127,6 +127,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutLoading => 'Loading app details…';
 
   @override
+  String get aboutSphereTitle => 'Interactive information sphere';
+
+  @override
+  String get aboutSphereHint => 'Drag to rotate · it spins slowly on its own';
+
+  @override
+  String get aboutSphereSemantics =>
+      'Interactive 3D sphere displaying information.';
+
+  @override
   String get preferencesSectionAccountFlight => 'Accounts & flight';
 
   @override

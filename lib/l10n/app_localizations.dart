@@ -4082,6 +4082,222 @@ abstract class AppLocalizations {
   /// **'Show HDG/ALT & GPS status'**
   String get settingShowStatus;
 
+  /// No description provided for @settingShowTakeoffPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show take-off point'**
+  String get settingShowTakeoffPoint;
+
+  /// No description provided for @settingShowLandingPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Show landing points'**
+  String get settingShowLandingPoints;
+
+  /// No description provided for @settingShowDefaultLandingLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Show line to default landing point'**
+  String get settingShowDefaultLandingLine;
+
+  /// No description provided for @settingShowLastLandingLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Show line to last landing point'**
+  String get settingShowLastLandingLine;
+
+  /// No description provided for @settingTakeoffPointColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Take-off marker color'**
+  String get settingTakeoffPointColor;
+
+  /// No description provided for @settingDefaultLandingPointColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Default landing marker color'**
+  String get settingDefaultLandingPointColor;
+
+  /// No description provided for @settingLastLandingPointColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Last landing marker color'**
+  String get settingLastLandingPointColor;
+
+  /// No description provided for @settingTakeoffLineColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Take-off line color'**
+  String get settingTakeoffLineColor;
+
+  /// No description provided for @settingDefaultLandingLineColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Default landing line color'**
+  String get settingDefaultLandingLineColor;
+
+  /// No description provided for @settingLastLandingLineColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Last landing line color'**
+  String get settingLastLandingLineColor;
+
+  /// No description provided for @landingPointsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing points'**
+  String get landingPointsTitle;
+
+  /// No description provided for @landingPointsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage saved landing destinations and the default target.'**
+  String get landingPointsSubtitle;
+
+  /// No description provided for @landingPointsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No landing points saved yet. Add your current location or pick a point on the map.'**
+  String get landingPointsEmpty;
+
+  /// No description provided for @landingPointAddCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Add current location'**
+  String get landingPointAddCurrent;
+
+  /// No description provided for @landingPointNoGpsFix.
+  ///
+  /// In en, this message translates to:
+  /// **'A valid GPS fix is required to save the current location.'**
+  String get landingPointNoGpsFix;
+
+  /// No description provided for @landingPointAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add landing point'**
+  String get landingPointAddTitle;
+
+  /// No description provided for @landingPointName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get landingPointName;
+
+  /// No description provided for @landingPointCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS coordinates'**
+  String get landingPointCoordinates;
+
+  /// No description provided for @landingPointAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get landingPointAltitude;
+
+  /// No description provided for @landingPointNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name for this landing point.'**
+  String get landingPointNameRequired;
+
+  /// No description provided for @landingPointAltitudeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid altitude between -12,000 and 100,000 m.'**
+  String get landingPointAltitudeInvalid;
+
+  /// No description provided for @landingPointGpsAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS accuracy'**
+  String get landingPointGpsAccuracy;
+
+  /// No description provided for @landingPointCapturedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Location captured'**
+  String get landingPointCapturedAt;
+
+  /// No description provided for @landingPointNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get landingPointNotes;
+
+  /// No description provided for @landingPointSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save landing point'**
+  String get landingPointSave;
+
+  /// No description provided for @landingPointDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get landingPointDefault;
+
+  /// No description provided for @landingPointLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Last selected'**
+  String get landingPointLast;
+
+  /// No description provided for @landingPointActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing point actions'**
+  String get landingPointActions;
+
+  /// No description provided for @landingPointClearDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear default landing point'**
+  String get landingPointClearDefault;
+
+  /// No description provided for @landingPointSetDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as default landing point'**
+  String get landingPointSetDefault;
+
+  /// No description provided for @landingPointUseAsLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as last landing point'**
+  String get landingPointUseAsLast;
+
+  /// No description provided for @landingPointDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete landing point'**
+  String get landingPointDelete;
+
+  /// No description provided for @landingPointPickPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map to choose a landing point location.'**
+  String get landingPointPickPrompt;
+
+  /// No description provided for @landingPointSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing point saved'**
+  String get landingPointSaved;
+
+  /// No description provided for @mapTakeoffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Take-off'**
+  String get mapTakeoffLabel;
+
+  /// No description provided for @mapAddLandingPointTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a landing point from the map'**
+  String get mapAddLandingPointTooltip;
+
   /// No description provided for @dataMonitorTitle.
   ///
   /// In en, this message translates to:

@@ -238,6 +238,26 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowBearing;
     case 'showTakeoffLine':
       return l10n.settingShowTakeoffLine;
+    case 'showTakeoffPoint':
+      return l10n.settingShowTakeoffPoint;
+    case 'showLandingPoints':
+      return l10n.settingShowLandingPoints;
+    case 'showDefaultLandingLine':
+      return l10n.settingShowDefaultLandingLine;
+    case 'showLastLandingLine':
+      return l10n.settingShowLastLandingLine;
+    case 'takeoffPointColor':
+      return l10n.settingTakeoffPointColor;
+    case 'defaultLandingPointColor':
+      return l10n.settingDefaultLandingPointColor;
+    case 'lastLandingPointColor':
+      return l10n.settingLastLandingPointColor;
+    case 'takeoffLineColor':
+      return l10n.settingTakeoffLineColor;
+    case 'defaultLandingLineColor':
+      return l10n.settingDefaultLandingLineColor;
+    case 'lastLandingLineColor':
+      return l10n.settingLastLandingLineColor;
     case 'showScale':
       return l10n.settingShowScale;
     case 'showAirspace':
@@ -962,6 +982,62 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'showTakeoffLine',
       label: 'Show line to take-off',
       defaultValue: false,
+    ),
+    ControlSetting.toggle(
+      key: 'showTakeoffPoint',
+      label: 'Show take-off point',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showLandingPoints',
+      label: 'Show landing points',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showDefaultLandingLine',
+      label: 'Show line to default landing point',
+      defaultValue: false,
+    ),
+    ControlSetting.toggle(
+      key: 'showLastLandingLine',
+      label: 'Show line to last landing point',
+      defaultValue: false,
+    ),
+    ControlSetting.color(
+      key: 'takeoffPointColor',
+      label: 'Take-off marker color',
+      defaultValue: 0xFF43A047,
+      palette: [0, 0xFF43A047, 0xFF2196F3, 0xFFFF9800, 0xFFE91E63],
+    ),
+    ControlSetting.color(
+      key: 'defaultLandingPointColor',
+      label: 'Default landing marker color',
+      defaultValue: 0xFFF44336,
+      palette: [0, 0xFFF44336, 0xFF43A047, 0xFF2196F3, 0xFFFF9800],
+    ),
+    ControlSetting.color(
+      key: 'lastLandingPointColor',
+      label: 'Last landing marker color',
+      defaultValue: 0xFF9C27B0,
+      palette: [0, 0xFF9C27B0, 0xFF673AB7, 0xFF2196F3, 0xFFFF9800],
+    ),
+    ControlSetting.color(
+      key: 'takeoffLineColor',
+      label: 'Take-off line color',
+      defaultValue: 0xFFE040FB,
+      palette: [0, 0xFFE040FB, 0xFF43A047, 0xFF2196F3, 0xFFFF9800],
+    ),
+    ControlSetting.color(
+      key: 'defaultLandingLineColor',
+      label: 'Default landing line color',
+      defaultValue: 0xFFF44336,
+      palette: [0, 0xFFF44336, 0xFF43A047, 0xFF2196F3, 0xFFFF9800],
+    ),
+    ControlSetting.color(
+      key: 'lastLandingLineColor',
+      label: 'Last landing line color',
+      defaultValue: 0xFF9C27B0,
+      palette: [0, 0xFF9C27B0, 0xFF673AB7, 0xFF2196F3, 0xFFFF9800],
     ),
     ControlSetting.toggle(
       key: 'showScale',

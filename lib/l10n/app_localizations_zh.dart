@@ -2054,6 +2054,114 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowStatus => '显示航向/高度与 GPS 状态';
 
   @override
+  String get settingShowTakeoffPoint => '显示起飞点';
+
+  @override
+  String get settingShowLandingPoints => '显示降落点';
+
+  @override
+  String get settingShowDefaultLandingLine => '显示到默认降落点的连线';
+
+  @override
+  String get settingShowLastLandingLine => '显示到最近降落点的连线';
+
+  @override
+  String get settingTakeoffPointColor => '起飞点标记颜色';
+
+  @override
+  String get settingDefaultLandingPointColor => '默认降落点标记颜色';
+
+  @override
+  String get settingLastLandingPointColor => '最近降落点标记颜色';
+
+  @override
+  String get settingTakeoffLineColor => '起飞点连线颜色';
+
+  @override
+  String get settingDefaultLandingLineColor => '默认降落点连线颜色';
+
+  @override
+  String get settingLastLandingLineColor => '最近降落点连线颜色';
+
+  @override
+  String get landingPointsTitle => '降落点';
+
+  @override
+  String get landingPointsSubtitle => '管理已保存的降落目的地和默认目标。';
+
+  @override
+  String get landingPointsEmpty => '尚未保存降落点。可以添加当前位置，或在地图上选择位置。';
+
+  @override
+  String get landingPointAddCurrent => '添加当前位置';
+
+  @override
+  String get landingPointNoGpsFix => '需要有效的 GPS 定位才能保存当前位置。';
+
+  @override
+  String get landingPointAddTitle => '添加降落点';
+
+  @override
+  String get landingPointName => '名称';
+
+  @override
+  String get landingPointCoordinates => 'GPS 坐标';
+
+  @override
+  String get landingPointAltitude => '海拔';
+
+  @override
+  String get landingPointNameRequired => '请输入降落点名称。';
+
+  @override
+  String get landingPointAltitudeInvalid => '请输入 -12,000 至 100,000 米之间的有效海拔。';
+
+  @override
+  String get landingPointGpsAccuracy => 'GPS 精度';
+
+  @override
+  String get landingPointCapturedAt => '定位时间';
+
+  @override
+  String get landingPointNotes => '备注';
+
+  @override
+  String get landingPointSave => '保存降落点';
+
+  @override
+  String get landingPointDefault => '默认';
+
+  @override
+  String get landingPointLast => '最近选择';
+
+  @override
+  String get landingPointActions => '降落点操作';
+
+  @override
+  String get landingPointClearDefault => '清除默认降落点';
+
+  @override
+  String get landingPointSetDefault => '设为默认降落点';
+
+  @override
+  String get landingPointUseAsLast => '设为最近降落点';
+
+  @override
+  String get landingPointDelete => '删除降落点';
+
+  @override
+  String get landingPointPickPrompt => '请在地图上点选降落点位置。';
+
+  @override
+  String get landingPointSaved => '降落点已保存';
+
+  @override
+  String get mapTakeoffLabel => '起飞点';
+
+  @override
+  String get mapAddLandingPointTooltip => '在地图上添加降落点';
+
+  @override
   String get dataMonitorTitle => '数据监视器';
 
   @override

@@ -13,6 +13,8 @@ import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
+import '../data/landing_point_store.dart';
+import '../data/takeoff_reference.dart';
 import '../data/offline_tiles_service.dart';
 import '../data/map_tile_cache.dart';
 import '../data/solar_position.dart';
@@ -21,6 +23,7 @@ import '../data/vario_color_scale.dart';
 import '../data/wind_estimator.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
+import 'landing_point_editor.dart';
 
 String _formatMapNumber(
   double value,
@@ -206,6 +209,17 @@ class MapControl extends StatefulWidget {
   /// point (the first fixed sample of the in-progress flight).
   final bool showTakeoffLine;
 
+  final bool showTakeoffPoint;
+  final bool showLandingPoints;
+  final bool showDefaultLandingLine;
+  final bool showLastLandingLine;
+  final Color takeoffPointColor;
+  final Color defaultLandingPointColor;
+  final Color lastLandingPointColor;
+  final Color takeoffLineColor;
+  final Color defaultLandingLineColor;
+  final Color lastLandingLineColor;
+
   /// Draw the ground-distance scale ruler (bottom-left).
   final bool showScale;
 
@@ -246,6 +260,16 @@ class MapControl extends StatefulWidget {
     this.showSun = false,
     this.showBearing = false,
     this.showTakeoffLine = false,
+    this.showTakeoffPoint = true,
+    this.showLandingPoints = true,
+    this.showDefaultLandingLine = false,
+    this.showLastLandingLine = false,
+    this.takeoffPointColor = const Color(0xFF43A047),
+    this.defaultLandingPointColor = const Color(0xFFF44336),
+    this.lastLandingPointColor = const Color(0xFF9C27B0),
+    this.takeoffLineColor = const Color(0xFFE040FB),
+    this.defaultLandingLineColor = const Color(0xFFF44336),
+    this.lastLandingLineColor = const Color(0xFF9C27B0),
     this.showScale = true,
     this.showLegend = false,
     this.showZoomLevel = true,
@@ -299,6 +323,7 @@ class _MapControlState extends State<MapControl> {
   /// Whether the map is currently following the aircraft. Turned off when the
   /// user pans/zooms manually, restored by the re-center button.
   late bool _follow = widget.follow;
+  bool _pickingLandingPoint = false;
 
   /// Whether the map widget has been laid out and is ready for programmatic
   /// moves (calling [MapController.move] before the first frame throws).
@@ -358,6 +383,8 @@ class _MapControlState extends State<MapControl> {
     // the recorder appends new track points.
     OfflineTilesService.instance.revision.addListener(_onExternalChange);
     FlightRecorder.instance.addListener(_onExternalChange);
+    LandingPointStore.instance.addListener(_onExternalChange);
+    TakeoffReference.instance.addListener(_onExternalChange);
     // Recolour the track/legend when the vario thresholds change.
     VarioSoundSettings.instance.addListener(_onThresholdsChanged);
     // React to the debug simulator being toggled on/off: when it turns on the
@@ -426,6 +453,8 @@ class _MapControlState extends State<MapControl> {
     _airspaceSub?.cancel();
     OfflineTilesService.instance.revision.removeListener(_onExternalChange);
     FlightRecorder.instance.removeListener(_onExternalChange);
+    LandingPointStore.instance.removeListener(_onExternalChange);
+    TakeoffReference.instance.removeListener(_onExternalChange);
     VarioSoundSettings.instance.removeListener(_onThresholdsChanged);
     DebugSettings.instance.removeListener(_onExternalChange);
     super.dispose();
@@ -516,6 +545,39 @@ class _MapControlState extends State<MapControl> {
 
   bool get _offlineActive => OfflineTilesService.instance.isActive;
 
+  Future<void> _savePickedLandingPoint(
+    LatLng tilePosition,
+    FlightData data,
+  ) async {
+    setState(() => _pickingLandingPoint = false);
+    final source = MapTileSources.byId(widget.tileSource);
+    final converted = _offlineActive || !source.requiresGcjShift
+        ? null
+        : Gcj02.gcjToWgs(tilePosition.latitude, tilePosition.longitude);
+    final wgs = converted == null
+        ? tilePosition
+        : LatLng(converted[0], converted[1]);
+    final altitude =
+        data.gpsAltitude ??
+        data.baroAltitude ??
+        (data.hasFix ? data.altitude : null);
+    final point = await showLandingPointEditorDialog(
+      context,
+      latitude: wgs.latitude,
+      longitude: wgs.longitude,
+      altitudeM: altitude,
+      gpsAccuracyM: data.gpsAccuracy,
+      capturedAt: data.gpsTimestamp ?? data.timestamp,
+    );
+    if (point == null || !mounted) return;
+    await LandingPointStore.instance.add(point);
+    if (!mounted) return;
+    final savedLabel = AppLocalizations.of(context).landingPointSaved;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${point.name} · $savedLabel')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -590,6 +652,87 @@ class _MapControlState extends State<MapControl> {
     // the overlays on a transparent background, so the dashboard/theme behind
     // the map shows through instead of flutter_map's default opaque grey fill.
     final bool blankBasemap = src.isNone && !_offlineActive;
+    final landingStore = LandingPointStore.instance;
+    final defaultLanding = landingStore.defaultPoint;
+    final lastLanding = landingStore.lastPoint;
+    final lastIsDifferent =
+        lastLanding != null && lastLanding.id != defaultLanding?.id;
+    final defaultLandingPos = defaultLanding == null
+        ? null
+        : _shift(
+            LatLng(defaultLanding.latitude, defaultLanding.longitude),
+            widget.tileSource,
+          );
+    final lastLandingPos = lastIsDifferent
+        ? _shift(
+            LatLng(lastLanding.latitude, lastLanding.longitude),
+            widget.tileSource,
+          )
+        : null;
+    final takeoff = TakeoffReference.instance.point;
+    final takeoffPos = takeoff?.latitude != null && takeoff?.longitude != null
+        ? _shift(
+            LatLng(takeoff!.latitude!, takeoff.longitude!),
+            widget.tileSource,
+          )
+        : null;
+    final connectionLines = <Polyline>[];
+    if (hasFix && widget.showTakeoffLine) {
+      final line = _buildTakeoffLine(renderPos, widget.takeoffLineColor);
+      if (line != null) connectionLines.add(line);
+    }
+    if (hasFix && widget.showDefaultLandingLine && defaultLandingPos != null) {
+      connectionLines.add(
+        _buildConnectionLine(
+          renderPos,
+          defaultLandingPos,
+          widget.defaultLandingLineColor,
+        ),
+      );
+    }
+    if (hasFix && widget.showLastLandingLine && lastLandingPos != null) {
+      final color = widget.lastLandingLineColor.withAlpha(
+        (widget.lastLandingLineColor.a * 255 * 0.3).round(),
+      );
+      connectionLines.add(
+        _buildConnectionLine(renderPos, lastLandingPos, color),
+      );
+    }
+    final pointMarkers = <Marker>[
+      if (widget.showTakeoffPoint && takeoffPos != null)
+        Marker(
+          point: takeoffPos,
+          width: 62,
+          height: 64,
+          child: _SavedPointMarker(
+            label: l10n.mapTakeoffLabel,
+            color: widget.takeoffPointColor,
+            heart: true,
+          ),
+        ),
+      if (widget.showLandingPoints && defaultLandingPos != null)
+        Marker(
+          point: defaultLandingPos,
+          width: 70,
+          height: 64,
+          child: _SavedPointMarker(
+            label: defaultLanding!.name,
+            color: widget.defaultLandingPointColor,
+            heart: true,
+          ),
+        ),
+      if (widget.showLandingPoints && lastLandingPos != null)
+        Marker(
+          point: lastLandingPos,
+          width: 70,
+          height: 64,
+          child: _SavedPointMarker(
+            label: lastLanding!.name,
+            color: widget.lastLandingPointColor,
+            heart: false,
+          ),
+        ),
+    ];
 
     return _SuppressPageSwipe(
       child: Stack(
@@ -602,6 +745,11 @@ class _MapControlState extends State<MapControl> {
                 initialZoom: widget.initialZoom,
                 minZoom: 2,
                 maxZoom: src.maxZoom,
+                onTap: (tapPosition, point) {
+                  if (_pickingLandingPoint) {
+                    _savePickedLandingPoint(point, data);
+                  }
+                },
                 // Transparent when there is no basemap so the grid overlay
                 // floats over the dashboard; otherwise keep flutter_map's
                 // default opaque grey tile backdrop.
@@ -655,16 +803,8 @@ class _MapControlState extends State<MapControl> {
                     polylines: [_buildBearingLine(renderPos, heading)],
                   ),
 
-                // Straight line from the current position back to take-off.
-                if (widget.showTakeoffLine && hasFix)
-                  Builder(
-                    builder: (context) {
-                      final line = _buildTakeoffLine(renderPos);
-                      return line == null
-                          ? const SizedBox.shrink()
-                          : PolylineLayer(polylines: [line]);
-                    },
-                  ),
+                if (connectionLines.isNotEmpty)
+                  PolylineLayer(polylines: connectionLines),
 
                 // Recorded flight track coloured by vertical speed.
                 if (widget.showTrack)
@@ -692,6 +832,8 @@ class _MapControlState extends State<MapControl> {
                       ),
                     ],
                   ),
+
+                if (pointMarkers.isNotEmpty) MarkerLayer(markers: pointMarkers),
 
                 // Sun-position marker: a sun glyph placed along its azimuth
                 // bearing from the aircraft, so the pilot can read where the
@@ -853,6 +995,25 @@ class _MapControlState extends State<MapControl> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  _MapButton(
+                    icon: _pickingLandingPoint
+                        ? Icons.close
+                        : Icons.add_location_alt_outlined,
+                    tooltip: _pickingLandingPoint
+                        ? l10n.cancel
+                        : l10n.mapAddLandingPointTooltip,
+                    onTap: () {
+                      setState(
+                        () => _pickingLandingPoint = !_pickingLandingPoint,
+                      );
+                      if (_pickingLandingPoint) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(l10n.landingPointPickPrompt)),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   if (_rotationDeg.abs() > 0.5) ...[
                     _CompassButton(
                       rotationDeg: _rotationDeg,
@@ -1057,7 +1218,7 @@ class _MapControlState extends State<MapControl> {
   /// The take-off point is the first recorded sample that carries a GPS fix.
   /// Its coordinates are GCJ-shifted the same way as the live position so the
   /// line stays anchored to the tiles on AMap sources.
-  Polyline? _buildTakeoffLine(LatLng to) {
+  Polyline? _buildTakeoffLine(LatLng to, Color lineColor) {
     final track = FlightRecorder.instance.currentTrack;
     final samples = track?.samples ?? const [];
     if (samples.isEmpty) return null;
@@ -1080,12 +1241,17 @@ class _MapControlState extends State<MapControl> {
     return Polyline(
       points: [from, to],
       strokeWidth: 2.0 * widget.lineThickness,
-      // Dashed magenta so it reads distinctly from the blue bearing line and
-      // the vario-coloured track.
-      color: const Color(0xFFE040FB),
+      color: lineColor,
       pattern: StrokePattern.dashed(segments: const [8, 6]),
     );
   }
+
+  Polyline _buildConnectionLine(LatLng from, LatLng to, Color color) =>
+      Polyline(
+        points: [from, to],
+        strokeWidth: 2.0 * widget.lineThickness,
+        color: color,
+      );
 
   /// XCTrack's climb→colour ramp (`theme.a.H`): grey (sink) → green (weak
   /// lift) → yellow (~1–2 m/s) → red (strong lift). [fade] ∈ [0,1] drives the
@@ -1584,6 +1750,68 @@ class _AlwaysWinHorizontalDragRecognizer
 
   @override
   String get debugDescription => 'suppressPageSwipe';
+}
+
+class _SavedPointMarker extends StatelessWidget {
+  const _SavedPointMarker({
+    required this.label,
+    required this.color,
+    required this.heart,
+  });
+
+  final String label;
+  final Color color;
+  final bool heart;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black54,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            heart ? Icons.favorite : Icons.circle,
+            size: heart ? 17 : 12,
+            color: Colors.white,
+          ),
+        ),
+        if (label.isNotEmpty)
+          Container(
+            constraints: const BoxConstraints(maxWidth: 68),
+            margin: const EdgeInsets.only(top: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(175),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 /// A north-up map marker: a filled arrow rotated to the current [heading].

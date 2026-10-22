@@ -2131,6 +2131,120 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowStatus => 'Show HDG/ALT & GPS status';
 
   @override
+  String get settingShowTakeoffPoint => 'Show take-off point';
+
+  @override
+  String get settingShowLandingPoints => 'Show landing points';
+
+  @override
+  String get settingShowDefaultLandingLine =>
+      'Show line to default landing point';
+
+  @override
+  String get settingShowLastLandingLine => 'Show line to last landing point';
+
+  @override
+  String get settingTakeoffPointColor => 'Take-off marker color';
+
+  @override
+  String get settingDefaultLandingPointColor => 'Default landing marker color';
+
+  @override
+  String get settingLastLandingPointColor => 'Last landing marker color';
+
+  @override
+  String get settingTakeoffLineColor => 'Take-off line color';
+
+  @override
+  String get settingDefaultLandingLineColor => 'Default landing line color';
+
+  @override
+  String get settingLastLandingLineColor => 'Last landing line color';
+
+  @override
+  String get landingPointsTitle => 'Landing points';
+
+  @override
+  String get landingPointsSubtitle =>
+      'Manage saved landing destinations and the default target.';
+
+  @override
+  String get landingPointsEmpty =>
+      'No landing points saved yet. Add your current location or pick a point on the map.';
+
+  @override
+  String get landingPointAddCurrent => 'Add current location';
+
+  @override
+  String get landingPointNoGpsFix =>
+      'A valid GPS fix is required to save the current location.';
+
+  @override
+  String get landingPointAddTitle => 'Add landing point';
+
+  @override
+  String get landingPointName => 'Name';
+
+  @override
+  String get landingPointCoordinates => 'GPS coordinates';
+
+  @override
+  String get landingPointAltitude => 'Altitude';
+
+  @override
+  String get landingPointNameRequired => 'Enter a name for this landing point.';
+
+  @override
+  String get landingPointAltitudeInvalid =>
+      'Enter a valid altitude between -12,000 and 100,000 m.';
+
+  @override
+  String get landingPointGpsAccuracy => 'GPS accuracy';
+
+  @override
+  String get landingPointCapturedAt => 'Location captured';
+
+  @override
+  String get landingPointNotes => 'Notes';
+
+  @override
+  String get landingPointSave => 'Save landing point';
+
+  @override
+  String get landingPointDefault => 'Default';
+
+  @override
+  String get landingPointLast => 'Last selected';
+
+  @override
+  String get landingPointActions => 'Landing point actions';
+
+  @override
+  String get landingPointClearDefault => 'Clear default landing point';
+
+  @override
+  String get landingPointSetDefault => 'Set as default landing point';
+
+  @override
+  String get landingPointUseAsLast => 'Use as last landing point';
+
+  @override
+  String get landingPointDelete => 'Delete landing point';
+
+  @override
+  String get landingPointPickPrompt =>
+      'Tap the map to choose a landing point location.';
+
+  @override
+  String get landingPointSaved => 'Landing point saved';
+
+  @override
+  String get mapTakeoffLabel => 'Take-off';
+
+  @override
+  String get mapAddLandingPointTooltip => 'Add a landing point from the map';
+
+  @override
   String get dataMonitorTitle => 'Data Monitor';
 
   @override

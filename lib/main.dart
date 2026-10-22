@@ -31,6 +31,7 @@ import 'controls/altitude_announcement_settings_sheet.dart';
 import 'controls/announcement_caption_overlay.dart';
 import 'controls/other_settings_sheet.dart';
 import 'controls/weather_sheet.dart';
+import 'controls/landing_points_sheet.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
 import 'data/device_battery_service.dart';
@@ -44,6 +45,7 @@ import 'data/flight_data_provider.dart';
 import 'data/flight_data_transformer.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
+import 'data/landing_point_store.dart';
 import 'data/takeoff_reference.dart';
 import 'data/gps_flight_data_bridge.dart';
 import 'data/sensors/internal_sensor_service.dart';
@@ -151,6 +153,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // choice from the first fix.
     RecordingSettings.instance.load();
     FlightState.instance.loadSettings();
+    LandingPointStore.instance.load();
     // Load the persisted default units before dashboard controls render.
     UnitSettings.instance.load();
     ShareCardSettings.instance.load();
@@ -963,6 +966,24 @@ class _DashGridPageState extends State<DashGridPage> {
                         ),
                         const Divider(height: 1),
                         sectionHeading(l10n.preferencesSectionMapDisplay),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.place_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.landingPointsTitle),
+                          subtitle: Text(
+                            LandingPointStore.instance.defaultPoint?.name ??
+                                l10n.landingPointsSubtitle,
+                          ),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showLandingPointsSheet(context);
+                            setSheetState(() {});
+                          },
+                        ),
+                        const Divider(height: 1),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(

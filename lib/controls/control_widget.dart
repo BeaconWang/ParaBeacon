@@ -373,6 +373,11 @@ class ControlWidget extends StatelessWidget {
         final source = control.setting('tileSource');
         final rot = control.setting('rotation');
         final windAlg = control.setting('windAlgorithm');
+        Color mapColor(String key, int fallback) {
+          final value = control.intSetting(key, fallback: fallback);
+          return Color(value == 0 ? fallback : value);
+        }
+
         return ClipRRect(
           borderRadius: innerRadius,
           child: MapControl(
@@ -408,6 +413,37 @@ class ControlWidget extends StatelessWidget {
               'showTakeoffLine',
               fallback: false,
             ),
+            showTakeoffPoint: control.boolSetting(
+              'showTakeoffPoint',
+              fallback: true,
+            ),
+            showLandingPoints: control.boolSetting(
+              'showLandingPoints',
+              fallback: true,
+            ),
+            showDefaultLandingLine: control.boolSetting(
+              'showDefaultLandingLine',
+              fallback: false,
+            ),
+            showLastLandingLine: control.boolSetting(
+              'showLastLandingLine',
+              fallback: false,
+            ),
+            takeoffPointColor: mapColor('takeoffPointColor', 0xFF43A047),
+            defaultLandingPointColor: mapColor(
+              'defaultLandingPointColor',
+              0xFFF44336,
+            ),
+            lastLandingPointColor: mapColor(
+              'lastLandingPointColor',
+              0xFF9C27B0,
+            ),
+            takeoffLineColor: mapColor('takeoffLineColor', 0xFFE040FB),
+            defaultLandingLineColor: mapColor(
+              'defaultLandingLineColor',
+              0xFFF44336,
+            ),
+            lastLandingLineColor: mapColor('lastLandingLineColor', 0xFF9C27B0),
             showScale: control.boolSetting('showScale', fallback: true),
             showTrack: control.boolSetting('showTrack', fallback: true),
             showThermal: control.boolSetting('showThermal', fallback: true),

@@ -49,12 +49,12 @@ class RecordingSettings extends ChangeNotifier {
 
   /// Supported automatic-deletion thresholds, in seconds.
   static const List<int> shortFlightThresholdOptions = [30, 60, 120, 300];
-  static const int defaultShortFlightThresholdSeconds = 60;
+  static const int defaultShortFlightThresholdSeconds = 120;
 
   // ── Current values (defaults) ─────────────────────────────────────────────
   RecordingIntervalMode _intervalMode = RecordingIntervalMode.fixed1s;
   RecordingDetail _detail = RecordingDetail.full;
-  bool _autoDeleteShortFlights = false;
+  bool _autoDeleteShortFlights = true;
   int _shortFlightThresholdSeconds = defaultShortFlightThresholdSeconds;
 
   /// The active recording interval mode. Defaults to
@@ -70,11 +70,11 @@ class RecordingSettings extends ChangeNotifier {
   bool get compactSamples => _detail == RecordingDetail.xctrack;
 
   /// Whether completed flights shorter than the configured threshold are
-  /// automatically removed. Defaults to off to avoid unexpected data loss.
+  /// automatically removed. Defaults to on.
   bool get autoDeleteShortFlights => _autoDeleteShortFlights;
 
   /// Minimum duration to keep a completed flight when short-flight cleanup is
-  /// enabled. Defaults to one minute.
+  /// enabled. Defaults to two minutes.
   int get shortFlightThresholdSeconds => _shortFlightThresholdSeconds;
 
   bool _loaded = false;

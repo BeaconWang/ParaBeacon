@@ -9,14 +9,14 @@ import 'package:parabeacon/data/recording_settings.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('short completed flight cleanup is opt-in', () async {
+  test('short completed flight cleanup defaults to two minutes', () async {
     SharedPreferences.setMockInitialValues({});
     final settings = RecordingSettings.instance;
     await settings.load();
-    expect(settings.autoDeleteShortFlights, isFalse);
+    expect(settings.autoDeleteShortFlights, isTrue);
     expect(
       settings.shortFlightThresholdSeconds,
-      RecordingSettings.defaultShortFlightThresholdSeconds,
+      const Duration(minutes: 2).inSeconds,
     );
 
     final recorder = FlightRecorder.instance;
@@ -25,6 +25,11 @@ void main() {
     if (flightState.isFlying) flightState.stop();
     recorder.bind(_EmptyFlightDataView(), flightState: flightState);
 
+    flightState.start();
+    flightState.stop();
+    expect(recorder.tracks, isEmpty);
+
+    settings.setAutoDeleteShortFlights(false);
     flightState.start();
     flightState.stop();
     expect(recorder.tracks, hasLength(1));
@@ -38,7 +43,9 @@ void main() {
     expect(recorder.tracks, [retainedTrack]);
     expect(recorder.lastCompletedTrack, retainedTrack);
     expect(settings.shortFlightThresholdSeconds, 30);
-    settings.setAutoDeleteShortFlights(false);
+    settings.setShortFlightThresholdSeconds(
+      RecordingSettings.defaultShortFlightThresholdSeconds,
+    );
   });
 
   test('existing short records can be counted and deleted in one batch', () {

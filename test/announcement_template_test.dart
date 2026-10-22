@@ -87,7 +87,7 @@ void main() {
         zh,
         values,
       ),
-      '高度：1250',
+      '高度：1250，速度：32',
     );
     expect(
       AnnouncementTemplate.render(
@@ -95,7 +95,7 @@ void main() {
         en,
         values,
       ),
-      'Altitude: 1250',
+      'Altitude: 1250, Speed: 32',
     );
     final record = values.copyWith(maxAltitudeMeters: 1310.4);
     expect(

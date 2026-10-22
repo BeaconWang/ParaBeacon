@@ -122,7 +122,7 @@ class _AboutSheetState extends State<_AboutSheet> {
                     ),
                     const SizedBox(height: 8),
                     AboutInfoSphere(
-                      labels: const ['师父：炉头', '涂君', '刘登科', '李永林', '中奇', '十一'],
+                      labels: const ['师父：炉头', '涂君', '刘登科', '李永林', '中奇', '十一号玩家'],
                       semanticsLabel: l10n.aboutSphereSemantics,
                       dragHint: l10n.aboutSphereHint,
                     ),

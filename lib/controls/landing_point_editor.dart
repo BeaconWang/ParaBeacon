@@ -11,27 +11,88 @@ Future<LandingPoint?> showLandingPointEditorDialog(
   double? gpsAccuracyM,
   DateTime? capturedAt,
 }) {
-  final l10n = AppLocalizations.of(context);
-  final formKey = GlobalKey<FormState>();
-  final nameController = TextEditingController();
-  final notesController = TextEditingController();
-  final altitudeController = TextEditingController(
-    text: altitudeM?.isFinite == true ? altitudeM!.toStringAsFixed(1) : '',
-  );
-
   return showDialog<LandingPoint>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
+    builder: (context) => _LandingPointEditorDialog(
+      latitude: latitude,
+      longitude: longitude,
+      altitudeM: altitudeM,
+      gpsAccuracyM: gpsAccuracyM,
+      capturedAt: capturedAt,
+    ),
+  );
+}
+
+class _LandingPointEditorDialog extends StatefulWidget {
+  const _LandingPointEditorDialog({
+    required this.latitude,
+    required this.longitude,
+    this.altitudeM,
+    this.gpsAccuracyM,
+    this.capturedAt,
+  });
+
+  final double latitude;
+  final double longitude;
+  final double? altitudeM;
+  final double? gpsAccuracyM;
+  final DateTime? capturedAt;
+
+  @override
+  State<_LandingPointEditorDialog> createState() =>
+      _LandingPointEditorDialogState();
+}
+
+class _LandingPointEditorDialogState extends State<_LandingPointEditorDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _notesController = TextEditingController();
+  late final _altitudeController = TextEditingController(
+    text: widget.altitudeM?.isFinite == true
+        ? widget.altitudeM!.toStringAsFixed(1)
+        : '',
+  );
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _notesController.dispose();
+    _altitudeController.dispose();
+    super.dispose();
+  }
+
+  void _save(AppLocalizations l10n) {
+    if (!_formKey.currentState!.validate()) return;
+    final altitudeText = _altitudeController.text.trim();
+    final point = LandingPoint.create(
+      name: _nameController.text,
+      latitude: widget.latitude,
+      longitude: widget.longitude,
+      altitudeM: altitudeText.isEmpty ? null : double.parse(altitudeText),
+      gpsAccuracyM: widget.gpsAccuracyM,
+      createdAt: widget.capturedAt,
+      notes: _notesController.text,
+    );
+    if (point != null) Navigator.of(context).pop(point);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final capturedAt = widget.capturedAt;
+    final gpsAccuracyM = widget.gpsAccuracyM;
+
+    return AlertDialog(
       title: Text(l10n.landingPointAddTitle),
       content: SingleChildScrollView(
         child: Form(
-          key: formKey,
+          key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextFormField(
-                controller: nameController,
+                controller: _nameController,
                 autofocus: true,
                 maxLength: LandingPoint.maxNameLength,
                 textCapitalization: TextCapitalization.sentences,
@@ -46,11 +107,12 @@ Future<LandingPoint?> showLandingPointEditorDialog(
               const SizedBox(height: 12),
               Text(
                 '${l10n.landingPointCoordinates}: '
-                '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
+                '${widget.latitude.toStringAsFixed(6)}, '
+                '${widget.longitude.toStringAsFixed(6)}',
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: altitudeController,
+                controller: _altitudeController,
                 keyboardType: const TextInputType.numberWithOptions(
                   signed: true,
                   decimal: true,
@@ -90,7 +152,7 @@ Future<LandingPoint?> showLandingPointEditorDialog(
               ],
               const SizedBox(height: 12),
               TextField(
-                controller: notesController,
+                controller: _notesController,
                 maxLength: LandingPoint.maxNotesLength,
                 minLines: 2,
                 maxLines: 4,
@@ -106,34 +168,14 @@ Future<LandingPoint?> showLandingPointEditorDialog(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
+          onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.cancel),
         ),
         FilledButton(
-          onPressed: () {
-            if (!formKey.currentState!.validate()) return;
-            final enteredAltitude = altitudeController.text.trim().isEmpty
-                ? null
-                : double.tryParse(altitudeController.text.trim());
-            final point = LandingPoint.create(
-              name: nameController.text,
-              latitude: latitude,
-              longitude: longitude,
-              altitudeM: enteredAltitude,
-              gpsAccuracyM: gpsAccuracyM,
-              createdAt: capturedAt,
-              notes: notesController.text,
-            );
-            if (point == null) return;
-            Navigator.of(dialogContext).pop(point);
-          },
+          onPressed: () => _save(l10n),
           child: Text(l10n.landingPointSave),
         ),
       ],
-    ),
-  ).whenComplete(() {
-    nameController.dispose();
-    notesController.dispose();
-    altitudeController.dispose();
-  });
+    );
+  }
 }

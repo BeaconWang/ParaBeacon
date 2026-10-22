@@ -1171,6 +1171,8 @@
   "altitudeAnnouncementTitle": "Voice announcements",
   "altitudeAnnouncementSubtitle": "Takeoff/landing, glide dead zone and altitude record",
   "altitudeAnnouncementDescription": "Choose which flight events are spoken. Every announcement text can be customized and previewed.",
+  "altitudeAnnouncementVoiceEnabled": "Voice announcements",
+  "altitudeAnnouncementVoiceEnabledDescription": "Turn all automatic voice announcements on or off.",
   "altitudeAnnouncementSectionVoice": "Voice",
   "altitudeAnnouncementSectionTakeoffLanding": "Takeoff & landing",
   "altitudeAnnouncementSectionGlide": "Glide dead zone",

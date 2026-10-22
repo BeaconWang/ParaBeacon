@@ -30,6 +30,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const _kDuckVario = '$_prefix.duckVario';
   static const _kDuckLevel = '$_prefix.duckLevel';
   static const _kSpeechRate = '$_prefix.speechRate';
+  static const _kAnnouncementsEnabled = '$_prefix.voiceEnabled';
   static const _kTakeoffLandingEnabled = '$_prefix.takeoffLanding.enabled';
   static const _kGlideEnabled = '$_prefix.glide.enabled';
   static const _kGlideMinimum = '$_prefix.glide.minimum';
@@ -55,7 +56,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   /// Allowed range for [speechRate] (multiple of the normal speaking speed).
   static const minSpeechRate = AltitudeAnnouncementSpeaker.minRate;
   static const maxSpeechRate = AltitudeAnnouncementSpeaker.maxRate;
-  static const defaultSpeechRate = 2.0;
+  static const defaultSpeechRate = 4.0;
 
   /// Allowed range for [varioDuckLevel] (fraction of normal vario volume kept
   /// while speaking). 0 silences the vario completely during speech.
@@ -88,6 +89,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   bool _duckVario = true;
   double _varioDuckLevel = 0.3;
   double _speechRate = defaultSpeechRate;
+  bool _announcementsEnabled = true;
   bool _takeoffLandingEnabled = true;
   bool _glideEnabled = true;
   double _glideMinimum = defaultGlideMinimum;
@@ -101,6 +103,9 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
 
   /// Speaking speed as a multiple of the normal speed (1.0 = normal).
   double get speechRate => _speechRate;
+
+  /// Master switch for all automatic voice announcements.
+  bool get announcementsEnabled => _announcementsEnabled;
 
   /// Takeoff / landing / continue-flight announcements.
   bool get takeoffLandingEnabled => _takeoffLandingEnabled;
@@ -133,7 +138,8 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
 
   /// Whether any announcement can currently be triggered.
   bool get anyEnabled =>
-      _takeoffLandingEnabled || _glideEnabled || _recordEnabled;
+      _announcementsEnabled &&
+      (_takeoffLandingEnabled || _glideEnabled || _recordEnabled);
 
   /// Whether the vario tone is lowered while an announcement is spoken.
   bool get duckVario => _duckVario;
@@ -172,6 +178,8 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
       if (rate != null && rate.isFinite) {
         _speechRate = rate.clamp(minSpeechRate, maxSpeechRate);
       }
+      _announcementsEnabled =
+          preferences.getBool(_kAnnouncementsEnabled) ?? _announcementsEnabled;
       _takeoffLandingEnabled =
           preferences.getBool(_kTakeoffLandingEnabled) ??
           _takeoffLandingEnabled;
@@ -210,6 +218,13 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
     } catch (_) {
       // Keep defaults if local storage is unavailable.
     }
+    notifyListeners();
+  }
+
+  void setAnnouncementsEnabled(bool enabled) {
+    if (_announcementsEnabled == enabled) return;
+    _announcementsEnabled = enabled;
+    _persistBool(_kAnnouncementsEnabled, enabled);
     notifyListeners();
   }
 

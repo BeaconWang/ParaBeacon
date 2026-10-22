@@ -31,6 +31,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('起飞/降落播报'), findsOneWidget);
+    expect(find.text('开启或关闭所有自动语音播报。'), findsOneWidget);
+    expect(find.byType(SwitchListTile), findsNWidgets(5));
     expect(find.text('死区播报'), findsOneWidget);
     expect(find.text('新的最高高度播报'), findsOneWidget);
     expect(find.textContaining('继续飞行'), findsWidgets);

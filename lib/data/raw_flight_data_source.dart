@@ -78,6 +78,7 @@ class FlightDataOverride {
       verticalSpeed: verticalSpeed,
       altitude: altitude,
       groundSpeed: groundSpeed,
+      hasGroundSpeed: groundSpeed == null ? null : true,
       heading: heading,
       windSpeed: windSpeed,
       windDirection: windDirection,

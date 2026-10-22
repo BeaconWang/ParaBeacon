@@ -2929,6 +2929,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose which flight events are spoken. Every announcement text can be customized and previewed.';
 
   @override
+  String get altitudeAnnouncementVoiceEnabled => 'Voice announcements';
+
+  @override
+  String get altitudeAnnouncementVoiceEnabledDescription =>
+      'Turn all automatic voice announcements on or off.';
+
+  @override
   String get altitudeAnnouncementSectionVoice => 'Voice';
 
   @override

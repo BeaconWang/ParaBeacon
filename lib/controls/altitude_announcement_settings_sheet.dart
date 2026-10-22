@@ -155,6 +155,15 @@ class _AltitudeAnnouncementSettingsSheetState
                   l10n.altitudeAnnouncementDescription,
                   style: theme.textTheme.bodyMedium,
                 ),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.altitudeAnnouncementVoiceEnabled),
+                  subtitle: Text(
+                    l10n.altitudeAnnouncementVoiceEnabledDescription,
+                  ),
+                  value: settings.announcementsEnabled,
+                  onChanged: settings.setAnnouncementsEnabled,
+                ),
                 if (unavailable) ...[
                   const SizedBox(height: 8),
                   _ErrorNote(text: l10n.altitudeAnnouncementUnavailable),
@@ -330,7 +339,7 @@ class _AltitudeAnnouncementSettingsSheetState
                   value: settings.speechRate,
                   min: AltitudeAnnouncementSettings.minSpeechRate,
                   max: AltitudeAnnouncementSettings.maxSpeechRate,
-                  divisions: 35,
+                  divisions: 150,
                   label: '${_formatRate(settings.speechRate)}×',
                   onChanged: settings.setSpeechRate,
                 ),

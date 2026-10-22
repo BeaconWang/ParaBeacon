@@ -5540,6 +5540,18 @@ abstract class AppLocalizations {
   /// **'Choose which flight events are spoken. Every announcement text can be customized and previewed.'**
   String get altitudeAnnouncementDescription;
 
+  /// No description provided for @altitudeAnnouncementVoiceEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice announcements'**
+  String get altitudeAnnouncementVoiceEnabled;
+
+  /// No description provided for @altitudeAnnouncementVoiceEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn all automatic voice announcements on or off.'**
+  String get altitudeAnnouncementVoiceEnabledDescription;
+
   /// No description provided for @altitudeAnnouncementSectionVoice.
   ///
   /// In en, this message translates to:

@@ -1041,6 +1041,8 @@
   "altitudeAnnouncementTitle": "语音播报",
   "altitudeAnnouncementSubtitle": "起飞降落、滑翔死区及刷新高度播报",
   "altitudeAnnouncementDescription": "选择需要语音播报的飞行事件，每条播报内容均可自定义并预览。",
+  "altitudeAnnouncementVoiceEnabled": "语音播报",
+  "altitudeAnnouncementVoiceEnabledDescription": "开启或关闭所有自动语音播报。",
   "altitudeAnnouncementSectionVoice": "语音",
   "altitudeAnnouncementSectionTakeoffLanding": "起飞与降落",
   "altitudeAnnouncementSectionGlide": "滑翔死区",

@@ -2834,6 +2834,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementDescription => '选择需要语音播报的飞行事件，每条播报内容均可自定义并预览。';
 
   @override
+  String get altitudeAnnouncementVoiceEnabled => '语音播报';
+
+  @override
+  String get altitudeAnnouncementVoiceEnabledDescription => '开启或关闭所有自动语音播报。';
+
+  @override
   String get altitudeAnnouncementSectionVoice => '语音';
 
   @override

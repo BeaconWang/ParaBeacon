@@ -36,23 +36,23 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
 
   /// User-facing speech speed range, as a multiple of the normal speed.
   static const minRate = 0.5;
-  static const maxRate = 4.0;
+  static const maxRate = 8.0;
 
   /// Maps a speed multiple (1.0 = normal) to flutter_tts' rate scale, where
   /// 0.5 is the normal speed on every platform.
   ///
   /// * Android (default): the plugin doubles the value into
   ///   `TextToSpeech.setSpeechRate`, which is linear, so `0.5 * multiple`
-  ///   yields the exact multiple (4.0x -> 2.0).
+  ///   yields the exact multiple (8.0x -> 4.0).
   /// * Apple ([apple]): `AVSpeechUtterance.rate` is limited to 0..1 with the
   ///   normal speed at 0.5, so speeds above normal are spread over 0.5..1.0
-  ///   (4.0x -> 1.0, the fastest voice).
+  ///   (8.0x -> 1.0, the fastest voice).
   static double platformRateFor(double multiple, {bool apple = false}) {
     final m = multiple.isFinite ? multiple.clamp(minRate, maxRate) : 1.0;
     if (apple && m > 1.0) {
       return (0.5 + 0.5 * (m - 1.0) / (maxRate - 1.0)).clamp(0.5, 1.0);
     }
-    return (0.5 * m).clamp(0.1, 2.0);
+    return (0.5 * m).clamp(0.1, 4.0);
   }
 
   static const _chineseTags = ['zh-CN', 'zh-TW', 'zh-HK', 'zh'];

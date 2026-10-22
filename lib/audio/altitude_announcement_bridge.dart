@@ -16,8 +16,9 @@ import 'vario_ducking.dart';
 
 /// Turns flight events into voice announcements:
 ///
-///  * **Takeoff / continue flight** — spoken after a notification ding when a
-///    flight starts or resumes. Automatic announcements stop when flying ends.
+///  * **Takeoff / continue flight / landing** — spoken after a notification
+///    ding when the corresponding flight transition occurs. Landing is allowed
+///    to speak after the flight state has switched off.
 ///  * **Glide dead zone** — during a flight, spoken after the vertical speed
 ///    has stayed in the (silent) dead zone for the configured delay, then
 ///    repeated at the configured interval while it stays there.
@@ -97,6 +98,11 @@ class AltitudeAnnouncementBridge {
     final becameEnabled = anyEnabled && _wasEnabled != true;
     _wasEnabled = anyEnabled;
 
+    if (!_settings.announcementsEnabled) {
+      _resetDwell(AnnouncementEvent.glide, _glide);
+      _cancelTimer(AnnouncementEvent.altitudeRecord);
+      if (_speaker.speaking.value) unawaited(_speaker.stop());
+    }
     if (!_settings.glideEnabled) _resetDwell(AnnouncementEvent.glide, _glide);
     if (!_settings.recordEnabled) {
       _cancelTimer(AnnouncementEvent.altitudeRecord);
@@ -171,7 +177,10 @@ class AltitudeAnnouncementBridge {
 
   void _evaluateGlide(DateTime now, FlightData data, bool flying) {
     final speed = data.verticalSpeed;
-    if (!_settings.glideEnabled || !flying || !speed.isFinite) {
+    if (!_settings.announcementsEnabled ||
+        !_settings.glideEnabled ||
+        !flying ||
+        !speed.isFinite) {
       _resetDwell(AnnouncementEvent.glide, _glide);
       return;
     }
@@ -213,7 +222,7 @@ class AltitudeAnnouncementBridge {
     if (!track) return;
     // The peak is tracked even while the announcement is off, so enabling it
     // mid-flight compares against the whole flight so far.
-    final enabled = _settings.recordEnabled;
+    final enabled = _settings.announcementsEnabled && _settings.recordEnabled;
     final interval = _settings.recordInterval;
     final due = _record.update(
       data.altitude,
@@ -320,7 +329,12 @@ class AltitudeAnnouncementBridge {
     return AnnouncementValues(
       altitudeMeters: altitude,
       climbMetersPerSecond: data.verticalSpeed,
-      groundSpeedKmh: data.hasGroundSpeed ? data.groundSpeed : double.nan,
+      groundSpeedKmh:
+          data.hasGroundSpeed &&
+              data.groundSpeed.isFinite &&
+              data.groundSpeed >= 0
+          ? data.groundSpeed
+          : double.nan,
       heightAboveGroundMeters: terrain != null
           ? altitude - terrain
           : double.nan,
@@ -337,13 +351,25 @@ class AltitudeAnnouncementBridge {
     );
   }
 
+  bool _maySpeak(AnnouncementEvent event) {
+    if (!_settings.announcementsEnabled) return false;
+    final eventEnabled = switch (event) {
+      AnnouncementEvent.takeoff ||
+      AnnouncementEvent.continueFlight ||
+      AnnouncementEvent.landing => _settings.takeoffLandingEnabled,
+      AnnouncementEvent.glide => _settings.glideEnabled,
+      AnnouncementEvent.altitudeRecord => _settings.recordEnabled,
+    };
+    return eventEnabled && (event.isFlightTransition || _flightState.isFlying);
+  }
+
   Future<void> _announce(
     AnnouncementEvent event,
     AnnouncementValues values, {
     bool waitIfBusy = false,
     void Function(bool spoken)? onDone,
   }) async {
-    if (!_flightState.isFlying || _inProgress.contains(event)) return;
+    if (!_maySpeak(event) || _inProgress.contains(event)) return;
     _inProgress.add(event);
     var spoken = false;
     try {
@@ -355,7 +381,7 @@ class AltitudeAnnouncementBridge {
         waitIfBusy: waitIfBusy,
         busyTimeout: _transitionBusyTimeout,
         chime: event.isFlightTransition ? _chime : null,
-        canSpeak: () => _flightState.isFlying,
+        canSpeak: () => _maySpeak(event),
       );
     } catch (_) {
       // Never let speech problems interrupt flight-data processing.

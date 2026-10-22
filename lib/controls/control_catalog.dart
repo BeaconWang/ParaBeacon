@@ -139,6 +139,8 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlFlightButton;
     case 'status_line':
       return l10n.controlStatusLine;
+    case 'takeoff_waypoint':
+      return l10n.controlTakeoffWaypoint;
     case 'compass_wind':
       return l10n.controlCompassWind;
     default:

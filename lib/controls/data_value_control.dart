@@ -386,9 +386,11 @@ String _formatHms(Duration d) {
   return '$h:$m:$s';
 }
 
-/// Converts a 0-360° bearing to an 8-point cardinal label (N, NE, …).
-String _cardinal8(double degrees) {
-  const labels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+/// Converts a 0-360° bearing to an 8-point cardinal label.
+String _cardinal8(double degrees, {bool chinese = false}) {
+  const englishLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const chineseLabels = ['北', '东北', '东', '东南', '南', '西南', '西', '西北'];
+  final labels = chinese ? chineseLabels : englishLabels;
   final normalized = ((degrees % 360) + 360) % 360;
   final index = ((normalized / 45.0).round()) % 8;
   return labels[index];
@@ -706,7 +708,10 @@ class HeadingControl extends StatelessWidget {
     if (!hasValue) {
       value = '--';
     } else if (cardinal) {
-      value = _cardinal8(data.heading);
+      value = _cardinal8(
+        data.heading,
+        chinese: Localizations.localeOf(context).languageCode == 'zh',
+      );
     } else {
       value = _formatDegrees(
         data.heading,

@@ -831,7 +831,21 @@
   "@colorPalettePreferencesSubtitle": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "colorPaletteSettingsDescription": "Choose how many built-in distinct colors appear in every color picker. Automatic and custom HEX colors remain available.",
+  "colorPaletteSettingsDescription": "Choose a built-in HSL color scheme and how many distinct colors appear in every color picker. Black, white and gray are included; High Saturation also adds dark and bright variants. Hues are evenly spaced.",
+  "colorPaletteSchemeLabel": "Color scheme",
+  "colorPaletteSchemeHighSaturation": "High Saturation",
+  "colorPaletteSchemeMacaron": "Macaron",
+  "colorPaletteSchemeMorandi": "Morandi",
+  "colorPaletteSchemeEarth": "Earth",
+  "colorPaletteSchemeDarkTech": "Dark Tech",
+  "colorPaletteSchemeMaldivesOcean": "Maldives Ocean",
+  "colorPaletteSchemeForest": "Forest",
+  "colorPaletteSchemeSunset": "Sunset",
+  "colorPaletteSchemeLavender": "Lavender",
+  "colorPaletteSchemeNordic": "Nordic",
+  "colorPaletteSchemeDesert": "Desert",
+  "colorPaletteSchemeSakura": "Sakura",
+  "colorPaletteSchemeGlacier": "Glacier",
   "colorPaletteCountLabel": "Number of preset colors",
   "colorPaletteSettingsCount": "{count} colors",
   "@colorPaletteSettingsCount": {

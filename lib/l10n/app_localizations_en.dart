@@ -2174,7 +2174,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get colorPaletteSettingsDescription =>
-      'Choose how many built-in distinct colors appear in every color picker. Automatic and custom HEX colors remain available.';
+      'Choose a built-in HSL color scheme and how many distinct colors appear in every color picker. Black, white and gray are included; High Saturation also adds dark and bright variants. Hues are evenly spaced.';
+
+  @override
+  String get colorPaletteSchemeLabel => 'Color scheme';
+
+  @override
+  String get colorPaletteSchemeHighSaturation => 'High Saturation';
+
+  @override
+  String get colorPaletteSchemeMacaron => 'Macaron';
+
+  @override
+  String get colorPaletteSchemeMorandi => 'Morandi';
+
+  @override
+  String get colorPaletteSchemeEarth => 'Earth';
+
+  @override
+  String get colorPaletteSchemeDarkTech => 'Dark Tech';
+
+  @override
+  String get colorPaletteSchemeMaldivesOcean => 'Maldives Ocean';
+
+  @override
+  String get colorPaletteSchemeForest => 'Forest';
+
+  @override
+  String get colorPaletteSchemeSunset => 'Sunset';
+
+  @override
+  String get colorPaletteSchemeLavender => 'Lavender';
+
+  @override
+  String get colorPaletteSchemeNordic => 'Nordic';
+
+  @override
+  String get colorPaletteSchemeDesert => 'Desert';
+
+  @override
+  String get colorPaletteSchemeSakura => 'Sakura';
+
+  @override
+  String get colorPaletteSchemeGlacier => 'Glacier';
 
   @override
   String get colorPaletteCountLabel => 'Number of preset colors';

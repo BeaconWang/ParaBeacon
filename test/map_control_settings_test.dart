@@ -7,16 +7,46 @@ import 'package:parabeacon/controls/placed_control.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 
 void main() {
-  test('color count preference controls the shared preset palette', () {
+  test('13 HSL schemes meet color limits and evenly space hues', () {
+    expect(ColorPaletteSettings.presets, hasLength(13));
+    expect(ColorPaletteSettings.defaultSchemeId, 'high-saturation');
+    final highSaturation = ColorPaletteSettings.presets.firstWhere(
+      (preset) => preset.id == 'high-saturation',
+    );
+    expect(highSaturation.saturation, 0.75);
+    for (final preset in ColorPaletteSettings.presets) {
+      expect(preset.saturation, inInclusiveRange(0.4, 0.75));
+      expect(preset.lightness, inInclusiveRange(0.5, 0.75));
+      final hues = preset
+          .colorsForCount(3)
+          .map((color) => HSLColor.fromColor(Color(color)).hue)
+          .toList();
+      expect(hues, hasLength(3));
+      for (var i = 0; i < hues.length; i++) {
+        final next = hues[(i + 1) % hues.length];
+        final gap = (next - hues[i] + 360) % 360;
+        expect((gap - 120).abs(), lessThan(1.5));
+      }
+    }
+    final highSaturationColors = highSaturation.colorsForCount(16);
+    expect(highSaturationColors, hasLength(16));
+    expect(
+      highSaturationColors.sublist(11, 14),
+      ColorPalettePreset.neutralColors,
+    );
+    expect(
+      HSLColor.fromColor(Color(highSaturationColors[14])).lightness,
+      closeTo(0.50, 0.01),
+    );
+    expect(
+      HSLColor.fromColor(Color(highSaturationColors[15])).lightness,
+      closeTo(0.75, 0.01),
+    );
+
     final settings = ColorPaletteSettings.instance;
     settings.previewColorCount(4);
     expect(settings.pickerColors, hasLength(5));
     expect(settings.pickerColors.first, 0);
-    expect(
-      ColorPaletteSettings.presetColors.toSet(),
-      hasLength(ColorPaletteSettings.presetColors.length),
-    );
-
     settings.previewColorCount(ColorPaletteSettings.defaultColorCount);
     expect(
       settings.pickerColors,

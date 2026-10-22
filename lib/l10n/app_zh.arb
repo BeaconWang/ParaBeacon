@@ -756,7 +756,21 @@
   "@colorPalettePreferencesSubtitle": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "colorPaletteSettingsDescription": "设置所有颜色选择器显示多少种内置的高区分度颜色。自动颜色和自定义 HEX 颜色仍可使用。",
+  "colorPaletteSettingsDescription": "选择内置 HSL 配色方案和所有颜色选择器显示的颜色数量。每套配色都包含黑、白、灰；高饱和度方案还包含深色与亮色变体。色相均匀分布。",
+  "colorPaletteSchemeLabel": "配色方案",
+  "colorPaletteSchemeHighSaturation": "高饱和度",
+  "colorPaletteSchemeMacaron": "马卡龙",
+  "colorPaletteSchemeMorandi": "莫兰迪",
+  "colorPaletteSchemeEarth": "大地",
+  "colorPaletteSchemeDarkTech": "暗黑科技",
+  "colorPaletteSchemeMaldivesOcean": "马尔代夫海洋",
+  "colorPaletteSchemeForest": "森林",
+  "colorPaletteSchemeSunset": "日落",
+  "colorPaletteSchemeLavender": "薰衣草",
+  "colorPaletteSchemeNordic": "北欧",
+  "colorPaletteSchemeDesert": "沙漠",
+  "colorPaletteSchemeSakura": "樱花",
+  "colorPaletteSchemeGlacier": "冰川",
   "colorPaletteCountLabel": "预设颜色数量",
   "colorPaletteSettingsCount": "{count} 种颜色",
   "@colorPaletteSettingsCount": {

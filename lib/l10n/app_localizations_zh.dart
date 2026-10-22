@@ -2096,7 +2096,49 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get colorPaletteSettingsDescription =>
-      '设置所有颜色选择器显示多少种内置的高区分度颜色。自动颜色和自定义 HEX 颜色仍可使用。';
+      '选择内置 HSL 配色方案和所有颜色选择器显示的颜色数量。每套配色都包含黑、白、灰；高饱和度方案还包含深色与亮色变体。色相均匀分布。';
+
+  @override
+  String get colorPaletteSchemeLabel => '配色方案';
+
+  @override
+  String get colorPaletteSchemeHighSaturation => '高饱和度';
+
+  @override
+  String get colorPaletteSchemeMacaron => '马卡龙';
+
+  @override
+  String get colorPaletteSchemeMorandi => '莫兰迪';
+
+  @override
+  String get colorPaletteSchemeEarth => '大地';
+
+  @override
+  String get colorPaletteSchemeDarkTech => '暗黑科技';
+
+  @override
+  String get colorPaletteSchemeMaldivesOcean => '马尔代夫海洋';
+
+  @override
+  String get colorPaletteSchemeForest => '森林';
+
+  @override
+  String get colorPaletteSchemeSunset => '日落';
+
+  @override
+  String get colorPaletteSchemeLavender => '薰衣草';
+
+  @override
+  String get colorPaletteSchemeNordic => '北欧';
+
+  @override
+  String get colorPaletteSchemeDesert => '沙漠';
+
+  @override
+  String get colorPaletteSchemeSakura => '樱花';
+
+  @override
+  String get colorPaletteSchemeGlacier => '冰川';
 
   @override
   String get colorPaletteCountLabel => '预设颜色数量';

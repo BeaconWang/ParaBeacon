@@ -3,6 +3,23 @@ import 'package:flutter/material.dart';
 import '../data/color_palette_settings.dart';
 import '../l10n/app_localizations.dart';
 
+String _schemeName(AppLocalizations l10n, String id) => switch (id) {
+  'high-saturation' => l10n.colorPaletteSchemeHighSaturation,
+  'macaron' => l10n.colorPaletteSchemeMacaron,
+  'morandi' => l10n.colorPaletteSchemeMorandi,
+  'earth' => l10n.colorPaletteSchemeEarth,
+  'dark-tech' => l10n.colorPaletteSchemeDarkTech,
+  'maldives-ocean' => l10n.colorPaletteSchemeMaldivesOcean,
+  'forest' => l10n.colorPaletteSchemeForest,
+  'sunset' => l10n.colorPaletteSchemeSunset,
+  'lavender' => l10n.colorPaletteSchemeLavender,
+  'nordic' => l10n.colorPaletteSchemeNordic,
+  'desert' => l10n.colorPaletteSchemeDesert,
+  'sakura' => l10n.colorPaletteSchemeSakura,
+  'glacier' => l10n.colorPaletteSchemeGlacier,
+  _ => id,
+};
+
 Future<void> showColorPaletteSettingsSheet(BuildContext context) async {
   await ColorPaletteSettings.instance.load();
   if (!context.mounted) return;
@@ -41,6 +58,31 @@ class _ColorPaletteSettingsSheet extends StatelessWidget {
               Text(
                 l10n.colorPaletteSettingsDescription,
                 style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              InputDecorator(
+                decoration: InputDecoration(
+                  labelText: l10n.colorPaletteSchemeLabel,
+                  border: const OutlineInputBorder(),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: settings.schemeId,
+                    isExpanded: true,
+                    items: [
+                      for (final preset in ColorPaletteSettings.presets)
+                        DropdownMenuItem(
+                          value: preset.id,
+                          child: Text(_schemeName(l10n, preset.id)),
+                        ),
+                    ],
+                    onChanged: (id) {
+                      if (id == null) return;
+                      settings.previewScheme(id);
+                      settings.setScheme(id);
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               Row(

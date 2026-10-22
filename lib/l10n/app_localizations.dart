@@ -4163,8 +4163,92 @@ abstract class AppLocalizations {
   /// No description provided for @colorPaletteSettingsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Choose how many built-in distinct colors appear in every color picker. Automatic and custom HEX colors remain available.'**
+  /// **'Choose a built-in HSL color scheme and how many distinct colors appear in every color picker. Black, white and gray are included; High Saturation also adds dark and bright variants. Hues are evenly spaced.'**
   String get colorPaletteSettingsDescription;
+
+  /// No description provided for @colorPaletteSchemeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Color scheme'**
+  String get colorPaletteSchemeLabel;
+
+  /// No description provided for @colorPaletteSchemeHighSaturation.
+  ///
+  /// In en, this message translates to:
+  /// **'High Saturation'**
+  String get colorPaletteSchemeHighSaturation;
+
+  /// No description provided for @colorPaletteSchemeMacaron.
+  ///
+  /// In en, this message translates to:
+  /// **'Macaron'**
+  String get colorPaletteSchemeMacaron;
+
+  /// No description provided for @colorPaletteSchemeMorandi.
+  ///
+  /// In en, this message translates to:
+  /// **'Morandi'**
+  String get colorPaletteSchemeMorandi;
+
+  /// No description provided for @colorPaletteSchemeEarth.
+  ///
+  /// In en, this message translates to:
+  /// **'Earth'**
+  String get colorPaletteSchemeEarth;
+
+  /// No description provided for @colorPaletteSchemeDarkTech.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark Tech'**
+  String get colorPaletteSchemeDarkTech;
+
+  /// No description provided for @colorPaletteSchemeMaldivesOcean.
+  ///
+  /// In en, this message translates to:
+  /// **'Maldives Ocean'**
+  String get colorPaletteSchemeMaldivesOcean;
+
+  /// No description provided for @colorPaletteSchemeForest.
+  ///
+  /// In en, this message translates to:
+  /// **'Forest'**
+  String get colorPaletteSchemeForest;
+
+  /// No description provided for @colorPaletteSchemeSunset.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunset'**
+  String get colorPaletteSchemeSunset;
+
+  /// No description provided for @colorPaletteSchemeLavender.
+  ///
+  /// In en, this message translates to:
+  /// **'Lavender'**
+  String get colorPaletteSchemeLavender;
+
+  /// No description provided for @colorPaletteSchemeNordic.
+  ///
+  /// In en, this message translates to:
+  /// **'Nordic'**
+  String get colorPaletteSchemeNordic;
+
+  /// No description provided for @colorPaletteSchemeDesert.
+  ///
+  /// In en, this message translates to:
+  /// **'Desert'**
+  String get colorPaletteSchemeDesert;
+
+  /// No description provided for @colorPaletteSchemeSakura.
+  ///
+  /// In en, this message translates to:
+  /// **'Sakura'**
+  String get colorPaletteSchemeSakura;
+
+  /// No description provided for @colorPaletteSchemeGlacier.
+  ///
+  /// In en, this message translates to:
+  /// **'Glacier'**
+  String get colorPaletteSchemeGlacier;
 
   /// No description provided for @colorPaletteCountLabel.
   ///

@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 class AboutInfoSphere extends StatefulWidget {
   const AboutInfoSphere({
@@ -20,23 +23,81 @@ class AboutInfoSphere extends StatefulWidget {
 
 class _AboutInfoSphereState extends State<AboutInfoSphere>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _rotation;
-  double _yaw = -0.24;
-  double _pitch = 0.08;
+  final ValueNotifier<Offset> _orientation = ValueNotifier(
+    const Offset(-0.24, 0.08),
+  );
+  late final Ticker _ticker;
+  Duration? _lastTick;
+  Duration? _lastPointerTime;
+  bool _isDragging = false;
+  double _yawVelocity = math.pi * 2 / 90;
+  double _pitchVelocity = 0;
+
+  static const _maxAngularVelocity = 2.5;
 
   @override
   void initState() {
     super.initState();
-    _rotation = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 90),
-    )..repeat();
+    _ticker = createTicker(_advanceRotation)..start();
   }
 
   @override
   void dispose() {
-    _rotation.dispose();
+    _ticker.dispose();
+    _orientation.dispose();
     super.dispose();
+  }
+
+  void _advanceRotation(Duration elapsed) {
+    final previous = _lastTick;
+    _lastTick = elapsed;
+    if (_isDragging || previous == null) return;
+
+    final deltaSeconds = (elapsed - previous).inMicroseconds / 1000000;
+    if (deltaSeconds <= 0) return;
+    final current = _orientation.value;
+    _orientation.value = Offset(
+      current.dx + _yawVelocity * deltaSeconds,
+      current.dy + _pitchVelocity * deltaSeconds,
+    );
+  }
+
+  void _beginDrag(Duration timeStamp) {
+    _isDragging = true;
+    _lastPointerTime = timeStamp;
+  }
+
+  void _updateDrag(Offset delta, Duration timeStamp, double radius) {
+    final current = _orientation.value;
+    _orientation.value = Offset(
+      current.dx + delta.dx / radius,
+      current.dy + delta.dy / radius,
+    );
+
+    final previous = _lastPointerTime;
+    _lastPointerTime = timeStamp;
+    if (previous == null) return;
+
+    final deltaSeconds = (timeStamp - previous).inMicroseconds / 1000000;
+    if (deltaSeconds <= 0) return;
+    if (delta.dx.abs() > 0.5) {
+      _yawVelocity = (delta.dx / radius / deltaSeconds).clamp(
+        -_maxAngularVelocity,
+        _maxAngularVelocity,
+      );
+    }
+    if (delta.dy.abs() > 0.5) {
+      _pitchVelocity = (delta.dy / radius / deltaSeconds).clamp(
+        -_maxAngularVelocity,
+        _maxAngularVelocity,
+      );
+    }
+  }
+
+  void _endDrag() {
+    _isDragging = false;
+    _lastPointerTime = null;
+    _lastTick = null;
   }
 
   @override
@@ -46,38 +107,42 @@ class _AboutInfoSphereState extends State<AboutInfoSphere>
       label: '${widget.semanticsLabel} ${widget.labels.join('. ')}',
       hint: widget.dragHint,
       child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: SizedBox(
-            height: 300,
-            width: double.infinity,
-            child: LayoutBuilder(
-              builder: (context, constraints) => GestureDetector(
+        child: SizedBox.square(
+          dimension: 300,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final radius =
+                  math.min(constraints.maxWidth, constraints.maxHeight) * 0.41;
+              final center = Offset(
+                constraints.maxWidth / 2,
+                constraints.maxHeight / 2,
+              );
+              return RawGestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onPanUpdate: (details) {
-                  setState(() {
-                    final radius =
-                        math.min(constraints.maxWidth, constraints.maxHeight) *
-                        0.41;
-                    _yaw += details.delta.dx / radius;
-                    _pitch = (_pitch + details.delta.dy / radius).clamp(
-                      -1.15,
-                      1.15,
-                    );
-                  });
+                gestures: <Type, GestureRecognizerFactory>{
+                  _SphereDragRecognizer:
+                      GestureRecognizerFactoryWithHandlers<
+                        _SphereDragRecognizer
+                      >(_SphereDragRecognizer.new, (recognizer) {
+                        recognizer.hitTestSphere = (position) =>
+                            (position - center).distance <= radius;
+                        recognizer.onStart = _beginDrag;
+                        recognizer.onMove = (delta, timeStamp) {
+                          _updateDrag(delta, timeStamp, radius);
+                        };
+                        recognizer.onEnd = _endDrag;
+                      }),
                 },
                 child: CustomPaint(
                   size: Size(constraints.maxWidth, constraints.maxHeight),
                   painter: _AboutSpherePainter(
                     labels: widget.labels,
-                    yaw: _yaw,
-                    pitch: _pitch,
-                    rotation: _rotation,
+                    orientation: _orientation,
                     textDirection: textDirection,
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -85,26 +150,64 @@ class _AboutInfoSphereState extends State<AboutInfoSphere>
   }
 }
 
+class _SphereDragRecognizer extends OneSequenceGestureRecognizer {
+  _SphereDragRecognizer({super.debugOwner});
+
+  bool Function(Offset localPosition)? hitTestSphere;
+  ValueChanged<Duration>? onStart;
+  void Function(Offset delta, Duration timeStamp)? onMove;
+  VoidCallback? onEnd;
+  int? _activePointer;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    if (_activePointer != null ||
+        !(hitTestSphere?.call(event.localPosition) ?? true)) {
+      return;
+    }
+    _activePointer = event.pointer;
+    super.addAllowedPointer(event);
+    resolve(GestureDisposition.accepted);
+    onStart?.call(event.timeStamp);
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (event.pointer != _activePointer) return;
+    if (event is PointerMoveEvent) {
+      onMove?.call(event.delta, event.timeStamp);
+    } else if (event is PointerUpEvent || event is PointerCancelEvent) {
+      onEnd?.call();
+      stopTrackingPointer(event.pointer);
+      _activePointer = null;
+    }
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {}
+
+  @override
+  String get debugDescription => 'sphere drag';
+}
+
 class _AboutSpherePainter extends CustomPainter {
   _AboutSpherePainter({
     required this.labels,
-    required this.yaw,
-    required this.pitch,
-    required this.rotation,
+    required this.orientation,
     required this.textDirection,
-  }) : super(repaint: rotation);
+  }) : super(repaint: orientation);
 
   final List<String> labels;
-  final double yaw;
-  final double pitch;
-  final Animation<double> rotation;
+  final ValueListenable<Offset> orientation;
   final TextDirection textDirection;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) * 0.41;
-    final currentYaw = yaw + rotation.value * math.pi * 2;
+    final currentOrientation = orientation.value;
+    final currentYaw = currentOrientation.dx;
+    final currentPitch = currentOrientation.dy;
     final sphereBounds = Rect.fromCircle(center: center, radius: radius);
 
     canvas.drawCircle(
@@ -159,8 +262,8 @@ class _AboutSpherePainter extends CustomPainter {
         ).createShader(sphereBounds),
     );
 
-    _drawSphericalGrid(canvas, center, radius, currentYaw);
-    _drawSurfaceLabels(canvas, center, radius, currentYaw);
+    _drawSphericalGrid(canvas, center, radius, currentYaw, currentPitch);
+    _drawSurfaceLabels(canvas, center, radius, currentYaw, currentPitch);
 
     canvas.drawCircle(
       center,
@@ -178,6 +281,7 @@ class _AboutSpherePainter extends CustomPainter {
     Offset center,
     double radius,
     double currentYaw,
+    double currentPitch,
   ) {
     final gridPaints = List<Paint>.generate(
       10,
@@ -208,7 +312,7 @@ class _AboutSpherePainter extends CustomPainter {
       drawCurve(
         List.generate(49, (index) {
           final latitude = -math.pi / 2 + math.pi * index / 48;
-          return _rotatePoint(latitude, longitude, currentYaw, pitch);
+          return _rotatePoint(latitude, longitude, currentYaw, currentPitch);
         }),
       );
     }
@@ -218,7 +322,7 @@ class _AboutSpherePainter extends CustomPainter {
       drawCurve(
         List.generate(73, (index) {
           final longitude = -math.pi + 2 * math.pi * index / 72;
-          return _rotatePoint(latitude, longitude, currentYaw, pitch);
+          return _rotatePoint(latitude, longitude, currentYaw, currentPitch);
         }),
       );
     }
@@ -229,6 +333,7 @@ class _AboutSpherePainter extends CustomPainter {
     Offset center,
     double radius,
     double currentYaw,
+    double currentPitch,
   ) {
     const positions = [
       (0.67, 0.0),
@@ -245,7 +350,7 @@ class _AboutSpherePainter extends CustomPainter {
       index++
     ) {
       final (latitude, longitude) = positions[index];
-      final point = _rotatePoint(latitude, longitude, currentYaw, pitch);
+      final point = _rotatePoint(latitude, longitude, currentYaw, currentPitch);
       if (point.z > 0.08) {
         surfaceLabels.add(_SurfaceLabel(labels[index], point));
       }
@@ -333,8 +438,7 @@ class _AboutSpherePainter extends CustomPainter {
   @override
   bool shouldRepaint(_AboutSpherePainter oldDelegate) =>
       oldDelegate.labels != labels ||
-      oldDelegate.yaw != yaw ||
-      oldDelegate.pitch != pitch ||
+      oldDelegate.orientation != orientation ||
       oldDelegate.textDirection != textDirection;
 }
 

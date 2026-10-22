@@ -45,6 +45,28 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
     widget.control.type.id,
   );
 
+  @override
+  void initState() {
+    super.initState();
+    final control = widget.control;
+    if (control.type.id != 'map' ||
+        !control.settings.containsKey('showLandingPoints')) {
+      return;
+    }
+    final legacyVisibility = control.boolSetting(
+      'showLandingPoints',
+      fallback: true,
+    );
+    control.settings.putIfAbsent(
+      'showDefaultLandingPoint',
+      () => legacyVisibility,
+    );
+    control.settings.putIfAbsent(
+      'showNearestLandingPoint',
+      () => legacyVisibility,
+    );
+  }
+
   void _set(String key, dynamic value) {
     setState(() => widget.control.settings[key] = value);
     widget.onChanged();
@@ -55,6 +77,17 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final control = widget.control;
+    final visibleSchema = _schema.where((setting) {
+      final visibleWhenKey = setting.visibleWhenKey;
+      if (visibleWhenKey == null) return true;
+      final toggle = _schema.firstWhere(
+        (candidate) => candidate.key == visibleWhenKey,
+      );
+      return control.boolSetting(
+        visibleWhenKey,
+        fallback: toggle.defaultValue as bool,
+      );
+    }).toList();
 
     return SafeArea(
       top: false,
@@ -91,11 +124,11 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
-                  itemCount: _schema.length,
+                  itemCount: visibleSchema.length,
                   separatorBuilder: (context, index) =>
                       const Divider(height: 1),
                   itemBuilder: (context, index) =>
-                      _buildSettingTile(context, l10n, _schema[index]),
+                      _buildSettingTile(context, l10n, visibleSchema[index]),
                 ),
               ),
           ],

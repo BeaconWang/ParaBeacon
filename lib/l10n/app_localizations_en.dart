@@ -2134,7 +2134,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowTakeoffPoint => 'Show take-off point';
 
   @override
-  String get settingShowLandingPoints => 'Show landing points';
+  String get settingShowDefaultLandingPoint => 'Show default landing point';
+
+  @override
+  String get settingShowNearestLandingPoint => 'Show nearest landing point';
 
   @override
   String get settingShowDefaultLandingLine =>

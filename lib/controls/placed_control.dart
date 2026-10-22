@@ -109,14 +109,14 @@ class PlacedControl {
   /// they must contain only JSON-encodable values (bool/num/String), which the
   /// settings schema guarantees.
   Map<String, dynamic> toJson() => {
-        'instanceId': instanceId,
-        'typeId': type.id,
-        'col': col,
-        'row': row,
-        'cols': cols,
-        'rows': rows,
-        'settings': settings,
-      };
+    'instanceId': instanceId,
+    'typeId': type.id,
+    'col': col,
+    'row': row,
+    'cols': cols,
+    'rows': rows,
+    'settings': settings,
+  };
 
   /// Rebuilds a control from [toJson] output. Returns null if the type id is
   /// no longer known (e.g. a control removed from the catalog).
@@ -131,6 +131,15 @@ class PlacedControl {
     final settings = defaultSettingsFor(typeId);
     final saved = json['settings'];
     if (saved is Map) {
+      if (typeId == 'map' && saved['showLandingPoints'] is bool) {
+        final legacyVisibility = saved['showLandingPoints'] as bool;
+        if (saved['showDefaultLandingPoint'] is! bool) {
+          settings['showDefaultLandingPoint'] = legacyVisibility;
+        }
+        if (saved['showNearestLandingPoint'] is! bool) {
+          settings['showNearestLandingPoint'] = legacyVisibility;
+        }
+      }
       saved.forEach((k, v) => settings[k.toString()] = v);
     }
 

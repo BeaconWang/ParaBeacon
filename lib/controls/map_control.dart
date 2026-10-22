@@ -217,7 +217,8 @@ class MapControl extends StatefulWidget {
   final bool showTakeoffLine;
 
   final bool showTakeoffPoint;
-  final bool showLandingPoints;
+  final bool showDefaultLandingPoint;
+  final bool showNearestLandingPoint;
   final bool showDefaultLandingLine;
   final bool showLastLandingLine;
   final Color takeoffPointColor;
@@ -272,13 +273,14 @@ class MapControl extends StatefulWidget {
     this.showBearing = false,
     this.showTakeoffLine = false,
     this.showTakeoffPoint = true,
-    this.showLandingPoints = true,
+    this.showDefaultLandingPoint = true,
+    this.showNearestLandingPoint = true,
     this.showDefaultLandingLine = false,
     this.showLastLandingLine = false,
     this.takeoffPointColor = const Color(0xFF43A047),
     this.defaultLandingPointColor = const Color(0xFFF44336),
     this.lastLandingPointColor = const Color(0xFF9C27B0),
-    this.takeoffLineColor = const Color(0xFFE040FB),
+    this.takeoffLineColor = const Color(0xFF43A047),
     this.defaultLandingLineColor = const Color(0xFFF44336),
     this.lastLandingLineColor = const Color(0xFF9C27B0),
     this.showScale = true,
@@ -688,13 +690,12 @@ class _MapControlState extends State<MapControl> {
         widget.showLastLandingLine &&
         nearestLandingPos != null &&
         (nearestIsDifferent || !widget.showDefaultLandingLine)) {
-      final color = nearestIsDifferent
-          ? widget.lastLandingLineColor.withAlpha(
-              (widget.lastLandingLineColor.a * 255 * 0.3).round(),
-            )
-          : widget.lastLandingLineColor;
       connectionLines.add(
-        _buildConnectionLine(renderPos, nearestLandingPos, color),
+        _buildConnectionLine(
+          renderPos,
+          nearestLandingPos,
+          widget.lastLandingLineColor,
+        ),
       );
     }
     final pointMarkers = <Marker>[
@@ -710,7 +711,7 @@ class _MapControlState extends State<MapControl> {
             heart: true,
           ),
         ),
-      if (widget.showLandingPoints && defaultLandingPos != null)
+      if (widget.showDefaultLandingPoint && defaultLandingPos != null)
         Marker(
           point: defaultLandingPos,
           width: 70,
@@ -722,16 +723,16 @@ class _MapControlState extends State<MapControl> {
             heart: true,
           ),
         ),
-      if (widget.showLandingPoints &&
-          nearestIsSeparate &&
-          nearestLandingPos != null)
+      if (widget.showNearestLandingPoint &&
+          nearestLandingPos != null &&
+          (nearestIsSeparate || !widget.showDefaultLandingPoint))
         Marker(
           point: nearestLandingPos,
           width: 70,
           height: _savedPointMarkerHeight,
           alignment: _savedPointMarkerAlignment,
           child: _SavedPointMarker(
-            label: nearestLanding.name,
+            label: nearestLanding!.name,
             color: widget.lastLandingPointColor,
             heart: false,
           ),
@@ -1235,7 +1236,7 @@ class _MapControlState extends State<MapControl> {
         points: [from, to],
         strokeWidth: 2.0 * widget.lineThickness,
         color: color,
-        pattern: StrokePattern.solid(),
+        pattern: StrokePattern.dashed(segments: const [8, 6]),
       );
 
   /// XCTrack's climb→colour ramp (`theme.a.H`): grey (sink) → green (weak

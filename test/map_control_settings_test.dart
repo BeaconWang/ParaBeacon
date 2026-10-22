@@ -1,0 +1,114 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:parabeacon/controls/control_catalog.dart';
+import 'package:parabeacon/controls/control_settings.dart';
+import 'package:parabeacon/controls/control_settings_sheet.dart';
+import 'package:parabeacon/controls/placed_control.dart';
+import 'package:parabeacon/l10n/app_localizations.dart';
+
+void main() {
+  test('map marker and line settings offer expanded color palettes', () {
+    const mapColorKeys = {
+      'takeoffPointColor',
+      'defaultLandingPointColor',
+      'lastLandingPointColor',
+      'takeoffLineColor',
+      'defaultLandingLineColor',
+      'lastLandingLineColor',
+    };
+    final colorSettings = settingsSchemaFor(
+      'map',
+    ).where((setting) => mapColorKeys.contains(setting.key)).toList();
+
+    expect(colorSettings, hasLength(6));
+    for (final setting in colorSettings) {
+      expect(setting.palette.length, greaterThan(10));
+      expect(setting.palette.first, 0);
+    }
+  });
+
+  testWidgets('map point and line colors follow their display switches', (
+    tester,
+  ) async {
+    final mapType = ControlCatalog.byId('map')!;
+    final control = PlacedControl.fromType(mapType, instanceId: 'map-test');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => showControlSettingsSheet(
+                  context,
+                  control: control,
+                  onChanged: () {},
+                ),
+                child: const Text('Open settings'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open settings'));
+    await tester.pumpAndSettle();
+
+    final list = find.byType(ListView).first;
+    Future<void> reveal(String label) =>
+        tester.dragUntilVisible(find.text(label), list, const Offset(0, -300));
+
+    expect(find.text('Show landing points'), findsNothing);
+
+    await reveal('Show take-off point');
+    expect(find.text('Take-off marker color'), findsOneWidget);
+    await tester.tap(find.text('Show take-off point'));
+    await tester.pumpAndSettle();
+    expect(find.text('Take-off marker color'), findsNothing);
+
+    await reveal('Show default landing point');
+    expect(find.text('Default landing marker color'), findsOneWidget);
+    await tester.tap(find.text('Show default landing point'));
+    await tester.pumpAndSettle();
+    expect(find.text('Default landing marker color'), findsNothing);
+
+    await reveal('Show nearest landing point');
+    expect(find.text('Nearest landing marker color'), findsOneWidget);
+    await tester.tap(find.text('Show nearest landing point'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nearest landing marker color'), findsNothing);
+
+    await reveal('Show line to take-off');
+    expect(find.text('Take-off line color'), findsNothing);
+    await tester.tap(find.text('Show line to take-off'));
+    await tester.pumpAndSettle();
+    expect(find.text('Take-off line color'), findsOneWidget);
+
+    await reveal('Show line to default landing point');
+    expect(find.text('Default landing line color'), findsNothing);
+    await tester.tap(find.text('Show line to default landing point'));
+    await tester.pumpAndSettle();
+    expect(find.text('Default landing line color'), findsOneWidget);
+
+    await reveal('Show line to nearest landing point');
+    expect(find.text('Nearest landing line color'), findsNothing);
+    await tester.tap(find.text('Show line to nearest landing point'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nearest landing line color'), findsOneWidget);
+  });
+
+  test('old combined landing visibility migrates to both point switches', () {
+    final mapType = ControlCatalog.byId('map')!;
+    final control = PlacedControl.fromJson({
+      'typeId': 'map',
+      'instanceId': 'legacy-map',
+      'settings': {'showLandingPoints': false},
+    })!;
+
+    expect(control.boolSetting('showDefaultLandingPoint'), isFalse);
+    expect(control.boolSetting('showNearestLandingPoint'), isFalse);
+    expect(mapType.id, control.type.id);
+  });
+}

@@ -4088,11 +4088,17 @@ abstract class AppLocalizations {
   /// **'Show take-off point'**
   String get settingShowTakeoffPoint;
 
-  /// No description provided for @settingShowLandingPoints.
+  /// No description provided for @settingShowDefaultLandingPoint.
   ///
   /// In en, this message translates to:
-  /// **'Show landing points'**
-  String get settingShowLandingPoints;
+  /// **'Show default landing point'**
+  String get settingShowDefaultLandingPoint;
+
+  /// No description provided for @settingShowNearestLandingPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show nearest landing point'**
+  String get settingShowNearestLandingPoint;
 
   /// No description provided for @settingShowDefaultLandingLine.
   ///

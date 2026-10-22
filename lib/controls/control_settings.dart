@@ -3,6 +3,28 @@ import 'package:flutter/foundation.dart';
 import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
 
+const List<int> _mapPointAndLineColorPalette = [
+  0,
+  0xFF43A047,
+  0xFFF44336,
+  0xFF9C27B0,
+  0xFF2196F3,
+  0xFFFF9800,
+  0xFFE91E63,
+  0xFF009688,
+  0xFF00BCD4,
+  0xFF8BC34A,
+  0xFFFFEB3B,
+  0xFF3F51B5,
+  0xFFFF5722,
+  0xFF795548,
+  0xFF607D8B,
+  0xFFFFC107,
+  0xFF03A9F4,
+  0xFFFFFFFF,
+  0xFF212121,
+];
+
 /// The kind of UI editor a setting uses.
 enum SettingKind { toggle, slider, choice, color, decimalRange }
 
@@ -41,6 +63,9 @@ class ControlSetting {
   /// automatic outline color.
   final List<int> palette;
 
+  /// Optional toggle key that must be enabled before this setting is shown.
+  final String? visibleWhenKey;
+
   /// Highest supported digit count for a decimal-range setting.
   final int maxDecimalPlaces;
 
@@ -55,7 +80,8 @@ class ControlSetting {
        divisions = null,
        unit = '',
        options = const {},
-       palette = const [];
+       palette = const [],
+       visibleWhenKey = null;
 
   const ControlSetting.toggle({
     required this.key,
@@ -68,7 +94,8 @@ class ControlSetting {
        unit = '',
        options = const {},
        palette = const [],
-       maxDecimalPlaces = 0;
+       maxDecimalPlaces = 0,
+       visibleWhenKey = null;
 
   const ControlSetting.slider({
     required this.key,
@@ -81,7 +108,8 @@ class ControlSetting {
   }) : kind = SettingKind.slider,
        options = const {},
        palette = const [],
-       maxDecimalPlaces = 0;
+       maxDecimalPlaces = 0,
+       visibleWhenKey = null;
 
   const ControlSetting.choice({
     required this.key,
@@ -94,7 +122,8 @@ class ControlSetting {
        divisions = null,
        unit = '',
        palette = const [],
-       maxDecimalPlaces = 0;
+       maxDecimalPlaces = 0,
+       visibleWhenKey = null;
 
   /// A color setting. [defaultValue] and every entry in [palette] must be an
   /// ARGB int (e.g. `0xFF2196F3`). A value of `0` in the palette means
@@ -104,6 +133,7 @@ class ControlSetting {
     required this.label,
     required int this.defaultValue,
     required this.palette,
+    this.visibleWhenKey,
   }) : kind = SettingKind.color,
        min = 0,
        max = 1,
@@ -240,8 +270,10 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowTakeoffLine;
     case 'showTakeoffPoint':
       return l10n.settingShowTakeoffPoint;
-    case 'showLandingPoints':
-      return l10n.settingShowLandingPoints;
+    case 'showDefaultLandingPoint':
+      return l10n.settingShowDefaultLandingPoint;
+    case 'showNearestLandingPoint':
+      return l10n.settingShowNearestLandingPoint;
     case 'showDefaultLandingLine':
       return l10n.settingShowDefaultLandingLine;
     case 'showLastLandingLine':
@@ -979,24 +1011,64 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       defaultValue: false,
     ),
     ControlSetting.toggle(
-      key: 'showTakeoffLine',
-      label: 'Show line to take-off',
-      defaultValue: false,
-    ),
-    ControlSetting.toggle(
       key: 'showTakeoffPoint',
       label: 'Show take-off point',
       defaultValue: true,
     ),
+    ControlSetting.color(
+      key: 'takeoffPointColor',
+      label: 'Take-off marker color',
+      defaultValue: 0xFF43A047,
+      palette: _mapPointAndLineColorPalette,
+      visibleWhenKey: 'showTakeoffPoint',
+    ),
     ControlSetting.toggle(
-      key: 'showLandingPoints',
-      label: 'Show landing points',
+      key: 'showDefaultLandingPoint',
+      label: 'Show default landing point',
       defaultValue: true,
+    ),
+    ControlSetting.color(
+      key: 'defaultLandingPointColor',
+      label: 'Default landing marker color',
+      defaultValue: 0xFFF44336,
+      palette: _mapPointAndLineColorPalette,
+      visibleWhenKey: 'showDefaultLandingPoint',
+    ),
+    ControlSetting.toggle(
+      key: 'showNearestLandingPoint',
+      label: 'Show nearest landing point',
+      defaultValue: true,
+    ),
+    ControlSetting.color(
+      key: 'lastLandingPointColor',
+      label: 'Last landing marker color',
+      defaultValue: 0xFF9C27B0,
+      palette: _mapPointAndLineColorPalette,
+      visibleWhenKey: 'showNearestLandingPoint',
+    ),
+    ControlSetting.toggle(
+      key: 'showTakeoffLine',
+      label: 'Show line to take-off',
+      defaultValue: false,
+    ),
+    ControlSetting.color(
+      key: 'takeoffLineColor',
+      label: 'Take-off line color',
+      defaultValue: 0xFF43A047,
+      palette: _mapPointAndLineColorPalette,
+      visibleWhenKey: 'showTakeoffLine',
     ),
     ControlSetting.toggle(
       key: 'showDefaultLandingLine',
       label: 'Show line to default landing point',
       defaultValue: false,
+    ),
+    ControlSetting.color(
+      key: 'defaultLandingLineColor',
+      label: 'Default landing line color',
+      defaultValue: 0xFFF44336,
+      palette: _mapPointAndLineColorPalette,
+      visibleWhenKey: 'showDefaultLandingLine',
     ),
     ControlSetting.toggle(
       key: 'showLastLandingLine',
@@ -1004,40 +1076,11 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       defaultValue: false,
     ),
     ControlSetting.color(
-      key: 'takeoffPointColor',
-      label: 'Take-off marker color',
-      defaultValue: 0xFF43A047,
-      palette: [0, 0xFF43A047, 0xFF2196F3, 0xFFFF9800, 0xFFE91E63],
-    ),
-    ControlSetting.color(
-      key: 'defaultLandingPointColor',
-      label: 'Default landing marker color',
-      defaultValue: 0xFFF44336,
-      palette: [0, 0xFFF44336, 0xFF43A047, 0xFF2196F3, 0xFFFF9800],
-    ),
-    ControlSetting.color(
-      key: 'lastLandingPointColor',
-      label: 'Last landing marker color',
-      defaultValue: 0xFF9C27B0,
-      palette: [0, 0xFF9C27B0, 0xFF673AB7, 0xFF2196F3, 0xFFFF9800],
-    ),
-    ControlSetting.color(
-      key: 'takeoffLineColor',
-      label: 'Take-off line color',
-      defaultValue: 0xFFE040FB,
-      palette: [0, 0xFFE040FB, 0xFF43A047, 0xFF2196F3, 0xFFFF9800],
-    ),
-    ControlSetting.color(
-      key: 'defaultLandingLineColor',
-      label: 'Default landing line color',
-      defaultValue: 0xFFF44336,
-      palette: [0, 0xFFF44336, 0xFF43A047, 0xFF2196F3, 0xFFFF9800],
-    ),
-    ControlSetting.color(
       key: 'lastLandingLineColor',
       label: 'Last landing line color',
       defaultValue: 0xFF9C27B0,
-      palette: [0, 0xFF9C27B0, 0xFF673AB7, 0xFF2196F3, 0xFFFF9800],
+      palette: _mapPointAndLineColorPalette,
+      visibleWhenKey: 'showLastLandingLine',
     ),
     ControlSetting.toggle(
       key: 'showScale',

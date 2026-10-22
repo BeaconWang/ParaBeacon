@@ -2057,7 +2057,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowTakeoffPoint => '显示起飞点';
 
   @override
-  String get settingShowLandingPoints => '显示降落点';
+  String get settingShowDefaultLandingPoint => '显示默认降落点';
+
+  @override
+  String get settingShowNearestLandingPoint => '显示距离最近的降落点';
 
   @override
   String get settingShowDefaultLandingLine => '显示到默认降落点的连线';

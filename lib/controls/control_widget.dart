@@ -378,6 +378,11 @@ class ControlWidget extends StatelessWidget {
           return Color(value == 0 ? fallback : value);
         }
 
+        final legacyLandingPointsVisible = control.boolSetting(
+          'showLandingPoints',
+          fallback: true,
+        );
+
         return ClipRRect(
           borderRadius: innerRadius,
           child: MapControl(
@@ -417,9 +422,13 @@ class ControlWidget extends StatelessWidget {
               'showTakeoffPoint',
               fallback: true,
             ),
-            showLandingPoints: control.boolSetting(
-              'showLandingPoints',
-              fallback: true,
+            showDefaultLandingPoint: control.boolSetting(
+              'showDefaultLandingPoint',
+              fallback: legacyLandingPointsVisible,
+            ),
+            showNearestLandingPoint: control.boolSetting(
+              'showNearestLandingPoint',
+              fallback: legacyLandingPointsVisible,
             ),
             showDefaultLandingLine: control.boolSetting(
               'showDefaultLandingLine',
@@ -438,7 +447,7 @@ class ControlWidget extends StatelessWidget {
               'lastLandingPointColor',
               0xFF9C27B0,
             ),
-            takeoffLineColor: mapColor('takeoffLineColor', 0xFFE040FB),
+            takeoffLineColor: mapColor('takeoffLineColor', 0xFF43A047),
             defaultLandingLineColor: mapColor(
               'defaultLandingLineColor',
               0xFFF44336,

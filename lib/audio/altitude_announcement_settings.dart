@@ -56,7 +56,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   /// Allowed range for [speechRate] (multiple of the normal speaking speed).
   static const minSpeechRate = AltitudeAnnouncementSpeaker.minRate;
   static const maxSpeechRate = AltitudeAnnouncementSpeaker.maxRate;
-  static const defaultSpeechRate = 4.0;
+  static const defaultSpeechRate = 1.0;
 
   /// Allowed range for [varioDuckLevel] (fraction of normal vario volume kept
   /// while speaking). 0 silences the vario completely during speech.

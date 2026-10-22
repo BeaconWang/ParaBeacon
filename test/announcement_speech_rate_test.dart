@@ -27,10 +27,10 @@ void main() {
     expect(apple(10), 1.0);
   });
 
-  test('announcements are enabled by default and speech speed is 4x', () {
+  test('announcements are enabled by default and speech speed is 1x', () {
     expect(AltitudeAnnouncementSettings.instance.announcementsEnabled, isTrue);
-    expect(AltitudeAnnouncementSettings.defaultSpeechRate, 4.0);
-    expect(AltitudeAnnouncementSettings.instance.speechRate, 4.0);
+    expect(AltitudeAnnouncementSettings.defaultSpeechRate, 1.0);
+    expect(AltitudeAnnouncementSettings.instance.speechRate, 1.0);
   });
 
   test('user range is 0.5x to 8.0x', () {

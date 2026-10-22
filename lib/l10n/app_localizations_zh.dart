@@ -102,7 +102,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutLoading => '正在加载应用详情…';
 
   @override
-  String get aboutSphereTitle => '交互式信息球体';
+  String get aboutSphereTitle => '贡献者';
 
   @override
   String get aboutSphereHint => '拖动即可旋转 · 球体也会缓慢自动转动';

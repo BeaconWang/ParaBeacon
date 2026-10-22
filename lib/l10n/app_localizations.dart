@@ -287,7 +287,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutSphereTitle.
   ///
   /// In en, this message translates to:
-  /// **'Interactive information sphere'**
+  /// **'Contributor'**
   String get aboutSphereTitle;
 
   /// No description provided for @aboutSphereHint.

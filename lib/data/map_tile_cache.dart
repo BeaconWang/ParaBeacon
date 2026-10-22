@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/painting.dart' show ImageProvider, MemoryImage;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/retry.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
+import 'gcj02.dart';
+import 'offline_tiles_service.dart';
 
 /// A snapshot of the app-wide persistent map-tile cache.
 class MapTileCacheStats {
@@ -16,6 +21,14 @@ class MapTileCacheStats {
 
   final int bytes;
   final int tileCount;
+}
+
+/// Per-source cache details and an aggregate total for the settings summary.
+class MapTileCacheSummary {
+  const MapTileCacheSummary({required this.total, required this.bySource});
+
+  final MapTileCacheStats total;
+  final Map<String, MapTileCacheStats> bySource;
 }
 
 /// Shared persistent cache for online map tiles used throughout the app.
@@ -27,13 +40,15 @@ class MapTileCacheService {
   static const _maxCacheBytes = 256 * 1024 * 1024;
   static const _trimTargetBytes = _maxCacheBytes * 3 ~/ 4;
   static const _maxTileBytes = 10 * 1024 * 1024;
-  static const _allowedHosts = <String>{
-    'tile.openstreetmap.org',
-    'a.tile.openstreetmap.fr',
-    'basemaps.cartocdn.com',
-    'webrd01.is.autonavi.com',
-    'webst01.is.autonavi.com',
-  };
+  static const _sourceIds = <String>[
+    'osm',
+    'osmfr',
+    'carto-dark',
+    'carto-voyager',
+    'amap',
+    'amap-sat',
+  ];
+  static const _legacySourceId = 'legacy';
 
   Future<Directory>? _directoryFuture;
   Future<void> _writeQueue = Future<void>.value();
@@ -52,14 +67,44 @@ class MapTileCacheService {
     return dir;
   }
 
-  String? _cachePathFor(String url, Directory directory) {
+  String? _sourceIdForUrl(String url) {
     final uri = Uri.tryParse(url);
-    if (uri == null ||
-        uri.scheme != 'https' ||
-        !_allowedHosts.contains(uri.host.toLowerCase()) ||
-        uri.userInfo.isNotEmpty) {
+    if (uri == null || uri.scheme != 'https' || uri.userInfo.isNotEmpty) {
       return null;
     }
+    final host = uri.host.toLowerCase();
+    if (host == 'tile.openstreetmap.org') return 'osm';
+    if (host == 'a.tile.openstreetmap.fr' && uri.path.startsWith('/osmfr/')) {
+      return 'osmfr';
+    }
+    if (host == 'basemaps.cartocdn.com') {
+      if (uri.path.startsWith('/dark_all/')) return 'carto-dark';
+      if (uri.path.startsWith('/rastertiles/voyager/')) {
+        return 'carto-voyager';
+      }
+    }
+    if (host == 'webrd01.is.autonavi.com' &&
+        uri.path == '/appmaptile' &&
+        uri.queryParameters['style'] == '8') {
+      return 'amap';
+    }
+    if (host == 'webst01.is.autonavi.com' &&
+        uri.path == '/appmaptile' &&
+        uri.queryParameters['style'] == '6') {
+      return 'amap-sat';
+    }
+    return null;
+  }
+
+  String? _cachePathFor(String url, Directory directory) {
+    final sourceId = _sourceIdForUrl(url);
+    if (sourceId == null) return null;
+    final key = sha256.convert(utf8.encode(url)).toString();
+    return p.join(directory.path, sourceId, key);
+  }
+
+  String? _legacyCachePathFor(String url, Directory directory) {
+    if (_sourceIdForUrl(url) == null) return null;
     final key = sha256.convert(utf8.encode(url)).toString();
     return p.join(directory.path, key);
   }
@@ -70,8 +115,12 @@ class MapTileCacheService {
     try {
       final directory = await _directory();
       final path = _cachePathFor(url, directory);
-      if (path == null) return null;
-      final file = File(path);
+      final legacyPath = _legacyCachePathFor(url, directory);
+      if (path == null || legacyPath == null) return null;
+      final cachedFile = File(path);
+      final legacyFile = File(legacyPath);
+      final isLegacy = !await cachedFile.exists();
+      final file = isLegacy ? legacyFile : cachedFile;
       if (!await file.exists()) return null;
       final stat = await file.stat();
       if (stat.size == 0 || stat.size > _maxTileBytes) {
@@ -86,18 +135,43 @@ class MapTileCacheService {
       try {
         await file.setLastModified(DateTime.now());
       } catch (_) {}
+      if (isLegacy) {
+        try {
+          await cachedFile.parent.create(recursive: true);
+          if (!await cachedFile.exists()) {
+            await file.rename(path);
+          } else {
+            await legacyFile.delete();
+          }
+        } catch (_) {}
+      }
       return bytes;
     } catch (_) {
       return null;
     }
   }
 
-  /// Returns the total size and tile count for the shared disk cache.
-  Future<MapTileCacheStats> getCacheStats() => _exclusive(() async {
+  /// Returns total size and tile count for the shared disk cache.
+  Future<MapTileCacheStats> getCacheStats() async =>
+      (await getCacheSummary()).total;
+
+  /// Returns cache details by online source, plus the aggregate total.
+  Future<MapTileCacheSummary> getCacheSummary() => _exclusive(() async {
     final directory = await _directory();
-    var bytes = 0;
-    var tileCount = 0;
-    await for (final entity in directory.list(followLinks: false)) {
+    final sourceBytes = <String, int>{
+      for (final sourceId in _sourceIds) sourceId: 0,
+      _legacySourceId: 0,
+    };
+    final sourceTileCounts = <String, int>{
+      for (final sourceId in _sourceIds) sourceId: 0,
+      _legacySourceId: 0,
+    };
+    var totalBytes = 0;
+    var totalTileCount = 0;
+    await for (final entity in directory.list(
+      recursive: true,
+      followLinks: false,
+    )) {
       if (entity is! File || p.basename(entity.path).contains('.tmp-')) {
         continue;
       }
@@ -107,10 +181,27 @@ class MapTileCacheService {
           stat.size > _maxTileBytes) {
         continue;
       }
-      bytes += stat.size;
-      tileCount++;
+      final relativePath = p.relative(entity.path, from: directory.path);
+      final pathParts = p.split(relativePath);
+      final sourceId =
+          pathParts.length > 1 && sourceBytes.containsKey(pathParts.first)
+          ? pathParts.first
+          : _legacySourceId;
+      sourceBytes[sourceId] = sourceBytes[sourceId]! + stat.size;
+      sourceTileCounts[sourceId] = sourceTileCounts[sourceId]! + 1;
+      totalBytes += stat.size;
+      totalTileCount++;
     }
-    return MapTileCacheStats(bytes: bytes, tileCount: tileCount);
+    return MapTileCacheSummary(
+      total: MapTileCacheStats(bytes: totalBytes, tileCount: totalTileCount),
+      bySource: {
+        for (final sourceId in sourceBytes.keys)
+          sourceId: MapTileCacheStats(
+            bytes: sourceBytes[sourceId]!,
+            tileCount: sourceTileCounts[sourceId]!,
+          ),
+      },
+    );
   });
 
   /// Persists a successful response if it belongs to the current cache
@@ -124,6 +215,7 @@ class MapTileCacheService {
         final path = _cachePathFor(url, directory);
         if (path == null) return;
         final file = File(path);
+        await file.parent.create(recursive: true);
         if (!await file.exists()) {
           final temp = File(
             '$path.tmp-${DateTime.now().microsecondsSinceEpoch}',
@@ -155,7 +247,10 @@ class MapTileCacheService {
   Future<void> _trimIfNeeded(Directory directory) async {
     final files = <({File file, int size, DateTime modified})>[];
     var totalBytes = 0;
-    await for (final entity in directory.list(followLinks: false)) {
+    await for (final entity in directory.list(
+      recursive: true,
+      followLinks: false,
+    )) {
       if (entity is! File) continue;
       if (p.basename(entity.path).contains('.tmp-')) {
         try {
@@ -198,6 +293,68 @@ class MapTileCacheService {
 class MapTileCacheProvider extends NetworkTileProvider {
   MapTileCacheProvider()
     : super(httpClient: MapTileCacheService.instance.httpClient);
+}
+
+/// Uses an MBTiles tile when present and asks the selected online source only
+/// for coordinates missing from that file.
+class OfflineFirstTileProvider extends TileProvider {
+  OfflineFirstTileProvider({required this.onlineProvider});
+
+  final MapTileCacheProvider? onlineProvider;
+
+  @override
+  ImageProvider getImage(TileCoordinates coordinates, TileLayer options) {
+    try {
+      final tile = OfflineTilesService.instance.getTile(
+        z: coordinates.z,
+        x: coordinates.x,
+        y: coordinates.y,
+      );
+      if (tile != null && tile.isNotEmpty) return MemoryImage(tile);
+    } catch (_) {}
+
+    final urlTemplate = options.urlTemplate;
+    final network = onlineProvider;
+    if (network == null || urlTemplate == null || urlTemplate.isEmpty) {
+      return MemoryImage(TileProvider.transparentImage);
+    }
+    final onlineCoordinates =
+        OfflineTilesService.instance.isActive &&
+            urlTemplate.contains('is.autonavi.com')
+        ? _gcjCoordinates(coordinates)
+        : coordinates;
+    return network.getImage(onlineCoordinates, options);
+  }
+
+  TileCoordinates _gcjCoordinates(TileCoordinates coordinates) {
+    final world = 1 << coordinates.z;
+    final longitude = (coordinates.x + 0.5) / world * 360 - 180;
+    final latitudeRadians =
+        2 *
+            math.atan(
+              math.exp(math.pi * (1 - 2 * (coordinates.y + 0.5) / world)),
+            ) -
+        math.pi / 2;
+    final latitude = latitudeRadians * 180 / math.pi;
+    final shifted = Gcj02.wgsToGcj(latitude, longitude);
+    final shiftedLatRadians = shifted[0] * math.pi / 180;
+    final shiftedX = ((shifted[1] + 180) / 360 * world).floor().clamp(
+      0,
+      world - 1,
+    );
+    final shiftedY =
+        ((1 -
+                    math.log(
+                          math.tan(shiftedLatRadians) +
+                              1 / math.cos(shiftedLatRadians),
+                        ) /
+                        math.pi) /
+                2 *
+                world)
+            .floor()
+            .clamp(0, world - 1);
+    return TileCoordinates(shiftedX, shiftedY, coordinates.z);
+  }
 }
 
 class _MapTileCacheClient extends http.BaseClient {

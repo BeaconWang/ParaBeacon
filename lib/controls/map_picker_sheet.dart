@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart' show LatLng;
 import '../data/gcj02.dart';
 import '../data/geocoding_service.dart';
 import '../data/map_tile_cache.dart';
+import '../data/offline_tiles_service.dart';
 import '../data/weather_favorites.dart';
 import '../data/weather_service.dart' show WeatherException;
 import '../l10n/app_localizations.dart';
@@ -83,9 +84,13 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
   final MapController _map = MapController();
   final WeatherFavoritesStore _favorites = WeatherFavoritesStore.instance;
   MapTileCacheProvider? _onlineTileProvider;
+  OfflineFirstTileProvider? _offlineFirstTileProvider;
 
   MapTileCacheProvider get _cachedTileProvider =>
       _onlineTileProvider ??= MapTileCacheProvider();
+
+  OfflineFirstTileProvider get _tileProvider => _offlineFirstTileProvider ??=
+      OfflineFirstTileProvider(onlineProvider: _cachedTileProvider);
 
   late String _tileSourceId;
 
@@ -128,6 +133,7 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
         ? LatLng(lat, lon)
         : _fallback;
     _favorites.addListener(_onFavoritesChanged);
+    OfflineTilesService.instance.revision.addListener(_onOfflineTilesChanged);
     _favorites.load();
   }
 
@@ -137,6 +143,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
     _searchController.dispose();
     _searchFocus.dispose();
     _favorites.removeListener(_onFavoritesChanged);
+    OfflineTilesService.instance.revision.removeListener(
+      _onOfflineTilesChanged,
+    );
     super.dispose();
   }
 
@@ -144,24 +153,35 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
     if (mounted) setState(() {});
   }
 
+  void _onOfflineTilesChanged() {
+    if (!mounted) return;
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _ready) _map.move(_toDisplay(_wgs), _zoom);
+    });
+  }
+
   static bool _validLat(double v) => v >= -90 && v <= 90 && !v.isNaN;
   static bool _validLon(double v) => v >= -180 && v <= 180 && !v.isNaN;
 
   MapTileSource get _src => MapTileSources.byId(_tileSourceId);
 
-  bool get _isFavorite =>
-      _favorites.contains(_wgs.latitude, _wgs.longitude);
+  bool get _isFavorite => _favorites.contains(_wgs.latitude, _wgs.longitude);
 
   /// WGS-84 -> tile coordinate system (GCJ-02 for the Chinese providers).
   LatLng _toDisplay(LatLng wgs) {
-    if (!_src.requiresGcjShift) return wgs;
+    if (OfflineTilesService.instance.isActive || !_src.requiresGcjShift) {
+      return wgs;
+    }
     final p = Gcj02.wgsToGcj(wgs.latitude, wgs.longitude);
     return LatLng(p[0], p[1]);
   }
 
   /// Tile coordinate system -> WGS-84.
   LatLng _toWgs(LatLng display) {
-    if (!_src.requiresGcjShift) return display;
+    if (OfflineTilesService.instance.isActive || !_src.requiresGcjShift) {
+      return display;
+    }
     final p = Gcj02.gcjToWgs(display.latitude, display.longitude);
     return LatLng(p[0], p[1]);
   }
@@ -356,20 +376,21 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
   }
 
   String _sourceLabel(AppLocalizations l10n, String id) => switch (id) {
-        'none' => l10n.settingMapSourceNone,
-        'osm' => l10n.settingMapSourceOsm,
-        'osmfr' => l10n.settingMapSourceOsmFr,
-        'carto-dark' => l10n.settingMapSourceCartoDark,
-        'carto-voyager' => l10n.settingMapSourceCartoVoyager,
-        'amap' => l10n.settingMapSourceAmap,
-        'amap-sat' => l10n.settingMapSourceAmapSat,
-        _ => MapTileSources.byId(id).label,
-      };
+    'none' => l10n.settingMapSourceNone,
+    'osm' => l10n.settingMapSourceOsm,
+    'osmfr' => l10n.settingMapSourceOsmFr,
+    'carto-dark' => l10n.settingMapSourceCartoDark,
+    'carto-voyager' => l10n.settingMapSourceCartoVoyager,
+    'amap' => l10n.settingMapSourceAmap,
+    'amap-sat' => l10n.settingMapSourceAmapSat,
+    _ => MapTileSources.byId(id).label,
+  };
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final src = _src;
+    final offlineActive = OfflineTilesService.instance.isActive;
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -417,12 +438,16 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                         },
                       ),
                       children: [
-                        if (!src.isNone)
+                        if (offlineActive || !src.isNone)
                           TileLayer(
-                            key: ValueKey<String>('picker-tile-$_tileSourceId'),
-                            tileProvider: _cachedTileProvider,
-                            urlTemplate: src.urlTemplate,
-                            maxNativeZoom: src.maxZoom.round(),
+                            key: ValueKey<String>(
+                              'picker-$_tileSourceId-${offlineActive ? OfflineTilesService.instance.activeFileName : 'online'}-r${OfflineTilesService.instance.revision.value}',
+                            ),
+                            tileProvider: _tileProvider,
+                            urlTemplate: src.isNone ? null : src.urlTemplate,
+                            maxNativeZoom: offlineActive
+                                ? 19
+                                : src.maxZoom.round(),
                             // Rely on flutter_map's own User-Agent (see the
                             // note in MapControl): a custom header is dropped
                             // on Android and breaks OSM's usage policy check.
@@ -481,7 +506,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                       bottom: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withAlpha(120),
                           borderRadius: BorderRadius.circular(4),
@@ -489,7 +516,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                         child: Text(
                           src.attribution,
                           style: const TextStyle(
-                              color: Colors.white54, fontSize: 10),
+                            color: Colors.white54,
+                            fontSize: 10,
+                          ),
                         ),
                       ),
                     ),
@@ -539,7 +568,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
               width: 14,
               height: 14,
               child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white70),
+                strokeWidth: 2,
+                color: Colors.white70,
+              ),
             )
           else if (_searchController.text.isNotEmpty)
             GestureDetector(
@@ -569,41 +600,45 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
               ),
             )
           : _searchResults.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Text(
-                    l10n.weatherNoResults,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ? Padding(
+              padding: const EdgeInsets.all(14),
+              child: Text(
+                l10n.weatherNoResults,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            )
+          : ListView.builder(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: _searchResults.length,
+              itemBuilder: (context, i) {
+                final place = _searchResults[i];
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(
+                    Icons.place_outlined,
+                    size: 18,
+                    color: Colors.white54,
                   ),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  itemCount: _searchResults.length,
-                  itemBuilder: (context, i) {
-                    final place = _searchResults[i];
-                    return ListTile(
-                      dense: true,
-                      leading: const Icon(Icons.place_outlined,
-                          size: 18, color: Colors.white54),
-                      title: Text(
-                        place.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 14),
-                      ),
-                      subtitle: Text(
-                        place.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            color: Colors.white.withAlpha(130), fontSize: 11),
-                      ),
-                      onTap: () => _selectSearchResult(place),
-                    );
-                  },
-                ),
+                  title: Text(
+                    place.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  subtitle: Text(
+                    place.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(130),
+                      fontSize: 11,
+                    ),
+                  ),
+                  onTap: () => _selectSearchResult(place),
+                );
+              },
+            ),
     );
   }
 
@@ -650,8 +685,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                         ),
                         IconButton(
                           icon: const Icon(
-                              Icons.drive_file_rename_outline,
-                              size: 18),
+                            Icons.drive_file_rename_outline,
+                            size: 18,
+                          ),
                           tooltip: l10n.weatherFavoriteRename,
                           visualDensity: VisualDensity.compact,
                           // Close the menu first: the dialog must not be
@@ -720,7 +756,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white70),
+                          strokeWidth: 2,
+                          color: Colors.white70,
+                        ),
                       )
                     : Icon(
                         saved ? Icons.star : Icons.star_border,
@@ -735,8 +773,8 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
               FilledButton.icon(
                 icon: const Icon(Icons.check, size: 18),
                 label: Text(l10n.mapPickerConfirm),
-                onPressed: () => Navigator.of(context)
-                    .pop((_wgs.latitude, _wgs.longitude)),
+                onPressed: () =>
+                    Navigator.of(context).pop((_wgs.latitude, _wgs.longitude)),
               ),
             ],
           ),
@@ -817,7 +855,9 @@ class _MapRoundButton extends StatelessWidget {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white70),
+                      strokeWidth: 2,
+                      color: Colors.white70,
+                    ),
                   ),
                 )
               : Icon(icon, size: 20, color: Colors.white70),

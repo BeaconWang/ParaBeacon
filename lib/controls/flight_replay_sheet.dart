@@ -10,6 +10,7 @@ import '../data/flight_data.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
 import '../data/map_tile_cache.dart';
+import '../data/offline_tiles_service.dart';
 import '../l10n/app_localizations.dart';
 import 'map_control.dart' show MapTileSources, MapTileSource;
 
@@ -53,9 +54,13 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   final MapController _map = MapController();
   MapTileCacheProvider? _onlineTileProvider;
+  OfflineFirstTileProvider? _offlineFirstTileProvider;
 
   MapTileCacheProvider get _cachedTileProvider =>
       _onlineTileProvider ??= MapTileCacheProvider();
+
+  OfflineFirstTileProvider get _tileProvider => _offlineFirstTileProvider ??=
+      OfflineFirstTileProvider(onlineProvider: _cachedTileProvider);
 
   late final Ticker _ticker;
   bool _ready = false;
@@ -112,6 +117,17 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     );
     _computeExtrema();
     _ticker = createTicker(_onTick);
+    OfflineTilesService.instance.revision.addListener(_onOfflineTilesChanged);
+  }
+
+  void _onOfflineTilesChanged() {
+    if (!mounted) return;
+    _cachedTrackPoints = null;
+    _cachedTrackPointsSourceId = null;
+    _cachedTrackPolylines = null;
+    _cachedPolylineSourceId = null;
+    setState(() {});
+    _fitTrack();
   }
 
   @override
@@ -146,6 +162,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
   @override
   void dispose() {
+    OfflineTilesService.instance.revision.removeListener(
+      _onOfflineTilesChanged,
+    );
     _stopAudio();
     _ticker.dispose();
     super.dispose();
@@ -354,7 +373,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   }
 
   LatLng _shift(LatLng wgs) {
-    if (!_src.requiresGcjShift) return wgs;
+    if (OfflineTilesService.instance.isActive || !_src.requiresGcjShift) {
+      return wgs;
+    }
     final p = Gcj02.wgsToGcj(wgs.latitude, wgs.longitude);
     return LatLng(p[0], p[1]);
   }
@@ -384,6 +405,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final offlineActive = OfflineTilesService.instance.isActive;
     final center = _firstFix() ?? _shift(const LatLng(46.5197, 6.6323));
     final cur = _currentSample();
     final hasFix = cur.data.hasFix;
@@ -471,12 +493,16 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                       },
                     ),
                     children: [
-                      if (!_src.isNone)
+                      if (offlineActive || !_src.isNone)
                         TileLayer(
-                          key: ValueKey<String>('replay-tile-$_tileSourceId'),
-                          tileProvider: _cachedTileProvider,
-                          urlTemplate: _src.urlTemplate,
-                          maxNativeZoom: _src.maxZoom.round(),
+                          key: ValueKey<String>(
+                            'replay-$_tileSourceId-${offlineActive ? OfflineTilesService.instance.activeFileName : 'online'}-r${OfflineTilesService.instance.revision.value}',
+                          ),
+                          tileProvider: _tileProvider,
+                          urlTemplate: _src.isNone ? null : _src.urlTemplate,
+                          maxNativeZoom: offlineActive
+                              ? 19
+                              : _src.maxZoom.round(),
                           // Rely on flutter_map's own User-Agent (formatted from
                           // this package name) rather than a custom
                           // NetworkTileProvider(headers:). Passing a `const`

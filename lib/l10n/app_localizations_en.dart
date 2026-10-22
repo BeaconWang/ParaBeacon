@@ -1585,34 +1585,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapZoomOutTooltip => 'Zoom out';
 
   @override
-  String get mapCacheTitle => 'Map tile cache';
+  String get mapCacheTitle => 'Map cache data';
 
   @override
   String get mapCacheSubtitle =>
-      'Shared by all maps. Clear downloaded online map tiles.';
+      'Cached map blocks by source, with a combined summary.';
+
+  @override
+  String get mapCacheSummary => 'Summary';
+
+  @override
+  String get mapCacheLegacySource => 'Uncategorized older cache';
 
   @override
   String get mapCacheClearTitle => 'Clear map cache?';
 
   @override
   String get mapCacheClearConfirmation =>
-      'Downloaded online map tiles will be removed. Offline .mbtiles maps are not affected.';
+      'Downloaded online map tiles will be removed; offline .mbtiles maps are not affected.';
 
   @override
-  String get mapCacheCleared => 'Map tile cache cleared.';
+  String get mapCacheCleared => 'Map cache cleared.';
 
   @override
-  String get mapCacheClearFailed => 'Unable to clear the map tile cache.';
+  String get mapCacheClearFailed => 'Unable to clear the map cache.';
 
   @override
-  String get mapCacheSizeLoading => 'Calculating cached map size…';
+  String get mapCacheSizeLoading => 'Calculating map cache data…';
 
   @override
-  String get mapCacheSizeUnavailable => 'Cached map size unavailable';
+  String get mapCacheSizeUnavailable => 'Map cache data unavailable';
 
   @override
   String mapCacheSizeDetails(String size, int tiles, int bytes) {
-    return '$size · $tiles tiles · $bytes bytes';
+    return '$size · $tiles blocks · $bytes bytes';
   }
 
   @override
@@ -2006,9 +2012,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingLatestThermals => 'Show N latest thermals';
-
-  @override
-  String get settingPreferOffline => 'Prefer offline maps (.mbtiles)';
 
   @override
   String get settingShowTrack => 'Show flight track';

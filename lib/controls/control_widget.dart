@@ -409,7 +409,6 @@ class ControlWidget extends StatelessWidget {
               fallback: false,
             ),
             showScale: control.boolSetting('showScale', fallback: true),
-            useOffline: control.boolSetting('useOffline', fallback: true),
             showTrack: control.boolSetting('showTrack', fallback: true),
             showThermal: control.boolSetting('showThermal', fallback: true),
             showAirspace: control.boolSetting('showAirspace', fallback: true),

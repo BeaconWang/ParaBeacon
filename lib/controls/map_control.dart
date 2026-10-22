@@ -209,9 +209,6 @@ class MapControl extends StatefulWidget {
   /// Draw the ground-distance scale ruler (bottom-left).
   final bool showScale;
 
-  /// Prefer an activated offline `.mbtiles` basemap over online tiles.
-  final bool useOffline;
-
   /// Show the vario colour-scale legend (bottom-centre).
   final bool showLegend;
 
@@ -250,7 +247,6 @@ class MapControl extends StatefulWidget {
     this.showBearing = false,
     this.showTakeoffLine = false,
     this.showScale = true,
-    this.useOffline = true,
     this.showLegend = false,
     this.showZoomLevel = true,
     this.showAttribution = true,
@@ -265,9 +261,13 @@ class MapControl extends StatefulWidget {
 class _MapControlState extends State<MapControl> {
   final MapController _map = MapController();
   MapTileCacheProvider? _onlineTileProvider;
+  OfflineFirstTileProvider? _offlineFirstTileProvider;
 
   MapTileCacheProvider get _cachedTileProvider =>
       _onlineTileProvider ??= MapTileCacheProvider();
+
+  OfflineFirstTileProvider get _tileProvider => _offlineFirstTileProvider ??=
+      OfflineFirstTileProvider(onlineProvider: _cachedTileProvider);
 
   /// Broadcast stream used to force [TileLayer] to drop error tiles and
   /// re-fetch them after a transient network failure. See [_onTileLoadError]
@@ -514,8 +514,7 @@ class _MapControlState extends State<MapControl> {
     return LatLng(p[0], p[1]);
   }
 
-  bool get _offlineActive =>
-      widget.useOffline && OfflineTilesService.instance.isActive;
+  bool get _offlineActive => OfflineTilesService.instance.isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -898,55 +897,31 @@ class _MapControlState extends State<MapControl> {
     );
   }
 
-  /// Builds the base tile layer: an activated offline `.mbtiles` source takes
-  /// precedence, otherwise the selected online source.
+  /// Builds a single tile layer that reads offline first and requests online
+  /// only for tiles absent from the active `.mbtiles` file.
   Widget _buildTileLayer(MapTileSource src) {
-    if (_offlineActive) {
-      final tp = OfflineTilesService.instance.tileProvider();
-      if (tp != null) {
-        return TileLayer(
-          key: ValueKey(
-            'offline-${OfflineTilesService.instance.activeFileName}-r$_tileRetryGen',
-          ),
-          tileProvider: tp,
-          maxNativeZoom: 19,
-          userAgentPackageName: 'com.beacon.parabeacon',
-          // Even mbtiles reads can fail (file busy, corrupt tile); use the
-          // same retry path as online tiles so we recover instead of leaving
-          // permanent blanks.
-          errorTileCallback: _onTileLoadError,
-          evictErrorTileStrategy:
-              EvictErrorTileStrategy.notVisibleRespectMargin,
-          reset: _tileResetCtrl.stream,
-        );
-      }
-    }
-    // "None" basemap: draw no tiles at all, leaving only the overlays
-    // (track / thermal / airspace / position marker) on a plain background.
-    if (src.isNone) {
-      return const SizedBox.shrink();
-    }
+    final useOffline = _offlineActive;
+    if (src.isNone && !useOffline) return const SizedBox.shrink();
+
     // NOTE (Android blank-map fix): do NOT set a custom `User-Agent` via
     // NetworkTileProvider(headers:). On Android, dart:io's HttpClient silently
     // drops the header, so tiles go out with the default `Dart/x.y (dart:io)`
     // UA — which OSM's tile usage policy rejects (403/418), leaving the map
     // blank. flutter_map's own `userAgentPackageName` correctly formats an
     // accepted UA (`<pkg>/flutter_map/<ver>`) on every platform, so we rely on
-    // that instead. Keep it in sync with the offline branch above.
+    // that instead.
     //
     // Retry / recovery: transient network errors (cell handoff, Wi-Fi drop,
     // captive portal) leave individual tiles in a permanent `loadError` state
-    // in flutter_map's cache, appearing as "the map won't load sometimes".
-    // We opt into `notVisibleRespectMargin` so the eviction actually kicks in
-    // when tiles leave the buffer, wire up `errorTileCallback` to schedule a
-    // reset, and pipe a broadcast [_tileResetCtrl] stream into `reset` so the
-    // layer drops failed tiles and re-requests the visible range without
-    // waiting for the user to pan.
+    // in flutter_map's cache. The callback and reset stream evict failures and
+    // re-request visible tiles after a short backoff.
     return TileLayer(
-      key: ValueKey('${src.id}-r$_tileRetryGen'),
-      tileProvider: _cachedTileProvider,
-      urlTemplate: src.urlTemplate,
-      maxNativeZoom: src.maxZoom.round(),
+      key: ValueKey(
+        '${src.id}-${useOffline ? 'offline-${OfflineTilesService.instance.activeFileName}-r${OfflineTilesService.instance.revision.value}' : 'online'}-r$_tileRetryGen',
+      ),
+      tileProvider: _tileProvider,
+      urlTemplate: src.isNone ? null : src.urlTemplate,
+      maxNativeZoom: useOffline ? 19 : src.maxZoom.round(),
       evictErrorTileStrategy: EvictErrorTileStrategy.notVisibleRespectMargin,
       keepBuffer: 3,
       panBuffer: 2,

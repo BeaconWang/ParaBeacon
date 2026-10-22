@@ -49,7 +49,6 @@ import 'data/sensors/internal_sensor_service.dart';
 import 'data/sensors/internal_sensor_bridge.dart';
 import 'data/layout_config_io.dart';
 import 'data/layout_store.dart';
-import 'data/map_tile_cache.dart';
 import 'data/offline_tiles_service.dart';
 import 'data/raw_flight_data_source.dart';
 import 'data/recording_settings.dart';
@@ -65,8 +64,9 @@ import 'theme/theme_controller.dart';
 import 'theme/theme_settings_sheet.dart';
 import 'theme/language_settings_sheet.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await OfflineTilesService.instance.warmup();
   // Keep the display awake: a flight instrument must stay visible and its
   // audio/GPS/sensor loops running rather than being suspended when the user
   // isn't touching the screen. Best-effort — unsupported platforms are no-ops.
@@ -212,10 +212,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // silent so a corrupt on-disk log doesn't block startup).
     FlightRecorder.instance.loadPersisted();
 
-    // Map control: re-open the last-activated offline basemap (.mbtiles) and
-    // load airspace data if the pilot has dropped an OpenAir file. Both are
-    // best-effort and leave the map on online tiles / no airspace on failure.
-    OfflineTilesService.instance.warmup();
+    // Load airspace data if the pilot has dropped an OpenAir file; failure is
+    // best-effort and leaves the map without airspace overlays.
     AirspaceStore.instance.warmup();
 
     // Load the user's persisted Vario sound profile and apply it to the audio
@@ -832,57 +830,8 @@ class _DashGridPageState extends State<DashGridPage> {
     });
   }
 
-  String _formatMapCacheSize(int bytes) {
-    const units = ['B', 'KiB', 'MiB', 'GiB'];
-    var value = bytes.toDouble();
-    var unitIndex = 0;
-    while (value >= 1024 && unitIndex < units.length - 1) {
-      value /= 1024;
-      unitIndex++;
-    }
-    final formatted = unitIndex == 0
-        ? value.toStringAsFixed(0)
-        : value.toStringAsFixed(2);
-    return '$formatted ${units[unitIndex]}';
-  }
-
-  Future<void> _clearMapTileCache() async {
-    final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.mapCacheClearTitle),
-        content: Text(l10n.mapCacheClearConfirmation),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.clear),
-          ),
-        ],
-      ),
-    );
-    if (!mounted || confirmed != true) return;
-    try {
-      await MapTileCacheService.instance.clearCache();
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.mapCacheCleared)));
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.mapCacheClearFailed)));
-    }
-  }
-
   /// Opens the app preferences sheet (full screen).
   Future<void> _openPreferences() async {
-    Future<MapTileCacheStats>? mapCacheStatsFuture;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1025,57 +974,7 @@ class _DashGridPageState extends State<DashGridPage> {
                           onTap: () => showUnitSettingsSheet(context),
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.map_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.mapCacheTitle),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(l10n.mapCacheSubtitle),
-                              const SizedBox(height: 4),
-                              FutureBuilder<MapTileCacheStats>(
-                                future: mapCacheStatsFuture ??=
-                                    MapTileCacheService.instance
-                                        .getCacheStats(),
-                                builder: (context, snapshot) {
-                                  final String details;
-                                  if (snapshot.connectionState !=
-                                      ConnectionState.done) {
-                                    details = l10n.mapCacheSizeLoading;
-                                  } else if (snapshot.hasError ||
-                                      !snapshot.hasData) {
-                                    details = l10n.mapCacheSizeUnavailable;
-                                  } else {
-                                    final stats = snapshot.data!;
-                                    details = l10n.mapCacheSizeDetails(
-                                      _formatMapCacheSize(stats.bytes),
-                                      stats.tileCount,
-                                      stats.bytes,
-                                    );
-                                  }
-                                  return Text(
-                                    details,
-                                    style: theme.textTheme.bodySmall,
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                          trailing: const Icon(Icons.delete_outline, size: 20),
-                          onTap: () async {
-                            await _clearMapTileCache();
-                            if (!context.mounted) return;
-                            mapCacheStatsFuture = MapTileCacheService.instance
-                                .getCacheStats();
-                            setSheetState(() {});
-                          },
-                        ),
-                        const Divider(height: 1),
+
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(

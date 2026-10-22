@@ -3041,14 +3041,26 @@ abstract class AppLocalizations {
   /// No description provided for @mapCacheTitle.
   ///
   /// In en, this message translates to:
-  /// **'Map tile cache'**
+  /// **'Map cache data'**
   String get mapCacheTitle;
 
   /// No description provided for @mapCacheSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Shared by all maps. Clear downloaded online map tiles.'**
+  /// **'Cached map blocks by source, with a combined summary.'**
   String get mapCacheSubtitle;
+
+  /// No description provided for @mapCacheSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get mapCacheSummary;
+
+  /// No description provided for @mapCacheLegacySource.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncategorized older cache'**
+  String get mapCacheLegacySource;
 
   /// No description provided for @mapCacheClearTitle.
   ///
@@ -3059,37 +3071,37 @@ abstract class AppLocalizations {
   /// No description provided for @mapCacheClearConfirmation.
   ///
   /// In en, this message translates to:
-  /// **'Downloaded online map tiles will be removed. Offline .mbtiles maps are not affected.'**
+  /// **'Downloaded online map tiles will be removed; offline .mbtiles maps are not affected.'**
   String get mapCacheClearConfirmation;
 
   /// No description provided for @mapCacheCleared.
   ///
   /// In en, this message translates to:
-  /// **'Map tile cache cleared.'**
+  /// **'Map cache cleared.'**
   String get mapCacheCleared;
 
   /// No description provided for @mapCacheClearFailed.
   ///
   /// In en, this message translates to:
-  /// **'Unable to clear the map tile cache.'**
+  /// **'Unable to clear the map cache.'**
   String get mapCacheClearFailed;
 
   /// No description provided for @mapCacheSizeLoading.
   ///
   /// In en, this message translates to:
-  /// **'Calculating cached map size…'**
+  /// **'Calculating map cache data…'**
   String get mapCacheSizeLoading;
 
   /// No description provided for @mapCacheSizeUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Cached map size unavailable'**
+  /// **'Map cache data unavailable'**
   String get mapCacheSizeUnavailable;
 
   /// No description provided for @mapCacheSizeDetails.
   ///
   /// In en, this message translates to:
-  /// **'{size} · {tiles} tiles · {bytes} bytes'**
+  /// **'{size} · {tiles} blocks · {bytes} bytes'**
   String mapCacheSizeDetails(String size, int tiles, int bytes);
 
   /// No description provided for @mapHeading.
@@ -3841,12 +3853,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show N latest thermals'**
   String get settingLatestThermals;
-
-  /// No description provided for @settingPreferOffline.
-  ///
-  /// In en, this message translates to:
-  /// **'Prefer offline maps (.mbtiles)'**
-  String get settingPreferOffline;
 
   /// No description provided for @settingShowTrack.
   ///

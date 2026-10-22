@@ -1,8 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_mbtiles/flutter_map_mbtiles.dart';
 import 'package:mbtiles/mbtiles.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -17,8 +15,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///   them via the Map control settings).
 /// * [warmup] re-opens the file the user last activated (persisted with
 ///   `shared_preferences`).
-/// * [tileProvider] returns a `flutter_map` provider when a file is active, or
-///   `null` so the caller falls back to online tiles.
+/// * [getTile] reads requested tiles so map controls can request online only
+///   for the individual blocks missing from the active offline file.
 ///
 /// A [ValueListenable] ([revision]) ticks whenever the active source changes so
 /// widgets (the Map control) can rebuild their tile layer.
@@ -136,12 +134,13 @@ class OfflineTilesService {
     if (await f.exists()) await f.delete();
   }
 
-  /// A `flutter_map` tile provider backed by the active file, or null when no
-  /// offline source is active (caller should fall back to online tiles).
-  TileProvider? tileProvider() {
+  /// Reads one slippy-map tile from the active file, returning null when the
+  /// tile is not present so the caller can request just that tile online.
+  Uint8List? getTile({required int z, required int x, required int y}) {
     final mb = _mbtiles;
     if (mb == null) return null;
-    return MbTilesTileProvider(mbtiles: mb, silenceTileNotFound: true);
+    final tmsY = ((1 << z) - 1) - y;
+    return mb.getTile(z: z, x: x, y: tmsY);
   }
 
   Future<void> _close() async {

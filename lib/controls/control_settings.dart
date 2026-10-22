@@ -224,8 +224,6 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingTracklogLength;
     case 'latestThermals':
       return l10n.settingLatestThermals;
-    case 'useOffline':
-      return l10n.settingPreferOffline;
     case 'showTrack':
       return l10n.settingShowTrack;
     case 'showThermal':
@@ -924,11 +922,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       min: 0.0,
       max: 12.0,
       divisions: 12,
-    ),
-    ControlSetting.toggle(
-      key: 'useOffline',
-      label: 'Prefer offline maps (.mbtiles)',
-      defaultValue: true,
     ),
     ControlSetting.toggle(
       key: 'showTrack',

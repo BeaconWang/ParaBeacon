@@ -81,7 +81,8 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   bool _playing = false;
   double _speed = 1.0;
   bool _audioSync = false;
-  bool _telemetryMinimized = true;
+  bool _showTelemetry = false;
+  bool _telemetryMinimized = false;
   Offset _telemetryOffset = const Offset(8, 8);
   Size? _telemetrySize;
 
@@ -429,6 +430,16 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                     style: theme.textTheme.titleLarge,
                   ),
                 ),
+                IconButton(
+                  icon: Icon(
+                    _showTelemetry
+                        ? Icons.monitor_heart
+                        : Icons.monitor_heart_outlined,
+                  ),
+                  tooltip: _showTelemetry ? l10n.close : l10n.dataMonitorTitle,
+                  onPressed: () =>
+                      setState(() => _showTelemetry = !_showTelemetry),
+                ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.layers_outlined),
                   tooltip: l10n.settingMapSource,
@@ -532,17 +543,18 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                   ),
                 ),
                 // Telemetry follows the current replay sample on every tick/seek.
-                LayoutBuilder(
-                  builder: (context, bounds) => Stack(
-                    children: [
-                      Positioned(
-                        left: _telemetryOffset.dx,
-                        top: _telemetryOffset.dy,
-                        child: _telemetryPanel(theme, cur, bounds),
-                      ),
-                    ],
+                if (_showTelemetry)
+                  LayoutBuilder(
+                    builder: (context, bounds) => Stack(
+                      children: [
+                        Positioned(
+                          left: _telemetryOffset.dx,
+                          top: _telemetryOffset.dy,
+                          child: _telemetryPanel(theme, cur, bounds),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),

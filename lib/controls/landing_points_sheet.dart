@@ -134,6 +134,7 @@ class _LandingPointsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final data = FlightDataProvider.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -178,6 +179,9 @@ class _LandingPointsSheet extends StatelessWidget {
                   animation: LandingPointStore.instance,
                   builder: (context, _) {
                     final store = LandingPointStore.instance;
+                    final nearest = _hasValidFix(data)
+                        ? store.nearestPointTo(data.latitude, data.longitude)
+                        : null;
                     if (store.points.isEmpty) {
                       return Center(
                         child: Text(
@@ -194,7 +198,7 @@ class _LandingPointsSheet extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final point = store.points[index];
                         final isDefault = store.defaultPoint?.id == point.id;
-                        final isLast = store.lastPoint?.id == point.id;
+                        final isNearest = nearest?.id == point.id;
                         final detail = <String>[
                           '${point.latitude.toStringAsFixed(5)}, '
                               '${point.longitude.toStringAsFixed(5)}',
@@ -202,19 +206,19 @@ class _LandingPointsSheet extends StatelessWidget {
                             '${l10n.landingPointAltitude}: '
                                 '${point.altitudeM!.toStringAsFixed(0)} m',
                           if (isDefault) l10n.landingPointDefault,
-                          if (isLast) l10n.landingPointLast,
+                          if (isNearest) l10n.landingPointLast,
                         ].join(' · ');
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(
                             isDefault
                                 ? Icons.favorite
-                                : isLast
+                                : isNearest
                                 ? Icons.place
                                 : Icons.location_on_outlined,
                             color: isDefault
                                 ? Colors.red
-                                : isLast
+                                : isNearest
                                 ? Colors.deepPurple
                                 : theme.colorScheme.primary,
                           ),
@@ -226,7 +230,6 @@ class _LandingPointsSheet extends StatelessWidget {
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          onTap: () => store.setLast(point.id),
                           trailing: PopupMenuButton<String>(
                             tooltip: l10n.landingPointActions,
                             onSelected: (value) async {
@@ -234,8 +237,6 @@ class _LandingPointsSheet extends StatelessWidget {
                                 await store.setDefault(
                                   isDefault ? null : point.id,
                                 );
-                              } else if (value == 'last') {
-                                await store.setLast(point.id);
                               } else if (value == 'delete') {
                                 await store.remove(point.id);
                               }
@@ -248,10 +249,6 @@ class _LandingPointsSheet extends StatelessWidget {
                                       ? l10n.landingPointClearDefault
                                       : l10n.landingPointSetDefault,
                                 ),
-                              ),
-                              PopupMenuItem(
-                                value: 'last',
-                                child: Text(l10n.landingPointUseAsLast),
                               ),
                               PopupMenuItem(
                                 value: 'delete',

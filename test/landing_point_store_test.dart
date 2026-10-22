@@ -55,7 +55,7 @@ void main() {
     setUp(() => SharedPreferences.setMockInitialValues({}));
 
     test(
-      'persists default and last point, repairing references on delete',
+      'automatically finds the nearest point and persists only the default',
       () async {
         final store = LandingPointStore.instance;
         await store.load();
@@ -65,7 +65,7 @@ void main() {
           longitude: 20,
           altitudeM: 300,
         )!;
-        final lastPoint = LandingPoint.create(
+        final nearbyPoint = LandingPoint.create(
           name: 'Valley LZ',
           latitude: 11,
           longitude: 21,
@@ -74,19 +74,23 @@ void main() {
 
         await store.add(defaultPoint);
         await store.setDefault(defaultPoint.id);
-        await store.add(lastPoint);
+        await store.add(nearbyPoint);
         expect(store.defaultPoint?.id, defaultPoint.id);
-        expect(store.lastPoint?.id, lastPoint.id);
+        expect(store.nearestPointTo(10.9, 20.9)?.id, nearbyPoint.id);
+        expect(store.nearestPointTo(10, 20)?.id, defaultPoint.id);
+        expect(store.nearestPointTo(double.nan, 0), isNull);
 
-        await store.remove(lastPoint.id);
+        await store.remove(nearbyPoint.id);
         expect(store.defaultPoint?.id, defaultPoint.id);
-        expect(store.lastPoint?.id, defaultPoint.id);
+        expect(store.nearestPointTo(10.9, 20.9)?.id, defaultPoint.id);
 
         final prefs = await SharedPreferences.getInstance();
         final raw = prefs.getString('pb.landingPoints.v1');
         expect(raw, contains('Home LZ'));
         expect(raw, isNot(contains('Valley LZ')));
-        expect(jsonDecode(raw!)['defaultId'], defaultPoint.id);
+        final persisted = jsonDecode(raw!) as Map;
+        expect(persisted['defaultId'], defaultPoint.id);
+        expect(persisted.containsKey('lastId'), isFalse);
       },
     );
   });

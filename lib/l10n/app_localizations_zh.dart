@@ -2063,7 +2063,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowDefaultLandingLine => '显示到默认降落点的连线';
 
   @override
-  String get settingShowLastLandingLine => '显示到最近降落点的连线';
+  String get settingShowLastLandingLine => '显示到距离最近降落点的连线';
 
   @override
   String get settingTakeoffPointColor => '起飞点标记颜色';
@@ -2072,7 +2072,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingDefaultLandingPointColor => '默认降落点标记颜色';
 
   @override
-  String get settingLastLandingPointColor => '最近降落点标记颜色';
+  String get settingLastLandingPointColor => '距离最近降落点标记颜色';
 
   @override
   String get settingTakeoffLineColor => '起飞点连线颜色';
@@ -2081,7 +2081,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingDefaultLandingLineColor => '默认降落点连线颜色';
 
   @override
-  String get settingLastLandingLineColor => '最近降落点连线颜色';
+  String get settingLastLandingLineColor => '距离最近降落点连线颜色';
 
   @override
   String get landingPointsTitle => '降落点';
@@ -2132,7 +2132,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingPointDefault => '默认';
 
   @override
-  String get landingPointLast => '最近选择';
+  String get landingPointLast => '距离最近';
 
   @override
   String get landingPointActions => '降落点操作';
@@ -2142,9 +2142,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get landingPointSetDefault => '设为默认降落点';
-
-  @override
-  String get landingPointUseAsLast => '设为最近降落点';
 
   @override
   String get landingPointDelete => '删除降落点';

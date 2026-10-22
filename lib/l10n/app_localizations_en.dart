@@ -2141,7 +2141,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show line to default landing point';
 
   @override
-  String get settingShowLastLandingLine => 'Show line to last landing point';
+  String get settingShowLastLandingLine => 'Show line to nearest landing point';
 
   @override
   String get settingTakeoffPointColor => 'Take-off marker color';
@@ -2150,7 +2150,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingDefaultLandingPointColor => 'Default landing marker color';
 
   @override
-  String get settingLastLandingPointColor => 'Last landing marker color';
+  String get settingLastLandingPointColor => 'Nearest landing marker color';
 
   @override
   String get settingTakeoffLineColor => 'Take-off line color';
@@ -2159,7 +2159,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingDefaultLandingLineColor => 'Default landing line color';
 
   @override
-  String get settingLastLandingLineColor => 'Last landing line color';
+  String get settingLastLandingLineColor => 'Nearest landing line color';
 
   @override
   String get landingPointsTitle => 'Landing points';
@@ -2214,7 +2214,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointDefault => 'Default';
 
   @override
-  String get landingPointLast => 'Last selected';
+  String get landingPointLast => 'Nearest';
 
   @override
   String get landingPointActions => 'Landing point actions';
@@ -2224,9 +2224,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get landingPointSetDefault => 'Set as default landing point';
-
-  @override
-  String get landingPointUseAsLast => 'Use as last landing point';
 
   @override
   String get landingPointDelete => 'Delete landing point';

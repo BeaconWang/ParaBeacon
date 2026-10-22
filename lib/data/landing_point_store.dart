@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -146,14 +147,60 @@ class LandingPointStore extends ChangeNotifier {
 
   final List<LandingPoint> _points = [];
   String? _defaultId;
-  String? _lastId;
   bool _loaded = false;
   Future<void>? _loading;
 
   List<LandingPoint> get points => List.unmodifiable(_points);
   LandingPoint? get defaultPoint => _byId(_defaultId);
-  LandingPoint? get lastPoint => _byId(_lastId);
   bool get isLoaded => _loaded;
+
+  LandingPoint? nearestPointTo(double latitude, double longitude) {
+    if (!latitude.isFinite ||
+        !longitude.isFinite ||
+        latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180) {
+      return null;
+    }
+    LandingPoint? nearest;
+    var shortestDistance = double.infinity;
+    for (final point in _points) {
+      final distance = _distanceMeters(
+        latitude,
+        longitude,
+        point.latitude,
+        point.longitude,
+      );
+      if (distance < shortestDistance) {
+        shortestDistance = distance;
+        nearest = point;
+      }
+    }
+    return nearest;
+  }
+
+  static double _distanceMeters(
+    double latitudeA,
+    double longitudeA,
+    double latitudeB,
+    double longitudeB,
+  ) {
+    const earthRadiusMeters = 6371008.8;
+    final latA = latitudeA * math.pi / 180;
+    final latB = latitudeB * math.pi / 180;
+    final deltaLat = (latitudeB - latitudeA) * math.pi / 180;
+    final deltaLon = (longitudeB - longitudeA) * math.pi / 180;
+    final sinHalfLat = math.sin(deltaLat / 2);
+    final sinHalfLon = math.sin(deltaLon / 2);
+    final haversine =
+        sinHalfLat * sinHalfLat +
+        math.cos(latA) * math.cos(latB) * sinHalfLon * sinHalfLon;
+    final bounded = haversine.clamp(0.0, 1.0);
+    return earthRadiusMeters *
+        2 *
+        math.atan2(math.sqrt(bounded), math.sqrt(1 - bounded));
+  }
 
   Future<void> load() {
     if (_loaded) return Future<void>.value();
@@ -179,17 +226,14 @@ class LandingPointStore extends ChangeNotifier {
         }
       }
       final defaultId = decoded['defaultId'];
-      final lastId = decoded['lastId'];
       _defaultId = defaultId is String ? defaultId : null;
-      _lastId = lastId is String ? lastId : null;
       _repairReferences();
-      if (_points.isNotEmpty || _defaultId != null || _lastId != null) {
+      if (_points.isNotEmpty || _defaultId != null) {
         notifyListeners();
       }
     } catch (_) {
       _points.clear();
       _defaultId = null;
-      _lastId = null;
     } finally {
       _loaded = true;
       _loading = null;
@@ -204,7 +248,6 @@ class LandingPointStore extends ChangeNotifier {
       final removed = _points.removeLast();
       if (_defaultId == removed.id) _defaultId = null;
     }
-    _lastId = point.id;
     notifyListeners();
     await _persist();
     return true;
@@ -219,21 +262,12 @@ class LandingPointStore extends ChangeNotifier {
     await _persist();
   }
 
-  Future<void> setLast(String id) async {
-    await load();
-    if (_byId(id) == null || _lastId == id) return;
-    _lastId = id;
-    notifyListeners();
-    await _persist();
-  }
-
   Future<void> remove(String id) async {
     await load();
     final index = _points.indexWhere((point) => point.id == id);
     if (index < 0) return;
     _points.removeAt(index);
     if (_defaultId == id) _defaultId = null;
-    if (_lastId == id) _lastId = _points.isEmpty ? null : _points.first.id;
     notifyListeners();
     await _persist();
   }
@@ -248,9 +282,6 @@ class LandingPointStore extends ChangeNotifier {
 
   void _repairReferences() {
     if (_byId(_defaultId) == null) _defaultId = null;
-    if (_byId(_lastId) == null) {
-      _lastId = _points.isEmpty ? null : _points.first.id;
-    }
   }
 
   Future<void> _persist() async {
@@ -261,7 +292,6 @@ class LandingPointStore extends ChangeNotifier {
         jsonEncode({
           'points': _points.map((point) => point.toJson()).toList(),
           'defaultId': _defaultId,
-          'lastId': _lastId,
         }),
       );
     } catch (_) {

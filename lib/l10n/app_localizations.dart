@@ -4103,7 +4103,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingShowLastLandingLine.
   ///
   /// In en, this message translates to:
-  /// **'Show line to last landing point'**
+  /// **'Show line to nearest landing point'**
   String get settingShowLastLandingLine;
 
   /// No description provided for @settingTakeoffPointColor.
@@ -4121,7 +4121,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingLastLandingPointColor.
   ///
   /// In en, this message translates to:
-  /// **'Last landing marker color'**
+  /// **'Nearest landing marker color'**
   String get settingLastLandingPointColor;
 
   /// No description provided for @settingTakeoffLineColor.
@@ -4139,7 +4139,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingLastLandingLineColor.
   ///
   /// In en, this message translates to:
-  /// **'Last landing line color'**
+  /// **'Nearest landing line color'**
   String get settingLastLandingLineColor;
 
   /// No description provided for @landingPointsTitle.
@@ -4241,7 +4241,7 @@ abstract class AppLocalizations {
   /// No description provided for @landingPointLast.
   ///
   /// In en, this message translates to:
-  /// **'Last selected'**
+  /// **'Nearest'**
   String get landingPointLast;
 
   /// No description provided for @landingPointActions.
@@ -4261,12 +4261,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set as default landing point'**
   String get landingPointSetDefault;
-
-  /// No description provided for @landingPointUseAsLast.
-  ///
-  /// In en, this message translates to:
-  /// **'Use as last landing point'**
-  String get landingPointUseAsLast;
 
   /// No description provided for @landingPointDelete.
   ///

@@ -24,6 +24,14 @@ import '../data/wind_estimator.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
 
+// Keep the geographic point aligned to the ball center, with its label below.
+const double _savedPointBallDiameter = 15;
+const double _savedPointMarkerHeight = 64;
+const Alignment _savedPointMarkerAlignment = Alignment(
+  0,
+  1 - _savedPointBallDiameter / _savedPointMarkerHeight,
+);
+
 String _formatMapNumber(
   double value,
   DecimalPlaceRange? precision, {
@@ -633,21 +641,28 @@ class _MapControlState extends State<MapControl> {
     final bool blankBasemap = src.isNone && !_offlineActive;
     final landingStore = LandingPointStore.instance;
     final defaultLanding = landingStore.defaultPoint;
-    final lastLanding = landingStore.lastPoint;
-    final lastIsDifferent =
-        lastLanding != null && lastLanding.id != defaultLanding?.id;
+    final nearestLanding = hasFix
+        ? landingStore.nearestPointTo(data.latitude, data.longitude)
+        : null;
+    final nearestIsDifferent =
+        defaultLanding != null &&
+        nearestLanding != null &&
+        nearestLanding.id != defaultLanding.id;
+    final nearestIsSeparate =
+        nearestLanding != null &&
+        (defaultLanding == null || nearestLanding.id != defaultLanding.id);
     final defaultLandingPos = defaultLanding == null
         ? null
         : _shift(
             LatLng(defaultLanding.latitude, defaultLanding.longitude),
             widget.tileSource,
           );
-    final lastLandingPos = lastIsDifferent
-        ? _shift(
-            LatLng(lastLanding.latitude, lastLanding.longitude),
+    final nearestLandingPos = nearestLanding == null
+        ? null
+        : _shift(
+            LatLng(nearestLanding.latitude, nearestLanding.longitude),
             widget.tileSource,
-          )
-        : null;
+          );
     final takeoff = TakeoffReference.instance.point;
     final takeoffPos = takeoff?.latitude != null && takeoff?.longitude != null
         ? _shift(
@@ -669,12 +684,17 @@ class _MapControlState extends State<MapControl> {
         ),
       );
     }
-    if (hasFix && widget.showLastLandingLine && lastLandingPos != null) {
-      final color = widget.lastLandingLineColor.withAlpha(
-        (widget.lastLandingLineColor.a * 255 * 0.3).round(),
-      );
+    if (hasFix &&
+        widget.showLastLandingLine &&
+        nearestLandingPos != null &&
+        (nearestIsDifferent || !widget.showDefaultLandingLine)) {
+      final color = nearestIsDifferent
+          ? widget.lastLandingLineColor.withAlpha(
+              (widget.lastLandingLineColor.a * 255 * 0.3).round(),
+            )
+          : widget.lastLandingLineColor;
       connectionLines.add(
-        _buildConnectionLine(renderPos, lastLandingPos, color),
+        _buildConnectionLine(renderPos, nearestLandingPos, color),
       );
     }
     final pointMarkers = <Marker>[
@@ -682,7 +702,8 @@ class _MapControlState extends State<MapControl> {
         Marker(
           point: takeoffPos,
           width: 62,
-          height: 64,
+          height: _savedPointMarkerHeight,
+          alignment: _savedPointMarkerAlignment,
           child: _SavedPointMarker(
             label: l10n.mapTakeoffLabel,
             color: widget.takeoffPointColor,
@@ -693,20 +714,24 @@ class _MapControlState extends State<MapControl> {
         Marker(
           point: defaultLandingPos,
           width: 70,
-          height: 64,
+          height: _savedPointMarkerHeight,
+          alignment: _savedPointMarkerAlignment,
           child: _SavedPointMarker(
             label: defaultLanding!.name,
             color: widget.defaultLandingPointColor,
             heart: true,
           ),
         ),
-      if (widget.showLandingPoints && lastLandingPos != null)
+      if (widget.showLandingPoints &&
+          nearestIsSeparate &&
+          nearestLandingPos != null)
         Marker(
-          point: lastLandingPos,
+          point: nearestLandingPos,
           width: 70,
-          height: 64,
+          height: _savedPointMarkerHeight,
+          alignment: _savedPointMarkerAlignment,
           child: _SavedPointMarker(
-            label: lastLanding!.name,
+            label: nearestLanding.name,
             color: widget.lastLandingPointColor,
             heart: false,
           ),
@@ -1210,6 +1235,7 @@ class _MapControlState extends State<MapControl> {
         points: [from, to],
         strokeWidth: 2.0 * widget.lineThickness,
         color: color,
+        pattern: StrokePattern.solid(),
       );
 
   /// XCTrack's climb→colour ramp (`theme.a.H`): grey (sink) → green (weak
@@ -1728,23 +1754,23 @@ class _SavedPointMarker extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 30,
-          height: 30,
+          width: _savedPointBallDiameter,
+          height: _savedPointBallDiameter,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
+            border: Border.all(color: Colors.white, width: 1),
             boxShadow: const [
               BoxShadow(
                 color: Colors.black54,
-                blurRadius: 4,
-                offset: Offset(0, 2),
+                blurRadius: 2,
+                offset: Offset(0, 1),
               ),
             ],
           ),
           child: Icon(
             heart ? Icons.favorite : Icons.circle,
-            size: heart ? 17 : 12,
+            size: heart ? 8.5 : 6,
             color: Colors.white,
           ),
         ),

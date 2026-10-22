@@ -2948,6 +2948,101 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementSectionRecord => 'Altitude record';
 
   @override
+  String get altitudeAnnouncementSectionCustomRules =>
+      'Data-triggered announcements';
+
+  @override
+  String get altitudeAnnouncementCustomRulesDescription =>
+      'During flight, speak custom text when a live value crosses a threshold or enters a range. Each rule can repeat at its own interval.';
+
+  @override
+  String get altitudeAnnouncementCustomRuleAdd => 'Add condition';
+
+  @override
+  String get altitudeAnnouncementCustomRuleLimit =>
+      'You can configure up to 20 conditions.';
+
+  @override
+  String get altitudeAnnouncementCustomRuleEmpty => 'No custom conditions yet.';
+
+  @override
+  String get altitudeAnnouncementCustomRuleTitle => 'Announcement condition';
+
+  @override
+  String get altitudeAnnouncementCustomMetric => 'Data value';
+
+  @override
+  String get altitudeAnnouncementCustomCondition => 'Judgment';
+
+  @override
+  String get altitudeAnnouncementConditionGreater => 'Greater than (>)';
+
+  @override
+  String get altitudeAnnouncementConditionLess => 'Less than (<)';
+
+  @override
+  String get altitudeAnnouncementConditionRange => 'Within range';
+
+  @override
+  String get altitudeAnnouncementCustomThreshold => 'Threshold';
+
+  @override
+  String get altitudeAnnouncementCustomLower => 'Minimum';
+
+  @override
+  String get altitudeAnnouncementCustomUpper => 'Maximum';
+
+  @override
+  String get altitudeAnnouncementCustomRepeat =>
+      'Repeat while condition remains true';
+
+  @override
+  String altitudeAnnouncementCustomRepeatInterval(String seconds) {
+    return 'Repeat every $seconds s';
+  }
+
+  @override
+  String get altitudeAnnouncementCustomContent => 'Spoken content template';
+
+  @override
+  String get altitudeAnnouncementCustomContentRequired =>
+      'Enter the text to speak.';
+
+  @override
+  String get altitudeAnnouncementCustomTemplateDescription =>
+      'Type the announcement and add live flight values using the tokens below. The preview uses sample values.';
+
+  @override
+  String get altitudeAnnouncementCustomDelete => 'Delete condition';
+
+  @override
+  String get altitudeAnnouncementMetricAltitude => 'Altitude';
+
+  @override
+  String get altitudeAnnouncementMetricVerticalSpeed => 'Vertical speed';
+
+  @override
+  String get altitudeAnnouncementMetricGroundSpeed => 'Ground speed';
+
+  @override
+  String get altitudeAnnouncementMetricWindSpeed => 'Wind speed';
+
+  @override
+  String get altitudeAnnouncementMetricTemperature => 'Temperature';
+
+  @override
+  String get altitudeAnnouncementMetricPressure => 'Pressure';
+
+  @override
+  String get altitudeAnnouncementMetricBattery => 'Sensor battery';
+
+  @override
+  String get altitudeAnnouncementMetricHeartRate => 'Heart rate';
+
+  @override
+  String get altitudeAnnouncementMetricHeading => 'Heading';
+
+  @override
   String get altitudeAnnouncementTakeoffLandingEnabled =>
       'Takeoff & landing announcements';
 

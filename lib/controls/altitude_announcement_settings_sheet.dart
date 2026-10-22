@@ -4,6 +4,7 @@ import '../audio/altitude_announcement_bridge.dart';
 import '../audio/altitude_announcement_settings.dart';
 import '../audio/altitude_announcement_speaker.dart';
 import '../audio/announcement_template.dart';
+import '../audio/custom_announcement_rule.dart';
 import '../data/flight_state.dart';
 import '../l10n/app_localizations.dart';
 
@@ -107,6 +108,25 @@ class _AltitudeAnnouncementSettingsSheetState
       testResult: _lastTested == event ? _lastTestSucceeded : null,
       onTest: () => _runTest(event),
     );
+  }
+
+  Future<void> _addCustomRule(AltitudeAnnouncementSettings settings) async {
+    final rule = CustomAnnouncementRule(
+      id: settings.nextCustomRuleId,
+      metric: AnnouncementMetric.verticalSpeed,
+      condition: AnnouncementCondition.greaterThan,
+      threshold: 2,
+      upperThreshold: 4,
+      repeatSeconds: null,
+      enabled: true,
+      content: '',
+    );
+    final saved = await showDialog<CustomAnnouncementRule>(
+      context: context,
+      builder: (context) => _CustomAnnouncementRuleDialog(rule: rule),
+    );
+    if (!mounted || saved == null) return;
+    settings.saveCustomRule(saved);
   }
 
   @override
@@ -311,6 +331,47 @@ class _AltitudeAnnouncementSettingsSheetState
                       : null,
                 ),
                 _textTile(AnnouncementEvent.altitudeRecord),
+
+                // ── Custom data conditions ────────────────────────────────
+                _SectionHeader(
+                  icon: Icons.rule_folder_outlined,
+                  title: l10n.altitudeAnnouncementSectionCustomRules,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    l10n.altitudeAnnouncementCustomRulesDescription,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+                for (final rule in settings.customRules)
+                  _CustomAnnouncementRuleTile(
+                    key: ValueKey(rule.id),
+                    rule: rule,
+                  ),
+                if (settings.customRules.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      l10n.altitudeAnnouncementCustomRuleEmpty,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed:
+                        settings.customRules.length >=
+                            CustomAnnouncementRule.maxRules
+                        ? null
+                        : () => _addCustomRule(settings),
+                    icon: const Icon(Icons.add),
+                    label: Text(l10n.altitudeAnnouncementCustomRuleAdd),
+                  ),
+                ),
+                if (settings.customRules.length >=
+                    CustomAnnouncementRule.maxRules)
+                  _InfoNote(text: l10n.altitudeAnnouncementCustomRuleLimit),
 
                 // ── Voice ─────────────────────────────────────────────────
                 _SectionHeader(
@@ -693,3 +754,355 @@ class _AnnouncementTextTileState extends State<_AnnouncementTextTile> {
     );
   }
 }
+
+class _CustomAnnouncementRuleTile extends StatelessWidget {
+  const _CustomAnnouncementRuleTile({required this.rule, super.key});
+
+  final CustomAnnouncementRule rule;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final settings = AltitudeAnnouncementSettings.instance;
+    final bounds = rule.condition == AnnouncementCondition.withinRange
+        ? '${rule.threshold}–${rule.upperThreshold}'
+        : '${rule.threshold}';
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        leading: Switch.adaptive(
+          value: rule.enabled,
+          onChanged: (value) => settings.setCustomRuleEnabled(rule.id, value),
+        ),
+        title: Text(_metricLabel(l10n, rule.metric)),
+        subtitle: Text(
+          '${_conditionLabel(l10n, rule.condition)} $bounds ${_metricUnit(rule.metric)}',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: l10n.altitudeAnnouncementCustomize,
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () async {
+                final edited = await showDialog<CustomAnnouncementRule>(
+                  context: context,
+                  builder: (context) =>
+                      _CustomAnnouncementRuleDialog(rule: rule),
+                );
+                if (edited != null) settings.saveCustomRule(edited);
+              },
+            ),
+            IconButton(
+              tooltip: l10n.altitudeAnnouncementCustomDelete,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => settings.removeCustomRule(rule.id),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomAnnouncementRuleDialog extends StatefulWidget {
+  const _CustomAnnouncementRuleDialog({required this.rule});
+
+  final CustomAnnouncementRule rule;
+
+  @override
+  State<_CustomAnnouncementRuleDialog> createState() =>
+      _CustomAnnouncementRuleDialogState();
+}
+
+class _CustomAnnouncementRuleDialogState
+    extends State<_CustomAnnouncementRuleDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late AnnouncementMetric _metric = widget.rule.metric;
+  late AnnouncementCondition _condition = widget.rule.condition;
+  late final TextEditingController _threshold = TextEditingController(
+    text: _formatNumber(widget.rule.threshold),
+  );
+  late final TextEditingController _upper = TextEditingController(
+    text: _formatNumber(widget.rule.upperThreshold),
+  );
+  late final TextEditingController _content = TextEditingController(
+    text: widget.rule.content,
+  );
+  late bool _repeat = widget.rule.repeatSeconds != null;
+  late double _repeatSeconds = widget.rule.repeatSeconds ?? 10;
+
+  static String _formatNumber(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toString();
+
+  double? _number(TextEditingController controller) =>
+      double.tryParse(controller.text.trim());
+
+  void _insertPlaceholder(AnnouncementPlaceholder placeholder) {
+    final value = _content.value;
+    final text = value.text;
+    final selection = value.selection;
+    final start = selection.isValid ? selection.start : text.length;
+    final end = selection.isValid ? selection.end : text.length;
+    final token = placeholder.token;
+    if (text.length - (end - start) + token.length >
+        AnnouncementTemplate.maxLength) {
+      return;
+    }
+    final next = text.replaceRange(start, end, token);
+    _content.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: start + token.length),
+    );
+    setState(() {});
+  }
+
+  String _preview() {
+    final template = _content.text;
+    return AnnouncementTemplate.render(
+      template,
+      announcementLanguageFor(template),
+      AnnouncementValues.sample,
+    );
+  }
+
+  @override
+  void dispose() {
+    _threshold.dispose();
+    _upper.dispose();
+    _content.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (!_formKey.currentState!.validate()) return;
+    final lower = _number(_threshold)!;
+    final upper = _condition == AnnouncementCondition.withinRange
+        ? _number(_upper)!
+        : lower;
+    Navigator.of(context).pop(
+      CustomAnnouncementRule(
+        id: widget.rule.id,
+        metric: _metric,
+        condition: _condition,
+        threshold: lower,
+        upperThreshold: upper,
+        repeatSeconds: _repeat ? _repeatSeconds : null,
+        enabled: widget.rule.enabled,
+        content: AnnouncementTemplate.sanitize(_content.text) ?? '',
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: Text(l10n.altitudeAnnouncementCustomRuleTitle),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DropdownButtonFormField<AnnouncementMetric>(
+                initialValue: _metric,
+                decoration: InputDecoration(
+                  labelText: l10n.altitudeAnnouncementCustomMetric,
+                ),
+                items: [
+                  for (final value in AnnouncementMetric.values)
+                    DropdownMenuItem(
+                      value: value,
+                      child: Text(_metricLabel(l10n, value)),
+                    ),
+                ],
+                onChanged: (value) => setState(() => _metric = value!),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<AnnouncementCondition>(
+                initialValue: _condition,
+                decoration: InputDecoration(
+                  labelText: l10n.altitudeAnnouncementCustomCondition,
+                ),
+                items: [
+                  for (final value in AnnouncementCondition.values)
+                    DropdownMenuItem(
+                      value: value,
+                      child: Text(_conditionLabel(l10n, value)),
+                    ),
+                ],
+                onChanged: (value) => setState(() => _condition = value!),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _threshold,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: _condition == AnnouncementCondition.withinRange
+                      ? l10n.altitudeAnnouncementCustomLower
+                      : l10n.altitudeAnnouncementCustomThreshold,
+                  suffixText: _metricUnit(_metric),
+                ),
+                validator: (value) {
+                  final parsed = double.tryParse(value?.trim() ?? '');
+                  return parsed == null || !parsed.isFinite
+                      ? l10n.altitudeAnnouncementCustomThreshold
+                      : null;
+                },
+              ),
+              if (_condition == AnnouncementCondition.withinRange) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _upper,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: l10n.altitudeAnnouncementCustomUpper,
+                    suffixText: _metricUnit(_metric),
+                  ),
+                  validator: (value) {
+                    final parsed = double.tryParse(value?.trim() ?? '');
+                    final lower = _number(_threshold);
+                    return parsed == null ||
+                            !parsed.isFinite ||
+                            lower == null ||
+                            parsed < lower
+                        ? l10n.altitudeAnnouncementCustomUpper
+                        : null;
+                  },
+                ),
+              ],
+              const SizedBox(height: 16),
+              Text(
+                l10n.altitudeAnnouncementCustomContent,
+                style: theme.textTheme.labelLarge,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                l10n.altitudeAnnouncementCustomTemplateDescription,
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _content,
+                onChanged: (_) => setState(() {}),
+                maxLength: AnnouncementTemplate.maxLength,
+                minLines: 1,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  hintText: l10n.altitudeAnnouncementCustomContentRequired,
+                ),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? l10n.altitudeAnnouncementCustomContentRequired
+                    : null,
+              ),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  for (final placeholder in AnnouncementPlaceholder.values)
+                    ActionChip(
+                      visualDensity: VisualDensity.compact,
+                      avatar: const Icon(Icons.add, size: 16),
+                      label: Text(_placeholderLabel(l10n, placeholder)),
+                      tooltip: placeholder.token,
+                      onPressed: () => _insertPlaceholder(placeholder),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.altitudeAnnouncementTemplatePreview(_preview()),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(height: 8),
+              CheckboxListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.altitudeAnnouncementCustomRepeat),
+                value: _repeat,
+                onChanged: (value) => setState(() => _repeat = value ?? false),
+              ),
+              if (_repeat) ...[
+                Text(
+                  l10n.altitudeAnnouncementCustomRepeatInterval(
+                    _repeatSeconds.round().toString(),
+                  ),
+                  style: theme.textTheme.bodySmall,
+                ),
+                Slider(
+                  value: _repeatSeconds,
+                  min: CustomAnnouncementRule.minRepeatSeconds,
+                  max: CustomAnnouncementRule.maxRepeatSeconds,
+                  divisions: 59,
+                  label: '${_repeatSeconds.round()} s',
+                  onChanged: (value) => setState(() => _repeatSeconds = value),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: Text(MaterialLocalizations.of(context).saveButtonLabel),
+        ),
+      ],
+    );
+  }
+}
+
+String _metricLabel(
+  AppLocalizations l10n,
+  AnnouncementMetric metric,
+) => switch (metric) {
+  AnnouncementMetric.altitude => l10n.altitudeAnnouncementMetricAltitude,
+  AnnouncementMetric.verticalSpeed =>
+    l10n.altitudeAnnouncementMetricVerticalSpeed,
+  AnnouncementMetric.groundSpeed => l10n.altitudeAnnouncementMetricGroundSpeed,
+  AnnouncementMetric.windSpeed => l10n.altitudeAnnouncementMetricWindSpeed,
+  AnnouncementMetric.temperature => l10n.altitudeAnnouncementMetricTemperature,
+  AnnouncementMetric.pressure => l10n.altitudeAnnouncementMetricPressure,
+  AnnouncementMetric.battery => l10n.altitudeAnnouncementMetricBattery,
+  AnnouncementMetric.heartRate => l10n.altitudeAnnouncementMetricHeartRate,
+  AnnouncementMetric.heading => l10n.altitudeAnnouncementMetricHeading,
+};
+
+String _conditionLabel(
+  AppLocalizations l10n,
+  AnnouncementCondition condition,
+) => switch (condition) {
+  AnnouncementCondition.greaterThan =>
+    l10n.altitudeAnnouncementConditionGreater,
+  AnnouncementCondition.lessThan => l10n.altitudeAnnouncementConditionLess,
+  AnnouncementCondition.withinRange => l10n.altitudeAnnouncementConditionRange,
+};
+
+String _metricUnit(AnnouncementMetric metric) => switch (metric) {
+  AnnouncementMetric.altitude => 'm',
+  AnnouncementMetric.verticalSpeed => 'm/s',
+  AnnouncementMetric.groundSpeed || AnnouncementMetric.windSpeed => 'km/h',
+  AnnouncementMetric.temperature => '°C',
+  AnnouncementMetric.pressure => 'hPa',
+  AnnouncementMetric.battery => '%',
+  AnnouncementMetric.heartRate => 'bpm',
+  AnnouncementMetric.heading => '°',
+};

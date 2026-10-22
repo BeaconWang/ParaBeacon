@@ -2852,6 +2852,97 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementSectionRecord => '最高高度';
 
   @override
+  String get altitudeAnnouncementSectionCustomRules => '数据条件播报';
+
+  @override
+  String get altitudeAnnouncementCustomRulesDescription =>
+      '飞行期间，当实时数据超过阈值或进入设定范围时播报自定义内容。每条规则都可单独设置重复间隔。';
+
+  @override
+  String get altitudeAnnouncementCustomRuleAdd => '添加条件';
+
+  @override
+  String get altitudeAnnouncementCustomRuleLimit => '最多可设置 20 条条件。';
+
+  @override
+  String get altitudeAnnouncementCustomRuleEmpty => '尚未添加自定义条件。';
+
+  @override
+  String get altitudeAnnouncementCustomRuleTitle => '播报条件';
+
+  @override
+  String get altitudeAnnouncementCustomMetric => '数据值';
+
+  @override
+  String get altitudeAnnouncementCustomCondition => '判断方式';
+
+  @override
+  String get altitudeAnnouncementConditionGreater => '大于 (>)';
+
+  @override
+  String get altitudeAnnouncementConditionLess => '小于 (<)';
+
+  @override
+  String get altitudeAnnouncementConditionRange => '处于范围内';
+
+  @override
+  String get altitudeAnnouncementCustomThreshold => '阈值';
+
+  @override
+  String get altitudeAnnouncementCustomLower => '最小值';
+
+  @override
+  String get altitudeAnnouncementCustomUpper => '最大值';
+
+  @override
+  String get altitudeAnnouncementCustomRepeat => '条件持续满足时重复播报';
+
+  @override
+  String altitudeAnnouncementCustomRepeatInterval(String seconds) {
+    return '每 $seconds 秒重复播报';
+  }
+
+  @override
+  String get altitudeAnnouncementCustomContent => '播报内容模板';
+
+  @override
+  String get altitudeAnnouncementCustomContentRequired => '请输入要播报的文字。';
+
+  @override
+  String get altitudeAnnouncementCustomTemplateDescription =>
+      '编写播报内容并点击下方占位符插入实时飞行数据。预览使用示例数值。';
+
+  @override
+  String get altitudeAnnouncementCustomDelete => '删除条件';
+
+  @override
+  String get altitudeAnnouncementMetricAltitude => '海拔';
+
+  @override
+  String get altitudeAnnouncementMetricVerticalSpeed => '升降速度';
+
+  @override
+  String get altitudeAnnouncementMetricGroundSpeed => '地速';
+
+  @override
+  String get altitudeAnnouncementMetricWindSpeed => '风速';
+
+  @override
+  String get altitudeAnnouncementMetricTemperature => '温度';
+
+  @override
+  String get altitudeAnnouncementMetricPressure => '气压';
+
+  @override
+  String get altitudeAnnouncementMetricBattery => '传感器电量';
+
+  @override
+  String get altitudeAnnouncementMetricHeartRate => '心率';
+
+  @override
+  String get altitudeAnnouncementMetricHeading => '航向';
+
+  @override
   String get altitudeAnnouncementTakeoffLandingEnabled => '起飞/降落播报';
 
   @override

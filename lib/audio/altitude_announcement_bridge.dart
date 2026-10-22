@@ -11,6 +11,7 @@ import 'altitude_announcement_settings.dart';
 import 'altitude_announcement_speaker.dart';
 import 'announcement_template.dart';
 import 'announcement_triggers.dart';
+import 'custom_announcement_rule.dart';
 import 'vario_audio_service.dart';
 import 'vario_ducking.dart';
 
@@ -56,6 +57,9 @@ class AltitudeAnnouncementBridge {
   final AltitudeRecordTrigger _record = AltitudeRecordTrigger();
   final Map<AnnouncementEvent, Timer> _timers = {};
   final Set<AnnouncementEvent> _inProgress = {};
+  final Map<int, _CustomAnnouncementState> _customStates = {};
+  final Map<int, Timer> _customTimers = {};
+  final Set<int> _customInProgress = {};
   StreamSubscription<FlightTransition>? _transitionSubscription;
 
   /// Highest altitude of the current (or just completed) flight.
@@ -90,6 +94,7 @@ class AltitudeAnnouncementBridge {
 
     _resetDwell(AnnouncementEvent.glide, _glide);
     _cancelTimer(AnnouncementEvent.altitudeRecord);
+    _resetCustomRules();
     if (_speaker.speaking.value) unawaited(_speaker.stop());
   }
 
@@ -101,6 +106,7 @@ class AltitudeAnnouncementBridge {
     if (!_settings.announcementsEnabled) {
       _resetDwell(AnnouncementEvent.glide, _glide);
       _cancelTimer(AnnouncementEvent.altitudeRecord);
+      _resetCustomRules();
       if (_speaker.speaking.value) unawaited(_speaker.stop());
     }
     if (!_settings.glideEnabled) _resetDwell(AnnouncementEvent.glide, _glide);
@@ -127,6 +133,9 @@ class AltitudeAnnouncementBridge {
     for (final event in AnnouncementEvent.values) {
       final template = _settings.templateFor(event);
       if (template != null) return template;
+    }
+    for (final rule in _settings.customRules) {
+      if (rule.enabled && rule.content.isNotEmpty) return rule.content;
     }
     return null;
   }
@@ -173,6 +182,7 @@ class AltitudeAnnouncementBridge {
     }
     _evaluateGlide(now, data, flying);
     _evaluateRecord(now, data, flying && hasAltitude);
+    _evaluateCustomRules(now, data, flying);
   }
 
   void _evaluateGlide(DateTime now, FlightData data, bool flying) {
@@ -255,6 +265,135 @@ class AltitudeAnnouncementBridge {
         },
       ),
     );
+  }
+
+  void _evaluateCustomRules(DateTime now, FlightData data, bool flying) {
+    final rules = _settings.customRules;
+    final activeIds = rules.map((rule) => rule.id).toSet();
+    for (final id in _customStates.keys.toList()) {
+      if (!activeIds.contains(id)) {
+        _customStates.remove(id)?.trigger.reset();
+        _cancelCustomTimer(id);
+      }
+    }
+    if (!_settings.announcementsEnabled || !flying) {
+      _resetCustomRules();
+      return;
+    }
+
+    for (final rule in rules) {
+      var state = _customStates[rule.id];
+      if (state == null || !state.hasSameTriggerConfig(rule)) {
+        _cancelCustomTimer(rule.id);
+        state = _CustomAnnouncementState(rule);
+        _customStates[rule.id] = state;
+      } else {
+        state.rule = rule;
+      }
+      if (!rule.enabled) {
+        state.trigger.reset();
+        _cancelCustomTimer(rule.id);
+        continue;
+      }
+
+      final due = state.trigger.update(
+        now,
+        condition: rule.matches(data),
+        repeatEvery: rule.repeatEvery,
+      );
+      if (due) {
+        _cancelCustomTimer(rule.id);
+        if (_customInProgress.contains(rule.id)) {
+          state.trigger.retryNow();
+        } else {
+          unawaited(_announceCustomRule(rule, _valuesFor(data)));
+        }
+        continue;
+      }
+      _scheduleCustomRecheckIn(
+        rule.id,
+        state.trigger.pendingFor(now, rule.repeatEvery),
+      );
+    }
+  }
+
+  Future<void> _announceCustomRule(
+    CustomAnnouncementRule rule,
+    AnnouncementValues values,
+  ) async {
+    if (!_maySpeakCustomRule(rule.id) || _customInProgress.contains(rule.id)) {
+      return;
+    }
+    _customInProgress.add(rule.id);
+    var spoken = false;
+    try {
+      final template =
+          AnnouncementTemplate.sanitize(rule.content) ??
+          (preferredAnnouncementLanguage() == AnnouncementLanguage.chinese
+              ? '条件已满足'
+              : 'Condition met');
+      spoken = await _speaker.speak(
+        preferred: announcementLanguageFor(template),
+        rate: _settings.speechRate,
+        canSpeak: () => _maySpeakCustomRule(rule.id),
+        phraseFor: (language) =>
+            AnnouncementTemplate.render(template, language, values),
+      );
+    } catch (_) {
+      // Voice failures must not interrupt live flight-data processing.
+    } finally {
+      _customInProgress.remove(rule.id);
+    }
+
+    if (!_attached) return;
+    final state = _customStates[rule.id];
+    if (spoken) {
+      _onData();
+    } else if (_speaker.availability != SpeechAvailability.unavailable) {
+      state?.trigger.retryNow();
+      _scheduleCustomRetry(rule.id);
+    }
+  }
+
+  bool _maySpeakCustomRule(int id) =>
+      _attached &&
+      _settings.announcementsEnabled &&
+      _flightState.isFlying &&
+      _settings.customRules.any((rule) => rule.id == id && rule.enabled);
+
+  void _scheduleCustomRecheckIn(int id, Duration? left) {
+    if (left == null) {
+      _cancelCustomTimer(id);
+      return;
+    }
+    if (_customTimers.containsKey(id)) return;
+    final delay = left == Duration.zero
+        ? const Duration(milliseconds: 100)
+        : left + const Duration(milliseconds: 20);
+    _customTimers[id] = Timer(delay, () {
+      _customTimers.remove(id);
+      _onData();
+    });
+  }
+
+  void _scheduleCustomRetry(int id) {
+    _cancelCustomTimer(id);
+    _customTimers[id] = Timer(const Duration(seconds: 1), () {
+      _customTimers.remove(id);
+      _onData();
+    });
+  }
+
+  void _cancelCustomTimer(int id) => _customTimers.remove(id)?.cancel();
+
+  void _resetCustomRules() {
+    for (final state in _customStates.values) {
+      state.trigger.reset();
+    }
+    for (final timer in _customTimers.values) {
+      timer.cancel();
+    }
+    _customTimers.clear();
   }
 
   /// Starts a new record comparison: against nothing (flight scope) or the
@@ -398,6 +537,11 @@ class AltitudeAnnouncementBridge {
       timer.cancel();
     }
     _timers.clear();
+    for (final timer in _customTimers.values) {
+      timer.cancel();
+    }
+    _customTimers.clear();
+    _customStates.clear();
     unawaited(_transitionSubscription?.cancel());
     _transitionSubscription = null;
     _flightState.removeListener(_onFlightStateChanged);
@@ -406,6 +550,21 @@ class AltitudeAnnouncementBridge {
     _ducking.dispose();
     unawaited(_speaker.stop());
   }
+}
+
+class _CustomAnnouncementState {
+  _CustomAnnouncementState(this.rule);
+
+  CustomAnnouncementRule rule;
+  final ConditionRepeatTrigger trigger = ConditionRepeatTrigger();
+
+  bool hasSameTriggerConfig(CustomAnnouncementRule other) =>
+      rule.metric == other.metric &&
+      rule.condition == other.condition &&
+      rule.threshold == other.threshold &&
+      rule.upperThreshold == other.upperThreshold &&
+      rule.repeatSeconds == other.repeatSeconds &&
+      rule.enabled == other.enabled;
 }
 
 /// Speech language matching the selected UI locale (or the system locale).

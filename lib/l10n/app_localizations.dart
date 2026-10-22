@@ -5576,6 +5576,180 @@ abstract class AppLocalizations {
   /// **'Altitude record'**
   String get altitudeAnnouncementSectionRecord;
 
+  /// No description provided for @altitudeAnnouncementSectionCustomRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Data-triggered announcements'**
+  String get altitudeAnnouncementSectionCustomRules;
+
+  /// No description provided for @altitudeAnnouncementCustomRulesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'During flight, speak custom text when a live value crosses a threshold or enters a range. Each rule can repeat at its own interval.'**
+  String get altitudeAnnouncementCustomRulesDescription;
+
+  /// No description provided for @altitudeAnnouncementCustomRuleAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add condition'**
+  String get altitudeAnnouncementCustomRuleAdd;
+
+  /// No description provided for @altitudeAnnouncementCustomRuleLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can configure up to 20 conditions.'**
+  String get altitudeAnnouncementCustomRuleLimit;
+
+  /// No description provided for @altitudeAnnouncementCustomRuleEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No custom conditions yet.'**
+  String get altitudeAnnouncementCustomRuleEmpty;
+
+  /// No description provided for @altitudeAnnouncementCustomRuleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement condition'**
+  String get altitudeAnnouncementCustomRuleTitle;
+
+  /// No description provided for @altitudeAnnouncementCustomMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Data value'**
+  String get altitudeAnnouncementCustomMetric;
+
+  /// No description provided for @altitudeAnnouncementCustomCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'Judgment'**
+  String get altitudeAnnouncementCustomCondition;
+
+  /// No description provided for @altitudeAnnouncementConditionGreater.
+  ///
+  /// In en, this message translates to:
+  /// **'Greater than (>)'**
+  String get altitudeAnnouncementConditionGreater;
+
+  /// No description provided for @altitudeAnnouncementConditionLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Less than (<)'**
+  String get altitudeAnnouncementConditionLess;
+
+  /// No description provided for @altitudeAnnouncementConditionRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Within range'**
+  String get altitudeAnnouncementConditionRange;
+
+  /// No description provided for @altitudeAnnouncementCustomThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Threshold'**
+  String get altitudeAnnouncementCustomThreshold;
+
+  /// No description provided for @altitudeAnnouncementCustomLower.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum'**
+  String get altitudeAnnouncementCustomLower;
+
+  /// No description provided for @altitudeAnnouncementCustomUpper.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum'**
+  String get altitudeAnnouncementCustomUpper;
+
+  /// No description provided for @altitudeAnnouncementCustomRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat while condition remains true'**
+  String get altitudeAnnouncementCustomRepeat;
+
+  /// No description provided for @altitudeAnnouncementCustomRepeatInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat every {seconds} s'**
+  String altitudeAnnouncementCustomRepeatInterval(String seconds);
+
+  /// No description provided for @altitudeAnnouncementCustomContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Spoken content template'**
+  String get altitudeAnnouncementCustomContent;
+
+  /// No description provided for @altitudeAnnouncementCustomContentRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the text to speak.'**
+  String get altitudeAnnouncementCustomContentRequired;
+
+  /// No description provided for @altitudeAnnouncementCustomTemplateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the announcement and add live flight values using the tokens below. The preview uses sample values.'**
+  String get altitudeAnnouncementCustomTemplateDescription;
+
+  /// No description provided for @altitudeAnnouncementCustomDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete condition'**
+  String get altitudeAnnouncementCustomDelete;
+
+  /// No description provided for @altitudeAnnouncementMetricAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude'**
+  String get altitudeAnnouncementMetricAltitude;
+
+  /// No description provided for @altitudeAnnouncementMetricVerticalSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical speed'**
+  String get altitudeAnnouncementMetricVerticalSpeed;
+
+  /// No description provided for @altitudeAnnouncementMetricGroundSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground speed'**
+  String get altitudeAnnouncementMetricGroundSpeed;
+
+  /// No description provided for @altitudeAnnouncementMetricWindSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind speed'**
+  String get altitudeAnnouncementMetricWindSpeed;
+
+  /// No description provided for @altitudeAnnouncementMetricTemperature.
+  ///
+  /// In en, this message translates to:
+  /// **'Temperature'**
+  String get altitudeAnnouncementMetricTemperature;
+
+  /// No description provided for @altitudeAnnouncementMetricPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Pressure'**
+  String get altitudeAnnouncementMetricPressure;
+
+  /// No description provided for @altitudeAnnouncementMetricBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensor battery'**
+  String get altitudeAnnouncementMetricBattery;
+
+  /// No description provided for @altitudeAnnouncementMetricHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart rate'**
+  String get altitudeAnnouncementMetricHeartRate;
+
+  /// No description provided for @altitudeAnnouncementMetricHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get altitudeAnnouncementMetricHeading;
+
   /// No description provided for @altitudeAnnouncementTakeoffLandingEnabled.
   ///
   /// In en, this message translates to:

@@ -53,6 +53,23 @@ void main() {
       AnnouncementEvent.altitudeRecord,
       null,
     );
+
+    await tester.tap(find.text('添加条件'));
+    await tester.pumpAndSettle();
+    expect(find.text('播报条件'), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField).last, '高度： ');
+    await tester.tap(find.byTooltip('{altitude}'));
+    await tester.pump();
+    final templateField = tester.widget<TextFormField>(
+      find.byType(TextFormField).last,
+    );
+    expect(templateField.controller!.text, '高度： {altitude}');
+    expect(find.text('预览：高度： 1250'), findsOneWidget);
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    final rule = AltitudeAnnouncementSettings.instance.customRules.single;
+    expect(rule.content, '高度： {altitude}');
+    AltitudeAnnouncementSettings.instance.removeCustomRule(rule.id);
     expect(tester.takeException(), isNull);
   });
 }

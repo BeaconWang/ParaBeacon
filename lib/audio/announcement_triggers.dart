@@ -82,6 +82,50 @@ class DwellTrigger {
   }
 }
 
+/// Fires immediately when a condition becomes true and repeats at the given
+/// interval while it remains true. A false observation rearms the trigger.
+class ConditionRepeatTrigger {
+  bool _active = false;
+  DateTime? _lastFiredAt;
+
+  bool update(DateTime now, {required bool condition, Duration? repeatEvery}) {
+    if (!condition) {
+      reset();
+      return false;
+    }
+    if (!_active) {
+      _active = true;
+      _lastFiredAt = now;
+      return true;
+    }
+    final last = _lastFiredAt;
+    if (repeatEvery == null ||
+        (last != null && now.difference(last) < repeatEvery)) {
+      return false;
+    }
+    _lastFiredAt = now;
+    return true;
+  }
+
+  Duration? pendingFor(DateTime now, Duration? repeatEvery) {
+    if (!_active || repeatEvery == null) return null;
+    final last = _lastFiredAt;
+    if (last == null) return Duration.zero;
+    final left = repeatEvery - now.difference(last);
+    return left.isNegative ? Duration.zero : left;
+  }
+
+  /// Clears the cadence timestamp so a missed/failed utterance can retry now.
+  void retryNow() {
+    if (_active) _lastFiredAt = null;
+  }
+
+  void reset() {
+    _active = false;
+    _lastFiredAt = null;
+  }
+}
+
 /// Detects new altitude records.
 ///
 /// A record is the altitude exceeding the highest altitude seen so far (the

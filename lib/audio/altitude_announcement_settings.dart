@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'altitude_announcement_speaker.dart';
 import 'announcement_template.dart';
+import 'custom_announcement_rule.dart';
 
 /// Which recorded altitudes a new altitude record is compared against.
 enum AltitudeRecordScope {
@@ -40,6 +41,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const _kRecordEnabled = '$_prefix.record.enabled';
   static const _kRecordScope = '$_prefix.record.scope';
   static const _kRecordInterval = '$_prefix.record.intervalSeconds';
+  static const _kCustomRules = '$_prefix.customRules';
 
   /// Keys of the removed climb (lift range) announcement, deleted on load.
   static const _obsoleteKeys = [
@@ -99,6 +101,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   bool _recordEnabled = true;
   AltitudeRecordScope _recordScope = AltitudeRecordScope.flight;
   double _recordIntervalSeconds = defaultRecordInterval;
+  final List<CustomAnnouncementRule> _customRules = [];
   bool _loaded = false;
 
   /// Speaking speed as a multiple of the normal speed (1.0 = normal).
@@ -126,6 +129,14 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   Duration get glideRepeat =>
       Duration(milliseconds: (_glideRepeatSeconds * 1000).round());
 
+  /// Configurable live-data announcement rules.
+  List<CustomAnnouncementRule> get customRules =>
+      List.unmodifiable(_customRules);
+  int get nextCustomRuleId => _customRules.fold<int>(
+    0,
+    (next, rule) => rule.id >= next ? rule.id + 1 : next,
+  );
+
   /// New altitude record announcement.
   bool get recordEnabled => _recordEnabled;
   AltitudeRecordScope get recordScope => _recordScope;
@@ -139,7 +150,10 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   /// Whether any announcement can currently be triggered.
   bool get anyEnabled =>
       _announcementsEnabled &&
-      (_takeoffLandingEnabled || _glideEnabled || _recordEnabled);
+      (_takeoffLandingEnabled ||
+          _glideEnabled ||
+          _recordEnabled ||
+          _customRules.any((rule) => rule.enabled));
 
   /// Whether the vario tone is lowered while an announcement is spoken.
   bool get duckVario => _duckVario;
@@ -215,6 +229,13 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
           maxRecordInterval,
         );
       }
+      _customRules
+        ..clear()
+        ..addAll(
+          CustomAnnouncementRule.decodeList(
+            preferences.getString(_kCustomRules),
+          ),
+        );
     } catch (_) {
       // Keep defaults if local storage is unavailable.
     }
@@ -298,6 +319,67 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
     if (_glideRepeatSeconds == next) return;
     _glideRepeatSeconds = next;
     _persistDouble(_kGlideRepeat, next);
+    notifyListeners();
+  }
+
+  void saveCustomRule(CustomAnnouncementRule rule) {
+    if (rule.id < 0 ||
+        !rule.threshold.isFinite ||
+        !rule.upperThreshold.isFinite ||
+        (rule.repeatSeconds != null && !rule.repeatSeconds!.isFinite)) {
+      return;
+    }
+    if (rule.condition == AnnouncementCondition.withinRange &&
+        rule.upperThreshold < rule.threshold) {
+      return;
+    }
+    final safeRule = CustomAnnouncementRule(
+      id: rule.id,
+      metric: rule.metric,
+      condition: rule.condition,
+      threshold: rule.threshold,
+      upperThreshold: rule.upperThreshold,
+      repeatSeconds: rule.repeatSeconds
+          ?.clamp(
+            CustomAnnouncementRule.minRepeatSeconds,
+            CustomAnnouncementRule.maxRepeatSeconds,
+          )
+          .toDouble(),
+      enabled: rule.enabled,
+      content: AnnouncementTemplate.sanitize(rule.content) ?? '',
+    );
+    final index = _customRules.indexWhere((item) => item.id == rule.id);
+    if (index < 0) {
+      if (_customRules.length >= CustomAnnouncementRule.maxRules) return;
+      _customRules.add(safeRule);
+    } else {
+      _customRules[index] = safeRule;
+    }
+    _persistString(
+      _kCustomRules,
+      CustomAnnouncementRule.encodeList(_customRules),
+    );
+    notifyListeners();
+  }
+
+  void setCustomRuleEnabled(int id, bool enabled) {
+    final index = _customRules.indexWhere((rule) => rule.id == id);
+    if (index < 0 || _customRules[index].enabled == enabled) return;
+    _customRules[index] = _customRules[index].copyWith(enabled: enabled);
+    _persistString(
+      _kCustomRules,
+      CustomAnnouncementRule.encodeList(_customRules),
+    );
+    notifyListeners();
+  }
+
+  void removeCustomRule(int id) {
+    if (!_customRules.any((rule) => rule.id == id)) return;
+    _customRules.removeWhere((rule) => rule.id == id);
+    _persistString(
+      _kCustomRules,
+      CustomAnnouncementRule.encodeList(_customRules),
+    );
     notifyListeners();
   }
 

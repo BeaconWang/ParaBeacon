@@ -69,6 +69,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutPlatform => '运行平台';
 
   @override
+  String get aboutAuthor => '作者';
+
+  @override
   String get aboutPlatformWeb => '网页';
 
   @override
@@ -88,27 +91,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutPlatformFuchsia => 'Fuchsia';
-
-  @override
-  String get aboutCapabilities => '功能';
-
-  @override
-  String get aboutCapabilityDashboard => '可自定义的飞行仪表盘';
-
-  @override
-  String get aboutCapabilityVario => '实时升降音与高度播报';
-
-  @override
-  String get aboutCapabilitySensors => '蓝牙与设备内置传感器数据';
-
-  @override
-  String get aboutCapabilityMapping => 'GPS 地图、离线地图与空域显示';
-
-  @override
-  String get aboutCapabilityFlights => '飞行记录、分析、分享与导出';
-
-  @override
-  String get aboutCapabilityIntegrations => '可选的 XContest 实时追踪与 ASFC 账户支持';
 
   @override
   String get aboutOpenSourceLicenses => '开源许可证';

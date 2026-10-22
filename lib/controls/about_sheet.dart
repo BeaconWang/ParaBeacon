@@ -122,23 +122,9 @@ class _AboutSheetState extends State<_AboutSheet> {
                     ),
                     const SizedBox(height: 8),
                     AboutInfoSphere(
-                      labels: const [
-                        '师父：炉头',
-                        '涂君',
-                        '刘登科',
-                        '李永林',
-                        '中奇',
-                        '十一',
-                      ],
+                      labels: const ['师父：炉头', '涂君', '刘登科', '李永林', '中奇', '十一'],
                       semanticsLabel: l10n.aboutSphereSemantics,
                       dragHint: l10n.aboutSphereHint,
-                    ),
-                    Text(
-                      l10n.aboutSphereHint,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
                     ),
                     const SizedBox(height: 24),
                     _sectionHeading(context, l10n.aboutApplicationDetails),
@@ -162,14 +148,11 @@ class _AboutSheetState extends State<_AboutSheet> {
                       label: l10n.aboutPlatform,
                       value: _platformName(l10n),
                     ),
-                    const SizedBox(height: 20),
-                    _sectionHeading(context, l10n.aboutCapabilities),
-                    _capability(context, l10n.aboutCapabilityDashboard),
-                    _capability(context, l10n.aboutCapabilityVario),
-                    _capability(context, l10n.aboutCapabilitySensors),
-                    _capability(context, l10n.aboutCapabilityMapping),
-                    _capability(context, l10n.aboutCapabilityFlights),
-                    _capability(context, l10n.aboutCapabilityIntegrations),
+                    _detailRow(
+                      context,
+                      label: l10n.aboutAuthor,
+                      value: 'Beacon',
+                    ),
                     const SizedBox(height: 20),
                     Card(
                       child: ListTile(
@@ -228,25 +211,6 @@ class _AboutSheetState extends State<_AboutSheet> {
           Expanded(
             child: SelectableText(value, style: theme.textTheme.bodyMedium),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _capability(BuildContext context, String text) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 18,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
         ],
       ),
     );

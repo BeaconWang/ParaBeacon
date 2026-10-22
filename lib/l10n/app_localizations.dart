@@ -218,6 +218,12 @@ abstract class AppLocalizations {
   /// **'Platform'**
   String get aboutPlatform;
 
+  /// No description provided for @aboutAuthor.
+  ///
+  /// In en, this message translates to:
+  /// **'Author'**
+  String get aboutAuthor;
+
   /// No description provided for @aboutPlatformWeb.
   ///
   /// In en, this message translates to:
@@ -259,48 +265,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fuchsia'**
   String get aboutPlatformFuchsia;
-
-  /// No description provided for @aboutCapabilities.
-  ///
-  /// In en, this message translates to:
-  /// **'Capabilities'**
-  String get aboutCapabilities;
-
-  /// No description provided for @aboutCapabilityDashboard.
-  ///
-  /// In en, this message translates to:
-  /// **'Customizable flight instrument dashboard'**
-  String get aboutCapabilityDashboard;
-
-  /// No description provided for @aboutCapabilityVario.
-  ///
-  /// In en, this message translates to:
-  /// **'Live vario audio and altitude announcements'**
-  String get aboutCapabilityVario;
-
-  /// No description provided for @aboutCapabilitySensors.
-  ///
-  /// In en, this message translates to:
-  /// **'Bluetooth and built-in sensor input'**
-  String get aboutCapabilitySensors;
-
-  /// No description provided for @aboutCapabilityMapping.
-  ///
-  /// In en, this message translates to:
-  /// **'GPS mapping, offline maps, and airspace'**
-  String get aboutCapabilityMapping;
-
-  /// No description provided for @aboutCapabilityFlights.
-  ///
-  /// In en, this message translates to:
-  /// **'Flight recording, analysis, sharing, and export'**
-  String get aboutCapabilityFlights;
-
-  /// No description provided for @aboutCapabilityIntegrations.
-  ///
-  /// In en, this message translates to:
-  /// **'Optional XContest live tracking and ASFC account support'**
-  String get aboutCapabilityIntegrations;
 
   /// No description provided for @aboutOpenSourceLicenses.
   ///

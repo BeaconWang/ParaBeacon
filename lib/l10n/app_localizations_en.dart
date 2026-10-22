@@ -70,6 +70,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutPlatform => 'Platform';
 
   @override
+  String get aboutAuthor => 'Author';
+
+  @override
   String get aboutPlatformWeb => 'Web';
 
   @override
@@ -89,32 +92,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutPlatformFuchsia => 'Fuchsia';
-
-  @override
-  String get aboutCapabilities => 'Capabilities';
-
-  @override
-  String get aboutCapabilityDashboard =>
-      'Customizable flight instrument dashboard';
-
-  @override
-  String get aboutCapabilityVario =>
-      'Live vario audio and altitude announcements';
-
-  @override
-  String get aboutCapabilitySensors => 'Bluetooth and built-in sensor input';
-
-  @override
-  String get aboutCapabilityMapping =>
-      'GPS mapping, offline maps, and airspace';
-
-  @override
-  String get aboutCapabilityFlights =>
-      'Flight recording, analysis, sharing, and export';
-
-  @override
-  String get aboutCapabilityIntegrations =>
-      'Optional XContest live tracking and ASFC account support';
 
   @override
   String get aboutOpenSourceLicenses => 'Open-source licenses';

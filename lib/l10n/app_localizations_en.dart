@@ -1573,6 +1573,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapZoomOutTooltip => 'Zoom out';
 
   @override
+  String get mapCacheTitle => 'Map tile cache';
+
+  @override
+  String get mapCacheSubtitle =>
+      'Shared by all maps. Clear downloaded online map tiles.';
+
+  @override
+  String get mapCacheClearTitle => 'Clear map cache?';
+
+  @override
+  String get mapCacheClearConfirmation =>
+      'Downloaded online map tiles will be removed. Offline .mbtiles maps are not affected.';
+
+  @override
+  String get mapCacheCleared => 'Map tile cache cleared.';
+
+  @override
+  String get mapCacheClearFailed => 'Unable to clear the map tile cache.';
+
+  @override
+  String get mapCacheSizeLoading => 'Calculating cached map size…';
+
+  @override
+  String get mapCacheSizeUnavailable => 'Cached map size unavailable';
+
+  @override
+  String mapCacheSizeDetails(String size, int tiles, int bytes) {
+    return '$size · $tiles tiles · $bytes bytes';
+  }
+
+  @override
   String get mapHeading => 'HDG';
 
   @override

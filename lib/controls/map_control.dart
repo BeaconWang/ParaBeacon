@@ -14,6 +14,7 @@ import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
 import '../data/offline_tiles_service.dart';
+import '../data/map_tile_cache.dart';
 import '../data/solar_position.dart';
 import '../data/thermal_detector.dart';
 import '../data/vario_color_scale.dart';
@@ -263,6 +264,10 @@ class MapControl extends StatefulWidget {
 
 class _MapControlState extends State<MapControl> {
   final MapController _map = MapController();
+  MapTileCacheProvider? _onlineTileProvider;
+
+  MapTileCacheProvider get _cachedTileProvider =>
+      _onlineTileProvider ??= MapTileCacheProvider();
 
   /// Broadcast stream used to force [TileLayer] to drop error tiles and
   /// re-fetch them after a transient network failure. See [_onTileLoadError]
@@ -939,6 +944,7 @@ class _MapControlState extends State<MapControl> {
     // waiting for the user to pan.
     return TileLayer(
       key: ValueKey('${src.id}-r$_tileRetryGen'),
+      tileProvider: _cachedTileProvider,
       urlTemplate: src.urlTemplate,
       maxNativeZoom: src.maxZoom.round(),
       evictErrorTileStrategy: EvictErrorTileStrategy.notVisibleRespectMargin,

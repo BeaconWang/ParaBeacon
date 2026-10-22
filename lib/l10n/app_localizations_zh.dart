@@ -1514,6 +1514,35 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapZoomOutTooltip => '缩小';
 
   @override
+  String get mapCacheTitle => '地图瓦片缓存';
+
+  @override
+  String get mapCacheSubtitle => '所有地图共享，可清除已下载的在线地图瓦片。';
+
+  @override
+  String get mapCacheClearTitle => '清除地图缓存？';
+
+  @override
+  String get mapCacheClearConfirmation => '将删除已下载的在线地图瓦片，不会影响 .mbtiles 离线地图。';
+
+  @override
+  String get mapCacheCleared => '地图瓦片缓存已清除。';
+
+  @override
+  String get mapCacheClearFailed => '无法清除地图瓦片缓存。';
+
+  @override
+  String get mapCacheSizeLoading => '正在统计地图缓存大小…';
+
+  @override
+  String get mapCacheSizeUnavailable => '暂时无法读取地图缓存大小';
+
+  @override
+  String mapCacheSizeDetails(String size, int tiles, int bytes) {
+    return '$size · $tiles 个瓦片 · $bytes 字节';
+  }
+
+  @override
   String get mapHeading => '航向';
 
   @override

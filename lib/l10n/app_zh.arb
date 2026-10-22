@@ -550,6 +550,22 @@
   "mapRecenterTooltip": "重新居中",
   "mapZoomInTooltip": "放大",
   "mapZoomOutTooltip": "缩小",
+  "mapCacheTitle": "地图瓦片缓存",
+  "mapCacheSubtitle": "所有地图共享，可清除已下载的在线地图瓦片。",
+  "mapCacheClearTitle": "清除地图缓存？",
+  "mapCacheClearConfirmation": "将删除已下载的在线地图瓦片，不会影响 .mbtiles 离线地图。",
+  "mapCacheCleared": "地图瓦片缓存已清除。",
+  "mapCacheClearFailed": "无法清除地图瓦片缓存。",
+  "mapCacheSizeLoading": "正在统计地图缓存大小…",
+  "mapCacheSizeUnavailable": "暂时无法读取地图缓存大小",
+  "mapCacheSizeDetails": "{size} · {tiles} 个瓦片 · {bytes} 字节",
+  "@mapCacheSizeDetails": {
+    "placeholders": {
+      "size": { "type": "String" },
+      "tiles": { "type": "int" },
+      "bytes": { "type": "int" }
+    }
+  },
   "mapHeading": "航向",
   "mapAltitude": "高度",
   "mapRequiredGlideRatio": "所需滑翔比",

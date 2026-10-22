@@ -3014,6 +3014,60 @@ abstract class AppLocalizations {
   /// **'Zoom out'**
   String get mapZoomOutTooltip;
 
+  /// No description provided for @mapCacheTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Map tile cache'**
+  String get mapCacheTitle;
+
+  /// No description provided for @mapCacheSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared by all maps. Clear downloaded online map tiles.'**
+  String get mapCacheSubtitle;
+
+  /// No description provided for @mapCacheClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear map cache?'**
+  String get mapCacheClearTitle;
+
+  /// No description provided for @mapCacheClearConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded online map tiles will be removed. Offline .mbtiles maps are not affected.'**
+  String get mapCacheClearConfirmation;
+
+  /// No description provided for @mapCacheCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Map tile cache cleared.'**
+  String get mapCacheCleared;
+
+  /// No description provided for @mapCacheClearFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to clear the map tile cache.'**
+  String get mapCacheClearFailed;
+
+  /// No description provided for @mapCacheSizeLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating cached map size…'**
+  String get mapCacheSizeLoading;
+
+  /// No description provided for @mapCacheSizeUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached map size unavailable'**
+  String get mapCacheSizeUnavailable;
+
+  /// No description provided for @mapCacheSizeDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} · {tiles} tiles · {bytes} bytes'**
+  String mapCacheSizeDetails(String size, int tiles, int bytes);
+
   /// No description provided for @mapHeading.
   ///
   /// In en, this message translates to:

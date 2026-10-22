@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../data/gcj02.dart';
 import '../data/geocoding_service.dart';
+import '../data/map_tile_cache.dart';
 import '../data/weather_favorites.dart';
 import '../data/weather_service.dart' show WeatherException;
 import '../l10n/app_localizations.dart';
@@ -81,6 +82,10 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
 
   final MapController _map = MapController();
   final WeatherFavoritesStore _favorites = WeatherFavoritesStore.instance;
+  MapTileCacheProvider? _onlineTileProvider;
+
+  MapTileCacheProvider get _cachedTileProvider =>
+      _onlineTileProvider ??= MapTileCacheProvider();
 
   late String _tileSourceId;
 
@@ -415,6 +420,7 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                         if (!src.isNone)
                           TileLayer(
                             key: ValueKey<String>('picker-tile-$_tileSourceId'),
+                            tileProvider: _cachedTileProvider,
                             urlTemplate: src.urlTemplate,
                             maxNativeZoom: src.maxZoom.round(),
                             // Rely on flutter_map's own User-Agent (see the

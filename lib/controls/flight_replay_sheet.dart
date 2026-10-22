@@ -9,6 +9,7 @@ import '../audio/vario_audio_service.dart';
 import '../data/flight_data.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
+import '../data/map_tile_cache.dart';
 import '../l10n/app_localizations.dart';
 import 'map_control.dart' show MapTileSources, MapTileSource;
 
@@ -51,6 +52,10 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   bool _tileSourceInitialized = false;
 
   final MapController _map = MapController();
+  MapTileCacheProvider? _onlineTileProvider;
+
+  MapTileCacheProvider get _cachedTileProvider =>
+      _onlineTileProvider ??= MapTileCacheProvider();
 
   late final Ticker _ticker;
   bool _ready = false;
@@ -469,6 +474,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                       if (!_src.isNone)
                         TileLayer(
                           key: ValueKey<String>('replay-tile-$_tileSourceId'),
+                          tileProvider: _cachedTileProvider,
                           urlTemplate: _src.urlTemplate,
                           maxNativeZoom: _src.maxZoom.round(),
                           // Rely on flutter_map's own User-Agent (formatted from

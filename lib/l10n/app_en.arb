@@ -16,6 +16,10 @@
   "submit": "Submit",
 
   "preferences": "Preferences",
+  "preferencesSectionAccountFlight": "Accounts & flight",
+  "preferencesSectionMapDisplay": "Map & display",
+  "preferencesSectionSensorsRecording": "Sensors & recording",
+  "preferencesSectionAudio": "Audio & announcements",
   "interfaceConfiguration": "Dashboard layout",
   "interfaceConfigurationImport": "Import dashboard layout",
   "interfaceConfigurationExport": "Export dashboard layout",

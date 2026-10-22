@@ -170,6 +170,30 @@ abstract class AppLocalizations {
   /// **'Preferences'**
   String get preferences;
 
+  /// No description provided for @preferencesSectionAccountFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts & flight'**
+  String get preferencesSectionAccountFlight;
+
+  /// No description provided for @preferencesSectionMapDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Map & display'**
+  String get preferencesSectionMapDisplay;
+
+  /// No description provided for @preferencesSectionSensorsRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensors & recording'**
+  String get preferencesSectionSensorsRecording;
+
+  /// No description provided for @preferencesSectionAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio & announcements'**
+  String get preferencesSectionAudio;
+
   /// No description provided for @interfaceConfiguration.
   ///
   /// In en, this message translates to:

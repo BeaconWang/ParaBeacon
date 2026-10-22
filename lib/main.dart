@@ -900,6 +900,10 @@ class _DashGridPageState extends State<DashGridPage> {
           builder: (context, setSheetState) {
             final theme = Theme.of(context);
             final l10n = AppLocalizations.of(context);
+            Widget sectionHeading(String title) => Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 4),
+              child: Text(title, style: theme.textTheme.titleMedium),
+            );
             return SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -934,6 +938,7 @@ class _DashGridPageState extends State<DashGridPage> {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                       children: [
+                        sectionHeading(l10n.preferencesSectionAccountFlight),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(
@@ -988,6 +993,26 @@ class _DashGridPageState extends State<DashGridPage> {
                           },
                         ),
                         const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.track_changes,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.liveTracking),
+                          subtitle: Text(
+                            LiveTrackingSettings.instance.enabled
+                                ? l10n.liveTrackingReady
+                                : l10n.liveTrackingSubtitle,
+                          ),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showLiveTrackingSettingsSheet(context);
+                            setSheetState(() {});
+                          },
+                        ),
+                        const Divider(height: 1),
+                        sectionHeading(l10n.preferencesSectionMapDisplay),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(
@@ -1054,25 +1079,6 @@ class _DashGridPageState extends State<DashGridPage> {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(
-                            Icons.track_changes,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.liveTracking),
-                          subtitle: Text(
-                            LiveTrackingSettings.instance.enabled
-                                ? l10n.liveTrackingReady
-                                : l10n.liveTrackingSubtitle,
-                          ),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await showLiveTrackingSettingsSheet(context);
-                            setSheetState(() {});
-                          },
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
                             Icons.palette_outlined,
                             color: theme.colorScheme.primary,
                           ),
@@ -1122,13 +1128,7 @@ class _DashGridPageState extends State<DashGridPage> {
                           },
                         ),
                         const Divider(height: 1),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12, bottom: 4),
-                          child: Text(
-                            l10n.interfaceConfiguration,
-                            style: theme.textTheme.titleMedium,
-                          ),
-                        ),
+                        sectionHeading(l10n.interfaceConfiguration),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(
@@ -1148,31 +1148,7 @@ class _DashGridPageState extends State<DashGridPage> {
                           onTap: _exportDashboardConfiguration,
                         ),
                         const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.graphic_eq,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.varioSoundSettings),
-                          subtitle: Text(l10n.varioSoundSettingsSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () => showVarioSoundSettingsSheet(context),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.record_voice_over,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.altitudeAnnouncementTitle),
-                          subtitle: Text(l10n.altitudeAnnouncementSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () =>
-                              showAltitudeAnnouncementSettingsSheet(context),
-                        ),
-                        const Divider(height: 1),
+                        sectionHeading(l10n.preferencesSectionSensorsRecording),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(
@@ -1209,6 +1185,32 @@ class _DashGridPageState extends State<DashGridPage> {
                             await _showRecordingSettingsSheet(context);
                             setSheetState(() {});
                           },
+                        ),
+                        const Divider(height: 1),
+                        sectionHeading(l10n.preferencesSectionAudio),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.graphic_eq,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.varioSoundSettings),
+                          subtitle: Text(l10n.varioSoundSettingsSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () => showVarioSoundSettingsSheet(context),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.record_voice_over,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.altitudeAnnouncementTitle),
+                          subtitle: Text(l10n.altitudeAnnouncementSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () =>
+                              showAltitudeAnnouncementSettingsSheet(context),
                         ),
                         // Debug tools are only compiled/shown in debug builds.
                         if (kDebugMode) ...[

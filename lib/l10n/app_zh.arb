@@ -15,6 +15,10 @@
   "submit": "提交",
 
   "preferences": "偏好设置",
+  "preferencesSectionAccountFlight": "账户与飞行",
+  "preferencesSectionMapDisplay": "地图与显示",
+  "preferencesSectionSensorsRecording": "传感器与记录",
+  "preferencesSectionAudio": "声音与播报",
   "interfaceConfiguration": "仪表盘布局",
   "interfaceConfigurationImport": "导入仪表盘布局",
   "interfaceConfigurationExport": "导出仪表盘布局",

@@ -45,6 +45,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferences => '偏好设置';
 
   @override
+  String get preferencesSectionAccountFlight => '账户与飞行';
+
+  @override
+  String get preferencesSectionMapDisplay => '地图与显示';
+
+  @override
+  String get preferencesSectionSensorsRecording => '传感器与记录';
+
+  @override
+  String get preferencesSectionAudio => '声音与播报';
+
+  @override
   String get interfaceConfiguration => '仪表盘布局';
 
   @override

@@ -45,6 +45,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferences => 'Preferences';
 
   @override
+  String get preferencesSectionAccountFlight => 'Accounts & flight';
+
+  @override
+  String get preferencesSectionMapDisplay => 'Map & display';
+
+  @override
+  String get preferencesSectionSensorsRecording => 'Sensors & recording';
+
+  @override
+  String get preferencesSectionAudio => 'Audio & announcements';
+
+  @override
   String get interfaceConfiguration => 'Dashboard layout';
 
   @override

@@ -1580,7 +1580,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightAutoSettingsTitle => '自动起飞 / 着陆';
 
   @override
+  String get flightAutoSettingsSubtitle => '调整全局自动起飞与着陆检测设置';
+
+  @override
+  String get resetToDefaults => '恢复默认';
+
+  @override
   String get flightAutoTakeoffSpeed => '起飞速度阈值';
+
+  @override
+  String get flightAutoLandingMinimumFlight => '着陆检测前的最短飞行时间';
+
+  @override
+  String get flightAutoLandingSpeedSensitivity => '着陆速度阈值';
 
   @override
   String get flightLandingAutomatic => '自动着陆';

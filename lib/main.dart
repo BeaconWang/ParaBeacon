@@ -13,6 +13,7 @@ import 'l10n/app_localizations.dart';
 
 import 'controls/accounts_sheet.dart';
 import 'controls/aircraft_settings_sheet.dart';
+import 'controls/auto_flight_settings_sheet.dart';
 import 'controls/live_tracking_settings_sheet.dart';
 import 'controls/add_control_sheet.dart';
 import 'controls/bluetooth_sensor_sheet.dart';
@@ -918,6 +919,21 @@ class _DashGridPageState extends State<DashGridPage> {
                           trailing: const Icon(Icons.chevron_right, size: 20),
                           onTap: () async {
                             await showAircraftSettingsSheet(context);
+                            setSheetState(() {});
+                          },
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.flight_takeoff,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.flightAutoSettingsTitle),
+                          subtitle: Text(l10n.flightAutoSettingsSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () async {
+                            await showAutoFlightSettingsSheet(context);
                             setSheetState(() {});
                           },
                         ),

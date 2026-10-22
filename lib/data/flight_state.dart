@@ -37,15 +37,31 @@ class FlightState extends ChangeNotifier {
   static const _kAutoDetect = 'pb.flight.autoDetect';
   static const _kLandingMode = 'pb.flight.landingMode';
   static const _kTakeoffSpeedKph = 'pb.flight.takeoffSpeedKph';
+  static const _kMinimumLandingFlightSeconds =
+      'pb.flight.minimumLandingFlightSeconds';
+  static const _kLandingSpeedSensitivity = 'pb.flight.landingSpeedSensitivity';
 
-  bool _autoDetect = true;
+  static const bool defaultAutoDetectEnabled = true;
+  static const LandingDetectionMode defaultLandingMode =
+      LandingDetectionMode.automatic;
+  static const double defaultTakeoffSpeedKph = 6.0;
+  static const int defaultMinimumLandingFlightSeconds = 30;
+  static const double defaultLandingSpeedSensitivity = 1.0;
+
+  bool _autoDetect = defaultAutoDetectEnabled;
   bool get autoDetect => _autoDetect;
 
-  LandingDetectionMode _landingMode = LandingDetectionMode.automatic;
+  LandingDetectionMode _landingMode = defaultLandingMode;
   LandingDetectionMode get landingMode => _landingMode;
 
-  double _takeoffSpeedKph = 6.0;
+  double _takeoffSpeedKph = defaultTakeoffSpeedKph;
   double get takeoffSpeedKph => _takeoffSpeedKph;
+
+  int _minimumLandingFlightSeconds = defaultMinimumLandingFlightSeconds;
+  int get minimumLandingFlightSeconds => _minimumLandingFlightSeconds;
+
+  double _landingSpeedSensitivity = defaultLandingSpeedSensitivity;
+  double get landingSpeedSensitivity => _landingSpeedSensitivity;
 
   bool _settingsLoaded = false;
 
@@ -61,6 +77,16 @@ class FlightState extends ChangeNotifier {
       final speed = prefs.getDouble(_kTakeoffSpeedKph);
       if (speed != null && speed.isFinite) {
         _takeoffSpeedKph = speed.clamp(1.0, 20.0).toDouble();
+      }
+      final minimumLandingSeconds = prefs.getInt(_kMinimumLandingFlightSeconds);
+      if (minimumLandingSeconds != null) {
+        _minimumLandingFlightSeconds = minimumLandingSeconds.clamp(15, 120);
+      }
+      final landingSensitivity = prefs.getDouble(_kLandingSpeedSensitivity);
+      if (landingSensitivity != null && landingSensitivity.isFinite) {
+        _landingSpeedSensitivity = landingSensitivity
+            .clamp(0.5, 1.5)
+            .toDouble();
       }
     } catch (_) {
       // Keep defaults when preferences are unavailable.
@@ -92,6 +118,32 @@ class FlightState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setMinimumLandingFlightSeconds(int seconds) {
+    final next = seconds.clamp(15, 120);
+    if (_minimumLandingFlightSeconds == next) return;
+    _minimumLandingFlightSeconds = next;
+    _persistInt(_kMinimumLandingFlightSeconds, next);
+    notifyListeners();
+  }
+
+  void setLandingSpeedSensitivity(double factor) {
+    if (!factor.isFinite) return;
+    final next = factor.clamp(0.5, 1.5).toDouble();
+    if (_landingSpeedSensitivity == next) return;
+    _landingSpeedSensitivity = next;
+    _persistDouble(_kLandingSpeedSensitivity, next);
+    notifyListeners();
+  }
+
+  /// Restores all automatic take-off and landing preferences to their defaults.
+  void resetAutoDetectionSettings() {
+    setAutoDetect(defaultAutoDetectEnabled);
+    setLandingMode(defaultLandingMode);
+    setTakeoffSpeedKph(defaultTakeoffSpeedKph);
+    setMinimumLandingFlightSeconds(defaultMinimumLandingFlightSeconds);
+    setLandingSpeedSensitivity(defaultLandingSpeedSensitivity);
+  }
+
   /// Toggles automatic flight detection.
   void toggleAutoDetect() => setAutoDetect(!_autoDetect);
 
@@ -113,6 +165,13 @@ class FlightState extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(key, value);
+    } catch (_) {}
+  }
+
+  void _persistInt(String key, int value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(key, value);
     } catch (_) {}
   }
 

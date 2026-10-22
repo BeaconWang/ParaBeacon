@@ -21,6 +21,8 @@ void main() {
       double? terrainElevationM,
       double windSpeedKph = 0,
       bool isMockLocation = false,
+      int minimumLandingSeconds = 30,
+      double landingSpeedFactor = 1.0,
     }) {
       final time = epoch.add(Duration(seconds: second));
       return detector.update(
@@ -40,6 +42,8 @@ void main() {
         landingMode: mode,
         takeoffSpeedKph: 6,
         trimSpeedKph: 38,
+        minimumFlightBeforeLanding: Duration(seconds: minimumLandingSeconds),
+        landingSpeedFactor: landingSpeedFactor,
         monotonicTime: Duration(seconds: second),
       );
     }
@@ -177,6 +181,48 @@ void main() {
         );
       },
     );
+
+    test('minimum flight time before landing detection is configurable', () {
+      expect(
+        update(
+          second: 31,
+          speedKph: 0,
+          isFlying: true,
+          startedAt: epoch,
+          minimumLandingSeconds: 60,
+        ),
+        isNull,
+      );
+      expect(
+        update(
+          second: 61,
+          speedKph: 0,
+          isFlying: true,
+          startedAt: epoch,
+          minimumLandingSeconds: 60,
+        ),
+        AutoFlightAction.automaticLanding,
+      );
+    });
+
+    test('landing speed factor adjusts the calculated speed limit', () {
+      expect(
+        update(second: 31, speedKph: 2.5, isFlying: true, startedAt: epoch),
+        isNull,
+      );
+
+      detector.reset();
+      expect(
+        update(
+          second: 31,
+          speedKph: 2.5,
+          isFlying: true,
+          startedAt: epoch,
+          landingSpeedFactor: 1.5,
+        ),
+        AutoFlightAction.automaticLanding,
+      );
+    });
 
     test('landing limit uses terrain altitude and wind/trim ratio', () {
       expect(

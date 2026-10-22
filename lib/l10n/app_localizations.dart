@@ -3146,11 +3146,35 @@ abstract class AppLocalizations {
   /// **'Auto take-off / landing'**
   String get flightAutoSettingsTitle;
 
+  /// No description provided for @flightAutoSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust shared take-off and landing detection settings'**
+  String get flightAutoSettingsSubtitle;
+
+  /// No description provided for @resetToDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get resetToDefaults;
+
   /// No description provided for @flightAutoTakeoffSpeed.
   ///
   /// In en, this message translates to:
   /// **'Take-off speed threshold'**
   String get flightAutoTakeoffSpeed;
+
+  /// No description provided for @flightAutoLandingMinimumFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum flight before landing detection'**
+  String get flightAutoLandingMinimumFlight;
+
+  /// No description provided for @flightAutoLandingSpeedSensitivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing speed threshold'**
+  String get flightAutoLandingSpeedSensitivity;
 
   /// No description provided for @flightLandingAutomatic.
   ///

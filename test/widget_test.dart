@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:parabeacon/data/auto_flight_detector.dart';
+import 'package:parabeacon/data/flight_state.dart';
 import 'package:parabeacon/main.dart';
 
 void main() {
@@ -45,8 +47,9 @@ void main() {
     }
   }
 
-  testWidgets('Empty dashboard bootstraps edit mode; menu carries the slider',
-      (WidgetTester tester) async {
+  testWidgets('Empty dashboard bootstraps edit mode; menu carries the slider', (
+    WidgetTester tester,
+  ) async {
     await runWithWindowsPlatform(() async {
       await tester.pumpWidget(const ParaBeaconApp());
 
@@ -62,14 +65,73 @@ void main() {
 
       // The grid-size slider lives in the swipe-down top menu.
       await tester.drag(
-          find.byType(GestureDetector).first, const Offset(0, 600));
+        find.byType(GestureDetector).first,
+        const Offset(0, 600),
+      );
       await tester.pump();
       expect(find.byType(Slider), findsOneWidget);
     });
   });
 
-  testWidgets('Menu opens only after being pulled fully down',
-      (WidgetTester tester) async {
+  testWidgets('Preferences exposes shared automatic flight settings', (
+    WidgetTester tester,
+  ) async {
+    await runWithWindowsPlatform(() async {
+      await tester.pumpWidget(const ParaBeaconApp());
+      await tester.pumpAndSettle();
+
+      await tester.drag(
+        find.byType(GestureDetector).first,
+        const Offset(0, 600),
+      );
+      await tester.pump();
+      final preferences = find.text('Preferences');
+      await tester.drag(find.byType(ListView).last, const Offset(0, -400));
+      await tester.pump();
+      await tester.ensureVisible(preferences);
+      await tester.tap(preferences);
+      await tester.pumpAndSettle();
+
+      final autoFlightSettings = find.text('Auto take-off / landing');
+      await tester.ensureVisible(autoFlightSettings);
+      await tester.tap(autoFlightSettings);
+      await tester.pumpAndSettle();
+
+      final parameterSliders = find.byWidgetPredicate(
+        (widget) => widget is Slider && widget.onChangeEnd != null,
+      );
+      expect(parameterSliders, findsNWidgets(3));
+      await tester.tap(find.text('Manual confirmation'));
+      await tester.pump();
+      expect(FlightState.instance.landingMode, LandingDetectionMode.manual);
+
+      FlightState.instance.setAutoDetect(false);
+      await tester.drag(parameterSliders.first, const Offset(120, 0));
+      await tester.pumpAndSettle();
+      expect(FlightState.instance.takeoffSpeedKph, greaterThan(6));
+
+      await tester.tap(find.text('Reset'));
+      await tester.pump();
+      expect(FlightState.instance.autoDetect, isTrue);
+      expect(FlightState.instance.landingMode, FlightState.defaultLandingMode);
+      expect(
+        FlightState.instance.takeoffSpeedKph,
+        FlightState.defaultTakeoffSpeedKph,
+      );
+      expect(
+        FlightState.instance.minimumLandingFlightSeconds,
+        FlightState.defaultMinimumLandingFlightSeconds,
+      );
+      expect(
+        FlightState.instance.landingSpeedSensitivity,
+        FlightState.defaultLandingSpeedSensitivity,
+      );
+    });
+  });
+
+  testWidgets('Menu opens only after being pulled fully down', (
+    WidgetTester tester,
+  ) async {
     await runWithWindowsPlatform(() async {
       await tester.pumpWidget(const ParaBeaconApp());
 

@@ -1116,6 +1116,10 @@ class FlightRecorder extends ChangeNotifier {
       landingMode: fs.landingMode,
       takeoffSpeedKph: fs.takeoffSpeedKph,
       trimSpeedKph: AircraftSettings.instance.trimSpeedKmh,
+      minimumFlightBeforeLanding: Duration(
+        seconds: fs.minimumLandingFlightSeconds,
+      ),
+      landingSpeedFactor: fs.landingSpeedSensitivity,
     );
     switch (action) {
       case AutoFlightAction.takeoff:

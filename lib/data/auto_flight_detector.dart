@@ -49,6 +49,9 @@ class AutoFlightDetector {
     required LandingDetectionMode landingMode,
     required double takeoffSpeedKph,
     required double trimSpeedKph,
+    Duration minimumFlightBeforeLanding =
+        AutoFlightDetector.minimumFlightBeforeLanding,
+    double landingSpeedFactor = 1.0,
     Duration? monotonicTime,
   }) {
     final sampleTime = data.gpsTimestamp ?? data.timestamp ?? observedAt;
@@ -134,7 +137,8 @@ class AutoFlightDetector {
     final trimMps = trimSpeedKph / 3.6;
     final windRatio = trimMps > 0 ? (data.windSpeed / 3.6) / trimMps : 0.0;
     final windFactor = _windFactor(windRatio);
-    final speedLimitMps = _windSpeedFactor * altitudeFactor * windFactor;
+    final speedLimitMps =
+        _windSpeedFactor * altitudeFactor * windFactor * landingSpeedFactor;
 
     final recentMinimumSpeed = _landingSpeedBuckets
         .where((speed) => !speed.isNaN)

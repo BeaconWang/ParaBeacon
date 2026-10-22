@@ -1641,7 +1641,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightAutoSettingsTitle => 'Auto take-off / landing';
 
   @override
+  String get flightAutoSettingsSubtitle =>
+      'Adjust shared take-off and landing detection settings';
+
+  @override
+  String get resetToDefaults => 'Reset';
+
+  @override
   String get flightAutoTakeoffSpeed => 'Take-off speed threshold';
+
+  @override
+  String get flightAutoLandingMinimumFlight =>
+      'Minimum flight before landing detection';
+
+  @override
+  String get flightAutoLandingSpeedSensitivity => 'Landing speed threshold';
 
   @override
   String get flightLandingAutomatic => 'Automatic landing';

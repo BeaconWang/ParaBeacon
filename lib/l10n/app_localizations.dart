@@ -4148,6 +4148,36 @@ abstract class AppLocalizations {
   /// **'Nearest landing line color'**
   String get settingLastLandingLineColor;
 
+  /// No description provided for @colorPalettePreferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Color picker palette'**
+  String get colorPalettePreferencesTitle;
+
+  /// No description provided for @colorPalettePreferencesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} preset colors in every picker'**
+  String colorPalettePreferencesSubtitle(int count);
+
+  /// No description provided for @colorPaletteSettingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how many built-in distinct colors appear in every color picker. Automatic and custom HEX colors remain available.'**
+  String get colorPaletteSettingsDescription;
+
+  /// No description provided for @colorPaletteCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of preset colors'**
+  String get colorPaletteCountLabel;
+
+  /// No description provided for @colorPaletteSettingsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} colors'**
+  String colorPaletteSettingsCount(int count);
+
   /// No description provided for @landingPointsTitle.
   ///
   /// In en, this message translates to:

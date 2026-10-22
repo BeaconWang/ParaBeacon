@@ -1226,7 +1226,7 @@ class _MapControlState extends State<MapControl> {
     return Polyline(
       points: [from, to],
       strokeWidth: 2.0 * widget.lineThickness,
-      color: lineColor,
+      color: lineColor.withAlpha(255),
       pattern: StrokePattern.dashed(segments: const [8, 6]),
     );
   }
@@ -1235,7 +1235,7 @@ class _MapControlState extends State<MapControl> {
       Polyline(
         points: [from, to],
         strokeWidth: 2.0 * widget.lineThickness,
-        color: color,
+        color: color.withAlpha(255),
         pattern: StrokePattern.dashed(segments: const [8, 6]),
       );
 

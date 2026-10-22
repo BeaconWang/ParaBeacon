@@ -2087,6 +2087,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingLastLandingLineColor => '距离最近降落点连线颜色';
 
   @override
+  String get colorPalettePreferencesTitle => '颜色选择器调色板';
+
+  @override
+  String colorPalettePreferencesSubtitle(int count) {
+    return '所有选择器显示 $count 种预设颜色';
+  }
+
+  @override
+  String get colorPaletteSettingsDescription =>
+      '设置所有颜色选择器显示多少种内置的高区分度颜色。自动颜色和自定义 HEX 颜色仍可使用。';
+
+  @override
+  String get colorPaletteCountLabel => '预设颜色数量';
+
+  @override
+  String colorPaletteSettingsCount(int count) {
+    return '$count 种颜色';
+  }
+
+  @override
   String get landingPointsTitle => '降落点';
 
   @override

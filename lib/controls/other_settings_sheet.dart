@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../data/color_palette_settings.dart';
 import '../data/map_tile_cache.dart';
 import '../data/share_card_settings.dart';
 import '../l10n/app_localizations.dart';
+import 'color_palette_settings_sheet.dart';
 import 'map_control.dart' show MapTileSources;
 
 Future<void> showOtherSettingsSheet(BuildContext context) {
@@ -218,6 +220,26 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                     subtitle: Text(l10n.shareCardFlatDesignSubtitle),
                     value: ShareCardSettings.instance.flatDesign,
                     onChanged: ShareCardSettings.instance.setFlatDesign,
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      Icons.color_lens_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    title: Text(l10n.colorPalettePreferencesTitle),
+                    subtitle: AnimatedBuilder(
+                      animation: ColorPaletteSettings.instance,
+                      builder: (context, _) => Text(
+                        l10n.colorPalettePreferencesSubtitle(
+                          ColorPaletteSettings.instance.colorCount,
+                        ),
+                      ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    onTap: () async {
+                      await showColorPaletteSettingsSheet(context);
+                    },
                   ),
                   _buildMapCache(l10n, theme),
                 ],

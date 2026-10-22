@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/color_palette_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
 import 'control_settings.dart';
@@ -291,30 +292,75 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
           setting.key,
           fallback: setting.defaultValue as int,
         );
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: setting.palette
-                    .map(
-                      (argb) => _ColorSwatch(
-                        argb: argb,
-                        selected: argb == value,
-                        onTap: () => _set(setting.key, argb),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
+        return _ColorSettingEditor(
+          key: ValueKey(setting.key),
+          label: label,
+          value: value,
+          onColorSelected: (argb) => _set(setting.key, argb),
         );
     }
+  }
+}
+
+class _ColorSettingEditor extends StatefulWidget {
+  const _ColorSettingEditor({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onColorSelected,
+  });
+
+  final String label;
+  final int value;
+  final ValueChanged<int> onColorSelected;
+
+  @override
+  State<_ColorSettingEditor> createState() => _ColorSettingEditorState();
+}
+
+class _ColorSettingEditorState extends State<_ColorSettingEditor> {
+  @override
+  void initState() {
+    super.initState();
+    ColorPaletteSettings.instance.addListener(_onPaletteSettingsChanged);
+    ColorPaletteSettings.instance.load();
+  }
+
+  void _onPaletteSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    ColorPaletteSettings.instance.removeListener(_onPaletteSettingsChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.label),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: ColorPaletteSettings.instance.pickerColors
+                .map(
+                  (argb) => _ColorSwatch(
+                    argb: argb,
+                    selected: argb == widget.value,
+                    onTap: () => widget.onColorSelected(argb),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
   }
 }
 

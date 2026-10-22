@@ -46,6 +46,7 @@ import 'data/flight_data_transformer.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/landing_point_store.dart';
+import 'data/color_palette_settings.dart';
 import 'data/takeoff_reference.dart';
 import 'data/gps_flight_data_bridge.dart';
 import 'data/sensors/internal_sensor_service.dart';
@@ -154,6 +155,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     RecordingSettings.instance.load();
     FlightState.instance.loadSettings();
     LandingPointStore.instance.load();
+    ColorPaletteSettings.instance.load();
     // Load the persisted default units before dashboard controls render.
     UnitSettings.instance.load();
     ShareCardSettings.instance.load();
@@ -996,7 +998,6 @@ class _DashGridPageState extends State<DashGridPage> {
                           onTap: () => showUnitSettingsSheet(context),
                         ),
                         const Divider(height: 1),
-
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(

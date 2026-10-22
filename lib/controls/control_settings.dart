@@ -3,28 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
 
-const List<int> _mapPointAndLineColorPalette = [
-  0,
-  0xFF43A047,
-  0xFFF44336,
-  0xFF9C27B0,
-  0xFF2196F3,
-  0xFFFF9800,
-  0xFFE91E63,
-  0xFF009688,
-  0xFF00BCD4,
-  0xFF8BC34A,
-  0xFFFFEB3B,
-  0xFF3F51B5,
-  0xFFFF5722,
-  0xFF795548,
-  0xFF607D8B,
-  0xFFFFC107,
-  0xFF03A9F4,
-  0xFFFFFFFF,
-  0xFF212121,
-];
-
 /// The kind of UI editor a setting uses.
 enum SettingKind { toggle, slider, choice, color, decimalRange }
 
@@ -57,12 +35,6 @@ class ControlSetting {
   /// Options for a choice setting: value -> label.
   final Map<Object, String> options;
 
-  /// Palette for a color setting: an ordered list of ARGB int swatches to
-  /// choose from. The special value `0` is treated as "use theme default"
-  /// (i.e. the widget's own fallback) so the user can revert to the
-  /// automatic outline color.
-  final List<int> palette;
-
   /// Optional toggle key that must be enabled before this setting is shown.
   final String? visibleWhenKey;
 
@@ -80,7 +52,6 @@ class ControlSetting {
        divisions = null,
        unit = '',
        options = const {},
-       palette = const [],
        visibleWhenKey = null;
 
   const ControlSetting.toggle({
@@ -93,7 +64,6 @@ class ControlSetting {
        divisions = null,
        unit = '',
        options = const {},
-       palette = const [],
        maxDecimalPlaces = 0,
        visibleWhenKey = null;
 
@@ -107,7 +77,6 @@ class ControlSetting {
     this.unit = '',
   }) : kind = SettingKind.slider,
        options = const {},
-       palette = const [],
        maxDecimalPlaces = 0,
        visibleWhenKey = null;
 
@@ -121,18 +90,15 @@ class ControlSetting {
        max = 1,
        divisions = null,
        unit = '',
-       palette = const [],
        maxDecimalPlaces = 0,
        visibleWhenKey = null;
 
-  /// A color setting. [defaultValue] and every entry in [palette] must be an
-  /// ARGB int (e.g. `0xFF2196F3`). A value of `0` in the palette means
-  /// "automatic / theme default".
+  /// A color setting. The picker uses the shared preset palette and supports
+  /// custom ARGB color numbers.
   const ControlSetting.color({
     required this.key,
     required this.label,
     required int this.defaultValue,
-    required this.palette,
     this.visibleWhenKey,
   }) : kind = SettingKind.color,
        min = 0,
@@ -533,67 +499,6 @@ String? _settingOptionLabel(
   }
 }
 
-/// Default palette for the border color picker.
-///
-/// The first entry (`0`) means "automatic" — the control widget will fall
-/// back to the theme's outline color, which is the historical behavior.
-const List<int> _borderColorPalette = [
-  0x00000000, // automatic (theme default)
-  0xFFFFFFFF, // white
-  0xFF000000, // black
-  0xFF9E9E9E, // grey
-  0xFFF44336, // red
-  0xFFFF9800, // orange
-  0xFFFFEB3B, // yellow
-  0xFF4CAF50, // green
-  0xFF00BCD4, // cyan
-  0xFF2196F3, // blue
-  0xFF9C27B0, // purple
-];
-
-/// Default palette for the text color picker.
-///
-/// The first entry (`0`) means "automatic" — the control face uses the
-/// theme's on-surface color (the historical behavior). Semantic colors
-/// (green for climb, red for sink) are *not* overridden by this setting so
-/// they keep conveying meaning regardless of the user's choice.
-const List<int> _textColorPalette = [
-  0x00000000, // automatic (theme onSurface)
-  0xFFFFFFFF, // white
-  0xFF000000, // black
-  0xFFE0E0E0, // light grey
-  0xFF9E9E9E, // grey
-  0xFFF44336, // red
-  0xFFFF9800, // orange
-  0xFFFFEB3B, // yellow
-  0xFF4CAF50, // green
-  0xFF00BCD4, // cyan
-  0xFF2196F3, // blue
-  0xFF9C27B0, // purple
-];
-
-/// Default palette for the background color picker.
-///
-/// The first entry (`0`) means "automatic" — the control widget falls back
-/// to the theme's surface color, which is the historical behavior. The
-/// remaining entries are opaque ARGB values; the widget re-applies the
-/// user's `backgroundOpacity` setting on top so alpha is controlled in a
-/// single place.
-const List<int> _backgroundColorPalette = [
-  0x00000000, // automatic (theme surface)
-  0xFFFFFFFF, // white
-  0xFF000000, // black
-  0xFF424242, // dark grey
-  0xFF9E9E9E, // grey
-  0xFFF44336, // red
-  0xFFFF9800, // orange
-  0xFFFFEB3B, // yellow
-  0xFF4CAF50, // green
-  0xFF00BCD4, // cyan
-  0xFF2196F3, // blue
-  0xFF9C27B0, // purple
-];
-
 /// Common settings that every control shares.
 const List<ControlSetting> _commonSettings = [
   ControlSetting.toggle(
@@ -610,7 +515,6 @@ const List<ControlSetting> _commonSettings = [
     key: 'borderColor',
     label: 'Border color',
     defaultValue: 0, // 0 == automatic (theme outline)
-    palette: _borderColorPalette,
   ),
   ControlSetting.slider(
     key: 'borderWidth',
@@ -643,7 +547,6 @@ const List<ControlSetting> _commonSettings = [
     key: 'backgroundColor',
     label: 'Background color',
     defaultValue: 0, // 0 == automatic (theme surface)
-    palette: _backgroundColorPalette,
   ),
   ControlSetting.slider(
     key: 'backgroundOpacity',
@@ -658,7 +561,6 @@ const List<ControlSetting> _commonSettings = [
     key: 'textColor',
     label: 'Text color',
     defaultValue: 0, // 0 == automatic (theme onSurface)
-    palette: _textColorPalette,
   ),
 ];
 
@@ -1019,7 +921,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'takeoffPointColor',
       label: 'Take-off marker color',
       defaultValue: 0xFF43A047,
-      palette: _mapPointAndLineColorPalette,
       visibleWhenKey: 'showTakeoffPoint',
     ),
     ControlSetting.toggle(
@@ -1031,7 +932,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'defaultLandingPointColor',
       label: 'Default landing marker color',
       defaultValue: 0xFFF44336,
-      palette: _mapPointAndLineColorPalette,
       visibleWhenKey: 'showDefaultLandingPoint',
     ),
     ControlSetting.toggle(
@@ -1043,7 +943,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'lastLandingPointColor',
       label: 'Last landing marker color',
       defaultValue: 0xFF9C27B0,
-      palette: _mapPointAndLineColorPalette,
       visibleWhenKey: 'showNearestLandingPoint',
     ),
     ControlSetting.toggle(
@@ -1055,7 +954,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'takeoffLineColor',
       label: 'Take-off line color',
       defaultValue: 0xFF43A047,
-      palette: _mapPointAndLineColorPalette,
       visibleWhenKey: 'showTakeoffLine',
     ),
     ControlSetting.toggle(
@@ -1067,7 +965,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'defaultLandingLineColor',
       label: 'Default landing line color',
       defaultValue: 0xFFF44336,
-      palette: _mapPointAndLineColorPalette,
       visibleWhenKey: 'showDefaultLandingLine',
     ),
     ControlSetting.toggle(
@@ -1079,7 +976,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'lastLandingLineColor',
       label: 'Last landing line color',
       defaultValue: 0xFF9C27B0,
-      palette: _mapPointAndLineColorPalette,
       visibleWhenKey: 'showLastLandingLine',
     ),
     ControlSetting.toggle(

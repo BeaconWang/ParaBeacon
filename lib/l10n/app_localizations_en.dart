@@ -2165,6 +2165,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingLastLandingLineColor => 'Nearest landing line color';
 
   @override
+  String get colorPalettePreferencesTitle => 'Color picker palette';
+
+  @override
+  String colorPalettePreferencesSubtitle(int count) {
+    return '$count preset colors in every picker';
+  }
+
+  @override
+  String get colorPaletteSettingsDescription =>
+      'Choose how many built-in distinct colors appear in every color picker. Automatic and custom HEX colors remain available.';
+
+  @override
+  String get colorPaletteCountLabel => 'Number of preset colors';
+
+  @override
+  String colorPaletteSettingsCount(int count) {
+    return '$count colors';
+  }
+
+  @override
   String get landingPointsTitle => 'Landing points';
 
   @override

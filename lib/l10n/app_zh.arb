@@ -751,6 +751,17 @@
   "settingTakeoffLineColor": "起飞点连线颜色",
   "settingDefaultLandingLineColor": "默认降落点连线颜色",
   "settingLastLandingLineColor": "距离最近降落点连线颜色",
+  "colorPalettePreferencesTitle": "颜色选择器调色板",
+  "colorPalettePreferencesSubtitle": "所有选择器显示 {count} 种预设颜色",
+  "@colorPalettePreferencesSubtitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "colorPaletteSettingsDescription": "设置所有颜色选择器显示多少种内置的高区分度颜色。自动颜色和自定义 HEX 颜色仍可使用。",
+  "colorPaletteCountLabel": "预设颜色数量",
+  "colorPaletteSettingsCount": "{count} 种颜色",
+  "@colorPaletteSettingsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
 
   "landingPointsTitle": "降落点",
   "landingPointsSubtitle": "管理已保存的降落目的地和默认目标。",

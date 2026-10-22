@@ -1,30 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/control_catalog.dart';
-import 'package:parabeacon/controls/control_settings.dart';
 import 'package:parabeacon/controls/control_settings_sheet.dart';
+import 'package:parabeacon/data/color_palette_settings.dart';
 import 'package:parabeacon/controls/placed_control.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 
 void main() {
-  test('map marker and line settings offer expanded color palettes', () {
-    const mapColorKeys = {
-      'takeoffPointColor',
-      'defaultLandingPointColor',
-      'lastLandingPointColor',
-      'takeoffLineColor',
-      'defaultLandingLineColor',
-      'lastLandingLineColor',
-    };
-    final colorSettings = settingsSchemaFor(
-      'map',
-    ).where((setting) => mapColorKeys.contains(setting.key)).toList();
+  test('color count preference controls the shared preset palette', () {
+    final settings = ColorPaletteSettings.instance;
+    settings.previewColorCount(4);
+    expect(settings.pickerColors, hasLength(5));
+    expect(settings.pickerColors.first, 0);
+    expect(
+      ColorPaletteSettings.presetColors.toSet(),
+      hasLength(ColorPaletteSettings.presetColors.length),
+    );
 
-    expect(colorSettings, hasLength(6));
-    for (final setting in colorSettings) {
-      expect(setting.palette.length, greaterThan(10));
-      expect(setting.palette.first, 0);
-    }
+    settings.previewColorCount(ColorPaletteSettings.defaultColorCount);
+    expect(
+      settings.pickerColors,
+      hasLength(ColorPaletteSettings.defaultColorCount + 1),
+    );
   });
 
   testWidgets('map point and line colors follow their display switches', (
@@ -64,6 +61,7 @@ void main() {
 
     await reveal('Show take-off point');
     expect(find.text('Take-off marker color'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
     await tester.tap(find.text('Show take-off point'));
     await tester.pumpAndSettle();
     expect(find.text('Take-off marker color'), findsNothing);

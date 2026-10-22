@@ -826,6 +826,17 @@
   "settingTakeoffLineColor": "Take-off line color",
   "settingDefaultLandingLineColor": "Default landing line color",
   "settingLastLandingLineColor": "Nearest landing line color",
+  "colorPalettePreferencesTitle": "Color picker palette",
+  "colorPalettePreferencesSubtitle": "{count} preset colors in every picker",
+  "@colorPalettePreferencesSubtitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "colorPaletteSettingsDescription": "Choose how many built-in distinct colors appear in every color picker. Automatic and custom HEX colors remain available.",
+  "colorPaletteCountLabel": "Number of preset colors",
+  "colorPaletteSettingsCount": "{count} colors",
+  "@colorPaletteSettingsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
 
   "landingPointsTitle": "Landing points",
   "landingPointsSubtitle": "Manage saved landing destinations and the default target.",

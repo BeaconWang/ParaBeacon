@@ -328,8 +328,6 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.dataMonitorLongitude;
     case 'monitorHeadingDecimals':
       return l10n.dataMonitorHeading;
-    case 'monitorBearingDecimals':
-      return l10n.dataMonitorBearing;
     case 'monitorGpsAccuracyDecimals':
       return l10n.dataMonitorGpsAccuracy;
     case 'monitorWindSpeedDecimals':
@@ -683,17 +681,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ),
   ],
   'heading': [
-    ControlSetting.choice(
-      key: 'format',
-      label: 'Format',
-      defaultValue: 'degrees',
-      options: {
-        'degrees': 'Degrees (0-360°)',
-        'cardinal': 'Cardinal (N, NE, …)',
-      },
-    ),
-  ],
-  'bearing': [
     ControlSetting.choice(
       key: 'format',
       label: 'Format',
@@ -1152,9 +1139,6 @@ const Map<String, List<ControlSetting>> _decimalSettings = {
   'heading': [
     ControlSetting.decimalRange(key: 'valueDecimals', label: 'Heading'),
   ],
-  'bearing': [
-    ControlSetting.decimalRange(key: 'valueDecimals', label: 'Bearing'),
-  ],
   'gps_accuracy': [
     ControlSetting.decimalRange(key: 'valueDecimals', label: 'GPS accuracy'),
   ],
@@ -1232,10 +1216,6 @@ const Map<String, List<ControlSetting>> _decimalSettings = {
     ControlSetting.decimalRange(
       key: 'monitorHeadingDecimals',
       label: 'Heading',
-    ),
-    ControlSetting.decimalRange(
-      key: 'monitorBearingDecimals',
-      label: 'Bearing',
     ),
     ControlSetting.decimalRange(
       key: 'monitorGpsAccuracyDecimals',

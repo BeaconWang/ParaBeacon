@@ -91,8 +91,6 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlGlide;
     case 'heading':
       return l10n.controlHeading;
-    case 'bearing':
-      return l10n.controlBearing;
     case 'gps_accuracy':
       return l10n.controlGpsAccuracy;
     case 'location':
@@ -257,14 +255,6 @@ class ControlCatalog {
           id: 'heading',
           label: 'Heading',
           icon: Icons.explore_outlined,
-          kind: ControlKind.data,
-          defaultCols: 3,
-          defaultRows: 2,
-        ),
-        ControlType(
-          id: 'bearing',
-          label: 'Bearing',
-          icon: Icons.near_me,
           kind: ControlKind.data,
           defaultCols: 3,
           defaultRows: 2,

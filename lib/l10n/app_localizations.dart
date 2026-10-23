@@ -2954,12 +2954,6 @@ abstract class AppLocalizations {
   /// **'Heading'**
   String get controlHeading;
 
-  /// No description provided for @controlBearing.
-  ///
-  /// In en, this message translates to:
-  /// **'Bearing'**
-  String get controlBearing;
-
   /// No description provided for @controlGpsAccuracy.
   ///
   /// In en, this message translates to:
@@ -4609,12 +4603,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Heading'**
   String get dataMonitorHeading;
-
-  /// No description provided for @dataMonitorBearing.
-  ///
-  /// In en, this message translates to:
-  /// **'Bearing'**
-  String get dataMonitorBearing;
 
   /// No description provided for @dataMonitorGpsAccuracy.
   ///

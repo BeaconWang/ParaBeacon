@@ -1542,9 +1542,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlHeading => 'Heading';
 
   @override
-  String get controlBearing => 'Bearing';
-
-  @override
   String get controlGpsAccuracy => 'GPS Accuracy';
 
   @override
@@ -2408,9 +2405,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dataMonitorHeading => 'Heading';
-
-  @override
-  String get dataMonitorBearing => 'Bearing';
 
   @override
   String get dataMonitorGpsAccuracy => 'GPS accuracy';

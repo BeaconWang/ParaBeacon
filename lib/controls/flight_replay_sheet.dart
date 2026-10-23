@@ -708,7 +708,6 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
       (l10n.dataMonitorLatitude, '${data.latitude.toStringAsFixed(6)}°'),
       (l10n.dataMonitorLongitude, '${data.longitude.toStringAsFixed(6)}°'),
       (l10n.dataMonitorHeading, '${data.heading.toStringAsFixed(0)}°'),
-      (l10n.dataMonitorBearing, '${optionalNumber(data.bearing, 0)}°'),
       (l10n.dataMonitorGpsAccuracy, '${optionalNumber(data.gpsAccuracy, 1)} m'),
       (l10n.dataMonitorSatellites, data.satellites?.toString() ?? '—'),
       (l10n.dataMonitorWindSpeed, '${data.windSpeed.toStringAsFixed(1)} km/h'),

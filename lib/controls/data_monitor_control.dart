@@ -68,11 +68,6 @@ class DataMonitorControl extends StatelessWidget {
         unit: '°',
       ),
       _Row(
-        l10n.dataMonitorBearing,
-        _fmtN(context, d.bearing, 0, 'monitorBearingDecimals'),
-        unit: '°',
-      ),
-      _Row(
         l10n.dataMonitorGpsAccuracy,
         _fmtN(context, d.gpsAccuracy, 1, 'monitorGpsAccuracyDecimals'),
         unit: 'm',

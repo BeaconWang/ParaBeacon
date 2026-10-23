@@ -1346,38 +1346,6 @@ class BaroAltitudeControl extends StatelessWidget {
   }
 }
 
-/// Bearing to the current navigation target, when one is available.
-class BearingControl extends StatelessWidget {
-  final bool showTitle;
-  final bool cardinal;
-
-  const BearingControl({
-    super.key,
-    this.showTitle = true,
-    this.cardinal = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final data = FlightDataProvider.of(context);
-    final bearing = data.bearing;
-    final value = bearing == null
-        ? '--'
-        : cardinal
-        ? _cardinal8(bearing)
-        : _formatDegrees(
-            bearing,
-            DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
-          );
-    return DataValueControl(
-      title: AppLocalizations.of(context).controlBearing,
-      value: value,
-      unit: cardinal ? '' : '°',
-      showTitle: showTitle,
-    );
-  }
-}
-
 /// Horizontal GPS accuracy in meters.
 class GpsAccuracyControl extends StatelessWidget {
   final bool showTitle;

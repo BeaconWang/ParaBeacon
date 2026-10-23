@@ -1479,9 +1479,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlHeading => '航向';
 
   @override
-  String get controlBearing => '目标方位';
-
-  @override
   String get controlGpsAccuracy => 'GPS 精度';
 
   @override
@@ -2323,9 +2320,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dataMonitorHeading => '航向';
-
-  @override
-  String get dataMonitorBearing => '方位';
 
   @override
   String get dataMonitorGpsAccuracy => 'GPS 精度';

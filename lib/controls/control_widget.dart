@@ -333,11 +333,6 @@ class ControlWidget extends StatelessWidget {
           showTitle: showTitle,
           cardinal: control.setting('format') == 'cardinal',
         );
-      case 'bearing':
-        return BearingControl(
-          showTitle: showTitle,
-          cardinal: control.setting('format') == 'cardinal',
-        );
       case 'gps_accuracy':
         return GpsAccuracyControl(showTitle: showTitle);
       case 'wind_speed':

@@ -59,7 +59,17 @@ class _ColorPaletteSettingsSheet extends StatelessWidget {
                 l10n.colorPaletteSettingsDescription,
                 style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.colorPaletteIncludeNeutralColors),
+                subtitle: Text(
+                  l10n.colorPaletteIncludeNeutralColorsDescription,
+                ),
+                value: settings.includeNeutralColors,
+                onChanged: settings.setIncludeNeutralColors,
+              ),
+              const SizedBox(height: 8),
               InputDecorator(
                 decoration: InputDecoration(
                   labelText: l10n.colorPaletteSchemeLabel,

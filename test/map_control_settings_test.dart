@@ -13,12 +13,12 @@ void main() {
     final highSaturation = ColorPaletteSettings.presets.firstWhere(
       (preset) => preset.id == 'high-saturation',
     );
-    expect(highSaturation.saturation, 0.75);
+    expect(highSaturation.saturation, 0.82);
     for (final preset in ColorPaletteSettings.presets) {
-      expect(preset.saturation, inInclusiveRange(0.4, 0.75));
+      expect(preset.saturation, inInclusiveRange(0.4, 0.82));
       expect(preset.lightness, inInclusiveRange(0.5, 0.75));
       final hues = preset
-          .colorsForCount(3)
+          .colorsForCount(3, includeNeutralColors: false)
           .map((color) => HSLColor.fromColor(Color(color)).hue)
           .toList();
       expect(hues, hasLength(3));
@@ -28,20 +28,54 @@ void main() {
         expect((gap - 120).abs(), lessThan(1.5));
       }
     }
-    final highSaturationColors = highSaturation.colorsForCount(16);
-    expect(highSaturationColors, hasLength(16));
-    expect(
-      highSaturationColors.sublist(11, 14),
-      ColorPalettePreset.neutralColors,
+    final highSaturationColors = highSaturation.colorsForCount(20);
+    expect(highSaturationColors, hasLength(20));
+    expect(ColorPaletteSettings.maxColorCount, 20);
+    expect(highSaturationColors.sublist(17), ColorPalettePreset.neutralColors);
+    final darkVariant = HSLColor.fromColor(Color(highSaturationColors[15]));
+    final brightVariant = HSLColor.fromColor(Color(highSaturationColors[16]));
+    expect(darkVariant.lightness, closeTo(0.28, 0.01));
+    expect(darkVariant.saturation, greaterThanOrEqualTo(0.85));
+    expect(brightVariant.lightness, closeTo(0.76, 0.01));
+    expect(brightVariant.saturation, greaterThanOrEqualTo(0.85));
+    final withoutNeutrals = highSaturation.colorsForCount(
+      20,
+      includeNeutralColors: false,
     );
+    expect(withoutNeutrals, hasLength(20));
     expect(
-      HSLColor.fromColor(Color(highSaturationColors[14])).lightness,
-      closeTo(0.50, 0.01),
+      withoutNeutrals[17],
+      isNot(anyOf(0xFF000000, 0xFFFFFFFF, 0xFF808080)),
     );
+    final neutralFreeColors = highSaturation.colorsForCount(
+      6,
+      includeNeutralColors: false,
+    );
+    expect(neutralFreeColors, hasLength(6));
     expect(
-      HSLColor.fromColor(Color(highSaturationColors[15])).lightness,
-      closeTo(0.75, 0.01),
+      neutralFreeColors,
+      isNot(
+        anyOf(contains(0xFF000000), contains(0xFFFFFFFF), contains(0xFF808080)),
+      ),
     );
+    expect(highSaturation.colorsForCount(3), ColorPalettePreset.neutralColors);
+    final presetHues =
+        ColorPaletteSettings.presets
+            .map(
+              (preset) => HSLColor.fromColor(
+                Color(
+                  preset.colorsForCount(3, includeNeutralColors: false).first,
+                ),
+              ).hue,
+            )
+            .toSet()
+            .toList()
+          ..sort();
+    for (var i = 0; i < presetHues.length; i++) {
+      final next = presetHues[(i + 1) % presetHues.length];
+      final gap = (next - presetHues[i] + 360) % 360;
+      expect(gap, greaterThanOrEqualTo(26.5));
+    }
 
     final settings = ColorPaletteSettings.instance;
     settings.previewColorCount(4);

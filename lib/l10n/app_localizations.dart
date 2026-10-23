@@ -4205,8 +4205,20 @@ abstract class AppLocalizations {
   /// No description provided for @colorPaletteSettingsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Choose a built-in HSL color scheme and how many distinct colors appear in every color picker. Black, white and gray are included; High Saturation also adds dark and bright variants. Hues are evenly spaced.'**
+  /// **'Choose up to 20 preset colors. High Saturation adds dark and bright high-saturation colors; when enabled, black, white and gray are appended at the end.'**
   String get colorPaletteSettingsDescription;
+
+  /// No description provided for @colorPaletteIncludeNeutralColors.
+  ///
+  /// In en, this message translates to:
+  /// **'Include black, white and gray'**
+  String get colorPaletteIncludeNeutralColors;
+
+  /// No description provided for @colorPaletteIncludeNeutralColorsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Append black, white and gray to the end of each palette.'**
+  String get colorPaletteIncludeNeutralColorsDescription;
 
   /// No description provided for @colorPaletteSchemeLabel.
   ///

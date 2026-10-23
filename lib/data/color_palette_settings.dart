@@ -18,28 +18,35 @@ class ColorPalettePreset {
 
   static const List<int> neutralColors = [0xFF000000, 0xFFFFFFFF, 0xFF808080];
 
-  List<int> colorsForCount(int count) {
+  List<int> colorsForCount(int count, {bool includeNeutralColors = true}) {
     final safeCount = count
         .clamp(1, ColorPaletteSettings.maxColorCount)
         .toInt();
+    final neutralCount = includeNeutralColors
+        ? (safeCount < neutralColors.length ? safeCount : neutralColors.length)
+        : 0;
+    final chromaticCount = safeCount - neutralCount;
+    if (chromaticCount == 0) {
+      return neutralColors.take(neutralCount).toList();
+    }
 
     List<int> hues(int hueCount) => List<int>.generate(hueCount, (index) {
       final hue = (hueOffset + 360 * index / hueCount) % 360;
       return _hslColor(hue, saturation, lightness);
     }, growable: false);
 
-    if (safeCount <= 3) return hues(safeCount);
-    if (safeCount <= 14) {
-      return [...hues(safeCount - neutralColors.length), ...neutralColors];
-    }
-
-    final extraToneCount = safeCount - 14;
-    return [
-      ...hues(11),
-      ...neutralColors,
-      if (extraToneCount >= 1) _hslColor(hueOffset, saturation, 0.50),
-      if (extraToneCount >= 2) _hslColor(hueOffset, saturation, 0.75),
+    final highSaturationVariants = id == 'high-saturation'
+        ? (chromaticCount - 14).clamp(0, 2)
+        : 0;
+    final colors = <int>[
+      ...hues(chromaticCount - highSaturationVariants),
+      if (highSaturationVariants >= 1)
+        _hslColor(hueOffset, saturation < 0.86 ? 0.86 : saturation, 0.28),
+      if (highSaturationVariants >= 2)
+        _hslColor(hueOffset, saturation < 0.86 ? 0.86 : saturation, 0.76),
+      if (neutralCount > 0) ...neutralColors.take(neutralCount),
     ];
+    return colors;
   }
 
   int _hslColor(double hue, double saturation, double lightness) =>
@@ -52,107 +59,114 @@ class ColorPaletteSettings extends ChangeNotifier {
   static final ColorPaletteSettings instance = ColorPaletteSettings._();
   static const String _countKey = 'pb.colorPalette.count.v1';
   static const String _schemeKey = 'pb.colorPalette.scheme.v1';
+  static const String _neutralColorsKey = 'pb.colorPalette.neutralColors.v1';
 
   static const List<ColorPalettePreset> presets = [
     ColorPalettePreset(
       id: 'high-saturation',
       hueOffset: 0,
-      saturation: 0.75,
-      lightness: 0.60,
+      saturation: 0.82,
+      lightness: 0.58,
     ),
     ColorPalettePreset(
       id: 'macaron',
-      hueOffset: 0,
-      saturation: 0.48,
+      hueOffset: 27.7,
+      saturation: 0.53,
       lightness: 0.70,
     ),
     ColorPalettePreset(
       id: 'morandi',
-      hueOffset: 18,
-      saturation: 0.42,
+      hueOffset: 55.4,
+      saturation: 0.47,
       lightness: 0.64,
     ),
     ColorPalettePreset(
       id: 'earth',
-      hueOffset: 36,
-      saturation: 0.55,
+      hueOffset: 83.1,
+      saturation: 0.60,
       lightness: 0.58,
     ),
     ColorPalettePreset(
       id: 'dark-tech',
-      hueOffset: 54,
-      saturation: 0.62,
+      hueOffset: 110.8,
+      saturation: 0.67,
       lightness: 0.53,
     ),
     ColorPalettePreset(
       id: 'maldives-ocean',
-      hueOffset: 72,
-      saturation: 0.60,
+      hueOffset: 138.5,
+      saturation: 0.65,
       lightness: 0.66,
     ),
     ColorPalettePreset(
       id: 'forest',
-      hueOffset: 90,
-      saturation: 0.52,
+      hueOffset: 166.2,
+      saturation: 0.57,
       lightness: 0.56,
     ),
     ColorPalettePreset(
       id: 'sunset',
-      hueOffset: 108,
-      saturation: 0.65,
+      hueOffset: 193.8,
+      saturation: 0.70,
       lightness: 0.62,
     ),
     ColorPalettePreset(
       id: 'lavender',
-      hueOffset: 126,
-      saturation: 0.45,
+      hueOffset: 221.5,
+      saturation: 0.50,
       lightness: 0.73,
     ),
     ColorPalettePreset(
       id: 'nordic',
-      hueOffset: 144,
-      saturation: 0.42,
+      hueOffset: 249.2,
+      saturation: 0.47,
       lightness: 0.72,
     ),
     ColorPalettePreset(
       id: 'desert',
-      hueOffset: 162,
-      saturation: 0.55,
+      hueOffset: 276.9,
+      saturation: 0.60,
       lightness: 0.60,
     ),
     ColorPalettePreset(
       id: 'sakura',
-      hueOffset: 180,
-      saturation: 0.50,
+      hueOffset: 304.6,
+      saturation: 0.55,
       lightness: 0.68,
     ),
     ColorPalettePreset(
       id: 'glacier',
-      hueOffset: 198,
-      saturation: 0.52,
+      hueOffset: 332.3,
+      saturation: 0.57,
       lightness: 0.65,
     ),
   ];
 
   static const int minColorCount = 3;
-  static const int maxColorCount = 16;
+  static const int maxColorCount = 20;
   static const int defaultColorCount = 6;
   static const String defaultSchemeId = 'high-saturation';
 
   int _colorCount = defaultColorCount;
   String _schemeId = defaultSchemeId;
+  bool _includeNeutralColors = true;
   bool _loaded = false;
   Future<void>? _loading;
 
   int get colorCount => _colorCount;
   String get schemeId => _schemeId;
+  bool get includeNeutralColors => _includeNeutralColors;
   bool get isLoaded => _loaded;
 
   ColorPalettePreset get selectedPreset =>
       presets.firstWhere((preset) => preset.id == _schemeId);
 
-  List<int> get visiblePresetColors =>
-      List.unmodifiable(selectedPreset.colorsForCount(_colorCount));
+  List<int> get visiblePresetColors => List.unmodifiable(
+    selectedPreset.colorsForCount(
+      _colorCount,
+      includeNeutralColors: _includeNeutralColors,
+    ),
+  );
 
   List<int> get pickerColors => [0, ...visiblePresetColors];
 
@@ -166,8 +180,12 @@ class ColorPaletteSettings extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final savedCount = prefs.getInt(_countKey);
       final savedSchemeId = prefs.getString(_schemeKey);
+      final savedNeutralColors = prefs.getBool(_neutralColorsKey);
       if (savedCount != null) _setCount(savedCount);
       if (savedSchemeId != null) _setScheme(savedSchemeId);
+      if (savedNeutralColors != null) {
+        _setIncludeNeutralColors(savedNeutralColors);
+      }
     } catch (_) {
       // Keep the built-in defaults if local preferences are unavailable.
     } finally {
@@ -183,6 +201,16 @@ class ColorPaletteSettings extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_countKey, _colorCount);
+    } catch (_) {
+      // Keep the selected value in memory if persistence is unavailable.
+    }
+  }
+
+  Future<void> setIncludeNeutralColors(bool enabled) async {
+    _setIncludeNeutralColors(enabled);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_neutralColorsKey, _includeNeutralColors);
     } catch (_) {
       // Keep the selected value in memory if persistence is unavailable.
     }
@@ -204,6 +232,12 @@ class ColorPaletteSettings extends ChangeNotifier {
     final normalized = count.clamp(minColorCount, maxColorCount).toInt();
     if (_colorCount == normalized) return;
     _colorCount = normalized;
+    notifyListeners();
+  }
+
+  void _setIncludeNeutralColors(bool enabled) {
+    if (_includeNeutralColors == enabled) return;
+    _includeNeutralColors = enabled;
     notifyListeners();
   }
 

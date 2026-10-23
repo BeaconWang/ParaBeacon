@@ -2197,7 +2197,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get colorPaletteSettingsDescription =>
-      'Choose a built-in HSL color scheme and how many distinct colors appear in every color picker. Black, white and gray are included; High Saturation also adds dark and bright variants. Hues are evenly spaced.';
+      'Choose up to 20 preset colors. High Saturation adds dark and bright high-saturation colors; when enabled, black, white and gray are appended at the end.';
+
+  @override
+  String get colorPaletteIncludeNeutralColors =>
+      'Include black, white and gray';
+
+  @override
+  String get colorPaletteIncludeNeutralColorsDescription =>
+      'Append black, white and gray to the end of each palette.';
 
   @override
   String get colorPaletteSchemeLabel => 'Color scheme';

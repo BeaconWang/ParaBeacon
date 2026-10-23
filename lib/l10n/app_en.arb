@@ -838,7 +838,9 @@
   "@colorPalettePreferencesSubtitle": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "colorPaletteSettingsDescription": "Choose a built-in HSL color scheme and how many distinct colors appear in every color picker. Black, white and gray are included; High Saturation also adds dark and bright variants. Hues are evenly spaced.",
+  "colorPaletteSettingsDescription": "Choose up to 20 preset colors. High Saturation adds dark and bright high-saturation colors; when enabled, black, white and gray are appended at the end.",
+  "colorPaletteIncludeNeutralColors": "Include black, white and gray",
+  "colorPaletteIncludeNeutralColorsDescription": "Append black, white and gray to the end of each palette.",
   "colorPaletteSchemeLabel": "Color scheme",
   "colorPaletteSchemeHighSaturation": "High Saturation",
   "colorPaletteSchemeMacaron": "Macaron",

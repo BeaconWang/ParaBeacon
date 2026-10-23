@@ -2118,7 +2118,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get colorPaletteSettingsDescription =>
-      '选择内置 HSL 配色方案和所有颜色选择器显示的颜色数量。每套配色都包含黑、白、灰；高饱和度方案还包含深色与亮色变体。色相均匀分布。';
+      '最多可选择 20 种预设颜色。高饱和度方案会加入深色和亮色高饱和度颜色；开启开关时，黑、白、灰会自动追加在末尾。';
+
+  @override
+  String get colorPaletteIncludeNeutralColors => '包含黑、白、灰';
+
+  @override
+  String get colorPaletteIncludeNeutralColorsDescription =>
+      '将黑色、白色和灰色追加到每套配色的末尾。';
 
   @override
   String get colorPaletteSchemeLabel => '配色方案';

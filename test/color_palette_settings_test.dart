@@ -11,6 +11,11 @@ void main() {
     final settings = ColorPaletteSettings.instance;
     await settings.load();
     expect(settings.schemeId, 'high-saturation');
+    expect(settings.includeNeutralColors, isTrue);
+
+    await settings.setIncludeNeutralColors(false);
+    expect(settings.includeNeutralColors, isFalse);
+    expect(settings.visiblePresetColors, isNot(contains(0xFF808080)));
 
     await settings.setScheme('morandi');
     await settings.setColorCount(ColorPaletteSettings.maxColorCount + 5);
@@ -20,6 +25,7 @@ void main() {
       settings.pickerColors,
       hasLength(ColorPaletteSettings.maxColorCount + 1),
     );
+    expect(settings.visiblePresetColors, isNot(contains(0xFF808080)));
 
     final prefs = await SharedPreferences.getInstance();
     expect(
@@ -27,12 +33,20 @@ void main() {
       ColorPaletteSettings.maxColorCount,
     );
     expect(prefs.getString('pb.colorPalette.scheme.v1'), 'morandi');
+    expect(prefs.getBool('pb.colorPalette.neutralColors.v1'), isFalse);
+    await settings.setIncludeNeutralColors(true);
+    expect(prefs.getBool('pb.colorPalette.neutralColors.v1'), isTrue);
+    expect(
+      settings.visiblePresetColors.sublist(settings.colorCount - 3),
+      ColorPalettePreset.neutralColors,
+    );
 
     await settings.setColorCount(ColorPaletteSettings.minColorCount);
     expect(
       settings.pickerColors,
       hasLength(ColorPaletteSettings.minColorCount + 1),
     );
+    await settings.setIncludeNeutralColors(true);
   });
 
   testWidgets('Preferences stores palette scheme and color count', (
@@ -40,6 +54,7 @@ void main() {
   ) async {
     SharedPreferences.setMockInitialValues({});
     final settings = ColorPaletteSettings.instance;
+    await settings.setIncludeNeutralColors(true);
     await settings.setScheme('macaron');
     await settings.setColorCount(ColorPaletteSettings.defaultColorCount);
 
@@ -75,6 +90,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(settings.colorCount, isNot(ColorPaletteSettings.defaultColorCount));
+    expect(settings.includeNeutralColors, isTrue);
+    await tester.tap(find.text('Include black, white and gray'));
+    await tester.pumpAndSettle();
+    expect(settings.includeNeutralColors, isFalse);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getInt('pb.colorPalette.count.v1'), settings.colorCount);
   });

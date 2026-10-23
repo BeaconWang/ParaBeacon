@@ -149,7 +149,7 @@ class ColorPaletteSettings extends ChangeNotifier {
 
   int _colorCount = defaultColorCount;
   String _schemeId = defaultSchemeId;
-  bool _includeNeutralColors = true;
+  bool _includeNeutralColors = false;
   bool _loaded = false;
   Future<void>? _loading;
 

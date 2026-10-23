@@ -11,7 +11,7 @@ void main() {
     final settings = ColorPaletteSettings.instance;
     await settings.load();
     expect(settings.schemeId, 'high-saturation');
-    expect(settings.includeNeutralColors, isTrue);
+    expect(settings.includeNeutralColors, isFalse);
 
     await settings.setIncludeNeutralColors(false);
     expect(settings.includeNeutralColors, isFalse);

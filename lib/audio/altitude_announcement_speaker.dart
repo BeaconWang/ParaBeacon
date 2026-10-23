@@ -70,6 +70,9 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
   AnnouncementLanguage? _preparedFor;
   AnnouncementLanguage? _activeLanguage;
   String? _currentEngine;
+  // The concrete locale tag last applied via `setLanguage`, used to pin a
+  // matching voice. `null` when only the engine default language is in use.
+  String? _selectedTag;
   int _failures = 0;
 
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
@@ -212,6 +215,7 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     await _call<dynamic>(() => _tts.stop());
     _preparedFor = null;
     _activeLanguage = null;
+    _selectedTag = null;
     _failures++;
     if (_failures >= _maxFailuresBeforeUnavailable) {
       _setAvailability(SpeechAvailability.unavailable);
@@ -271,6 +275,11 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     await _call<dynamic>(() => _tts.setPitch(1.0));
     await _call<dynamic>(() => _tts.setVolume(1.0));
 
+    // Pin a concrete voice for the chosen locale so announcements always sound
+    // the same (see [_pinConsistentVoice]).
+    final tag = _selectedTag;
+    if (tag != null) await _pinConsistentVoice(tag);
+
     _preparedFor = preferred;
     _activeLanguage = language;
     return language;
@@ -281,6 +290,7 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
   Future<AnnouncementLanguage?> _selectLanguage(
     AnnouncementLanguage preferred,
   ) async {
+    _selectedTag = null;
     final candidates = preferred == AnnouncementLanguage.chinese
         ? [..._chineseTags, ..._englishTags]
         : _englishTags;
@@ -308,12 +318,75 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     for (final tag in ordered) {
       final result = await _call<dynamic>(() => _tts.setLanguage(tag));
       if (_isSuccess(result)) {
+        _selectedTag = tag;
         return tag.startsWith('zh')
             ? AnnouncementLanguage.chinese
             : AnnouncementLanguage.english;
       }
     }
     return null;
+  }
+
+  /// Pins a single, deterministic voice for [localeTag].
+  ///
+  /// Setting only a language lets the engine pick a voice per utterance, and
+  /// that choice is not stable: Android's engines expose both a high-quality
+  /// *network* voice (natural sounding, online only) and a *local* voice
+  /// (synthetic, offline), while Apple exposes *enhanced/premium* and
+  /// *compact* voices. The engine therefore alternated between a human-like
+  /// voice when online and a robotic one when offline. Here we choose one
+  /// matching voice explicitly, preferring an offline-capable, higher-quality
+  /// one, so announcements always sound the same and keep working in flight
+  /// without a connection.
+  Future<void> _pinConsistentVoice(String localeTag) async {
+    final raw = await _call<dynamic>(() => _tts.getVoices);
+    if (raw is! List) return;
+
+    final matches = <Map<String, String>>[];
+    for (final entry in raw) {
+      if (entry is! Map) continue;
+      final name = entry['name']?.toString();
+      final voiceLocale = entry['locale']?.toString();
+      if (name == null || name.isEmpty || voiceLocale == null) continue;
+      if (!_localeMatches(voiceLocale, localeTag)) continue;
+      matches.add({'name': name, 'locale': voiceLocale});
+    }
+    if (matches.isEmpty) return;
+
+    // Stable ordering: preferred quality first, then by name so the same voice
+    // is always selected for a given locale.
+    matches.sort((a, b) {
+      final byRank = _voiceRank(a['name']!).compareTo(_voiceRank(b['name']!));
+      return byRank != 0 ? byRank : a['name']!.compareTo(b['name']!);
+    });
+    await _call<dynamic>(() => _tts.setVoice(matches.first));
+  }
+
+  /// Ranks a voice by how well it serves consistent, offline playback (lower
+  /// is more preferred).
+  int _voiceRank(String name) {
+    final n = name.toLowerCase();
+    if (_isApple) {
+      // Enhanced/premium voices are natural and offline once installed;
+      // compact voices are the robotic fallback.
+      if (n.contains('premium')) return 0;
+      if (n.contains('enhanced')) return 1;
+      return 2;
+    }
+    // Android: local voices are identical online and offline; network voices
+    // only exist while connected, so prefer local ones.
+    return n.contains('network') ? 1 : 0;
+  }
+
+  /// Whether a voice's [voiceLocale] belongs to the same language as [tag]
+  /// (e.g. both English), tolerating `en-US` / `en_US` / `eng-USA` forms.
+  static bool _localeMatches(String voiceLocale, String tag) {
+    String primary(String s) => s.toLowerCase().split(RegExp('[-_]')).first;
+    final a = primary(voiceLocale);
+    final b = primary(tag);
+    // Map ISO 639-2/T "eng"/"zho" to the 639-1 codes used by the tags.
+    String norm(String code) => const {'eng': 'en', 'zho': 'zh'}[code] ?? code;
+    return norm(a) == norm(b);
   }
 
   Future<List<String>> _androidEngines() async {

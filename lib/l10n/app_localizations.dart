@@ -3800,6 +3800,12 @@ abstract class AppLocalizations {
   /// **'Barometric altitude'**
   String get settingAltitudeSourceBaro;
 
+  /// No description provided for @settingShowSourceIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Show source icon'**
+  String get settingShowSourceIcon;
+
   /// No description provided for @settingFormat.
   ///
   /// In en, this message translates to:

@@ -50,6 +50,10 @@ class DataValueControl extends StatelessWidget {
   final ValueState state;
   final bool showTitle;
 
+  /// Optional small icon rendered right after the caption/title (e.g. to
+  /// indicate the data source). Ignored when [showTitle] is false.
+  final IconData? captionIcon;
+
   const DataValueControl({
     super.key,
     required this.title,
@@ -57,6 +61,7 @@ class DataValueControl extends StatelessWidget {
     required this.unit,
     this.state = ValueState.neutral,
     this.showTitle = true,
+    this.captionIcon,
   });
 
   Color _valueColor(ThemeData theme) {
@@ -116,11 +121,25 @@ class DataValueControl extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.center,
-                child: Text(
-                  title.toUpperCase(),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  style: labelStyle,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title.toUpperCase(),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      style: labelStyle,
+                    ),
+                    if (captionIcon != null) ...[
+                      SizedBox(width: labelSize * 0.3),
+                      Icon(
+                        captionIcon,
+                        size: labelSize * 1.1,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ],
                 ),
               ),
             Flexible(
@@ -426,10 +445,15 @@ class AltitudeControl extends StatelessWidget {
   final bool showTitle;
   final AltitudeSource source;
 
+  /// Whether to show a small icon after the caption indicating whether the
+  /// displayed altitude comes from GPS or the barometer.
+  final bool showSourceIcon;
+
   const AltitudeControl({
     super.key,
     this.showTitle = true,
     this.source = AltitudeSource.auto,
+    this.showSourceIcon = true,
   });
 
   @override
@@ -438,23 +462,34 @@ class AltitudeControl extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final double? raw;
     final String title;
+    // Whether the currently displayed value is barometric. For a pinned
+    // source this is fixed; for [AltitudeSource.auto] it mirrors the effective
+    // altitude logic (baro is preferred whenever a baro reading exists).
+    final bool? fromBaro;
     switch (source) {
       case AltitudeSource.auto:
         // The "effective" altitude is always non-null (defaults to 0), but is
         // only meaningful once we have any positioning fix or baro reading.
         raw = data.hasFix || data.baroAltitude != null ? data.altitude : null;
         title = l10n.controlAltitude;
+        fromBaro = data.baroAltitude != null;
         break;
       case AltitudeSource.gps:
         raw = data.gpsAltitude;
         title = l10n.controlGpsAltitude;
+        fromBaro = false;
         break;
       case AltitudeSource.baro:
         raw = data.baroAltitude;
         title = l10n.controlBaroAltitude;
+        fromBaro = true;
         break;
     }
     final unit = selectedUnit(context, UnitDimension.altitude);
+    // Only show a source icon when we actually have a value to attribute.
+    final IconData? captionIcon = (showSourceIcon && showTitle && raw != null)
+        ? (fromBaro ? Icons.compress : Icons.satellite_alt)
+        : null;
     return DataValueControl(
       title: title,
       value: raw == null
@@ -463,6 +498,7 @@ class AltitudeControl extends StatelessWidget {
       unit: UnitValues.symbol(UnitDimension.altitude, unit),
       state: ValueState.neutral,
       showTitle: showTitle,
+      captionIcon: captionIcon,
     );
   }
 }

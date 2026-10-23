@@ -765,6 +765,7 @@
   "settingAltitudeSourceAuto": "Auto (baro if available)",
   "settingAltitudeSourceGps": "GPS altitude",
   "settingAltitudeSourceBaro": "Barometric altitude",
+  "settingShowSourceIcon": "Show source icon",
   "settingFormat": "Format",
   "settingFormatDegrees": "Degrees (0-360°)",
   "settingFormatCardinal": "Cardinal (N, NE, …)",

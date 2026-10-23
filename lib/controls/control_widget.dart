@@ -300,7 +300,14 @@ class ControlWidget extends StatelessWidget {
           default:
             source = AltitudeSource.auto;
         }
-        return AltitudeControl(showTitle: showTitle, source: source);
+        return AltitudeControl(
+          showTitle: showTitle,
+          source: source,
+          showSourceIcon: control.boolSetting(
+            'showSourceIcon',
+            fallback: true,
+          ),
+        );
       case 'max_altitude':
         return MaxAltitudeControl(showTitle: showTitle);
       case 'thermal_gain':

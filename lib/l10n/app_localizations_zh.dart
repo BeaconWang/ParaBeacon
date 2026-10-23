@@ -1912,6 +1912,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingAltitudeSourceBaro => '气压高度';
 
   @override
+  String get settingShowSourceIcon => '显示来源图标';
+
+  @override
   String get settingFormat => '格式';
 
   @override

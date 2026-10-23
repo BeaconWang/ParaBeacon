@@ -176,6 +176,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingAveragingInterval;
     case 'source':
       return l10n.settingAltitudeSource;
+    case 'showSourceIcon':
+      return l10n.settingShowSourceIcon;
     case 'showSeconds':
       return l10n.settingShowSeconds;
     case 'showAutoDetect':
@@ -663,6 +665,11 @@ const Map<String, List<ControlSetting>> _typeSettings = {
         'gps': 'GPS altitude',
         'baro': 'Barometric altitude',
       },
+    ),
+    ControlSetting.toggle(
+      key: 'showSourceIcon',
+      label: 'Show source icon',
+      defaultValue: true,
     ),
   ],
   'heading': [

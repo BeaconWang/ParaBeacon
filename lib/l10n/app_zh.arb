@@ -690,6 +690,7 @@
   "settingAltitudeSourceAuto": "自动（优先气压）",
   "settingAltitudeSourceGps": "GPS 高度",
   "settingAltitudeSourceBaro": "气压高度",
+  "settingShowSourceIcon": "显示来源图标",
   "settingFormat": "格式",
   "settingFormatDegrees": "度数（0-360°）",
   "settingFormatCardinal": "方位（N、NE …）",

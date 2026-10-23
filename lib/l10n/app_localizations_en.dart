@@ -1990,6 +1990,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingAltitudeSourceBaro => 'Barometric altitude';
 
   @override
+  String get settingShowSourceIcon => 'Show source icon';
+
+  @override
   String get settingFormat => 'Format';
 
   @override

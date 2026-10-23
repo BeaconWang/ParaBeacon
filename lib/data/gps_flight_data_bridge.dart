@@ -259,6 +259,12 @@ class GpsFlightDataBridge {
         accuracy: accuracy,
         distanceFilter: distanceFilterMeters,
         intervalDuration: updateInterval,
+        // Report NMEA-derived mean-sea-level altitude (EGM2008) rather than the
+        // raw WGS84 geoidal height, so the GPS altitude matches iOS, the app's
+        // "meters above mean sea level" definition, and external tools like
+        // "GPS Test". Falls back to WGS84 automatically when the device emits
+        // no `$GPGGA` NMEA altitude.
+        useMSLAltitude: true,
         foregroundNotificationConfig: background
             ? ForegroundNotificationConfig(
                 notificationTitle: l10n.gpsNotificationTitle,
@@ -309,6 +315,17 @@ class GpsFlightDataBridge {
     _lastEmit = now;
 
     _hadFix = true;
+    // geolocator's Android `AndroidPosition` never forwards the platform
+    // `hasAltitude` / `hasSpeed` flags to the base `Position`, so they are
+    // ALWAYS false on Android. Gating on them therefore silently discards a
+    // perfectly good GPS altitude (the "GPS Altitude" control just shows `--`)
+    // and ground speed. Treat a value as present when the platform flag says
+    // so OR when the reported value is a real measurement — i.e. finite and not
+    // the `0.0` "unavailable" placeholder geolocator documents.
+    final hasGpsAltitude =
+        pos.altitude.isFinite && (pos.hasAltitude || pos.altitude != 0.0);
+    final hasGpsSpeed =
+        pos.speed.isFinite && pos.speed >= 0 && (pos.hasSpeed || pos.speed > 0);
     source.ingestGpsSnapshot(
       latitude: pos.latitude,
       longitude: pos.longitude,
@@ -318,13 +335,9 @@ class GpsFlightDataBridge {
       heading: (pos.heading.isFinite && pos.heading >= 0) ? pos.heading : 0.0,
       hasHeading: pos.heading.isFinite && pos.heading >= 0,
       // Geolocator reports speed in m/s; the app-wide model uses km/h.
-      groundSpeedKmh: (pos.speed.isFinite && pos.speed >= 0)
-          ? pos.speed * 3.6
-          : 0.0,
-      hasGroundSpeed: pos.hasSpeed,
-      gpsAltitude: pos.hasAltitude && pos.altitude.isFinite
-          ? pos.altitude
-          : null,
+      groundSpeedKmh: hasGpsSpeed ? pos.speed * 3.6 : 0.0,
+      hasGroundSpeed: hasGpsSpeed,
+      gpsAltitude: hasGpsAltitude ? pos.altitude : null,
       gpsAccuracy: pos.accuracy.isFinite ? pos.accuracy : null,
       timestamp: pos.timestamp,
       isMockLocation: pos.isMocked,

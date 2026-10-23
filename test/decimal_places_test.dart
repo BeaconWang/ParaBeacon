@@ -105,6 +105,65 @@ void main() {
       ]),
     );
 
-    expect(defaultSettingsFor('location')['latitudeDecimals'], 'auto');
+    expect(defaultSettingsFor('location')['latitudeDecimals'], 'default');
+    expect(defaultSettingsFor('ground_speed')['valueDecimals'], 'default');
+  });
+
+  test('default precision switch applies one decimal or whole numbers', () {
+    const defaults = [
+      ('gps_accuracy', 'valueDecimals'),
+      ('gps_altitude', 'valueDecimals'),
+      ('baro_altitude', 'valueDecimals'),
+      ('ground_speed', 'valueDecimals'),
+      ('vertical_speed', 'valueDecimals'),
+      ('wind_speed', 'valueDecimals'),
+      ('data_monitor', 'monitorGpsAccuracyDecimals'),
+    ];
+    for (final (typeId, key) in defaults) {
+      expect(defaultDecimalPlacesForControl(typeId, key, true), 1);
+      expect(defaultDecimalPlacesForControl(typeId, key, false), 0);
+    }
+    expect(
+      defaultDecimalPlacesForControl('location', 'latitudeDecimals', true),
+      isNull,
+    );
+    expect(
+      formatDecimalValue(
+        12.345,
+        autoDecimals: 5,
+        range: DecimalPlaceRange(
+          defaultDecimalPlacesForControl(
+            'ground_speed',
+            'valueDecimals',
+            true,
+          )!,
+          defaultDecimalPlacesForControl(
+            'ground_speed',
+            'valueDecimals',
+            true,
+          )!,
+        ),
+      ),
+      '12.3',
+    );
+    expect(
+      formatDecimalValue(
+        12.345,
+        autoDecimals: 5,
+        range: DecimalPlaceRange(
+          defaultDecimalPlacesForControl(
+            'ground_speed',
+            'valueDecimals',
+            false,
+          )!,
+          defaultDecimalPlacesForControl(
+            'ground_speed',
+            'valueDecimals',
+            false,
+          )!,
+        ),
+      ),
+      '12',
+    );
   });
 }

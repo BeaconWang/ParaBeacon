@@ -44,7 +44,7 @@ class ControlSetting {
   const ControlSetting.decimalRange({
     required this.key,
     required this.label,
-    this.defaultValue = 'auto',
+    this.defaultValue = 'default',
     this.maxDecimalPlaces = 8,
   }) : kind = SettingKind.decimalRange,
        min = 0,

@@ -392,6 +392,30 @@ abstract class AppLocalizations {
   /// **'Choose default units for dashboard controls'**
   String get unitsSubtitle;
 
+  /// No description provided for @displaySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Display settings'**
+  String get displaySettings;
+
+  /// No description provided for @displaySettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure default numeric precision'**
+  String get displaySettingsSubtitle;
+
+  /// No description provided for @defaultPrecision.
+  ///
+  /// In en, this message translates to:
+  /// **'Default precision'**
+  String get defaultPrecision;
+
+  /// No description provided for @defaultPrecisionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When on, GPS accuracy, altitude, speed, climb rate and wind speed use one decimal place by default. When off, they use whole numbers. Custom precision settings are unchanged.'**
+  String get defaultPrecisionDescription;
+
   /// No description provided for @otherSettings.
   ///
   /// In en, this message translates to:
@@ -3589,6 +3613,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Auto'**
   String get settingDecimalPlacesAuto;
+
+  /// No description provided for @settingDecimalPlacesDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get settingDecimalPlacesDefault;
 
   /// No description provided for @settingLatitudeDecimals.
   ///

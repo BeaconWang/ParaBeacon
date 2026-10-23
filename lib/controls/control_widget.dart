@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/unit_settings.dart';
+import '../data/display_settings.dart';
 import 'climb_avg_control.dart';
 import 'takeoff_waypoint_control.dart';
 import '../l10n/app_localizations.dart';
@@ -58,6 +59,9 @@ class ControlWidget extends StatelessWidget {
             : null,
         child: DecimalPlacesScope(
           settings: Map<String, dynamic>.from(control.settings),
+          controlTypeId: control.type.id,
+          defaultPrecisionEnabled:
+              DisplaySettings.instance.defaultPrecisionEnabled,
           child: _buildBody(context),
         ),
       ),

@@ -23,6 +23,7 @@ import 'controls/control_catalog.dart';
 import 'controls/control_context_menu.dart';
 import 'controls/control_settings_sheet.dart';
 import 'controls/control_widget.dart';
+import 'controls/display_settings_sheet.dart';
 import 'controls/unit_settings_sheet.dart';
 import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
@@ -47,6 +48,7 @@ import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/landing_point_store.dart';
 import 'data/color_palette_settings.dart';
+import 'data/display_settings.dart';
 import 'data/takeoff_reference.dart';
 import 'data/gps_flight_data_bridge.dart';
 import 'data/sensors/internal_sensor_service.dart';
@@ -156,8 +158,9 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     FlightState.instance.loadSettings();
     LandingPointStore.instance.load();
     ColorPaletteSettings.instance.load();
-    // Load the persisted default units before dashboard controls render.
+    // Load persisted units and display precision before dashboard controls render.
     UnitSettings.instance.load();
+    DisplaySettings.instance.load();
     ShareCardSettings.instance.load();
     // Load the persisted theme preset before the first frame paints. The
     // MaterialApp below listens to ThemeController so setTheme(...) at any
@@ -996,6 +999,18 @@ class _DashGridPageState extends State<DashGridPage> {
                           subtitle: Text(l10n.unitsSubtitle),
                           trailing: const Icon(Icons.chevron_right, size: 20),
                           onTap: () => showUnitSettingsSheet(context),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.display_settings_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.displaySettings),
+                          subtitle: Text(l10n.displaySettingsSubtitle),
+                          trailing: const Icon(Icons.chevron_right, size: 20),
+                          onTap: () => showDisplaySettingsSheet(context),
                         ),
                         const Divider(height: 1),
                         ListTile(

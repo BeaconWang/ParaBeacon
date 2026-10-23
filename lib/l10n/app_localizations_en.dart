@@ -163,6 +163,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unitsSubtitle => 'Choose default units for dashboard controls';
 
   @override
+  String get displaySettings => 'Display settings';
+
+  @override
+  String get displaySettingsSubtitle => 'Configure default numeric precision';
+
+  @override
+  String get defaultPrecision => 'Default precision';
+
+  @override
+  String get defaultPrecisionDescription =>
+      'When on, GPS accuracy, altitude, speed, climb rate and wind speed use one decimal place by default. When off, they use whole numbers. Custom precision settings are unchanged.';
+
+  @override
   String get otherSettings => 'Other settings';
 
   @override
@@ -1877,6 +1890,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingDecimalPlacesAuto => 'Auto';
+
+  @override
+  String get settingDecimalPlacesDefault => 'Default';
 
   @override
   String get settingLatitudeDecimals => 'Latitude decimal places';

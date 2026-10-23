@@ -157,6 +157,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get unitsSubtitle => '选择仪表控件的默认单位';
 
   @override
+  String get displaySettings => '显示设置';
+
+  @override
+  String get displaySettingsSubtitle => '配置数值的默认精度';
+
+  @override
+  String get defaultPrecision => '默认精度';
+
+  @override
+  String get defaultPrecisionDescription =>
+      '开启时，GPS 精度、高度、速度、爬升/下降率和风速默认显示 1 位小数；关闭时默认显示整数。自定义精度不受影响。';
+
+  @override
   String get otherSettings => '其他设置';
 
   @override
@@ -1804,6 +1817,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingDecimalPlacesAuto => '自动';
+
+  @override
+  String get settingDecimalPlacesDefault => '默认';
 
   @override
   String get settingLatitudeDecimals => '纬度小数位数';

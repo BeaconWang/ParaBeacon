@@ -27,6 +27,60 @@ class DecimalPlaceRange {
   int get hashCode => Object.hash(min, max);
 }
 
+/// Returns the keys that follow the app-wide default-precision switch.
+///
+/// Other decimal settings retain their existing per-value automatic precision.
+int? defaultDecimalPlacesForControl(String typeId, String key, bool enabled) {
+  final applies = switch ((typeId, key)) {
+    ('gps_accuracy', 'valueDecimals') => true,
+    ('altitude' || 'gps_altitude' || 'baro_altitude', 'valueDecimals') => true,
+    ('max_altitude' || 'altitude_above_takeoff', 'valueDecimals') => true,
+    ('vertical_graph', 'altitudeDecimals') => true,
+    ('thermal_gain', 'valueDecimals') => true,
+    ('takeoff_waypoint', 'altitudeDifferenceDecimals') => true,
+    ('ground_speed', 'valueDecimals') => true,
+    ('vertical_speed' || 'vario', 'valueDecimals') => true,
+    ('glide_ratio', 'varioDecimals') => true,
+    ('climb_avg', 'averageDecimals' || 'peakDecimals') => true,
+    ('wind_speed', 'valueDecimals') => true,
+    ('status_line', 'accuracyDecimals') => true,
+    ('compass_wind', 'windSpeedDecimals') => true,
+    (
+      'data_monitor',
+      'monitorVerticalSpeedDecimals' ||
+          'monitorGroundSpeedDecimals' ||
+          'monitorAltitudeDecimals' ||
+          'monitorBaroAltitudeDecimals' ||
+          'monitorGpsAltitudeDecimals' ||
+          'monitorGpsAccuracyDecimals' ||
+          'monitorWindSpeedDecimals' ||
+          'monitorAltitudeDeltaDecimals' ||
+          'monitorTotalEnergyDecimals',
+    ) =>
+      true,
+    (
+      'debug_sensor',
+      'verticalSpeedDecimals' ||
+          'altitudeDecimals' ||
+          'groundSpeedDecimals' ||
+          'windSpeedDecimals',
+    ) =>
+      true,
+    (
+      'map',
+      'mapAltitudeDecimals' ||
+          'mapWindSpeedDecimals' ||
+          'mapVarioColorMinDecimals' ||
+          'mapVarioSinkDecimals' ||
+          'mapVarioLiftDecimals' ||
+          'mapVarioColorMaxDecimals',
+    ) =>
+      true,
+    _ => false,
+  };
+  return applies ? (enabled ? 1 : 0) : null;
+}
+
 /// Formats [value] with the default precision unless [range] overrides it.
 /// Configured ranges show up to [DecimalPlaceRange.max] digits and trim trailing
 /// zeroes without going below [DecimalPlaceRange.min].

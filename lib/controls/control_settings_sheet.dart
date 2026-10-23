@@ -251,7 +251,9 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
                 children: [
                   Expanded(child: Text(label)),
                   Text(
-                    '${selectedRange.min}–${selectedRange.max}',
+                    range == null
+                        ? l10n.settingDecimalPlacesDefault
+                        : '${selectedRange.min}–${selectedRange.max}',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.primary,
                     ),
@@ -279,9 +281,9 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
                 ),
               ),
               ChoiceChip(
-                label: Text(l10n.settingDecimalPlacesAuto),
+                label: Text(l10n.settingDecimalPlacesDefault),
                 selected: range == null,
-                onSelected: (_) => _set(setting.key, 'auto'),
+                onSelected: (_) => _set(setting.key, 'default'),
               ),
             ],
           ),

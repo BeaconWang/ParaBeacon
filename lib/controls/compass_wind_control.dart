@@ -166,40 +166,59 @@ class _CompassWindPainter extends CustomPainter {
     // bearing is windFrom + 180. Rotate into the heading-up frame as well.
     final blowToDeg = windFromDeg + 180.0;
     final windAngle = rotation + _deg2rad(blowToDeg) - math.pi / 2;
-    final windLen = radius * 0.6;
-    final tip = Offset(
-      center.dx + windLen * math.cos(windAngle),
-      center.dy + windLen * math.sin(windAngle),
-    );
-    final tail = Offset(
-      center.dx - windLen * 0.5 * math.cos(windAngle),
-      center.dy - windLen * 0.5 * math.sin(windAngle),
-    );
 
     if (windSpeedKph > 0.1) {
-      final windPaint = Paint()
-        ..color = const Color(0xFF4C9AFF)
-        ..strokeWidth = (radius * 0.06).clamp(2.0, 6.0)
-        ..strokeCap = StrokeCap.round;
-      canvas.drawLine(tail, tip, windPaint);
+      // A large, triangular dart arrow inspired by XCTrack's wind pointer:
+      // the tip reaches out towards the blow-to direction, two swept-back
+      // wings sit at +/-140 degrees and the tail forms a shallow notch. It is
+      // drawn as two half-triangles in two shades to give a folded, 3D look.
+      const wingAngle = 140.0 * math.pi / 180.0;
+      final arrowR = radius * 0.82; // tip reach
+      final wingR = arrowR * 0.9; // back corners
+      final tailR = arrowR * 0.4; // tail notch depth
 
-      // Arrowhead.
-      final headLen = radius * 0.16;
-      final left = windAngle + math.pi - 0.5;
-      final right = windAngle + math.pi + 0.5;
-      final headFill = Paint()..color = windPaint.color;
-      final head = Path()
+      Offset polar(double angle, double r) => Offset(
+        center.dx + r * math.cos(angle),
+        center.dy + r * math.sin(angle),
+      );
+
+      final tip = polar(windAngle, arrowR);
+      final leftWing = polar(windAngle - wingAngle, wingR);
+      final rightWing = polar(windAngle + wingAngle, wingR);
+      final tail = polar(windAngle + math.pi, tailR);
+
+      const baseColor = Color(0xFF4C9AFF);
+      final darkColor = Color.lerp(baseColor, Colors.black, 0.28)!;
+
+      final leftHalf = Path()
         ..moveTo(tip.dx, tip.dy)
-        ..lineTo(
-          tip.dx + headLen * math.cos(left),
-          tip.dy + headLen * math.sin(left),
-        )
-        ..lineTo(
-          tip.dx + headLen * math.cos(right),
-          tip.dy + headLen * math.sin(right),
-        )
+        ..lineTo(leftWing.dx, leftWing.dy)
+        ..lineTo(tail.dx, tail.dy)
         ..close();
-      canvas.drawPath(head, headFill);
+      final rightHalf = Path()
+        ..moveTo(tip.dx, tip.dy)
+        ..lineTo(rightWing.dx, rightWing.dy)
+        ..lineTo(tail.dx, tail.dy)
+        ..close();
+
+      canvas.drawPath(leftHalf, Paint()..color = baseColor);
+      canvas.drawPath(rightHalf, Paint()..color = darkColor);
+
+      // Thin outline to keep the arrow crisp against the dial.
+      final outline = Path()
+        ..moveTo(tip.dx, tip.dy)
+        ..lineTo(leftWing.dx, leftWing.dy)
+        ..lineTo(tail.dx, tail.dy)
+        ..lineTo(rightWing.dx, rightWing.dy)
+        ..close();
+      canvas.drawPath(
+        outline,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = (radius * 0.012).clamp(0.8, 2.0)
+          ..strokeJoin = StrokeJoin.round
+          ..color = cs.surface.withAlpha(140),
+      );
     }
 
     // Center hub.

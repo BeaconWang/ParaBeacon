@@ -8,6 +8,7 @@ import '../data/flight_data_provider.dart';
 import '../data/flight_state.dart';
 import '../data/geo_math.dart';
 import '../data/landing_point_store.dart';
+import '../data/raw_flight_data_source.dart';
 import '../data/takeoff_reference.dart';
 import '../data/sun_times.dart';
 import '../data/unit_settings.dart';
@@ -489,9 +490,23 @@ class AltitudeControl extends StatelessWidget {
     }
     final unit = selectedUnit(context, UnitDimension.altitude);
     // Only show a source icon when we actually have a value to attribute.
-    final IconData? captionIcon = (showSourceIcon && showTitle && raw != null)
-        ? (fromBaro ? Icons.compress : Icons.satellite_alt)
-        : null;
+    // Three-way source hint:
+    //   * GPS altitude        -> satellite icon
+    //   * internal barometer  -> compress (barometer) icon
+    //   * bluetooth barometer -> bluetooth icon
+    IconData? captionIcon;
+    if (showSourceIcon && showTitle && raw != null) {
+      if (fromBaro != true) {
+        captionIcon = Icons.satellite_alt;
+      } else {
+        // Baro value: distinguish the device's built-in barometer from an
+        // external BLE sensor using the raw layer's active priority tier.
+        final tier = FlightDataProvider.sourceOf(context).verticalSpeedSource;
+        captionIcon = tier == FlightDataPriority.bluetoothSensor
+            ? Icons.bluetooth
+            : Icons.compress;
+      }
+    }
     return DataValueControl(
       title: title,
       value: raw == null

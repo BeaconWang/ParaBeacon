@@ -3020,6 +3020,30 @@ abstract class AppLocalizations {
   /// **'Distance to Takeoff'**
   String get controlDistanceToTakeoff;
 
+  /// No description provided for @controlDistanceToNearestLanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance to Nearest Landing'**
+  String get controlDistanceToNearestLanding;
+
+  /// No description provided for @controlDistanceToDefaultLanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance to Default Landing'**
+  String get controlDistanceToDefaultLanding;
+
+  /// No description provided for @controlBearingToNearestLanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Bearing to Nearest Landing'**
+  String get controlBearingToNearestLanding;
+
+  /// No description provided for @controlBearingToDefaultLanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Bearing to Default Landing'**
+  String get controlBearingToDefaultLanding;
+
   /// No description provided for @controlSunrise.
   ///
   /// In en, this message translates to:

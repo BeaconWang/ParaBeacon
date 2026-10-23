@@ -1512,6 +1512,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlDistanceToTakeoff => '距起飞点距离';
 
   @override
+  String get controlDistanceToNearestLanding => '距最近降落点距离';
+
+  @override
+  String get controlDistanceToDefaultLanding => '距默认降落点距离';
+
+  @override
+  String get controlBearingToNearestLanding => '至最近降落点方位';
+
+  @override
+  String get controlBearingToDefaultLanding => '至默认降落点方位';
+
+  @override
   String get controlSunrise => '日出';
 
   @override

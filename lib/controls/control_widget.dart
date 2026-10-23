@@ -363,6 +363,28 @@ class ControlWidget extends StatelessWidget {
         return AirTimeControl(showTitle: showTitle);
       case 'distance_to_takeoff':
         return DistanceToTakeoffControl(showTitle: showTitle);
+      case 'distance_to_nearest_landing':
+        return DistanceToLandingControl(
+          showTitle: showTitle,
+          reference: LandingReference.nearest,
+        );
+      case 'distance_to_default_landing':
+        return DistanceToLandingControl(
+          showTitle: showTitle,
+          reference: LandingReference.defaultPoint,
+        );
+      case 'bearing_to_nearest_landing':
+        return BearingToLandingControl(
+          showTitle: showTitle,
+          reference: LandingReference.nearest,
+          cardinal: control.setting('format') == 'cardinal',
+        );
+      case 'bearing_to_default_landing':
+        return BearingToLandingControl(
+          showTitle: showTitle,
+          reference: LandingReference.defaultPoint,
+          cardinal: control.setting('format') == 'cardinal',
+        );
       case 'sunrise':
         return SunTimeControl(
           event: SunEvent.sunrise,

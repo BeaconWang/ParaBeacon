@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/device_battery_service.dart';
+import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_state.dart';
 import '../data/geo_math.dart';
+import '../data/landing_point_store.dart';
 import '../data/takeoff_reference.dart';
 import '../data/sun_times.dart';
 import '../data/unit_settings.dart';
@@ -1458,6 +1460,196 @@ class _AltitudeAboveTakeoffControlState
           value: value,
           unit: UnitValues.symbol(UnitDimension.altitude, unit),
           state: state,
+          showTitle: widget.showTitle,
+        );
+      },
+    );
+  }
+}
+
+/// Whether a landing-distance control measures to the nearest saved landing
+/// point or to the user's chosen default landing point.
+enum LandingReference { nearest, defaultPoint }
+
+/// Returns true when [data] carries a usable, in-range GPS position.
+bool _hasValidLandingFix(FlightData data) =>
+    data.hasFix &&
+    data.latitude.isFinite &&
+    data.longitude.isFinite &&
+    data.latitude >= -90 &&
+    data.latitude <= 90 &&
+    data.longitude >= -180 &&
+    data.longitude <= 180;
+
+/// Straight-line distance from the current position to a saved landing point —
+/// either the nearest one or the configured default — in the user's distance
+/// unit (switching to meters when close).
+///
+/// Reads the shared [LandingPointStore] so the value tracks edits to the
+/// landing-point list live, and the current position from the unified
+/// [FlightDataProvider]. Renders `--` when there's no fix or no matching point.
+class DistanceToLandingControl extends StatefulWidget {
+  final bool showTitle;
+  final LandingReference reference;
+
+  const DistanceToLandingControl({
+    super.key,
+    required this.reference,
+    this.showTitle = true,
+  });
+
+  @override
+  State<DistanceToLandingControl> createState() =>
+      _DistanceToLandingControlState();
+}
+
+class _DistanceToLandingControlState extends State<DistanceToLandingControl> {
+  @override
+  void initState() {
+    super.initState();
+    // Ensure the persisted points are available even if this control is the
+    // first thing on screen that touches the store.
+    LandingPointStore.instance.load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: LandingPointStore.instance,
+      builder: (context, _) {
+        final data = FlightDataProvider.of(context);
+        final hasCurrentFix = _hasValidLandingFix(data);
+        final store = LandingPointStore.instance;
+        final LandingPoint? target = switch (widget.reference) {
+          LandingReference.nearest => hasCurrentFix
+              ? store.nearestPointTo(data.latitude, data.longitude)
+              : null,
+          LandingReference.defaultPoint => store.defaultPoint,
+        };
+        final meters = target != null && hasCurrentFix
+            ? GeoMath.distanceMeters(
+                data.latitude,
+                data.longitude,
+                target.latitude,
+                target.longitude,
+              )
+            : null;
+        final selected = selectedUnit(context, UnitDimension.distance);
+        final value = meters == null
+            ? '--'
+            : UnitValues.formatDistance(
+                meters,
+                selected,
+                precision: DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
+              );
+        final unit = meters == null
+            ? UnitValues.symbol(UnitDimension.distance, selected)
+            : selected == 'auto'
+            ? (meters < 1000 ? 'm' : 'km')
+            : UnitValues.symbol(UnitDimension.distance, selected);
+        final l10n = AppLocalizations.of(context);
+        final title = widget.reference == LandingReference.nearest
+            ? l10n.controlDistanceToNearestLanding
+            : l10n.controlDistanceToDefaultLanding;
+
+        return DataValueControl(
+          title: title,
+          value: value,
+          unit: unit,
+          state: ValueState.neutral,
+          showTitle: widget.showTitle,
+        );
+      },
+    );
+  }
+}
+
+/// Initial great-circle bearing from the current position to a saved landing
+/// point — either the nearest one or the configured default — in degrees (or
+/// an 8-point cardinal when [cardinal] is set).
+///
+/// Reads the shared [LandingPointStore] so the value tracks edits to the
+/// landing-point list live, and the current position from the unified
+/// [FlightDataProvider]. Renders `--` when there's no fix or no matching point,
+/// and `--` as well when the pilot is sitting on top of the point (bearing
+/// undefined).
+class BearingToLandingControl extends StatefulWidget {
+  final bool showTitle;
+  final bool cardinal;
+  final LandingReference reference;
+
+  const BearingToLandingControl({
+    super.key,
+    required this.reference,
+    this.showTitle = true,
+    this.cardinal = false,
+  });
+
+  @override
+  State<BearingToLandingControl> createState() =>
+      _BearingToLandingControlState();
+}
+
+class _BearingToLandingControlState extends State<BearingToLandingControl> {
+  @override
+  void initState() {
+    super.initState();
+    LandingPointStore.instance.load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: LandingPointStore.instance,
+      builder: (context, _) {
+        final data = FlightDataProvider.of(context);
+        final hasCurrentFix = _hasValidLandingFix(data);
+        final store = LandingPointStore.instance;
+        final LandingPoint? target = switch (widget.reference) {
+          LandingReference.nearest => hasCurrentFix
+              ? store.nearestPointTo(data.latitude, data.longitude)
+              : null,
+          LandingReference.defaultPoint => store.defaultPoint,
+        };
+        // Bearing from the current position to the target. Undefined (and so
+        // rendered as `--`) when there's no fix, no point, or the point is
+        // effectively the current position.
+        final distanceMeters = target != null && hasCurrentFix
+            ? GeoMath.distanceMeters(
+                data.latitude,
+                data.longitude,
+                target.latitude,
+                target.longitude,
+              )
+            : null;
+        final bearing = target != null && hasCurrentFix && distanceMeters! > 1.0
+            ? GeoMath.bearingDegrees(
+                data.latitude,
+                data.longitude,
+                target.latitude,
+                target.longitude,
+              )
+            : null;
+        final value = bearing == null
+            ? '--'
+            : widget.cardinal
+            ? _cardinal8(
+                bearing,
+                chinese: Localizations.localeOf(context).languageCode == 'zh',
+              )
+            : _formatDegrees(
+                bearing,
+                DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
+              );
+        final l10n = AppLocalizations.of(context);
+        final title = widget.reference == LandingReference.nearest
+            ? l10n.controlBearingToNearestLanding
+            : l10n.controlBearingToDefaultLanding;
+        return DataValueControl(
+          title: title,
+          value: value,
+          unit: widget.cardinal || bearing == null ? '' : '°',
+          state: ValueState.neutral,
           showTitle: widget.showTitle,
         );
       },

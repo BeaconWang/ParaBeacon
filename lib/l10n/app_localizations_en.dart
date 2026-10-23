@@ -1575,6 +1575,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlDistanceToTakeoff => 'Distance to Takeoff';
 
   @override
+  String get controlDistanceToNearestLanding => 'Distance to Nearest Landing';
+
+  @override
+  String get controlDistanceToDefaultLanding => 'Distance to Default Landing';
+
+  @override
+  String get controlBearingToNearestLanding => 'Bearing to Nearest Landing';
+
+  @override
+  String get controlBearingToDefaultLanding => 'Bearing to Default Landing';
+
+  @override
   String get controlSunrise => 'Sunrise';
 
   @override

@@ -3848,6 +3848,24 @@ abstract class AppLocalizations {
   /// **'Cardinal (N, NE, …)'**
   String get settingFormatCardinal;
 
+  /// No description provided for @settingBearingReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Direction'**
+  String get settingBearingReference;
+
+  /// No description provided for @settingBearingAbsolute.
+  ///
+  /// In en, this message translates to:
+  /// **'Absolute (compass)'**
+  String get settingBearingAbsolute;
+
+  /// No description provided for @settingBearingRelative.
+  ///
+  /// In en, this message translates to:
+  /// **'Relative (to heading)'**
+  String get settingBearingRelative;
+
   /// No description provided for @settingShowSeconds.
   ///
   /// In en, this message translates to:

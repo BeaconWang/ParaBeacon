@@ -378,6 +378,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
     // the same label and option set.
     case 'format':
       return l10n.settingFormat;
+    case 'bearingReference':
+      return l10n.settingBearingReference;
     case 'displayUnit':
       return l10n.settingDisplayUnit;
     default:
@@ -414,6 +416,14 @@ String? _settingOptionLabel(
           return l10n.settingFormatDegrees;
         case 'cardinal':
           return l10n.settingFormatCardinal;
+      }
+      return null;
+    case 'bearingReference':
+      switch (optionKey) {
+        case 'absolute':
+          return l10n.settingBearingAbsolute;
+        case 'relative':
+          return l10n.settingBearingRelative;
       }
       return null;
     case 'displayUnit':
@@ -696,6 +706,15 @@ const Map<String, List<ControlSetting>> _typeSettings = {
   ],
   'bearing_to_nearest_landing': [
     ControlSetting.choice(
+      key: 'bearingReference',
+      label: 'Direction',
+      defaultValue: 'absolute',
+      options: {
+        'absolute': 'Absolute (compass)',
+        'relative': 'Relative (to heading)',
+      },
+    ),
+    ControlSetting.choice(
       key: 'format',
       label: 'Format',
       defaultValue: 'degrees',
@@ -706,6 +725,15 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ),
   ],
   'bearing_to_default_landing': [
+    ControlSetting.choice(
+      key: 'bearingReference',
+      label: 'Direction',
+      defaultValue: 'absolute',
+      options: {
+        'absolute': 'Absolute (compass)',
+        'relative': 'Relative (to heading)',
+      },
+    ),
     ControlSetting.choice(
       key: 'format',
       label: 'Format',

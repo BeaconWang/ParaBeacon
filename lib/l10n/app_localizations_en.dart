@@ -2014,6 +2014,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingFormatCardinal => 'Cardinal (N, NE, …)';
 
   @override
+  String get settingBearingReference => 'Direction';
+
+  @override
+  String get settingBearingAbsolute => 'Absolute (compass)';
+
+  @override
+  String get settingBearingRelative => 'Relative (to heading)';
+
+  @override
   String get settingShowSeconds => 'Show seconds';
 
   @override

@@ -378,12 +378,14 @@ class ControlWidget extends StatelessWidget {
           showTitle: showTitle,
           reference: LandingReference.nearest,
           cardinal: control.setting('format') == 'cardinal',
+          relative: control.setting('bearingReference') == 'relative',
         );
       case 'bearing_to_default_landing':
         return BearingToLandingControl(
           showTitle: showTitle,
           reference: LandingReference.defaultPoint,
           cardinal: control.setting('format') == 'cardinal',
+          relative: control.setting('bearingReference') == 'relative',
         );
       case 'sunrise':
         return SunTimeControl(

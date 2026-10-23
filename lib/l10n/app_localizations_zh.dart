@@ -1936,6 +1936,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingFormatCardinal => '方位（N、NE …）';
 
   @override
+  String get settingBearingReference => '方向基准';
+
+  @override
+  String get settingBearingAbsolute => '绝对方位（罗盘）';
+
+  @override
+  String get settingBearingRelative => '相对方位（相对航向）';
+
+  @override
   String get settingShowSeconds => '显示秒';
 
   @override

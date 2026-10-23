@@ -1565,24 +1565,34 @@ class _DistanceToLandingControlState extends State<DistanceToLandingControl> {
 }
 
 /// Initial great-circle bearing from the current position to a saved landing
-/// point — either the nearest one or the configured default — in degrees (or
-/// an 8-point cardinal when [cardinal] is set).
+/// point — either the nearest one or the configured default.
+///
+/// When [relative] is false the bearing is absolute (relative to true north),
+/// rendered in degrees or as an 8-point cardinal when [cardinal] is set. When
+/// [relative] is true the value is expressed relative to the pilot's current
+/// heading (0° = straight ahead, 90° = target to the right, 270° = to the
+/// left), which requires a valid heading from the position feed.
 ///
 /// Reads the shared [LandingPointStore] so the value tracks edits to the
 /// landing-point list live, and the current position from the unified
 /// [FlightDataProvider]. Renders `--` when there's no fix or no matching point,
-/// and `--` as well when the pilot is sitting on top of the point (bearing
-/// undefined).
+/// when the pilot is sitting on top of the point (bearing undefined), or — in
+/// relative mode — when no heading is available.
 class BearingToLandingControl extends StatefulWidget {
   final bool showTitle;
   final bool cardinal;
   final LandingReference reference;
+
+  /// When true the bearing is shown relative to the current heading instead of
+  /// as an absolute compass bearing.
+  final bool relative;
 
   const BearingToLandingControl({
     super.key,
     required this.reference,
     this.showTitle = true,
     this.cardinal = false,
+    this.relative = false,
   });
 
   @override
@@ -1611,9 +1621,9 @@ class _BearingToLandingControlState extends State<BearingToLandingControl> {
               : null,
           LandingReference.defaultPoint => store.defaultPoint,
         };
-        // Bearing from the current position to the target. Undefined (and so
-        // rendered as `--`) when there's no fix, no point, or the point is
-        // effectively the current position.
+        // Absolute great-circle bearing from the current position to the
+        // target. Undefined (and so rendered as `--`) when there's no fix, no
+        // point, or the point is effectively the current position.
         final distanceMeters = target != null && hasCurrentFix
             ? GeoMath.distanceMeters(
                 data.latitude,
@@ -1630,15 +1640,25 @@ class _BearingToLandingControlState extends State<BearingToLandingControl> {
                 target.longitude,
               )
             : null;
-        final value = bearing == null
+        // In relative mode, fold in the current heading so the value reads as
+        // an offset from the pilot's travel direction. Needs a real, measured
+        // heading; otherwise there's nothing meaningful to measure against.
+        double? displayAngle = bearing;
+        if (bearing != null && widget.relative) {
+          final heading = data.heading;
+          displayAngle = data.hasHeading && heading.isFinite
+              ? ((bearing - heading) % 360 + 360) % 360
+              : null;
+        }
+        final value = displayAngle == null
             ? '--'
             : widget.cardinal
             ? _cardinal8(
-                bearing,
+                displayAngle,
                 chinese: Localizations.localeOf(context).languageCode == 'zh',
               )
             : _formatDegrees(
-                bearing,
+                displayAngle,
                 DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
               );
         final l10n = AppLocalizations.of(context);
@@ -1648,7 +1668,7 @@ class _BearingToLandingControlState extends State<BearingToLandingControl> {
         return DataValueControl(
           title: title,
           value: value,
-          unit: widget.cardinal || bearing == null ? '' : '°',
+          unit: widget.cardinal || displayAngle == null ? '' : '°',
           state: ValueState.neutral,
           showTitle: widget.showTitle,
         );

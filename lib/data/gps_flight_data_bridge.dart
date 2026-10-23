@@ -326,6 +326,18 @@ class GpsFlightDataBridge {
         pos.altitude.isFinite && (pos.hasAltitude || pos.altitude != 0.0);
     final hasGpsSpeed =
         pos.speed.isFinite && pos.speed >= 0 && (pos.hasSpeed || pos.speed > 0);
+    // geolocator only surfaces the GNSS satellite count on Android, where each
+    // fix is an `AndroidPosition`. Prefer the satellites actually used in the
+    // fix, falling back to the total count; both default to 0.0 when the
+    // platform could not determine them, in which case we leave it null so the
+    // data monitor shows "—" instead of a bogus zero.
+    int? satellites;
+    if (pos is AndroidPosition) {
+      final used = pos.satellitesUsedInFix;
+      final total = pos.satelliteCount;
+      final value = used > 0 ? used : total;
+      if (value.isFinite && value > 0) satellites = value.round();
+    }
     source.ingestGpsSnapshot(
       latitude: pos.latitude,
       longitude: pos.longitude,
@@ -339,6 +351,7 @@ class GpsFlightDataBridge {
       hasGroundSpeed: hasGpsSpeed,
       gpsAltitude: hasGpsAltitude ? pos.altitude : null,
       gpsAccuracy: pos.accuracy.isFinite ? pos.accuracy : null,
+      satellites: satellites,
       timestamp: pos.timestamp,
       isMockLocation: pos.isMocked,
     );

@@ -30,12 +30,24 @@ class _DisplaySettingsSheet extends StatelessWidget {
             const SizedBox(height: 8),
             AnimatedBuilder(
               animation: DisplaySettings.instance,
-              builder: (context, _) => SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.defaultPrecision),
-                subtitle: Text(l10n.defaultPrecisionDescription),
-                value: DisplaySettings.instance.defaultPrecisionEnabled,
-                onChanged: DisplaySettings.instance.setDefaultPrecisionEnabled,
+              builder: (context, _) => Column(
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.defaultPrecision),
+                    subtitle: Text(l10n.defaultPrecisionDescription),
+                    value: DisplaySettings.instance.defaultPrecisionEnabled,
+                    onChanged:
+                        DisplaySettings.instance.setDefaultPrecisionEnabled,
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.largerFont),
+                    subtitle: Text(l10n.largerFontDescription),
+                    value: DisplaySettings.instance.largerFontEnabled,
+                    onChanged: DisplaySettings.instance.setLargerFontEnabled,
+                  ),
+                ],
               ),
             ),
           ],

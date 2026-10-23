@@ -176,6 +176,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When on, GPS accuracy, altitude, speed, climb rate and wind speed use one decimal place by default. When off, they use whole numbers. Custom precision settings are unchanged.';
 
   @override
+  String get largerFont => 'Larger font';
+
+  @override
+  String get largerFontDescription =>
+      'Enlarge numeric readouts and tighten the spacing within dashboard controls.';
+
+  @override
   String get otherSettings => 'Other settings';
 
   @override

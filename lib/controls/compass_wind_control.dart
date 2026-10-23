@@ -54,6 +54,7 @@ class CompassWindControl extends StatelessWidget {
           'windSpeedDecimals',
         ),
         theme: Theme.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
       ),
       child: const SizedBox.expand(),
     );
@@ -68,6 +69,7 @@ class _CompassWindPainter extends CustomPainter {
   final DecimalPlaceRange? headingPrecision;
   final DecimalPlaceRange? windSpeedPrecision;
   final ThemeData theme;
+  final TextScaler textScaler;
 
   _CompassWindPainter({
     required this.heading,
@@ -77,6 +79,7 @@ class _CompassWindPainter extends CustomPainter {
     required this.headingPrecision,
     required this.windSpeedPrecision,
     required this.theme,
+    required this.textScaler,
   });
 
   static double _deg2rad(double d) => d * (math.pi / 180.0);
@@ -142,6 +145,7 @@ class _CompassWindPainter extends CustomPainter {
           ),
         ),
         textDirection: TextDirection.ltr,
+        textScaler: textScaler,
       )..layout();
       tp.paint(canvas, pos - Offset(tp.width / 2, tp.height / 2));
     }
@@ -232,6 +236,7 @@ class _CompassWindPainter extends CustomPainter {
         ),
       ),
       textDirection: TextDirection.ltr,
+      textScaler: textScaler,
     )..layout();
     tpHeading.paint(
       canvas,
@@ -252,6 +257,7 @@ class _CompassWindPainter extends CustomPainter {
         ),
       ),
       textDirection: TextDirection.ltr,
+      textScaler: textScaler,
     )..layout();
     tpWind.paint(
       canvas,
@@ -272,6 +278,7 @@ class _CompassWindPainter extends CustomPainter {
         headingPrecision?.max != old.headingPrecision?.max ||
         windSpeedPrecision?.min != old.windSpeedPrecision?.min ||
         windSpeedPrecision?.max != old.windSpeedPrecision?.max ||
-        theme != old.theme;
+        theme != old.theme ||
+        textScaler != old.textScaler;
   }
 }

@@ -66,6 +66,7 @@ class VerticalGraphControl extends StatelessWidget {
               'accelerationDecimals',
             ),
             theme: Theme.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
           ),
           child: const SizedBox.expand(),
         );
@@ -120,6 +121,7 @@ class _VerticalGraphPainter extends CustomPainter {
   final DecimalPlaceRange? altitudePrecision;
   final DecimalPlaceRange? accelerationPrecision;
   final ThemeData theme;
+  final TextScaler textScaler;
 
   _VerticalGraphPainter({
     required this.samples,
@@ -131,6 +133,7 @@ class _VerticalGraphPainter extends CustomPainter {
     required this.altitudePrecision,
     required this.accelerationPrecision,
     required this.theme,
+    required this.textScaler,
   });
 
   double _verticalAccelerationFor(
@@ -215,7 +218,10 @@ class _VerticalGraphPainter extends CustomPainter {
     final accelerationLabelStyle = labelStyle.copyWith(
       color: theme.colorScheme.tertiary,
     );
-    final labelPaint = TextPainter(textDirection: TextDirection.ltr);
+    final labelPaint = TextPainter(
+      textDirection: TextDirection.ltr,
+      textScaler: textScaler,
+    );
 
     for (
       var altitude = graphMin;
@@ -248,6 +254,7 @@ class _VerticalGraphPainter extends CustomPainter {
           style: accelerationLabelStyle,
         ),
         textDirection: TextDirection.ltr,
+        textScaler: textScaler,
       )..layout();
       final accelerationZeroLabel = TextPainter(
         text: TextSpan(
@@ -259,6 +266,7 @@ class _VerticalGraphPainter extends CustomPainter {
           style: accelerationLabelStyle,
         ),
         textDirection: TextDirection.ltr,
+        textScaler: textScaler,
       )..layout();
       final accelerationMinLabel = TextPainter(
         text: TextSpan(
@@ -267,6 +275,7 @@ class _VerticalGraphPainter extends CustomPainter {
           style: accelerationLabelStyle,
         ),
         textDirection: TextDirection.ltr,
+        textScaler: textScaler,
       )..layout();
       accelerationMaxLabel.paint(
         canvas,
@@ -291,10 +300,12 @@ class _VerticalGraphPainter extends CustomPainter {
     final intervalLabel = TextPainter(
       text: TextSpan(text: '${intervalSeconds.round()}s', style: labelStyle),
       textDirection: TextDirection.ltr,
+      textScaler: textScaler,
     )..layout();
     final zeroLabel = TextPainter(
       text: TextSpan(text: '0s', style: labelStyle),
       textDirection: TextDirection.ltr,
+      textScaler: textScaler,
     )..layout();
     intervalLabel.paint(canvas, Offset(graph.left, graph.bottom + 2));
     zeroLabel.paint(
@@ -444,6 +455,7 @@ class _VerticalGraphPainter extends CustomPainter {
         ),
       ),
       textDirection: TextDirection.ltr,
+      textScaler: textScaler,
     )..layout(maxWidth: size.width);
     text.paint(
       canvas,
@@ -460,6 +472,7 @@ class _VerticalGraphPainter extends CustomPainter {
         oldDelegate.showVerticalAcceleration != showVerticalAcceleration ||
         oldDelegate.verticalAccelerationFillOpacity !=
             verticalAccelerationFillOpacity ||
+        oldDelegate.textScaler != textScaler ||
         oldDelegate.theme != theme;
   }
 }

@@ -32,6 +32,7 @@ class VarioControl extends StatelessWidget {
         maxScale: maxScale,
         precision: DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
         theme: Theme.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
       ),
       child: const SizedBox.expand(),
     );
@@ -56,12 +57,14 @@ class _VarioPainter extends CustomPainter {
   final double maxScale;
   final DecimalPlaceRange? precision;
   final ThemeData theme;
+  final TextScaler textScaler;
 
   _VarioPainter({
     required this.value,
     required this.maxScale,
     required this.precision,
     required this.theme,
+    required this.textScaler,
   });
 
   @override
@@ -118,6 +121,7 @@ class _VarioPainter extends CustomPainter {
       ),
       textDirection: TextDirection.ltr,
       textAlign: TextAlign.center,
+      textScaler: textScaler,
     )..layout(maxWidth: size.width);
     tp.paint(
       canvas,
@@ -133,6 +137,7 @@ class _VarioPainter extends CustomPainter {
         ),
       ),
       textDirection: TextDirection.ltr,
+      textScaler: textScaler,
     )..layout(maxWidth: size.width);
     unit.paint(canvas, Offset((size.width - unit.width) / 2, 2));
   }
@@ -143,6 +148,7 @@ class _VarioPainter extends CustomPainter {
         maxScale != oldDelegate.maxScale ||
         precision?.min != oldDelegate.precision?.min ||
         precision?.max != oldDelegate.precision?.max ||
-        theme != oldDelegate.theme;
+        theme != oldDelegate.theme ||
+        textScaler != oldDelegate.textScaler;
   }
 }

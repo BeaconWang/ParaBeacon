@@ -17,6 +17,28 @@ import 'vertical_graph_control.dart';
 import 'thermal_gain_widget.dart';
 import 'decimal_places.dart';
 
+class _ScaledTextScaler extends TextScaler {
+  final TextScaler base;
+  final double factor;
+
+  const _ScaledTextScaler({required this.base, required this.factor});
+
+  @override
+  double scale(double fontSize) => base.scale(fontSize) * factor;
+
+  @override
+  double get textScaleFactor => scale(14) / 14;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _ScaledTextScaler &&
+      other.base == base &&
+      other.factor == factor;
+
+  @override
+  int get hashCode => Object.hash(base, factor);
+}
+
 /// Visual representation of a [PlacedControl] on the dashboard.
 ///
 /// In edit mode it renders as a selectable/movable card (the edit-mode
@@ -52,19 +74,33 @@ class ControlWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: UnitSettings.instance,
-      builder: (context, _) => UnitDisplayScope(
-        customUnit: control.setting('displayUnit') is String
-            ? control.setting('displayUnit') as String
-            : null,
-        child: DecimalPlacesScope(
-          settings: Map<String, dynamic>.from(control.settings),
-          controlTypeId: control.type.id,
-          defaultPrecisionEnabled:
-              DisplaySettings.instance.defaultPrecisionEnabled,
-          child: _buildBody(context),
-        ),
-      ),
+      animation: Listenable.merge([
+        UnitSettings.instance,
+        DisplaySettings.instance,
+      ]),
+      builder: (context, _) {
+        final textScaler = MediaQuery.textScalerOf(context);
+        final effectiveTextScaler = DisplaySettings.instance.largerFontEnabled
+            ? _ScaledTextScaler(base: textScaler, factor: 1.2)
+            : textScaler;
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: effectiveTextScaler),
+          child: UnitDisplayScope(
+            customUnit: control.setting('displayUnit') is String
+                ? control.setting('displayUnit') as String
+                : null,
+            child: DecimalPlacesScope(
+              settings: Map<String, dynamic>.from(control.settings),
+              controlTypeId: control.type.id,
+              defaultPrecisionEnabled:
+                  DisplaySettings.instance.defaultPrecisionEnabled,
+              child: _buildBody(context),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -185,7 +221,9 @@ class ControlWidget extends StatelessWidget {
                 ),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(6),
+                padding: EdgeInsets.all(
+                  DisplaySettings.instance.largerFontEnabled ? 3 : 6,
+                ),
                 child: Theme(
                   data: faceThemeData,
                   child: Builder(

@@ -170,6 +170,12 @@ class AppLocalizationsZh extends AppLocalizations {
       '开启时，GPS 精度、高度、速度、爬升/下降率和风速默认显示 1 位小数；关闭时默认显示整数。自定义精度不受影响。';
 
   @override
+  String get largerFont => '更大字体';
+
+  @override
+  String get largerFontDescription => '放大仪表盘数值读数，并缩小控件内部间距。';
+
+  @override
   String get otherSettings => '其他设置';
 
   @override

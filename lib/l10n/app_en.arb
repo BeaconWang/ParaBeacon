@@ -57,6 +57,8 @@
   "displaySettingsSubtitle": "Configure default numeric precision",
   "defaultPrecision": "Default precision",
   "defaultPrecisionDescription": "When on, GPS accuracy, altitude, speed, climb rate and wind speed use one decimal place by default. When off, they use whole numbers. Custom precision settings are unchanged.",
+  "largerFont": "Larger font",
+  "largerFontDescription": "Enlarge numeric readouts and tighten the spacing within dashboard controls.",
   "otherSettings": "Other settings",
   "otherSettingsSubtitle": "Additional preferences",
   "shareCardFlatDesign": "Flat share cards",

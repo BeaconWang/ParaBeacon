@@ -2115,6 +2115,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowAirspace => '显示空域';
 
   @override
+  String get settingAirspaceCount => '绘制最近的空域数量';
+
+  @override
   String get settingShowLegend => '显示升降音图例';
 
   @override

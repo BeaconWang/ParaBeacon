@@ -835,6 +835,7 @@
   "settingShowTakeoffLine": "Show line to take-off",
   "settingShowScale": "Display map scale",
   "settingShowAirspace": "Show airspace",
+  "settingAirspaceCount": "Nearest airspaces to plot",
   "settingShowLegend": "Show vario legend",
   "settingShowZoomLevel": "Show zoom level",
   "settingShowAttribution": "Show map attribution",

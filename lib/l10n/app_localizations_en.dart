@@ -2193,6 +2193,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowAirspace => 'Show airspace';
 
   @override
+  String get settingAirspaceCount => 'Nearest airspaces to plot';
+
+  @override
   String get settingShowLegend => 'Show vario legend';
 
   @override

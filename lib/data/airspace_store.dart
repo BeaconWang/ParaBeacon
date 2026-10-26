@@ -22,12 +22,62 @@ enum AirspaceSeverity {
 ///
 /// Altitudes are stored in meters MSL. `null` floor/ceiling means
 /// "ground"/"unlimited" respectively.
+///
+/// Each airspace also carries a precomputed horizontal bounding box
+/// (`minLat`/`maxLat`/`minLon`/`maxLon`) derived from its polygon — XCTrack
+/// keeps the same SW/NE corner box per airspace. The box lets the Map control
+/// cheaply measure each airspace's **size** ([widthM]/[heightM]/[diagonalM])
+/// and compute a fast representative distance for the "nearest N" selection
+/// without walking every polygon edge.
 @immutable
 class Airspace {
-  const Airspace({
+  /// Builds an airspace and derives its bounding box from [polygon].
+  factory Airspace({
+    required String name,
+    required List<List<double>> polygon,
+    required AirspaceSeverity severity,
+    double? floorM,
+    double? ceilingM,
+  }) {
+    var minLat = double.infinity;
+    var maxLat = double.negativeInfinity;
+    var minLon = double.infinity;
+    var maxLon = double.negativeInfinity;
+    for (final pt in polygon) {
+      if (pt.length < 2) continue;
+      final lat = pt[0];
+      final lon = pt[1];
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+      if (lon < minLon) minLon = lon;
+      if (lon > maxLon) maxLon = lon;
+    }
+    // Degenerate (no usable points): collapse the box to the origin so the
+    // size/distance helpers stay finite rather than propagating infinities.
+    if (minLat > maxLat) {
+      minLat = maxLat = minLon = maxLon = 0;
+    }
+    return Airspace._(
+      name: name,
+      polygon: polygon,
+      severity: severity,
+      floorM: floorM,
+      ceilingM: ceilingM,
+      minLat: minLat,
+      maxLat: maxLat,
+      minLon: minLon,
+      maxLon: maxLon,
+    );
+  }
+
+  const Airspace._({
     required this.name,
     required this.polygon,
     required this.severity,
+    required this.minLat,
+    required this.maxLat,
+    required this.minLon,
+    required this.maxLon,
     this.floorM,
     this.ceilingM,
   });
@@ -42,6 +92,26 @@ class Airspace {
   /// Lower / upper altitude bounds in meters MSL (null = ground / unlimited).
   final double? floorM;
   final double? ceilingM;
+
+  /// Horizontal bounding box corners (WGS-84), derived from [polygon].
+  final double minLat;
+  final double maxLat;
+  final double minLon;
+  final double maxLon;
+
+  double get centerLat => (minLat + maxLat) / 2;
+  double get centerLon => (minLon + maxLon) / 2;
+
+  /// East-west extent of the bounding box in meters at its own latitude.
+  double get widthM =>
+      (maxLon - minLon) * 111320.0 * math.cos(centerLat * math.pi / 180.0);
+
+  /// North-south extent of the bounding box in meters.
+  double get heightM => (maxLat - minLat) * 111320.0;
+
+  /// Diagonal size of the bounding box in meters — a single scalar describing
+  /// how large the airspace is on the map.
+  double get diagonalM => math.sqrt(widthM * widthM + heightM * heightM);
 
   /// Whether [altMslM] falls inside this airspace's vertical band.
   bool containsAltitude(double altMslM) {
@@ -91,6 +161,60 @@ class AirspaceStore extends ChangeNotifier {
   final List<Airspace> _all = [];
   List<Airspace> get all => List.unmodifiable(_all);
   bool get isEmpty => _all.isEmpty;
+
+  /// Returns up to [maxCount] airspaces nearest to the last known position,
+  /// sorted by horizontal distance (penetrating / closest first).
+  ///
+  /// This is the selection the Map control draws: rather than an arbitrary
+  /// slice of the file, it plots the *nearest N* airspaces so the ones the
+  /// pilot is actually approaching are always visible even when the dataset
+  /// holds thousands of volumes.
+  ///
+  /// Distance ranking reuses the exact polygon distances computed by
+  /// [updatePosition] when available; before any fix is processed it falls
+  /// back to each airspace's bounding-box centre distance from the last
+  /// position, and finally to load order so the layer is never silently empty.
+  List<Airspace> nearest(int maxCount) {
+    if (maxCount <= 0 || _all.isEmpty) return const [];
+    final count = math.min(maxCount, _all.length);
+
+    List<double> metric;
+    if (_horizontalDistances.length == _all.length) {
+      metric = [
+        for (final d in _horizontalDistances) d ?? double.infinity,
+      ];
+    } else if (_lastPositionLat != null && _lastPositionLon != null) {
+      final lat = _lastPositionLat!;
+      final lon = _lastPositionLon!;
+      metric = [
+        for (final a in _all) _approxDistanceM(lat, lon, a.centerLat, a.centerLon),
+      ];
+    } else {
+      // No position known yet: keep load order.
+      return List<Airspace>.unmodifiable(_all.take(count));
+    }
+
+    final order = List<int>.generate(_all.length, (i) => i)
+      ..sort((a, b) => metric[a].compareTo(metric[b]));
+    return List<Airspace>.unmodifiable([
+      for (var i = 0; i < count; i++) _all[order[i]],
+    ]);
+  }
+
+  /// Equirectangular great-circle approximation (meters) — adequate for the
+  /// short ranges relevant to airspace proximity ranking.
+  static double _approxDistanceM(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    const mPerDegLat = 111320.0;
+    final mPerDegLon = mPerDegLat * math.cos(lat1 * math.pi / 180.0);
+    final dx = (lon2 - lon1) * mPerDegLon;
+    final dy = (lat2 - lat1) * mPerDegLat;
+    return math.sqrt(dx * dx + dy * dy);
+  }
 
   final StreamController<List<AirspaceProximity>> _proximity =
       StreamController<List<AirspaceProximity>>.broadcast();

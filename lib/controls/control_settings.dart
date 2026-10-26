@@ -272,6 +272,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowScale;
     case 'showAirspace':
       return l10n.settingShowAirspace;
+    case 'airspaceCount':
+      return l10n.settingAirspaceCount;
     case 'showLegend':
       return l10n.settingShowLegend;
     case 'showZoomLevel':
@@ -1051,6 +1053,14 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'showAirspace',
       label: 'Show airspace',
       defaultValue: true,
+    ),
+    ControlSetting.slider(
+      key: 'airspaceCount',
+      label: 'Nearest airspaces to plot',
+      defaultValue: 20.0,
+      min: 0.0,
+      max: 60.0,
+      divisions: 60,
     ),
     ControlSetting.toggle(
       key: 'showLegend',

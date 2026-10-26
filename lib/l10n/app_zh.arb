@@ -760,6 +760,7 @@
   "settingShowTakeoffLine": "显示到起飞点的连线",
   "settingShowScale": "显示地图比例尺",
   "settingShowAirspace": "显示空域",
+  "settingAirspaceCount": "绘制最近的空域数量",
   "settingShowLegend": "显示升降音图例",
   "settingShowZoomLevel": "显示缩放级别",
   "settingShowAttribution": "显示地图来源标注",

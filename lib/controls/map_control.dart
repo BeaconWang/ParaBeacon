@@ -174,6 +174,12 @@ class MapControl extends StatefulWidget {
   /// Draw airspace polygons (only visible when airspace data is loaded).
   final bool showAirspace;
 
+  /// Maximum number of airspaces to plot, chosen as the *nearest N* to the
+  /// current position. 0 draws none. Mirrors XCTrack's bounded airspace draw:
+  /// only the closest volumes are rendered so a large dataset stays legible
+  /// and fast.
+  final int airspaceCount;
+
   /// Rotate the map so the current heading points up ("track up"). When false
   /// the map stays north-up. Ported from XCTrack's Thermal Assistant rotation
   /// setting.
@@ -261,6 +267,7 @@ class MapControl extends StatefulWidget {
     this.showTrack = true,
     this.showThermal = true,
     this.showAirspace = true,
+    this.airspaceCount = 20,
     this.trackUp = false,
     this.showNorth = false,
     this.pilotArrowCoef = 1.0,
@@ -1405,11 +1412,15 @@ class _MapControlState extends State<MapControl> {
   }
 
   /// Builds altitude-aware airspace polygons (feature 19).
+  ///
+  /// Plots the *nearest N* airspaces (N == [MapControl.airspaceCount]) rather
+  /// than an arbitrary file slice, so the volumes the pilot is approaching are
+  /// always drawn even when the dataset is large.
   List<Polygon> _buildAirspacePolygons() {
-    final airspaces = AirspaceStore.instance.all;
+    final airspaces = AirspaceStore.instance.nearest(widget.airspaceCount);
     if (airspaces.isEmpty) return const [];
     final out = <Polygon>[];
-    for (final a in airspaces.take(80)) {
+    for (final a in airspaces) {
       if (a.polygon.length < 3) continue;
       final color = _airspaceColor(a);
       out.add(
@@ -1429,15 +1440,21 @@ class _MapControlState extends State<MapControl> {
   /// Picks a boundary colour by proximity: inside = red, near = orange,
   /// else grey (bolder for high-severity classes).
   Color _airspaceColor(Airspace a) {
-    final pr = _airspaceProximity.firstWhere(
-      (p) => p.airspace.name == a.name,
-      orElse: () => AirspaceProximity(
-        airspace: a,
-        horizontalM: double.infinity,
-        verticalM: double.infinity,
-        inside: false,
-      ),
-    );
+    // Match by identity: the proximity list holds the very same [Airspace]
+    // instances the store returns from `nearest`, so this is reliable even
+    // when two airspaces share a name.
+    AirspaceProximity? pr;
+    for (final p in _airspaceProximity) {
+      if (identical(p.airspace, a)) {
+        pr = p;
+        break;
+      }
+    }
+    if (pr == null) {
+      return a.severity == AirspaceSeverity.high
+          ? const Color(0xFF9E9E9E)
+          : const Color(0x889E9E9E);
+    }
     if (pr.inside) return const Color(0xFFFF3B30); // red: penetrating
     if (pr.horizontalM < 1000 || pr.verticalM < 200) {
       return const Color(0xFFFF9800); // orange: about to enter

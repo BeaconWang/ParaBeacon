@@ -4202,6 +4202,12 @@ abstract class AppLocalizations {
   /// **'Show airspace'**
   String get settingShowAirspace;
 
+  /// No description provided for @settingAirspaceCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearest airspaces to plot'**
+  String get settingAirspaceCount;
+
   /// No description provided for @settingShowLegend.
   ///
   /// In en, this message translates to:

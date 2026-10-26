@@ -524,6 +524,9 @@ class ControlWidget extends StatelessWidget {
             showTrack: control.boolSetting('showTrack', fallback: true),
             showThermal: control.boolSetting('showThermal', fallback: true),
             showAirspace: control.boolSetting('showAirspace', fallback: true),
+            airspaceCount: control
+                .doubleSetting('airspaceCount', fallback: 20.0)
+                .round(),
             showLegend: control.boolSetting('showLegend', fallback: false),
             showZoomLevel: control.boolSetting('showZoomLevel', fallback: true),
             showAttribution: control.boolSetting(

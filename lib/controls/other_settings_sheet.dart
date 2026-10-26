@@ -53,12 +53,8 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
     _ => id,
   };
 
-  String _details(AppLocalizations l10n, MapTileCacheStats stats) =>
-      l10n.mapCacheSizeDetails(
-        _formatMapCacheSize(stats.bytes),
-        stats.tileCount,
-        stats.bytes,
-      );
+  String _details(AppLocalizations l10n, MapTileCacheStats stats) => l10n
+      .mapCacheSizeDetails(_formatMapCacheSize(stats.bytes), stats.tileCount);
 
   Future<void> _clearMapTileCache() async {
     final l10n = AppLocalizations.of(context);
@@ -112,7 +108,6 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
               : l10n.flightLibraryStorageDetails(
                   _formatMapCacheSize(snapshot.data!),
                   flightCount,
-                  snapshot.data!,
                 );
           return ListTile(
             contentPadding: EdgeInsets.zero,

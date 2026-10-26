@@ -1665,8 +1665,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapCacheSizeUnavailable => '暂时无法读取地图缓存数据';
 
   @override
-  String mapCacheSizeDetails(String size, int tiles, int bytes) {
-    return '$size · $tiles 个数据块 · $bytes 字节';
+  String mapCacheSizeDetails(String size, int tiles) {
+    return '$size · $tiles 个数据块';
   }
 
   @override
@@ -1688,8 +1688,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightLibraryStorageUnavailable => '暂时无法读取飞行库大小';
 
   @override
-  String flightLibraryStorageDetails(String size, int flights, int bytes) {
-    return '$size · $flights 条飞行记录 · $bytes 字节';
+  String flightLibraryStorageDetails(String size, int flights) {
+    return '$size · $flights 条飞行记录';
   }
 
   @override

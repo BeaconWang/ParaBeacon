@@ -1730,8 +1730,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapCacheSizeUnavailable => 'Map cache data unavailable';
 
   @override
-  String mapCacheSizeDetails(String size, int tiles, int bytes) {
-    return '$size · $tiles blocks · $bytes bytes';
+  String mapCacheSizeDetails(String size, int tiles) {
+    return '$size · $tiles blocks';
   }
 
   @override
@@ -1755,8 +1755,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Flight library size unavailable';
 
   @override
-  String flightLibraryStorageDetails(String size, int flights, int bytes) {
-    return '$size · $flights flights · $bytes bytes';
+  String flightLibraryStorageDetails(String size, int flights) {
+    return '$size · $flights flights';
   }
 
   @override

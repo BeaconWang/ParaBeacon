@@ -600,12 +600,11 @@
   "mapCacheClearFailed": "无法清除地图缓存。",
   "mapCacheSizeLoading": "正在统计地图缓存数据…",
   "mapCacheSizeUnavailable": "暂时无法读取地图缓存数据",
-  "mapCacheSizeDetails": "{size} · {tiles} 个数据块 · {bytes} 字节",
+  "mapCacheSizeDetails": "{size} · {tiles} 个数据块",
   "@mapCacheSizeDetails": {
     "placeholders": {
       "size": { "type": "String" },
-      "tiles": { "type": "int" },
-      "bytes": { "type": "int" }
+      "tiles": { "type": "int" }
     }
   },
   "mapHeading": "航向",
@@ -614,12 +613,11 @@
   "flightLibraryStorageSubtitle": "已保存飞行记录所占用的存储空间。",
   "flightLibraryStorageLoading": "正在统计飞行库大小…",
   "flightLibraryStorageUnavailable": "暂时无法读取飞行库大小",
-  "flightLibraryStorageDetails": "{size} · {flights} 条飞行记录 · {bytes} 字节",
+  "flightLibraryStorageDetails": "{size} · {flights} 条飞行记录",
   "@flightLibraryStorageDetails": {
     "placeholders": {
       "size": { "type": "String" },
-      "flights": { "type": "int" },
-      "bytes": { "type": "int" }
+      "flights": { "type": "int" }
     }
   },
   "mapRequiredGlideRatio": "所需滑翔比",

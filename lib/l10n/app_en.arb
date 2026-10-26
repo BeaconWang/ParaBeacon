@@ -669,12 +669,11 @@
   "mapCacheClearFailed": "Unable to clear the map cache.",
   "mapCacheSizeLoading": "Calculating map cache data…",
   "mapCacheSizeUnavailable": "Map cache data unavailable",
-  "mapCacheSizeDetails": "{size} · {tiles} blocks · {bytes} bytes",
+  "mapCacheSizeDetails": "{size} · {tiles} blocks",
   "@mapCacheSizeDetails": {
     "placeholders": {
       "size": { "type": "String" },
-      "tiles": { "type": "int" },
-      "bytes": { "type": "int" }
+      "tiles": { "type": "int" }
     }
   },
   "mapHeading": "HDG",
@@ -683,12 +682,11 @@
   "flightLibraryStorageSubtitle": "Space used by saved flight records.",
   "flightLibraryStorageLoading": "Calculating flight library size…",
   "flightLibraryStorageUnavailable": "Flight library size unavailable",
-  "flightLibraryStorageDetails": "{size} · {flights} flights · {bytes} bytes",
+  "flightLibraryStorageDetails": "{size} · {flights} flights",
   "@flightLibraryStorageDetails": {
     "placeholders": {
       "size": { "type": "String" },
-      "flights": { "type": "int" },
-      "bytes": { "type": "int" }
+      "flights": { "type": "int" }
     }
   },
   "mapRequiredGlideRatio": "L/D REQ",

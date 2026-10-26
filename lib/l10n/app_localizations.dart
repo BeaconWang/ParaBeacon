@@ -3317,8 +3317,8 @@ abstract class AppLocalizations {
   /// No description provided for @mapCacheSizeDetails.
   ///
   /// In en, this message translates to:
-  /// **'{size} · {tiles} blocks · {bytes} bytes'**
-  String mapCacheSizeDetails(String size, int tiles, int bytes);
+  /// **'{size} · {tiles} blocks'**
+  String mapCacheSizeDetails(String size, int tiles);
 
   /// No description provided for @mapHeading.
   ///
@@ -3359,8 +3359,8 @@ abstract class AppLocalizations {
   /// No description provided for @flightLibraryStorageDetails.
   ///
   /// In en, this message translates to:
-  /// **'{size} · {flights} flights · {bytes} bytes'**
-  String flightLibraryStorageDetails(String size, int flights, int bytes);
+  /// **'{size} · {flights} flights'**
+  String flightLibraryStorageDetails(String size, int flights);
 
   /// No description provided for @mapRequiredGlideRatio.
   ///

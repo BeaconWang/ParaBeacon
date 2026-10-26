@@ -48,58 +48,67 @@ class _LandingPointsSheet extends StatelessWidget {
     LatLng initialPosition,
   ) {
     final l10n = AppLocalizations.of(context);
+    var selectedPosition = initialPosition;
     return showDialog<LatLng>(
       context: context,
       builder: (dialogContext) {
         final size = MediaQuery.sizeOf(dialogContext);
-        return AlertDialog(
-          title: Text(l10n.landingPointPickMapTitle),
-          content: SizedBox(
-            width: size.width * 0.8,
-            height: size.height * 0.58,
-            child: Column(
-              children: [
-                Text(l10n.landingPointPickPrompt),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: MapControl(
-                      active: true,
-                      follow: false,
-                      initialZoom: 13,
-                      initialCenter: initialPosition,
-                      showTrack: false,
-                      showThermal: false,
-                      showAirspace: false,
-                      showWind: false,
-                      showSun: false,
-                      showBearing: false,
-                      showTakeoffLine: false,
-                      showTakeoffPoint: false,
-                      showDefaultLandingPoint: false,
-                      showNearestLandingPoint: false,
-                      showDefaultLandingLine: false,
-                      showLastLandingLine: false,
-                      showScale: false,
-                      showLegend: false,
-                      showZoomLevel: false,
-                      showAttribution: false,
-                      showStatus: false,
-                      onMapTap: (point) =>
-                          Navigator.of(dialogContext).pop(point),
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text(l10n.landingPointPickMapTitle),
+            content: SizedBox(
+              width: size.width * 0.8,
+              height: size.height * 0.58,
+              child: Column(
+                children: [
+                  Text(l10n.landingPointPickPrompt),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: MapControl(
+                        active: true,
+                        follow: false,
+                        initialZoom: 13,
+                        initialCenter: initialPosition,
+                        selectionMarker: selectedPosition,
+                        showTrack: false,
+                        showThermal: false,
+                        showAirspace: false,
+                        showWind: false,
+                        showSun: false,
+                        showBearing: false,
+                        showTakeoffLine: false,
+                        showTakeoffPoint: false,
+                        showDefaultLandingPoint: false,
+                        showNearestLandingPoint: false,
+                        showDefaultLandingLine: false,
+                        showLastLandingLine: false,
+                        showScale: false,
+                        showLegend: false,
+                        showZoomLevel: false,
+                        showAttribution: false,
+                        showStatus: false,
+                        onMapTap: (point) =>
+                            setDialogState(() => selectedPosition = point),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () =>
+                    Navigator.of(dialogContext).pop(selectedPosition),
+                child: Text(l10n.landingPointApply),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(l10n.cancel),
-            ),
-          ],
         );
       },
     );

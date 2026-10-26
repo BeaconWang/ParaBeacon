@@ -2318,7 +2318,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingPointPickMapTitle => '在地图上选择位置';
 
   @override
-  String get landingPointPickPrompt => '请在地图上点选降落点位置。';
+  String get landingPointPickPrompt => '点击地图放置标记，然后应用所选位置。';
+
+  @override
+  String get landingPointApply => '应用';
 
   @override
   String get landingPointSaved => '降落点已保存';

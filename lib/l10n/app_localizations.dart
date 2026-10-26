@@ -4595,8 +4595,14 @@ abstract class AppLocalizations {
   /// No description provided for @landingPointPickPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Tap the map to choose a landing point location.'**
+  /// **'Tap the map to place the marker, then apply the selected location.'**
   String get landingPointPickPrompt;
+
+  /// No description provided for @landingPointApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get landingPointApply;
 
   /// No description provided for @landingPointSaved.
   ///

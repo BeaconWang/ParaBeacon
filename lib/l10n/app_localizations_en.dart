@@ -2405,7 +2405,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get landingPointPickPrompt =>
-      'Tap the map to choose a landing point location.';
+      'Tap the map to place the marker, then apply the selected location.';
+
+  @override
+  String get landingPointApply => 'Apply';
 
   @override
   String get landingPointSaved => 'Landing point saved';

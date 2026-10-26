@@ -262,6 +262,9 @@ class MapControl extends StatefulWidget {
   /// MapControl never creates or persists landing points.
   final ValueChanged<LatLng>? onMapTap;
 
+  /// Optional WGS-84 location marker, for map-based selection flows.
+  final LatLng? selectionMarker;
+
   const MapControl({
     super.key,
     this.initialZoom = 17.0,
@@ -301,6 +304,7 @@ class MapControl extends StatefulWidget {
     this.showStatus = true,
     this.active = false,
     this.onMapTap,
+    this.selectionMarker,
   });
 
   @override
@@ -742,6 +746,18 @@ class _MapControlState extends State<MapControl> {
             label: nearestLanding!.name,
             color: widget.lastLandingPointColor,
             heart: false,
+          ),
+        ),
+      if (widget.selectionMarker != null)
+        Marker(
+          point: _shift(widget.selectionMarker!, widget.tileSource),
+          width: 48,
+          height: 48,
+          alignment: Alignment.bottomCenter,
+          child: Icon(
+            Icons.location_pin,
+            color: theme.colorScheme.error,
+            size: 44,
           ),
         ),
     ];

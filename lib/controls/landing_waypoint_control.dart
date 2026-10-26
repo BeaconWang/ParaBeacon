@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../data/flight_data.dart';
@@ -16,6 +18,10 @@ import 'decimal_places.dart';
 /// distance, bearing, elevation change (height above the point), required
 /// glide ratio to reach it, and ETA at the current ground speed. Each metric
 /// can be shown or hidden independently from the control's settings sheet.
+///
+/// The bearing is rendered as a live compass dial with an arrow pointing to
+/// the target; distance is the hero readout; the remaining metrics sit in a
+/// row of compact chips.
 ///
 /// Reads the shared [LandingPointStore] (so it tracks edits to the landing
 /// list live) and the current position from the unified [FlightDataProvider].
@@ -42,7 +48,8 @@ class LandingWaypointControl extends StatefulWidget {
   final bool showGlide;
   final bool showEta;
 
-  /// Render the bearing as an 8-point cardinal (N, NE, …) instead of degrees.
+  /// Render the bearing readout as an 8-point cardinal (N, NE, …) instead of
+  /// degrees.
   final bool cardinal;
 
   /// Express the bearing relative to the current heading instead of as an
@@ -111,6 +118,8 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
             target.longitude,
           )
         : null;
+    // Angle shown on the dial / in the readout. In relative mode it's folded
+    // against the current heading (0 = straight ahead) when a heading exists.
     double? bearingAngle = absoluteBearing;
     if (absoluteBearing != null && widget.relative) {
       bearingAngle = data.hasHeading && data.heading.isFinite
@@ -118,15 +127,11 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
           : null;
     }
 
-    // Elevation change = how far above the target we currently are. Needs a
-    // known target altitude.
     final elevationChange =
         target?.altitudeM != null && data.altitude.isFinite
         ? data.altitude - target!.altitudeM!
         : null;
 
-    // Required glide ratio to reach the point: horizontal distance over the
-    // height we have to give away. Only meaningful while above the target.
     double? requiredGlide;
     if (distanceMeters != null &&
         elevationChange != null &&
@@ -135,7 +140,6 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
       if (ld.isFinite && ld > 0) requiredGlide = ld;
     }
 
-    // ETA at the current ground speed.
     int? etaSeconds;
     if (distanceMeters != null) {
       final groundMps = data.groundSpeed / 3.6;
@@ -161,8 +165,8 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
     final distanceUnitLabel = distanceMeters == null
         ? UnitValues.symbol(UnitDimension.distance, distanceUnit)
         : distanceUnit == 'auto'
-        ? (distanceMeters < 1000 ? 'M' : 'KM')
-        : UnitValues.symbol(UnitDimension.distance, distanceUnit).toUpperCase();
+        ? (distanceMeters < 1000 ? 'm' : 'km')
+        : UnitValues.symbol(UnitDimension.distance, distanceUnit);
 
     final bearingText = bearingAngle == null
         ? '--'
@@ -196,43 +200,32 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
 
     final etaText = etaSeconds == null ? '--' : _formatDuration(etaSeconds);
 
-    // ── Assemble the enabled metrics in a stable order. ──
-    final metrics = <_Metric>[
-      if (widget.showDistance)
-        _Metric(
-          label: l10n.takeoffDistanceLabel,
-          value: distanceText,
-          unit: distanceUnitLabel,
-          color: theme.colorScheme.primary,
-        ),
-      if (widget.showBearing)
-        _Metric(
-          label: l10n.waypointBearingLabel,
-          value: bearingText,
-          unit: '',
-          color: theme.colorScheme.onSurface,
-        ),
+    // Secondary metrics shown as chips (distance is the hero, bearing is the
+    // dial). Order is stable regardless of which are enabled.
+    final chips = <_Metric>[
       if (widget.showElevation)
         _Metric(
+          icon: Icons.swap_vert,
           label: l10n.takeoffAltitudeDifferenceLabel,
           value: elevationText,
-          unit: UnitValues.symbol(
-            UnitDimension.altitude,
-            altitudeUnit,
-          ).toUpperCase(),
-          color: (elevationChange ?? 0) >= 0
+          unit: UnitValues.symbol(UnitDimension.altitude, altitudeUnit),
+          color: elevationChange == null
+              ? theme.colorScheme.onSurface
+              : elevationChange >= 0
               ? theme.colorScheme.secondary
               : theme.colorScheme.error,
         ),
       if (widget.showGlide)
         _Metric(
+          icon: Icons.trending_down,
           label: l10n.waypointGlideLabel,
           value: glideText,
           unit: '',
-          color: theme.colorScheme.primary,
+          color: theme.colorScheme.onSurface,
         ),
       if (widget.showEta)
         _Metric(
+          icon: Icons.schedule,
           label: l10n.waypointEtaLabel,
           value: etaText,
           unit: '',
@@ -244,93 +237,51 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
       LandingReference.nearest => l10n.controlLastLandingWaypoint,
       LandingReference.defaultPoint => l10n.controlDefaultLandingWaypoint,
     };
-    final pointName = target?.name;
+    final headerIcon = widget.reference == LandingReference.defaultPoint
+        ? Icons.where_to_vote
+        : Icons.flight_land;
+    final hasTarget = target != null;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight.isFinite
             ? constraints.maxHeight
-            : 120.0;
+            : 140.0;
         final width = constraints.maxWidth.isFinite
             ? constraints.maxWidth
-            : 200.0;
-        final scale = (height / 120.0).clamp(0.6, 1.4).toDouble();
-        final padding = (height * 0.05).clamp(3.0, 8.0).toDouble();
-
-        final labelStyle = theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          fontSize: 9.5 * scale,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.6,
-          height: 1.1,
-        );
-
-        // Two columns unless the widget is very narrow.
-        final columns = width < 150 ? 1 : 2;
-        final spacing = 8.0 * scale;
-        final tileWidth = metrics.isEmpty
-            ? width
-            : (width - spacing * (columns - 1)) / columns;
+            : 240.0;
+        final scale = (math.min(height / 140.0, width / 240.0))
+            .clamp(0.55, 1.5)
+            .toDouble();
+        final pad = (height * 0.05).clamp(4.0, 10.0).toDouble();
 
         return Padding(
-          padding: EdgeInsets.all(padding),
+          padding: EdgeInsets.all(pad),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    widget.reference == LandingReference.defaultPoint
-                        ? Icons.where_to_vote
-                        : Icons.flight_land,
-                    size: 16 * scale,
-                    color: theme.colorScheme.primary,
-                  ),
-                  SizedBox(width: 6 * scale),
-                  Expanded(
-                    child: Text(
-                      pointName ?? title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                        fontSize: 13 * scale,
-                      ),
-                    ),
-                  ),
-                ],
+              _Header(
+                icon: headerIcon,
+                name: target?.name ?? title,
+                subtitle: hasTarget ? title : null,
+                scale: scale,
+                dimmed: !hasTarget,
               ),
-              SizedBox(height: (height * 0.06).clamp(4.0, 10.0)),
+              SizedBox(height: 6 * scale),
               Expanded(
-                child: metrics.isEmpty
-                    ? Center(
-                        child: Text(
-                          title,
-                          style: labelStyle,
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    : Align(
-                        alignment: Alignment.topLeft,
-                        child: Wrap(
-                          spacing: spacing,
-                          runSpacing: (height * 0.05).clamp(4.0, 12.0),
-                          children: [
-                            for (final metric in metrics)
-                              SizedBox(
-                                width: tileWidth,
-                                child: _MetricTile(
-                                  metric: metric,
-                                  labelStyle: labelStyle,
-                                  valueSize: 26 * scale,
-                                  unitSize: 11 * scale,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+                child: _Body(
+                  showBearing: widget.showBearing,
+                  showDistance: widget.showDistance,
+                  bearingAngle: bearingAngle,
+                  relative: widget.relative,
+                  bearingText: bearingText,
+                  distanceText: distanceText,
+                  distanceUnit: distanceUnitLabel,
+                  distanceLabel: l10n.takeoffDistanceLabel,
+                  bearingLabel: l10n.waypointBearingLabel,
+                  chips: chips,
+                  scale: scale,
+                ),
               ),
             ],
           ),
@@ -340,34 +291,180 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
   }
 }
 
-/// A single computed metric to display (label + value + optional unit).
-@immutable
-class _Metric {
-  const _Metric({
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.icon,
+    required this.name,
+    required this.subtitle,
+    required this.scale,
+    required this.dimmed,
+  });
+
+  final IconData icon;
+  final String name;
+  final String? subtitle;
+  final double scale;
+  final bool dimmed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final badgeSize = 28.0 * scale;
+    return Row(
+      children: [
+        Container(
+          width: badgeSize,
+          height: badgeSize,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withAlpha(dimmed ? 20 : 38),
+            borderRadius: BorderRadius.circular(badgeSize * 0.3),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            size: 16 * scale,
+            color: dimmed
+                ? theme.colorScheme.onSurfaceVariant
+                : theme.colorScheme.primary,
+          ),
+        ),
+        SizedBox(width: 8 * scale),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                  fontSize: 14 * scale,
+                  height: 1.1,
+                ),
+              ),
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 9.5 * scale,
+                    letterSpacing: 0.3,
+                    height: 1.1,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Body extends StatelessWidget {
+  const _Body({
+    required this.showBearing,
+    required this.showDistance,
+    required this.bearingAngle,
+    required this.relative,
+    required this.bearingText,
+    required this.distanceText,
+    required this.distanceUnit,
+    required this.distanceLabel,
+    required this.bearingLabel,
+    required this.chips,
+    required this.scale,
+  });
+
+  final bool showBearing;
+  final bool showDistance;
+  final double? bearingAngle;
+  final bool relative;
+  final String bearingText;
+  final String distanceText;
+  final String distanceUnit;
+  final String distanceLabel;
+  final String bearingLabel;
+  final List<_Metric> chips;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final h = constraints.maxHeight;
+        final w = constraints.maxWidth;
+        final dialSize = showBearing
+            ? math.min(h, w * 0.42).clamp(40.0, 110.0).toDouble()
+            : 0.0;
+
+        final rightColumn = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showDistance) ...[
+              _HeroValue(
+                label: distanceLabel,
+                value: distanceText,
+                unit: distanceUnit,
+                scale: scale,
+              ),
+              if (chips.isNotEmpty) SizedBox(height: 8 * scale),
+            ],
+            if (chips.isNotEmpty)
+              Wrap(
+                spacing: 6 * scale,
+                runSpacing: 6 * scale,
+                children: [
+                  for (final m in chips) _MetricChip(metric: m, scale: scale),
+                ],
+              ),
+          ],
+        );
+
+        if (!showBearing) {
+          return Align(alignment: Alignment.centerLeft, child: rightColumn);
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _CompassDial(
+              size: dialSize,
+              angle: bearingAngle,
+              relative: relative,
+              readout: bearingText,
+              label: bearingLabel,
+              scale: scale,
+            ),
+            SizedBox(width: 12 * scale),
+            Expanded(child: rightColumn),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Big primary readout (value + small trailing unit) with a caption above.
+class _HeroValue extends StatelessWidget {
+  const _HeroValue({
     required this.label,
     required this.value,
     required this.unit,
-    required this.color,
+    required this.scale,
   });
 
   final String label;
   final String value;
   final String unit;
-  final Color color;
-}
-
-class _MetricTile extends StatelessWidget {
-  const _MetricTile({
-    required this.metric,
-    required this.labelStyle,
-    required this.valueSize,
-    required this.unitSize,
-  });
-
-  final _Metric metric;
-  final TextStyle? labelStyle;
-  final double valueSize;
-  final double unitSize;
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
@@ -377,40 +474,45 @@ class _MetricTile extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          metric.label,
+          label.toUpperCase(),
           maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: labelStyle,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 9.5 * scale,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.8,
+            height: 1.0,
+          ),
         ),
-        const SizedBox(height: 1),
+        SizedBox(height: 2 * scale),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                metric.value,
+                value,
                 maxLines: 1,
                 style: TextStyle(
-                  color: metric.color,
-                  fontSize: valueSize,
+                  color: theme.colorScheme.primary,
+                  fontSize: 38 * scale,
                   fontWeight: FontWeight.w700,
                   height: 1.0,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
-              if (metric.unit.isNotEmpty)
+              if (unit.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(left: 3, bottom: 2),
+                  padding: EdgeInsets.only(left: 4 * scale),
                   child: Text(
-                    metric.unit,
-                    style: theme.textTheme.labelSmall?.copyWith(
+                    unit,
+                    style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: unitSize,
+                      fontSize: 13 * scale,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
                     ),
                   ),
                 ),
@@ -420,6 +522,256 @@ class _MetricTile extends StatelessWidget {
       ],
     );
   }
+}
+
+/// A single computed metric (icon + label + value + optional unit).
+@immutable
+class _Metric {
+  const _Metric({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String unit;
+  final Color color;
+}
+
+/// Compact rounded chip used for the secondary metrics.
+class _MetricChip extends StatelessWidget {
+  const _MetricChip({required this.metric, required this.scale});
+
+  final _Metric metric;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 5 * scale),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withAlpha(90),
+        borderRadius: BorderRadius.circular(8 * scale),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            metric.icon,
+            size: 13 * scale,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          SizedBox(width: 5 * scale),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                metric.label.toUpperCase(),
+                maxLines: 1,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 7.5 * scale,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.4,
+                  height: 1.0,
+                ),
+              ),
+              SizedBox(height: 1 * scale),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    metric.value,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: metric.color,
+                      fontSize: 15 * scale,
+                      fontWeight: FontWeight.w700,
+                      height: 1.0,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  if (metric.unit.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(left: 2 * scale),
+                      child: Text(
+                        metric.unit,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 9 * scale,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A circular compass dial with an arrow pointing to the target, plus the
+/// numeric/cardinal bearing readout centered inside it.
+class _CompassDial extends StatelessWidget {
+  const _CompassDial({
+    required this.size,
+    required this.angle,
+    required this.relative,
+    required this.readout,
+    required this.label,
+    required this.scale,
+  });
+
+  final double size;
+  final double? angle;
+  final bool relative;
+  final String readout;
+  final String label;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: size,
+          height: size,
+          child: CustomPaint(
+            painter: _CompassPainter(
+              angleDegrees: angle,
+              relative: relative,
+              ring: theme.colorScheme.outlineVariant.withAlpha(140),
+              arrow: theme.colorScheme.primary,
+              tick: theme.colorScheme.onSurfaceVariant.withAlpha(150),
+            ),
+            child: Center(
+              child: Text(
+                readout,
+                maxLines: 1,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: size * 0.2,
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 2 * scale),
+        Text(
+          label.toUpperCase(),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 8.5 * scale,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.6,
+            height: 1.0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CompassPainter extends CustomPainter {
+  _CompassPainter({
+    required this.angleDegrees,
+    required this.relative,
+    required this.ring,
+    required this.arrow,
+    required this.tick,
+  });
+
+  final double? angleDegrees;
+  final bool relative;
+  final Color ring;
+  final Color arrow;
+  final Color tick;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // Outer ring.
+    final ringPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(1.2, radius * 0.06)
+      ..color = ring;
+    canvas.drawCircle(center, radius - ringPaint.strokeWidth / 2, ringPaint);
+
+    // Cardinal/ahead ticks.
+    final tickPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(1.0, radius * 0.045)
+      ..strokeCap = StrokeCap.round
+      ..color = tick;
+    for (var i = 0; i < 4; i++) {
+      final theta = i * math.pi / 2 - math.pi / 2;
+      final outer = center + Offset(math.cos(theta), math.sin(theta)) * radius;
+      final innerLen = i == 0 ? radius * 0.78 : radius * 0.86;
+      final inner =
+          center + Offset(math.cos(theta), math.sin(theta)) * innerLen;
+      canvas.drawLine(inner, outer, tickPaint);
+    }
+
+    if (angleDegrees == null) return;
+
+    // Arrow pointing to the target. 0° = top; clockwise.
+    final theta = (angleDegrees! - 90) * math.pi / 180;
+    final dir = Offset(math.cos(theta), math.sin(theta));
+    final perp = Offset(-dir.dy, dir.dx);
+    final tip = center + dir * (radius * 0.62);
+    final tailLen = radius * 0.5;
+    final tail = center - dir * tailLen;
+    final headHalf = radius * 0.2;
+    final headBase = center + dir * (radius * 0.28);
+
+    final arrowPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = arrow;
+    final linePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(1.6, radius * 0.09)
+      ..strokeCap = StrokeCap.round
+      ..color = arrow;
+
+    // Shaft from tail to the base of the head.
+    canvas.drawLine(tail, headBase, linePaint);
+
+    // Triangular arrowhead.
+    final head = Path()
+      ..moveTo(tip.dx, tip.dy)
+      ..lineTo(headBase.dx + perp.dx * headHalf, headBase.dy + perp.dy * headHalf)
+      ..lineTo(headBase.dx - perp.dx * headHalf, headBase.dy - perp.dy * headHalf)
+      ..close();
+    canvas.drawPath(head, arrowPaint);
+
+    // Pivot dot.
+    canvas.drawCircle(center, math.max(1.5, radius * 0.07), arrowPaint);
+  }
+
+  @override
+  bool shouldRepaint(_CompassPainter old) =>
+      old.angleDegrees != angleDegrees ||
+      old.relative != relative ||
+      old.ring != ring ||
+      old.arrow != arrow ||
+      old.tick != tick;
 }
 
 /// Formats a duration in seconds as `M:SS` (or `H:MM:SS` past an hour).

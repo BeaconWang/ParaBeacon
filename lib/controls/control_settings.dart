@@ -749,46 +749,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       },
     ),
   ],
-  'bearing_to_nearest_landing': [
-    ControlSetting.choice(
-      key: 'bearingReference',
-      label: 'Direction',
-      defaultValue: 'absolute',
-      options: {
-        'absolute': 'Absolute (compass)',
-        'relative': 'Relative (to heading)',
-      },
-    ),
-    ControlSetting.choice(
-      key: 'format',
-      label: 'Format',
-      defaultValue: 'degrees',
-      options: {
-        'degrees': 'Degrees (0-360°)',
-        'cardinal': 'Cardinal (N, NE, …)',
-      },
-    ),
-  ],
-  'bearing_to_default_landing': [
-    ControlSetting.choice(
-      key: 'bearingReference',
-      label: 'Direction',
-      defaultValue: 'absolute',
-      options: {
-        'absolute': 'Absolute (compass)',
-        'relative': 'Relative (to heading)',
-      },
-    ),
-    ControlSetting.choice(
-      key: 'format',
-      label: 'Format',
-      defaultValue: 'degrees',
-      options: {
-        'degrees': 'Degrees (0-360°)',
-        'cardinal': 'Cardinal (N, NE, …)',
-      },
-    ),
-  ],
   'wind_direction': [
     ControlSetting.choice(
       key: 'format',

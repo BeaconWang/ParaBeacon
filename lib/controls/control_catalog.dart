@@ -111,14 +111,6 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlAirTime;
     case 'distance_to_takeoff':
       return l10n.controlDistanceToTakeoff;
-    case 'distance_to_nearest_landing':
-      return l10n.controlDistanceToNearestLanding;
-    case 'distance_to_default_landing':
-      return l10n.controlDistanceToDefaultLanding;
-    case 'bearing_to_nearest_landing':
-      return l10n.controlBearingToNearestLanding;
-    case 'bearing_to_default_landing':
-      return l10n.controlBearingToDefaultLanding;
     case 'sunrise':
       return l10n.controlSunrise;
     case 'sunset':
@@ -342,38 +334,6 @@ class ControlCatalog {
           id: 'distance_to_takeoff',
           label: 'Distance to Takeoff',
           icon: Icons.straighten,
-          kind: ControlKind.data,
-          defaultCols: 3,
-          defaultRows: 2,
-        ),
-        ControlType(
-          id: 'distance_to_nearest_landing',
-          label: 'Distance to Nearest Landing',
-          icon: Icons.flight_land,
-          kind: ControlKind.data,
-          defaultCols: 3,
-          defaultRows: 2,
-        ),
-        ControlType(
-          id: 'distance_to_default_landing',
-          label: 'Distance to Default Landing',
-          icon: Icons.where_to_vote_outlined,
-          kind: ControlKind.data,
-          defaultCols: 3,
-          defaultRows: 2,
-        ),
-        ControlType(
-          id: 'bearing_to_nearest_landing',
-          label: 'Bearing to Nearest Landing',
-          icon: Icons.assistant_direction_outlined,
-          kind: ControlKind.data,
-          defaultCols: 3,
-          defaultRows: 2,
-        ),
-        ControlType(
-          id: 'bearing_to_default_landing',
-          label: 'Bearing to Default Landing',
-          icon: Icons.turn_right_outlined,
           kind: ControlKind.data,
           defaultCols: 3,
           defaultRows: 2,

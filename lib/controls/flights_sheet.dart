@@ -1102,7 +1102,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                         color: theme.colorScheme.error,
                         visualDensity: VisualDensity.compact,
                         onPressed: () async {
-                          final confirmed = await _confirmDeleteSamples();
+                          final confirmed = await _confirmDeleteSamples(track);
                           if (confirmed != true) return;
                           _recorder.deleteTrackSamples(track);
                           setDialogState(() {});
@@ -1500,13 +1500,21 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     dialogFuture.whenComplete(() => updateDialog = null);
   }
 
-  Future<bool?> _confirmDeleteSamples() {
+  Future<bool?> _confirmDeleteSamples(FlightTrack track) {
     final l10n = AppLocalizations.of(context);
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.flightsDeleteSamplesTitle),
-        content: Text(l10n.flightsDeleteSamplesMessage),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _deleteTargetCard(track),
+            const SizedBox(height: 12),
+            Text(l10n.flightsDeleteSamplesMessage),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -1572,7 +1580,35 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.flightsDeleteSelectedTitle(selectedTracks.length)),
-        content: Text(l10n.flightsDeleteSelectedMessage),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.4,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final track
+                        in List<FlightTrack>.of(selectedTracks)..sort(
+                          (a, b) => b.startTime.compareTo(a.startTime),
+                        ))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: _deleteTargetCard(track),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(l10n.flightsDeleteSelectedMessage),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -1752,13 +1788,95 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     }
   }
 
+  /// Identifies [track] in a delete confirmation the same way the list does
+  /// (start date/time title, AUTO badge and summary line, plus the launch site
+  /// when known) so the user can verify which record will be deleted.
+  Widget _deleteTargetCard(FlightTrack track) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final site = track.takeoffSite?.trim();
+    return DecoratedBox(
+      key: ValueKey<String>('delete-target-${flightId(track)}'),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withAlpha(90),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: theme.colorScheme.error.withAlpha(110)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        child: Row(
+          children: [
+            Icon(Icons.flight, size: 20, color: theme.colorScheme.error),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _fmtDateTime(track.startTime),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (track.isAutoFlight) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.flightButtonAuto,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  Text(
+                    l10n.flightsListSubtitle(
+                      _fmtDuration(track.duration),
+                      (track.distanceM / 1000).toStringAsFixed(2),
+                      track.pointCount,
+                    ),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  if (site != null && site.isNotEmpty)
+                    Text(
+                      site,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _confirmDeleteTrack(FlightTrack track) async {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.flightsDeleteTitle),
-        content: Text(l10n.flightsDeleteMessage),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _deleteTargetCard(track),
+            const SizedBox(height: 12),
+            Text(l10n.flightsDeleteMessage),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),

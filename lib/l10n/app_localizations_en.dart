@@ -3254,6 +3254,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sensorFieldBattery => 'Battery';
 
   @override
+  String get sensorFieldQnh => 'QNH (reference)';
+
+  @override
+  String get sensorCalibrate => 'Calibrate';
+
+  @override
+  String get sensorCalibrationReset => 'Reset';
+
+  @override
+  String get sensorCalibrationStandard => 'Standard reference (1013.25 hPa)';
+
+  @override
+  String get sensorCalibrationCalibrated => 'Calibrated to a known altitude';
+
+  @override
+  String get sensorCalibrateTitle => 'Calibrate altitude';
+
+  @override
+  String get sensorCalibrateDescription =>
+      'Enter the current known altitude. The reference pressure (QNH) is adjusted so the barometric altitude matches.';
+
+  @override
+  String get sensorCalibrateAltitudeLabel => 'Current altitude';
+
+  @override
+  String get sensorCalibrateInvalid => 'Enter a valid altitude';
+
+  @override
+  String get sensorCalibrateFailed =>
+      'Calibration failed — no barometer reading or value out of range';
+
+  @override
   String get sensorNoDeviceSelected => 'No device selected';
 
   @override

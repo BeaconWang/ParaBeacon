@@ -6152,6 +6152,66 @@ abstract class AppLocalizations {
   /// **'Battery'**
   String get sensorFieldBattery;
 
+  /// No description provided for @sensorFieldQnh.
+  ///
+  /// In en, this message translates to:
+  /// **'QNH (reference)'**
+  String get sensorFieldQnh;
+
+  /// No description provided for @sensorCalibrate.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrate'**
+  String get sensorCalibrate;
+
+  /// No description provided for @sensorCalibrationReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get sensorCalibrationReset;
+
+  /// No description provided for @sensorCalibrationStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard reference (1013.25 hPa)'**
+  String get sensorCalibrationStandard;
+
+  /// No description provided for @sensorCalibrationCalibrated.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrated to a known altitude'**
+  String get sensorCalibrationCalibrated;
+
+  /// No description provided for @sensorCalibrateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrate altitude'**
+  String get sensorCalibrateTitle;
+
+  /// No description provided for @sensorCalibrateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the current known altitude. The reference pressure (QNH) is adjusted so the barometric altitude matches.'**
+  String get sensorCalibrateDescription;
+
+  /// No description provided for @sensorCalibrateAltitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current altitude'**
+  String get sensorCalibrateAltitudeLabel;
+
+  /// No description provided for @sensorCalibrateInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid altitude'**
+  String get sensorCalibrateInvalid;
+
+  /// No description provided for @sensorCalibrateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibration failed — no barometer reading or value out of range'**
+  String get sensorCalibrateFailed;
+
   /// No description provided for @sensorNoDeviceSelected.
   ///
   /// In en, this message translates to:

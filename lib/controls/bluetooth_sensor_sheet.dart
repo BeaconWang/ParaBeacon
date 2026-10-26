@@ -223,10 +223,129 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
             r.altitudeM?.toStringAsFixed(0), 'm'))
         ..add(const Divider(height: 1))
         ..add(_fieldRow(theme, Icons.compress, l10n.sensorFieldPressure,
-            r.pressureHpa?.toStringAsFixed(2), 'hPa'));
+            r.pressureHpa?.toStringAsFixed(2), 'hPa'))
+        ..add(const Divider(height: 1))
+        ..add(_fieldRow(theme, Icons.adjust, l10n.sensorFieldQnh,
+            _internal.referencePressureHpa.toStringAsFixed(2), 'hPa'))
+        ..add(const Divider(height: 1))
+        ..add(_calibrationControls(theme, l10n));
     }
 
     return _card(theme, children);
+  }
+
+  // ── Barometer altitude calibration ────────────────────────────────────────
+  //
+  // Lets the user calibrate the barometric altimeter to a known altitude. The
+  // service back-computes the sea-level reference pressure (QNH) so the derived
+  // altitude reads correctly, and persists it.
+  Widget _calibrationControls(ThemeData theme, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              _internal.isCalibrated
+                  ? l10n.sensorCalibrationCalibrated
+                  : l10n.sensorCalibrationStandard,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          if (_internal.isCalibrated)
+            TextButton(
+              onPressed: () => _internal.resetCalibration(),
+              child: Text(l10n.sensorCalibrationReset),
+            ),
+          FilledButton.tonalIcon(
+            onPressed: _internal.lastPressureHpa == null
+                ? null
+                : () => _openCalibrateDialog(l10n),
+            icon: const Icon(Icons.tune, size: 18),
+            label: Text(l10n.sensorCalibrate),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openCalibrateDialog(AppLocalizations l10n) async {
+    final current = _internal.readings.altitudeM;
+    final controller = TextEditingController(
+      text: current == null ? '' : current.toStringAsFixed(0),
+    );
+    final result = await showDialog<double>(
+      context: context,
+      builder: (context) {
+        String? errorText;
+        return StatefulBuilder(
+          builder: (context, setLocalState) {
+            return AlertDialog(
+              title: Text(l10n.sensorCalibrateTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.sensorCalibrateDescription,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      signed: true,
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: l10n.sensorCalibrateAltitudeLabel,
+                      suffixText: 'm',
+                      errorText: errorText,
+                      border: const OutlineInputBorder(),
+                    ),
+                    onSubmitted: (_) {
+                      final value = double.tryParse(controller.text.trim());
+                      if (value != null) Navigator.of(context).pop(value);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.cancel),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final value = double.tryParse(controller.text.trim());
+                    if (value == null) {
+                      setLocalState(() => errorText = l10n.sensorCalibrateInvalid);
+                      return;
+                    }
+                    Navigator.of(context).pop(value);
+                  },
+                  child: Text(l10n.save),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    controller.dispose();
+    if (result == null || !mounted) return;
+
+    final ok = await _internal.calibrateToAltitude(result);
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.sensorCalibrateFailed)),
+      );
+    }
   }
 
   Widget _adapterBanner(ThemeData theme, AppLocalizations l10n) {

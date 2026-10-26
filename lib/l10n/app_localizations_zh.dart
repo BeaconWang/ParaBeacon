@@ -3147,6 +3147,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sensorFieldBattery => '电量';
 
   @override
+  String get sensorFieldQnh => 'QNH（基准气压）';
+
+  @override
+  String get sensorCalibrate => '校准';
+
+  @override
+  String get sensorCalibrationReset => '重置';
+
+  @override
+  String get sensorCalibrationStandard => '标准基准（1013.25 hPa）';
+
+  @override
+  String get sensorCalibrationCalibrated => '已按已知海拔校准';
+
+  @override
+  String get sensorCalibrateTitle => '校准海拔';
+
+  @override
+  String get sensorCalibrateDescription =>
+      '输入当前的已知海拔，将自动调整基准气压（QNH），使气压海拔与之匹配。';
+
+  @override
+  String get sensorCalibrateAltitudeLabel => '当前海拔';
+
+  @override
+  String get sensorCalibrateInvalid => '请输入有效的海拔';
+
+  @override
+  String get sensorCalibrateFailed => '校准失败——没有气压读数或数值超出范围';
+
+  @override
   String get sensorNoDeviceSelected => '未选择设备';
 
   @override

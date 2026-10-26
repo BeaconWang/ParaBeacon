@@ -2636,6 +2636,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsSiteNamesUpdated => 'Site names updated.';
 
   @override
+  String get flightsSiteNamesKept => 'Existing site names were kept.';
+
+  @override
   String flightsLookupFailed(String error) {
     return 'Lookup failed: $error';
   }
@@ -2800,6 +2803,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get flightDetailPilot => 'Pilot';
+
+  @override
+  String get flightDetailEditNames => 'Edit names';
+
+  @override
+  String get flightNamesDialogTitle => 'Edit flight names';
+
+  @override
+  String get flightDetailTakeoffSite => 'Takeoff site';
+
+  @override
+  String get flightDetailLandingSite => 'Landing site';
 
   @override
   String get flightDetailPerformance => 'Performance';

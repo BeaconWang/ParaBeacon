@@ -997,6 +997,7 @@
   "flightsLookingUpSites": "Looking up site names…",
   "flightsNoPlaceNames": "No place names found for these coordinates.",
   "flightsSiteNamesUpdated": "Site names updated.",
+  "flightsSiteNamesKept": "Existing site names were kept.",
   "flightsLookupFailed": "Lookup failed: {error}",
   "@flightsLookupFailed": {
     "placeholders": { "error": { "type": "String" } }
@@ -1089,6 +1090,10 @@
   "flightDetailTakeoff": "Takeoff",
   "flightDetailLanding": "Landing",
   "flightDetailPilot": "Pilot",
+  "flightDetailEditNames": "Edit names",
+  "flightNamesDialogTitle": "Edit flight names",
+  "flightDetailTakeoffSite": "Takeoff site",
+  "flightDetailLandingSite": "Landing site",
   "flightDetailPerformance": "Performance",
   "flightDetailStraightDistance": "Straight distance",
   "flightDetailXcDistance": "XC distance",

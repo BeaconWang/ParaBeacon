@@ -912,6 +912,7 @@
   "flightsLookingUpSites": "正在查询地名……",
   "flightsNoPlaceNames": "未找到这些坐标对应的地名。",
   "flightsSiteNamesUpdated": "地名已更新。",
+  "flightsSiteNamesKept": "已保留现有地名。",
   "flightsLookupFailed": "查询失败：{error}",
 
 
@@ -976,6 +977,10 @@
   "flightDetailTakeoff": "起飞",
   "flightDetailLanding": "降落",
   "flightDetailPilot": "飞行员",
+  "flightDetailEditNames": "编辑名称",
+  "flightNamesDialogTitle": "编辑飞行名称",
+  "flightDetailTakeoffSite": "起飞地点",
+  "flightDetailLandingSite": "降落地点",
   "flightDetailPerformance": "性能",
   "flightDetailStraightDistance": "直线距离",
   "flightDetailXcDistance": "越野距离",

@@ -999,8 +999,8 @@ class FlightRecorder extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Persists in-place edits to a logged [track]'s optional metadata (aircraft
-  /// and reverse-geocoded site names) and notifies listeners.
+  /// Persists in-place edits to a logged [track]'s optional metadata (aircraft,
+  /// pilot name, and site names) and notifies listeners.
   /// No-op if the track isn't in the log.
   void persistTrackMeta(FlightTrack track) {
     if (!_tracks.contains(track)) return;

@@ -2539,6 +2539,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsSiteNamesUpdated => '地名已更新。';
 
   @override
+  String get flightsSiteNamesKept => '已保留现有地名。';
+
+  @override
   String flightsLookupFailed(String error) {
     return '查询失败：$error';
   }
@@ -2700,6 +2703,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get flightDetailPilot => '飞行员';
+
+  @override
+  String get flightDetailEditNames => '编辑名称';
+
+  @override
+  String get flightNamesDialogTitle => '编辑飞行名称';
+
+  @override
+  String get flightDetailTakeoffSite => '起飞地点';
+
+  @override
+  String get flightDetailLandingSite => '降落地点';
 
   @override
   String get flightDetailPerformance => '性能';

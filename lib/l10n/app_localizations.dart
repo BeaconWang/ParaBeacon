@@ -5024,6 +5024,12 @@ abstract class AppLocalizations {
   /// **'Site names updated.'**
   String get flightsSiteNamesUpdated;
 
+  /// No description provided for @flightsSiteNamesKept.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing site names were kept.'**
+  String get flightsSiteNamesKept;
+
   /// No description provided for @flightsLookupFailed.
   ///
   /// In en, this message translates to:
@@ -5311,6 +5317,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pilot'**
   String get flightDetailPilot;
+
+  /// No description provided for @flightDetailEditNames.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit names'**
+  String get flightDetailEditNames;
+
+  /// No description provided for @flightNamesDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit flight names'**
+  String get flightNamesDialogTitle;
+
+  /// No description provided for @flightDetailTakeoffSite.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeoff site'**
+  String get flightDetailTakeoffSite;
+
+  /// No description provided for @flightDetailLandingSite.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing site'**
+  String get flightDetailLandingSite;
 
   /// No description provided for @flightDetailPerformance.
   ///

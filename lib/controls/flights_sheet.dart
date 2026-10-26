@@ -489,16 +489,103 @@ class _FlightsSheetState extends State<_FlightsSheet> {
         fixes.last.data.latitude,
         fixes.last.data.longitude,
       );
-      if (takeoff != null) track.takeoffSite = takeoff;
-      if (landing != null) track.landingSite = landing;
-      _recorder.persistTrackMeta(track);
+      final updateTakeoff =
+          takeoff != null && (track.takeoffSite?.trim().isEmpty ?? true);
+      final updateLanding =
+          landing != null && (track.landingSite?.trim().isEmpty ?? true);
+      if (updateTakeoff) track.takeoffSite = takeoff;
+      if (updateLanding) track.landingSite = landing;
+      if (updateTakeoff || updateLanding) {
+        _recorder.persistTrackMeta(track);
+      }
       _snack(
         takeoff == null && landing == null
             ? l10n.flightsNoPlaceNames
-            : l10n.flightsSiteNamesUpdated,
+            : updateTakeoff || updateLanding
+            ? l10n.flightsSiteNamesUpdated
+            : l10n.flightsSiteNamesKept,
       );
     } catch (e) {
       _snack(l10n.flightsLookupFailed('$e'));
+    }
+  }
+
+  Future<void> _editFlightNames(FlightTrack track) async {
+    final l10n = AppLocalizations.of(context);
+    final pilotController = TextEditingController(text: track.pilotName ?? '');
+    final takeoffController = TextEditingController(
+      text: track.takeoffSite ?? '',
+    );
+    final landingController = TextEditingController(
+      text: track.landingSite ?? '',
+    );
+    try {
+      final values = await showDialog<List<String>>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.flightNamesDialogTitle),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: pilotController,
+                  maxLength: 120,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: l10n.flightDetailPilot,
+                  ),
+                ),
+                TextField(
+                  controller: takeoffController,
+                  maxLength: 120,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: l10n.flightDetailTakeoffSite,
+                  ),
+                ),
+                TextField(
+                  controller: landingController,
+                  maxLength: 120,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: l10n.flightDetailLandingSite,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop([
+                pilotController.text,
+                takeoffController.text,
+                landingController.text,
+              ]),
+              child: Text(l10n.save),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || values == null) return;
+      String? normalize(String value) {
+        final trimmed = value.trim();
+        return trimmed.isEmpty ? null : trimmed;
+      }
+
+      track
+        ..pilotName = normalize(values[0])
+        ..takeoffSite = normalize(values[1])
+        ..landingSite = normalize(values[2]);
+      _recorder.persistTrackMeta(track);
+    } finally {
+      pilotController.dispose();
+      takeoffController.dispose();
+      landingController.dispose();
     }
   }
 
@@ -1114,6 +1201,17 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                               _detailRow(l10n.flightDetailLanding, landing),
                           ];
                         }(),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () async {
+                              await _editFlightNames(track);
+                              setDialogState(() {});
+                            },
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            label: Text(l10n.flightDetailEditNames),
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         _sectionLabel(theme, l10n.flightDetailAltitude),
                         _detailRow(
@@ -1491,10 +1589,9 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final track
-                        in List<FlightTrack>.of(selectedTracks)..sort(
-                          (a, b) => b.startTime.compareTo(a.startTime),
-                        ))
+                    for (final track in List<FlightTrack>.of(
+                      selectedTracks,
+                    )..sort((a, b) => b.startTime.compareTo(a.startTime)))
                       Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: _deleteTargetCard(track),

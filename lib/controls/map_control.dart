@@ -753,7 +753,7 @@ class _MapControlState extends State<MapControl> {
           point: _shift(widget.selectionMarker!, widget.tileSource),
           width: 48,
           height: 48,
-          alignment: Alignment.bottomCenter,
+          alignment: Alignment.topCenter,
           child: Icon(
             Icons.location_pin,
             color: theme.colorScheme.error,

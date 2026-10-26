@@ -173,11 +173,17 @@ class FlightTrack {
       aircraftTrimSpeedKmh != null ||
       aircraftGoalGlideRatio != null;
 
-  /// Equipment names used for this flight (free text). Any of these may be
-  /// null / empty when the pilot hasn't recorded them.
-  String? gliderName;
-  String? harnessName;
-  String? helmetName;
+  /// Human-readable aircraft for this flight: manufacturer + model, falling
+  /// back to the stored aircraft name. Null when nothing identifies it.
+  String? get aircraftLabel {
+    final makeAndModel = [
+      aircraftManufacturer?.trim() ?? '',
+      aircraftModel?.trim() ?? '',
+    ].where((value) => value.isNotEmpty).join(' ');
+    if (makeAndModel.isNotEmpty) return makeAndModel;
+    final name = aircraftName?.trim();
+    return name == null || name.isEmpty ? null : name;
+  }
 
   /// Reverse-geocoded place names for the launch and landing, when resolved.
   String? takeoffSite;
@@ -265,9 +271,6 @@ class FlightTrack {
       ..aircraftEngineType = pick((t) => t.aircraftEngineType)
       ..aircraftTrimSpeedKmh = pick((t) => t.aircraftTrimSpeedKmh)
       ..aircraftGoalGlideRatio = pick((t) => t.aircraftGoalGlideRatio)
-      ..gliderName = pick((t) => t.gliderName)
-      ..harnessName = pick((t) => t.harnessName)
-      ..helmetName = pick((t) => t.helmetName)
       ..pilotName = pick((t) => t.pilotName);
 
     // Gaps must be known before samples are folded so stats skip them.
@@ -287,12 +290,6 @@ class FlightTrack {
     merged.endTime = merged.samples.last.time;
     return merged;
   }
-
-  /// Whether any equipment field has been recorded.
-  bool get hasEquipment =>
-      (gliderName?.isNotEmpty ?? false) ||
-      (harnessName?.isNotEmpty ?? false) ||
-      (helmetName?.isNotEmpty ?? false);
 
   // ── Incrementally-maintained statistics ────────────────────────────────────
   double _distanceM = 0.0;
@@ -614,9 +611,6 @@ class FlightTrack {
       if (aircraftGoalGlideRatio != null)
         'aircraftGoalGlideRatio': aircraftGoalGlideRatio,
       // Optional post-flight metadata (omitted when unset to keep payloads lean).
-      if (gliderName?.isNotEmpty ?? false) 'gliderName': gliderName,
-      if (harnessName?.isNotEmpty ?? false) 'harnessName': harnessName,
-      if (helmetName?.isNotEmpty ?? false) 'helmetName': helmetName,
       if (takeoffSite?.isNotEmpty ?? false) 'takeoffSite': takeoffSite,
       if (landingSite?.isNotEmpty ?? false) 'landingSite': landingSite,
       if (pilotName?.isNotEmpty ?? false) 'pilotName': pilotName,
@@ -645,9 +639,15 @@ class FlightTrack {
     aircraftTrimSpeedKmh = (json['aircraftTrimSpeedKmh'] as num?)?.toDouble();
     aircraftGoalGlideRatio = (json['aircraftGoalGlideRatio'] as num?)
         ?.toDouble();
-    gliderName = json['gliderName'] as String?;
-    harnessName = json['harnessName'] as String?;
-    helmetName = json['helmetName'] as String?;
+    // Records saved before equipment tracking was removed may only identify
+    // the wing through the legacy free-text glider name; keep it as the
+    // aircraft model. Harness and helmet names are intentionally dropped.
+    final legacyGlider = (json['gliderName'] as String?)?.trim();
+    if (aircraftLabel == null &&
+        legacyGlider != null &&
+        legacyGlider.isNotEmpty) {
+      aircraftModel = legacyGlider;
+    }
     takeoffSite = json['takeoffSite'] as String?;
     landingSite = json['landingSite'] as String?;
     pilotName = json['pilotName'] as String?;
@@ -999,8 +999,8 @@ class FlightRecorder extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Persists in-place edits to a logged [track]'s optional metadata (aircraft,
-  /// equipment names, reverse-geocoded site names) and notifies listeners.
+  /// Persists in-place edits to a logged [track]'s optional metadata (aircraft
+  /// and reverse-geocoded site names) and notifies listeners.
   /// No-op if the track isn't in the log.
   void persistTrackMeta(FlightTrack track) {
     if (!_tracks.contains(track)) return;
@@ -1266,9 +1266,7 @@ class FlightRecorder extends ChangeNotifier {
       ..aircraftTrimSpeedKmh = aircraft.trimSpeedKmh
       ..aircraftGoalGlideRatio = aircraft.goalGlideRatio
       ..startedAutomatically = automaticTakeoff
-      ..endedAutomatically = false
-      // Keep the legacy equipment field aligned with the same takeoff snapshot.
-      ..gliderName = aircraft.displayName;
+      ..endedAutomatically = false;
     _lastStored = null;
     return false;
   }

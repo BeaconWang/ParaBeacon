@@ -78,7 +78,8 @@ void main() {
 
       final track = IgcImportService.instance.parseString(content)!;
       expect(track.pilotName, 'Sample Pilot');
-      expect(track.gliderName, 'Test Wing');
+      expect(track.aircraftModel, 'Test Wing');
+      expect(track.aircraftLabel, 'Test Wing');
       expect(track.takeoffSite, 'Launch Ridge');
       expect(track.takeoffAltitude, 2000);
       expect(track.landingAltitude, 2010);

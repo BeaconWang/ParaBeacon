@@ -804,25 +804,6 @@ class FlightShareCardService {
       );
     }
 
-    final equipment = <(String, String)>[
-      if (track.gliderName?.isNotEmpty ?? false)
-        (l10n.equipmentGlider, track.gliderName!),
-      if (track.harnessName?.isNotEmpty ?? false)
-        (l10n.equipmentHarness, track.harnessName!),
-      if (track.helmetName?.isNotEmpty ?? false)
-        (l10n.equipmentHelmet, track.helmetName!),
-    ];
-    if (equipment.isNotEmpty) {
-      y = _paintMetricSection(
-        canvas,
-        l10n.equipment,
-        equipment,
-        left: 60,
-        top: y,
-        colorScheme: colorScheme,
-      );
-    }
-
     final aircraft = <(String, String)>[
       if (track.aircraftName?.isNotEmpty ?? false)
         (l10n.flightDetailAircraftName, track.aircraftName!),
@@ -969,11 +950,6 @@ class FlightShareCardService {
       );
       counts.addAll([4, 7, 4]);
     }
-    final equipmentCount = [
-      track.gliderName,
-      track.harnessName,
-      track.helmetName,
-    ].where((value) => value?.isNotEmpty ?? false).length;
     final aircraftCount = [
       track.aircraftName?.isNotEmpty ?? false,
       track.aircraftManufacturer?.isNotEmpty ?? false,
@@ -985,7 +961,6 @@ class FlightShareCardService {
       track.aircraftTrimSpeedKmh != null,
       track.aircraftGoalGlideRatio != null,
     ].where((value) => value).length;
-    if (equipmentCount > 0) counts.add(equipmentCount);
     if (aircraftCount > 0) counts.add(aircraftCount);
     final telemetryCount = _telemetryEntries(track, l10n).length;
     if (telemetryCount > 0) counts.add(telemetryCount);

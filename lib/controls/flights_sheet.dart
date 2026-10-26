@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/flight_aircraft_editor.dart';
-import '../data/equipment_store.dart';
 import '../data/flight_derived_stats.dart';
 import '../data/flight_export_service.dart';
 import '../data/flight_library_io.dart';
@@ -71,8 +70,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
   void initState() {
     super.initState();
     _recorder.addListener(_onChanged);
-    // Prime the equipment defaults and geo settings for the editors/actions.
-    EquipmentStore.instance.load();
+    // Prime the geo settings for the site-name actions.
     GeoNameSettings.instance.load();
   }
 
@@ -502,79 +500,6 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     } catch (e) {
       _snack(l10n.flightsLookupFailed('$e'));
     }
-  }
-
-  // ── Equipment editor ─────────────────────────────────────────────────────
-
-  Future<void> _editEquipment(FlightTrack track) async {
-    await EquipmentStore.instance.load();
-    if (!mounted) return;
-    final l10n = AppLocalizations.of(context);
-    final glider = TextEditingController(
-      text: track.gliderName ?? EquipmentStore.instance.glider ?? '',
-    );
-    final harness = TextEditingController(
-      text: track.harnessName ?? EquipmentStore.instance.harness ?? '',
-    );
-    final helmet = TextEditingController(
-      text: track.helmetName ?? EquipmentStore.instance.helmet ?? '',
-    );
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.equipment),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: glider,
-                decoration: InputDecoration(labelText: l10n.equipmentGlider),
-                textCapitalization: TextCapitalization.words,
-              ),
-              TextField(
-                controller: harness,
-                decoration: InputDecoration(labelText: l10n.equipmentHarness),
-                textCapitalization: TextCapitalization.words,
-              ),
-              TextField(
-                controller: helmet,
-                decoration: InputDecoration(labelText: l10n.equipmentHelmet),
-                textCapitalization: TextCapitalization.words,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
-    );
-
-    if (saved != true) return;
-    String? norm(TextEditingController c) {
-      final t = c.text.trim();
-      return t.isEmpty ? null : t;
-    }
-
-    track.gliderName = norm(glider);
-    track.harnessName = norm(harness);
-    track.helmetName = norm(helmet);
-    _recorder.persistTrackMeta(track);
-    // Remember as defaults for the next flight.
-    await EquipmentStore.instance.remember(
-      glider: track.gliderName,
-      harness: track.harnessName,
-      helmet: track.helmetName,
-    );
   }
 
   Future<void> _editAircraft(FlightTrack track) async {
@@ -1273,33 +1198,6 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        _sectionLabel(theme, l10n.equipment),
-                        if (track.hasEquipment) ...[
-                          if (track.gliderName?.isNotEmpty ?? false)
-                            _detailRow(l10n.equipmentGlider, track.gliderName!),
-                          if (track.harnessName?.isNotEmpty ?? false)
-                            _detailRow(
-                              l10n.equipmentHarness,
-                              track.harnessName!,
-                            ),
-                          if (track.helmetName?.isNotEmpty ?? false)
-                            _detailRow(l10n.equipmentHelmet, track.helmetName!),
-                        ],
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: () async {
-                              await _editEquipment(track);
-                              setDialogState(() {});
-                            },
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            label: Text(
-                              track.hasEquipment
-                                  ? l10n.equipmentEdit
-                                  : l10n.equipmentAdd,
-                            ),
-                          ),
-                        ),
                         if (track.hasSamples && stats == null && !statsFailed)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),

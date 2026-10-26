@@ -85,15 +85,8 @@ class FlightExportService {
     );
     b.writeln('HFFXA035');
     b.writeln('HFPLTPILOTINCHARGE:');
-    final configuredAircraft = AircraftSettings.instance.displayName;
-    final trackAircraft = track.gliderName?.trim();
-    final snapshotAircraft = [
-      track.aircraftManufacturer?.trim() ?? '',
-      track.aircraftModel?.trim() ?? '',
-    ].where((value) => value.isNotEmpty).join(' ');
-    final aircraftType = trackAircraft == null || trackAircraft.isEmpty
-        ? (snapshotAircraft.isEmpty ? configuredAircraft : snapshotAircraft)
-        : trackAircraft;
+    final aircraftType =
+        track.aircraftLabel ?? AircraftSettings.instance.displayName;
     b.writeln('HFGTYGLIDERTYPE:${_igcHeaderValue(aircraftType)}');
     b.writeln('HFDTMGPSDATUM:WGS84');
     b.writeln('HFRFWFIRMWAREVERSION:1.0');

@@ -305,7 +305,8 @@ class IgcImportService {
     }
 
     track.endTime = fixes.last.time;
-    if (gliderType != null) track.gliderName = gliderType;
+    // The IGC glider type header identifies the aircraft model.
+    if (gliderType != null) track.aircraftModel = gliderType;
     if (pilot != null) track.pilotName = pilot;
     if (takeoffSite != null) track.takeoffSite = takeoffSite;
     return track;

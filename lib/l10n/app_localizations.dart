@@ -4976,42 +4976,6 @@ abstract class AppLocalizations {
   /// **'Lookup failed: {error}'**
   String flightsLookupFailed(String error);
 
-  /// No description provided for @equipment.
-  ///
-  /// In en, this message translates to:
-  /// **'Equipment'**
-  String get equipment;
-
-  /// No description provided for @equipmentGlider.
-  ///
-  /// In en, this message translates to:
-  /// **'Glider'**
-  String get equipmentGlider;
-
-  /// No description provided for @equipmentHarness.
-  ///
-  /// In en, this message translates to:
-  /// **'Harness'**
-  String get equipmentHarness;
-
-  /// No description provided for @equipmentHelmet.
-  ///
-  /// In en, this message translates to:
-  /// **'Helmet'**
-  String get equipmentHelmet;
-
-  /// No description provided for @equipmentEdit.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit equipment'**
-  String get equipmentEdit;
-
-  /// No description provided for @equipmentAdd.
-  ///
-  /// In en, this message translates to:
-  /// **'Add equipment'**
-  String get equipmentAdd;
-
   /// No description provided for @placeNameLookup.
   ///
   /// In en, this message translates to:

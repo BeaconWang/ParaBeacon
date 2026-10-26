@@ -2609,24 +2609,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get equipment => 'Equipment';
-
-  @override
-  String get equipmentGlider => 'Glider';
-
-  @override
-  String get equipmentHarness => 'Harness';
-
-  @override
-  String get equipmentHelmet => 'Helmet';
-
-  @override
-  String get equipmentEdit => 'Edit equipment';
-
-  @override
-  String get equipmentAdd => 'Add equipment';
-
-  @override
   String get placeNameLookup => 'Place-name lookup';
 
   @override

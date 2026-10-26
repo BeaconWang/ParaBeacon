@@ -20,7 +20,7 @@ import 'flight_recorder.dart';
 /// this project's model. The report mirrors the share card's completeness: a
 /// track-map and altitude-profile visual plus every headline, distance,
 /// altitude and performance metric from [FlightDerivedStats], followed by the
-/// recorded sites, equipment and aircraft configuration.
+/// recorded sites and aircraft configuration.
 class FlightReportService {
   FlightReportService._();
   static final FlightReportService instance = FlightReportService._();
@@ -55,15 +55,6 @@ class FlightReportService {
       [l10n.flightDetailDistance, _km(track.distanceM)],
       if (takeoff != null) [l10n.flightDetailTakeoff, takeoff],
       if (landing != null) [l10n.flightDetailLanding, landing],
-    ];
-
-    final equipRows = <List<String>>[
-      if (track.gliderName?.isNotEmpty ?? false)
-        [l10n.equipmentGlider, track.gliderName!],
-      if (track.harnessName?.isNotEmpty ?? false)
-        [l10n.equipmentHarness, track.harnessName!],
-      if (track.helmetName?.isNotEmpty ?? false)
-        [l10n.equipmentHelmet, track.helmetName!],
     ];
 
     final aircraftRows = <List<String>>[
@@ -386,11 +377,6 @@ class FlightReportService {
                 [l10n.flightDetailSinkTime, _fmtDuration(stats.sinkTime)],
                 [l10n.flightDetailMovingTime, _fmtDuration(stats.movingTime)],
               ]),
-            ],
-            if (equipRows.isNotEmpty) ...[
-              pw.SizedBox(height: 12),
-              _section(l10n.equipment),
-              _table(equipRows),
             ],
             if (aircraftRows.isNotEmpty) ...[
               pw.SizedBox(height: 12),

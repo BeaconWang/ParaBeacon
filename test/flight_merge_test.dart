@@ -101,13 +101,15 @@ void main() {
 
     test('rejects different wings and pilots, ignores missing values', () {
       final a = _track(base)
-        ..gliderName = 'Ozone Rush 6'
+        ..aircraftManufacturer = 'Ozone'
+        ..aircraftModel = 'Rush 6'
         ..pilotName = 'Alice';
       final b = _track(
         a.lastRecordedTime.add(const Duration(minutes: 5)),
         lat: 46.5 + 4 * 0.001,
       )
-        ..gliderName = 'Advance Iota 2'
+        ..aircraftManufacturer = 'Advance'
+        ..aircraftModel = 'Iota 2'
         ..pilotName = 'Bob';
       final kinds = FlightMergeValidator.check([
         a,
@@ -122,7 +124,9 @@ void main() {
       );
 
       b
-        ..gliderName = ' ozone  rush 6 '
+        ..aircraftManufacturer = null
+        ..aircraftModel = null
+        ..aircraftName = ' ozone  rush 6 '
         ..pilotName = null;
       expect(FlightMergeValidator.check([a, b]).canMerge, isTrue);
     });
@@ -175,7 +179,7 @@ void main() {
         ..takeoffSite = 'Launch A'
         ..landingSite = 'Landing A'
         ..startedAutomatically = true
-        ..gliderName = 'Rush 6';
+        ..aircraftModel = 'Rush 6';
       final b = _track(
         a.lastRecordedTime.add(const Duration(minutes: 20)),
         lat: 46.5 + 4 * 0.001 + 2 * _degPerKm,
@@ -184,7 +188,7 @@ void main() {
         ..takeoffSite = 'Launch B'
         ..landingSite = 'Landing B'
         ..endedAutomatically = true
-        ..harnessName = 'Lightness 3';
+        ..aircraftManufacturer = 'Ozone';
 
       final merged = FlightTrack.merge([a, b]);
       expect(merged.samples, hasLength(10));
@@ -199,8 +203,8 @@ void main() {
       expect(merged.landingSite, 'Landing B');
       expect(merged.startedAutomatically, isTrue);
       expect(merged.endedAutomatically, isTrue);
-      expect(merged.gliderName, 'Rush 6');
-      expect(merged.harnessName, 'Lightness 3');
+      expect(merged.aircraftModel, 'Rush 6');
+      expect(merged.aircraftManufacturer, 'Ozone');
       expect(merged.maxAltitude, a.maxAltitude);
       expect(merged.minAltitude, b.minAltitude);
 
@@ -215,6 +219,26 @@ void main() {
       expect(restored.distanceM, closeTo(merged.distanceM, 1e-9));
       final summary = FlightTrack.fromSummaryJson(merged.toSummaryJson())!;
       expect(summary.dataGaps, merged.dataGaps);
+    });
+
+    test('legacy glider name migrates to the aircraft model', () {
+      final source = _track(base);
+      final legacy = source.toJson()
+        ..['gliderName'] = 'Ozone Rush 6'
+        ..['harnessName'] = 'Lightness 3'
+        ..['helmetName'] = 'Kortel';
+      final restored = FlightTrack.fromJson(legacy)!;
+      expect(restored.aircraftModel, 'Ozone Rush 6');
+      expect(restored.aircraftLabel, 'Ozone Rush 6');
+      final saved = restored.toJson();
+      expect(saved.containsKey('gliderName'), isFalse);
+      expect(saved.containsKey('harnessName'), isFalse);
+      expect(saved.containsKey('helmetName'), isFalse);
+
+      // An existing aircraft snapshot wins over the legacy free text.
+      final withAircraft = (_track(base)..aircraftModel = 'Iota 2').toJson()
+        ..['gliderName'] = 'Something else';
+      expect(FlightTrack.fromJson(withAircraft)!.aircraftModel, 'Iota 2');
     });
 
     test('trimming drops gaps outside the kept range', () {

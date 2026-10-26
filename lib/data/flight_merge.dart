@@ -230,20 +230,8 @@ class FlightMergeValidator {
     return FlightMergeCheck(ordered: ordered, issues: issues);
   }
 
-  /// The wing used for [track], or null when none was recorded. The legacy
-  /// glider name (set for live recordings and IGC imports) is preferred, then
-  /// the aircraft snapshot.
-  static String? aircraftLabel(FlightTrack track) {
-    final glider = _nonEmpty(track.gliderName);
-    if (glider != null) return glider;
-    final model = _nonEmpty(
-      [
-        track.aircraftManufacturer?.trim() ?? '',
-        track.aircraftModel?.trim() ?? '',
-      ].where((part) => part.isNotEmpty).join(' '),
-    );
-    return model ?? _nonEmpty(track.aircraftName);
-  }
+  /// The aircraft flown on [track], or null when none was recorded.
+  static String? aircraftLabel(FlightTrack track) => track.aircraftLabel;
 
   static FlightSample? _firstFix(FlightTrack track) {
     for (final sample in track.samples) {

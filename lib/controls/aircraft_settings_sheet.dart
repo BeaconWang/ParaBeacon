@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../data/aircraft_settings.dart';
-import '../data/equipment_store.dart';
 import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
 
@@ -89,14 +88,6 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
       engineType: _engineType,
       trimSpeedKmh: trimSpeed,
       goalGlideRatio: goalGlideRatio,
-    );
-    // Keep the existing flight equipment editor aligned with the active
-    // aircraft, while preserving harness and helmet defaults.
-    await EquipmentStore.instance.load();
-    await EquipmentStore.instance.remember(
-      glider: settings.displayName,
-      harness: EquipmentStore.instance.harness,
-      helmet: EquipmentStore.instance.helmet,
     );
     if (mounted) Navigator.of(context).pop();
   }

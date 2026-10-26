@@ -2515,24 +2515,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get equipment => '装备';
-
-  @override
-  String get equipmentGlider => '伞具';
-
-  @override
-  String get equipmentHarness => '座袋';
-
-  @override
-  String get equipmentHelmet => '头盔';
-
-  @override
-  String get equipmentEdit => '编辑装备';
-
-  @override
-  String get equipmentAdd => '添加装备';
-
-  @override
   String get placeNameLookup => '地名查询';
 
   @override

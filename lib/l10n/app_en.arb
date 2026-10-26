@@ -988,12 +988,6 @@
     "placeholders": { "error": { "type": "String" } }
   },
 
-  "equipment": "Equipment",
-  "equipmentGlider": "Glider",
-  "equipmentHarness": "Harness",
-  "equipmentHelmet": "Helmet",
-  "equipmentEdit": "Edit equipment",
-  "equipmentAdd": "Add equipment",
 
   "placeNameLookup": "Place-name lookup",
   "placeNameLookupDescription": "Reverse-geocode takeoff/landing coordinates to place names using the AMap (AutoNavi) web service. Requests only ever go to restapi.amap.com.",

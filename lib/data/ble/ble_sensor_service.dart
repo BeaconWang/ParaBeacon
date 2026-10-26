@@ -41,6 +41,17 @@ class BleSensorService extends ChangeNotifier {
   static const _maxReconnectAttempts = 5;
   static const _reconnectBaseDelayMs = 1000;
 
+  /// How long a link may stay "connected but completely silent" (no bytes at
+  /// all) after we subscribe before we auto-recover it. On expiry we first
+  /// re-arm notifications and, if that still yields nothing, force a full
+  /// reconnect — the programmatic equivalent of toggling the system Bluetooth,
+  /// which users previously had to do by hand to get data flowing again.
+  static const _dataWatchdogTimeout = Duration(seconds: 10);
+
+  /// How many times we silently re-arm notifications before escalating to a
+  /// full reconnect.
+  static const _maxSilentResubscribes = 2;
+
   /// Whether this platform has a real BLE implementation (iOS/Android only).
   bool get supported => BleSupport.isSupported;
 
@@ -97,6 +108,11 @@ class BleSensorService extends ChangeNotifier {
 
   bool _initialized = false;
   int _reconnectAttempts = 0;
+
+  // Watchdog that detects a "connected but no data" link and auto-recovers it.
+  Timer? _dataWatchdog;
+  bool _sawDataThisConnection = false;
+  int _silentResubscribes = 0;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   Future<void> init() async {
@@ -252,6 +268,9 @@ class BleSensorService extends ChangeNotifier {
         _reconnectAttempts = 0;
         await _onConnected();
       } else if (s == BluetoothConnectionState.disconnected) {
+        _dataWatchdog?.cancel();
+        _dataWatchdog = null;
+        _silentResubscribes = 0;
         _cancelValueSubs();
         _lineBuffer.clear();
         readings = SensorReadings.empty();
@@ -297,15 +316,19 @@ class BleSensorService extends ChangeNotifier {
       final services = await dev.discoverServices();
       _cancelValueSubs();
 
+      var notifyCount = 0;
+      var subscribed = 0;
       for (final service in services) {
         for (final c in service.characteristics) {
           final props = c.properties;
           if (props.notify || props.indicate) {
+            notifyCount++;
             try {
               final sub =
                   c.onValueReceived.listen((value) => _handleValue(c, value));
               _valueSubs.add(sub);
               await c.setNotifyValue(true);
+              subscribed++;
             } catch (e) {
               debugPrint('BleSensorService: subscribe ${c.uuid.str} failed: $e');
             }
@@ -318,15 +341,33 @@ class BleSensorService extends ChangeNotifier {
           }
         }
       }
+
+      // Only watch links that are supposed to stream. A one-shot battery read
+      // above does not count as the stream being alive, so clear the flag here
+      // (after the loop) and let genuine notifications satisfy the watchdog.
+      // If we couldn't arm a single notification, recover promptly; otherwise
+      // give real data a chance to arrive before declaring the link dead.
+      if (notifyCount > 0) {
+        _sawDataThisConnection = false;
+        _kickDataWatchdog(
+          subscribed == 0 ? const Duration(seconds: 2) : _dataWatchdogTimeout,
+        );
+      }
     } catch (e) {
       error = 'Service discovery failed: $e';
       notifyListeners();
+      // Discovery failed on a live link — treat it as silent and recover.
+      if (isConnected) _kickDataWatchdog(const Duration(seconds: 2));
     }
   }
 
   // ── Decode ────────────────────────────────────────────────────────────────
   void _handleValue(BluetoothCharacteristic c, List<int> value) {
     if (value.isEmpty) return;
+
+    // Any byte arriving proves the link is alive and streaming — stop the
+    // silence watchdog and reset the recovery counter.
+    _onDataArrived();
 
     // 1) Standard GATT binary characteristics.
     if (BleUuids.same(c.uuid, BleUuids.batteryLevel)) {
@@ -369,6 +410,51 @@ class BleSensorService extends ChangeNotifier {
     readings = readings.merge(r);
     if (!_readingsCtrl.isClosed) _readingsCtrl.add(readings);
     notifyListeners();
+  }
+
+  // ── Data watchdog (auto-recover a "connected but silent" link) ──────────────
+  void _onDataArrived() {
+    _sawDataThisConnection = true;
+    _silentResubscribes = 0;
+    _dataWatchdog?.cancel();
+    _dataWatchdog = null;
+  }
+
+  void _kickDataWatchdog(Duration timeout) {
+    _dataWatchdog?.cancel();
+    _dataWatchdog = Timer(timeout, _onDataWatchdogTimeout);
+  }
+
+  /// Fires when a connected link produced no data within the allotted time.
+  /// First it re-discovers services and re-arms notifications (cheap); if that
+  /// still yields nothing it forces a full reconnect, mirroring the manual
+  /// "toggle Bluetooth, then reconnect" workaround.
+  Future<void> _onDataWatchdogTimeout() async {
+    _dataWatchdog = null;
+    // Data showed up in the meantime, or we're no longer meant to be running.
+    if (_sawDataThisConnection || !_enabled || !isConnected) return;
+    final dev = _device;
+    if (dev == null) return;
+
+    if (_silentResubscribes < _maxSilentResubscribes) {
+      _silentResubscribes++;
+      debugPrint('BleSensorService: connected but no data — re-arming '
+          'notifications (attempt $_silentResubscribes).');
+      // Re-discover + re-subscribe without dropping the link; this also
+      // re-kicks the watchdog so we keep checking.
+      await _onConnected();
+      return;
+    }
+
+    // Still silent after re-arming: force a full reconnect.
+    debugPrint('BleSensorService: still no data after re-arming — '
+        'forcing a reconnect.');
+    _silentResubscribes = 0;
+    // Dropping the link makes the connectionState listener observe the
+    // disconnect and trigger the normal reconnect path.
+    try {
+      await dev.disconnect();
+    } catch (_) {}
   }
 
   // ── Auto-reconnect ─────────────────────────────────────────────────────────
@@ -433,6 +519,9 @@ class BleSensorService extends ChangeNotifier {
   }
 
   Future<void> _teardownConnection() async {
+    _dataWatchdog?.cancel();
+    _dataWatchdog = null;
+    _silentResubscribes = 0;
     _cancelValueSubs();
     await _connSub?.cancel();
     _connSub = null;
@@ -461,6 +550,7 @@ class BleSensorService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _dataWatchdog?.cancel();
     _adapterSub?.cancel();
     _scanSub?.cancel();
     _isScanningSub?.cancel();

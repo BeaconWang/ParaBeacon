@@ -3026,6 +3026,118 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsDeleteSelectedMessage => '选中的飞行记录将被永久删除，此操作无法撤销。';
 
   @override
+  String get flightsMerge => '合并飞行记录';
+
+  @override
+  String flightsMergeTitle(int count) {
+    return '合并 $count 条飞行记录？';
+  }
+
+  @override
+  String flightsMergeMessage(String start, String end) {
+    return '选中的飞行将合并为一条记录（$start 至 $end）。航班之间的时间将保留为数据缺失时段，并在回放和 3D 回放中标出。原记录将被替换，此操作无法撤销。';
+  }
+
+  @override
+  String get flightsMergeConfirm => '合并';
+
+  @override
+  String get flightsMergeDone => '已合并为一条飞行记录。';
+
+  @override
+  String get flightsMergeNotPossibleTitle => '无法合并这些飞行记录';
+
+  @override
+  String flightsMergeConditions(int minutes, String km) {
+    return '合并条件：飞行需前后相连，从降落到下一次起飞不超过 $minutes 分钟、距离不超过 $km 公里，且使用同一翼型、同一飞行员。';
+  }
+
+  @override
+  String get flightsMergeIssueTooFew => '请至少选择 2 条飞行记录进行合并。';
+
+  @override
+  String flightsMergeIssueRecording(String flight) {
+    return '飞行 $flight 仍在记录中。';
+  }
+
+  @override
+  String flightsMergeIssueNotInLog(String flight) {
+    return '飞行 $flight 已不在飞行记录中。';
+  }
+
+  @override
+  String flightsMergeIssueNoSamples(String flight) {
+    return '飞行 $flight 没有 GPS 轨迹数据。';
+  }
+
+  @override
+  String flightsMergeIssueNoFix(String flight) {
+    return '飞行 $flight 没有有效的 GPS 定位。';
+  }
+
+  @override
+  String flightsMergeIssueOverlap(
+    String first,
+    String second,
+    String duration,
+  ) {
+    return '$first → $second：两次飞行时间重叠 $duration。';
+  }
+
+  @override
+  String flightsMergeIssueGap(
+    String first,
+    String second,
+    String duration,
+    String max,
+  ) {
+    return '$first → $second：降落到下一次起飞间隔 $duration（上限 $max）。';
+  }
+
+  @override
+  String flightsMergeIssueDistance(
+    String first,
+    String second,
+    String distance,
+    String max,
+  ) {
+    return '$first → $second：降落点距离下一次起飞点 $distance 公里（上限 $max 公里）。';
+  }
+
+  @override
+  String flightsMergeIssueAircraft(
+    String first,
+    String second,
+    String previous,
+    String next,
+  ) {
+    return '$first → $second：翼型不同（$previous / $next）。';
+  }
+
+  @override
+  String flightsMergeIssuePilot(
+    String first,
+    String second,
+    String previous,
+    String next,
+  ) {
+    return '$first → $second：飞行员不同（$previous / $next）。';
+  }
+
+  @override
+  String replayDataGapBanner(String start, String end, String duration) {
+    return '无数据 $start – $end（$duration）';
+  }
+
+  @override
+  String replayDataGapSummary(int count, String total) {
+    return '$count 段数据缺失 · $total';
+  }
+
+  @override
+  String get replayDataGapNoData => '无数据';
+
+  @override
   String get replayTitle => '回放';
 
   @override

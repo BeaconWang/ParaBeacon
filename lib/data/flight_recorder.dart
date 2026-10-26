@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'aircraft_settings.dart';
 import 'auto_flight_detector.dart';
 import 'flight_data.dart';
+import 'flight_merge.dart';
 import 'flight_state.dart';
 import 'flight_store.dart';
 import 'flight_timestamp.dart';
@@ -43,6 +44,42 @@ class FlightSample {
         : FlightData.empty;
     return FlightSample(time: t, data: data);
   }
+}
+
+/// A period inside a flight track with no recorded data, e.g. the ground time
+/// between two flights that were merged into one record. [start] is the last
+/// sample before the gap and [end] the first sample after it.
+@immutable
+class FlightDataGap {
+  const FlightDataGap({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  Duration get duration => end.difference(start);
+
+  /// Whether [time] lies strictly inside the missing-data period.
+  bool contains(DateTime time) => time.isAfter(start) && time.isBefore(end);
+
+  Map<String, dynamic> toJson() => {
+    's': flightTimestampMilliseconds(start),
+    'e': flightTimestampMilliseconds(end),
+  };
+
+  static FlightDataGap? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final start = parseFlightTimestamp(json['s']);
+    final end = parseFlightTimestamp(json['e']);
+    if (start == null || end == null || !end.isAfter(start)) return null;
+    return FlightDataGap(start: start, end: end);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlightDataGap && other.start == start && other.end == end;
+
+  @override
+  int get hashCode => Object.hash(start, end);
 }
 
 /// A completed or in-progress flight track: the ordered samples plus rolling
@@ -153,6 +190,103 @@ class FlightTrack {
   /// All recorded samples (full snapshots), in chronological order. Empty for
   /// tracks restored from a persisted summary.
   final List<FlightSample> samples = [];
+
+  final List<FlightDataGap> _dataGaps = [];
+
+  /// Periods without recorded data (currently created by merging flights),
+  /// in chronological order. Distance and vario statistics never span them.
+  List<FlightDataGap> get dataGaps => List.unmodifiable(_dataGaps);
+
+  bool get hasDataGaps => _dataGaps.isNotEmpty;
+
+  /// Whether the step from a sample at [from] to one at [to] spans a gap.
+  bool crossesDataGap(DateTime from, DateTime to) {
+    for (final gap in _dataGaps) {
+      if (!from.isAfter(gap.start) && !to.isBefore(gap.end)) return true;
+    }
+    return false;
+  }
+
+  /// The gap containing [time], if any.
+  FlightDataGap? dataGapAt(DateTime time) {
+    for (final gap in _dataGaps) {
+      if (gap.contains(time)) return gap;
+    }
+    return null;
+  }
+
+  void _setDataGaps(Iterable<FlightDataGap> gaps) {
+    final sorted = gaps.toSet().toList()
+      ..sort((a, b) => a.start.compareTo(b.start));
+    _dataGaps
+      ..clear()
+      ..addAll(sorted);
+  }
+
+  static List<FlightDataGap> _parseDataGaps(Object? json) {
+    if (json is! List) return const [];
+    return [for (final item in json) ?FlightDataGap.fromJson(item)];
+  }
+
+  /// Builds one track from chronologically ordered, non-overlapping [ordered]
+  /// tracks that all carry samples. The time between consecutive tracks is
+  /// recorded as a [FlightDataGap]; statistics are rebuilt from the samples
+  /// and never span a gap. Validation is the caller's responsibility (see
+  /// `FlightMergeValidator`).
+  factory FlightTrack.merge(List<FlightTrack> ordered) {
+    if (ordered.length < 2 || ordered.any((t) => !t.hasSamples)) {
+      throw ArgumentError('At least two tracks with samples are required.');
+    }
+    final first = ordered.first;
+    final last = ordered.last;
+    final merged = FlightTrack(startTime: first.samples.first.time)
+      ..startedAutomatically = first.startedAutomatically
+      ..endedAutomatically = last.endedAutomatically
+      ..takeoffSite = first.takeoffSite
+      ..landingSite = last.landingSite;
+
+    T? pick<T>(T? Function(FlightTrack t) read) {
+      for (final track in ordered) {
+        final value = read(track);
+        if (value == null) continue;
+        if (value is String && value.trim().isEmpty) continue;
+        return value;
+      }
+      return null;
+    }
+
+    merged
+      ..aircraftFaiClass = pick((t) => t.aircraftFaiClass)
+      ..aircraftManufacturer = pick((t) => t.aircraftManufacturer)
+      ..aircraftModel = pick((t) => t.aircraftModel)
+      ..aircraftName = pick((t) => t.aircraftName)
+      ..aircraftCategory = pick((t) => t.aircraftCategory)
+      ..aircraftTandem = pick((t) => t.aircraftTandem)
+      ..aircraftEngineType = pick((t) => t.aircraftEngineType)
+      ..aircraftTrimSpeedKmh = pick((t) => t.aircraftTrimSpeedKmh)
+      ..aircraftGoalGlideRatio = pick((t) => t.aircraftGoalGlideRatio)
+      ..gliderName = pick((t) => t.gliderName)
+      ..harnessName = pick((t) => t.harnessName)
+      ..helmetName = pick((t) => t.helmetName)
+      ..pilotName = pick((t) => t.pilotName);
+
+    // Gaps must be known before samples are folded so stats skip them.
+    merged._setDataGaps([
+      for (final track in ordered) ...track._dataGaps,
+      for (var i = 1; i < ordered.length; i++)
+        FlightDataGap(
+          start: ordered[i - 1].samples.last.time,
+          end: ordered[i].samples.first.time,
+        ),
+    ]);
+    for (final track in ordered) {
+      for (final sample in track.samples) {
+        merged.add(sample);
+      }
+    }
+    merged.endTime = merged.samples.last.time;
+    return merged;
+  }
 
   /// Whether any equipment field has been recorded.
   bool get hasEquipment =>
@@ -292,6 +426,13 @@ class FlightTrack {
     _persistedPointCount = null;
     if (trimmedBeginning) takeoffSite = null;
     if (trimmedEnd) landingSite = null;
+    _setDataGaps(
+      _dataGaps.where(
+        (gap) =>
+            !gap.start.isBefore(retained.first.time) &&
+            !gap.end.isAfter(retained.last.time),
+      ),
+    );
 
     for (final sample in retained) {
       add(sample);
@@ -318,6 +459,20 @@ class FlightTrack {
 
     final chronological = prev == null || s.time.isAfter(prev.time);
     if (!chronological) return;
+
+    if (prev != null &&
+        _dataGaps.isNotEmpty &&
+        crossesDataGap(prev.time, s.time)) {
+      // No data was recorded across the gap: neither distance nor vario
+      // windows may bridge it.
+      _lastFixSample = null;
+      _gpsVarioWindowStart = null;
+      _gpsVarioWindowPreviousAltitude = null;
+      _gpsVarioWindowChange = 0.0;
+      _baroVarioWindowStart = null;
+      _baroVarioWindowPreviousAltitude = null;
+      _baroVarioWindowChange = 0.0;
+    }
 
     final alt = s.data.gpsAltitude ?? s.data.altitude;
     _maxAltGainM ??= 0.0;
@@ -471,6 +626,8 @@ class FlightTrack {
       if (_landingLon != null) 'landingLon': _landingLon,
       if (_takeoffAltitude != null) 'takeoffAlt': _takeoffAltitude,
       if (_landingAltitude != null) 'landingAlt': _landingAltitude,
+      if (_dataGaps.isNotEmpty)
+        'dataGaps': [for (final gap in _dataGaps) gap.toJson()],
     };
   }
 
@@ -500,6 +657,7 @@ class FlightTrack {
     _landingLon = (json['landingLon'] as num?)?.toDouble();
     _takeoffAltitude = (json['takeoffAlt'] as num?)?.toDouble();
     _landingAltitude = (json['landingAlt'] as num?)?.toDouble();
+    _setDataGaps(_parseDataGaps(json['dataGaps']));
     _elevationDropM ??= _takeoffAltitude != null && _landingAltitude != null
         ? _takeoffAltitude! - _landingAltitude!
         : null;
@@ -557,7 +715,8 @@ class FlightTrack {
     final start = parseFlightTimestamp(json['startTime']);
     if (start == null) return null;
 
-    final track = FlightTrack(startTime: start);
+    final track = FlightTrack(startTime: start)
+      .._setDataGaps(_parseDataGaps(json['dataGaps']));
     for (final s in samplesJson) {
       if (s is Map<String, dynamic>) {
         final sample = FlightSample.fromJson(s);
@@ -777,6 +936,43 @@ class FlightRecorder extends ChangeNotifier {
     FlightStore.instance.save(_tracks);
     notifyListeners();
     return true;
+  }
+
+  /// Checks whether [tracks] can be merged (see [FlightMergeValidator]).
+  FlightMergeCheck checkMerge(Iterable<FlightTrack> tracks) =>
+      FlightMergeValidator.check(
+        tracks,
+        recording: _current,
+        isLogged: _tracks.contains,
+      );
+
+  /// Merges [tracks] into a single record that replaces them in the log. The
+  /// time between consecutive flights is kept as a [FlightDataGap]. Nothing
+  /// changes when validation fails; the returned check lists every reason.
+  FlightMergeResult mergeTracks(Iterable<FlightTrack> tracks) {
+    final check = checkMerge(tracks);
+    if (!check.canMerge) return FlightMergeResult(check: check);
+
+    final merged = FlightTrack.merge(check.ordered);
+    for (final track in check.ordered) {
+      _tracks.remove(track);
+      if (identical(_quickRelaunchTrack, track)) {
+        _quickRelaunchTrack = null;
+        _quickRelaunchAt = null;
+        _quickRelaunchTrackDiscarded = false;
+      }
+    }
+    _tracks
+      ..add(merged)
+      ..sort((a, b) => b.startTime.compareTo(a.startTime));
+    if (_lastCompleted == null ||
+        !_tracks.contains(_lastCompleted) ||
+        check.ordered.contains(_lastCompleted)) {
+      _lastCompleted = _tracks.first;
+    }
+    FlightStore.instance.save(_tracks);
+    notifyListeners();
+    return FlightMergeResult(check: check, merged: merged);
   }
 
   /// Clears the entire flight log.

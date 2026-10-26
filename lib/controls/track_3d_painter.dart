@@ -189,6 +189,9 @@ class Track3DPainter extends CustomPainter {
     required this.geometryCache,
     required this.gridColor,
     required this.background,
+    this.gapAfterIndices = const <int>{},
+    this.cursorInGap = false,
+    this.gapColor = const Color(0xFFFF9800),
   });
 
   final List<FlightSample> samples;
@@ -199,6 +202,14 @@ class Track3DPainter extends CustomPainter {
   final Track3DGeometryCache geometryCache;
   final Color gridColor;
   final Color background;
+
+  /// Sample indices whose segment from the previous sample spans a
+  /// missing-data period. Those segments are drawn as dashed gap connectors.
+  final Set<int> gapAfterIndices;
+
+  /// Whether the playback cursor is currently inside a missing-data period.
+  final bool cursorInGap;
+  final Color gapColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -242,11 +253,11 @@ class Track3DPainter extends CustomPainter {
       );
     }
 
-    // ── 6. Ground shadow polyline. ─────────────────────────────────────────
+    // ── 6. Ground shadow polyline (broken at missing-data periods). ────────
     final shadowPath = Path();
     for (var i = 0; i < groundProjected.length; i++) {
       final s = toScreen(groundProjected[i]);
-      if (i == 0) {
+      if (i == 0 || gapAfterIndices.contains(i)) {
         shadowPath.moveTo(s.dx, s.dy);
       } else {
         shadowPath.lineTo(s.dx, s.dy);
@@ -260,8 +271,23 @@ class Track3DPainter extends CustomPainter {
         ..color = gridColor,
     );
 
-    // ── 7. The 3D track, colored by vario. ─────────────────────────────────
+    // ── 7. The 3D track, colored by vario; gaps are dashed connectors. ────
+    final gapPaint = Paint()
+      ..color = gapColor
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
     for (var i = 1; i < projected.length; i++) {
+      if (gapAfterIndices.contains(i)) {
+        _drawDashed(
+          canvas,
+          toScreen(projected[i - 1]),
+          toScreen(projected[i]),
+          gapPaint,
+        );
+        canvas.drawCircle(toScreen(projected[i - 1]), 4, gapPaint);
+        canvas.drawCircle(toScreen(projected[i]), 4, gapPaint);
+        continue;
+      }
       final v = samples[i].data.verticalSpeed;
       final paint = Paint()
         ..color = _varioColor(v)
@@ -281,18 +307,34 @@ class Track3DPainter extends CustomPainter {
     canvas.drawCircle(toScreen(projected.last), 5, endPaint);
 
     final ci = cursorIndex.clamp(0, projected.length - 1);
+    final cursorColor = cursorInGap ? gapColor : Colors.blueAccent;
     final cursor = toScreen(projected[ci]);
     canvas.drawCircle(cursor, 8, Paint()..color = Colors.white.withAlpha(220));
-    canvas.drawCircle(cursor, 5, Paint()..color = Colors.blueAccent);
+    canvas.drawCircle(cursor, 5, Paint()..color = cursorColor);
 
     // A single point-mode dot ensures the cursor is crisp on all backends.
     canvas.drawPoints(
       PointMode.points,
       [cursor],
       Paint()
-        ..color = Colors.blueAccent
+        ..color = cursorColor
         ..strokeWidth = 2,
     );
+  }
+
+  static void _drawDashed(Canvas canvas, Offset a, Offset b, Paint paint) {
+    const dash = 7.0;
+    const space = 5.0;
+    final delta = b - a;
+    final length = delta.distance;
+    if (length < 1) return;
+    final dir = delta / length;
+    var t = 0.0;
+    while (t < length) {
+      final end = math.min(t + dash, length);
+      canvas.drawLine(a + dir * t, a + dir * end, paint);
+      t = end + space;
+    }
   }
 
   /// Vario → color ramp: strong sink (blue) → neutral (grey) → strong lift
@@ -315,6 +357,8 @@ class Track3DPainter extends CustomPainter {
         old.pitch != pitch ||
         old.zScale != zScale ||
         old.cursorIndex != cursorIndex ||
+        old.cursorInGap != cursorInGap ||
+        old.gapAfterIndices != gapAfterIndices ||
         old.gridColor != gridColor ||
         old.background != background;
   }

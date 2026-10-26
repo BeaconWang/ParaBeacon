@@ -13,6 +13,7 @@ import '../data/map_tile_cache.dart';
 import '../data/offline_tiles_service.dart';
 import '../l10n/app_localizations.dart';
 import 'map_control.dart' show MapTileSources, MapTileSource;
+import 'replay_gaps.dart';
 
 /// Opens the flight replay screen for a completed [track] as a full-screen
 /// sheet (feature 6: replay — animated playback on the map with optional
@@ -95,6 +96,15 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
   /// The samples we replay, captured once so the list can't change under us.
   late final List<FlightSample> _samples;
   late final List<double> _sampleOffsetsMs;
+
+  /// Missing-data periods (e.g. ground time between merged flights).
+  late final List<ReplayGap> _gaps;
+
+  /// Sample indices whose step from the previous sample spans a gap.
+  late final Set<int> _gapAfterIndices;
+  static final StrokePattern _gapPattern = StrokePattern.dashed(
+    segments: const [8, 6],
+  );
   List<LatLng>? _cachedTrackPoints;
   String? _cachedTrackPointsSourceId;
   List<Polyline>? _cachedTrackPolylines;
@@ -116,6 +126,8 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
       1.0,
       _sampleOffsetsMs.isEmpty ? 0.0 : _sampleOffsetsMs.last,
     );
+    _gaps = replayGapsFor(widget.track, _samples);
+    _gapAfterIndices = {for (final gap in _gaps) gap.afterIndex};
     _computeExtrema();
     _ticker = createTicker(_onTick);
     OfflineTilesService.instance.revision.addListener(_onOfflineTilesChanged);
@@ -191,7 +203,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
     final startMs = _trimMode ? _trimStartMs : 0.0;
     final endMs = _trimMode ? _trimEndMs : _spanMs;
-    var next = _cursorMs + dtMs * _speed;
+    var next = _cursorMs + dtMs * replaySpeedAt(_gaps, _cursorMs, _speed);
     if (_trimMode && next < startMs) next = startMs;
     if (next >= endMs) {
       _setCursor(endMs);
@@ -305,7 +317,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     setState(() => _cursorMs = ms.clamp(0.0, _spanMs));
     if (_audioSync && _playing) {
       VarioAudioService.instance.setPreviewSpeed(
-        _currentSample().data.verticalSpeed,
+        replayGapAt(_gaps, _cursorMs) != null
+            ? 0.0
+            : _currentSample().data.verticalSpeed,
       );
     }
     if (_currentIndex() != previousIndex) _followCursor();
@@ -410,6 +424,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     final center = _firstFix() ?? _shift(const LatLng(46.5197, 6.6323));
     final cur = _currentSample();
     final hasFix = cur.data.hasFix;
+    final activeGap = replayGapAt(_gaps, _cursorMs);
 
     return SafeArea(
       child: Column(
@@ -534,7 +549,9 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                               height: 34,
                               child: _CursorMarker(
                                 heading: cur.data.heading,
-                                color: theme.colorScheme.primary,
+                                color: activeGap != null
+                                    ? replayGapColor
+                                    : theme.colorScheme.primary,
                               ),
                             ),
                           ],
@@ -542,6 +559,15 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                     ],
                   ),
                 ),
+                if (activeGap != null)
+                  Positioned(
+                    top: 8,
+                    left: 0,
+                    right: 0,
+                    child: IgnorePointer(
+                      child: Center(child: ReplayGapBanner(gap: activeGap)),
+                    ),
+                  ),
                 // Telemetry follows the current replay sample on every tick/seek.
                 if (_showTelemetry)
                   LayoutBuilder(
@@ -563,6 +589,10 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
             _AltitudeProfile(
               samples: _samples,
               cursorIndex: _currentIndex(),
+              cursorFraction: (_cursorMs / _spanMs).clamp(0.0, 1.0),
+              gaps: _gaps,
+              gapAfterIndices: _gapAfterIndices,
+              spanMs: _spanMs,
               minAlt: _minAlt,
               maxAlt: _maxAlt,
               lineColor: theme.colorScheme.primary,
@@ -1016,6 +1046,8 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
               trimRange: _trimRange,
               cursorFraction: (_cursorMs / _spanMs).clamp(0.0, 1.0),
               spanMs: _spanMs,
+              gaps: _gaps,
+              gapAfterIndices: _gapAfterIndices,
               minAlt: _minAlt,
               maxAlt: _maxAlt,
               backgroundColor: theme.colorScheme.surfaceContainerHighest,
@@ -1080,16 +1112,22 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
               children: [
                 Text(_fmt(elapsed), style: theme.textTheme.labelMedium),
                 Expanded(
-                  child: Slider(
-                    value: _spanMs <= 0 ? 0 : _cursorMs.clamp(0.0, _spanMs),
-                    max: _spanMs,
-                    // Scrubbing keeps the current play/pause state.
-                    onChanged: canReplay ? _setCursor : null,
+                  child: replayGapSlider(
+                    context: context,
+                    gaps: _gaps,
+                    spanMs: _spanMs,
+                    slider: Slider(
+                      value: _spanMs <= 0 ? 0 : _cursorMs.clamp(0.0, _spanMs),
+                      max: _spanMs,
+                      // Scrubbing keeps the current play/pause state.
+                      onChanged: canReplay ? _setCursor : null,
+                    ),
                   ),
                 ),
                 Text(_fmt(total), style: theme.textTheme.labelMedium),
               ],
             ),
+            ReplayGapSummary(gaps: _gaps),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -1198,8 +1236,11 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
 
     final points = _trackPoints();
     final out = <Polyline>[];
-    int runStart = 0;
-    Color runColor = _segmentColor(1, dimmed: 1 > curIdx);
+    int runStart = _gapAfterIndices.contains(1) ? 1 : 0;
+    Color runColor = _segmentColor(
+      runStart + 1 < _samples.length ? runStart + 1 : runStart,
+      dimmed: runStart + 1 > curIdx,
+    );
 
     void flush(int endExclusive) {
       if (endExclusive - runStart < 2) return;
@@ -1213,14 +1254,42 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     }
 
     for (int i = 2; i < _samples.length; i++) {
+      if (_gapAfterIndices.contains(i)) {
+        // Never draw a track line across a missing-data period.
+        flush(i);
+        runStart = i;
+        runColor = _segmentColor(
+          math.min(i + 1, _samples.length - 1),
+          dimmed: i + 1 > curIdx,
+        );
+        continue;
+      }
       final c = _segmentColor(i, dimmed: i > curIdx);
-      if (c != runColor) {
+      if (c != runColor && i - 1 > runStart) {
         flush(i);
         runStart = i - 1; // share the endpoint for visual continuity
+        runColor = c;
+      } else if (c != runColor) {
         runColor = c;
       }
     }
     flush(_samples.length);
+    // Dashed connectors mark where data is missing between two fixes.
+    for (final gap in _gaps) {
+      final before = _samples[gap.afterIndex - 1];
+      final after = _samples[gap.afterIndex];
+      if (!before.data.hasFix || !after.data.hasFix) continue;
+      out.add(
+        Polyline(
+          points: [points[gap.afterIndex - 1], points[gap.afterIndex]],
+          strokeWidth: 3,
+          color: gap.afterIndex > curIdx
+              ? replayGapColor.withAlpha(110)
+              : replayGapColor,
+          pattern: _gapPattern,
+        ),
+      );
+    }
     _cachedTrackPolylines = out;
     _cachedPolylineCursorIndex = curIdx;
     _cachedPolylineColorMode = _colorMode;
@@ -1312,6 +1381,10 @@ class _AltitudeProfile extends StatelessWidget {
   const _AltitudeProfile({
     required this.samples,
     required this.cursorIndex,
+    required this.cursorFraction,
+    required this.gaps,
+    required this.gapAfterIndices,
+    required this.spanMs,
     required this.minAlt,
     required this.maxAlt,
     required this.lineColor,
@@ -1323,6 +1396,10 @@ class _AltitudeProfile extends StatelessWidget {
 
   final List<FlightSample> samples;
   final int cursorIndex;
+  final double cursorFraction;
+  final List<ReplayGap> gaps;
+  final Set<int> gapAfterIndices;
+  final double spanMs;
   final double minAlt;
   final double maxAlt;
   final Color lineColor;
@@ -1354,6 +1431,9 @@ class _AltitudeProfile extends StatelessWidget {
                   child: CustomPaint(
                     painter: _AltitudeProfilePainter(
                       samples: samples,
+                      gaps: gaps,
+                      gapAfterIndices: gapAfterIndices,
+                      spanMs: spanMs,
                       minAlt: minAlt,
                       maxAlt: maxAlt,
                       lineColor: lineColor,
@@ -1366,6 +1446,8 @@ class _AltitudeProfile extends StatelessWidget {
                   painter: _AltitudeCursorPainter(
                     samples: samples,
                     cursorIndex: cursorIndex,
+                    cursorFraction: cursorFraction,
+                    inGap: replayGapAt(gaps, cursorFraction * spanMs) != null,
                     minAlt: minAlt,
                     maxAlt: maxAlt,
                     cursorColor: cursorColor,
@@ -1383,6 +1465,9 @@ class _AltitudeProfile extends StatelessWidget {
 class _AltitudeProfilePainter extends CustomPainter {
   _AltitudeProfilePainter({
     required this.samples,
+    required this.gaps,
+    required this.gapAfterIndices,
+    required this.spanMs,
     required this.minAlt,
     required this.maxAlt,
     required this.lineColor,
@@ -1391,6 +1476,9 @@ class _AltitudeProfilePainter extends CustomPainter {
   });
 
   final List<FlightSample> samples;
+  final List<ReplayGap> gaps;
+  final Set<int> gapAfterIndices;
+  final double spanMs;
   final double minAlt;
   final double maxAlt;
   final Color lineColor;
@@ -1427,31 +1515,54 @@ class _AltitudeProfilePainter extends CustomPainter {
         ..strokeWidth = 1,
     );
 
-    final area = Path()..moveTo(0, padTop + h);
-    for (final point in points) {
-      area.lineTo(point.dx, point.dy);
-    }
-    area
-      ..lineTo(size.width, padTop + h)
-      ..close();
-    canvas.drawPath(area, Paint()..color = fillColor);
-
-    final line = Path()..moveTo(points.first.dx, points.first.dy);
-    for (final point in points.skip(1)) {
-      line.lineTo(point.dx, point.dy);
-    }
-    canvas.drawPath(
-      line,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..color = lineColor,
+    paintReplayGapBands(
+      canvas,
+      gaps: gaps,
+      spanMs: totalMs,
+      left: 0,
+      right: size.width,
+      top: 0,
+      bottom: size.height,
     );
+
+    // One filled area + line per contiguous run; runs break at data gaps.
+    final linePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..color = lineColor;
+    final areaPaint = Paint()..color = fillColor;
+    var runStart = 0;
+    void drawRun(int endExclusive) {
+      if (endExclusive - runStart < 1) return;
+      final first = points[runStart];
+      final last = points[endExclusive - 1];
+      final area = Path()..moveTo(first.dx, padTop + h);
+      final line = Path()..moveTo(first.dx, first.dy);
+      for (var i = runStart; i < endExclusive; i++) {
+        area.lineTo(points[i].dx, points[i].dy);
+        if (i > runStart) line.lineTo(points[i].dx, points[i].dy);
+      }
+      area
+        ..lineTo(last.dx, padTop + h)
+        ..close();
+      canvas.drawPath(area, areaPaint);
+      canvas.drawPath(line, linePaint);
+    }
+
+    for (var i = 1; i < points.length; i++) {
+      if (gapAfterIndices.contains(i)) {
+        drawRun(i);
+        runStart = i;
+      }
+    }
+    drawRun(points.length);
   }
 
   @override
   bool shouldRepaint(covariant _AltitudeProfilePainter old) {
     return old.samples != samples ||
+        old.gaps != gaps ||
+        old.spanMs != spanMs ||
         old.minAlt != minAlt ||
         old.maxAlt != maxAlt ||
         old.lineColor != lineColor ||
@@ -1464,6 +1575,8 @@ class _AltitudeCursorPainter extends CustomPainter {
   const _AltitudeCursorPainter({
     required this.samples,
     required this.cursorIndex,
+    required this.cursorFraction,
+    required this.inGap,
     required this.minAlt,
     required this.maxAlt,
     required this.cursorColor,
@@ -1471,6 +1584,8 @@ class _AltitudeCursorPainter extends CustomPainter {
 
   final List<FlightSample> samples;
   final int cursorIndex;
+  final double cursorFraction;
+  final bool inGap;
   final double minAlt;
   final double maxAlt;
   final Color cursorColor;
@@ -1488,22 +1603,27 @@ class _AltitudeCursorPainter extends CustomPainter {
         .toDouble();
     final index = cursorIndex.clamp(0, samples.length - 1);
     final sample = samples[index];
-    final x =
-        (sample.time.difference(t0).inMilliseconds / totalMs) * size.width;
-    final norm = (sample.data.altitude - minAlt) / span;
-    final y = padTop + h * (1.0 - norm.clamp(0.0, 1.0));
-    final point = Offset(x, y);
+    // Inside a gap the cursor keeps moving with time but has no altitude.
+    final x = inGap
+        ? cursorFraction.clamp(0.0, 1.0) * size.width
+        : (sample.time.difference(t0).inMilliseconds / totalMs) * size.width;
+    final color = inGap ? replayGapColor : cursorColor;
     final paint = Paint()
-      ..color = cursorColor
+      ..color = color
       ..strokeWidth = 1.5;
     canvas.drawLine(Offset(x, padTop), Offset(x, padTop + h), paint);
-    canvas.drawCircle(point, 3.5, Paint()..color = cursorColor);
+    if (inGap) return;
+    final norm = (sample.data.altitude - minAlt) / span;
+    final y = padTop + h * (1.0 - norm.clamp(0.0, 1.0));
+    canvas.drawCircle(Offset(x, y), 3.5, Paint()..color = color);
   }
 
   @override
   bool shouldRepaint(covariant _AltitudeCursorPainter old) =>
       old.samples != samples ||
       old.cursorIndex != cursorIndex ||
+      old.cursorFraction != cursorFraction ||
+      old.inGap != inGap ||
       old.minAlt != minAlt ||
       old.maxAlt != maxAlt ||
       old.cursorColor != cursorColor;
@@ -1517,6 +1637,8 @@ class _ReplayTrimTimeline extends StatefulWidget {
     required this.trimRange,
     required this.cursorFraction,
     required this.spanMs,
+    required this.gaps,
+    required this.gapAfterIndices,
     required this.minAlt,
     required this.maxAlt,
     required this.backgroundColor,
@@ -1530,6 +1652,8 @@ class _ReplayTrimTimeline extends StatefulWidget {
   final RangeValues trimRange;
   final double cursorFraction;
   final double spanMs;
+  final List<ReplayGap> gaps;
+  final Set<int> gapAfterIndices;
   final double minAlt;
   final double maxAlt;
   final Color backgroundColor;
@@ -1653,6 +1777,8 @@ class _ReplayTrimTimelineState extends State<_ReplayTrimTimeline> {
                       samples: widget.samples,
                       trimRange: widget.trimRange,
                       spanMs: widget.spanMs,
+                      gaps: widget.gaps,
+                      gapAfterIndices: widget.gapAfterIndices,
                       minAlt: widget.minAlt,
                       maxAlt: widget.maxAlt,
                       backgroundColor: widget.backgroundColor,
@@ -1694,6 +1820,8 @@ class _ReplayTrimTimelinePainter extends CustomPainter {
     required this.samples,
     required this.trimRange,
     required this.spanMs,
+    required this.gaps,
+    required this.gapAfterIndices,
     required this.minAlt,
     required this.maxAlt,
     required this.backgroundColor,
@@ -1704,6 +1832,8 @@ class _ReplayTrimTimelinePainter extends CustomPainter {
   final List<FlightSample> samples;
   final RangeValues trimRange;
   final double spanMs;
+  final List<ReplayGap> gaps;
+  final Set<int> gapAfterIndices;
   final double minAlt;
   final double maxAlt;
   final Color backgroundColor;
@@ -1770,28 +1900,47 @@ class _ReplayTrimTimelinePainter extends CustomPainter {
       );
     }
 
-    final area = Path()..moveTo(points.first.dx, timeline.bottom);
-    for (final point in points) {
-      area.lineTo(point.dx, point.dy);
-    }
-    area
-      ..lineTo(points.last.dx, timeline.bottom)
-      ..close();
-    canvas.drawPath(area, Paint()..color = profileColor.withAlpha(65));
-
-    final profile = Path()..moveTo(points.first.dx, points.first.dy);
-    for (final point in points.skip(1)) {
-      profile.lineTo(point.dx, point.dy);
-    }
-    canvas.drawPath(
-      profile,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..color = profileColor,
+    paintReplayGapBands(
+      canvas,
+      gaps: gaps,
+      spanMs: spanMs,
+      left: timeline.left,
+      right: timeline.right,
+      top: timeline.top,
+      bottom: timeline.bottom,
     );
+
+    final profileFill = Paint()..color = profileColor.withAlpha(65);
+    final profileStroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = profileColor;
+    var runStart = 0;
+    void drawRun(int endExclusive) {
+      if (endExclusive - runStart < 1) return;
+      final area = Path()..moveTo(points[runStart].dx, timeline.bottom);
+      final profile = Path()
+        ..moveTo(points[runStart].dx, points[runStart].dy);
+      for (var i = runStart; i < endExclusive; i++) {
+        area.lineTo(points[i].dx, points[i].dy);
+        if (i > runStart) profile.lineTo(points[i].dx, points[i].dy);
+      }
+      area
+        ..lineTo(points[endExclusive - 1].dx, timeline.bottom)
+        ..close();
+      canvas.drawPath(area, profileFill);
+      canvas.drawPath(profile, profileStroke);
+    }
+
+    for (var i = 1; i < points.length; i++) {
+      if (gapAfterIndices.contains(i)) {
+        drawRun(i);
+        runStart = i;
+      }
+    }
+    drawRun(points.length);
 
     final outsidePaint = Paint()..color = Colors.black.withAlpha(92);
     if (startX > timeline.left) {
@@ -1855,6 +2004,7 @@ class _ReplayTrimTimelinePainter extends CustomPainter {
     return old.samples != samples ||
         old.trimRange != trimRange ||
         old.spanMs != spanMs ||
+        old.gaps != gaps ||
         old.minAlt != minAlt ||
         old.maxAlt != maxAlt ||
         old.backgroundColor != backgroundColor ||

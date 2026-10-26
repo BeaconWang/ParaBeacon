@@ -7,6 +7,7 @@ import '../audio/vario_audio_service.dart';
 import '../data/flight_data.dart';
 import '../data/flight_recorder.dart';
 import '../l10n/app_localizations.dart';
+import 'replay_gaps.dart';
 import 'track_3d_painter.dart';
 
 /// Opens a 3D replay of a completed [track] as a full-screen sheet.
@@ -45,6 +46,10 @@ class _Track3DSheetState extends State<_Track3DSheet>
   late final Track3DGeometryCache _geometryCache;
   late final Ticker _ticker;
 
+  /// Missing-data periods (e.g. ground time between merged flights).
+  late final List<ReplayGap> _gaps;
+  late final Set<int> _gapAfterIndices;
+
   // Camera orientation.
   double _yaw = -0.6; // radians, around the vertical (Z) axis
   double _pitch = 0.9; // radians, tilt toward the horizon
@@ -72,6 +77,8 @@ class _Track3DSheetState extends State<_Track3DSheet>
       _sampleOffsetsMs.isEmpty ? 0.0 : _sampleOffsetsMs.last,
     );
     _geometryCache = Track3DGeometryCache(_samples);
+    _gaps = replayGapsFor(widget.track, _samples);
+    _gapAfterIndices = {for (final gap in _gaps) gap.afterIndex};
     _ticker = createTicker(_onTick);
   }
 
@@ -90,7 +97,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
     if (last == null) return;
     final dtMs = (elapsed - last).inMicroseconds / 1000.0;
     if (dtMs <= 0) return;
-    final next = _cursorMs + dtMs * _speed;
+    final next = _cursorMs + dtMs * replaySpeedAt(_gaps, _cursorMs, _speed);
     if (next >= _spanMs) {
       _setCursor(_spanMs);
       _pause();
@@ -137,7 +144,9 @@ class _Track3DSheetState extends State<_Track3DSheet>
     setState(() => _cursorMs = ms.clamp(0.0, _spanMs));
     if (_audioSync && _playing) {
       VarioAudioService.instance.setPreviewSpeed(
-        _currentSample().data.verticalSpeed,
+        replayGapAt(_gaps, _cursorMs) != null
+            ? 0.0
+            : _currentSample().data.verticalSpeed,
       );
     }
   }
@@ -177,6 +186,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
     final l10n = AppLocalizations.of(context);
     final canReplay = _samples.length >= 2;
     final cur = _currentSample();
+    final activeGap = replayGapAt(_gaps, _cursorMs);
 
     return SafeArea(
       child: Column(
@@ -212,49 +222,73 @@ class _Track3DSheetState extends State<_Track3DSheet>
           ),
           const Divider(height: 1),
           Expanded(
-            child: _GestureCanvas(
-              yaw: _yaw,
-              pitch: _pitch,
-              zScale: _zScale,
-              samples: _samples,
-              cursorIndex: _currentIndex(),
-              geometryCache: _geometryCache,
-              onOrbit: (dx, dy) => setState(() {
-                _yaw += dx * 0.01;
-                _pitch = (_pitch + dy * 0.01).clamp(0.15, 1.45);
-              }),
-              onZoom: (factor) => setState(() {
-                _zScale = (_zScale * factor).clamp(0.1, 3.0);
-              }),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: _GestureCanvas(
+                    yaw: _yaw,
+                    pitch: _pitch,
+                    zScale: _zScale,
+                    samples: _samples,
+                    cursorIndex: _currentIndex(),
+                    geometryCache: _geometryCache,
+                    gapAfterIndices: _gapAfterIndices,
+                    cursorInGap: activeGap != null,
+                    onOrbit: (dx, dy) => setState(() {
+                      _yaw += dx * 0.01;
+                      _pitch = (_pitch + dy * 0.01).clamp(0.15, 1.45);
+                    }),
+                    onZoom: (factor) => setState(() {
+                      _zScale = (_zScale * factor).clamp(0.1, 3.0);
+                    }),
+                  ),
+                ),
+                if (activeGap != null)
+                  Positioned(
+                    top: 8,
+                    left: 0,
+                    right: 0,
+                    child: IgnorePointer(
+                      child: Center(child: ReplayGapBanner(gap: activeGap)),
+                    ),
+                  ),
+              ],
             ),
           ),
           const Divider(height: 1),
-          _readout(theme, cur),
+          _readout(theme, cur, inGap: activeGap != null),
           _controls(theme, canReplay),
         ],
       ),
     );
   }
 
-  Widget _readout(ThemeData theme, FlightSample s) {
+  Widget _readout(ThemeData theme, FlightSample s, {bool inGap = false}) {
     final l10n = AppLocalizations.of(context);
     final d = s.data;
     final v = d.verticalSpeed;
+    final noData = l10n.replayDataGapNoData;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _stat(theme, l10n.replay3dStatAlt, '${d.altitude.round()} m'),
+          _stat(
+            theme,
+            l10n.replay3dStatAlt,
+            inGap ? noData : '${d.altitude.round()} m',
+          ),
           _stat(
             theme,
             l10n.replay3dStatSpd,
-            '${d.groundSpeed.toStringAsFixed(0)} km/h',
+            inGap ? noData : '${d.groundSpeed.toStringAsFixed(0)} km/h',
           ),
           _stat(
             theme,
             l10n.replay3dStatVario,
-            '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)} m/s',
+            inGap
+                ? noData
+                : '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)} m/s',
           ),
         ],
       ),
@@ -289,16 +323,22 @@ class _Track3DSheetState extends State<_Track3DSheet>
             children: [
               Text(_fmt(elapsed), style: theme.textTheme.labelMedium),
               Expanded(
-                child: Slider(
-                  value: _spanMs <= 0 ? 0 : _cursorMs.clamp(0.0, _spanMs),
-                  max: _spanMs,
-                  // Scrubbing keeps the current play/pause state.
-                  onChanged: canReplay ? _setCursor : null,
+                child: replayGapSlider(
+                  context: context,
+                  gaps: _gaps,
+                  spanMs: _spanMs,
+                  slider: Slider(
+                    value: _spanMs <= 0 ? 0 : _cursorMs.clamp(0.0, _spanMs),
+                    max: _spanMs,
+                    // Scrubbing keeps the current play/pause state.
+                    onChanged: canReplay ? _setCursor : null,
+                  ),
                 ),
               ),
               Text(_fmt(total), style: theme.textTheme.labelMedium),
             ],
           ),
+          ReplayGapSummary(gaps: _gaps),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -368,6 +408,8 @@ class _GestureCanvas extends StatefulWidget {
     required this.samples,
     required this.cursorIndex,
     required this.geometryCache,
+    required this.gapAfterIndices,
+    required this.cursorInGap,
     required this.onOrbit,
     required this.onZoom,
   });
@@ -378,6 +420,8 @@ class _GestureCanvas extends StatefulWidget {
   final List<FlightSample> samples;
   final int cursorIndex;
   final Track3DGeometryCache geometryCache;
+  final Set<int> gapAfterIndices;
+  final bool cursorInGap;
   final void Function(double dx, double dy) onOrbit;
   final void Function(double factor) onZoom;
 
@@ -410,6 +454,9 @@ class _GestureCanvasState extends State<_GestureCanvas> {
           zScale: widget.zScale,
           cursorIndex: widget.cursorIndex,
           geometryCache: widget.geometryCache,
+          gapAfterIndices: widget.gapAfterIndices,
+          cursorInGap: widget.cursorInGap,
+          gapColor: replayGapColor,
           gridColor: theme.colorScheme.onSurface.withAlpha(64),
           background: theme.colorScheme.surface,
         ),

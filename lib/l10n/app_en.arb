@@ -1227,6 +1227,105 @@
     }
   },
   "flightsDeleteSelectedMessage": "The selected flight records will be permanently deleted. This cannot be undone.",
+  "flightsMerge": "Merge flights",
+  "flightsMergeTitle": "Merge {count} flights?",
+  "@flightsMergeTitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "flightsMergeMessage": "The selected flights will be combined into one record from {start} to {end}. The time between flights is kept as missing data and is marked in replay and 3D replay. The original records will be replaced. This cannot be undone.",
+  "@flightsMergeMessage": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "flightsMergeConfirm": "Merge",
+  "flightsMergeDone": "Flights merged into one record.",
+  "flightsMergeNotPossibleTitle": "These flights can't be merged",
+  "flightsMergeConditions": "Requirements: consecutive flights, at most {minutes} min and {km} km from landing to the next takeoff, the same wing and the same pilot.",
+  "@flightsMergeConditions": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "km": { "type": "String" }
+    }
+  },
+  "flightsMergeIssueTooFew": "Select at least 2 flights to merge.",
+  "flightsMergeIssueRecording": "Flight {flight} is still being recorded.",
+  "@flightsMergeIssueRecording": {
+    "placeholders": { "flight": { "type": "String" } }
+  },
+  "flightsMergeIssueNotInLog": "Flight {flight} is no longer in the flight log.",
+  "@flightsMergeIssueNotInLog": {
+    "placeholders": { "flight": { "type": "String" } }
+  },
+  "flightsMergeIssueNoSamples": "Flight {flight} has no GPS track data.",
+  "@flightsMergeIssueNoSamples": {
+    "placeholders": { "flight": { "type": "String" } }
+  },
+  "flightsMergeIssueNoFix": "Flight {flight} has no valid GPS fix.",
+  "@flightsMergeIssueNoFix": {
+    "placeholders": { "flight": { "type": "String" } }
+  },
+  "flightsMergeIssueOverlap": "{first} → {second}: the flights overlap by {duration}.",
+  "@flightsMergeIssueOverlap": {
+    "placeholders": {
+      "first": { "type": "String" },
+      "second": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "flightsMergeIssueGap": "{first} → {second}: {duration} between landing and the next takeoff (max {max}).",
+  "@flightsMergeIssueGap": {
+    "placeholders": {
+      "first": { "type": "String" },
+      "second": { "type": "String" },
+      "duration": { "type": "String" },
+      "max": { "type": "String" }
+    }
+  },
+  "flightsMergeIssueDistance": "{first} → {second}: the landing point is {distance} km from the next takeoff (max {max} km).",
+  "@flightsMergeIssueDistance": {
+    "placeholders": {
+      "first": { "type": "String" },
+      "second": { "type": "String" },
+      "distance": { "type": "String" },
+      "max": { "type": "String" }
+    }
+  },
+  "flightsMergeIssueAircraft": "{first} → {second}: different wings ({previous} / {next}).",
+  "@flightsMergeIssueAircraft": {
+    "placeholders": {
+      "first": { "type": "String" },
+      "second": { "type": "String" },
+      "previous": { "type": "String" },
+      "next": { "type": "String" }
+    }
+  },
+  "flightsMergeIssuePilot": "{first} → {second}: different pilots ({previous} / {next}).",
+  "@flightsMergeIssuePilot": {
+    "placeholders": {
+      "first": { "type": "String" },
+      "second": { "type": "String" },
+      "previous": { "type": "String" },
+      "next": { "type": "String" }
+    }
+  },
+  "replayDataGapBanner": "No data {start} – {end} ({duration})",
+  "@replayDataGapBanner": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "replayDataGapSummary": "{count, plural, =1{1 missing-data period} other{{count} missing-data periods}} · {total}",
+  "@replayDataGapSummary": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "total": { "type": "String" }
+    }
+  },
+  "replayDataGapNoData": "No data",
 
   "replayTitle": "Replay",
   "replayColorBy": "Color by",

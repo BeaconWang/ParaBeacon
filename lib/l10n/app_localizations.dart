@@ -5918,6 +5918,146 @@ abstract class AppLocalizations {
   /// **'The selected flight records will be permanently deleted. This cannot be undone.'**
   String get flightsDeleteSelectedMessage;
 
+  /// No description provided for @flightsMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge flights'**
+  String get flightsMerge;
+
+  /// No description provided for @flightsMergeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge {count} flights?'**
+  String flightsMergeTitle(int count);
+
+  /// No description provided for @flightsMergeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected flights will be combined into one record from {start} to {end}. The time between flights is kept as missing data and is marked in replay and 3D replay. The original records will be replaced. This cannot be undone.'**
+  String flightsMergeMessage(String start, String end);
+
+  /// No description provided for @flightsMergeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get flightsMergeConfirm;
+
+  /// No description provided for @flightsMergeDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights merged into one record.'**
+  String get flightsMergeDone;
+
+  /// No description provided for @flightsMergeNotPossibleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'These flights can\'t be merged'**
+  String get flightsMergeNotPossibleTitle;
+
+  /// No description provided for @flightsMergeConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Requirements: consecutive flights, at most {minutes} min and {km} km from landing to the next takeoff, the same wing and the same pilot.'**
+  String flightsMergeConditions(int minutes, String km);
+
+  /// No description provided for @flightsMergeIssueTooFew.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least 2 flights to merge.'**
+  String get flightsMergeIssueTooFew;
+
+  /// No description provided for @flightsMergeIssueRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight {flight} is still being recorded.'**
+  String flightsMergeIssueRecording(String flight);
+
+  /// No description provided for @flightsMergeIssueNotInLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight {flight} is no longer in the flight log.'**
+  String flightsMergeIssueNotInLog(String flight);
+
+  /// No description provided for @flightsMergeIssueNoSamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight {flight} has no GPS track data.'**
+  String flightsMergeIssueNoSamples(String flight);
+
+  /// No description provided for @flightsMergeIssueNoFix.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight {flight} has no valid GPS fix.'**
+  String flightsMergeIssueNoFix(String flight);
+
+  /// No description provided for @flightsMergeIssueOverlap.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} → {second}: the flights overlap by {duration}.'**
+  String flightsMergeIssueOverlap(String first, String second, String duration);
+
+  /// No description provided for @flightsMergeIssueGap.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} → {second}: {duration} between landing and the next takeoff (max {max}).'**
+  String flightsMergeIssueGap(
+    String first,
+    String second,
+    String duration,
+    String max,
+  );
+
+  /// No description provided for @flightsMergeIssueDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} → {second}: the landing point is {distance} km from the next takeoff (max {max} km).'**
+  String flightsMergeIssueDistance(
+    String first,
+    String second,
+    String distance,
+    String max,
+  );
+
+  /// No description provided for @flightsMergeIssueAircraft.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} → {second}: different wings ({previous} / {next}).'**
+  String flightsMergeIssueAircraft(
+    String first,
+    String second,
+    String previous,
+    String next,
+  );
+
+  /// No description provided for @flightsMergeIssuePilot.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} → {second}: different pilots ({previous} / {next}).'**
+  String flightsMergeIssuePilot(
+    String first,
+    String second,
+    String previous,
+    String next,
+  );
+
+  /// No description provided for @replayDataGapBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'No data {start} – {end} ({duration})'**
+  String replayDataGapBanner(String start, String end, String duration);
+
+  /// No description provided for @replayDataGapSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 missing-data period} other{{count} missing-data periods}} · {total}'**
+  String replayDataGapSummary(int count, String total);
+
+  /// No description provided for @replayDataGapNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data'**
+  String get replayDataGapNoData;
+
   /// No description provided for @replayTitle.
   ///
   /// In en, this message translates to:

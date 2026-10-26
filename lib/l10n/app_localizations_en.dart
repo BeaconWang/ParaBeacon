@@ -3128,6 +3128,124 @@ class AppLocalizationsEn extends AppLocalizations {
       'The selected flight records will be permanently deleted. This cannot be undone.';
 
   @override
+  String get flightsMerge => 'Merge flights';
+
+  @override
+  String flightsMergeTitle(int count) {
+    return 'Merge $count flights?';
+  }
+
+  @override
+  String flightsMergeMessage(String start, String end) {
+    return 'The selected flights will be combined into one record from $start to $end. The time between flights is kept as missing data and is marked in replay and 3D replay. The original records will be replaced. This cannot be undone.';
+  }
+
+  @override
+  String get flightsMergeConfirm => 'Merge';
+
+  @override
+  String get flightsMergeDone => 'Flights merged into one record.';
+
+  @override
+  String get flightsMergeNotPossibleTitle => 'These flights can\'t be merged';
+
+  @override
+  String flightsMergeConditions(int minutes, String km) {
+    return 'Requirements: consecutive flights, at most $minutes min and $km km from landing to the next takeoff, the same wing and the same pilot.';
+  }
+
+  @override
+  String get flightsMergeIssueTooFew => 'Select at least 2 flights to merge.';
+
+  @override
+  String flightsMergeIssueRecording(String flight) {
+    return 'Flight $flight is still being recorded.';
+  }
+
+  @override
+  String flightsMergeIssueNotInLog(String flight) {
+    return 'Flight $flight is no longer in the flight log.';
+  }
+
+  @override
+  String flightsMergeIssueNoSamples(String flight) {
+    return 'Flight $flight has no GPS track data.';
+  }
+
+  @override
+  String flightsMergeIssueNoFix(String flight) {
+    return 'Flight $flight has no valid GPS fix.';
+  }
+
+  @override
+  String flightsMergeIssueOverlap(
+    String first,
+    String second,
+    String duration,
+  ) {
+    return '$first → $second: the flights overlap by $duration.';
+  }
+
+  @override
+  String flightsMergeIssueGap(
+    String first,
+    String second,
+    String duration,
+    String max,
+  ) {
+    return '$first → $second: $duration between landing and the next takeoff (max $max).';
+  }
+
+  @override
+  String flightsMergeIssueDistance(
+    String first,
+    String second,
+    String distance,
+    String max,
+  ) {
+    return '$first → $second: the landing point is $distance km from the next takeoff (max $max km).';
+  }
+
+  @override
+  String flightsMergeIssueAircraft(
+    String first,
+    String second,
+    String previous,
+    String next,
+  ) {
+    return '$first → $second: different wings ($previous / $next).';
+  }
+
+  @override
+  String flightsMergeIssuePilot(
+    String first,
+    String second,
+    String previous,
+    String next,
+  ) {
+    return '$first → $second: different pilots ($previous / $next).';
+  }
+
+  @override
+  String replayDataGapBanner(String start, String end, String duration) {
+    return 'No data $start – $end ($duration)';
+  }
+
+  @override
+  String replayDataGapSummary(int count, String total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count missing-data periods',
+      one: '1 missing-data period',
+    );
+    return '$_temp0 · $total';
+  }
+
+  @override
+  String get replayDataGapNoData => 'No data';
+
+  @override
   String get replayTitle => 'Replay';
 
   @override

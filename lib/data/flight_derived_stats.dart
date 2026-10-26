@@ -243,6 +243,8 @@ class FlightDerivedStats {
       final b = s[i];
       final dtMs = b.time.difference(a.time).inMilliseconds;
       if (dtMs <= 0) continue;
+      // Merged flights: nothing was recorded across a data gap.
+      if (track.hasDataGaps && track.crossesDataGap(a.time, b.time)) continue;
       final dt = dtMs / 1000.0;
 
       final stepM = _haversineM(
@@ -320,7 +322,11 @@ class FlightDerivedStats {
     final routes = _bestRoutes(s);
     final straight = routes.vp2M;
 
-    final totalSec = last.time.difference(first.time).inMilliseconds / 1000.0;
+    var totalMs = last.time.difference(first.time).inMilliseconds;
+    for (final gap in track.dataGaps) {
+      totalMs -= gap.duration.inMilliseconds;
+    }
+    final totalSec = math.max(0, totalMs) / 1000.0;
     final avgGs = totalSec > 0 ? (trackDist / totalSec) * 3.6 : 0.0;
 
     return FlightDerivedStats(

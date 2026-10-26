@@ -7,6 +7,7 @@ import '../data/equipment_store.dart';
 import '../data/flight_derived_stats.dart';
 import '../data/flight_export_service.dart';
 import '../data/flight_library_io.dart';
+import '../data/flight_merge.dart';
 import '../data/flight_recorder.dart';
 import '../data/flight_report_service.dart';
 import '../data/flight_share_card_service.dart';
@@ -17,6 +18,7 @@ import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
 import 'flight_replay_sheet.dart';
 import 'flight_statistics_sheet.dart';
+import 'replay_gaps.dart' show formatGapDuration;
 import 'track_3d_sheet.dart';
 
 /// Where imported flights come from (see [_FlightsSheetState._showImportMenu]).
@@ -203,6 +205,12 @@ class _FlightsSheetState extends State<_FlightsSheet> {
           onPressed: _selectedTracks.isEmpty
               ? null
               : () => _exportLibrary(_selectedTracks.toList()),
+        ),
+        IconButton(
+          key: const ValueKey<String>('flights-merge-selected'),
+          icon: const Icon(Icons.merge_type),
+          tooltip: l10n.flightsMerge,
+          onPressed: _selectedTracks.isEmpty ? null : _mergeSelectedTracks,
         ),
         IconButton(
           icon: const Icon(Icons.delete_outline),
@@ -1581,6 +1589,167 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
     _recorder.deleteTracks(selectedTracks);
     if (mounted) _leaveSelectionMode();
+  }
+
+  /// Validates the selection, then either explains why it can't be merged or
+  /// asks for confirmation and merges.
+  Future<void> _mergeSelectedTracks() async {
+    final l10n = AppLocalizations.of(context);
+    final check = _recorder.checkMerge(_selectedTracks);
+    if (!check.canMerge) {
+      await _showMergeIssues(check);
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.flightsMergeTitle(check.ordered.length)),
+        content: Text(
+          l10n.flightsMergeMessage(
+            _fmtDateTime(check.ordered.first.firstRecordedTime),
+            _fmtDateTime(check.ordered.last.lastRecordedTime),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.flightsMergeConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    // Re-validate: the log may have changed while the dialog was open.
+    final result = _recorder.mergeTracks(check.ordered);
+    if (!result.succeeded) {
+      await _showMergeIssues(result.check);
+      return;
+    }
+    if (!mounted) return;
+    _leaveSelectionMode();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.flightsMergeDone)));
+  }
+
+  Future<void> _showMergeIssues(FlightMergeCheck check) {
+    final l10n = AppLocalizations.of(context);
+    final maxKm = (FlightMergeValidator.maxDistanceM / 1000).toStringAsFixed(
+      FlightMergeValidator.maxDistanceM % 1000 == 0 ? 0 : 1,
+    );
+    return showDialog<void>(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          key: const ValueKey<String>('flights-merge-issues'),
+          icon: Icon(Icons.call_split, color: theme.colorScheme.error),
+          title: Text(l10n.flightsMergeNotPossibleTitle),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final issue in check.issues)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Icon(
+                            Icons.error_outline,
+                            size: 18,
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(_mergeIssueText(l10n, issue))),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.flightsMergeConditions(
+                    FlightMergeValidator.maxGap.inMinutes,
+                    maxKm,
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.close),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _mergeIssueText(AppLocalizations l10n, FlightMergeIssue issue) {
+    String label(FlightTrack? track) =>
+        track == null ? '—' : _fmtDateTime(track.firstRecordedTime);
+    final first = label(issue.track);
+    final second = label(issue.next);
+    switch (issue.kind) {
+      case FlightMergeIssueKind.tooFewFlights:
+        return l10n.flightsMergeIssueTooFew;
+      case FlightMergeIssueKind.recording:
+        return l10n.flightsMergeIssueRecording(first);
+      case FlightMergeIssueKind.notInLog:
+        return l10n.flightsMergeIssueNotInLog(first);
+      case FlightMergeIssueKind.noSamples:
+        return l10n.flightsMergeIssueNoSamples(first);
+      case FlightMergeIssueKind.noFix:
+        return l10n.flightsMergeIssueNoFix(first);
+      case FlightMergeIssueKind.overlap:
+        return l10n.flightsMergeIssueOverlap(
+          first,
+          second,
+          formatGapDuration(issue.duration ?? Duration.zero),
+        );
+      case FlightMergeIssueKind.gapTooLong:
+        return l10n.flightsMergeIssueGap(
+          first,
+          second,
+          formatGapDuration(issue.duration ?? Duration.zero),
+          formatGapDuration(FlightMergeValidator.maxGap),
+        );
+      case FlightMergeIssueKind.tooFar:
+        return l10n.flightsMergeIssueDistance(
+          first,
+          second,
+          ((issue.distanceM ?? 0) / 1000).toStringAsFixed(2),
+          (FlightMergeValidator.maxDistanceM / 1000).toStringAsFixed(1),
+        );
+      case FlightMergeIssueKind.aircraftMismatch:
+        return l10n.flightsMergeIssueAircraft(
+          first,
+          second,
+          issue.previousValue ?? '—',
+          issue.nextValue ?? '—',
+        );
+      case FlightMergeIssueKind.pilotMismatch:
+        return l10n.flightsMergeIssuePilot(
+          first,
+          second,
+          issue.previousValue ?? '—',
+          issue.nextValue ?? '—',
+        );
+    }
   }
 
   Future<void> _confirmDeleteTrack(FlightTrack track) async {

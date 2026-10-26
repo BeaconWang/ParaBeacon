@@ -28,8 +28,8 @@ enum AnnouncementEvent {
 
 /// Values that can be inserted into a voice announcement template.
 ///
-/// Every optional value defaults to "unknown" (NaN / null), which is spoken
-/// as such rather than as a misleading zero.
+/// Every optional value defaults to "unavailable" (NaN / null), which is
+/// spoken as zero.
 class AnnouncementValues {
   const AnnouncementValues({
     required this.altitudeMeters,
@@ -234,7 +234,8 @@ class AnnouncementTemplate {
     final speedUnit = units.defaultUnit(UnitDimension.speed);
     final distanceUnit = units.defaultUnit(UnitDimension.distance);
     final zh = language == AnnouncementLanguage.chinese;
-    final unknown = zh ? '未知' : 'unknown';
+    // Unavailable values are voiced as zero rather than as "unknown".
+    const unknown = '0';
 
     // Spell the sign out as a word. TTS engines often drop a leading ASCII
     // hyphen-minus, which made negative values (e.g. height below takeoff) be
@@ -297,7 +298,6 @@ class AnnouncementTemplate {
       AnnouncementPlaceholder.flightTime.key: _duration(
         values.flightDuration,
         zh,
-        unknown,
       ),
       AnnouncementPlaceholder.distance.key: distance?.$1 ?? unknown,
       AnnouncementPlaceholder.distanceUnit.key:
@@ -312,7 +312,7 @@ class AnnouncementTemplate {
     );
   }
 
-  /// Ground distance per height lost; unknown while (almost) not sinking.
+  /// Ground distance per height lost; zero while (almost) not sinking.
   static String _glideRatio(
     double groundSpeedKmh,
     double climb,
@@ -336,8 +336,8 @@ class AnnouncementTemplate {
     return (text, _distanceWord(effective, zh));
   }
 
-  static String _duration(Duration? duration, bool zh, String unknown) {
-    if (duration == null || duration.isNegative) return unknown;
+  static String _duration(Duration? value, bool zh) {
+    final duration = value == null || value.isNegative ? Duration.zero : value;
     final hours = duration.inHours;
     final minutes = duration.inMinutes % 60;
     final seconds = duration.inSeconds % 60;

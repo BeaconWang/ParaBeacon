@@ -22,7 +22,7 @@ void main() {
     );
   });
 
-  test('missing values are spoken as unknown', () {
+  test('missing values are spoken as zero, never as unknown', () {
     const missing = AnnouncementValues(
       altitudeMeters: 900,
       climbMetersPerSecond: 0,
@@ -34,7 +34,15 @@ void main() {
         AnnouncementLanguage.chinese,
         missing,
       ),
-      '未知',
+      '0',
+    );
+    expect(
+      AnnouncementTemplate.render(
+        '{groundSpeed} {agl} {windSpeed} {distance} {flightTime}',
+        AnnouncementLanguage.english,
+        missing,
+      ),
+      '0 0 0 0 0 seconds',
     );
   });
 
@@ -173,14 +181,14 @@ void main() {
     );
   });
 
-  test('glide ratio is unknown while not sinking', () {
+  test('glide ratio is zero while not sinking', () {
     expect(
       AnnouncementTemplate.render(
         '{glideRatio}',
         AnnouncementLanguage.english,
         values,
       ),
-      'unknown',
+      '0',
     );
   });
 

@@ -579,10 +579,6 @@ class _MapControlState extends State<MapControl> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final offlineFileName = OfflineTilesService.instance.activeFileName;
-    final requiredGlidePrecision = DecimalPlacesScope.rangeOf(
-      context,
-      'mapRequiredGlideRatioDecimals',
-    );
     final headingPrecision = DecimalPlacesScope.rangeOf(
       context,
       'mapHeadingDecimals',
@@ -904,19 +900,6 @@ class _MapControlState extends State<MapControl> {
                 speedPrecision: windSpeedPrecision,
               ),
             ),
-
-          // Bottom-left: required L/D readout (feature 31).
-          Positioned(
-            left: 8,
-            bottom: 8,
-            child: _glassChip(
-              theme,
-              icon: Icons.trending_down,
-              label:
-                  '${l10n.mapRequiredGlideRatio} ${_ldReqStr(data, requiredGlidePrecision)}',
-              small: true,
-            ),
-          ),
 
           // Bottom-center: vario colour-scale legend (feature 20 legend).
           // Requires the track layer to be enabled (the legend explains the
@@ -1462,18 +1445,6 @@ class _MapControlState extends State<MapControl> {
     return a.severity == AirspaceSeverity.high
         ? const Color(0xFF9E9E9E)
         : const Color(0x889E9E9E);
-  }
-
-  /// Required glide ratio to sustain the current descent: ground speed / sink.
-  /// Only meaningful while sinking (vertical speed < 0).
-  String _ldReqStr(dynamic data, DecimalPlaceRange? precision) {
-    final v = data.verticalSpeed as double; // m/s (+climb / -sink)
-    if (v >= -0.1) return '--';
-    final groundMps = (data.groundSpeed as double) / 3.6; // km/h -> m/s
-    final ld = groundMps / -v;
-    if (!ld.isFinite || ld <= 0) return '--';
-    if (ld >= 100) return '99+';
-    return formatDecimalValue(ld, autoDecimals: 1, range: precision);
   }
 
   Widget _glassChip(

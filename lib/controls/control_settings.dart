@@ -356,8 +356,6 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.dataMonitorBaroGpsDelta;
     case 'monitorTotalEnergyDecimals':
       return l10n.dataMonitorTotalEnergy;
-    case 'mapRequiredGlideRatioDecimals':
-      return l10n.settingRatioDecimals;
     case 'mapHeadingDecimals':
       return l10n.settingHeadingDecimals;
     case 'mapAltitudeDecimals':
@@ -1081,10 +1079,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'showStatus',
       label: 'Show HDG/ALT & GPS status',
       defaultValue: true,
-    ),
-    ControlSetting.decimalRange(
-      key: 'mapRequiredGlideRatioDecimals',
-      label: 'Required glide ratio',
     ),
     ControlSetting.decimalRange(key: 'mapHeadingDecimals', label: 'Heading'),
     ControlSetting.decimalRange(key: 'mapAltitudeDecimals', label: 'Altitude'),

@@ -9,10 +9,9 @@ import 'vario_keypoints.dart';
 
 /// Top-level vario sound profile.
 ///
-/// [xcTrack] is the stock, XCTrack-faithful preset: all custom tuning (lift/
-/// sink thresholds, pitch, waveform and keypoints) is ignored and the engine
-/// runs on [VarioAudioConfig.xcTrack] defaults. [custom] applies the user's
-/// saved tuning on top of those defaults.
+/// [xcTrack] is the stock, XCTrack-faithful preset: custom sound shaping
+/// (pitch, waveform and keypoints) is ignored, while lift/sink thresholds still
+/// apply. [custom] also applies the user's saved sound-shaping tuning.
 enum VarioSoundProfile { xcTrack, custom }
 
 /// Persisted, user-tunable Vario sound settings.
@@ -97,8 +96,8 @@ class VarioSoundSettings extends ChangeNotifier {
   /// The selected top-level sound profile.
   VarioSoundProfile get profile => _profile;
 
-  /// Whether the custom tuning controls are active. False while the stock
-  /// [VarioSoundProfile.xcTrack] profile is selected.
+  /// Whether profile-specific tuning controls are active. Threshold controls
+  /// apply to both profiles.
   bool get customEnabled => _profile == VarioSoundProfile.custom;
 
   double get liftThreshold => _liftThreshold;
@@ -126,12 +125,13 @@ class VarioSoundSettings extends ChangeNotifier {
   bool get isLoaded => _loaded;
 
   /// Builds the effective [VarioAudioConfig] from the current settings. Under
-  /// the stock [VarioSoundProfile.xcTrack] profile the custom tuning is ignored
-  /// and the engine runs on the XCTrack defaults (master gain still applies, as
-  /// it is an output-headroom control rather than a sound-shaping knob).
+  /// the stock [VarioSoundProfile.xcTrack] profile custom sound shaping is
+  /// ignored, while thresholds, master gain, and behavior options still apply.
   VarioAudioConfig get config {
     if (_profile == VarioSoundProfile.xcTrack) {
       return _base.copyWith(
+        liftThreshold: _liftThreshold,
+        sinkThreshold: _sinkThreshold,
         masterGain: _masterGain,
         sinkZoneCueEnabled: _sinkZoneCue,
       );

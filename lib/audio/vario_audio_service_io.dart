@@ -661,6 +661,9 @@ class _PcmSink {
   int _channels = 1;
   double _targetLatencySeconds = 0.02;
   int _fifoCapacityFrames = 0;
+  // Retained so the device can be rebuilt with the same geometry after the OS
+  // stops/reroutes it (see the watchdog below).
+  int _bufferFrames = 0;
 
   MiniaudioPlayer? _player;
 
@@ -668,6 +671,23 @@ class _PcmSink {
   int _nativeCapacityFrames = 0;
 
   Timer? _timer;
+
+  // ── Device watchdog ────────────────────────────────────────────────────────
+  // The OS can silently stop or reroute the native playback device during a
+  // flight: an incoming VoIP / video call (e.g. WeChat), the camera grabbing
+  // the microphone, voice recognition, or a Bluetooth route switch. miniaudio
+  // is opened without a notification callback, so such a stop is invisible —
+  // its data callback simply stops draining the FIFO and the vario goes quiet
+  // for the rest of the flight, while voice announcements keep working because
+  // flutter_tts re-activates its audio session on every utterance.
+  //
+  // This watchdog notices the dead device by checking whether it is still
+  // consuming frames while the FIFO holds audio, and rebuilds it in place.
+  static const Duration _stallTimeout = Duration(milliseconds: 600);
+  int _lastConsumed = 0;
+  DateTime? _progressAt;
+  DateTime? _lastTickAt;
+  bool _rebuilding = false;
 
   Future<void> open({
     required int sampleRate,
@@ -681,40 +701,121 @@ class _PcmSink {
     _channels = channels;
     _targetLatencySeconds = (lookAheadMs * 0.001).clamp(0.008, 0.5);
 
-    final bufferFrames = math.max(256, (chunkMs * 0.001 * sampleRate).round());
-    final fifoCapacityFrames = math.max(
-      bufferFrames * 4,
+    _bufferFrames = math.max(256, (chunkMs * 0.001 * sampleRate).round());
+    _fifoCapacityFrames = math.max(
+      _bufferFrames * 4,
       (_targetLatencySeconds * 3.0 * sampleRate).round(),
     );
-    _fifoCapacityFrames = fifoCapacityFrames;
-
-    final player = MiniaudioPlayer(
-      sampleRate: sampleRate,
-      channels: channels,
-      bufferFrames: bufferFrames,
-      fifoCapacityFrames: fifoCapacityFrames,
-    );
-    _player = player;
 
     _nativeCapacityFrames = math.max(
-      bufferFrames,
+      _bufferFrames,
       (_targetLatencySeconds * sampleRate).ceil(),
     );
     _native = malloc<Int16>(_nativeCapacityFrames * channels);
 
     _open = true;
 
-    player.start();
-    _refill();
+    _createPlayer();
 
     final tickUs = (lookAheadMs * 1000 / 4).round().clamp(2000, 15000);
     _timer = Timer.periodic(Duration(microseconds: tickUs), (_) => _refill());
   }
 
+  /// Creates and starts the native playback device with the stored geometry
+  /// and installs a fresh watchdog baseline. Assumes any previous player has
+  /// already been disposed (the native backend uses a single shared device).
+  /// Returns whether a device is now running.
+  bool _createPlayer() {
+    try {
+      final player = MiniaudioPlayer(
+        sampleRate: _sampleRate,
+        channels: _channels,
+        bufferFrames: _bufferFrames,
+        fifoCapacityFrames: _fifoCapacityFrames,
+      );
+      _player = player;
+      player.start();
+      // Give the fresh device a full timeout before it can be judged stalled.
+      _lastConsumed = player.framesConsumed;
+      _progressAt = DateTime.now();
+      _refill();
+      return true;
+    } catch (e) {
+      _player = null;
+      if (kDebugMode) {
+        debugPrint('VarioAudioService: miniaudio device create failed: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Tears down the (presumed dead) device and brings up a fresh one. The old
+  /// player is disposed *before* the new one is created because the native
+  /// backend manages a single global device; creating first would make the new
+  /// device be torn down by the old player's dispose.
+  void _rebuild() {
+    if (_rebuilding || !_open) return;
+    _rebuilding = true;
+    try {
+      final old = _player;
+      _player = null;
+      if (old != null) {
+        try {
+          old.stop();
+          old.dispose();
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('VarioAudioService: miniaudio rebuild dispose: $e');
+          }
+        }
+      }
+      _createPlayer();
+    } finally {
+      _rebuilding = false;
+    }
+  }
+
   void _refill() {
-    final player = _player;
     final native = _native;
-    if (!_open || player == null || native == null) return;
+    if (!_open || native == null) return;
+
+    final now = DateTime.now();
+    final lastTick = _lastTickAt;
+    _lastTickAt = now;
+
+    // No device yet (initial create failed, or a rebuild is mid-flight): try to
+    // bring one up and leave stall detection for later ticks.
+    final player = _player;
+    if (player == null) {
+      _rebuild();
+      return;
+    }
+
+    // ── Watchdog ──────────────────────────────────────────────────────────────
+    // If the periodic tick itself paused for a long time, the OS most likely
+    // suspended the whole app (and the device with it); that is not a device
+    // stall, so just re-baseline instead of needlessly rebuilding.
+    if (lastTick != null && now.difference(lastTick) > _stallTimeout) {
+      _lastConsumed = player.framesConsumed;
+      _progressAt = now;
+    } else {
+      final consumed = player.framesConsumed;
+      final queued = player.fifoAvailableFrames;
+      if (consumed != _lastConsumed || queued <= 0) {
+        // Device is still draining (or there is simply nothing to drain):
+        // healthy, keep the progress timer fresh.
+        _lastConsumed = consumed;
+        _progressAt = now;
+      } else {
+        // Audio is queued but the device consumed nothing: it has been stopped
+        // or rerouted by the OS. Rebuild it once the stall persists.
+        final since = _progressAt;
+        if (since != null && now.difference(since) > _stallTimeout) {
+          _rebuild();
+          return;
+        }
+      }
+    }
 
     final queuedFrames = player.fifoAvailableFrames;
     final targetFrames = (_targetLatencySeconds * _sampleRate).round();

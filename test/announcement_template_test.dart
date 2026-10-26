@@ -148,6 +148,31 @@ void main() {
     );
   });
 
+  test('negative values spell out the sign so TTS reads it', () {
+    const belowTakeoff = AnnouncementValues(
+      altitudeMeters: 1250,
+      climbMetersPerSecond: -1.2,
+      groundSpeedKmh: 36,
+      heightAboveTakeoffMeters: -410,
+    );
+    expect(
+      AnnouncementTemplate.render(
+        '{takeoffHeight} climb {climb}',
+        AnnouncementLanguage.english,
+        belowTakeoff,
+      ),
+      'minus 410 climb minus 1.2',
+    );
+    expect(
+      AnnouncementTemplate.render(
+        '{takeoffHeight} climb {climb}',
+        AnnouncementLanguage.chinese,
+        belowTakeoff,
+      ),
+      '负410 climb 负1.2',
+    );
+  });
+
   test('glide ratio is unknown while not sinking', () {
     expect(
       AnnouncementTemplate.render(

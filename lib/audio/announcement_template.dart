@@ -236,11 +236,20 @@ class AnnouncementTemplate {
     final zh = language == AnnouncementLanguage.chinese;
     final unknown = zh ? '未知' : 'unknown';
 
+    // Spell the sign out as a word. TTS engines often drop a leading ASCII
+    // hyphen-minus, which made negative values (e.g. height below takeoff) be
+    // voiced as if they were positive.
+    String spokenSign(String text) {
+      if (!text.startsWith('-')) return text;
+      final magnitude = text.substring(1);
+      return zh ? '负$magnitude' : 'minus $magnitude';
+    }
+
     String number(double value, {int decimals = 0}) {
       if (!value.isFinite) return unknown;
-      if (decimals == 0) return value.round().toString();
+      if (decimals == 0) return spokenSign(value.round().toString());
       final text = value.toStringAsFixed(decimals);
-      return text == '-0.0' ? '0.0' : text;
+      return spokenSign(text == '-0.0' ? '0.0' : text);
     }
 
     String altitudeValue(double meters) => number(

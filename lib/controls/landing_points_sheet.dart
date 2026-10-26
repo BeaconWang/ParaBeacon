@@ -37,16 +37,18 @@ class _LandingPointsSheet extends StatelessWidget {
       latitude: data.latitude,
       longitude: data.longitude,
       altitudeM: data.gpsAltitude ?? data.baroAltitude,
-      gpsAccuracyM: data.gpsAccuracy,
       capturedAt: data.gpsTimestamp ?? data.timestamp,
     );
     if (point == null || !context.mounted) return;
     await _savePoint(context, point);
   }
 
-  Future<void> _addFromMap(BuildContext context) async {
+  Future<LatLng?> _pickMapLocation(
+    BuildContext context,
+    LatLng initialPosition,
+  ) {
     final l10n = AppLocalizations.of(context);
-    final position = await showDialog<LatLng>(
+    return showDialog<LatLng>(
       context: context,
       builder: (dialogContext) {
         final size = MediaQuery.sizeOf(dialogContext);
@@ -66,6 +68,7 @@ class _LandingPointsSheet extends StatelessWidget {
                       active: true,
                       follow: false,
                       initialZoom: 13,
+                      initialCenter: initialPosition,
                       showTrack: false,
                       showThermal: false,
                       showAirspace: false,
@@ -100,6 +103,14 @@ class _LandingPointsSheet extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _addFromMap(BuildContext context) async {
+    final data = FlightDataProvider.of(context);
+    final initialPosition = _hasValidFix(data)
+        ? LatLng(data.latitude, data.longitude)
+        : const LatLng(46.5197, 6.6323);
+    final position = await _pickMapLocation(context, initialPosition);
     if (position == null || !context.mounted) return;
     final point = await showLandingPointEditorDialog(
       context,
@@ -117,6 +128,32 @@ class _LandingPointsSheet extends StatelessWidget {
       SnackBar(
         content: Text(
           '${point.name} · ${AppLocalizations.of(context).landingPointSaved}',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editPoint(BuildContext context, LandingPoint point) async {
+    final edited = await showLandingPointEditorDialog(
+      context,
+      latitude: point.latitude,
+      longitude: point.longitude,
+      altitudeM: point.altitudeM,
+      capturedAt: point.createdAt,
+      point: point,
+      onPickLocation: (_, initialPosition) =>
+          _pickMapLocation(context, initialPosition),
+    );
+    if (edited == null || !context.mounted) return;
+    final saved = await LandingPointStore.instance.update(edited);
+    if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          saved
+              ? '${edited.name} · ${l10n.landingPointUpdated}'
+              : l10n.landingPointUpdateFailed,
         ),
       ),
     );
@@ -234,7 +271,9 @@ class _LandingPointsSheet extends StatelessWidget {
                           trailing: PopupMenuButton<String>(
                             tooltip: l10n.landingPointActions,
                             onSelected: (value) async {
-                              if (value == 'default') {
+                              if (value == 'edit') {
+                                await _editPoint(context, point);
+                              } else if (value == 'default') {
                                 await store.setDefault(
                                   isDefault ? null : point.id,
                                 );
@@ -243,6 +282,10 @@ class _LandingPointsSheet extends StatelessWidget {
                               }
                             },
                             itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Text(l10n.edit),
+                              ),
                               PopupMenuItem(
                                 value: 'default',
                                 child: Text(

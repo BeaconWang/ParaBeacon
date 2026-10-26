@@ -2352,10 +2352,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointAddTitle => 'Add landing point';
 
   @override
+  String get landingPointEditTitle => 'Edit landing point';
+
+  @override
   String get landingPointName => 'Name';
 
   @override
   String get landingPointCoordinates => 'GPS coordinates';
+
+  @override
+  String get landingPointChangeLocation => 'Change location on map';
 
   @override
   String get landingPointAltitude => 'Altitude';
@@ -2366,9 +2372,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get landingPointAltitudeInvalid =>
       'Enter a valid altitude between -12,000 and 100,000 m.';
-
-  @override
-  String get landingPointGpsAccuracy => 'GPS accuracy';
 
   @override
   String get landingPointCapturedAt => 'Location captured';
@@ -2406,6 +2409,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get landingPointSaved => 'Landing point saved';
+
+  @override
+  String get landingPointUpdated => 'Landing point updated';
+
+  @override
+  String get landingPointUpdateFailed =>
+      'This landing point could not be updated.';
 
   @override
   String get mapTakeoffLabel => 'Take-off';

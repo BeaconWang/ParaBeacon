@@ -159,6 +159,9 @@ class MapControl extends StatefulWidget {
   /// Initial zoom level (flutter_map zoom, ~1..19).
   final double initialZoom;
 
+  /// Optional initial map center for location-picking dialogs.
+  final LatLng? initialCenter;
+
   /// Whether the map re-centers on the current position as it updates.
   final bool follow;
 
@@ -262,6 +265,7 @@ class MapControl extends StatefulWidget {
   const MapControl({
     super.key,
     this.initialZoom = 17.0,
+    this.initialCenter,
     this.follow = true,
     this.tileSource = 'amap-sat',
     this.showTrack = true,
@@ -636,9 +640,9 @@ class _MapControlState extends State<MapControl> {
     final hasFix = wgs != null;
 
     // Render position in the tile coordinate system (GCJ-shifted if needed).
-    final renderPos = hasFix
-        ? _shift(wgs, widget.tileSource)
-        : _shift(const LatLng(46.5197, 6.6323), widget.tileSource);
+    final centerWgs =
+        widget.initialCenter ?? wgs ?? const LatLng(46.5197, 6.6323);
+    final renderPos = _shift(centerWgs, widget.tileSource);
 
     // "None" basemap (with no offline source standing in for it) renders only
     // the overlays on a transparent background, so the dashboard/theme behind
@@ -822,7 +826,7 @@ class _MapControlState extends State<MapControl> {
                 if (widget.showThermal)
                   CircleLayer(circles: _buildThermalCircles()),
 
-                if (hasFix)
+                if (hasFix && widget.initialCenter == null)
                   MarkerLayer(
                     markers: [
                       Marker(

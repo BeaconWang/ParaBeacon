@@ -2267,10 +2267,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingPointAddTitle => '添加降落点';
 
   @override
+  String get landingPointEditTitle => '编辑降落点';
+
+  @override
   String get landingPointName => '名称';
 
   @override
   String get landingPointCoordinates => 'GPS 坐标';
+
+  @override
+  String get landingPointChangeLocation => '在地图上更改位置';
 
   @override
   String get landingPointAltitude => '海拔';
@@ -2280,9 +2286,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get landingPointAltitudeInvalid => '请输入 -12,000 至 100,000 米之间的有效海拔。';
-
-  @override
-  String get landingPointGpsAccuracy => 'GPS 精度';
 
   @override
   String get landingPointCapturedAt => '定位时间';
@@ -2319,6 +2322,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get landingPointSaved => '降落点已保存';
+
+  @override
+  String get landingPointUpdated => '降落点已更新';
+
+  @override
+  String get landingPointUpdateFailed => '无法更新此降落点。';
 
   @override
   String get mapTakeoffLabel => '起飞点';

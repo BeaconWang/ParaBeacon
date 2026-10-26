@@ -4490,6 +4490,12 @@ abstract class AppLocalizations {
   /// **'Add landing point'**
   String get landingPointAddTitle;
 
+  /// No description provided for @landingPointEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit landing point'**
+  String get landingPointEditTitle;
+
   /// No description provided for @landingPointName.
   ///
   /// In en, this message translates to:
@@ -4501,6 +4507,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'GPS coordinates'**
   String get landingPointCoordinates;
+
+  /// No description provided for @landingPointChangeLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Change location on map'**
+  String get landingPointChangeLocation;
 
   /// No description provided for @landingPointAltitude.
   ///
@@ -4519,12 +4531,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a valid altitude between -12,000 and 100,000 m.'**
   String get landingPointAltitudeInvalid;
-
-  /// No description provided for @landingPointGpsAccuracy.
-  ///
-  /// In en, this message translates to:
-  /// **'GPS accuracy'**
-  String get landingPointGpsAccuracy;
 
   /// No description provided for @landingPointCapturedAt.
   ///
@@ -4597,6 +4603,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Landing point saved'**
   String get landingPointSaved;
+
+  /// No description provided for @landingPointUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing point updated'**
+  String get landingPointUpdated;
+
+  /// No description provided for @landingPointUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This landing point could not be updated.'**
+  String get landingPointUpdateFailed;
 
   /// No description provided for @mapTakeoffLabel.
   ///

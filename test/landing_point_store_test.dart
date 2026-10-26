@@ -27,12 +27,12 @@ void main() {
         latitude: 46.5197,
         longitude: 6.6323,
         altitudeM: 1420.5,
-        gpsAccuracyM: 4.2,
         notes: 'Road access',
         createdAt: DateTime.utc(2026, 10, 22),
       )!;
+      final legacyJson = {...point.toJson(), 'gpsAccuracyM': 4.2};
       final restored = LandingPoint.tryParse(
-        jsonDecode(jsonEncode(point.toJson())),
+        jsonDecode(jsonEncode(legacyJson)),
       );
 
       expect(restored?.id, point.id);
@@ -40,7 +40,7 @@ void main() {
       expect(restored?.latitude, 46.5197);
       expect(restored?.longitude, 6.6323);
       expect(restored?.altitudeM, 1420.5);
-      expect(restored?.gpsAccuracyM, 4.2);
+      expect(restored?.toJson().containsKey('gpsAccuracyM'), isFalse);
       expect(restored?.notes, 'Road access');
       expect(restored?.createdAt, point.createdAt);
     });
@@ -80,6 +80,33 @@ void main() {
         expect(store.nearestPointTo(10, 20)?.id, defaultPoint.id);
         expect(store.nearestPointTo(double.nan, 0), isNull);
 
+        await store.setDefault(nearbyPoint.id);
+        final editedPoint = LandingPoint(
+          id: nearbyPoint.id,
+          name: 'Updated Valley LZ',
+          latitude: 11.1,
+          longitude: 21.1,
+          altitudeM: 135,
+          createdAt: nearbyPoint.createdAt,
+          notes: 'Gate access',
+        );
+        expect(await store.update(editedPoint), isTrue);
+        expect(store.defaultPoint?.id, nearbyPoint.id);
+        expect(
+          store.points.firstWhere((point) => point.id == nearbyPoint.id).name,
+          'Updated Valley LZ',
+        );
+        final updatedPrefs = await SharedPreferences.getInstance();
+        expect(
+          updatedPrefs.getString('pb.landingPoints.v1'),
+          contains('Updated Valley LZ'),
+        );
+        expect(
+          updatedPrefs.getString('pb.landingPoints.v1'),
+          isNot(contains('gpsAccuracyM')),
+        );
+
+        await store.setDefault(defaultPoint.id);
         await store.remove(nearbyPoint.id);
         expect(store.defaultPoint?.id, defaultPoint.id);
         expect(store.nearestPointTo(10.9, 20.9)?.id, defaultPoint.id);

@@ -13,7 +13,6 @@ class LandingPoint {
     required this.longitude,
     required this.createdAt,
     this.altitudeM,
-    this.gpsAccuracyM,
     this.notes = '',
   });
 
@@ -25,7 +24,6 @@ class LandingPoint {
   final double latitude;
   final double longitude;
   final double? altitudeM;
-  final double? gpsAccuracyM;
   final DateTime createdAt;
   final String notes;
 
@@ -35,7 +33,6 @@ class LandingPoint {
     'latitude': latitude,
     'longitude': longitude,
     'altitudeM': altitudeM,
-    'gpsAccuracyM': gpsAccuracyM,
     'createdAt': createdAt.toIso8601String(),
     'notes': notes,
   };
@@ -45,7 +42,6 @@ class LandingPoint {
     required double latitude,
     required double longitude,
     double? altitudeM,
-    double? gpsAccuracyM,
     DateTime? createdAt,
     String notes = '',
   }) {
@@ -65,20 +61,12 @@ class LandingPoint {
             altitudeM <= 100000
         ? altitudeM
         : null;
-    final safeAccuracy =
-        gpsAccuracyM != null &&
-            gpsAccuracyM.isFinite &&
-            gpsAccuracyM >= 0 &&
-            gpsAccuracyM <= 100000
-        ? gpsAccuracyM
-        : null;
     return LandingPoint(
       id: _newId(),
       name: cleanName,
       latitude: latitude,
       longitude: longitude,
       altitudeM: safeAltitude,
-      gpsAccuracyM: safeAccuracy,
       createdAt: createdAt ?? DateTime.now(),
       notes: _sanitize(notes, maxNotesLength),
     );
@@ -97,14 +85,12 @@ class LandingPoint {
     final parsedDate = DateTime.tryParse(createdAt);
     if (parsedDate == null) return null;
     final altitude = raw['altitudeM'];
-    final accuracy = raw['gpsAccuracyM'];
     final notes = raw['notes'];
     final validated = create(
       name: name,
       latitude: latitude.toDouble(),
       longitude: longitude.toDouble(),
       altitudeM: altitude is num ? altitude.toDouble() : null,
-      gpsAccuracyM: accuracy is num ? accuracy.toDouble() : null,
       createdAt: parsedDate,
       notes: notes is String ? notes : '',
     );
@@ -115,7 +101,6 @@ class LandingPoint {
       latitude: validated.latitude,
       longitude: validated.longitude,
       altitudeM: validated.altitudeM,
-      gpsAccuracyM: validated.gpsAccuracyM,
       createdAt: validated.createdAt,
       notes: validated.notes,
     );
@@ -248,6 +233,16 @@ class LandingPointStore extends ChangeNotifier {
       final removed = _points.removeLast();
       if (_defaultId == removed.id) _defaultId = null;
     }
+    notifyListeners();
+    await _persist();
+    return true;
+  }
+
+  Future<bool> update(LandingPoint point) async {
+    await load();
+    final index = _points.indexWhere((saved) => saved.id == point.id);
+    if (index < 0) return false;
+    _points[index] = point;
     notifyListeners();
     await _persist();
     return true;

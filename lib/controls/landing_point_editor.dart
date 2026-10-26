@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../data/landing_point_store.dart';
 import '../l10n/app_localizations.dart';
+
+typedef LandingPointLocationPicker =
+    Future<LatLng?> Function(BuildContext context, LatLng initialPosition);
 
 Future<LandingPoint?> showLandingPointEditorDialog(
   BuildContext context, {
   required double latitude,
   required double longitude,
   double? altitudeM,
-  double? gpsAccuracyM,
   DateTime? capturedAt,
+  LandingPoint? point,
+  LandingPointLocationPicker? onPickLocation,
 }) {
   return showDialog<LandingPoint>(
     context: context,
@@ -17,8 +22,9 @@ Future<LandingPoint?> showLandingPointEditorDialog(
       latitude: latitude,
       longitude: longitude,
       altitudeM: altitudeM,
-      gpsAccuracyM: gpsAccuracyM,
       capturedAt: capturedAt,
+      point: point,
+      onPickLocation: onPickLocation,
     ),
   );
 }
@@ -28,15 +34,17 @@ class _LandingPointEditorDialog extends StatefulWidget {
     required this.latitude,
     required this.longitude,
     this.altitudeM,
-    this.gpsAccuracyM,
     this.capturedAt,
+    this.point,
+    this.onPickLocation,
   });
 
   final double latitude;
   final double longitude;
   final double? altitudeM;
-  final double? gpsAccuracyM;
   final DateTime? capturedAt;
+  final LandingPoint? point;
+  final LandingPointLocationPicker? onPickLocation;
 
   @override
   State<_LandingPointEditorDialog> createState() =>
@@ -45,12 +53,16 @@ class _LandingPointEditorDialog extends StatefulWidget {
 
 class _LandingPointEditorDialogState extends State<_LandingPointEditorDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _notesController = TextEditingController();
+  late final _nameController = TextEditingController(
+    text: widget.point?.name ?? '',
+  );
+  late double _latitude = widget.point?.latitude ?? widget.latitude;
+  late double _longitude = widget.point?.longitude ?? widget.longitude;
+  late final _notesController = TextEditingController(
+    text: widget.point?.notes ?? '',
+  );
   late final _altitudeController = TextEditingController(
-    text: widget.altitudeM?.isFinite == true
-        ? widget.altitudeM!.toStringAsFixed(1)
-        : '',
+    text: (widget.point?.altitudeM ?? widget.altitudeM)?.toString() ?? '',
   );
 
   @override
@@ -61,29 +73,54 @@ class _LandingPointEditorDialogState extends State<_LandingPointEditorDialog> {
     super.dispose();
   }
 
+  Future<void> _pickLocation() async {
+    final picker = widget.onPickLocation;
+    if (picker == null) return;
+    final selected = await picker(context, LatLng(_latitude, _longitude));
+    if (selected == null || !mounted) return;
+    setState(() {
+      _latitude = selected.latitude;
+      _longitude = selected.longitude;
+    });
+  }
+
   void _save(AppLocalizations l10n) {
     if (!_formKey.currentState!.validate()) return;
     final altitudeText = _altitudeController.text.trim();
-    final point = LandingPoint.create(
+    final editedPoint = widget.point;
+    final candidate = LandingPoint.create(
       name: _nameController.text,
-      latitude: widget.latitude,
-      longitude: widget.longitude,
+      latitude: _latitude,
+      longitude: _longitude,
       altitudeM: altitudeText.isEmpty ? null : double.parse(altitudeText),
-      gpsAccuracyM: widget.gpsAccuracyM,
-      createdAt: widget.capturedAt,
+      createdAt: editedPoint?.createdAt ?? widget.capturedAt,
       notes: _notesController.text,
     );
-    if (point != null) Navigator.of(context).pop(point);
+    if (candidate == null) return;
+    final result = editedPoint == null
+        ? candidate
+        : LandingPoint(
+            id: editedPoint.id,
+            name: candidate.name,
+            latitude: candidate.latitude,
+            longitude: candidate.longitude,
+            altitudeM: candidate.altitudeM,
+            createdAt: editedPoint.createdAt,
+            notes: candidate.notes,
+          );
+    Navigator.of(context).pop(result);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final capturedAt = widget.capturedAt;
-    final gpsAccuracyM = widget.gpsAccuracyM;
+    final point = widget.point;
+    final capturedAt = point?.createdAt ?? widget.capturedAt;
 
     return AlertDialog(
-      title: Text(l10n.landingPointAddTitle),
+      title: Text(
+        point == null ? l10n.landingPointAddTitle : l10n.landingPointEditTitle,
+      ),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -107,9 +144,17 @@ class _LandingPointEditorDialogState extends State<_LandingPointEditorDialog> {
               const SizedBox(height: 12),
               Text(
                 '${l10n.landingPointCoordinates}: '
-                '${widget.latitude.toStringAsFixed(6)}, '
-                '${widget.longitude.toStringAsFixed(6)}',
+                '${_latitude.toStringAsFixed(6)}, '
+                '${_longitude.toStringAsFixed(6)}',
               ),
+              if (point != null && widget.onPickLocation != null) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _pickLocation,
+                  icon: const Icon(Icons.map_outlined),
+                  label: Text(l10n.landingPointChangeLocation),
+                ),
+              ],
               const SizedBox(height: 12),
               TextFormField(
                 controller: _altitudeController,
@@ -135,13 +180,6 @@ class _LandingPointEditorDialogState extends State<_LandingPointEditorDialog> {
                   border: const OutlineInputBorder(),
                 ),
               ),
-              if (gpsAccuracyM != null && gpsAccuracyM.isFinite) ...[
-                const SizedBox(height: 8),
-                Text(
-                  '${l10n.landingPointGpsAccuracy}: '
-                  '${gpsAccuracyM.toStringAsFixed(0)} m',
-                ),
-              ],
               if (capturedAt != null) ...[
                 const SizedBox(height: 4),
                 Text(

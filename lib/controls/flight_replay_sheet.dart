@@ -569,10 +569,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
               fillColor: theme.colorScheme.primary.withAlpha(40),
               cursorColor: theme.colorScheme.secondary,
               gridColor: theme.colorScheme.onSurface.withAlpha(24),
-              onSeek: (fraction) {
-                if (_playing) _pause();
-                _setCursor(fraction * _spanMs);
-              },
+              onSeek: (fraction) => _setCursor(fraction * _spanMs),
             ),
           _buildControls(theme),
         ],
@@ -1025,10 +1022,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
               profileColor: theme.colorScheme.primary,
               selectionColor: const Color(0xFFFFC107),
               onTrimChanged: canTrim ? _updateTrimRange : null,
-              onSeek: (fraction) {
-                if (_playing) _pause();
-                _setCursor(fraction * _spanMs);
-              },
+              onSeek: (fraction) => _setCursor(fraction * _spanMs),
             ),
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -1089,13 +1083,8 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                   child: Slider(
                     value: _spanMs <= 0 ? 0 : _cursorMs.clamp(0.0, _spanMs),
                     max: _spanMs,
-                    onChanged: canReplay
-                        ? (v) {
-                            // Scrubbing pauses playback for precise positioning.
-                            if (_playing) _pause();
-                            _setCursor(v);
-                          }
-                        : null,
+                    // Scrubbing keeps the current play/pause state.
+                    onChanged: canReplay ? _setCursor : null,
                   ),
                 ),
                 Text(_fmt(total), style: theme.textTheme.labelMedium),

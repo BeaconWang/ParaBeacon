@@ -292,12 +292,8 @@ class _Track3DSheetState extends State<_Track3DSheet>
                 child: Slider(
                   value: _spanMs <= 0 ? 0 : _cursorMs.clamp(0.0, _spanMs),
                   max: _spanMs,
-                  onChanged: canReplay
-                      ? (v) {
-                          if (_playing) _pause();
-                          _setCursor(v);
-                        }
-                      : null,
+                  // Scrubbing keeps the current play/pause state.
+                  onChanged: canReplay ? _setCursor : null,
                 ),
               ),
               Text(_fmt(total), style: theme.textTheme.labelMedium),

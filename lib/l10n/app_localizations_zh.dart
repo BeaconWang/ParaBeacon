@@ -3178,6 +3178,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sensorCalibrateFailed => '校准失败——没有气压读数或数值超出范围';
 
   @override
+  String get sensorExtCalibrationSection => '外接传感器海拔';
+
+  @override
+  String get sensorExtCalibrationCurrent => '校准后海拔';
+
+  @override
+  String get sensorFieldAltitudeOffset => '海拔偏移';
+
+  @override
+  String get sensorExtCalibrationNone => '未应用偏移（传感器原始海拔）';
+
+  @override
+  String get sensorExtCalibrationApplied => '已按已知海拔校准';
+
+  @override
   String get sensorNoDeviceSelected => '未选择设备';
 
   @override

@@ -3286,6 +3286,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Calibration failed — no barometer reading or value out of range';
 
   @override
+  String get sensorExtCalibrationSection => 'External sensor altitude';
+
+  @override
+  String get sensorExtCalibrationCurrent => 'Calibrated altitude';
+
+  @override
+  String get sensorFieldAltitudeOffset => 'Altitude offset';
+
+  @override
+  String get sensorExtCalibrationNone =>
+      'No offset applied (raw sensor altitude)';
+
+  @override
+  String get sensorExtCalibrationApplied => 'Calibrated to a known altitude';
+
+  @override
   String get sensorNoDeviceSelected => 'No device selected';
 
   @override

@@ -6212,6 +6212,36 @@ abstract class AppLocalizations {
   /// **'Calibration failed — no barometer reading or value out of range'**
   String get sensorCalibrateFailed;
 
+  /// No description provided for @sensorExtCalibrationSection.
+  ///
+  /// In en, this message translates to:
+  /// **'External sensor altitude'**
+  String get sensorExtCalibrationSection;
+
+  /// No description provided for @sensorExtCalibrationCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrated altitude'**
+  String get sensorExtCalibrationCurrent;
+
+  /// No description provided for @sensorFieldAltitudeOffset.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude offset'**
+  String get sensorFieldAltitudeOffset;
+
+  /// No description provided for @sensorExtCalibrationNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No offset applied (raw sensor altitude)'**
+  String get sensorExtCalibrationNone;
+
+  /// No description provided for @sensorExtCalibrationApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrated to a known altitude'**
+  String get sensorExtCalibrationApplied;
+
   /// No description provided for @sensorNoDeviceSelected.
   ///
   /// In en, this message translates to:

@@ -37,6 +37,7 @@ class BleSensorService extends ChangeNotifier {
   static const _spDeviceId = 'pb.ble.sensor.device_id';
   static const _spDeviceName = 'pb.ble.sensor.device_name';
   static const _spEnabled = 'pb.ble.sensor.enabled';
+  static const _spAltitudeOffset = 'pb.ble.sensor.altitude_offset_m';
 
   static const _maxReconnectAttempts = 5;
   static const _reconnectBaseDelayMs = 1000;
@@ -81,6 +82,34 @@ class BleSensorService extends ChangeNotifier {
 
   /// Latest aggregated readings.
   SensorReadings readings = SensorReadings.empty();
+
+  /// Altitude calibration offset in meters, added to the sensor's reported
+  /// barometric altitude before it is used by the app. Persisted.
+  ///
+  /// External varios report an altitude derived from their own pressure sensor
+  /// against a fixed sea-level reference, which can read high or low versus a
+  /// known field elevation. Rather than re-deriving it (the sensor may report
+  /// altitude without pressure), the app applies this additive offset — set by
+  /// calibrating to a known altitude — on top of whatever the sensor reports.
+  double _altitudeOffsetM = 0.0;
+
+  /// The current altitude calibration offset (meters) applied to the external
+  /// sensor's reported altitude.
+  double get altitudeOffsetM => _altitudeOffsetM;
+
+  /// Whether a non-zero altitude calibration offset is currently applied.
+  bool get isAltitudeCalibrated => _altitudeOffsetM.abs() > 0.05;
+
+  /// The sensor's latest reported barometric altitude *before* calibration
+  /// (meters), or null when the sensor has not reported one.
+  double? get rawAltitudeM => readings.altitudeM;
+
+  /// The sensor's latest altitude *after* applying [altitudeOffsetM] (meters),
+  /// or null when the sensor has not reported one.
+  double? get calibratedAltitudeM {
+    final a = readings.altitudeM;
+    return a == null ? null : a + _altitudeOffsetM;
+  }
 
   /// User-facing error (scan/connect failures, unsupported platform, ...).
   String? error;
@@ -131,6 +160,8 @@ class BleSensorService extends ChangeNotifier {
       _enabled = sp.getBool(_spEnabled) ?? false;
       selectedId = sp.getString(_spDeviceId);
       selectedName = sp.getString(_spDeviceName);
+      final offset = sp.getDouble(_spAltitudeOffset);
+      if (offset != null && offset.isFinite) _altitudeOffsetM = offset;
     } catch (_) {}
 
     _adapterSub = FlutterBluePlus.adapterState.listen((s) {
@@ -170,6 +201,55 @@ class BleSensorService extends ChangeNotifier {
     } else {
       await disconnect();
     }
+  }
+
+  // ── Altitude calibration ────────────────────────────────────────────────
+  /// Largest plausible calibration offset (meters). Guards against bogus input
+  /// (a 2 km correction already far exceeds any real sensor drift).
+  static const double _maxAltitudeOffsetM = 2000.0;
+
+  /// Calibrates the external sensor so its *current* reported altitude reads as
+  /// the given known [altitudeM] (e.g. the elevation of your takeoff). Stores
+  /// the resulting additive offset and persists it.
+  ///
+  /// Returns false when the sensor has not reported an altitude yet or the
+  /// resulting offset is implausibly large.
+  Future<bool> calibrateToAltitude(double altitudeM) async {
+    final raw = readings.altitudeM;
+    if (raw == null || !raw.isFinite || !altitudeM.isFinite) return false;
+    return setAltitudeOffset(altitudeM - raw);
+  }
+
+  /// Sets the additive altitude calibration offset directly (meters).
+  ///
+  /// Returns false when the value is not finite or exceeds the plausible range.
+  Future<bool> setAltitudeOffset(double offsetM) async {
+    if (!offsetM.isFinite || offsetM.abs() > _maxAltitudeOffsetM) return false;
+    if ((offsetM - _altitudeOffsetM).abs() < 1e-6) return true;
+    _altitudeOffsetM = offsetM;
+    await _persistAltitudeOffset();
+    // Re-emit the latest readings so the data bridge re-forwards the altitude
+    // with the new offset immediately (offset changes don't produce a new
+    // sensor sample on their own).
+    if (!_readingsCtrl.isClosed) _readingsCtrl.add(readings);
+    notifyListeners();
+    return true;
+  }
+
+  /// Clears any altitude calibration, reverting to the sensor's raw altitude.
+  Future<void> resetAltitudeCalibration() async {
+    if (_altitudeOffsetM == 0.0) return;
+    _altitudeOffsetM = 0.0;
+    await _persistAltitudeOffset();
+    if (!_readingsCtrl.isClosed) _readingsCtrl.add(readings);
+    notifyListeners();
+  }
+
+  Future<void> _persistAltitudeOffset() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setDouble(_spAltitudeOffset, _altitudeOffsetM);
+    } catch (_) {}
   }
 
   // ── Scan ──────────────────────────────────────────────────────────────────

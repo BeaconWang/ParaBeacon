@@ -88,9 +88,11 @@ class BleFlightDataBridge {
     final vario = internalOwns ? null : r.varioMs;
 
     // The sensor's altitude is barometric (derived from pressure by the
-    // parser). Feed it into both the barometric-specific field and the
-    // effective [altitude] convenience value.
-    final baroAlt = internalOwns ? null : r.altitudeM;
+    // parser). Apply the user's altitude calibration offset (set by
+    // calibrating to a known elevation) before feeding it into both the
+    // barometric-specific field and the effective [altitude] convenience value.
+    final rawAlt = internalOwns ? null : r.altitudeM;
+    final baroAlt = rawAlt == null ? null : rawAlt + service.altitudeOffsetM;
 
     // Build a snapshot preserving previously-known fields, updating only the
     // ones this sensor reports (all maintenance fields are forwarded so the

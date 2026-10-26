@@ -110,6 +110,12 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
                       _sectionLabel(theme, l10n.sensorLiveDataFields),
                       const SizedBox(height: 8),
                       _readingsCard(theme, l10n, _svc.readings),
+                      if (_svc.isConnected) ...[
+                        const SizedBox(height: 20),
+                        _sectionLabel(theme, l10n.sensorExtCalibrationSection),
+                        const SizedBox(height: 8),
+                        _externalCalibrationCard(theme, l10n),
+                      ],
                       const SizedBox(height: 20),
                       _sectionLabel(theme, l10n.sensorNearbyDevices),
                       const SizedBox(height: 8),
@@ -262,7 +268,11 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
           FilledButton.tonalIcon(
             onPressed: _internal.lastPressureHpa == null
                 ? null
-                : () => _openCalibrateDialog(l10n),
+                : () => _openCalibrateDialog(
+                      l10n,
+                      currentAltitude: _internal.readings.altitudeM,
+                      calibrate: _internal.calibrateToAltitude,
+                    ),
             icon: const Icon(Icons.tune, size: 18),
             label: Text(l10n.sensorCalibrate),
           ),
@@ -271,10 +281,16 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     );
   }
 
-  Future<void> _openCalibrateDialog(AppLocalizations l10n) async {
-    final current = _internal.readings.altitudeM;
+  /// Opens the "calibrate to a known altitude" dialog. [currentAltitude]
+  /// pre-fills the field; [calibrate] applies the entered altitude to the
+  /// relevant sensor and returns whether it succeeded.
+  Future<void> _openCalibrateDialog(
+    AppLocalizations l10n, {
+    required double? currentAltitude,
+    required Future<bool> Function(double altitudeM) calibrate,
+  }) async {
     final controller = TextEditingController(
-      text: current == null ? '' : current.toStringAsFixed(0),
+      text: currentAltitude == null ? '' : currentAltitude.toStringAsFixed(0),
     );
     final result = await showDialog<double>(
       context: context,
@@ -339,13 +355,72 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     controller.dispose();
     if (result == null || !mounted) return;
 
-    final ok = await _internal.calibrateToAltitude(result);
+    final ok = await calibrate(result);
     if (!mounted) return;
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.sensorCalibrateFailed)),
       );
     }
+  }
+
+  // ── External sensor altitude calibration ──────────────────────────────────
+  //
+  // External varios report an altitude derived from their own pressure sensor,
+  // which can read high/low versus a known field elevation. The app applies a
+  // user-set additive offset (from calibrating to a known altitude) on top of
+  // whatever the sensor reports, so the displayed altitude is correct.
+  Widget _externalCalibrationCard(ThemeData theme, AppLocalizations l10n) {
+    final calibrated = _svc.isAltitudeCalibrated;
+    final offset = _svc.altitudeOffsetM;
+    final hasAltitude = _svc.rawAltitudeM != null;
+
+    return _card(theme, [
+      _fieldRow(theme, Icons.terrain, l10n.sensorExtCalibrationCurrent,
+          _svc.calibratedAltitudeM?.toStringAsFixed(0), 'm'),
+      const Divider(height: 1),
+      _fieldRow(
+        theme,
+        Icons.height,
+        l10n.sensorFieldAltitudeOffset,
+        calibrated ? '${offset >= 0 ? '+' : ''}${offset.toStringAsFixed(0)}' : '0',
+        'm',
+      ),
+      const Divider(height: 1),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                calibrated
+                    ? l10n.sensorExtCalibrationApplied
+                    : l10n.sensorExtCalibrationNone,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            if (calibrated)
+              TextButton(
+                onPressed: () => _svc.resetAltitudeCalibration(),
+                child: Text(l10n.sensorCalibrationReset),
+              ),
+            FilledButton.tonalIcon(
+              onPressed: !hasAltitude
+                  ? null
+                  : () => _openCalibrateDialog(
+                        l10n,
+                        currentAltitude: _svc.calibratedAltitudeM,
+                        calibrate: _svc.calibrateToAltitude,
+                      ),
+              icon: const Icon(Icons.tune, size: 18),
+              label: Text(l10n.sensorCalibrate),
+            ),
+          ],
+        ),
+      ),
+    ]);
   }
 
   Widget _adapterBanner(ThemeData theme, AppLocalizations l10n) {

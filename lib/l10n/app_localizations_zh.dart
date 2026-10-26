@@ -3510,6 +3510,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementSpeechRateNormal => '正常';
 
   @override
+  String altitudeAnnouncementVolume(String percent) {
+    return '播报音量：$percent%';
+  }
+
+  @override
   String get altitudeAnnouncementDuckVarioDescription =>
       '语音播报期间调低升降音音量，避免升降音过响时听不清播报。';
 

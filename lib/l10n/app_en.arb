@@ -1434,6 +1434,12 @@
     }
   },
   "altitudeAnnouncementSpeechRateNormal": "Normal",
+  "altitudeAnnouncementVolume": "Voice volume: {percent}%",
+  "@altitudeAnnouncementVolume": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
   "altitudeAnnouncementDuckVarioDescription": "Turns the vario tone down during announcements so the voice can be heard over a loud vario.",
   "altitudeAnnouncementDuckLevel": "Vario volume while speaking: {percent}%",
   "@altitudeAnnouncementDuckLevel": {

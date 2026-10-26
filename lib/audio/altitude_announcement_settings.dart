@@ -31,6 +31,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const _kDuckVario = '$_prefix.duckVario';
   static const _kDuckLevel = '$_prefix.duckLevel';
   static const _kSpeechRate = '$_prefix.speechRate';
+  static const _kVolume = '$_prefix.volume';
   static const _kAnnouncementsEnabled = '$_prefix.voiceEnabled';
   static const _kTakeoffLandingEnabled = '$_prefix.takeoffLanding.enabled';
   static const _kGlideEnabled = '$_prefix.glide.enabled';
@@ -59,6 +60,11 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const minSpeechRate = AltitudeAnnouncementSpeaker.minRate;
   static const maxSpeechRate = AltitudeAnnouncementSpeaker.maxRate;
   static const defaultSpeechRate = 1.0;
+
+  /// Allowed range for [volume] (0 = silent, 1 = full volume).
+  static const minVolume = 0.0;
+  static const maxVolume = 1.0;
+  static const defaultVolume = 1.0;
 
   /// Allowed range for [varioDuckLevel] (fraction of normal vario volume kept
   /// while speaking). 0 silences the vario completely during speech.
@@ -91,6 +97,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   bool _duckVario = true;
   double _varioDuckLevel = 0.3;
   double _speechRate = defaultSpeechRate;
+  double _volume = defaultVolume;
   bool _announcementsEnabled = true;
   bool _takeoffLandingEnabled = true;
   bool _glideEnabled = true;
@@ -106,6 +113,9 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
 
   /// Speaking speed as a multiple of the normal speed (1.0 = normal).
   double get speechRate => _speechRate;
+
+  /// Voice volume (0..1), independent of vario tones and announcement chimes.
+  double get volume => _volume;
 
   /// Master switch for all automatic voice announcements.
   bool get announcementsEnabled => _announcementsEnabled;
@@ -191,6 +201,10 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
       final rate = preferences.getDouble(_kSpeechRate);
       if (rate != null && rate.isFinite) {
         _speechRate = rate.clamp(minSpeechRate, maxSpeechRate);
+      }
+      final volume = preferences.getDouble(_kVolume);
+      if (volume != null && volume.isFinite) {
+        _volume = volume.clamp(minVolume, maxVolume);
       }
       _announcementsEnabled =
           preferences.getBool(_kAnnouncementsEnabled) ?? _announcementsEnabled;
@@ -406,6 +420,15 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
     if (_speechRate == next) return;
     _speechRate = next;
     _persistDouble(_kSpeechRate, next);
+    notifyListeners();
+  }
+
+  void setVolume(double volume) {
+    if (!volume.isFinite) return;
+    final next = volume.clamp(minVolume, maxVolume);
+    if (_volume == next) return;
+    _volume = next;
+    _persistDouble(_kVolume, next);
     notifyListeners();
   }
 

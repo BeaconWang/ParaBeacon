@@ -1304,6 +1304,12 @@
     }
   },
   "altitudeAnnouncementSpeechRateNormal": "正常",
+  "altitudeAnnouncementVolume": "播报音量：{percent}%",
+  "@altitudeAnnouncementVolume": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
   "altitudeAnnouncementDuckVarioDescription": "语音播报期间调低升降音音量，避免升降音过响时听不清播报。",
   "altitudeAnnouncementDuckLevel": "播报时升降音音量：{percent}%",
   "@altitudeAnnouncementDuckLevel": {

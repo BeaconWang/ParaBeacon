@@ -37,10 +37,12 @@ void main() {
       final messenger =
           TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
       final speeches = <Object?>[];
+      final volumes = <Object?>[];
       messenger.setMockMethodCallHandler(const MethodChannel('flutter_tts'), (
         call,
       ) async {
         if (call.method == 'isLanguageAvailable') return true;
+        if (call.method == 'setVolume') volumes.add(call.arguments);
         if (call.method == 'speak') speeches.add(call.arguments);
         return 1;
       });
@@ -53,6 +55,8 @@ void main() {
 
       final settings = AltitudeAnnouncementSettings.instance;
       await settings.load();
+      settings.setVolume(0.35);
+      addTearDown(() => settings.setVolume(1.0));
       settings.setAnnouncementsEnabled(true);
       settings.setTakeoffLandingEnabled(false);
       settings.setGlideEnabled(false);
@@ -97,6 +101,7 @@ void main() {
       await _waitForSpeech(speeches);
       expect(speeches, hasLength(1));
       expect(speeches.single, contains('Configured threshold reached'));
+      expect(volumes, [0.35]);
     },
   );
 }

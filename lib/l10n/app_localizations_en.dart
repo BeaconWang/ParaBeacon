@@ -3633,6 +3633,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementSpeechRateNormal => 'Normal';
 
   @override
+  String altitudeAnnouncementVolume(String percent) {
+    return 'Voice volume: $percent%';
+  }
+
+  @override
   String get altitudeAnnouncementDuckVarioDescription =>
       'Turns the vario tone down during announcements so the voice can be heard over a loud vario.';
 

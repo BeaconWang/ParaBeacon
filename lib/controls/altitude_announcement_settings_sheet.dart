@@ -378,6 +378,25 @@ class _AltitudeAnnouncementSettingsSheetState
                   icon: Icons.tune,
                   title: l10n.altitudeAnnouncementSectionVoice,
                 ),
+                Text(
+                  l10n.altitudeAnnouncementVolume(
+                    (settings.volume * 100).round().toString(),
+                  ),
+                  style: theme.textTheme.titleSmall,
+                ),
+                Slider(
+                  key: const ValueKey('announcementVolume'),
+                  value: settings.volume,
+                  min: AltitudeAnnouncementSettings.minVolume,
+                  max: AltitudeAnnouncementSettings.maxVolume,
+                  divisions: 20,
+                  label: '${(settings.volume * 100).round()}%',
+                  semanticFormatterCallback: (value) =>
+                      l10n.altitudeAnnouncementVolume(
+                        (value * 100).round().toString(),
+                      ),
+                  onChanged: settings.setVolume,
+                ),
                 Row(
                   children: [
                     Expanded(

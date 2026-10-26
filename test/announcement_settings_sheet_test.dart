@@ -41,6 +41,18 @@ void main() {
     // not set here, so only the custom text below is asserted.)
     expect(find.textContaining('预览：'), findsNWidgets(5));
     expect(find.text('爬升播报'), findsNothing);
+    expect(find.text('播报音量：100%'), findsOneWidget);
+    final volumeSlider = find.byKey(const ValueKey('announcementVolume'));
+    expect(tester.widget<Slider>(volumeSlider).value, 1.0);
+    await tester.ensureVisible(volumeSlider);
+    await tester.tapAt(tester.getCenter(volumeSlider));
+    await tester.pumpAndSettle();
+    expect(AltitudeAnnouncementSettings.instance.volume, 0.5);
+    expect(find.text('播报音量：50%'), findsOneWidget);
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getDouble('pb.altitudeAnnouncements.volume'), 0.5);
+    AltitudeAnnouncementSettings.instance.setVolume(1.0);
+    await tester.pump();
 
     // Customizing a text updates its preview.
     AltitudeAnnouncementSettings.instance.setTemplateFor(

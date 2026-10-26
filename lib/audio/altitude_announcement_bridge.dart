@@ -335,6 +335,7 @@ class AltitudeAnnouncementBridge {
       spoken = await _speaker.speak(
         preferred: announcementLanguageFor(template),
         rate: _settings.speechRate,
+        volume: _settings.volume,
         canSpeak: () => _maySpeakCustomRule(rule.id),
         phraseFor: (language) =>
             AnnouncementTemplate.render(template, language, values),
@@ -624,6 +625,7 @@ Future<bool> speakAnnouncement(
     waitIfBusy: waitIfBusy,
     busyTimeout: busyTimeout,
     rate: resolved.speechRate,
+    volume: resolved.volume,
     prelude: chime,
     canSpeak: canSpeak,
     phraseFor: (language) =>

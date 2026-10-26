@@ -116,6 +116,7 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     bool waitIfBusy = false,
     Duration busyTimeout = const Duration(seconds: 45),
     double rate = 1.0,
+    double volume = 1.0,
     Future<void> Function()? prelude,
     bool Function()? canSpeak,
   }) async {
@@ -146,6 +147,9 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
       // immediately and survives Android engine switches (which reset it).
       await _call<dynamic>(
         () => _tts.setSpeechRate(platformRateFor(rate, apple: _isApple)),
+      );
+      await _call<dynamic>(
+        () => _tts.setVolume(volume.isFinite ? volume.clamp(0.0, 1.0) : 1.0),
       );
       if (canSpeak != null && !canSpeak()) return false;
 
@@ -273,7 +277,6 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
 
     await _call<dynamic>(() => _tts.setSpeechRate(platformRateFor(1.0)));
     await _call<dynamic>(() => _tts.setPitch(1.0));
-    await _call<dynamic>(() => _tts.setVolume(1.0));
 
     // Pin a concrete voice for the chosen locale so announcements always sound
     // the same (see [_pinConsistentVoice]).

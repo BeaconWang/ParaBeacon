@@ -6830,6 +6830,12 @@ abstract class AppLocalizations {
   /// **'Normal'**
   String get altitudeAnnouncementSpeechRateNormal;
 
+  /// No description provided for @altitudeAnnouncementVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice volume: {percent}%'**
+  String altitudeAnnouncementVolume(String percent);
+
   /// No description provided for @altitudeAnnouncementDuckVarioDescription.
   ///
   /// In en, this message translates to:

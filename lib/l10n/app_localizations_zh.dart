@@ -3035,7 +3035,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String flightsMergeMessage(String start, String end) {
-    return '选中的飞行将合并为一条记录（$start 至 $end）。航班之间的时间将保留为数据缺失时段，并在回放和 3D 回放中标出。原记录将被替换，此操作无法撤销。';
+    return '选中的飞行记录将合并为一条飞行记录（$start 至 $end）。飞行记录之间的时间将保留为数据缺失时段，并在回放和 3D 回放中标出。原飞行记录将被替换，此操作无法撤销。';
   }
 
   @override
@@ -3049,7 +3049,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String flightsMergeConditions(int minutes, String km) {
-    return '合并条件：飞行需前后相连，从降落到下一次起飞不超过 $minutes 分钟、距离不超过 $km 公里，且使用同一翼型、同一飞行员。';
+    return '合并条件：飞行记录需前后相连，从降落到下一次起飞不超过 $minutes 分钟、距离不超过 $km 公里，且使用同一翼型、同一飞行员。';
   }
 
   @override
@@ -3057,22 +3057,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String flightsMergeIssueRecording(String flight) {
-    return '飞行 $flight 仍在记录中。';
+    return '飞行记录 $flight 仍在记录中。';
   }
 
   @override
   String flightsMergeIssueNotInLog(String flight) {
-    return '飞行 $flight 已不在飞行记录中。';
+    return '飞行记录 $flight 已被删除。';
   }
 
   @override
   String flightsMergeIssueNoSamples(String flight) {
-    return '飞行 $flight 没有 GPS 轨迹数据。';
+    return '飞行记录 $flight 没有 GPS 轨迹数据。';
   }
 
   @override
   String flightsMergeIssueNoFix(String flight) {
-    return '飞行 $flight 没有有效的 GPS 定位。';
+    return '飞行记录 $flight 没有有效的 GPS 定位。';
   }
 
   @override
@@ -3081,7 +3081,7 @@ class AppLocalizationsZh extends AppLocalizations {
     String second,
     String duration,
   ) {
-    return '$first → $second：两次飞行时间重叠 $duration。';
+    return '$first → $second：两条飞行记录时间重叠 $duration。';
   }
 
   @override

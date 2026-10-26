@@ -147,6 +147,10 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlStatusLine;
     case 'takeoff_waypoint':
       return l10n.controlTakeoffWaypoint;
+    case 'default_landing_waypoint':
+      return l10n.controlDefaultLandingWaypoint;
+    case 'last_landing_waypoint':
+      return l10n.controlLastLandingWaypoint;
     case 'compass_wind':
       return l10n.controlCompassWind;
     default:
@@ -427,6 +431,22 @@ class ControlCatalog {
           kind: ControlKind.widget,
           defaultCols: 6,
           defaultRows: 2,
+        ),
+        ControlType(
+          id: 'default_landing_waypoint',
+          label: 'Default Landing Point',
+          icon: Icons.where_to_vote_outlined,
+          kind: ControlKind.widget,
+          defaultCols: 6,
+          defaultRows: 3,
+        ),
+        ControlType(
+          id: 'last_landing_waypoint',
+          label: 'Last Landing Point',
+          icon: Icons.flight_land,
+          kind: ControlKind.widget,
+          defaultCols: 6,
+          defaultRows: 3,
         ),
         ControlType(
           id: 'climb_avg',

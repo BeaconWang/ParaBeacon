@@ -2852,6 +2852,18 @@ abstract class AppLocalizations {
   /// **'Takeoff Waypoint'**
   String get controlTakeoffWaypoint;
 
+  /// No description provided for @controlDefaultLandingWaypoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Landing Point'**
+  String get controlDefaultLandingWaypoint;
+
+  /// No description provided for @controlLastLandingWaypoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Landing Point'**
+  String get controlLastLandingWaypoint;
+
   /// No description provided for @takeoffPointLabel.
   ///
   /// In en, this message translates to:
@@ -2869,6 +2881,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ALT DIFF'**
   String get takeoffAltitudeDifferenceLabel;
+
+  /// No description provided for @waypointBearingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BRG'**
+  String get waypointBearingLabel;
+
+  /// No description provided for @waypointGlideLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'GLIDE'**
+  String get waypointGlideLabel;
+
+  /// No description provided for @waypointEtaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ETA'**
+  String get waypointEtaLabel;
 
   /// No description provided for @climbAverageLabel.
   ///
@@ -3871,6 +3901,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show auto-detect checkbox'**
   String get settingShowAutoDetect;
+
+  /// No description provided for @settingShowDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Show distance'**
+  String get settingShowDistance;
+
+  /// No description provided for @settingShowBearingMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Show bearing'**
+  String get settingShowBearingMetric;
+
+  /// No description provided for @settingShowElevation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show elevation change'**
+  String get settingShowElevation;
+
+  /// No description provided for @settingShowGlide.
+  ///
+  /// In en, this message translates to:
+  /// **'Show glide ratio'**
+  String get settingShowGlide;
+
+  /// No description provided for @settingShowEta.
+  ///
+  /// In en, this message translates to:
+  /// **'Show ETA'**
+  String get settingShowEta;
 
   /// No description provided for @settingShowGps.
   ///

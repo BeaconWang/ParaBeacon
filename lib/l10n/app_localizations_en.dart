@@ -1491,6 +1491,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlTakeoffWaypoint => 'Takeoff Waypoint';
 
   @override
+  String get controlDefaultLandingWaypoint => 'Default Landing Point';
+
+  @override
+  String get controlLastLandingWaypoint => 'Last Landing Point';
+
+  @override
   String get takeoffPointLabel => 'HOME';
 
   @override
@@ -1498,6 +1504,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get takeoffAltitudeDifferenceLabel => 'ALT DIFF';
+
+  @override
+  String get waypointBearingLabel => 'BRG';
+
+  @override
+  String get waypointGlideLabel => 'GLIDE';
+
+  @override
+  String get waypointEtaLabel => 'ETA';
 
   @override
   String get climbAverageLabel => 'CLIMB AVG';
@@ -2024,6 +2039,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingShowAutoDetect => 'Show auto-detect checkbox';
+
+  @override
+  String get settingShowDistance => 'Show distance';
+
+  @override
+  String get settingShowBearingMetric => 'Show bearing';
+
+  @override
+  String get settingShowElevation => 'Show elevation change';
+
+  @override
+  String get settingShowGlide => 'Show glide ratio';
+
+  @override
+  String get settingShowEta => 'Show ETA';
 
   @override
   String get settingShowGps => 'Show GPS status';

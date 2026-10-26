@@ -1428,6 +1428,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlTakeoffWaypoint => '起飞点导航';
 
   @override
+  String get controlDefaultLandingWaypoint => '默认降落点';
+
+  @override
+  String get controlLastLandingWaypoint => '最近降落点';
+
+  @override
   String get takeoffPointLabel => '起飞点';
 
   @override
@@ -1435,6 +1441,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get takeoffAltitudeDifferenceLabel => '高度差';
+
+  @override
+  String get waypointBearingLabel => '方位';
+
+  @override
+  String get waypointGlideLabel => '滑比';
+
+  @override
+  String get waypointEtaLabel => '预计';
 
   @override
   String get climbAverageLabel => '平均爬升';
@@ -1946,6 +1961,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingShowAutoDetect => '显示自动检测复选框';
+
+  @override
+  String get settingShowDistance => '显示距离';
+
+  @override
+  String get settingShowBearingMetric => '显示方位';
+
+  @override
+  String get settingShowElevation => '显示高度差';
+
+  @override
+  String get settingShowGlide => '显示滑翔比';
+
+  @override
+  String get settingShowEta => '显示预计到达时间';
 
   @override
   String get settingShowGps => '显示 GPS 状态';

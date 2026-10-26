@@ -182,6 +182,16 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowSeconds;
     case 'showAutoDetect':
       return l10n.settingShowAutoDetect;
+    case 'showDistance':
+      return l10n.settingShowDistance;
+    case 'showBearingDir':
+      return l10n.settingShowBearingMetric;
+    case 'showElevation':
+      return l10n.settingShowElevation;
+    case 'showGlide':
+      return l10n.settingShowGlide;
+    case 'showEta':
+      return l10n.settingShowEta;
     case 'showGps':
       return l10n.settingShowGps;
     case 'gpsDetailed':
@@ -588,6 +598,54 @@ ControlSetting _unitSetting(UnitDimension dimension) {
   );
 }
 
+/// Metric show/hide toggles and bearing format shared by the two
+/// landing-waypoint widget controls (default + last landing point).
+const List<ControlSetting> _landingWaypointSettings = [
+  ControlSetting.toggle(
+    key: 'showDistance',
+    label: 'Show distance',
+    defaultValue: true,
+  ),
+  ControlSetting.toggle(
+    key: 'showBearingDir',
+    label: 'Show bearing',
+    defaultValue: true,
+  ),
+  ControlSetting.toggle(
+    key: 'showElevation',
+    label: 'Show elevation change',
+    defaultValue: true,
+  ),
+  ControlSetting.toggle(
+    key: 'showGlide',
+    label: 'Show glide ratio',
+    defaultValue: true,
+  ),
+  ControlSetting.toggle(
+    key: 'showEta',
+    label: 'Show ETA',
+    defaultValue: true,
+  ),
+  ControlSetting.choice(
+    key: 'bearingReference',
+    label: 'Direction',
+    defaultValue: 'absolute',
+    options: {
+      'absolute': 'Absolute (compass)',
+      'relative': 'Relative (to heading)',
+    },
+  ),
+  ControlSetting.choice(
+    key: 'format',
+    label: 'Format',
+    defaultValue: 'degrees',
+    options: {
+      'degrees': 'Degrees (0-360°)',
+      'cardinal': 'Cardinal (N, NE, …)',
+    },
+  ),
+];
+
 /// Type-specific settings, keyed by control type id.
 const Map<String, List<ControlSetting>> _typeSettings = {
   'vertical_graph': [
@@ -742,6 +800,8 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       },
     ),
   ],
+  'default_landing_waypoint': _landingWaypointSettings,
+  'last_landing_waypoint': _landingWaypointSettings,
   'clock': [
     ControlSetting.toggle(
       key: 'showSeconds',
@@ -1090,6 +1150,17 @@ const Map<String, List<ControlSetting>> _typeSettings = {
   ],
 };
 
+/// Decimal-place ranges shared by the two landing-waypoint widget controls.
+const List<ControlSetting> _landingWaypointDecimals = [
+  ControlSetting.decimalRange(key: 'distanceDecimals', label: 'Distance'),
+  ControlSetting.decimalRange(key: 'bearingDecimals', label: 'Bearing'),
+  ControlSetting.decimalRange(
+    key: 'altitudeDifferenceDecimals',
+    label: 'Elevation change',
+  ),
+  ControlSetting.decimalRange(key: 'ratioDecimals', label: 'Glide ratio'),
+];
+
 const Map<String, List<ControlSetting>> _decimalSettings = {
   'vertical_graph': [
     ControlSetting.decimalRange(key: 'altitudeDecimals', label: 'Altitude'),
@@ -1177,6 +1248,8 @@ const Map<String, List<ControlSetting>> _decimalSettings = {
     ),
     ControlSetting.decimalRange(key: 'bearingDecimals', label: 'Bearing'),
   ],
+  'default_landing_waypoint': _landingWaypointDecimals,
+  'last_landing_waypoint': _landingWaypointDecimals,
   'status_line': [
     ControlSetting.decimalRange(key: 'accuracyDecimals', label: 'GPS accuracy'),
   ],
@@ -1276,6 +1349,8 @@ const Set<String> _controlsWithoutTitle = {
   'vario',
   'climb_avg',
   'takeoff_waypoint',
+  'default_landing_waypoint',
+  'last_landing_waypoint',
   'debug_sensor',
   'data_monitor',
   'flight_button',
@@ -1298,6 +1373,8 @@ const Map<String, UnitDimension> _unitDimensions = {
   'wind_speed': UnitDimension.speed,
   'distance_to_takeoff': UnitDimension.distance,
   'takeoff_waypoint': UnitDimension.distance,
+  'default_landing_waypoint': UnitDimension.distance,
+  'last_landing_waypoint': UnitDimension.distance,
   'gps_accuracy': UnitDimension.altitude,
   'pressure': UnitDimension.pressure,
   'temperature': UnitDimension.temperature,

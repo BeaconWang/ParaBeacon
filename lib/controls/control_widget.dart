@@ -3,6 +3,7 @@ import '../data/unit_settings.dart';
 import '../data/display_settings.dart';
 import 'climb_avg_control.dart';
 import 'takeoff_waypoint_control.dart';
+import 'landing_waypoint_control.dart';
 import '../l10n/app_localizations.dart';
 import 'placed_control.dart';
 import 'data_value_control.dart';
@@ -404,6 +405,28 @@ class ControlWidget extends StatelessWidget {
         return const ClimbAvgControl();
       case 'takeoff_waypoint':
         return const TakeoffWaypointControl();
+      case 'default_landing_waypoint':
+        return LandingWaypointControl(
+          reference: LandingReference.defaultPoint,
+          showDistance: control.boolSetting('showDistance', fallback: true),
+          showBearing: control.boolSetting('showBearingDir', fallback: true),
+          showElevation: control.boolSetting('showElevation', fallback: true),
+          showGlide: control.boolSetting('showGlide', fallback: true),
+          showEta: control.boolSetting('showEta', fallback: true),
+          cardinal: control.setting('format') == 'cardinal',
+          relative: control.setting('bearingReference') == 'relative',
+        );
+      case 'last_landing_waypoint':
+        return LandingWaypointControl(
+          reference: LandingReference.nearest,
+          showDistance: control.boolSetting('showDistance', fallback: true),
+          showBearing: control.boolSetting('showBearingDir', fallback: true),
+          showElevation: control.boolSetting('showElevation', fallback: true),
+          showGlide: control.boolSetting('showGlide', fallback: true),
+          showEta: control.boolSetting('showEta', fallback: true),
+          cardinal: control.setting('format') == 'cardinal',
+          relative: control.setting('bearingReference') == 'relative',
+        );
       case 'debug_sensor':
         return const DebugSensorControl();
       case 'data_monitor':

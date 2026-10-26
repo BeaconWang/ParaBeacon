@@ -72,7 +72,11 @@ import 'theme/language_settings_sheet.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await OfflineTilesService.instance.warmup();
+  // Restore offline maps after the first frame so opening the app is not held
+  // up by preferences I/O or opening the MBTiles database.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(OfflineTilesService.instance.warmup());
+  });
   // Keep the display awake: a flight instrument must stay visible and its
   // audio/GPS/sensor loops running rather than being suspended when the user
   // isn't touching the screen. Best-effort — unsupported platforms are no-ops.

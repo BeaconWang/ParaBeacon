@@ -40,6 +40,7 @@ class MapTileCacheService {
   static const _maxCacheBytes = 256 * 1024 * 1024;
   static const _trimTargetBytes = _maxCacheBytes * 3 ~/ 4;
   static const _maxTileBytes = 10 * 1024 * 1024;
+  static const _trimWriteThresholdBytes = 8 * 1024 * 1024;
   static const _sourceIds = <String>[
     'osm',
     'osmfr',
@@ -53,6 +54,7 @@ class MapTileCacheService {
   Future<Directory>? _directoryFuture;
   Future<void> _writeQueue = Future<void>.value();
   int _generation = 0;
+  int _bytesSinceLastTrim = 0;
   late final http.BaseClient _httpClient = _MapTileCacheClient(this);
 
   int get generation => _generation;
@@ -156,7 +158,10 @@ class MapTileCacheService {
       (await getCacheSummary()).total;
 
   /// Returns cache details by online source, plus the aggregate total.
-  Future<MapTileCacheSummary> getCacheSummary() => _exclusive(() async {
+  /// File stats are processed in bounded parallel batches and intentionally do
+  /// not share the tile-write queue, so opening settings cannot stall tile loads.
+  Future<MapTileCacheSummary> getCacheSummary() async {
+    final generation = _generation;
     final directory = await _directory();
     final sourceBytes = <String, int>{
       for (final sourceId in _sourceIds) sourceId: 0,
@@ -168,30 +173,52 @@ class MapTileCacheService {
     };
     var totalBytes = 0;
     var totalTileCount = 0;
-    await for (final entity in directory.list(
-      recursive: true,
-      followLinks: false,
-    )) {
-      if (entity is! File || p.basename(entity.path).contains('.tmp-')) {
-        continue;
-      }
-      final stat = await entity.stat();
-      if (stat.type != FileSystemEntityType.file ||
-          stat.size <= 0 ||
-          stat.size > _maxTileBytes) {
-        continue;
-      }
-      final relativePath = p.relative(entity.path, from: directory.path);
-      final pathParts = p.split(relativePath);
-      final sourceId =
-          pathParts.length > 1 && sourceBytes.containsKey(pathParts.first)
-          ? pathParts.first
-          : _legacySourceId;
-      sourceBytes[sourceId] = sourceBytes[sourceId]! + stat.size;
-      sourceTileCounts[sourceId] = sourceTileCounts[sourceId]! + 1;
-      totalBytes += stat.size;
-      totalTileCount++;
+    final pending = <File>[];
+
+    Future<void> flushBatch() async {
+      final batch = List<File>.of(pending);
+      pending.clear();
+      await Future.wait(
+        batch.map((file) async {
+          try {
+            final stat = await file.stat();
+            if (stat.type != FileSystemEntityType.file || stat.size <= 0)
+              return;
+            final relativePath = p.relative(file.path, from: directory.path);
+            final pathParts = p.split(relativePath);
+            final sourceId =
+                pathParts.length > 1 && sourceBytes.containsKey(pathParts.first)
+                ? pathParts.first
+                : _legacySourceId;
+            sourceBytes[sourceId] = sourceBytes[sourceId]! + stat.size;
+            sourceTileCounts[sourceId] = sourceTileCounts[sourceId]! + 1;
+            totalBytes += stat.size;
+            totalTileCount++;
+          } on FileSystemException {
+            // A tile may be removed while the settings summary is being read.
+          }
+        }),
+      );
     }
+
+    try {
+      await for (final entity in directory.list(
+        recursive: true,
+        followLinks: false,
+      )) {
+        if (entity is! File || p.basename(entity.path).contains('.tmp-')) {
+          continue;
+        }
+        pending.add(entity);
+        if (pending.length == 64) await flushBatch();
+      }
+      await flushBatch();
+    } on FileSystemException {
+      if (generation == _generation) rethrow;
+      return getCacheSummary();
+    }
+    if (generation != _generation) return getCacheSummary();
+
     return MapTileCacheSummary(
       total: MapTileCacheStats(bytes: totalBytes, tileCount: totalTileCount),
       bySource: {
@@ -202,7 +229,7 @@ class MapTileCacheService {
           ),
       },
     );
-  });
+  }
 
   /// Persists a successful response if it belongs to the current cache
   /// generation. A clear operation invalidates writes already in flight.
@@ -223,11 +250,15 @@ class MapTileCacheService {
           try {
             await temp.writeAsBytes(bytes, flush: true);
             await temp.rename(path);
+            _bytesSinceLastTrim += bytes.length;
           } finally {
             if (await temp.exists()) await temp.delete();
           }
         }
-        await _trimIfNeeded(directory);
+        if (_bytesSinceLastTrim >= _trimWriteThresholdBytes) {
+          await _trimIfNeeded(directory);
+          _bytesSinceLastTrim = 0;
+        }
       } catch (_) {
         // A disk-cache failure must not prevent online tiles from displaying.
       }
@@ -242,6 +273,7 @@ class MapTileCacheService {
       await directory.delete(recursive: true);
     }
     await directory.create(recursive: true);
+    _bytesSinceLastTrim = 0;
   });
 
   Future<void> _trimIfNeeded(Directory directory) async {

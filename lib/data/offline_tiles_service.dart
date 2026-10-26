@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -25,10 +26,15 @@ class OfflineTilesService {
   static final OfflineTilesService instance = OfflineTilesService._();
 
   static const _kActiveKey = 'pb.map.activeMbtiles';
+  static const _maxMemoryTileBytes = 16 * 1024 * 1024;
+  static const _maxMemoryTileCount = 256;
 
   Directory? _root;
   MbTiles? _mbtiles;
   String? _activeName;
+  final LinkedHashMap<String, Uint8List?> _tileCache =
+      LinkedHashMap<String, Uint8List?>();
+  int _tileCacheBytes = 0;
 
   /// Ticks on every activate/deactivate so listeners rebuild the tile layer.
   final ValueNotifier<int> revision = ValueNotifier<int>(0);
@@ -89,6 +95,8 @@ class OfflineTilesService {
       final path = p.join(dir.path, fileName);
       if (!await File(path).exists()) {
         debugPrint('OfflineTilesService: file not found: $path');
+        _activeName = null;
+        await _persistActive(null);
         revision.value++;
         return false;
       }
@@ -140,7 +148,25 @@ class OfflineTilesService {
     final mb = _mbtiles;
     if (mb == null) return null;
     final tmsY = ((1 << z) - 1) - y;
-    return mb.getTile(z: z, x: x, y: tmsY);
+    final key = '$z/$x/$tmsY';
+    if (_tileCache.containsKey(key)) {
+      final cached = _tileCache.remove(key);
+      _tileCache[key] = cached;
+      return cached;
+    }
+
+    final tile = mb.getTile(z: z, x: x, y: tmsY);
+    if (tile == null || tile.length <= _maxMemoryTileBytes) {
+      _tileCache[key] = tile;
+      _tileCacheBytes += tile?.length ?? 0;
+      while (_tileCache.length > _maxMemoryTileCount ||
+          _tileCacheBytes > _maxMemoryTileBytes) {
+        final oldestKey = _tileCache.keys.first;
+        final oldestTile = _tileCache.remove(oldestKey);
+        _tileCacheBytes -= oldestTile?.length ?? 0;
+      }
+    }
+    return tile;
   }
 
   Future<void> _close() async {
@@ -148,6 +174,8 @@ class OfflineTilesService {
       _mbtiles?.dispose();
     } catch (_) {}
     _mbtiles = null;
+    _tileCache.clear();
+    _tileCacheBytes = 0;
   }
 
   Future<void> _persistActive(String? name) async {

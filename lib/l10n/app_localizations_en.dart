@@ -1741,6 +1741,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapAltitude => 'ALT';
 
   @override
+  String get flightLibraryStorageTitle => 'Flight library storage';
+
+  @override
+  String get flightLibraryStorageSubtitle =>
+      'Space used by saved flight records.';
+
+  @override
+  String get flightLibraryStorageLoading => 'Calculating flight library size…';
+
+  @override
+  String get flightLibraryStorageUnavailable =>
+      'Flight library size unavailable';
+
+  @override
+  String flightLibraryStorageDetails(String size, int flights, int bytes) {
+    return '$size · $flights flights · $bytes bytes';
+  }
+
+  @override
   String get mapRequiredGlideRatio => 'L/D REQ';
 
   @override

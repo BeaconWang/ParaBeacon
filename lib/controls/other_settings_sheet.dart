@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../data/color_palette_settings.dart';
+import '../data/flight_recorder.dart';
+import '../data/flight_store.dart';
 import '../data/map_tile_cache.dart';
 import '../data/share_card_settings.dart';
 import '../l10n/app_localizations.dart';
@@ -24,6 +26,7 @@ class _OtherSettingsSheet extends StatefulWidget {
 }
 
 class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
+  Future<int>? _flightLibrarySizeFuture;
   Future<MapTileCacheSummary>? _mapCacheSummaryFuture;
 
   String _formatMapCacheSize(int bytes) {
@@ -92,6 +95,37 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.mapCacheClearFailed)));
     }
+  }
+
+  Widget _buildFlightLibraryStorage(AppLocalizations l10n, ThemeData theme) {
+    final flightCount = FlightRecorder.instance.tracks.length;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: FutureBuilder<int>(
+        future: _flightLibrarySizeFuture ??= FlightStore.instance
+            .storageSizeBytes(),
+        builder: (context, snapshot) {
+          final subtitle = snapshot.connectionState != ConnectionState.done
+              ? l10n.flightLibraryStorageLoading
+              : snapshot.hasError || !snapshot.hasData
+              ? l10n.flightLibraryStorageUnavailable
+              : l10n.flightLibraryStorageDetails(
+                  _formatMapCacheSize(snapshot.data!),
+                  flightCount,
+                  snapshot.data!,
+                );
+          return ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              Icons.flight_outlined,
+              color: theme.colorScheme.primary,
+            ),
+            title: Text(l10n.flightLibraryStorageTitle),
+            subtitle: Text(subtitle),
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildMapCache(AppLocalizations l10n, ThemeData theme) {
@@ -241,6 +275,7 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                       await showColorPaletteSettingsSheet(context);
                     },
                   ),
+                  _buildFlightLibraryStorage(l10n, theme),
                   _buildMapCache(l10n, theme),
                 ],
               ),

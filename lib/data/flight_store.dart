@@ -74,6 +74,15 @@ class FlightStore {
     }
   }
 
+  /// Returns the UTF-8 byte length of the persisted flight-library JSON, or 0
+  /// when nothing is stored. Storage errors are propagated to the caller.
+  Future<int> storageSizeBytes() async {
+    final sp = await SharedPreferences.getInstance();
+    final raw = sp.getString(_kTracksKey);
+    if (raw == null || raw.isEmpty) return 0;
+    return utf8.encode(raw).length;
+  }
+
   /// Schedules a debounced save of the given flight summaries.
   void save(
     List<FlightTrack> tracks, {

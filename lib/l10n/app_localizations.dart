@@ -3332,6 +3332,36 @@ abstract class AppLocalizations {
   /// **'ALT'**
   String get mapAltitude;
 
+  /// No description provided for @flightLibraryStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight library storage'**
+  String get flightLibraryStorageTitle;
+
+  /// No description provided for @flightLibraryStorageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Space used by saved flight records.'**
+  String get flightLibraryStorageSubtitle;
+
+  /// No description provided for @flightLibraryStorageLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating flight library size…'**
+  String get flightLibraryStorageLoading;
+
+  /// No description provided for @flightLibraryStorageUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight library size unavailable'**
+  String get flightLibraryStorageUnavailable;
+
+  /// No description provided for @flightLibraryStorageDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} · {flights} flights · {bytes} bytes'**
+  String flightLibraryStorageDetails(String size, int flights, int bytes);
+
   /// No description provided for @mapRequiredGlideRatio.
   ///
   /// In en, this message translates to:

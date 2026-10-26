@@ -679,6 +679,18 @@
   },
   "mapHeading": "HDG",
   "mapAltitude": "ALT",
+  "flightLibraryStorageTitle": "Flight library storage",
+  "flightLibraryStorageSubtitle": "Space used by saved flight records.",
+  "flightLibraryStorageLoading": "Calculating flight library size…",
+  "flightLibraryStorageUnavailable": "Flight library size unavailable",
+  "flightLibraryStorageDetails": "{size} · {flights} flights · {bytes} bytes",
+  "@flightLibraryStorageDetails": {
+    "placeholders": {
+      "size": { "type": "String" },
+      "flights": { "type": "int" },
+      "bytes": { "type": "int" }
+    }
+  },
   "mapRequiredGlideRatio": "L/D REQ",
   "varioLegendSink": "SINK",
   "varioLegendNeutral": "NEUTRAL",

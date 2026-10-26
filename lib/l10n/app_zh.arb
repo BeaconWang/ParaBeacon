@@ -610,6 +610,18 @@
   },
   "mapHeading": "航向",
   "mapAltitude": "高度",
+  "flightLibraryStorageTitle": "飞行库占用空间",
+  "flightLibraryStorageSubtitle": "已保存飞行记录所占用的存储空间。",
+  "flightLibraryStorageLoading": "正在统计飞行库大小…",
+  "flightLibraryStorageUnavailable": "暂时无法读取飞行库大小",
+  "flightLibraryStorageDetails": "{size} · {flights} 条飞行记录 · {bytes} 字节",
+  "@flightLibraryStorageDetails": {
+    "placeholders": {
+      "size": { "type": "String" },
+      "flights": { "type": "int" },
+      "bytes": { "type": "int" }
+    }
+  },
   "mapRequiredGlideRatio": "所需滑翔比",
   "varioLegendSink": "下沉",
   "varioLegendNeutral": "中性",

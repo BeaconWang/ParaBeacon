@@ -1676,6 +1676,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapAltitude => '高度';
 
   @override
+  String get flightLibraryStorageTitle => '飞行库占用空间';
+
+  @override
+  String get flightLibraryStorageSubtitle => '已保存飞行记录所占用的存储空间。';
+
+  @override
+  String get flightLibraryStorageLoading => '正在统计飞行库大小…';
+
+  @override
+  String get flightLibraryStorageUnavailable => '暂时无法读取飞行库大小';
+
+  @override
+  String flightLibraryStorageDetails(String size, int flights, int bytes) {
+    return '$size · $flights 条飞行记录 · $bytes 字节';
+  }
+
+  @override
   String get mapRequiredGlideRatio => '所需滑翔比';
 
   @override

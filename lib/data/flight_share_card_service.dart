@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
 import 'flight_derived_stats.dart';
 import 'flight_file_output_service.dart';
@@ -661,13 +662,11 @@ class FlightShareCardService {
       track.takeoffSite,
       track.takeoffLatitude,
       track.takeoffLongitude,
-      track.takeoffAltitude,
     );
     final landing = _endpointText(
       track.landingSite,
       track.landingLatitude,
       track.landingLongitude,
-      track.landingAltitude,
     );
     y = _paintMetricSection(
       canvas,
@@ -675,7 +674,11 @@ class FlightShareCardService {
       [
         (l10n.flightDetailDistance, km(track.distanceM)),
         if (takeoff != null) (l10n.flightDetailTakeoff, takeoff),
+        if (track.takeoffAltitude != null)
+          (l10n.flightDetailTakeoffAltitude, m(track.takeoffAltitude!)),
         if (landing != null) (l10n.flightDetailLanding, landing),
+        if (track.landingAltitude != null)
+          (l10n.flightDetailLandingAltitude, m(track.landingAltitude!)),
       ],
       left: 60,
       top: y,
@@ -703,6 +706,15 @@ class FlightShareCardService {
     );
 
     if (track.hasSamples) {
+      _text(
+        canvas,
+        l10n.flightDetailPerformance.toUpperCase(),
+        Offset(60, y),
+        fontSize: 24,
+        color: colorScheme.primary,
+        weight: FontWeight.w700,
+      );
+      y += 44;
       y = _paintMetricSection(
         canvas,
         l10n.flightDetailRouteMetrics,
@@ -812,8 +824,12 @@ class FlightShareCardService {
       if (track.aircraftModel?.isNotEmpty ?? false)
         (l10n.flightDetailAircraftModel, track.aircraftModel!),
       if (track.aircraftFaiClass?.isNotEmpty ?? false)
-        (l10n.flightDetailAircraftClass, track.aircraftFaiClass!),
-      if (track.aircraftCategory?.isNotEmpty ?? false)
+        (
+          l10n.flightDetailAircraftClass,
+          aircraftFaiClassLabel(l10n, track.aircraftFaiClass!),
+        ),
+      if (!const {'3', '11', '12'}.contains(track.aircraftFaiClass?.trim()) &&
+          (track.aircraftCategory?.isNotEmpty ?? false))
         (l10n.flightDetailAircraftCategory, track.aircraftCategory!),
       if (track.aircraftTandem != null)
         (
@@ -926,17 +942,19 @@ class FlightShareCardService {
       track.takeoffSite,
       track.takeoffLatitude,
       track.takeoffLongitude,
-      track.takeoffAltitude,
     );
     final landing = _endpointText(
       track.landingSite,
       track.landingLatitude,
       track.landingLongitude,
-      track.landingAltitude,
     );
     final counts = <int>[
       5 + (track.pilotName?.isNotEmpty ?? false ? 1 : 0),
-      1 + (takeoff == null ? 0 : 1) + (landing == null ? 0 : 1),
+      1 +
+          (takeoff == null ? 0 : 1) +
+          (track.takeoffAltitude == null ? 0 : 1) +
+          (landing == null ? 0 : 1) +
+          (track.landingAltitude == null ? 0 : 1),
       4 +
           (!track.hasSamples && track.maxAltGainM != null ? 1 : 0) +
           (!track.hasSamples && track.elevationDropM != null ? 1 : 0),
@@ -955,7 +973,8 @@ class FlightShareCardService {
       track.aircraftManufacturer?.isNotEmpty ?? false,
       track.aircraftModel?.isNotEmpty ?? false,
       track.aircraftFaiClass?.isNotEmpty ?? false,
-      track.aircraftCategory?.isNotEmpty ?? false,
+      !const {'3', '11', '12'}.contains(track.aircraftFaiClass?.trim()) &&
+          (track.aircraftCategory?.isNotEmpty ?? false),
       track.aircraftTandem != null,
       track.aircraftEngineType?.isNotEmpty ?? false,
       track.aircraftTrimSpeedKmh != null,
@@ -965,9 +984,10 @@ class FlightShareCardService {
     final telemetryCount = _telemetryEntries(track, l10n).length;
     if (telemetryCount > 0) counts.add(telemetryCount);
     return counts.fold<double>(
-      0,
-      (height, count) => height + 50 + ((count + 2) ~/ 3) * 104,
-    );
+          0,
+          (height, count) => height + 50 + ((count + 2) ~/ 3) * 104,
+        ) +
+        (track.hasSamples ? 44 : 0);
   }
 
   double _paintMetricSection(
@@ -1145,14 +1165,9 @@ class FlightShareCardService {
     String? site,
     double? latitude,
     double? longitude,
-    double? altitude,
   ) {
     final coords = _formatCoordinates(latitude, longitude);
-    final parts = <String>[
-      if (coords != null) coords,
-      if (altitude != null) '${altitude.round()} m',
-    ];
-    final detail = parts.join(' · ');
+    final detail = coords ?? '';
     final hasSite = site?.isNotEmpty ?? false;
     if (hasSite && detail.isNotEmpty) return '$site ($detail)';
     if (hasSite) return site;

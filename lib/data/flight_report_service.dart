@@ -8,6 +8,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
 import 'flight_derived_stats.dart';
 import 'flight_file_output_service.dart';
@@ -43,18 +44,26 @@ class FlightReportService {
       track.takeoffSite,
       track.takeoffLatitude,
       track.takeoffLongitude,
-      track.takeoffAltitude,
     );
     final landing = _endpointText(
       track.landingSite,
       track.landingLatitude,
       track.landingLongitude,
-      track.landingAltitude,
     );
     final routeRows = <List<String>>[
       [l10n.flightDetailDistance, _km(track.distanceM)],
       if (takeoff != null) [l10n.flightDetailTakeoff, takeoff],
+      if (track.takeoffAltitude != null)
+        [
+          l10n.flightDetailTakeoffAltitude,
+          '${track.takeoffAltitude!.round()} m',
+        ],
       if (landing != null) [l10n.flightDetailLanding, landing],
+      if (track.landingAltitude != null)
+        [
+          l10n.flightDetailLandingAltitude,
+          '${track.landingAltitude!.round()} m',
+        ],
     ];
 
     final aircraftRows = <List<String>>[
@@ -65,8 +74,12 @@ class FlightReportService {
       if (track.aircraftModel?.isNotEmpty ?? false)
         [l10n.flightDetailAircraftModel, track.aircraftModel!],
       if (track.aircraftFaiClass?.isNotEmpty ?? false)
-        [l10n.flightDetailAircraftClass, track.aircraftFaiClass!],
-      if (track.aircraftCategory?.isNotEmpty ?? false)
+        [
+          l10n.flightDetailAircraftClass,
+          aircraftFaiClassLabel(l10n, track.aircraftFaiClass!),
+        ],
+      if (!const {'3', '11', '12'}.contains(track.aircraftFaiClass?.trim()) &&
+          (track.aircraftCategory?.isNotEmpty ?? false))
         [l10n.flightDetailAircraftCategory, track.aircraftCategory!],
       if (track.aircraftTandem != null)
         [
@@ -893,14 +906,9 @@ class FlightReportService {
     String? site,
     double? latitude,
     double? longitude,
-    double? altitude,
   ) {
     final coords = _fmtCoords(latitude, longitude);
-    final parts = <String>[
-      if (coords != null) coords,
-      if (altitude != null) '${altitude.round()} m',
-    ];
-    final detail = parts.join(' · ');
+    final detail = coords ?? '';
     final hasSite = site?.isNotEmpty ?? false;
     if (hasSite && detail.isNotEmpty) return '$site ($detail)';
     if (hasSite) return site;

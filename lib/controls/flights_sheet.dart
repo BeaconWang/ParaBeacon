@@ -1252,6 +1252,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                         const SizedBox(height: 8),
                         _sectionLabel(theme, l10n.flightDetailAircraft),
                         if (track.hasAircraftInformation) ...[
+                          if (track.aircraftName?.isNotEmpty ?? false)
+                            _detailRow(
+                              l10n.flightDetailAircraftName,
+                              track.aircraftName!,
+                            ),
                           if (track.aircraftFaiClass?.isNotEmpty ?? false)
                             _detailRow(
                               l10n.flightDetailAircraftClass,

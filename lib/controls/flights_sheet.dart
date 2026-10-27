@@ -325,6 +325,15 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     final l10n = AppLocalizations.of(context);
     final canReplay = track.samples.length >= 2;
     final selected = _selectedTracks.contains(track);
+    final takeoffSite = track.takeoffSite?.trim() ?? '';
+    final landingSite = track.landingSite?.trim() ?? '';
+    final route = switch ((takeoffSite.isNotEmpty, landingSite.isNotEmpty)) {
+      (true, true) => '$takeoffSite → $landingSite',
+      (true, false) => takeoffSite,
+      (false, true) => landingSite,
+      (false, false) => '',
+    };
+    final dateTime = _fmtDateTime(track.startTime);
     return ListTile(
       contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 0),
       leading: _selectionMode
@@ -339,34 +348,47 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-      title: Row(
+      isThreeLine: route.isNotEmpty,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Text(
-              _fmtDateTime(track.startTime),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (track.isAutoFlight) ...[
-            const SizedBox(width: 8),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          Row(
+            children: [
+              Expanded(
                 child: Text(
-                  l10n.flightButtonAuto,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+                  route.isEmpty ? dateTime : route,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (track.isAutoFlight) ...[
+                const SizedBox(width: 8),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    child: Text(
+                      l10n.flightButtonAuto,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (route.isNotEmpty)
+            Text(
+              dateTime,
+              style: theme.textTheme.bodySmall,
+              overflow: TextOverflow.ellipsis,
             ),
-          ],
         ],
       ),
       subtitle: Text(

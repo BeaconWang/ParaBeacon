@@ -658,6 +658,54 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pilotTrainingRetry => '重试';
 
   @override
+  String get pilotTrainingAdd => '新增训练记录';
+
+  @override
+  String get pilotTrainingSubmit => '保存记录';
+
+  @override
+  String get pilotTrainingSaveFailed => '训练记录保存失败。';
+
+  @override
+  String get pilotTrainingRequired => '此项为必填项。';
+
+  @override
+  String get pilotTrainingSelect => '请选择';
+
+  @override
+  String get pilotTrainingWindEast => '东';
+
+  @override
+  String get pilotTrainingWindSouthEast => '东南';
+
+  @override
+  String get pilotTrainingWindSouth => '南';
+
+  @override
+  String get pilotTrainingWindSouthWest => '西南';
+
+  @override
+  String get pilotTrainingWindWest => '西';
+
+  @override
+  String get pilotTrainingWindNorthWest => '西北';
+
+  @override
+  String get pilotTrainingWindNorth => '北';
+
+  @override
+  String get pilotTrainingWindNorthEast => '东北';
+
+  @override
+  String get pilotTrainingResultFine => '优秀';
+
+  @override
+  String get pilotTrainingResultStandard => '合格';
+
+  @override
+  String get pilotTrainingResultNotStandard => '不合格';
+
+  @override
   String get pilotTrainingDate => '训练日期';
 
   @override

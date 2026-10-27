@@ -686,6 +686,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pilotTrainingRetry => 'Retry';
 
   @override
+  String get pilotTrainingAdd => 'Add training record';
+
+  @override
+  String get pilotTrainingSubmit => 'Save record';
+
+  @override
+  String get pilotTrainingSaveFailed => 'Couldn\'t save the training record.';
+
+  @override
+  String get pilotTrainingRequired => 'This field is required.';
+
+  @override
+  String get pilotTrainingSelect => 'Select an option';
+
+  @override
+  String get pilotTrainingWindEast => 'East';
+
+  @override
+  String get pilotTrainingWindSouthEast => 'Southeast';
+
+  @override
+  String get pilotTrainingWindSouth => 'South';
+
+  @override
+  String get pilotTrainingWindSouthWest => 'Southwest';
+
+  @override
+  String get pilotTrainingWindWest => 'West';
+
+  @override
+  String get pilotTrainingWindNorthWest => 'Northwest';
+
+  @override
+  String get pilotTrainingWindNorth => 'North';
+
+  @override
+  String get pilotTrainingWindNorthEast => 'Northeast';
+
+  @override
+  String get pilotTrainingResultFine => 'Excellent';
+
+  @override
+  String get pilotTrainingResultStandard => 'Qualified';
+
+  @override
+  String get pilotTrainingResultNotStandard => 'Not qualified';
+
+  @override
   String get pilotTrainingDate => 'Training date';
 
   @override

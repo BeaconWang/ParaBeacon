@@ -815,7 +815,7 @@ abstract class AppLocalizations {
   /// No description provided for @aircraftSelectManufacturer.
   ///
   /// In en, this message translates to:
-  /// **'Select a manufacturer'**
+  /// **'Type or select a manufacturer'**
   String get aircraftSelectManufacturer;
 
   /// No description provided for @aircraftModel.
@@ -827,7 +827,7 @@ abstract class AppLocalizations {
   /// No description provided for @aircraftSelectModel.
   ///
   /// In en, this message translates to:
-  /// **'Select a model'**
+  /// **'Type or select a model'**
   String get aircraftSelectModel;
 
   /// No description provided for @aircraftName.
@@ -1387,6 +1387,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get pilotTrainingRetry;
+
+  /// No description provided for @pilotTrainingAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add training record'**
+  String get pilotTrainingAdd;
+
+  /// No description provided for @pilotTrainingSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Save record'**
+  String get pilotTrainingSubmit;
+
+  /// No description provided for @pilotTrainingSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the training record.'**
+  String get pilotTrainingSaveFailed;
+
+  /// No description provided for @pilotTrainingRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get pilotTrainingRequired;
+
+  /// No description provided for @pilotTrainingSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an option'**
+  String get pilotTrainingSelect;
+
+  /// No description provided for @pilotTrainingWindEast.
+  ///
+  /// In en, this message translates to:
+  /// **'East'**
+  String get pilotTrainingWindEast;
+
+  /// No description provided for @pilotTrainingWindSouthEast.
+  ///
+  /// In en, this message translates to:
+  /// **'Southeast'**
+  String get pilotTrainingWindSouthEast;
+
+  /// No description provided for @pilotTrainingWindSouth.
+  ///
+  /// In en, this message translates to:
+  /// **'South'**
+  String get pilotTrainingWindSouth;
+
+  /// No description provided for @pilotTrainingWindSouthWest.
+  ///
+  /// In en, this message translates to:
+  /// **'Southwest'**
+  String get pilotTrainingWindSouthWest;
+
+  /// No description provided for @pilotTrainingWindWest.
+  ///
+  /// In en, this message translates to:
+  /// **'West'**
+  String get pilotTrainingWindWest;
+
+  /// No description provided for @pilotTrainingWindNorthWest.
+  ///
+  /// In en, this message translates to:
+  /// **'Northwest'**
+  String get pilotTrainingWindNorthWest;
+
+  /// No description provided for @pilotTrainingWindNorth.
+  ///
+  /// In en, this message translates to:
+  /// **'North'**
+  String get pilotTrainingWindNorth;
+
+  /// No description provided for @pilotTrainingWindNorthEast.
+  ///
+  /// In en, this message translates to:
+  /// **'Northeast'**
+  String get pilotTrainingWindNorthEast;
+
+  /// No description provided for @pilotTrainingResultFine.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get pilotTrainingResultFine;
+
+  /// No description provided for @pilotTrainingResultStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Qualified'**
+  String get pilotTrainingResultStandard;
+
+  /// No description provided for @pilotTrainingResultNotStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Not qualified'**
+  String get pilotTrainingResultNotStandard;
 
   /// No description provided for @pilotTrainingDate.
   ///

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
+import 'pilot_training_record_form.dart';
 
 Future<void> showPilotTrainingRecordsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -49,6 +50,11 @@ class _PilotTrainingRecordsSheetState
 
   Future<void> _refresh() async {
     await _auth.loadPilotTrainingRecords(force: true);
+  }
+
+  Future<void> _addRecord() async {
+    if (!_auth.isSignedIn || _auth.isPilotTrainingRecordSubmitting) return;
+    await showAddPilotTrainingRecordSheet(context);
   }
 
   Widget _field(String label, String value, TextTheme textTheme) {
@@ -202,6 +208,15 @@ class _PilotTrainingRecordsSheetState
                       style: theme.textTheme.titleLarge,
                     ),
                   ),
+                  if (signedIn)
+                    IconButton(
+                      tooltip: l10n.pilotTrainingAdd,
+                      onPressed:
+                          loading || _auth.isPilotTrainingRecordSubmitting
+                          ? null
+                          : _addRecord,
+                      icon: const Icon(Icons.add),
+                    ),
                   IconButton(
                     tooltip: l10n.refresh,
                     onPressed: loading ? null : _refresh,

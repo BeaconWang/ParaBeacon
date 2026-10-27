@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -258,6 +259,9 @@ class AsfcAuthService extends ChangeNotifier {
   static final Uri _pilotTrainingRecordListUri = Uri.parse(
     'https://www.57fly.com/api/train/parasailTrainRecord/list',
   );
+  static final Uri _pilotTrainingRecordSaveUri = Uri.parse(
+    'https://www.57fly.com/api/train/parasailTrainRecord/save',
+  );
   static final Uri _flightRecordDetailUri = Uri.parse(
     'https://www.57fly.com/api/train/trainFlyRecord/customer/detail',
   );
@@ -283,11 +287,14 @@ class AsfcAuthService extends ChangeNotifier {
   bool _captchaLoading = false;
   bool _smsCodeLoading = false;
   bool _profileLoading = false;
+  Completer<bool>? _profileLoadCompleter;
   bool _certificateInfoLoading = false;
   bool _certificateCoachesLoading = false;
   bool _flightRecordsLoading = false;
   bool _pilotTrainingRecordsLoading = false;
   bool _pilotTrainingRecordsFailed = false;
+  bool _pilotTrainingRecordSubmitting = false;
+  bool _pilotTrainingRecordSubmitFailed = false;
   bool _flightRecordSubmitting = false;
   bool _agenciesLoading = false;
   Uint8List? _captchaImageBytes;
@@ -315,6 +322,9 @@ class AsfcAuthService extends ChangeNotifier {
   bool get isFlightRecordsLoading => _flightRecordsLoading;
   bool get isPilotTrainingRecordsLoading => _pilotTrainingRecordsLoading;
   bool get hasPilotTrainingRecordsError => _pilotTrainingRecordsFailed;
+  bool get isPilotTrainingRecordSubmitting => _pilotTrainingRecordSubmitting;
+  bool get hasPilotTrainingRecordSubmitError =>
+      _pilotTrainingRecordSubmitFailed;
   bool get isFlightRecordSubmitting => _flightRecordSubmitting;
   bool get isAgenciesLoading => _agenciesLoading;
   Uint8List? get captchaImageBytes => _captchaImageBytes;
@@ -393,9 +403,14 @@ class AsfcAuthService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-    if (_profileLoading || (!force && _profile != null)) return true;
+    if (_profileLoading) {
+      return _profileLoadCompleter?.future ?? false;
+    }
+    if (!force && _profile != null) return true;
 
     _profileLoading = true;
+    final profileLoadCompleter = Completer<bool>();
+    _profileLoadCompleter = profileLoadCompleter;
     _profileErrorCode = null;
     _profileErrorMessage = null;
     notifyListeners();
@@ -430,6 +445,10 @@ class AsfcAuthService extends ChangeNotifier {
       return false;
     } finally {
       _profileLoading = false;
+      profileLoadCompleter.complete(_profile != null);
+      if (identical(_profileLoadCompleter, profileLoadCompleter)) {
+        _profileLoadCompleter = null;
+      }
       notifyListeners();
     }
   }
@@ -596,9 +615,18 @@ class AsfcAuthService extends ChangeNotifier {
     _pilotTrainingRecordsFailed = false;
     notifyListeners();
     try {
+      await loadProfile();
+      final user = _profile?['user'];
+      final userId = user is Map<String, dynamic> ? _asInt(user['id']) : null;
+      if (userId == null || userId <= 0) {
+        _pilotTrainingRecordsFailed = true;
+        return pilotTrainingRecords;
+      }
       final response = await http
           .get(
-            _pilotTrainingRecordListUri,
+            _pilotTrainingRecordListUri.replace(
+              queryParameters: {'userId': '$userId'},
+            ),
             headers: {'Accept': 'application/json', 'token': _token!},
           )
           .timeout(const Duration(seconds: 15));
@@ -623,6 +651,89 @@ class AsfcAuthService extends ChangeNotifier {
       return pilotTrainingRecords;
     } finally {
       _pilotTrainingRecordsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> addPilotTrainingRecord({
+    required String trainDate,
+    required String address,
+    required String venueHeight,
+    required String windDirection,
+    required String windSpeed,
+    required String trainingSubject,
+    required String numberOfTimes,
+    required String airbornePeriod,
+    required String trainResult,
+  }) async {
+    final values = <String, String>{
+      'trainDate': trainDate.trim(),
+      'address': address.trim(),
+      'venueHeight': venueHeight.trim(),
+      'windDirection': windDirection.trim(),
+      'windSpeed': windSpeed.trim(),
+      'trainingSubject': trainingSubject.trim(),
+      'numberOfTimes': numberOfTimes.trim(),
+      'airbornePeriod': airbornePeriod.trim(),
+      'trainResult': trainResult.trim(),
+    };
+    final parsedDate = DateTime.tryParse(values['trainDate']!);
+    final validDate =
+        parsedDate != null &&
+        '${parsedDate.year.toString().padLeft(4, '0')}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}' ==
+            values['trainDate'];
+    final count = int.tryParse(values['numberOfTimes']!);
+    const windDirections = <String>{'东', '东南', '南', '西南', '西', '西北', '北', '东北'};
+    const windSpeeds = <String>{
+      '0m/s',
+      '1m/s',
+      '2m/s',
+      '3m/s',
+      '4m/s',
+      '5m/s',
+      '6m/s',
+    };
+    const results = <String>{'FINE', 'STANDARD', 'NOT_STANDARD'};
+    if (!isSignedIn ||
+        values.values.any((value) => value.isEmpty || value.length > 500) ||
+        !validDate ||
+        count == null ||
+        count < 1 ||
+        count > 99 ||
+        !windDirections.contains(values['windDirection']) ||
+        !windSpeeds.contains(values['windSpeed']) ||
+        !results.contains(values['trainResult'])) {
+      _pilotTrainingRecordSubmitFailed = true;
+      notifyListeners();
+      return false;
+    }
+    if (_pilotTrainingRecordSubmitting) return false;
+
+    _pilotTrainingRecordSubmitting = true;
+    _pilotTrainingRecordSubmitFailed = false;
+    notifyListeners();
+    try {
+      final response = await http
+          .post(
+            _pilotTrainingRecordSaveUri,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json; charset=utf-8',
+              'token': _token!,
+            },
+            body: jsonEncode(values),
+          )
+          .timeout(const Duration(seconds: 20));
+      final decoded = _decodeMap(response.body);
+      final success = _isSuccessful(response.statusCode, decoded);
+      _pilotTrainingRecordSubmitFailed = !success;
+      if (success) await loadPilotTrainingRecords(force: true);
+      return success;
+    } on Exception {
+      _pilotTrainingRecordSubmitFailed = true;
+      return false;
+    } finally {
+      _pilotTrainingRecordSubmitting = false;
       notifyListeners();
     }
   }

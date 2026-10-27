@@ -97,20 +97,6 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
     return parsed != null && parsed > 0 ? parsed : null;
   }
 
-  List<String> _manufacturerOptions(AircraftSettings settings) {
-    final options = [...settings.manufacturers];
-    if (_manufacturer.isNotEmpty && !options.contains(_manufacturer)) {
-      options.add(_manufacturer);
-    }
-    return options;
-  }
-
-  List<String> _modelOptions(AircraftSettings settings) {
-    final options = [...settings.modelsFor(_manufacturer)];
-    if (_model.isNotEmpty && !options.contains(_model)) options.add(_model);
-    return options;
-  }
-
   InputDecoration _decoration(String label, IconData icon) =>
       InputDecoration(labelText: label, prefixIcon: Icon(icon));
 
@@ -207,61 +193,78 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
                               }),
                       ),
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        key: ValueKey('manufacturer-$_manufacturer'),
-                        initialValue:
-                            _manufacturerOptions(
-                              settings,
-                            ).contains(_manufacturer)
-                            ? _manufacturer
-                            : null,
-                        isExpanded: true,
-                        menuMaxHeight: 420,
-                        decoration: _decoration(
-                          l10n.aircraftManufacturer,
-                          Icons.business_outlined,
-                        ).copyWith(hintText: l10n.aircraftSelectManufacturer),
-                        items: _manufacturerOptions(settings)
-                            .map(
-                              (value) => DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: _loading || !settings.arePresetsLoaded
-                            ? null
-                            : (value) => setState(() {
-                                _manufacturer = value ?? '';
-                                _model = '';
-                              }),
+                      Autocomplete<String>(
+                        key: ValueKey('manufacturer-$_loading'),
+                        initialValue: TextEditingValue(text: _manufacturer),
+                        optionsBuilder: (textEditingValue) {
+                          final query = textEditingValue.text.toLowerCase();
+                          return settings.manufacturers.where(
+                            (value) => value.toLowerCase().contains(query),
+                          );
+                        },
+                        onSelected: (value) => setState(() {
+                          _manufacturer = value;
+                          _model = '';
+                        }),
+                        fieldViewBuilder:
+                            (
+                              context,
+                              controller,
+                              focusNode,
+                              onFieldSubmitted,
+                            ) => TextFormField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              enabled: !_loading && settings.arePresetsLoaded,
+                              decoration:
+                                  _decoration(
+                                    l10n.aircraftManufacturer,
+                                    Icons.business_outlined,
+                                  ).copyWith(
+                                    hintText: l10n.aircraftSelectManufacturer,
+                                  ),
+                              onChanged: (value) {
+                                if (_manufacturer == value) return;
+                                setState(() {
+                                  _manufacturer = value;
+                                  _model = '';
+                                });
+                              },
+                            ),
                       ),
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        key: ValueKey('model-$_manufacturer-$_model'),
-                        initialValue: _modelOptions(settings).contains(_model)
-                            ? _model
-                            : null,
-                        isExpanded: true,
-                        menuMaxHeight: 420,
-                        decoration: _decoration(
-                          l10n.aircraftModel,
-                          Icons.air_outlined,
-                        ).copyWith(hintText: l10n.aircraftSelectModel),
-                        items: _modelOptions(settings)
-                            .map(
-                              (value) => DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value),
-                              ),
-                            )
-                            .toList(),
-                        onChanged:
-                            _loading ||
-                                !settings.arePresetsLoaded ||
-                                _manufacturer.isEmpty
-                            ? null
-                            : (value) => setState(() => _model = value ?? ''),
+                      Autocomplete<String>(
+                        key: ValueKey('model-$_loading-$_manufacturer'),
+                        initialValue: TextEditingValue(text: _model),
+                        optionsBuilder: (textEditingValue) {
+                          if (_manufacturer.isEmpty) return const [];
+                          final query = textEditingValue.text.toLowerCase();
+                          return settings
+                              .modelsFor(_manufacturer)
+                              .where(
+                                (value) => value.toLowerCase().contains(query),
+                              );
+                        },
+                        onSelected: (value) => setState(() => _model = value),
+                        fieldViewBuilder:
+                            (
+                              context,
+                              controller,
+                              focusNode,
+                              onFieldSubmitted,
+                            ) => TextFormField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              enabled:
+                                  !_loading &&
+                                  settings.arePresetsLoaded &&
+                                  _manufacturer.isNotEmpty,
+                              decoration: _decoration(
+                                l10n.aircraftModel,
+                                Icons.air_outlined,
+                              ).copyWith(hintText: l10n.aircraftSelectModel),
+                              onChanged: (value) => _model = value,
+                            ),
                       ),
                       const SizedBox(height: 16),
                       if (isHangGlider) ...[

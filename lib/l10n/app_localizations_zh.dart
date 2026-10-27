@@ -368,13 +368,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aircraftManufacturer => '制造商';
 
   @override
-  String get aircraftSelectManufacturer => '选择制造商';
+  String get aircraftSelectManufacturer => '输入或选择制造商';
 
   @override
   String get aircraftModel => '型号';
 
   @override
-  String get aircraftSelectModel => '选择型号';
+  String get aircraftSelectModel => '输入或选择型号';
 
   @override
   String get aircraftName => '飞行器名称';

@@ -389,13 +389,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aircraftManufacturer => 'Manufacturer';
 
   @override
-  String get aircraftSelectManufacturer => 'Select a manufacturer';
+  String get aircraftSelectManufacturer => 'Type or select a manufacturer';
 
   @override
   String get aircraftModel => 'Model';
 
   @override
-  String get aircraftSelectModel => 'Select a model';
+  String get aircraftSelectModel => 'Type or select a model';
 
   @override
   String get aircraftName => 'Aircraft name';

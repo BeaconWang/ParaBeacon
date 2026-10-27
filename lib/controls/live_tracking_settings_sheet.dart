@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../data/live_tracking_proxy_auth_service.dart';
+import '../data/live_tracking_proxy_service.dart';
 import '../data/live_tracking_settings.dart';
 import '../data/xcontest_auth_service.dart';
 import '../l10n/app_localizations.dart';
@@ -31,6 +33,7 @@ class _LiveTrackingSettingsSheetState
   bool _flightPublic = LiveTrackingSettings.instance.flightPublic;
   bool _temporaryDontShare = LiveTrackingSettings.instance.temporaryDontShare;
   bool _loading = true;
+  final TextEditingController _proxyTokenController = TextEditingController();
 
   @override
   void initState() {
@@ -39,9 +42,12 @@ class _LiveTrackingSettingsSheetState
       await Future.wait([
         LiveTrackingSettings.instance.load(),
         XContestAuthService.instance.load(),
+        LiveTrackingProxyAuthService.instance.load(),
       ]);
       if (!mounted) return;
       final settings = LiveTrackingSettings.instance;
+      _proxyTokenController.text =
+          LiveTrackingProxyAuthService.instance.bearerTokenForSettings;
       setState(() {
         _enabled = settings.enabled;
         _claimContest = settings.claimContest;
@@ -53,7 +59,16 @@ class _LiveTrackingSettingsSheetState
     });
   }
 
+  @override
+  void dispose() {
+    _proxyTokenController.dispose();
+    super.dispose();
+  }
+
   Future<void> _save() async {
+    await LiveTrackingProxyAuthService.instance.setBearerToken(
+      _proxyTokenController.text,
+    );
     await LiveTrackingSettings.instance.save(
       enabled: _enabled,
       claimContest: _claimContest,
@@ -70,9 +85,11 @@ class _LiveTrackingSettingsSheetState
     final l10n = AppLocalizations.of(context);
     final settings = LiveTrackingSettings.instance;
     final auth = XContestAuthService.instance;
+    final proxyAuth = LiveTrackingProxyAuthService.instance;
+    final tracking = LiveTrackingService.instance;
 
     return AnimatedBuilder(
-      animation: Listenable.merge([settings, auth]),
+      animation: Listenable.merge([settings, auth, proxyAuth, tracking]),
       builder: (context, _) {
         final signedIn = auth.isSignedIn;
         final canEnable = signedIn && !_temporaryDontShare;
@@ -180,6 +197,40 @@ class _LiveTrackingSettingsSheetState
                       ),
                       const SizedBox(height: 16),
                       Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.liveTrackingProxyToken,
+                                style: theme.textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                l10n.liveTrackingProxyTokenSubtitle,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _proxyTokenController,
+                                enabled: !_loading,
+                                obscureText: true,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                decoration: InputDecoration(
+                                  labelText: l10n.liveTrackingProxyToken,
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Card(
                         color: _temporaryDontShare
                             ? theme.colorScheme.errorContainer
                             : null,
@@ -205,6 +256,27 @@ class _LiveTrackingSettingsSheetState
                         _StatusMessage(
                           icon: Icons.pause_circle_outline,
                           message: l10n.liveTrackingTemporarilyDisabled,
+                        )
+                      else if (canEnable && _enabled && !proxyAuth.isConfigured)
+                        _StatusMessage(
+                          icon: Icons.key_off_outlined,
+                          message: l10n.liveTrackingProxyAuthRequired,
+                        )
+                      else if (tracking.state == LiveTrackingProxyState.active)
+                        _StatusMessage(
+                          icon: Icons.cloud_done_outlined,
+                          message: l10n.liveTrackingConnected,
+                        )
+                      else if (tracking.state ==
+                          LiveTrackingProxyState.retrying)
+                        _StatusMessage(
+                          icon: Icons.cloud_sync_outlined,
+                          message: l10n.liveTrackingRetrying,
+                        )
+                      else if (tracking.state == LiveTrackingProxyState.failed)
+                        _StatusMessage(
+                          icon: Icons.error_outline,
+                          message: l10n.liveTrackingFailed,
                         )
                       else if (canEnable && _enabled)
                         _StatusMessage(

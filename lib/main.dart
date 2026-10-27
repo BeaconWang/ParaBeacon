@@ -26,6 +26,8 @@ import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/gps_flight_data_bridge.dart';
 import 'data/landing_point_store.dart';
+import 'data/live_tracking_proxy_auth_service.dart';
+import 'data/live_tracking_proxy_service.dart';
 import 'data/live_tracking_settings.dart';
 import 'data/offline_tiles_service.dart';
 import 'data/raw_flight_data_source.dart';
@@ -80,6 +82,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   // and the recorder all read from this so they share the same transforms.
   //   [control] <- [_transformer] <- [_dataSource] <- [raw data]
   late final FlightDataTransformer _transformer;
+  late final LiveTrackingService _liveTracking;
 
   // Drives the Vario audio directly from the vertical speed of [_dataSource].
   // Every FlightData update forwards `verticalSpeed` into the audio engine, so
@@ -123,6 +126,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // Restore the XContest OAuth session from platform secure storage.
     XContestAuthService.instance.load();
     LiveTrackingSettings.instance.load();
+    LiveTrackingProxyAuthService.instance.load();
     // Restore the aircraft preferences before the Preferences sheet opens.
     AircraftSettings.instance.load();
     // Load persisted debug preferences (e.g. the simulated-source toggle,
@@ -190,6 +194,24 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // source (BLE sensor / simulator) is providing.
     _gpsBridge.attach();
 
+    // Route the shared, transformed GPS feed through the configured ParaBeacon
+    // proxy only while the user has enabled sharing and a flight is active.
+    _liveTracking = LiveTrackingService.instance;
+    _liveTracking.bind(
+      data: _transformer,
+      flightState: FlightState.instance,
+      isEnabled: () =>
+          LiveTrackingSettings.instance.isEffectivelyEnabled &&
+          XContestAuthService.instance.isSignedIn &&
+          LiveTrackingProxyAuthService.instance.isConfigured,
+      pilotId: () => XContestAuthService.instance.uid,
+      eligibilitySource: Listenable.merge([
+        LiveTrackingSettings.instance,
+        XContestAuthService.instance,
+        LiveTrackingProxyAuthService.instance,
+      ]),
+    );
+
     // Continuously record the full flight-data feed while a flight is in
     // progress (driven by the shared FlightState; supports auto take-off /
     // landing detection when enabled). Records the transformed feed.
@@ -235,6 +257,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _flightRecorder.removeListener(_onFlightRecorderChanged);
+    _liveTracking.unbind();
     _gpsBridge.dispose();
     _internalBridge.dispose();
     _bleBridge.dispose();

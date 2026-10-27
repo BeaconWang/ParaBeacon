@@ -629,7 +629,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingEnabledSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Send your active flight to XContest'**
+  /// **'Send active-flight telemetry through your ParaBeacon proxy'**
   String get liveTrackingEnabledSubtitle;
 
   /// No description provided for @liveTrackingRequiresXContest.
@@ -637,6 +637,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in to XContest to enable LiveTracking.'**
   String get liveTrackingRequiresXContest;
+
+  /// No description provided for @liveTrackingProxyToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy access token'**
+  String get liveTrackingProxyToken;
+
+  /// No description provided for @liveTrackingProxyTokenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stored securely on this device and sent only to your configured ParaBeacon proxy.'**
+  String get liveTrackingProxyTokenSubtitle;
+
+  /// No description provided for @liveTrackingProxyAuthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the bearer token issued by your ParaBeacon proxy before tracking can start.'**
+  String get liveTrackingProxyAuthRequired;
+
+  /// No description provided for @liveTrackingConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy session active; live points are uploading.'**
+  String get liveTrackingConnected;
+
+  /// No description provided for @liveTrackingRetrying.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy connection failed; queued points will retry automatically.'**
+  String get liveTrackingRetrying;
+
+  /// No description provided for @liveTrackingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Live tracking could not start. Check the proxy configuration and account.'**
+  String get liveTrackingFailed;
 
   /// No description provided for @liveTrackingClaimContest.
   ///
@@ -695,7 +731,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingReady.
   ///
   /// In en, this message translates to:
-  /// **'LiveTracking is configured and ready.'**
+  /// **'Tracking will start automatically when a flight becomes active.'**
   String get liveTrackingReady;
 
   /// No description provided for @aircraftFaiClass.

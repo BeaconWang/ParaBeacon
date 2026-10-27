@@ -285,11 +285,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingEnabledSubtitle =>
-      'Send your active flight to XContest';
+      'Send active-flight telemetry through your ParaBeacon proxy';
 
   @override
   String get liveTrackingRequiresXContest =>
       'Sign in to XContest to enable LiveTracking.';
+
+  @override
+  String get liveTrackingProxyToken => 'Proxy access token';
+
+  @override
+  String get liveTrackingProxyTokenSubtitle =>
+      'Stored securely on this device and sent only to your configured ParaBeacon proxy.';
+
+  @override
+  String get liveTrackingProxyAuthRequired =>
+      'Enter the bearer token issued by your ParaBeacon proxy before tracking can start.';
+
+  @override
+  String get liveTrackingConnected =>
+      'Proxy session active; live points are uploading.';
+
+  @override
+  String get liveTrackingRetrying =>
+      'Proxy connection failed; queued points will retry automatically.';
+
+  @override
+  String get liveTrackingFailed =>
+      'Live tracking could not start. Check the proxy configuration and account.';
 
   @override
   String get liveTrackingClaimContest => 'Claim contest flight';
@@ -324,7 +347,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'LiveTracking is temporarily paused.';
 
   @override
-  String get liveTrackingReady => 'LiveTracking is configured and ready.';
+  String get liveTrackingReady =>
+      'Tracking will start automatically when a flight becomes active.';
 
   @override
   String get aircraftFaiClass => 'FAI class';

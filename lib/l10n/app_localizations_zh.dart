@@ -275,10 +275,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingEnabled => '启用实时追踪';
 
   @override
-  String get liveTrackingEnabledSubtitle => '将正在进行的飞行发送到 XContest';
+  String get liveTrackingEnabledSubtitle => '通过 ParaBeacon 代理发送正在进行的飞行数据';
 
   @override
   String get liveTrackingRequiresXContest => '请先登录 XContest 才能启用实时追踪。';
+
+  @override
+  String get liveTrackingProxyToken => '代理访问令牌';
+
+  @override
+  String get liveTrackingProxyTokenSubtitle =>
+      '令牌仅安全保存在本设备，并只发送到已配置的 ParaBeacon 代理。';
+
+  @override
+  String get liveTrackingProxyAuthRequired =>
+      '开始追踪前，请输入 ParaBeacon 代理签发的 Bearer 令牌。';
+
+  @override
+  String get liveTrackingConnected => '代理会话已建立，正在上传实时航迹点。';
+
+  @override
+  String get liveTrackingRetrying => '代理连接失败；已缓存的航迹点将自动重试。';
+
+  @override
+  String get liveTrackingFailed => '无法启动实时追踪，请检查代理配置和账户。';
 
   @override
   String get liveTrackingClaimContest => '认领竞赛飞行';
@@ -308,7 +328,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingTemporarilyDisabled => '实时追踪已暂时暂停。';
 
   @override
-  String get liveTrackingReady => '实时追踪已配置并准备就绪。';
+  String get liveTrackingReady => '飞行状态激活后将自动开始实时追踪。';
 
   @override
   String get aircraftFaiClass => 'FAI级别';

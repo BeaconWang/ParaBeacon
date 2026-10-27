@@ -1083,18 +1083,21 @@ class _CertificateDocumentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedImageUrl = _resolvedImageUrl;
     final isNetworkImage = resolvedImageUrl != null;
+    final imageWidth =
+        (MediaQuery.sizeOf(context).width * 0.4).clamp(96.0, 180.0).toDouble();
+    final imageHeight = imageWidth * 0.7;
     final image = isNetworkImage
         ? Image.network(
             resolvedImageUrl,
-            width: 48,
-            height: 64,
-            fit: BoxFit.cover,
+            width: imageWidth,
+            height: imageHeight,
+            fit: BoxFit.contain,
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
-              return const SizedBox(
-                width: 48,
-                height: 64,
-                child: Center(
+              return SizedBox(
+                width: imageWidth,
+                height: imageHeight,
+                child: const Center(
                   child: SizedBox(
                     width: 18,
                     height: 18,
@@ -1108,12 +1111,20 @@ class _CertificateDocumentRow extends StatelessWidget {
         : const Icon(Icons.image_outlined, size: 36);
     final thumbnail = ClipRRect(
       borderRadius: BorderRadius.circular(4),
-      child: image,
+      child: SizedBox(
+        width: imageWidth,
+        height: imageHeight,
+        child: ColoredBox(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest
+              .withValues(alpha: 0.35),
+          child: Center(child: image),
+        ),
+      ),
     );
     return _CertificateDetailRow(
       label: label,
       value: '',
-      height: 76,
+      height: imageHeight + 16,
       trailing: isNetworkImage
           ? Tooltip(
               message: AppLocalizations.of(context).certificateImagePreview,

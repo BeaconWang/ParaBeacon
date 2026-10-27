@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
-import 'asfc_flight_records_sheet.dart';
 import 'certificate_application_sheet.dart';
+import 'pilot_training_records_sheet.dart';
 import 'desktop_scrolling.dart';
 
 Future<void> showAsfcCertificateDetailsSheet(BuildContext context) {
@@ -290,9 +290,9 @@ class _AsfcCertificateDetailsSheetState
                         ],
                         const SizedBox(height: 12),
                         _CertificateActionRow(
-                          icon: Icons.flight_takeoff_outlined,
-                          title: l10n.asfcFlightRecords,
-                          onTap: () => showAsfcFlightRecordsSheet(context),
+                          icon: Icons.school_outlined,
+                          title: l10n.pilotTrainingRecords,
+                          onTap: () => showPilotTrainingRecordsSheet(context),
                         ),
                         _CertificateActionRow(
                           icon: Icons.upgrade,
@@ -1115,8 +1115,9 @@ class _CertificateDocumentRow extends StatelessWidget {
         width: imageWidth,
         height: imageHeight,
         child: ColoredBox(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest
-              .withValues(alpha: 0.35),
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
           child: Center(child: image),
         ),
       ),

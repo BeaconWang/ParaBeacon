@@ -669,6 +669,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certificateNoSignIns => 'No sign-in records';
 
   @override
+  String get pilotTrainingRecords => 'Pilot training records';
+
+  @override
+  String get pilotTrainingNoRecords => 'No pilot training records';
+
+  @override
+  String get pilotTrainingLoadFailed =>
+      'Couldn\'t load pilot training records.';
+
+  @override
+  String get pilotTrainingSignInRequired =>
+      'Sign in to view pilot training records.';
+
+  @override
+  String get pilotTrainingRetry => 'Retry';
+
+  @override
+  String get pilotTrainingDate => 'Training date';
+
+  @override
+  String get pilotTrainingLocation => 'Location';
+
+  @override
+  String get pilotTrainingVenueHeight => 'Venue height';
+
+  @override
+  String get pilotTrainingMetersUnit => 'm';
+
+  @override
+  String get pilotTrainingWindDirection => 'Wind direction';
+
+  @override
+  String get pilotTrainingWindSpeed => 'Wind speed';
+
+  @override
+  String get pilotTrainingSubject => 'Training subject';
+
+  @override
+  String get pilotTrainingNumberOfTimes => 'Training count';
+
+  @override
+  String get pilotTrainingAirbornePeriod => 'Airborne time';
+
+  @override
+  String get pilotTrainingResult => 'Training result';
+
+  @override
+  String get pilotTrainingMinutesUnit => 'min';
+
+  @override
   String get asfcFlightRecords => 'ASFC flight records';
 
   @override

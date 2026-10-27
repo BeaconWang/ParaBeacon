@@ -643,6 +643,54 @@ class AppLocalizationsZh extends AppLocalizations {
   String get certificateNoSignIns => '暂无签注记录';
 
   @override
+  String get pilotTrainingRecords => '飞行员训练记录';
+
+  @override
+  String get pilotTrainingNoRecords => '暂无飞行员训练记录';
+
+  @override
+  String get pilotTrainingLoadFailed => '无法加载飞行员训练记录。';
+
+  @override
+  String get pilotTrainingSignInRequired => '请登录后查看飞行员训练记录。';
+
+  @override
+  String get pilotTrainingRetry => '重试';
+
+  @override
+  String get pilotTrainingDate => '训练日期';
+
+  @override
+  String get pilotTrainingLocation => '地点';
+
+  @override
+  String get pilotTrainingVenueHeight => '场地高度';
+
+  @override
+  String get pilotTrainingMetersUnit => '米';
+
+  @override
+  String get pilotTrainingWindDirection => '风向';
+
+  @override
+  String get pilotTrainingWindSpeed => '风速';
+
+  @override
+  String get pilotTrainingSubject => '训练科目';
+
+  @override
+  String get pilotTrainingNumberOfTimes => '训练次数';
+
+  @override
+  String get pilotTrainingAirbornePeriod => '留空时间';
+
+  @override
+  String get pilotTrainingResult => '训练结果';
+
+  @override
+  String get pilotTrainingMinutesUnit => '分钟';
+
+  @override
   String get asfcFlightRecords => 'ASFC 飞行记录';
 
   @override

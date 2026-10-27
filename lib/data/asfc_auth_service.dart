@@ -144,6 +144,47 @@ class AsfcFlightRecord {
   }
 }
 
+class PilotTrainingRecord {
+  const PilotTrainingRecord({
+    required this.id,
+    required this.trainDate,
+    required this.address,
+    required this.venueHeight,
+    required this.windDirection,
+    required this.windSpeed,
+    required this.trainingSubject,
+    required this.numberOfTimes,
+    required this.airbornePeriod,
+    required this.trainResultName,
+  });
+
+  final int id;
+  final String trainDate;
+  final String address;
+  final String venueHeight;
+  final String windDirection;
+  final String windSpeed;
+  final String trainingSubject;
+  final int numberOfTimes;
+  final String airbornePeriod;
+  final String trainResultName;
+
+  factory PilotTrainingRecord.fromJson(Map<String, dynamic> json) {
+    return PilotTrainingRecord(
+      id: _asInt(json['id']) ?? 0,
+      trainDate: _asString(json['trainDate']) ?? '',
+      address: _asString(json['address']) ?? '',
+      venueHeight: _asString(json['venueHeight']) ?? '',
+      windDirection: _asString(json['windDirection']) ?? '',
+      windSpeed: _asString(json['windSpeed']) ?? '',
+      trainingSubject: _asString(json['trainingSubject']) ?? '',
+      numberOfTimes: _asInt(json['numberOfTimes']) ?? 0,
+      airbornePeriod: _asString(json['airbornePeriod']) ?? '',
+      trainResultName: _asString(json['trainResultName']) ?? '',
+    );
+  }
+}
+
 enum AsfcCertificateState { none, pending, issued, rejected }
 
 class AsfcCertificateStatus {
@@ -214,6 +255,9 @@ class AsfcAuthService extends ChangeNotifier {
   static final Uri _flightRecordListUri = Uri.parse(
     'https://www.57fly.com/api/train/trainFlyRecord/customer/list',
   );
+  static final Uri _pilotTrainingRecordListUri = Uri.parse(
+    'https://www.57fly.com/api/train/parasailTrainRecord/list',
+  );
   static final Uri _flightRecordDetailUri = Uri.parse(
     'https://www.57fly.com/api/train/trainFlyRecord/customer/detail',
   );
@@ -242,6 +286,8 @@ class AsfcAuthService extends ChangeNotifier {
   bool _certificateInfoLoading = false;
   bool _certificateCoachesLoading = false;
   bool _flightRecordsLoading = false;
+  bool _pilotTrainingRecordsLoading = false;
+  bool _pilotTrainingRecordsFailed = false;
   bool _flightRecordSubmitting = false;
   bool _agenciesLoading = false;
   Uint8List? _captchaImageBytes;
@@ -250,6 +296,7 @@ class AsfcAuthService extends ChangeNotifier {
   List<AsfcCoach>? _certificateCoaches;
   List<AsfcAgency>? _agencies;
   List<AsfcFlightRecord>? _flightRecords;
+  List<PilotTrainingRecord>? _pilotTrainingRecords;
   String? _profileErrorCode;
   String? _profileErrorMessage;
   String? _token;
@@ -266,6 +313,8 @@ class AsfcAuthService extends ChangeNotifier {
   bool get isCertificateInfoLoading => _certificateInfoLoading;
   bool get isCertificateCoachesLoading => _certificateCoachesLoading;
   bool get isFlightRecordsLoading => _flightRecordsLoading;
+  bool get isPilotTrainingRecordsLoading => _pilotTrainingRecordsLoading;
+  bool get hasPilotTrainingRecordsError => _pilotTrainingRecordsFailed;
   bool get isFlightRecordSubmitting => _flightRecordSubmitting;
   bool get isAgenciesLoading => _agenciesLoading;
   Uint8List? get captchaImageBytes => _captchaImageBytes;
@@ -285,6 +334,8 @@ class AsfcAuthService extends ChangeNotifier {
       List.unmodifiable(_agencies ?? const <AsfcAgency>[]);
   List<AsfcFlightRecord> get flightRecords =>
       List.unmodifiable(_flightRecords ?? const <AsfcFlightRecord>[]);
+  List<PilotTrainingRecord> get pilotTrainingRecords =>
+      List.unmodifiable(_pilotTrainingRecords ?? const <PilotTrainingRecord>[]);
   AsfcCertificateStatus get certificateStatus {
     final application = _certificateApplication;
     if (application == null) {
@@ -525,6 +576,53 @@ class AsfcAuthService extends ChangeNotifier {
       return const <AsfcFlightRecord>[];
     } finally {
       _flightRecordsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<PilotTrainingRecord>> loadPilotTrainingRecords({
+    bool force = false,
+  }) async {
+    if (!isSignedIn) {
+      _pilotTrainingRecordsFailed = true;
+      notifyListeners();
+      return const <PilotTrainingRecord>[];
+    }
+    if (_pilotTrainingRecordsLoading ||
+        (!force && _pilotTrainingRecords != null)) {
+      return pilotTrainingRecords;
+    }
+    _pilotTrainingRecordsLoading = true;
+    _pilotTrainingRecordsFailed = false;
+    notifyListeners();
+    try {
+      final response = await http
+          .get(
+            _pilotTrainingRecordListUri,
+            headers: {'Accept': 'application/json', 'token': _token!},
+          )
+          .timeout(const Duration(seconds: 15));
+      final decoded = _decodeMap(response.body);
+      final data = decoded?['data'];
+      final rows = data is Map<String, dynamic>
+          ? data['rows'] ?? data['records']
+          : data;
+      if (_isSuccessful(response.statusCode, decoded) && rows is List) {
+        _pilotTrainingRecords = rows
+            .whereType<Map<String, dynamic>>()
+            .map(PilotTrainingRecord.fromJson)
+            .where((record) => record.id > 0)
+            .toList(growable: false);
+        _pilotTrainingRecordsFailed = false;
+      } else {
+        _pilotTrainingRecordsFailed = true;
+      }
+      return pilotTrainingRecords;
+    } on Exception {
+      _pilotTrainingRecordsFailed = true;
+      return pilotTrainingRecords;
+    } finally {
+      _pilotTrainingRecordsLoading = false;
       notifyListeners();
     }
   }

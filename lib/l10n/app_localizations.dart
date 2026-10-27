@@ -1358,6 +1358,102 @@ abstract class AppLocalizations {
   /// **'No sign-in records'**
   String get certificateNoSignIns;
 
+  /// No description provided for @pilotTrainingRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'Pilot training records'**
+  String get pilotTrainingRecords;
+
+  /// No description provided for @pilotTrainingNoRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'No pilot training records'**
+  String get pilotTrainingNoRecords;
+
+  /// No description provided for @pilotTrainingLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load pilot training records.'**
+  String get pilotTrainingLoadFailed;
+
+  /// No description provided for @pilotTrainingSignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to view pilot training records.'**
+  String get pilotTrainingSignInRequired;
+
+  /// No description provided for @pilotTrainingRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get pilotTrainingRetry;
+
+  /// No description provided for @pilotTrainingDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Training date'**
+  String get pilotTrainingDate;
+
+  /// No description provided for @pilotTrainingLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get pilotTrainingLocation;
+
+  /// No description provided for @pilotTrainingVenueHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Venue height'**
+  String get pilotTrainingVenueHeight;
+
+  /// No description provided for @pilotTrainingMetersUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'m'**
+  String get pilotTrainingMetersUnit;
+
+  /// No description provided for @pilotTrainingWindDirection.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind direction'**
+  String get pilotTrainingWindDirection;
+
+  /// No description provided for @pilotTrainingWindSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind speed'**
+  String get pilotTrainingWindSpeed;
+
+  /// No description provided for @pilotTrainingSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Training subject'**
+  String get pilotTrainingSubject;
+
+  /// No description provided for @pilotTrainingNumberOfTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Training count'**
+  String get pilotTrainingNumberOfTimes;
+
+  /// No description provided for @pilotTrainingAirbornePeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Airborne time'**
+  String get pilotTrainingAirbornePeriod;
+
+  /// No description provided for @pilotTrainingResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Training result'**
+  String get pilotTrainingResult;
+
+  /// No description provided for @pilotTrainingMinutesUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get pilotTrainingMinutesUnit;
+
   /// No description provided for @asfcFlightRecords.
   ///
   /// In en, this message translates to:

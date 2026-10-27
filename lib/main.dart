@@ -26,8 +26,9 @@ import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/gps_flight_data_bridge.dart';
 import 'data/landing_point_store.dart';
+import 'data/live_tracking_config.dart';
 import 'data/live_tracking_proxy_auth_service.dart';
-import 'data/live_tracking_proxy_service.dart';
+import 'data/live_tracking_service.dart';
 import 'data/live_tracking_settings.dart';
 import 'data/offline_tiles_service.dart';
 import 'data/raw_flight_data_source.dart';
@@ -47,6 +48,12 @@ export 'dash_grid_page.dart' show DashGridPage, DashGridPainter;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    final trackingConfig = await const LiveTrackingConfigLoader().load();
+    LiveTrackingService.instance.configure(trackingConfig);
+  } on Object {
+    LiveTrackingService.instance.configure(null);
+  }
   // Restore offline maps after the first frame so opening the app is not held
   // up by preferences I/O or opening the MBTiles database.
   WidgetsBinding.instance.addPostFrameCallback((_) {

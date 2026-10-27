@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/live_tracking_proxy_auth_service.dart';
-import '../data/live_tracking_proxy_service.dart';
+import '../data/live_tracking_service.dart';
 import '../data/live_tracking_settings.dart';
 import '../data/xcontest_auth_service.dart';
 import '../l10n/app_localizations.dart';
@@ -257,23 +257,37 @@ class _LiveTrackingSettingsSheetState
                           icon: Icons.pause_circle_outline,
                           message: l10n.liveTrackingTemporarilyDisabled,
                         )
+                      else if (!tracking.isConfigured)
+                        _StatusMessage(
+                          icon: Icons.settings_outlined,
+                          message: l10n.liveTrackingConfigInvalid,
+                        )
                       else if (canEnable && _enabled && !proxyAuth.isConfigured)
                         _StatusMessage(
                           icon: Icons.key_off_outlined,
                           message: l10n.liveTrackingProxyAuthRequired,
                         )
-                      else if (tracking.state == LiveTrackingProxyState.active)
+                      else if (tracking.state ==
+                          LiveTrackingConnectionState.connecting)
+                        _StatusMessage(
+                          icon: Icons.cloud_sync_outlined,
+                          message: l10n.liveTrackingConnecting,
+                        )
+                      else if (tracking.state ==
+                          LiveTrackingConnectionState.active)
                         _StatusMessage(
                           icon: Icons.cloud_done_outlined,
                           message: l10n.liveTrackingConnected,
                         )
                       else if (tracking.state ==
-                          LiveTrackingProxyState.retrying)
+                          LiveTrackingConnectionState.reconnecting)
                         _StatusMessage(
                           icon: Icons.cloud_sync_outlined,
                           message: l10n.liveTrackingRetrying,
                         )
-                      else if (tracking.state == LiveTrackingProxyState.failed)
+                      else if (tracking.state ==
+                              LiveTrackingConnectionState.disconnected &&
+                          tracking.lastErrorCode != null)
                         _StatusMessage(
                           icon: Icons.error_outline,
                           message: l10n.liveTrackingFailed,

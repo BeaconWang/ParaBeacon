@@ -1,0 +1,12 @@
+{
+  "api_base_url": "https://api.myparabeacon-proxy.com",
+  "session_start_endpoint": "/v1/flight/start",
+  "points_endpoint": "/v1/flight/{session_id}/points",
+  "auth_endpoint": null,
+  "websocket_url": null,
+  "channel_ids": [],
+  "request_timeout_seconds": 15,
+  "upload_interval_seconds": 5,
+  "maximum_batch_points": 50,
+  "maximum_buffered_points": 5000
+}

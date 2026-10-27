@@ -6,10 +6,13 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:parabeacon/data/flight_data.dart';
 import 'package:parabeacon/data/flight_state.dart';
+import 'package:parabeacon/data/live_tracking_config.dart';
 import 'package:parabeacon/data/live_tracking_proxy_auth_service.dart';
-import 'package:parabeacon/data/live_tracking_proxy_service.dart';
+import 'package:parabeacon/data/live_tracking_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(() {
     FlightState.instance.stop();
   });
@@ -18,11 +21,10 @@ void main() {
     FlightState.instance.stop();
   });
 
-  test('proxy config resolves the session and batch routes over HTTPS', () {
-    final config = LiveTrackingProxyConfig(
-      apiBaseUri: Uri.https('api.myparabeacon-proxy.com', ''),
-    );
+  test('loads endpoints and settings from the bundled JSON asset', () async {
+    final config = await LiveTrackingConfigLoader().load();
 
+    expect(config.apiBaseUri, Uri.https('api.myparabeacon-proxy.com', ''));
     expect(
       config.sessionStartUri,
       Uri.https('api.myparabeacon-proxy.com', '/v1/flight/start'),
@@ -31,43 +33,89 @@ void main() {
       config.pointsUri('flight-123'),
       Uri.https('api.myparabeacon-proxy.com', '/v1/flight/flight-123/points'),
     );
+    expect(config.authEndpointUri, isNull);
+    expect(config.webSocketUri, isNull);
+    expect(config.channelIds, isEmpty);
   });
 
-  test('proxy config rejects insecure and internal origins', () {
+  test('parses optional auth, WebSocket, and channel configuration', () {
+    final config = LiveTrackingConfig.fromJson(
+      _configJson(
+        authEndpoint: '/v1/auth/token',
+        webSocketUrl: 'wss://api.myparabeacon-proxy.com/v1/live',
+        channelIds: ['thermal', 7],
+      ),
+    );
+
     expect(
-      () => LiveTrackingProxyConfig(apiBaseUri: Uri.http('proxy.example', '')),
-      throwsArgumentError,
+      config.authEndpointUri,
+      Uri.https('api.myparabeacon-proxy.com', '/v1/auth/token'),
     );
     expect(
-      () => LiveTrackingProxyConfig(apiBaseUri: Uri.https('10.1.2.3', '')),
-      throwsArgumentError,
+      config.webSocketUri,
+      Uri.parse('wss://api.myparabeacon-proxy.com/v1/live'),
+    );
+    expect(config.channelIds, ['thermal', '7']);
+  });
+
+  test('rejects insecure origins and cross-origin auth/socket endpoints', () {
+    expect(
+      () => LiveTrackingConfig.fromJson(
+        _configJson(apiBaseUrl: 'http://proxy.example'),
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => LiveTrackingConfig.fromJson(
+        _configJson(apiBaseUrl: 'https://10.1.2.3'),
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => LiveTrackingConfig.fromJson(
+        _configJson(authEndpoint: 'https://other.example/auth'),
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => LiveTrackingConfig.fromJson(
+        _configJson(webSocketUrl: 'ws://api.myparabeacon-proxy.com/live'),
+      ),
+      throwsFormatException,
     );
   });
 
   test('maps a real GPS fix to proxy units and wire fields', () {
-    final point = ProxyLiveTrackpoint.fromFlightData(
+    final point = LiveTrackpoint.fromFlightData(
       FlightData(
         hasFix: true,
         latitude: 47.123,
         longitude: 8.456,
         gpsAltitude: 1234.5,
         groundSpeed: 36,
+        heading: 193.5,
+        hasHeading: true,
         gpsTimestamp: DateTime.utc(2026, 1, 2, 3, 4, 5),
       ),
     );
 
     expect(point, isNotNull);
     expect(point!.altitudeMeters, 1234.5);
-    expect(point.speedMetersPerSecond, 10);
+    expect(point.groundSpeedMetersPerSecond, 10);
+    expect(point.bearingDegrees, 193.5);
     expect(point.toJson(), {
       'lat': 47.123,
       'lon': 8.456,
       'altitude': 1234.5,
       'speed': 10.0,
       'timestamp': '2026-01-02T03:04:05.000Z',
+      'bearing': 193.5,
     });
+    final restoredPoint = LiveTrackpoint.fromJson(point.toJson());
+    expect(restoredPoint?.groundSpeedMetersPerSecond, 10);
+    expect(restoredPoint?.bearingDegrees, 193.5);
     expect(
-      ProxyLiveTrackpoint.fromFlightData(
+      LiveTrackpoint.fromFlightData(
         const FlightData(hasFix: true, isMockLocation: true),
       ),
       isNull,
@@ -87,6 +135,7 @@ void main() {
           expect(jsonDecode(request.body), {
             'pilot_id': 'pilot-42',
             'start_time': startTime.toIso8601String(),
+            'channel_ids': ['live-main'],
           });
           return http.Response(
             jsonEncode({
@@ -110,6 +159,7 @@ void main() {
           'altitude': 1200,
           'speed': 5.0,
           'timestamp': '2026-03-04T05:06:09.000Z',
+          'bearing': 123.4,
         });
         return http.Response('', 204);
       });
@@ -121,13 +171,13 @@ void main() {
           longitude: 8.5,
           gpsAltitude: 1200,
           groundSpeed: 18,
+          heading: 123.4,
+          hasHeading: true,
           gpsTimestamp: startTime.add(const Duration(seconds: 2)),
         ),
       );
       final service = LiveTrackingService(
-        config: LiveTrackingProxyConfig(
-          apiBaseUri: Uri.https('api.myparabeacon-proxy.com', ''),
-        ),
+        config: _config(channelIds: ['live-main']),
         authProvider: _TestProxyAuthProvider(),
         pointStore: _MemoryProxyPointStore(),
         httpClient: client,
@@ -142,7 +192,7 @@ void main() {
       FlightState.instance.start(at: startTime);
       await pumpEventQueue(times: 20);
 
-      expect(service.state, LiveTrackingProxyState.active);
+      expect(service.state, LiveTrackingConnectionState.active);
       expect(service.sessionId, 'session-123');
       expect(service.pendingPointCount, 0);
       expect(requests.map((request) => request.url.path), [
@@ -152,13 +202,69 @@ void main() {
 
       FlightState.instance.stop();
       await pumpEventQueue(times: 10);
-      expect(service.state, LiveTrackingProxyState.idle);
+      expect(service.state, LiveTrackingConnectionState.disconnected);
       await service.shutdown();
       client.close();
       data.dispose();
     },
   );
+
+  test('uses reconnecting backoff after transient session failures', () async {
+    var attempts = 0;
+    final client = MockClient((request) async {
+      attempts++;
+      return http.Response('unavailable', 503);
+    });
+    final data = _MutableFlightDataView(FlightData.empty);
+    final service = LiveTrackingService(
+      config: _config(),
+      authProvider: _TestProxyAuthProvider(),
+      pointStore: _MemoryProxyPointStore(),
+      httpClient: client,
+    );
+    service.bind(
+      data: data,
+      flightState: FlightState.instance,
+      isEnabled: () => true,
+      pilotId: () => 'pilot-42',
+    );
+
+    FlightState.instance.start(at: DateTime.utc(2026, 3, 4));
+    await pumpEventQueue(times: 20);
+
+    expect(attempts, greaterThanOrEqualTo(1));
+    expect(service.state, LiveTrackingConnectionState.reconnecting);
+    expect(service.lastErrorCode, 'session_http_503');
+
+    FlightState.instance.stop();
+    await pumpEventQueue(times: 10);
+    expect(service.state, LiveTrackingConnectionState.disconnected);
+    await service.shutdown();
+    client.close();
+    data.dispose();
+  });
 }
+
+Map<String, Object?> _configJson({
+  String apiBaseUrl = 'https://api.myparabeacon-proxy.com',
+  String? authEndpoint,
+  String? webSocketUrl,
+  List<Object> channelIds = const [],
+}) => {
+  'api_base_url': apiBaseUrl,
+  'session_start_endpoint': '/v1/flight/start',
+  'points_endpoint': '/v1/flight/{session_id}/points',
+  'auth_endpoint': authEndpoint,
+  'websocket_url': webSocketUrl,
+  'channel_ids': channelIds,
+  'request_timeout_seconds': 15,
+  'upload_interval_seconds': 5,
+  'maximum_batch_points': 50,
+  'maximum_buffered_points': 5000,
+};
+
+LiveTrackingConfig _config({List<Object> channelIds = const []}) =>
+    LiveTrackingConfig.fromJson(_configJson(channelIds: channelIds));
 
 class _TestProxyAuthProvider implements LiveTrackingProxyAuthProvider {
   @override

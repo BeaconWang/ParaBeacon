@@ -650,11 +650,23 @@ abstract class AppLocalizations {
   /// **'Stored securely on this device and sent only to your configured ParaBeacon proxy.'**
   String get liveTrackingProxyTokenSubtitle;
 
+  /// No description provided for @liveTrackingConfigInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Live tracking configuration could not be loaded. Check the bundled JSON configuration.'**
+  String get liveTrackingConfigInvalid;
+
   /// No description provided for @liveTrackingProxyAuthRequired.
   ///
   /// In en, this message translates to:
   /// **'Enter the bearer token issued by your ParaBeacon proxy before tracking can start.'**
   String get liveTrackingProxyAuthRequired;
+
+  /// No description provided for @liveTrackingConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to the live-tracking proxy…'**
+  String get liveTrackingConnecting;
 
   /// No description provided for @liveTrackingConnected.
   ///

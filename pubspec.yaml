@@ -171,6 +171,7 @@ flutter:
 
   assets:
     - assets/aircraft_presets.json
+    - assets/config/live_tracking_config.json
 
   # To add more assets to your application, add them under this section.
 

@@ -7,126 +7,39 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'flight_data.dart';
 import 'flight_state.dart';
+import 'live_tracking_config.dart';
 import 'live_tracking_proxy_auth_service.dart';
 
-class LiveTrackingProxyConfig {
-  LiveTrackingProxyConfig({
-    required this.apiBaseUri,
-    this.sessionStartPath = '/v1/flight/start',
-    this.pointsPath = '/v1/flight/{session_id}/points',
-    this.requestTimeout = const Duration(seconds: 15),
-    this.uploadInterval = const Duration(seconds: 5),
-    this.maximumBatchPoints = 50,
-    this.maximumBufferedPoints = 5000,
-  }) {
-    if (apiBaseUri.scheme != 'https' ||
-        apiBaseUri.host.isEmpty ||
-        apiBaseUri.userInfo.isNotEmpty ||
-        apiBaseUri.hasQuery ||
-        apiBaseUri.hasFragment ||
-        _isDisallowedHost(apiBaseUri.host)) {
-      throw ArgumentError.value(
-        apiBaseUri,
-        'apiBaseUri',
-        'A public HTTPS proxy origin is required.',
-      );
-    }
-    if (!sessionStartPath.startsWith('/') ||
-        !pointsPath.startsWith('/') ||
-        !pointsPath.contains('{session_id}')) {
-      throw ArgumentError('Proxy endpoint paths are invalid.');
-    }
-    if (maximumBatchPoints < 1 || maximumBufferedPoints < maximumBatchPoints) {
-      throw ArgumentError('Proxy point limits are invalid.');
-    }
-    if (requestTimeout <= Duration.zero || uploadInterval <= Duration.zero) {
-      throw ArgumentError('Proxy request durations must be positive.');
-    }
-  }
-
-  factory LiveTrackingProxyConfig.fromEnvironment() {
-    const rawBaseUri = String.fromEnvironment(
-      'PARABEACON_LIVE_TRACKING_PROXY',
-      defaultValue: 'https://api.myparabeacon-proxy.com',
-    );
-    return LiveTrackingProxyConfig(apiBaseUri: Uri.parse(rawBaseUri));
-  }
-
-  final Uri apiBaseUri;
-  final String sessionStartPath;
-  final String pointsPath;
-  final Duration requestTimeout;
-  final Duration uploadInterval;
-  final int maximumBatchPoints;
-  final int maximumBufferedPoints;
-
-  Uri get sessionStartUri => apiBaseUri.resolve(sessionStartPath);
-
-  Uri pointsUri(String sessionId) => apiBaseUri.resolve(
-    pointsPath.replaceAll('{session_id}', Uri.encodeComponent(sessionId)),
-  );
-}
-
-bool _isDisallowedHost(String host) {
-  final normalized = host.toLowerCase().replaceAll(RegExp(r'\.$'), '');
-  if (normalized == 'localhost' ||
-      normalized.endsWith('.localhost') ||
-      normalized.endsWith('.local') ||
-      normalized.endsWith('.internal')) {
-    return true;
-  }
-  final parts = normalized.split('.');
-  if (parts.length == 4 && parts.every((part) => int.tryParse(part) != null)) {
-    final octets = parts.map(int.parse).toList(growable: false);
-    if (octets.any((octet) => octet < 0 || octet > 255)) return true;
-    final first = octets[0];
-    final second = octets[1];
-    return first == 0 ||
-        first == 9 ||
-        first == 10 ||
-        first == 11 ||
-        first == 21 ||
-        first == 30 ||
-        first == 127 ||
-        (first == 169 && second == 254) ||
-        (first == 172 && second >= 16 && second <= 31) ||
-        (first == 192 && second == 168);
-  }
-  if (normalized.contains(':')) {
-    return normalized == '::' ||
-        normalized == '::1' ||
-        normalized.startsWith('fc') ||
-        normalized.startsWith('fd') ||
-        normalized.startsWith('fe80:');
-  }
-  return false;
-}
-
 @immutable
-class ProxyLiveTrackpoint {
-  const ProxyLiveTrackpoint({
+class LiveTrackpoint {
+  const LiveTrackpoint({
     required this.latitude,
     required this.longitude,
     required this.altitudeMeters,
-    required this.speedMetersPerSecond,
+    required this.groundSpeedMetersPerSecond,
     required this.timestamp,
+    this.bearingDegrees,
   });
 
   final double latitude;
   final double longitude;
   final double altitudeMeters;
-  final double speedMetersPerSecond;
+  final double groundSpeedMetersPerSecond;
   final DateTime timestamp;
+  final double? bearingDegrees;
 
-  Map<String, Object> toJson() => {
+  double get speedMetersPerSecond => groundSpeedMetersPerSecond;
+
+  Map<String, Object?> toJson() => {
     'lat': latitude,
     'lon': longitude,
     'altitude': altitudeMeters,
-    'speed': speedMetersPerSecond,
+    'speed': groundSpeedMetersPerSecond,
     'timestamp': timestamp.toUtc().toIso8601String(),
+    if (bearingDegrees != null) 'bearing': bearingDegrees,
   };
 
-  static ProxyLiveTrackpoint? fromFlightData(FlightData data) {
+  static LiveTrackpoint? fromFlightData(FlightData data) {
     if (!data.hasFix || data.isMockLocation) return null;
     if (!data.latitude.isFinite ||
         !data.longitude.isFinite ||
@@ -140,21 +53,33 @@ class ProxyLiveTrackpoint {
     if (timestamp == null) return null;
     final altitude = data.gpsAltitude ?? data.altitude;
     if (!altitude.isFinite || !data.groundSpeed.isFinite) return null;
-    return ProxyLiveTrackpoint(
+    final heading = data.heading;
+    final bearing = !data.hasHeading || !heading.isFinite
+        ? null
+        : heading >= 0 && heading < 360
+        ? heading
+        : ((heading % 360) + 360) % 360;
+    return LiveTrackpoint(
       latitude: data.latitude,
       longitude: data.longitude,
       altitudeMeters: altitude,
-      speedMetersPerSecond: (data.groundSpeed / 3.6).clamp(0, 200).toDouble(),
+      groundSpeedMetersPerSecond: (data.groundSpeed / 3.6)
+          .clamp(0, 200)
+          .toDouble(),
       timestamp: timestamp.toUtc(),
+      bearingDegrees: bearing,
     );
   }
 
-  static ProxyLiveTrackpoint? fromJson(Object? value) {
+  static LiveTrackpoint? fromJson(Object? value) {
     if (value is! Map<String, dynamic>) return null;
-    final lat = (value['lat'] as num?)?.toDouble();
-    final lon = (value['lon'] as num?)?.toDouble();
-    final altitude = (value['altitude'] as num?)?.toDouble();
-    final speed = (value['speed'] as num?)?.toDouble();
+    double? number(Object? item) => item is num ? item.toDouble() : null;
+    final lat = number(value['lat']);
+    final lon = number(value['lon']);
+    final altitude = number(value['altitude']);
+    final speed = number(value['speed'] ?? value['ground_speed']);
+    final rawBearing = value['bearing'];
+    final bearing = number(rawBearing);
     final timestampValue = value['timestamp'];
     final timestamp = timestampValue is String
         ? DateTime.tryParse(timestampValue)
@@ -168,18 +93,24 @@ class ProxyLiveTrackpoint {
         !lon.isFinite ||
         !altitude.isFinite ||
         !speed.isFinite ||
+        (rawBearing != null &&
+            (bearing == null ||
+                !bearing.isFinite ||
+                bearing < 0 ||
+                bearing >= 360)) ||
         lat < -90 ||
         lat > 90 ||
         lon < -180 ||
         lon > 180) {
       return null;
     }
-    return ProxyLiveTrackpoint(
+    return LiveTrackpoint(
       latitude: lat,
       longitude: lon,
       altitudeMeters: altitude,
-      speedMetersPerSecond: speed,
+      groundSpeedMetersPerSecond: speed,
       timestamp: timestamp.toUtc(),
+      bearingDegrees: bearing,
     );
   }
 }
@@ -230,7 +161,7 @@ class QueuedProxyPoint {
   const QueuedProxyPoint({required this.sessionId, required this.point});
 
   final String sessionId;
-  final ProxyLiveTrackpoint point;
+  final LiveTrackpoint point;
 
   Map<String, Object> toJson() => {
     'session_id': sessionId,
@@ -240,49 +171,85 @@ class QueuedProxyPoint {
   static QueuedProxyPoint? fromJson(Object? value) {
     if (value is! Map<String, dynamic>) return null;
     final sessionId = value['session_id'];
-    final point = ProxyLiveTrackpoint.fromJson(value['point']);
+    final point = LiveTrackpoint.fromJson(value['point']);
     if (sessionId is! String || sessionId.isEmpty || point == null) return null;
     return QueuedProxyPoint(sessionId: sessionId, point: point);
   }
 }
 
-enum LiveTrackingProxyState { idle, starting, active, retrying, failed }
+enum LiveTrackingConnectionState {
+  idle,
+  connecting,
+  active,
+  reconnecting,
+  disconnected,
+}
 
 /// Client for ParaBeacon's own proxy API. It uses authenticated REST for both
 /// session creation and point batches; the returned socket_url is reserved for
 /// a future WebSocket transport and is not needed by this HTTP-batch mode.
 class LiveTrackingService extends ChangeNotifier {
   LiveTrackingService({
-    required LiveTrackingProxyConfig config,
+    required LiveTrackingConfig config,
     required LiveTrackingProxyAuthProvider authProvider,
     LiveTrackingProxyPointStore? pointStore,
     http.Client? httpClient,
   }) : _config = config,
+       _configured = true,
        _authProvider = authProvider,
        _pointStore =
            pointStore ?? SharedPreferencesLiveTrackingProxyPointStore(),
        _httpClient = httpClient ?? http.Client(),
        _ownsHttpClient = httpClient == null;
 
-  static final LiveTrackingService instance = LiveTrackingService(
-    config: LiveTrackingProxyConfig.fromEnvironment(),
-    authProvider: LiveTrackingProxyAuthService.instance,
-  );
+  LiveTrackingService._singleton()
+    : _authProvider = LiveTrackingProxyAuthService.instance,
+      _pointStore = SharedPreferencesLiveTrackingProxyPointStore(),
+      _httpClient = http.Client(),
+      _ownsHttpClient = true;
 
-  final LiveTrackingProxyConfig _config;
+  static final LiveTrackingService instance = LiveTrackingService._singleton();
+
+  late LiveTrackingConfig _config;
+  bool _configured = false;
   final LiveTrackingProxyAuthProvider _authProvider;
   final LiveTrackingProxyPointStore _pointStore;
   final http.Client _httpClient;
   final bool _ownsHttpClient;
   final List<QueuedProxyPoint> _pending = [];
 
-  LiveTrackingProxyState _state = LiveTrackingProxyState.idle;
-  LiveTrackingProxyState get state => _state;
+  LiveTrackingConnectionState _state = LiveTrackingConnectionState.idle;
+  LiveTrackingConnectionState get state => _state;
   int get pendingPointCount => _pending.length;
   String? _lastErrorCode;
   String? get lastErrorCode => _lastErrorCode;
   String? _sessionId;
   String? get sessionId => _sessionId;
+  bool get isConfigured => _configured;
+
+  void configure(LiveTrackingConfig? config) {
+    if (_sessionId != null || _starting) {
+      throw StateError(
+        'Cannot replace live-tracking config while a session runs.',
+      );
+    }
+    if (config == null) {
+      _configured = false;
+      _flushWhileIdle = false;
+      _uploadTimer?.cancel();
+      _uploadTimer = null;
+      _retryTimer?.cancel();
+      _retryTimer = null;
+      _lastErrorCode = 'config_load_failed';
+      _setState(LiveTrackingConnectionState.disconnected);
+      return;
+    }
+    _config = config;
+    _configured = true;
+    _lastErrorCode = null;
+    _setState(LiveTrackingConnectionState.idle);
+    _queueLifecycleSync();
+  }
 
   FlightDataView? _data;
   FlightState? _flightState;
@@ -339,11 +306,11 @@ class LiveTrackingService extends ChangeNotifier {
     _eligibilitySource = null;
     _isEnabled = null;
     _pilotId = null;
-    if (!_disposed) _setState(LiveTrackingProxyState.idle);
+    if (!_disposed) _setState(LiveTrackingConnectionState.idle);
   }
 
   Future<void> _loadQueue() {
-    if (_loadedQueue) return Future<void>.value();
+    if (!_configured || _loadedQueue) return Future<void>.value();
     return _queueLoadFuture ??= _loadQueueOnce();
   }
 
@@ -373,15 +340,18 @@ class LiveTrackingService extends ChangeNotifier {
         .then((_) => _syncLifecycle())
         .catchError((Object error) {
           _lastErrorCode = _errorCode(error);
-          _setState(LiveTrackingProxyState.failed);
+          _setState(LiveTrackingConnectionState.reconnecting);
           _scheduleRetry();
         });
   }
 
   bool get _shouldTrack =>
-      _flightState?.isFlying == true && (_isEnabled?.call() ?? false);
+      _configured &&
+      _flightState?.isFlying == true &&
+      (_isEnabled?.call() ?? false);
 
   Future<void> _syncLifecycle() async {
+    if (!_configured) return;
     if (!_loadedQueue) {
       await _loadQueue();
       return;
@@ -397,8 +367,15 @@ class LiveTrackingService extends ChangeNotifier {
       _retryTimer = null;
       _uploadTimer?.cancel();
       _uploadTimer = null;
-      _setState(LiveTrackingProxyState.idle);
+      _setState(LiveTrackingConnectionState.disconnected);
       unawaited(_flushPending());
+    } else {
+      _retryTimer?.cancel();
+      _retryTimer = null;
+      if (_state == LiveTrackingConnectionState.connecting ||
+          _state == LiveTrackingConnectionState.reconnecting) {
+        _setState(LiveTrackingConnectionState.disconnected);
+      }
     }
   }
 
@@ -411,14 +388,16 @@ class LiveTrackingService extends ChangeNotifier {
       throw const LiveTrackingProxyException('pilot_or_start_time_missing');
     }
     _starting = true;
-    _setState(LiveTrackingProxyState.starting);
+    _setState(LiveTrackingConnectionState.connecting);
     try {
+      final config = _config;
       final response = await _sendJson(
         method: 'POST',
-        uri: _config.sessionStartUri,
+        uri: config.sessionStartUri,
         body: {
           'pilot_id': pilotId,
           'start_time': startTime.toUtc().toIso8601String(),
+          if (config.channelIds.isNotEmpty) 'channel_ids': config.channelIds,
         },
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -434,7 +413,7 @@ class LiveTrackingService extends ChangeNotifier {
         throw const LiveTrackingProxyException('invalid_session_response');
       }
       if (bindingEpoch != _bindingEpoch || !_shouldTrack) {
-        _setState(LiveTrackingProxyState.idle);
+        _setState(LiveTrackingConnectionState.disconnected);
         return;
       }
       _sessionId = sessionId.trim();
@@ -442,7 +421,7 @@ class LiveTrackingService extends ChangeNotifier {
       _lastPointTimestamp = null;
       _lastErrorCode = null;
       _retryAttempt = 0;
-      _setState(LiveTrackingProxyState.active);
+      _setState(LiveTrackingConnectionState.active);
       _uploadTimer?.cancel();
       _uploadTimer = Timer.periodic(_config.uploadInterval, (_) {
         unawaited(_flushPending());
@@ -458,7 +437,7 @@ class LiveTrackingService extends ChangeNotifier {
     if (!_shouldTrack || _sessionId == null) return;
     final snapshot = _data?.data;
     if (snapshot == null) return;
-    final point = ProxyLiveTrackpoint.fromFlightData(snapshot);
+    final point = LiveTrackpoint.fromFlightData(snapshot);
     if (point == null) return;
     final previous = _lastPointTimestamp;
     if (previous != null && !point.timestamp.isAfter(previous)) return;
@@ -522,16 +501,16 @@ class LiveTrackingService extends ChangeNotifier {
         await _persistQueue();
       }
       if (_pending.isEmpty) _flushWhileIdle = false;
-      if (_state == LiveTrackingProxyState.retrying) {
+      if (_state == LiveTrackingConnectionState.reconnecting) {
         _setState(
           _sessionId == null
-              ? LiveTrackingProxyState.idle
-              : LiveTrackingProxyState.active,
+              ? LiveTrackingConnectionState.disconnected
+              : LiveTrackingConnectionState.active,
         );
       }
     } on Object catch (error) {
       _lastErrorCode = _errorCode(error);
-      if (_sessionId != null) _setState(LiveTrackingProxyState.retrying);
+      _setState(LiveTrackingConnectionState.reconnecting);
       _scheduleRetry();
     } finally {
       _uploading = false;
@@ -584,8 +563,8 @@ class LiveTrackingService extends ChangeNotifier {
 
   void _scheduleRetry() {
     if (_disposed || _retryTimer != null) return;
-    final exponent = _retryAttempt.clamp(0, 6).toInt();
-    final seconds = (1 << exponent).clamp(2, 60).toInt();
+    final exponent = _retryAttempt.clamp(0, 5).toInt();
+    final seconds = (2 * (1 << exponent)).clamp(2, 60).toInt();
     _retryAttempt++;
     _retryTimer = Timer(Duration(seconds: seconds), () {
       _retryTimer = null;
@@ -603,7 +582,7 @@ class LiveTrackingService extends ChangeNotifier {
       ? error.code
       : 'proxy_network_error';
 
-  void _setState(LiveTrackingProxyState next) {
+  void _setState(LiveTrackingConnectionState next) {
     if (_state == next) return;
     _state = next;
     _notify();

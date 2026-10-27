@@ -288,8 +288,14 @@ class AppLocalizationsZh extends AppLocalizations {
       '令牌仅安全保存在本设备，并只发送到已配置的 ParaBeacon 代理。';
 
   @override
+  String get liveTrackingConfigInvalid => '无法加载实时追踪配置，请检查内置 JSON 配置文件。';
+
+  @override
   String get liveTrackingProxyAuthRequired =>
       '开始追踪前，请输入 ParaBeacon 代理签发的 Bearer 令牌。';
+
+  @override
+  String get liveTrackingConnecting => '正在连接实时追踪代理……';
 
   @override
   String get liveTrackingConnected => '代理会话已建立，正在上传实时航迹点。';

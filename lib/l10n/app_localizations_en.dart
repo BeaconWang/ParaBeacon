@@ -299,8 +299,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Stored securely on this device and sent only to your configured ParaBeacon proxy.';
 
   @override
+  String get liveTrackingConfigInvalid =>
+      'Live tracking configuration could not be loaded. Check the bundled JSON configuration.';
+
+  @override
   String get liveTrackingProxyAuthRequired =>
       'Enter the bearer token issued by your ParaBeacon proxy before tracking can start.';
+
+  @override
+  String get liveTrackingConnecting => 'Connecting to the live-tracking proxy…';
 
   @override
   String get liveTrackingConnected =>

@@ -1003,7 +1003,24 @@ class _CertificateDocumentRow extends StatelessWidget {
   final String label;
   final String imageUrl;
 
-  Future<void> _showImagePreview(BuildContext context) {
+  String? get _resolvedImageUrl {
+    final value = imageUrl.trim();
+    final uri = Uri.tryParse(value);
+    if (uri == null) return null;
+    if (uri.hasScheme) {
+      if (uri.scheme != 'https' ||
+          uri.host != 'upload.57fly.com' ||
+          uri.port != 443 ||
+          uri.userInfo.isNotEmpty) {
+        return null;
+      }
+      return uri.toString();
+    }
+    if (!value.startsWith('/') || value.startsWith('//')) return null;
+    return Uri.parse('https://upload.57fly.com').resolve(value).toString();
+  }
+
+  Future<void> _showImagePreview(BuildContext context, String imageUrl) {
     final screenSize = MediaQuery.sizeOf(context);
     final l10n = AppLocalizations.of(context);
     final dialogWidth = (screenSize.width - 40).clamp(0.0, 1100.0).toDouble();
@@ -1064,15 +1081,28 @@ class _CertificateDocumentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uri = Uri.tryParse(imageUrl);
-    final isNetworkImage =
-        uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+    final resolvedImageUrl = _resolvedImageUrl;
+    final isNetworkImage = resolvedImageUrl != null;
     final image = isNetworkImage
         ? Image.network(
-            imageUrl,
+            resolvedImageUrl,
             width: 48,
             height: 64,
             fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return const SizedBox(
+                width: 48,
+                height: 64,
+                child: Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              );
+            },
             errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
           )
         : const Icon(Icons.image_outlined, size: 36);
@@ -1089,7 +1119,7 @@ class _CertificateDocumentRow extends StatelessWidget {
               message: AppLocalizations.of(context).certificateImagePreview,
               child: InkWell(
                 borderRadius: BorderRadius.circular(4),
-                onTap: () => _showImagePreview(context),
+                onTap: () => _showImagePreview(context, resolvedImageUrl),
                 child: thumbnail,
               ),
             )

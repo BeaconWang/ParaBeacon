@@ -268,6 +268,8 @@
   "certificateCoachSelect": "请选择教练（可选）",
   "certificateCoachesLoading": "正在加载教练列表…",
   "certificateDocuments": "证明材料",
+  "certificateGroupPhotoWithCoach": "学员与教练合影",
+  "certificateImagePreview": "预览图片",
   "licensePhoto": "上传执照照片",
   "groupPhoto": "上传培训合照",
   "licensePhotoUploaded": "执照照片已上传",

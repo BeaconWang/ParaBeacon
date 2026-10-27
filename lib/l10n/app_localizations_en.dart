@@ -822,6 +822,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certificateDocuments => 'Documents';
 
   @override
+  String get certificateGroupPhotoWithCoach =>
+      'Students take a group photo with their coach';
+
+  @override
+  String get certificateImagePreview => 'Preview image';
+
+  @override
   String get licensePhoto => 'Upload license photo';
 
   @override

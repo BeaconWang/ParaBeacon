@@ -272,7 +272,7 @@ class _AsfcCertificateDetailsSheetState
                         if (_value(certificate, ['groupPhoto']) != null) ...[
                           _sectionTitle(context, l10n.certificateDocuments),
                           _CertificateDocumentRow(
-                            label: l10n.groupPhoto,
+                            label: l10n.certificateGroupPhotoWithCoach,
                             imageUrl: _value(certificate, ['groupPhoto'])!,
                           ),
                         ],
@@ -1003,10 +1003,71 @@ class _CertificateDocumentRow extends StatelessWidget {
   final String label;
   final String imageUrl;
 
+  Future<void> _showImagePreview(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final l10n = AppLocalizations.of(context);
+    final dialogWidth = (screenSize.width - 40).clamp(0.0, 1100.0).toDouble();
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: const Color(0xF20B1018),
+        insetPadding: const EdgeInsets.all(20),
+        constraints: const BoxConstraints(maxWidth: 1100),
+        child: SizedBox(
+          width: dialogWidth,
+          height: screenSize.height * 0.82,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              InteractiveViewer(
+                minScale: 1,
+                maxScale: 5,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    final expectedBytes = loadingProgress.expectedTotalBytes;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: expectedBytes == null
+                            ? null
+                            : loadingProgress.cumulativeBytesLoaded /
+                                  expectedBytes,
+                      ),
+                    );
+                  },
+                  errorBuilder: (_, _, _) => const Center(
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.white70,
+                      size: 48,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: IconButton.filledTonal(
+                  tooltip: l10n.close,
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final uri = Uri.tryParse(imageUrl);
-    final image = uri != null && (uri.scheme == 'http' || uri.scheme == 'https')
+    final isNetworkImage =
+        uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+    final image = isNetworkImage
         ? Image.network(
             imageUrl,
             width: 48,
@@ -1015,11 +1076,24 @@ class _CertificateDocumentRow extends StatelessWidget {
             errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
           )
         : const Icon(Icons.image_outlined, size: 36);
+    final thumbnail = ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: image,
+    );
     return _CertificateDetailRow(
       label: label,
       value: '',
       height: 76,
-      trailing: ClipRRect(borderRadius: BorderRadius.circular(4), child: image),
+      trailing: isNetworkImage
+          ? Tooltip(
+              message: AppLocalizations.of(context).certificateImagePreview,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(4),
+                onTap: () => _showImagePreview(context),
+                child: thumbnail,
+              ),
+            )
+          : thumbnail,
     );
   }
 }

@@ -269,6 +269,8 @@
   "certificateCoachSelect": "Select a coach (optional)",
   "certificateCoachesLoading": "Loading coaches…",
   "certificateDocuments": "Documents",
+  "certificateGroupPhotoWithCoach": "Students take a group photo with their coach",
+  "certificateImagePreview": "Preview image",
   "licensePhoto": "Upload license photo",
   "groupPhoto": "Upload training group photo",
   "licensePhotoUploaded": "License photo uploaded",

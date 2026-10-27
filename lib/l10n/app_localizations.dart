@@ -1658,6 +1658,18 @@ abstract class AppLocalizations {
   /// **'Documents'**
   String get certificateDocuments;
 
+  /// No description provided for @certificateGroupPhotoWithCoach.
+  ///
+  /// In en, this message translates to:
+  /// **'Students take a group photo with their coach'**
+  String get certificateGroupPhotoWithCoach;
+
+  /// No description provided for @certificateImagePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview image'**
+  String get certificateImagePreview;
+
   /// No description provided for @licensePhoto.
   ///
   /// In en, this message translates to:

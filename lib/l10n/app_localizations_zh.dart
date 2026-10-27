@@ -793,6 +793,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get certificateDocuments => '证明材料';
 
   @override
+  String get certificateGroupPhotoWithCoach => '学员与教练合影';
+
+  @override
+  String get certificateImagePreview => '预览图片';
+
+  @override
   String get licensePhoto => '上传执照照片';
 
   @override

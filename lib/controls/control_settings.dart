@@ -823,6 +823,16 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       label: 'Show auto-detect checkbox',
       defaultValue: true,
     ),
+    ControlSetting.toggle(
+      key: 'showFlightTime',
+      label: 'Show flight time',
+      defaultValue: false,
+    ),
+    ControlSetting.toggle(
+      key: 'showRecordingStats',
+      label: 'Show recording points and distance',
+      defaultValue: false,
+    ),
   ],
   'status_line': [
     ControlSetting.toggle(

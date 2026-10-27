@@ -410,6 +410,9 @@ class ControlWidget extends StatelessWidget {
       case 'flight_button':
         return FlightButtonControl(
           showAutoDetect: control.boolSetting('showAutoDetect', fallback: true),
+          showFlightTime: control.boolSetting('showFlightTime', fallback: false),
+          showRecordingStats:
+              control.boolSetting('showRecordingStats', fallback: false),
         );
       case 'status_line':
         return StatusLineControl(

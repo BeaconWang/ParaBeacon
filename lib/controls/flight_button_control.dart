@@ -12,7 +12,8 @@ import 'auto_flight_settings_sheet.dart';
 /// All Flight buttons share the single [FlightState.instance], so tapping any
 /// one of them toggles the same global flight session and every button (across
 /// pages) updates in sync. While flying it shows the elapsed time and a "Stop"
-/// affordance; when idle it shows "Start".
+/// affordance; when idle it shows "Start". Flight time and recording stats
+/// are independently configurable and hidden by default.
 ///
 /// When [showAutoDetect] is true, a checkbox is shown to the left of the
 /// button; ticking it enables system auto start/stop (take-off & landing
@@ -22,7 +23,18 @@ class FlightButtonControl extends StatefulWidget {
   /// Whether the auto-detect checkbox is shown to the left of the button.
   final bool showAutoDetect;
 
-  const FlightButtonControl({super.key, this.showAutoDetect = true});
+  /// Whether elapsed flight time is shown while flying.
+  final bool showFlightTime;
+
+  /// Whether recording point count and distance are shown while recording.
+  final bool showRecordingStats;
+
+  const FlightButtonControl({
+    super.key,
+    this.showAutoDetect = true,
+    this.showFlightTime = false,
+    this.showRecordingStats = false,
+  });
 
   @override
   State<FlightButtonControl> createState() => _FlightButtonControlState();
@@ -133,7 +145,7 @@ class _FlightButtonControlState extends State<FlightButtonControl> {
                             color: fgColor,
                           ),
                         ),
-                        if (flying) ...[
+                        if (flying && widget.showFlightTime) ...[
                           const SizedBox(height: 2),
                           Text(
                             _fmtElapsed(_flight.elapsed),
@@ -145,13 +157,14 @@ class _FlightButtonControlState extends State<FlightButtonControl> {
                               ],
                             ),
                           ),
+                        ],
+                        if (flying && widget.showRecordingStats)
                           _RecordingReadout(
                             fgColor: fgColor,
                             fontSize: (timeSize * 0.85)
                                 .clamp(8.0, 14.0)
                                 .toDouble(),
                           ),
-                        ],
                       ],
                     ),
                   ),

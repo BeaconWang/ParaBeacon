@@ -1464,17 +1464,6 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                                 ),
                                 label: Text(l10n.flightExportShareCard),
                               ),
-                              OutlinedButton.icon(
-                                onPressed: () async {
-                                  await _resolveSites(track);
-                                  setDialogState(() {});
-                                },
-                                icon: const Icon(
-                                  Icons.place_outlined,
-                                  size: 18,
-                                ),
-                                label: Text(l10n.flightDetailSiteNames),
-                              ),
                             ],
                           ),
                         ],

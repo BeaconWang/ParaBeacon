@@ -3399,10 +3399,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementVoiceEnabledDescription => '开启或关闭所有自动语音播报。';
 
   @override
+  String get bleSensorAnnouncementEnabled => '蓝牙传感器连接播报';
+
+  @override
+  String get bleSensorAnnouncementEnabledDescription => '蓝牙传感器连接或断开时进行语音播报。';
+
+  @override
+  String get bleSensorAnnouncementTextDescription => '自定义当前所选语言的播报内容。';
+
+  @override
   String get altitudeAnnouncementSectionVoice => '语音';
 
   @override
-  String get altitudeAnnouncementSectionTakeoffLanding => '起飞与降落';
+  String get altitudeAnnouncementSectionEvent => '事件';
 
   @override
   String get altitudeAnnouncementSectionGlide => '滑翔死区';

@@ -6562,17 +6562,35 @@ abstract class AppLocalizations {
   /// **'Turn all automatic voice announcements on or off.'**
   String get altitudeAnnouncementVoiceEnabledDescription;
 
+  /// No description provided for @bleSensorAnnouncementEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth sensor connection announcements'**
+  String get bleSensorAnnouncementEnabled;
+
+  /// No description provided for @bleSensorAnnouncementEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak when a Bluetooth sensor connects or disconnects.'**
+  String get bleSensorAnnouncementEnabledDescription;
+
+  /// No description provided for @bleSensorAnnouncementTextDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize the spoken phrase in the currently selected language.'**
+  String get bleSensorAnnouncementTextDescription;
+
   /// No description provided for @altitudeAnnouncementSectionVoice.
   ///
   /// In en, this message translates to:
   /// **'Voice'**
   String get altitudeAnnouncementSectionVoice;
 
-  /// No description provided for @altitudeAnnouncementSectionTakeoffLanding.
+  /// No description provided for @altitudeAnnouncementSectionEvent.
   ///
   /// In en, this message translates to:
-  /// **'Takeoff & landing'**
-  String get altitudeAnnouncementSectionTakeoffLanding;
+  /// **'Event'**
+  String get altitudeAnnouncementSectionEvent;
 
   /// No description provided for @altitudeAnnouncementSectionGlide.
   ///

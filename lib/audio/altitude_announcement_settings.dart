@@ -14,6 +14,8 @@ enum AltitudeRecordScope {
   allFlights,
 }
 
+enum BleSensorAnnouncementEvent { connected, disconnected }
+
 /// Persisted preferences for spoken flight announcements.
 ///
 /// Features (each independently switchable, each with its own text):
@@ -33,6 +35,10 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const _kSpeechRate = '$_prefix.speechRate';
   static const _kVolume = '$_prefix.volume';
   static const _kAnnouncementsEnabled = '$_prefix.voiceEnabled';
+  static const _kBleSensorAnnouncementsEnabled =
+      '$_prefix.bleSensorAnnouncements.enabled';
+  static const _kBleSensorAnnouncementTemplate =
+      '$_prefix.bleSensorAnnouncements.template';
   static const _kTakeoffLandingEnabled = '$_prefix.takeoffLanding.enabled';
   static const _kGlideEnabled = '$_prefix.glide.enabled';
   static const _kGlideMinimum = '$_prefix.glide.minimum';
@@ -55,6 +61,24 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   /// Storage key of the custom text for [event].
   static String _templateKey(AnnouncementEvent event) =>
       '$_kTemplate.${event.name}';
+
+  static String _bleSensorTemplateKey(
+    BleSensorAnnouncementEvent event,
+    AnnouncementLanguage language,
+  ) => '$_kBleSensorAnnouncementTemplate.${event.name}.${language.name}';
+
+  static String defaultBleSensorAnnouncement(
+    BleSensorAnnouncementEvent event,
+    AnnouncementLanguage language,
+  ) {
+    final chinese = language == AnnouncementLanguage.chinese;
+    return switch (event) {
+      BleSensorAnnouncementEvent.connected =>
+        chinese ? '蓝牙传感器已连接' : 'Bluetooth sensor connected',
+      BleSensorAnnouncementEvent.disconnected =>
+        chinese ? '蓝牙传感器已断开连接' : 'Bluetooth sensor disconnected',
+    };
+  }
 
   /// Allowed range for [speechRate] (multiple of the normal speaking speed).
   static const minSpeechRate = AltitudeAnnouncementSpeaker.minRate;
@@ -94,11 +118,13 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   static const defaultRecordInterval = 5.0;
 
   final Map<AnnouncementEvent, String> _templates = {};
+  final Map<String, String> _bleSensorTemplates = {};
   bool _duckVario = true;
   double _varioDuckLevel = 0.3;
   double _speechRate = defaultSpeechRate;
   double _volume = defaultVolume;
   bool _announcementsEnabled = true;
+  bool _bleSensorAnnouncementsEnabled = true;
   bool _takeoffLandingEnabled = true;
   bool _glideEnabled = true;
   double _glideMinimum = defaultGlideMinimum;
@@ -119,6 +145,9 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
 
   /// Master switch for all automatic voice announcements.
   bool get announcementsEnabled => _announcementsEnabled;
+
+  /// Whether Bluetooth sensor connect/disconnect events are spoken.
+  bool get bleSensorAnnouncementsEnabled => _bleSensorAnnouncementsEnabled;
 
   /// Takeoff / landing / continue-flight announcements.
   bool get takeoffLandingEnabled => _takeoffLandingEnabled;
@@ -175,6 +204,18 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   /// default for the current language.
   String? templateFor(AnnouncementEvent event) => _templates[event];
 
+  String? customBleSensorAnnouncementText(
+    BleSensorAnnouncementEvent event,
+    AnnouncementLanguage language,
+  ) => _bleSensorTemplates[_bleSensorTemplateKey(event, language)];
+
+  String bleSensorAnnouncementText(
+    BleSensorAnnouncementEvent event,
+    AnnouncementLanguage language,
+  ) =>
+      customBleSensorAnnouncementText(event, language) ??
+      defaultBleSensorAnnouncement(event, language);
+
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
@@ -193,6 +234,19 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
           _templates[event] = value;
         }
       }
+      for (final event in BleSensorAnnouncementEvent.values) {
+        for (final language in AnnouncementLanguage.values) {
+          final key = _bleSensorTemplateKey(event, language);
+          final value = AnnouncementTemplate.sanitize(
+            preferences.getString(key),
+          );
+          if (value == null) {
+            _bleSensorTemplates.remove(key);
+          } else {
+            _bleSensorTemplates[key] = value;
+          }
+        }
+      }
       _duckVario = preferences.getBool(_kDuckVario) ?? _duckVario;
       final duckLevel = preferences.getDouble(_kDuckLevel);
       if (duckLevel != null && duckLevel.isFinite) {
@@ -208,6 +262,9 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
       }
       _announcementsEnabled =
           preferences.getBool(_kAnnouncementsEnabled) ?? _announcementsEnabled;
+      _bleSensorAnnouncementsEnabled =
+          preferences.getBool(_kBleSensorAnnouncementsEnabled) ??
+          _bleSensorAnnouncementsEnabled;
       _takeoffLandingEnabled =
           preferences.getBool(_kTakeoffLandingEnabled) ??
           _takeoffLandingEnabled;
@@ -260,6 +317,30 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
     if (_announcementsEnabled == enabled) return;
     _announcementsEnabled = enabled;
     _persistBool(_kAnnouncementsEnabled, enabled);
+    notifyListeners();
+  }
+
+  void setBleSensorAnnouncementsEnabled(bool enabled) {
+    if (_bleSensorAnnouncementsEnabled == enabled) return;
+    _bleSensorAnnouncementsEnabled = enabled;
+    _persistBool(_kBleSensorAnnouncementsEnabled, enabled);
+    notifyListeners();
+  }
+
+  void setBleSensorAnnouncementText(
+    BleSensorAnnouncementEvent event,
+    AnnouncementLanguage language,
+    String? text,
+  ) {
+    final key = _bleSensorTemplateKey(event, language);
+    final next = AnnouncementTemplate.sanitize(text);
+    if (_bleSensorTemplates[key] == next) return;
+    if (next == null) {
+      _bleSensorTemplates.remove(key);
+    } else {
+      _bleSensorTemplates[key] = next;
+    }
+    _persistTemplate(key, next);
     notifyListeners();
   }
 

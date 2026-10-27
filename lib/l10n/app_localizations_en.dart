@@ -3521,10 +3521,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Turn all automatic voice announcements on or off.';
 
   @override
+  String get bleSensorAnnouncementEnabled =>
+      'Bluetooth sensor connection announcements';
+
+  @override
+  String get bleSensorAnnouncementEnabledDescription =>
+      'Speak when a Bluetooth sensor connects or disconnects.';
+
+  @override
+  String get bleSensorAnnouncementTextDescription =>
+      'Customize the spoken phrase in the currently selected language.';
+
+  @override
   String get altitudeAnnouncementSectionVoice => 'Voice';
 
   @override
-  String get altitudeAnnouncementSectionTakeoffLanding => 'Takeoff & landing';
+  String get altitudeAnnouncementSectionEvent => 'Event';
 
   @override
   String get altitudeAnnouncementSectionGlide => 'Glide dead zone';

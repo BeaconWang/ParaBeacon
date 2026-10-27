@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../audio/altitude_announcement_bridge.dart';
 import '../audio/altitude_announcement_settings.dart';
 import '../audio/altitude_announcement_speaker.dart';
+import '../audio/ble_sensor_announcement_bridge.dart'
+    show speakBleSensorAnnouncementTest;
 import '../audio/announcement_template.dart';
 import '../audio/custom_announcement_rule.dart';
 import '../data/flight_state.dart';
@@ -81,8 +83,8 @@ class _AltitudeAnnouncementSettingsSheet extends StatefulWidget {
 
 class _AltitudeAnnouncementSettingsSheetState
     extends State<_AltitudeAnnouncementSettingsSheet> {
-  AnnouncementEvent? _testing;
-  AnnouncementEvent? _lastTested;
+  Object? _testing;
+  Object? _lastTested;
   bool? _lastTestSucceeded;
 
   Future<void> _runTest(AnnouncementEvent event) async {
@@ -100,6 +102,21 @@ class _AltitudeAnnouncementSettingsSheetState
     });
   }
 
+  Future<void> _runBleTest(BleSensorAnnouncementEvent event) async {
+    if (_testing != null) return;
+    setState(() {
+      _testing = event;
+      _lastTested = event;
+      _lastTestSucceeded = null;
+    });
+    final ok = await speakBleSensorAnnouncementTest(event);
+    if (!mounted) return;
+    setState(() {
+      _testing = null;
+      _lastTestSucceeded = ok;
+    });
+  }
+
   Widget _textTile(AnnouncementEvent event) {
     return _AnnouncementTextTile(
       event: event,
@@ -107,6 +124,16 @@ class _AltitudeAnnouncementSettingsSheetState
       testBusy: _testing != null,
       testResult: _lastTested == event ? _lastTestSucceeded : null,
       onTest: () => _runTest(event),
+    );
+  }
+
+  Widget _bleSensorTextTile(BleSensorAnnouncementEvent event) {
+    return _BleSensorAnnouncementTextTile(
+      event: event,
+      testing: _testing == event,
+      testBusy: _testing != null,
+      testResult: _lastTested == event ? _lastTestSucceeded : null,
+      onTest: () => _runBleTest(event),
     );
   }
 
@@ -189,11 +216,27 @@ class _AltitudeAnnouncementSettingsSheetState
                   _ErrorNote(text: l10n.altitudeAnnouncementUnavailable),
                 ],
 
-                // ── Feature 1: takeoff / landing ──────────────────────────
+                // ── Events ────────────────────────────────────────────────
                 _SectionHeader(
-                  icon: Icons.flight_takeoff,
-                  title: l10n.altitudeAnnouncementSectionTakeoffLanding,
+                  icon: Icons.event,
+                  title: l10n.altitudeAnnouncementSectionEvent,
                 ),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.bleSensorAnnouncementEnabled),
+                  subtitle: Text(l10n.bleSensorAnnouncementEnabledDescription),
+                  value: settings.bleSensorAnnouncementsEnabled,
+                  onChanged: settings.setBleSensorAnnouncementsEnabled,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    l10n.bleSensorAnnouncementTextDescription,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+                for (final event in BleSensorAnnouncementEvent.values)
+                  _bleSensorTextTile(event),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: Text(l10n.altitudeAnnouncementTakeoffLandingEnabled),
@@ -770,6 +813,190 @@ class _AnnouncementTextTileState extends State<_AnnouncementTextTile> {
         ),
         const SizedBox(height: 4),
       ],
+    );
+  }
+}
+
+class _BleSensorAnnouncementTextTile extends StatefulWidget {
+  const _BleSensorAnnouncementTextTile({
+    required this.event,
+    required this.testing,
+    required this.testBusy,
+    required this.testResult,
+    required this.onTest,
+  });
+
+  final BleSensorAnnouncementEvent event;
+  final bool testing;
+  final bool testBusy;
+  final bool? testResult;
+  final VoidCallback onTest;
+
+  @override
+  State<_BleSensorAnnouncementTextTile> createState() =>
+      _BleSensorAnnouncementTextTileState();
+}
+
+class _BleSensorAnnouncementTextTileState
+    extends State<_BleSensorAnnouncementTextTile> {
+  final _settings = AltitudeAnnouncementSettings.instance;
+  late final Map<AnnouncementLanguage, TextEditingController> _controllers = {
+    for (final language in AnnouncementLanguage.values)
+      language: TextEditingController(
+        text:
+            _settings.customBleSensorAnnouncementText(widget.event, language) ??
+            '',
+      ),
+  };
+  bool _expanded = false;
+
+  @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _reset(AnnouncementLanguage language) {
+    _controllers[language]!.clear();
+    _settings.setBleSensorAnnouncementText(widget.event, language, null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final language = preferredAnnouncementLanguage();
+    final title = switch (widget.event) {
+      BleSensorAnnouncementEvent.connected => l10n.sensorConnected,
+      BleSensorAnnouncementEvent.disconnected => l10n.sensorDisconnected,
+    };
+    final preview = _settings.bleSensorAnnouncementText(widget.event, language);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: theme.textTheme.titleSmall),
+                        const SizedBox(height: 2),
+                        Text(
+                          l10n.altitudeAnnouncementTemplatePreview(preview),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    key: ValueKey(
+                      'bleSensorAnnouncementCustomize-${widget.event.name}',
+                    ),
+                    tooltip: l10n.altitudeAnnouncementCustomize,
+                    isSelected: _expanded,
+                    icon: const Icon(Icons.edit_outlined),
+                    selectedIcon: const Icon(Icons.expand_less),
+                    onPressed: () => setState(() => _expanded = !_expanded),
+                  ),
+                  IconButton(
+                    key: ValueKey(
+                      'bleSensorAnnouncementTest-${widget.event.name}',
+                    ),
+                    tooltip: l10n.altitudeAnnouncementTest,
+                    onPressed: widget.testBusy ? null : widget.onTest,
+                    icon: widget.testing
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.volume_up),
+                  ),
+                ],
+              ),
+              if (widget.testResult == true)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, right: 8),
+                  child: Text(
+                    l10n.altitudeAnnouncementTestSuccess,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                )
+              else if (widget.testResult == false)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, right: 8),
+                  child: _ErrorNote(text: l10n.altitudeAnnouncementUnavailable),
+                ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 180),
+                alignment: Alignment.topCenter,
+                child: _expanded
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 6, right: 8),
+                        child: _buildEditor(l10n),
+                      )
+                    : const SizedBox(width: double.infinity),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditor(AppLocalizations l10n) {
+    final language = preferredAnnouncementLanguage();
+    return TextField(
+      key: ValueKey(
+        'bleSensorAnnouncement-${widget.event.name}-${language.name}',
+      ),
+      controller: _controllers[language],
+      onChanged: (text) =>
+          _settings.setBleSensorAnnouncementText(widget.event, language, text),
+      maxLength: AnnouncementTemplate.maxLength,
+      minLines: 1,
+      maxLines: 2,
+      textInputAction: TextInputAction.done,
+      decoration: InputDecoration(
+        labelText: language == AnnouncementLanguage.chinese
+            ? l10n.languageChineseSimplified
+            : l10n.languageEnglish,
+        hintText: AltitudeAnnouncementSettings.defaultBleSensorAnnouncement(
+          widget.event,
+          language,
+        ),
+        border: const OutlineInputBorder(),
+        isDense: true,
+        suffixIcon: IconButton(
+          key: ValueKey(
+            'bleSensorAnnouncementReset-${widget.event.name}-${language.name}',
+          ),
+          tooltip: l10n.altitudeAnnouncementTemplateReset,
+          onPressed:
+              _settings.customBleSensorAnnouncementText(
+                    widget.event,
+                    language,
+                  ) ==
+                  null
+              ? null
+              : () => _reset(language),
+          icon: const Icon(Icons.restore),
+        ),
+      ),
     );
   }
 }

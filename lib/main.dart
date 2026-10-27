@@ -64,6 +64,7 @@ import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
 import 'audio/altitude_announcement_bridge.dart';
+import 'audio/ble_sensor_announcement_bridge.dart';
 import 'theme/app_themes.dart';
 import 'theme/locale_controller.dart';
 import 'theme/theme_controller.dart';
@@ -118,6 +119,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   // whenever a real sensor is connected, its vertical speed drives the app
   // (and the vario audio) instead of the development simulator.
   late final BleFlightDataBridge _bleBridge;
+  late final BleSensorAnnouncementBridge _bleAnnouncements;
 
   // Forwards continuous device-GPS readings into [_dataSource] so every
   // consumer (map, recorder, data-value controls, ...) sees the real
@@ -192,6 +194,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // its vertical speed takes over from the simulator.
     BleSensorService.instance.init();
     _bleBridge = BleFlightDataBridge(source: _dataSource)..attach();
+    _bleAnnouncements = BleSensorAnnouncementBridge()..attach();
 
     // Bring up the device's internal barometer (best-effort; no-op where there
     // is no barometer or on desktop/web). When present and preferred, its
@@ -263,6 +266,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _gpsBridge.dispose();
     _internalBridge.dispose();
     _bleBridge.dispose();
+    _bleAnnouncements.dispose();
     _varioAudio.dispose();
     _altitudeAnnouncements.dispose();
     TakeoffReference.instance.unbind();

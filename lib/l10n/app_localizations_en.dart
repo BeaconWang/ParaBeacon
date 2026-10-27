@@ -2817,6 +2817,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailLandingSite => 'Landing site';
 
   @override
+  String get flightDetailShowOnMap => 'Show on map';
+
+  @override
   String get flightDetailPerformance => 'Performance';
 
   @override

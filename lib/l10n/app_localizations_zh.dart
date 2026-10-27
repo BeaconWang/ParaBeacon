@@ -2717,6 +2717,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightDetailLandingSite => '降落地点';
 
   @override
+  String get flightDetailShowOnMap => '在地图中显示';
+
+  @override
   String get flightDetailPerformance => '性能';
 
   @override

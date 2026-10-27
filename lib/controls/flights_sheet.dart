@@ -17,6 +17,7 @@ import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
 import 'flight_replay_sheet.dart';
 import 'flight_statistics_sheet.dart';
+import 'map_picker_sheet.dart' show showMapLocationSheet;
 import 'replay_gaps.dart' show formatGapDuration;
 import 'track_3d_sheet.dart';
 
@@ -1196,9 +1197,19 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                           );
                           return [
                             if (takeoff != null)
-                              _detailRow(l10n.flightDetailTakeoff, takeoff),
+                              _endpointDetailRow(
+                                l10n.flightDetailTakeoff,
+                                takeoff,
+                                latitude: track.takeoffLatitude,
+                                longitude: track.takeoffLongitude,
+                              ),
                             if (landing != null)
-                              _detailRow(l10n.flightDetailLanding, landing),
+                              _endpointDetailRow(
+                                l10n.flightDetailLanding,
+                                landing,
+                                latitude: track.landingLatitude,
+                                longitude: track.landingLongitude,
+                              ),
                           ];
                         }(),
                         Align(
@@ -1538,6 +1549,62 @@ class _FlightsSheetState extends State<_FlightsSheet> {
               value,
               textAlign: TextAlign.right,
               style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _endpointDetailRow(
+    String label,
+    String value, {
+    required double? latitude,
+    required double? longitude,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final hasCoordinates =
+        latitude != null &&
+        longitude != null &&
+        latitude.isFinite &&
+        longitude.isFinite &&
+        latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if (hasCoordinates)
+                  TextButton.icon(
+                    onPressed: () => showMapLocationSheet(
+                      context,
+                      latitude: latitude,
+                      longitude: longitude,
+                      title: label,
+                    ),
+                    icon: const Icon(Icons.map_outlined, size: 16),
+                    label: Text(l10n.flightDetailShowOnMap),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+              ],
             ),
           ),
         ],

@@ -1094,6 +1094,7 @@
   "flightNamesDialogTitle": "Edit flight names",
   "flightDetailTakeoffSite": "Takeoff site",
   "flightDetailLandingSite": "Landing site",
+  "flightDetailShowOnMap": "Show on map",
   "flightDetailPerformance": "Performance",
   "flightDetailStraightDistance": "Straight distance",
   "flightDetailXcDistance": "XC distance",

@@ -981,6 +981,7 @@
   "flightNamesDialogTitle": "编辑飞行名称",
   "flightDetailTakeoffSite": "起飞地点",
   "flightDetailLandingSite": "降落地点",
+  "flightDetailShowOnMap": "在地图中显示",
   "flightDetailPerformance": "性能",
   "flightDetailStraightDistance": "直线距离",
   "flightDetailXcDistance": "越野距离",

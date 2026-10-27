@@ -5342,6 +5342,12 @@ abstract class AppLocalizations {
   /// **'Landing site'**
   String get flightDetailLandingSite;
 
+  /// No description provided for @flightDetailShowOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Show on map'**
+  String get flightDetailShowOnMap;
+
   /// No description provided for @flightDetailPerformance.
   ///
   /// In en, this message translates to:

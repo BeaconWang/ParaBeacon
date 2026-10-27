@@ -50,6 +50,38 @@ Future<(double, double)?> showMapPickerSheet(
   );
 }
 
+/// Opens a read-only map centered on [latitude] and [longitude], with a pin at
+/// the saved WGS-84 location.
+Future<void> showMapLocationSheet(
+  BuildContext context, {
+  required double latitude,
+  required double longitude,
+  required String title,
+}) {
+  if (!latitude.isFinite ||
+      !longitude.isFinite ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180) {
+    return Future<void>.value();
+  }
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    shape: const RoundedRectangleBorder(),
+    constraints: const BoxConstraints.expand(),
+    builder: (context) => _MapPickerSheet(
+      initialLat: latitude,
+      initialLon: longitude,
+      initialTileSourceId: MapPickerDefaults.tileSourceId,
+      resolveCurrentLocation: null,
+      fixedTitle: title,
+    ),
+  );
+}
+
 /// Defaults for the map picker.
 class MapPickerDefaults {
   MapPickerDefaults._();
@@ -65,12 +97,14 @@ class _MapPickerSheet extends StatefulWidget {
     required this.initialLon,
     required this.initialTileSourceId,
     required this.resolveCurrentLocation,
+    this.fixedTitle,
   });
 
   final double? initialLat;
   final double? initialLon;
   final String initialTileSourceId;
   final CurrentLocationResolver? resolveCurrentLocation;
+  final String? fixedTitle;
 
   @override
   State<_MapPickerSheet> createState() => _MapPickerSheetState();
@@ -96,6 +130,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
 
   /// Current crosshair position in WGS-84 (the value handed back).
   late LatLng _wgs;
+  late final LatLng? _fixedMarker;
+
+  bool get _isLocationViewer => widget.fixedTitle != null;
 
   double _zoom = 11;
   bool _ready = false;
@@ -132,6 +169,8 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
     _wgs = (lat != null && lon != null && _validLat(lat) && _validLon(lon))
         ? LatLng(lat, lon)
         : _fallback;
+    _fixedMarker = _isLocationViewer ? _wgs : null;
+    if (_isLocationViewer) _zoom = 13;
     _favorites.addListener(_onFavoritesChanged);
     OfflineTilesService.instance.revision.addListener(_onOfflineTilesChanged);
     _favorites.load();
@@ -434,7 +473,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                               _searchFailed = false;
                             });
                           }
-                          _map.move(point, _map.camera.zoom);
+                          if (!_isLocationViewer) {
+                            _map.move(point, _map.camera.zoom);
+                          }
                         },
                       ),
                       children: [
@@ -453,27 +494,45 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                             // on Android and breaks OSM's usage policy check.
                             userAgentPackageName: 'com.beacon.parabeacon',
                           ),
+                        if (_fixedMarker case final marker?)
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: _toDisplay(marker),
+                                width: 44,
+                                height: 48,
+                                alignment: Alignment.bottomCenter,
+                                child: const Icon(
+                                  Icons.location_pin,
+                                  color: Colors.redAccent,
+                                  size: 44,
+                                ),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   ),
-                  const Positioned.fill(
-                    child: IgnorePointer(child: Center(child: _Crosshair())),
-                  ),
+                  if (!_isLocationViewer)
+                    const Positioned.fill(
+                      child: IgnorePointer(child: Center(child: _Crosshair())),
+                    ),
                   // Search overlays the map rather than taking a row of its
                   // own, so the pickable area stays as large as possible.
-                  Positioned(
-                    left: 12,
-                    right: 12,
-                    top: 8,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildSearchField(l10n),
-                        if (_searchResults.isNotEmpty || _searchFailed)
-                          _buildSearchResults(l10n),
-                      ],
+                  if (!_isLocationViewer)
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      top: 8,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildSearchField(l10n),
+                          if (_searchResults.isNotEmpty || _searchFailed)
+                            _buildSearchResults(l10n),
+                        ],
+                      ),
                     ),
-                  ),
                   Positioned(
                     right: 12,
                     bottom: 12,
@@ -525,7 +584,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                 ],
               ),
             ),
-            _buildBottomBar(l10n),
+            _isLocationViewer
+                ? _buildLocationViewerBottomBar()
+                : _buildBottomBar(l10n),
           ],
         ),
       ),
@@ -652,7 +713,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              l10n.mapPickerTitle,
+              widget.fixedTitle ?? l10n.mapPickerTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -660,7 +723,7 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
               ),
             ),
           ),
-          if (favorites.isNotEmpty)
+          if (!_isLocationViewer && favorites.isNotEmpty)
             PopupMenuButton<int>(
               icon: const Icon(Icons.bookmarks_outlined, color: Colors.white70),
               tooltip: l10n.weatherFavorites,
@@ -720,6 +783,28 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
             icon: const Icon(Icons.close, color: Colors.white70),
             tooltip: l10n.cancel,
             onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationViewerBottomBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      child: Row(
+        children: [
+          const Icon(Icons.place_outlined, color: Colors.white70),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _coordsLabel(_fixedMarker),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
           ),
         ],
       ),

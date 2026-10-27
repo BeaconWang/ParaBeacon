@@ -27,6 +27,8 @@ void main() {
       }
       track.endTime = start.add(const Duration(seconds: 90));
 
+      expect(track.takeoffAltitude, 500);
+      expect(track.landingAltitude, 490);
       expect(track.maxAltitude, 130);
       expect(track.minAltitude, 90);
       expect(track.maxAltGainM, 30);
@@ -60,13 +62,52 @@ void main() {
         );
       }
 
+      expect(track.takeoffAltitude, 1000);
+      expect(track.landingAltitude, 1000);
+
       final stats = FlightDerivedStats.compute(track);
       expect(stats.straightDistanceM, greaterThan(1100));
       expect(stats.straightDistanceM, lessThan(1120));
       expect(stats.trackDistanceM, greaterThan(stats.straightDistanceM));
     });
 
-    test('imports XCTrack pilot, glider, site, and GNSS endpoint altitude', () {
+    test('uses the first and last records with barometric-first altitude', () {
+      final start = DateTime.utc(2026, 9, 19, 12);
+      final track = FlightTrack(startTime: start);
+      track.add(
+        FlightSample(
+          time: start,
+          data: const FlightData(
+            altitude: 1100,
+            baroAltitude: 1200,
+            gpsAltitude: 1150,
+          ),
+        ),
+      );
+      track.add(
+        FlightSample(
+          time: start.add(const Duration(seconds: 10)),
+          data: const FlightData(
+            altitude: 1210,
+            gpsAltitude: 1210,
+            latitude: 0,
+            longitude: 0,
+            hasFix: true,
+          ),
+        ),
+      );
+      track.add(
+        FlightSample(
+          time: start.add(const Duration(seconds: 20)),
+          data: const FlightData(altitude: 1250, gpsAltitude: 1250),
+        ),
+      );
+
+      expect(track.takeoffAltitude, 1200);
+      expect(track.landingAltitude, 1250);
+    });
+
+    test('imports XCTrack metadata and barometric endpoint altitude', () {
       final content = [
         'HFDTE190926',
         'HFPLTPILOTINCHARGE:Sample Pilot',
@@ -81,8 +122,8 @@ void main() {
       expect(track.aircraftModel, 'Test Wing');
       expect(track.aircraftLabel, 'Test Wing');
       expect(track.takeoffSite, 'Launch Ridge');
-      expect(track.takeoffAltitude, 2000);
-      expect(track.landingAltitude, 2010);
+      expect(track.takeoffAltitude, 1000);
+      expect(track.landingAltitude, 1005);
       expect(track.maxAltitude, 2010);
       expect(track.maxClimb, closeTo(5 / 30, 1e-6));
     });

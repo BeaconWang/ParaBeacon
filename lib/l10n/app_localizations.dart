@@ -5414,11 +5414,23 @@ abstract class AppLocalizations {
   /// **'Takeoff'**
   String get flightDetailTakeoff;
 
+  /// No description provided for @flightDetailTakeoffAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeoff altitude'**
+  String get flightDetailTakeoffAltitude;
+
   /// No description provided for @flightDetailLanding.
   ///
   /// In en, this message translates to:
   /// **'Landing'**
   String get flightDetailLanding;
+
+  /// No description provided for @flightDetailLandingAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing altitude'**
+  String get flightDetailLandingAltitude;
 
   /// No description provided for @flightDetailPilot.
   ///

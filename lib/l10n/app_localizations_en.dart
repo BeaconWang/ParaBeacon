@@ -2856,7 +2856,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailTakeoff => 'Takeoff';
 
   @override
+  String get flightDetailTakeoffAltitude => 'Takeoff altitude';
+
+  @override
   String get flightDetailLanding => 'Landing';
+
+  @override
+  String get flightDetailLandingAltitude => 'Landing altitude';
 
   @override
   String get flightDetailPilot => 'Pilot';

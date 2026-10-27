@@ -1187,13 +1187,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                             track.takeoffSite,
                             track.takeoffLatitude,
                             track.takeoffLongitude,
-                            track.takeoffAltitude,
                           );
                           final landing = _endpointText(
                             track.landingSite,
                             track.landingLatitude,
                             track.landingLongitude,
-                            track.landingAltitude,
                           );
                           return [
                             if (takeoff != null)
@@ -1203,12 +1201,22 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                                 latitude: track.takeoffLatitude,
                                 longitude: track.takeoffLongitude,
                               ),
+                            if (track.takeoffAltitude != null)
+                              _detailRow(
+                                l10n.flightDetailTakeoffAltitude,
+                                '${track.takeoffAltitude!.round()} m',
+                              ),
                             if (landing != null)
                               _endpointDetailRow(
                                 l10n.flightDetailLanding,
                                 landing,
                                 latitude: track.landingLatitude,
                                 longitude: track.landingLongitude,
+                              ),
+                            if (track.landingAltitude != null)
+                              _detailRow(
+                                l10n.flightDetailLandingAltitude,
+                                '${track.landingAltitude!.round()} m',
                               ),
                           ];
                         }(),
@@ -2002,22 +2010,12 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     return '${_km(totalM)}$legs$closing$mark';
   }
 
-  /// Combines an optional site name with its coordinates and altitude for a
-  /// launch/landing detail row. Returns a string like
-  /// `Site (22.8311°N, 114.7010°E · 300 m)`, degrading gracefully when parts
-  /// are missing, or null when nothing is known.
-  static String? _endpointText(
-    String? site,
-    double? lat,
-    double? lon,
-    double? altitude,
-  ) {
+  /// Combines an optional site name with its coordinates for a launch/landing
+  /// detail row. Returns null when neither is known.
+  static String? _endpointText(String? site, double? lat, double? lon) {
     final hasSite = site != null && site.isNotEmpty;
     final coords = _fmtCoords(lat, lon);
-    final parts = <String>[];
-    if (coords != null) parts.add(coords);
-    if (altitude != null) parts.add('${altitude.round()} m');
-    final detail = parts.join(' · ');
+    final detail = coords ?? '';
     if (hasSite && detail.isNotEmpty) return '$site ($detail)';
     if (hasSite) return site;
     return detail.isNotEmpty ? detail : null;

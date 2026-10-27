@@ -471,6 +471,10 @@ class FlightTrack {
       _baroVarioWindowChange = 0.0;
     }
 
+    final endpointAltitude = s.data.baroAltitude ?? s.data.gpsAltitude;
+    if (prev == null) _takeoffAltitude = endpointAltitude;
+    _landingAltitude = endpointAltitude;
+
     final alt = s.data.gpsAltitude ?? s.data.altitude;
     _maxAltGainM ??= 0.0;
     if (_minAltitude != double.infinity) {
@@ -497,13 +501,10 @@ class FlightTrack {
     }
 
     if (s.data.hasFix) {
-      // XCTrack uses the first and last tracklog fixes for endpoint values.
       _takeoffLat ??= s.data.latitude;
       _takeoffLon ??= s.data.longitude;
-      _takeoffAltitude ??= alt;
       _landingLat = s.data.latitude;
       _landingLon = s.data.longitude;
-      _landingAltitude = alt;
 
       final previousFix = _lastFixSample;
       if (previousFix != null) {

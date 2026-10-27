@@ -2753,7 +2753,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightDetailTakeoff => '起飞';
 
   @override
+  String get flightDetailTakeoffAltitude => '起飞海拔';
+
+  @override
   String get flightDetailLanding => '降落';
+
+  @override
+  String get flightDetailLandingAltitude => '降落海拔';
 
   @override
   String get flightDetailPilot => '飞行员';

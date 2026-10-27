@@ -27,14 +27,26 @@ class _AsfcFlightRecordsSheetState extends State<_AsfcFlightRecordsSheet> {
   @override
   void initState() {
     super.initState();
+    _auth.addListener(_handleAuthChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _auth.load();
+      if (!mounted || !_auth.isSignedIn) return;
       await Future.wait([
         _auth.loadFlightRecords(force: true),
         _auth.loadAgencies(),
         _auth.loadCertificateCoaches(),
       ]);
-      if (mounted) setState(() {});
     });
+  }
+
+  void _handleAuthChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _auth.removeListener(_handleAuthChanged);
+    super.dispose();
   }
 
   Future<void> _addRecord() async {

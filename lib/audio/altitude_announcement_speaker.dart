@@ -93,9 +93,15 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     if (_busy) return;
     _busy = true;
     try {
-      await _prepare(preferred);
+      final language = await _prepare(preferred);
+      _failures = 0;
+      _setAvailability(
+        language == null
+            ? SpeechAvailability.unavailable
+            : SpeechAvailability.available,
+      );
     } catch (_) {
-      // Best effort only.
+      _setAvailability(SpeechAvailability.unavailable);
     } finally {
       _busy = false;
     }

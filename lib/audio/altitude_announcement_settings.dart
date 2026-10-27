@@ -135,7 +135,7 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
   AltitudeRecordScope _recordScope = AltitudeRecordScope.flight;
   double _recordIntervalSeconds = defaultRecordInterval;
   final List<CustomAnnouncementRule> _customRules = [];
-  bool _loaded = false;
+  Future<void>? _loadFuture;
 
   /// Speaking speed as a multiple of the normal speed (1.0 = normal).
   double get speechRate => _speechRate;
@@ -216,9 +216,9 @@ class AltitudeAnnouncementSettings extends ChangeNotifier {
       customBleSensorAnnouncementText(event, language) ??
       defaultBleSensorAnnouncement(event, language);
 
-  Future<void> load() async {
-    if (_loaded) return;
-    _loaded = true;
+  Future<void> load() => _loadFuture ??= _loadPreferences();
+
+  Future<void> _loadPreferences() async {
     try {
       final preferences = await SharedPreferences.getInstance();
       for (final key in _obsoleteKeys) {

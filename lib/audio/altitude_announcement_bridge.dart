@@ -73,8 +73,14 @@ class AltitudeAnnouncementBridge {
   void attach() {
     if (_attached) return;
     _attached = true;
-    _settings.load();
     _settings.addListener(_onSettingsChanged);
+    _speaker.addListener(_onSpeechAvailabilityChanged);
+    unawaited(
+      _settings.load().then((_) {
+        if (!_attached) return;
+        _onSettingsChanged();
+      }),
+    );
     _wasFlying = _flightState.isFlying;
     _flightState.addListener(_onFlightStateChanged);
     source.addListener(_onData);
@@ -99,7 +105,7 @@ class AltitudeAnnouncementBridge {
   }
 
   void _onSettingsChanged() {
-    final anyEnabled = _settings.anyEnabled;
+    final anyEnabled = _settings.announcementsEnabled;
     final becameEnabled = anyEnabled && _wasEnabled != true;
     _wasEnabled = anyEnabled;
 
@@ -124,9 +130,22 @@ class AltitudeAnnouncementBridge {
 
     if (becameEnabled) {
       // Bind the engine and pick a voice before the first announcement is due.
-      unawaited(_speaker.warmUp(announcementLanguageFor(_firstTemplate())));
+      unawaited(_warmUpSpeaker());
     }
     _onData();
+  }
+
+  Future<void> _warmUpSpeaker() async {
+    await _speaker.warmUp(announcementLanguageFor(_firstTemplate()));
+    if (_attached && _speaker.availability == SpeechAvailability.unavailable) {
+      _settings.setAnnouncementsEnabled(false);
+    }
+  }
+
+  void _onSpeechAvailabilityChanged() {
+    if (_attached && _speaker.availability == SpeechAvailability.unavailable) {
+      _settings.setAnnouncementsEnabled(false);
+    }
   }
 
   String? _firstTemplate() {
@@ -548,6 +567,7 @@ class AltitudeAnnouncementBridge {
     _flightState.removeListener(_onFlightStateChanged);
     source.removeListener(_onData);
     _settings.removeListener(_onSettingsChanged);
+    _speaker.removeListener(_onSpeechAvailabilityChanged);
     _ducking.dispose();
     unawaited(_speaker.stop());
   }

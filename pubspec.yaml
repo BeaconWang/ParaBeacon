@@ -137,6 +137,7 @@ dependencies:
   # (AutoNavi) web service. Only ever calls the fixed external host
   # `restapi.amap.com`; no internal-network requests are made.
   http: ^1.2.2
+  web_socket_channel: ^3.0.1
 
 dev_dependencies:
   flutter_test:

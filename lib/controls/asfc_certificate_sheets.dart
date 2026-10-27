@@ -207,7 +207,7 @@ class _AsfcCertificateDetailsSheetState
       (l10n.certificateMobile, _value(certificate, ['mobile'])),
       (l10n.certificateEmail, _value(certificate, ['email'])),
       (l10n.certificateAddress, _value(certificate, ['address'])),
-      (l10n.certificateArea, _value(certificate, ['area', 'cityName'])),
+      (l10n.certificateArea, _value(certificate, ['cityName'])),
       (l10n.certificateAgency, _value(certificate, ['agencyName'])),
       (l10n.certificateCoach, _value(certificate, ['coachName'])),
     ];
@@ -322,9 +322,10 @@ class _AsfcCertificateDetailsSheetState
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 760),
+                              constraints: const BoxConstraints(maxWidth: 980),
                               child: _CertificateCardPreview(
                                 photoUrl: photoUrl,
+                                area: _value(certificate, ['cityName']),
                                 title: l10n.certificateCardTitle,
                                 fullName:
                                     status.fullName ??
@@ -339,10 +340,9 @@ class _AsfcCertificateDetailsSheetState
                                 licenseNo:
                                     status.licenseNo ??
                                     _value(certificate, ['licenseNo']),
-                                validity: validity.isEmpty
-                                    ? null
-                                    : validity.join(' – '),
-                                validityStatus: status.licenseStatusName,
+                                validityStatus:
+                                    status.licenseStatusName ??
+                                    _value(certificate, ['licenseStatusName']),
                                 level: level,
                                 sportCode: sportCode,
                                 l10n: l10n,
@@ -370,16 +370,75 @@ class _AsfcCertificateDetailsSheetState
   }
 }
 
+class _AsfcLogoMark extends StatelessWidget {
+  const _AsfcLogoMark({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: height * 1.92,
+      height: height,
+      child: CustomPaint(painter: _AsfcLogoPainter(const Color(0xFF168BC7))),
+    );
+  }
+}
+
+class _AsfcLogoPainter extends CustomPainter {
+  const _AsfcLogoPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 120, size.height / 60);
+    final paint = Paint()..color = color;
+    final mark = Path()
+      ..moveTo(60, 2)
+      ..cubicTo(64, 17, 69, 21, 80, 22)
+      ..lineTo(118, 22)
+      ..lineTo(108, 31)
+      ..lineTo(81, 31)
+      ..cubicTo(72, 31, 65, 37, 60, 53)
+      ..cubicTo(55, 37, 48, 31, 39, 31)
+      ..lineTo(12, 31)
+      ..lineTo(2, 22)
+      ..lineTo(40, 22)
+      ..cubicTo(51, 21, 56, 17, 60, 2)
+      ..close();
+    canvas.drawPath(mark, paint);
+    final stripePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.88)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round;
+    final stripe = Path()
+      ..moveTo(13, 26)
+      ..lineTo(39, 26)
+      ..cubicTo(48, 26, 55, 29, 60, 38)
+      ..cubicTo(65, 29, 72, 26, 81, 26)
+      ..lineTo(107, 26);
+    canvas.drawPath(stripe, stripePaint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_AsfcLogoPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
 class _CertificateCardPreview extends StatelessWidget {
   const _CertificateCardPreview({
     required this.photoUrl,
+    required this.area,
     required this.title,
     required this.fullName,
     required this.gender,
     required this.birthday,
     required this.country,
     required this.licenseNo,
-    required this.validity,
     required this.validityStatus,
     required this.level,
     required this.sportCode,
@@ -387,13 +446,13 @@ class _CertificateCardPreview extends StatelessWidget {
   });
 
   final String? photoUrl;
+  final String? area;
   final String title;
   final String? fullName;
   final String? gender;
   final String? birthday;
   final String? country;
   final String? licenseNo;
-  final String? validity;
   final String? validityStatus;
   final String level;
   final String sportCode;
@@ -405,8 +464,9 @@ class _CertificateCardPreview extends StatelessWidget {
     double labelFontSize,
     double valueFontSize, {
     bool emphasized = false,
+    bool scaleToFit = false,
   }) {
-    return Text.rich(
+    final field = Text.rich(
       TextSpan(
         children: [
           TextSpan(
@@ -427,7 +487,14 @@ class _CertificateCardPreview extends StatelessWidget {
         ],
       ),
       maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+      softWrap: false,
+      overflow: scaleToFit ? TextOverflow.visible : TextOverflow.ellipsis,
+    );
+    if (!scaleToFit) return field;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: field,
     );
   }
 
@@ -437,9 +504,8 @@ class _CertificateCardPreview extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final pad = width * 0.032;
-        final labelFontSize = (width * 0.023).clamp(8.0, 17.0).toDouble();
-        final valueFontSize = (width * 0.031).clamp(10.0, 23.0).toDouble();
-        final smallFontSize = (width * 0.019).clamp(7.0, 14.0).toDouble();
+        final labelFontSize = (width * 0.024).clamp(9.0, 22.0).toDouble();
+        final valueFontSize = (width * 0.032).clamp(11.0, 29.0).toDouble();
         final portraitWidth = width * 0.16;
         final portraitHeight = width / 2.02 * 0.46;
         final imageUri = Uri.tryParse(photoUrl ?? '');
@@ -489,8 +555,18 @@ class _CertificateCardPreview extends StatelessWidget {
                         ),
                       ),
                       Positioned(
-                        right: cardWidth * 0.08,
-                        top: cardHeight * 0.2,
+                        right: cardWidth * 0.1,
+                        top: cardHeight * 0.29,
+                        child: IgnorePointer(
+                          child: Opacity(
+                            opacity: 0.055,
+                            child: _AsfcLogoMark(height: cardHeight * 0.34),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: cardWidth * 0.17,
+                        top: cardHeight * 0.59,
                         child: IgnorePointer(
                           child: Opacity(
                             opacity: 0.055,
@@ -498,7 +574,7 @@ class _CertificateCardPreview extends StatelessWidget {
                               'ASFC',
                               style: TextStyle(
                                 color: const Color(0xFF168BC7),
-                                fontSize: cardHeight * 0.74,
+                                fontSize: cardHeight * 0.19,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -2,
                               ),
@@ -519,35 +595,38 @@ class _CertificateCardPreview extends StatelessWidget {
                               height: cardHeight * 0.26,
                               child: Row(
                                 children: [
-                                  Icon(
-                                    Icons.flight_takeoff,
-                                    color: const Color(0xFF168BC7),
-                                    size: cardHeight * 0.14,
-                                  ),
-                                  SizedBox(width: pad * 0.25),
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'ASFC',
-                                        style: TextStyle(
-                                          color: const Color(0xFF176CA8),
-                                          fontSize: valueFontSize,
-                                          fontWeight: FontWeight.w800,
-                                          height: 1,
+                                  SizedBox(
+                                    width: cardWidth * 0.16,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        _AsfcLogoMark(
+                                          height: cardHeight * 0.105,
                                         ),
-                                      ),
-                                      Text(
-                                        'AERO SPORTS FEDERATION OF CHINA',
-                                        style: TextStyle(
-                                          color: const Color(0xFF4282A9),
-                                          fontSize: smallFontSize * 0.66,
-                                          fontWeight: FontWeight.w600,
+                                        Text(
+                                          'ASFC',
+                                          style: TextStyle(
+                                            color: const Color(0xFF176CA8),
+                                            fontSize: cardHeight * 0.044,
+                                            fontWeight: FontWeight.w800,
+                                            height: 1,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          'AERO SPORTS FEDERATION OF CHINA',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: const Color(0xFF4282A9),
+                                            fontSize: (cardHeight * 0.013)
+                                                .clamp(5.0, 8.0),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                   SizedBox(width: pad * 0.7),
                                   Expanded(
@@ -559,8 +638,8 @@ class _CertificateCardPreview extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           color: const Color(0xFF176CA8),
-                                          fontSize: (width * 0.034)
-                                              .clamp(11.0, 25.0)
+                                          fontSize: (width * 0.037)
+                                              .clamp(12.0, 36.0)
                                               .toDouble(),
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -644,11 +723,27 @@ class _CertificateCardPreview extends StatelessWidget {
                                           labelFontSize,
                                           valueFontSize,
                                         ),
-                                        _field(
-                                          l10n.certificateValidity,
-                                          validity,
-                                          labelFontSize,
-                                          valueFontSize,
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: _field(
+                                                l10n.certificateSportCode,
+                                                sportCode,
+                                                labelFontSize,
+                                                valueFontSize,
+                                              ),
+                                            ),
+                                            SizedBox(width: pad * 0.4),
+                                            Expanded(
+                                              child: _field(
+                                                l10n.certificateArea,
+                                                area,
+                                                labelFontSize,
+                                                valueFontSize,
+                                                scaleToFit: true,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -681,33 +776,25 @@ class _CertificateCardPreview extends StatelessWidget {
                             gradient: LinearGradient(
                               colors: [Color(0xFF50C6E9), Color(0xFF348FEA)],
                             ),
+                            border: Border(
+                              top: BorderSide(
+                                color: Color(0xFF8AE3F0),
+                                width: 2,
+                              ),
+                            ),
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  '${l10n.certificateLevel}: $level',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: valueFontSize,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${l10n.certificateLevel}: $level',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: valueFontSize,
+                                fontWeight: FontWeight.w600,
                               ),
-                              SizedBox(width: pad),
-                              Text(
-                                '${l10n.certificateSportCode}: $sportCode',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: smallFontSize,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),

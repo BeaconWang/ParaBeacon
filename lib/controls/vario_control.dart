@@ -111,48 +111,11 @@ LinearGradient _varioFillGradient(double maxScale) {
 double _markerY(double centerY, double value, double scale) =>
     centerY - (value / scale) * (centerY);
 
-double _liquidSurfaceY(Size size, double x, double markerY, double fillHeight) {
-  final amplitude = math
-      .min(1.8, math.min(size.width * 0.035, fillHeight * 0.12))
-      .toDouble();
-  final phase = size.width == 0 ? 0.0 : (x / size.width) * 2 * math.pi;
-  return markerY + amplitude * math.sin(phase);
-}
-
-Path _liquidSurfacePath(Size size, double markerY, double fillHeight) {
-  final path = Path()..moveTo(0, _liquidSurfaceY(size, 0, markerY, fillHeight));
-  for (var i = 1; i <= 24; i++) {
-    final x = size.width * i / 24;
-    path.lineTo(x, _liquidSurfaceY(size, x, markerY, fillHeight));
-  }
-  return path;
-}
-
-Path _liquidFillPath(
-  Size size,
-  double centerY,
-  double value,
-  double fillHeight,
-  double markerY,
-) {
-  final path = Path();
-  if (value >= 0) {
-    path
-      ..addPath(_liquidSurfacePath(size, markerY, fillHeight), Offset.zero)
-      ..lineTo(size.width, centerY)
-      ..lineTo(0, centerY)
-      ..close();
-  } else {
-    path
-      ..moveTo(0, centerY)
-      ..lineTo(size.width, centerY);
-    for (var i = 24; i >= 0; i--) {
-      final x = size.width * i / 24;
-      path.lineTo(x, _liquidSurfaceY(size, x, markerY, fillHeight));
-    }
-    path.close();
-  }
-  return path;
+Path _liquidFillPath(Size size, double centerY, double value, double markerY) {
+  final fillRect = value >= 0
+      ? Rect.fromLTRB(0, markerY, size.width, centerY)
+      : Rect.fromLTRB(0, centerY, size.width, markerY);
+  return Path()..addRect(fillRect);
 }
 
 class _VarioPainter extends CustomPainter {
@@ -231,13 +194,7 @@ class _VarioPainter extends CustomPainter {
       ..shader = _varioFillGradient(scale).createShader(Offset.zero & size);
     if (liquidGlass) {
       final markerY = _markerY(centerY, clamped, scale);
-      final liquidPath = _liquidFillPath(
-        size,
-        centerY,
-        clamped,
-        fillHeight,
-        markerY,
-      );
+      final liquidPath = _liquidFillPath(size, centerY, clamped, markerY);
       canvas.drawPath(liquidPath, fillPaint);
     } else {
       final fillRect = clamped >= 0
@@ -267,7 +224,7 @@ class _VarioPainter extends CustomPainter {
       ..strokeWidth = 2;
     canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), baseline);
 
-    // Keep the current-speed marker straight even when the liquid edge ripples.
+    // Keep the current-speed level marker straight in both display styles.
     final markerY = _markerY(centerY, clamped, scale);
     final markerOutline = Paint()
       ..color = Colors.black.withAlpha(210)

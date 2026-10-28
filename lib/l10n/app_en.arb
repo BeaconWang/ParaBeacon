@@ -840,7 +840,7 @@
   "settingFormat": "Format",
   "settingFormatDegrees": "Degrees (0-360°)",
   "settingFormatBearing": "Bearing",
-  "settingFormatCardinal": "Cardinal (N, NE, …)",
+  "settingFormatCardinal": "Cardinal",
   "settingFormatNone": "None",
   "settingBearingReference": "Direction",
   "settingBearingAbsolute": "Absolute (compass)",

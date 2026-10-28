@@ -4223,7 +4223,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingFormatCardinal.
   ///
   /// In en, this message translates to:
-  /// **'Cardinal (N, NE, …)'**
+  /// **'Cardinal'**
   String get settingFormatCardinal;
 
   /// No description provided for @settingFormatNone.

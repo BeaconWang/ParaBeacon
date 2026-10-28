@@ -647,7 +647,7 @@ const List<ControlSetting> _landingWaypointSettings = [
     defaultValue: 'cardinal',
     options: {
       'bearing': 'Bearing',
-      'cardinal': 'Cardinal (N, NE, …)',
+      'cardinal': 'Cardinal',
       'none': 'None',
     },
   ),
@@ -752,7 +752,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       defaultValue: 'degrees',
       options: {
         'degrees': 'Degrees (0-360°)',
-        'cardinal': 'Cardinal (N, NE, …)',
+        'cardinal': 'Cardinal',
       },
     ),
   ],
@@ -763,7 +763,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       defaultValue: 'degrees',
       options: {
         'degrees': 'Degrees (0-360°)',
-        'cardinal': 'Cardinal (N, NE, …)',
+        'cardinal': 'Cardinal',
       },
     ),
   ],

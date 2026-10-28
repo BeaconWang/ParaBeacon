@@ -2214,7 +2214,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingFormatBearing => 'Bearing';
 
   @override
-  String get settingFormatCardinal => 'Cardinal (N, NE, …)';
+  String get settingFormatCardinal => 'Cardinal';
 
   @override
   String get settingFormatNone => 'None';

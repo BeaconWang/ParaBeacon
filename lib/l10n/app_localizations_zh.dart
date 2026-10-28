@@ -2126,7 +2126,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingFormatBearing => '方位角';
 
   @override
-  String get settingFormatCardinal => '方位（N、NE …）';
+  String get settingFormatCardinal => '方位';
 
   @override
   String get settingFormatNone => '不显示';

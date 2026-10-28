@@ -1193,7 +1193,6 @@ class _DashGridPageState extends State<DashGridPage> {
       template: template,
       viewport: MediaQuery.of(context).size,
       gridSize: _gridSize,
-      l10n: AppLocalizations.of(context),
       nextInstanceId: () => 'ctrl_${_controlSeq++}',
     );
     setState(() {

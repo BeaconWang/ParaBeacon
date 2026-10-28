@@ -1642,10 +1642,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get takeoffAltitudeDifferenceLabel => 'ALT DIFF';
 
   @override
+  String get landingCurrentAltitudeLabel => 'Current Altitude';
+
+  @override
+  String get landingPointAltitudeLabel => 'Landing Point Altitude';
+
+  @override
+  String get landingAltitudeDifferenceLabel => 'Altitude Diff';
+
+  @override
   String get waypointBearingLabel => 'BRG';
 
   @override
-  String get waypointGlideLabel => 'GLIDE';
+  String get waypointRequiredGlideRatioLabel => 'REQ GLIDE RATIO';
 
   @override
   String get waypointEtaLabel => 'ETA';

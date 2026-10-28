@@ -127,17 +127,21 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
           : null;
     }
 
+    final landingAltitudeMeters = target?.altitudeM;
     final elevationChange =
-        target?.altitudeM != null && data.altitude.isFinite
-        ? data.altitude - target!.altitudeM!
+        landingAltitudeMeters != null &&
+            landingAltitudeMeters.isFinite &&
+            data.altitude.isFinite
+        ? data.altitude - landingAltitudeMeters
         : null;
 
+    // Required L/D is horizontal distance divided by altitude available.
     double? requiredGlide;
     if (distanceMeters != null &&
         elevationChange != null &&
         elevationChange > 0.5) {
       final ld = distanceMeters / elevationChange;
-      if (ld.isFinite && ld > 0) requiredGlide = ld;
+      if (ld.isFinite && ld >= 0) requiredGlide = ld;
     }
 
     int? etaSeconds;
@@ -177,15 +181,39 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
           )
         : '${formatDecimalValue(bearingAngle, autoDecimals: 0, range: DecimalPlacesScope.rangeOf(context, 'bearingDecimals'))}°';
 
+    final altitudePrecision = DecimalPlacesScope.rangeOf(
+      context,
+      'altitudeDifferenceDecimals',
+    );
+    final currentAltitudeText = data.altitude.isFinite
+        ? formatDecimalValue(
+            UnitValues.convert(
+              data.altitude,
+              UnitDimension.altitude,
+              altitudeUnit,
+            ),
+            autoDecimals: 0,
+            range: altitudePrecision,
+          )
+        : '--';
+    final landingAltitudeText =
+        landingAltitudeMeters != null && landingAltitudeMeters.isFinite
+        ? formatDecimalValue(
+            UnitValues.convert(
+              landingAltitudeMeters,
+              UnitDimension.altitude,
+              altitudeUnit,
+            ),
+            autoDecimals: 0,
+            range: altitudePrecision,
+          )
+        : '--';
     final elevationText = elevationChange == null
         ? '--'
         : UnitValues.formatAltitudeDifference(
             elevationChange,
             altitudeUnit,
-            precision: DecimalPlacesScope.rangeOf(
-              context,
-              'altitudeDifferenceDecimals',
-            ),
+            precision: altitudePrecision,
           );
 
     final glideText = requiredGlide == null
@@ -203,22 +231,10 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
     // Secondary metrics shown as chips (distance is the hero, bearing is the
     // dial). Order is stable regardless of which are enabled.
     final chips = <_Metric>[
-      if (widget.showElevation)
-        _Metric(
-          icon: Icons.swap_vert,
-          label: l10n.takeoffAltitudeDifferenceLabel,
-          value: elevationText,
-          unit: UnitValues.symbol(UnitDimension.altitude, altitudeUnit),
-          color: elevationChange == null
-              ? theme.colorScheme.onSurface
-              : elevationChange >= 0
-              ? theme.colorScheme.secondary
-              : theme.colorScheme.error,
-        ),
       if (widget.showGlide)
         _Metric(
           icon: Icons.trending_down,
-          label: l10n.waypointGlideLabel,
+          label: l10n.waypointRequiredGlideRatioLabel,
           value: glideText,
           unit: '',
           color: theme.colorScheme.onSurface,
@@ -250,9 +266,10 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
         final width = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : 240.0;
-        final scale = (math.min(height / 140.0, width / 240.0))
-            .clamp(0.55, 1.5)
-            .toDouble();
+        final scale = (math.min(
+          height / 140.0,
+          width / 240.0,
+        )).clamp(0.55, 1.5).toDouble();
         final pad = (height * 0.05).clamp(4.0, 10.0).toDouble();
 
         return Padding(
@@ -269,18 +286,45 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
               ),
               SizedBox(height: 6 * scale),
               Expanded(
-                child: _Body(
-                  showBearing: widget.showBearing,
-                  showDistance: widget.showDistance,
-                  bearingAngle: bearingAngle,
-                  relative: widget.relative,
-                  bearingText: bearingText,
-                  distanceText: distanceText,
-                  distanceUnit: distanceUnitLabel,
-                  distanceLabel: l10n.takeoffDistanceLabel,
-                  bearingLabel: l10n.waypointBearingLabel,
-                  chips: chips,
-                  scale: scale,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: _Body(
+                        showBearing: widget.showBearing,
+                        showDistance: widget.showDistance,
+                        bearingAngle: bearingAngle,
+                        relative: widget.relative,
+                        bearingText: bearingText,
+                        distanceText: distanceText,
+                        distanceUnit: distanceUnitLabel,
+                        distanceLabel: l10n.takeoffDistanceLabel,
+                        bearingLabel: l10n.waypointBearingLabel,
+                        chips: chips,
+                        scale: scale,
+                      ),
+                    ),
+                    if (widget.showElevation) ...[
+                      SizedBox(height: 5 * scale),
+                      _AltitudeEquation(
+                        currentLabel: l10n.landingCurrentAltitudeLabel,
+                        currentValue: currentAltitudeText,
+                        landingLabel: l10n.landingPointAltitudeLabel,
+                        landingValue: landingAltitudeText,
+                        differenceLabel: l10n.landingAltitudeDifferenceLabel,
+                        differenceValue: elevationText,
+                        unit: UnitValues.symbol(
+                          UnitDimension.altitude,
+                          altitudeUnit,
+                        ),
+                        differenceColor: elevationChange == null
+                            ? theme.colorScheme.onSurface
+                            : elevationChange >= 0
+                            ? theme.colorScheme.secondary
+                            : theme.colorScheme.error,
+                        scale: scale,
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
@@ -289,6 +333,149 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
       },
     );
   }
+}
+
+class _AltitudeEquation extends StatelessWidget {
+  const _AltitudeEquation({
+    required this.currentLabel,
+    required this.currentValue,
+    required this.landingLabel,
+    required this.landingValue,
+    required this.differenceLabel,
+    required this.differenceValue,
+    required this.unit,
+    required this.differenceColor,
+    required this.scale,
+  });
+
+  final String currentLabel;
+  final String currentValue;
+  final String landingLabel;
+  final String landingValue;
+  final String differenceLabel;
+  final String differenceValue;
+  final String unit;
+  final Color differenceColor;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 7 * scale, vertical: 4 * scale),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withAlpha(90),
+        borderRadius: BorderRadius.circular(8 * scale),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _AltitudeEquationTerm(
+              label: currentLabel,
+              value: currentValue,
+              unit: unit,
+              color: theme.colorScheme.onSurface,
+              scale: scale,
+            ),
+          ),
+          _EquationOperator(symbol: '−', scale: scale),
+          Expanded(
+            child: _AltitudeEquationTerm(
+              label: landingLabel,
+              value: landingValue,
+              unit: unit,
+              color: theme.colorScheme.onSurface,
+              scale: scale,
+            ),
+          ),
+          _EquationOperator(symbol: '=', scale: scale),
+          Expanded(
+            child: _AltitudeEquationTerm(
+              label: differenceLabel,
+              value: differenceValue,
+              unit: unit,
+              color: differenceColor,
+              scale: scale,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AltitudeEquationTerm extends StatelessWidget {
+  const _AltitudeEquationTerm({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.color,
+    required this.scale,
+  });
+
+  final String label;
+  final String value;
+  final String unit;
+  final Color color;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label.toUpperCase(),
+          maxLines: 2,
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 7.5 * scale,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+            height: 1.0,
+          ),
+        ),
+        SizedBox(height: 2 * scale),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            '$value $unit',
+            maxLines: 1,
+            style: TextStyle(
+              color: color,
+              fontSize: 13 * scale,
+              fontWeight: FontWeight.w700,
+              height: 1.0,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EquationOperator extends StatelessWidget {
+  const _EquationOperator({required this.symbol, required this.scale});
+
+  final String symbol;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.symmetric(horizontal: 3 * scale),
+    child: Text(
+      symbol,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        fontSize: 12 * scale,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
 }
 
 class _Header extends StatelessWidget {
@@ -756,8 +943,14 @@ class _CompassPainter extends CustomPainter {
     // Triangular arrowhead.
     final head = Path()
       ..moveTo(tip.dx, tip.dy)
-      ..lineTo(headBase.dx + perp.dx * headHalf, headBase.dy + perp.dy * headHalf)
-      ..lineTo(headBase.dx - perp.dx * headHalf, headBase.dy - perp.dy * headHalf)
+      ..lineTo(
+        headBase.dx + perp.dx * headHalf,
+        headBase.dy + perp.dy * headHalf,
+      )
+      ..lineTo(
+        headBase.dx - perp.dx * headHalf,
+        headBase.dy - perp.dy * headHalf,
+      )
       ..close();
     canvas.drawPath(head, arrowPaint);
 

@@ -1571,10 +1571,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get takeoffAltitudeDifferenceLabel => '高度差';
 
   @override
+  String get landingCurrentAltitudeLabel => '当前高度';
+
+  @override
+  String get landingPointAltitudeLabel => '降落点高度';
+
+  @override
+  String get landingAltitudeDifferenceLabel => '高度差';
+
+  @override
   String get waypointBearingLabel => '方位';
 
   @override
-  String get waypointGlideLabel => '滑比';
+  String get waypointRequiredGlideRatioLabel => '所需滑翔比';
 
   @override
   String get waypointEtaLabel => '预计';

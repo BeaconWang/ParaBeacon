@@ -613,7 +613,7 @@ const List<ControlSetting> _landingWaypointSettings = [
   ),
   ControlSetting.toggle(
     key: 'showElevation',
-    label: 'Show elevation change',
+    label: 'Show altitude equation',
     defaultValue: true,
   ),
   ControlSetting.toggle(

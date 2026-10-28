@@ -3134,17 +3134,35 @@ abstract class AppLocalizations {
   /// **'ALT DIFF'**
   String get takeoffAltitudeDifferenceLabel;
 
+  /// No description provided for @landingCurrentAltitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Altitude'**
+  String get landingCurrentAltitudeLabel;
+
+  /// No description provided for @landingPointAltitudeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing Point Altitude'**
+  String get landingPointAltitudeLabel;
+
+  /// No description provided for @landingAltitudeDifferenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Altitude Diff'**
+  String get landingAltitudeDifferenceLabel;
+
   /// No description provided for @waypointBearingLabel.
   ///
   /// In en, this message translates to:
   /// **'BRG'**
   String get waypointBearingLabel;
 
-  /// No description provided for @waypointGlideLabel.
+  /// No description provided for @waypointRequiredGlideRatioLabel.
   ///
   /// In en, this message translates to:
-  /// **'GLIDE'**
-  String get waypointGlideLabel;
+  /// **'REQ GLIDE RATIO'**
+  String get waypointRequiredGlideRatioLabel;
 
   /// No description provided for @waypointEtaLabel.
   ///

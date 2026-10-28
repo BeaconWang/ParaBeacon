@@ -5081,14 +5081,38 @@ abstract class AppLocalizations {
   /// No description provided for @landingPointsImportTitle.
   ///
   /// In en, this message translates to:
-  /// **'Replace saved landing points?'**
+  /// **'Import landing points?'**
   String get landingPointsImportTitle;
 
   /// No description provided for @landingPointsImportConfirmation.
   ///
   /// In en, this message translates to:
-  /// **'This will replace all saved landing points and the default destination.'**
+  /// **'New points will be added and saved points will remain. For matching names, choose one point to keep.'**
   String get landingPointsImportConfirmation;
+
+  /// No description provided for @landingPointsImportConflictPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose one point to keep for each matching name:'**
+  String get landingPointsImportConflictPrompt;
+
+  /// No description provided for @landingPointsImportSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved point'**
+  String get landingPointsImportSaved;
+
+  /// No description provided for @landingPointsImportFromFile.
+  ///
+  /// In en, this message translates to:
+  /// **'From imported file'**
+  String get landingPointsImportFromFile;
+
+  /// No description provided for @landingPointsImportLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'The import would exceed the 100-point limit. Remove some saved points before importing.'**
+  String get landingPointsImportLimit;
 
   /// No description provided for @landingPointsImported.
   ///

@@ -2670,11 +2670,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointsExport => 'Export';
 
   @override
-  String get landingPointsImportTitle => 'Replace saved landing points?';
+  String get landingPointsImportTitle => 'Import landing points?';
 
   @override
   String get landingPointsImportConfirmation =>
-      'This will replace all saved landing points and the default destination.';
+      'New points will be added and saved points will remain. For matching names, choose one point to keep.';
+
+  @override
+  String get landingPointsImportConflictPrompt =>
+      'Choose one point to keep for each matching name:';
+
+  @override
+  String get landingPointsImportSaved => 'Saved point';
+
+  @override
+  String get landingPointsImportFromFile => 'From imported file';
+
+  @override
+  String get landingPointsImportLimit =>
+      'The import would exceed the 100-point limit. Remove some saved points before importing.';
 
   @override
   String get landingPointsImported => 'Landing points imported.';

@@ -240,8 +240,116 @@ class _LandingPointsSheet extends StatelessWidget {
     }
   }
 
+  Future<Map<String, String>?> _confirmLandingPointImport(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<LandingPointNameConflict> conflicts,
+  ) {
+    if (conflicts.isEmpty) {
+      return showDialog<Map<String, String>>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.landingPointsImportTitle),
+          content: Text(l10n.landingPointsImportConfirmation),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop({}),
+              child: Text(l10n.landingPointsImport),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final choices = <String, String>{};
+    return showDialog<Map<String, String>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final allChosen = conflicts.every(
+            (conflict) => choices.containsKey(conflict.nameKey),
+          );
+          final size = MediaQuery.sizeOf(context);
+          return AlertDialog(
+            title: Text(l10n.landingPointsImportTitle),
+            content: SizedBox(
+              width: size.width * 0.8,
+              height: size.height * 0.62,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.landingPointsImportConfirmation),
+                    const SizedBox(height: 12),
+                    Text(l10n.landingPointsImportConflictPrompt),
+                    for (final conflict in conflicts) ...[
+                      const Divider(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(
+                          conflict.candidates.first.point.name,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                      ),
+                      RadioGroup<String>(
+                        groupValue: choices[conflict.nameKey],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setDialogState(
+                            () => choices[conflict.nameKey] = value,
+                          );
+                        },
+                        child: Column(
+                          children: [
+                            for (final candidate in conflict.candidates)
+                              RadioListTile<String>(
+                                contentPadding: EdgeInsets.zero,
+                                value: candidate.key,
+                                title: Text(
+                                  '${candidate.fromFile ? l10n.landingPointsImportFromFile : l10n.landingPointsImportSaved}: ${candidate.point.name}',
+                                ),
+                                subtitle: Text(
+                                  '${candidate.point.latitude.toStringAsFixed(5)}, '
+                                  '${candidate.point.longitude.toStringAsFixed(5)}'
+                                  '${candidate.point.altitudeM == null ? '' : ' · ${candidate.point.altitudeM!.toStringAsFixed(0)} m'}'
+                                  '${candidate.point.notes.isEmpty ? '' : ' · ${candidate.point.notes}'}',
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: allChosen
+                    ? () => Navigator.of(
+                        dialogContext,
+                      ).pop(Map<String, String>.of(choices))
+                    : null,
+                child: Text(l10n.landingPointsImport),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _importLandingPoints(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
+    final store = LandingPointStore.instance;
     try {
       final isAndroid =
           !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -264,33 +372,34 @@ class _LandingPointsSheet extends StatelessWidget {
           : await LandingPointsConfigIO.instance.importFile(path!);
       if (!context.mounted) return;
 
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(l10n.landingPointsImportTitle),
-          content: Text(l10n.landingPointsImportConfirmation),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(l10n.landingPointsImport),
-            ),
-          ],
-        ),
-      );
-      if (!context.mounted || confirmed != true) return;
-
-      await LandingPointStore.instance.replaceAll(
+      await store.load();
+      if (!context.mounted) return;
+      final conflicts = LandingPointsConfigIO.instance.findNameConflicts(
+        store.points,
         imported.points,
-        defaultId: imported.defaultId,
       );
+      final choices = await _confirmLandingPointImport(
+        context,
+        l10n,
+        conflicts,
+      );
+      if (!context.mounted || choices == null) return;
+      final merged = LandingPointsConfigIO.instance.merge(
+        savedPoints: store.points,
+        savedDefaultId: store.defaultPoint?.id,
+        imported: imported,
+        conflictChoices: choices,
+      );
+      await store.applyImportMerge(merged.points, defaultId: merged.defaultId);
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImported)));
+    } on LandingPointsLimitException {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImportLimit)));
     } catch (_) {
       if (!context.mounted) return;
       await showDialog<void>(

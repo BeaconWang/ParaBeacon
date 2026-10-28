@@ -2566,10 +2566,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingPointsExport => '导出';
 
   @override
-  String get landingPointsImportTitle => '替换已保存的降落点？';
+  String get landingPointsImportTitle => '导入降落点？';
 
   @override
-  String get landingPointsImportConfirmation => '此操作将替换所有已保存的降落点和默认目的地。';
+  String get landingPointsImportConfirmation =>
+      '将添加新降落点并保留现有降落点。同名时，请选择要保留的降落点。';
+
+  @override
+  String get landingPointsImportConflictPrompt => '请为每个同名降落点选择一个要保留的项目：';
+
+  @override
+  String get landingPointsImportSaved => '已保存的降落点';
+
+  @override
+  String get landingPointsImportFromFile => '导入文件中的降落点';
+
+  @override
+  String get landingPointsImportLimit => '导入后将超过 100 个降落点的上限。请先删除部分已保存的降落点。';
 
   @override
   String get landingPointsImported => '降落点已导入。';

@@ -16,6 +16,40 @@ class LandingPointsBundle {
   final String? defaultId;
 }
 
+class LandingPointImportCandidate {
+  const LandingPointImportCandidate({
+    required this.key,
+    required this.point,
+    required this.fromFile,
+  });
+
+  final String key;
+  final LandingPoint point;
+  final bool fromFile;
+}
+
+class LandingPointNameConflict {
+  LandingPointNameConflict({
+    required this.nameKey,
+    required List<LandingPointImportCandidate> candidates,
+  }) : candidates = List.unmodifiable(candidates);
+
+  final String nameKey;
+  final List<LandingPointImportCandidate> candidates;
+}
+
+class LandingPointsMergeResult {
+  LandingPointsMergeResult({required List<LandingPoint> points, this.defaultId})
+    : points = List.unmodifiable(points);
+
+  final List<LandingPoint> points;
+  final String? defaultId;
+}
+
+class LandingPointsLimitException implements Exception {
+  const LandingPointsLimitException();
+}
+
 /// Imports and exports saved landing points as a portable JSON file.
 class LandingPointsConfigIO {
   LandingPointsConfigIO._();
@@ -103,6 +137,170 @@ class LandingPointsConfigIO {
     } catch (_) {
       throw const FormatException('Invalid landing-point configuration.');
     }
+  }
+
+  List<LandingPointNameConflict> findNameConflicts(
+    List<LandingPoint> savedPoints,
+    List<LandingPoint> importedPoints,
+  ) {
+    return _groupCandidates(savedPoints, importedPoints).entries
+        .where(
+          (entry) =>
+              entry.value.length > 1 &&
+              entry.value.any((candidate) => candidate.fromFile),
+        )
+        .map(
+          (entry) => LandingPointNameConflict(
+            nameKey: entry.key,
+            candidates: entry.value,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  LandingPointsMergeResult merge({
+    required List<LandingPoint> savedPoints,
+    required String? savedDefaultId,
+    required LandingPointsBundle imported,
+    required Map<String, String> conflictChoices,
+  }) {
+    final groups = _groupCandidates(savedPoints, imported.points);
+    final selectedByName = <String, LandingPointImportCandidate>{};
+    final selectedCandidates = <LandingPointImportCandidate>[];
+    for (final entry in groups.entries) {
+      final candidates = entry.value;
+      if (candidates.length == 1) {
+        selectedByName[entry.key] = candidates.single;
+        selectedCandidates.add(candidates.single);
+      } else if (candidates.any((candidate) => candidate.fromFile)) {
+        final selectedKey = conflictChoices[entry.key];
+        final selected = candidates.where((item) => item.key == selectedKey);
+        if (selected.isEmpty) {
+          throw const FormatException('Missing landing-point name choice.');
+        }
+        selectedByName[entry.key] = selected.first;
+        selectedCandidates.add(selected.first);
+      } else {
+        selectedCandidates.addAll(candidates);
+      }
+    }
+
+    if (selectedCandidates.length > LandingPointStore.maxEntries) {
+      throw const LandingPointsLimitException();
+    }
+    final reservedSavedIds = selectedCandidates
+        .where((candidate) => !candidate.fromFile)
+        .map((candidate) => candidate.point.id)
+        .toSet();
+    final usedIds = <String>{};
+    final pointsByCandidateKey = <String, LandingPoint>{};
+    final mergedPoints = <LandingPoint>[];
+    for (final candidate in selectedCandidates) {
+      var point = candidate.point;
+      if ((candidate.fromFile && reservedSavedIds.contains(point.id)) ||
+          usedIds.contains(point.id)) {
+        point = _copyWithNewId(point, {...reservedSavedIds, ...usedIds});
+      }
+      usedIds.add(point.id);
+      pointsByCandidateKey[candidate.key] = point;
+      mergedPoints.add(point);
+    }
+
+    final savedDefaultCandidate = _findCandidateById(
+      savedPoints,
+      savedDefaultId,
+      fromFile: false,
+    );
+    final importedDefaultCandidate = _findCandidateById(
+      imported.points,
+      imported.defaultId,
+      fromFile: true,
+    );
+    final defaultReference = savedDefaultCandidate ?? importedDefaultCandidate;
+    LandingPointImportCandidate? resolveDefaultCandidate(
+      LandingPointImportCandidate? candidate,
+    ) {
+      if (candidate == null) return null;
+      final nameKey = _nameKey(candidate.point.name);
+      final group = groups[nameKey];
+      if (group != null &&
+          group.length > 1 &&
+          group.any((item) => item.fromFile)) {
+        return selectedByName[nameKey];
+      }
+      return candidate;
+    }
+
+    final keptDefaultCandidate = resolveDefaultCandidate(defaultReference);
+
+    return LandingPointsMergeResult(
+      points: mergedPoints,
+      defaultId: keptDefaultCandidate == null
+          ? null
+          : pointsByCandidateKey[keptDefaultCandidate.key]?.id,
+    );
+  }
+
+  Map<String, List<LandingPointImportCandidate>> _groupCandidates(
+    List<LandingPoint> savedPoints,
+    List<LandingPoint> importedPoints,
+  ) {
+    final groups = <String, List<LandingPointImportCandidate>>{};
+    void addPoints(
+      List<LandingPoint> points, {
+      required String source,
+      required bool fromFile,
+    }) {
+      for (var index = 0; index < points.length; index++) {
+        final point = points[index];
+        final key = _nameKey(point.name);
+        groups
+            .putIfAbsent(key, () => [])
+            .add(
+              LandingPointImportCandidate(
+                key: '$source:$index',
+                point: point,
+                fromFile: fromFile,
+              ),
+            );
+      }
+    }
+
+    addPoints(savedPoints, source: 'saved', fromFile: false);
+    addPoints(importedPoints, source: 'file', fromFile: true);
+    return groups;
+  }
+
+  LandingPointImportCandidate? _findCandidateById(
+    List<LandingPoint> points,
+    String? id, {
+    required bool fromFile,
+  }) {
+    if (id == null) return null;
+    final index = points.indexWhere((point) => point.id == id);
+    if (index < 0) return null;
+    return LandingPointImportCandidate(
+      key: '${fromFile ? 'file' : 'saved'}:$index',
+      point: points[index],
+      fromFile: fromFile,
+    );
+  }
+
+  String _nameKey(String name) => name.trim().toLowerCase();
+
+  LandingPoint _copyWithNewId(LandingPoint point, Set<String> usedIds) {
+    LandingPoint? copy;
+    do {
+      copy = LandingPoint.create(
+        name: point.name,
+        latitude: point.latitude,
+        longitude: point.longitude,
+        altitudeM: point.altitudeM,
+        createdAt: point.createdAt,
+        notes: point.notes,
+      );
+    } while (copy == null || usedIds.contains(copy.id));
+    return copy;
   }
 
   Future<LandingPointsBundle> importFile(String path) async {

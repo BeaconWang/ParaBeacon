@@ -248,26 +248,35 @@ class LandingPointStore extends ChangeNotifier {
     return true;
   }
 
-  Future<void> replaceAll(
-    List<LandingPoint> points, {
+  Future<void> applyImportMerge(
+    List<LandingPoint> mergedPoints, {
     String? defaultId,
   }) async {
     await load();
-    if (points.length > maxEntries) {
-      throw ArgumentError.value(points.length, 'points', 'Too many entries.');
+    if (mergedPoints.length > maxEntries) {
+      throw ArgumentError.value(
+        mergedPoints.length,
+        'mergedPoints',
+        'Too many entries.',
+      );
     }
-    final ids = points.map((point) => point.id).toSet();
-    if (ids.length != points.length ||
-        (defaultId != null && !ids.contains(defaultId))) {
-      throw ArgumentError('Landing-point references must be unique and valid.');
+    final ids = mergedPoints.map((point) => point.id).toSet();
+    final names = mergedPoints.map((point) => _nameKey(point.name)).toSet();
+    if (ids.length != mergedPoints.length ||
+        (defaultId != null && !ids.contains(defaultId)) ||
+        (_defaultId != null && defaultId == null) ||
+        _points.any((point) => !names.contains(_nameKey(point.name)))) {
+      throw ArgumentError('Import merge must preserve existing point names.');
     }
     _points
       ..clear()
-      ..addAll(points);
+      ..addAll(mergedPoints);
     _defaultId = defaultId;
     notifyListeners();
     await _persist();
   }
+
+  String _nameKey(String name) => name.trim().toLowerCase();
 
   Future<void> setDefault(String? id) async {
     await load();

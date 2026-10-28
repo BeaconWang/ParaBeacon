@@ -613,7 +613,7 @@
   "controlClimbAverage": "Climb Average",
   "controlTakeoffWaypoint": "Takeoff Waypoint",
   "controlDefaultLandingWaypoint": "Default Landing Point",
-  "controlLastLandingWaypoint": "Last Landing Point",
+  "controlLastLandingWaypoint": "Nearest Landing Point",
   "takeoffPointLabel": "HOME",
   "takeoffDistanceLabel": "DIST",
   "takeoffAltitudeDifferenceLabel": "ALT DIFF",

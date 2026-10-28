@@ -599,7 +599,7 @@ ControlSetting _unitSetting(UnitDimension dimension) {
 }
 
 /// Metric show/hide toggles and bearing format shared by the two
-/// landing-waypoint widget controls (default + last landing point).
+/// landing-waypoint widget controls (default + nearest landing point).
 const List<ControlSetting> _landingWaypointSettings = [
   ControlSetting.toggle(
     key: 'showDistance',
@@ -1015,7 +1015,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ),
     ControlSetting.color(
       key: 'lastLandingPointColor',
-      label: 'Last landing marker color',
+      label: 'Nearest landing marker color',
       defaultValue: 0xFF9C27B0,
       visibleWhenKey: 'showNearestLandingPoint',
     ),
@@ -1043,12 +1043,12 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ),
     ControlSetting.toggle(
       key: 'showLastLandingLine',
-      label: 'Show line to last landing point',
+      label: 'Show line to nearest landing point',
       defaultValue: false,
     ),
     ControlSetting.color(
       key: 'lastLandingLineColor',
-      label: 'Last landing line color',
+      label: 'Nearest landing line color',
       defaultValue: 0xFF9C27B0,
       visibleWhenKey: 'showLastLandingLine',
     ),

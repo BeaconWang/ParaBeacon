@@ -1630,7 +1630,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlDefaultLandingWaypoint => 'Default Landing Point';
 
   @override
-  String get controlLastLandingWaypoint => 'Last Landing Point';
+  String get controlLastLandingWaypoint => 'Nearest Landing Point';
 
   @override
   String get takeoffPointLabel => 'HOME';

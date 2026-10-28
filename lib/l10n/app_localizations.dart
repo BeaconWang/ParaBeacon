@@ -3113,7 +3113,7 @@ abstract class AppLocalizations {
   /// No description provided for @controlLastLandingWaypoint.
   ///
   /// In en, this message translates to:
-  /// **'Last Landing Point'**
+  /// **'Nearest Landing Point'**
   String get controlLastLandingWaypoint;
 
   /// No description provided for @takeoffPointLabel.

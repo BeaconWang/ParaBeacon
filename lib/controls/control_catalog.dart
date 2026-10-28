@@ -402,7 +402,7 @@ class ControlCatalog {
         ),
         ControlType(
           id: 'last_landing_waypoint',
-          label: 'Last Landing Point',
+          label: 'Nearest Landing Point',
           icon: Icons.flight_land,
           kind: ControlKind.widget,
           defaultCols: 6,

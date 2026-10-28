@@ -1852,7 +1852,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlHeartRate => 'Heart Rate';
 
   @override
-  String get controlVario => 'Vario';
+  String get controlVario => 'Vario bar';
 
   @override
   String get controlDebugSensor => 'Debug Sensor';

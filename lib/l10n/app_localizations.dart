@@ -3539,7 +3539,7 @@ abstract class AppLocalizations {
   /// No description provided for @controlVario.
   ///
   /// In en, this message translates to:
-  /// **'Vario'**
+  /// **'Vario bar'**
   String get controlVario;
 
   /// No description provided for @controlDebugSensor.

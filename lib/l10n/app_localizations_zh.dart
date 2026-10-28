@@ -1775,7 +1775,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlHeartRate => '心率';
 
   @override
-  String get controlVario => '升降音';
+  String get controlVario => '升降率条';
 
   @override
   String get controlDebugSensor => '调试传感器';

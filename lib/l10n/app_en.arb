@@ -691,7 +691,7 @@
   "controlSensorBattery": "Sensor Battery",
   "controlPhoneBattery": "Phone Battery",
   "controlHeartRate": "Heart Rate",
-  "controlVario": "Vario",
+  "controlVario": "Vario bar",
   "controlDebugSensor": "Debug Sensor",
   "controlDataMonitor": "Data Monitor",
   "controlMap": "Map",

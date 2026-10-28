@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart'
     show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
@@ -10,15 +12,12 @@ import 'package:parabeacon/data/flight_state.dart';
 import 'package:parabeacon/main.dart';
 
 void main() {
-  // In widget tests the SharedPreferences platform channel never answers,
-  // which would leave the async layout load (and the edit-mode bootstrap)
-  // hanging forever. Mock in-memory values instead.
-  SharedPreferences.setMockInitialValues({});
-
   // Voice announcements are on by default and warm up the text-to-speech
   // engine at startup. Answer its channel immediately so no call is left
-  // waiting on its timeout after the test ends.
+  // waiting on its timeout after the test ends. Mock preferences for each test
+  // so startup layout state is isolated and deterministic.
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('flutter_tts'),
@@ -53,8 +52,14 @@ void main() {
     await runWithWindowsPlatform(() async {
       await tester.pumpWidget(const ParaBeaconApp());
 
-      // The async layout load completes and, finding no controls, flips the
-      // dashboard into edit mode so the grid is painted.
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'The interface is blank. Do you want to load a preset interface?',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('No'));
       await tester.pumpAndSettle();
       expect(
         find.byWidgetPredicate(
@@ -73,12 +78,76 @@ void main() {
     });
   });
 
+  testWidgets('Yes loads the Default template on a blank single page', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(384, 832);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await runWithWindowsPlatform(() async {
+      await tester.pumpWidget(const ParaBeaconApp());
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'The interface is blank. Do you want to load a preset interface?',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Yes'));
+      await tester.pumpAndSettle();
+
+      final preferences = await SharedPreferences.getInstance();
+      final saved =
+          jsonDecode(preferences.getString('pb.layout.v1')!)
+              as Map<String, dynamic>;
+      final pages = saved['pages'] as List<dynamic>;
+      expect(pages, hasLength(1));
+      final controls =
+          (pages.single as Map<String, dynamic>)['controls'] as List<dynamic>;
+      expect(controls, hasLength(21));
+      expect(
+        controls.map((control) => (control as Map<String, dynamic>)['typeId']),
+        containsAll(['map', 'vario', 'flight_button']),
+      );
+    });
+  });
+
+  testWidgets('multiple empty pages do not prompt for a preset', (
+    WidgetTester tester,
+  ) async {
+    final layout = jsonEncode({
+      'version': 1,
+      'gridSize': 32.0,
+      'currentPage': 0,
+      'pages': [
+        {'id': 'page_0', 'controls': <dynamic>[]},
+        {'id': 'page_1', 'controls': <dynamic>[]},
+      ],
+    });
+    SharedPreferences.setMockInitialValues({'pb.layout.v1': layout});
+
+    await runWithWindowsPlatform(() async {
+      await tester.pumpWidget(const ParaBeaconApp());
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'The interface is blank. Do you want to load a preset interface?',
+        ),
+        findsNothing,
+      );
+    });
+  });
+
   testWidgets('Preferences exposes shared automatic flight settings', (
     WidgetTester tester,
   ) async {
     await runWithWindowsPlatform(() async {
       await tester.pumpWidget(const ParaBeaconApp());
       await tester.pumpAndSettle();
+      await _declineBlankPromptIfVisible(tester);
 
       await tester.drag(
         find.byType(GestureDetector).first,
@@ -134,6 +203,8 @@ void main() {
   ) async {
     await runWithWindowsPlatform(() async {
       await tester.pumpWidget(const ParaBeaconApp());
+      await tester.pumpAndSettle();
+      await _declineBlankPromptIfVisible(tester);
 
       // A partial pull is released without opening the menu.
       final gestureTarget = find.byType(GestureDetector).first;
@@ -155,4 +226,13 @@ void main() {
       expect(find.byType(SwitchListTile), findsOneWidget);
     });
   });
+}
+
+Future<void> _declineBlankPromptIfVisible(WidgetTester tester) async {
+  final prompt = find.text(
+    'The interface is blank. Do you want to load a preset interface?',
+  );
+  if (prompt.evaluate().isEmpty) return;
+  await tester.tap(find.text('No'));
+  await tester.pumpAndSettle();
 }

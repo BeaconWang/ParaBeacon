@@ -2276,6 +2276,24 @@ abstract class AppLocalizations {
   /// **'This removes every control from the dashboard. This cannot be undone.'**
   String get clearAllControlsMessage;
 
+  /// No description provided for @blankInterfacePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'The interface is blank. Do you want to load a preset interface?'**
+  String get blankInterfacePrompt;
+
+  /// No description provided for @yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get yes;
+
+  /// No description provided for @no.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get no;
+
   /// No description provided for @defaultDashboardFlight.
   ///
   /// In en, this message translates to:

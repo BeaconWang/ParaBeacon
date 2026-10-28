@@ -1113,6 +1113,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get clearAllControlsMessage => '这将从仪表盘中移除所有控件，且无法撤销。';
 
   @override
+  String get blankInterfacePrompt => '界面为空。是否要加载预设界面？';
+
+  @override
+  String get yes => '是';
+
+  @override
+  String get no => '否';
+
+  @override
   String get defaultDashboardFlight => '飞行仪表';
 
   @override

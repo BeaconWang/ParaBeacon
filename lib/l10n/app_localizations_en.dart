@@ -1173,6 +1173,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'This removes every control from the dashboard. This cannot be undone.';
 
   @override
+  String get blankInterfacePrompt =>
+      'The interface is blank. Do you want to load a preset interface?';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
+
+  @override
   String get defaultDashboardFlight => 'Flight';
 
   @override

@@ -378,6 +378,9 @@
 
   "clearAllControlsTitle": "清除所有控件？",
   "clearAllControlsMessage": "这将从仪表盘中移除所有控件，且无法撤销。",
+  "blankInterfacePrompt": "界面为空。是否要加载预设界面？",
+  "yes": "是",
+  "no": "否",
 
   "defaultDashboardFlight": "飞行仪表",
   "defaultDashboardNavigation": "导航与降落",

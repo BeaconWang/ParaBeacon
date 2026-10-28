@@ -150,11 +150,40 @@ class _DashGridPageState extends State<DashGridPage> {
     if (!mounted) return;
     if (saved != null) _applyLayout(saved);
 
-    // Empty-dashboard bootstrap: if no page has any control (first launch, or
-    // the user cleared everything), drop straight into edit mode so the edit
-    // affordances and "Add Control" entry point are immediately discoverable
-    // instead of showing a blank screen.
-    final hasAnyControl = _pages.any((p) => p.controls.isNotEmpty);
+    if (_pages.length == 1 && _pages.single.controls.isEmpty) {
+      final loadDefault = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          final l10n = AppLocalizations.of(dialogContext);
+          return AlertDialog(
+            content: Text(l10n.blankInterfacePrompt),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(l10n.no),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(l10n.yes),
+              ),
+            ],
+          );
+        },
+      );
+      if (!mounted) return;
+      if (loadDefault == true) {
+        await _applyPageTemplate(DashboardPageTemplate.defaultLayout);
+        await LayoutStore.instance.flush(
+          pages: _pages,
+          gridSize: _gridSize,
+          currentPage: _currentPage,
+        );
+        return;
+      }
+    }
+
+    // Keep a declined or ineligible empty dashboard usable in edit mode.
+    final hasAnyControl = _pages.any((page) => page.controls.isNotEmpty);
     if (!hasAnyControl && !_isEditMode) {
       setState(() => _isEditMode = true);
     }

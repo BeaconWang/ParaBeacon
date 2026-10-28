@@ -627,11 +627,7 @@ const List<ControlSetting> _landingWaypointSettings = [
     label: 'Show glide ratio',
     defaultValue: true,
   ),
-  ControlSetting.toggle(
-    key: 'showEta',
-    label: 'Show ETA',
-    defaultValue: true,
-  ),
+  ControlSetting.toggle(key: 'showEta', label: 'Show ETA', defaultValue: true),
   ControlSetting.choice(
     key: 'bearingReference',
     label: 'Direction',
@@ -645,11 +641,7 @@ const List<ControlSetting> _landingWaypointSettings = [
     key: 'format',
     label: 'Format',
     defaultValue: 'cardinal',
-    options: {
-      'bearing': 'Bearing',
-      'cardinal': 'Cardinal',
-      'none': 'None',
-    },
+    options: {'bearing': 'Bearing', 'cardinal': 'Cardinal', 'none': 'None'},
   ),
 ];
 
@@ -708,6 +700,11 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       divisions: 10,
       unit: 'm/s',
     ),
+    ControlSetting.toggle(
+      key: 'liquidGlass',
+      label: 'Glass bottle / liquid fill',
+      defaultValue: false,
+    ),
   ],
   'vertical_speed': [
     ControlSetting.slider(
@@ -750,10 +747,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'format',
       label: 'Format',
       defaultValue: 'degrees',
-      options: {
-        'degrees': 'Degrees (0-360°)',
-        'cardinal': 'Cardinal',
-      },
+      options: {'degrees': 'Degrees (0-360°)', 'cardinal': 'Cardinal'},
     ),
   ],
   'wind_direction': [
@@ -761,10 +755,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'format',
       label: 'Format',
       defaultValue: 'degrees',
-      options: {
-        'degrees': 'Degrees (0-360°)',
-        'cardinal': 'Cardinal',
-      },
+      options: {'degrees': 'Degrees (0-360°)', 'cardinal': 'Cardinal'},
     ),
   ],
   'default_landing_waypoint': [

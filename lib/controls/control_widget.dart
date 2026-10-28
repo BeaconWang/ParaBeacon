@@ -271,6 +271,7 @@ class ControlWidget extends StatelessWidget {
           borderRadius: innerRadius,
           child: VarioControl(
             maxScale: control.doubleSetting('maxScale', fallback: 8.0),
+            liquidGlass: control.boolSetting('liquidGlass', fallback: false),
           ),
         );
       case 'vertical_speed':
@@ -304,10 +305,7 @@ class ControlWidget extends StatelessWidget {
         return AltitudeControl(
           showTitle: showTitle,
           source: source,
-          showSourceIcon: control.boolSetting(
-            'showSourceIcon',
-            fallback: true,
-          ),
+          showSourceIcon: control.boolSetting('showSourceIcon', fallback: true),
         );
       case 'max_altitude':
         return MaxAltitudeControl(showTitle: showTitle);
@@ -418,9 +416,14 @@ class ControlWidget extends StatelessWidget {
       case 'flight_button':
         return FlightButtonControl(
           showAutoDetect: control.boolSetting('showAutoDetect', fallback: true),
-          showFlightTime: control.boolSetting('showFlightTime', fallback: false),
-          showRecordingStats:
-              control.boolSetting('showRecordingStats', fallback: false),
+          showFlightTime: control.boolSetting(
+            'showFlightTime',
+            fallback: false,
+          ),
+          showRecordingStats: control.boolSetting(
+            'showRecordingStats',
+            fallback: false,
+          ),
         );
       case 'status_line':
         return StatusLineControl(
@@ -530,7 +533,10 @@ class ControlWidget extends StatelessWidget {
               'defaultLandingLineColor',
               0xFFF44336,
             ),
-            nearestLandingLineColor: mapColor('nearestLandingLineColor', 0xFF9C27B0),
+            nearestLandingLineColor: mapColor(
+              'nearestLandingLineColor',
+              0xFF9C27B0,
+            ),
             showScale: control.boolSetting('showScale', fallback: true),
             showTrack: control.boolSetting('showTrack', fallback: true),
             showThermal: control.boolSetting('showThermal', fallback: true),

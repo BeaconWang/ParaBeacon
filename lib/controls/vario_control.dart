@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../data/flight_data_provider.dart';
@@ -21,7 +23,15 @@ class VarioControl extends StatelessWidget {
   /// Absolute scale limit in m/s for the column extent.
   final double maxScale;
 
-  const VarioControl({super.key, this.verticalSpeed, this.maxScale = 8.0});
+  /// Whether to render the gauge as a glass vessel with a liquid surface.
+  final bool liquidGlass;
+
+  const VarioControl({
+    super.key,
+    this.verticalSpeed,
+    this.maxScale = 8.0,
+    this.liquidGlass = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +40,7 @@ class VarioControl extends StatelessWidget {
       painter: _VarioPainter(
         value: value,
         maxScale: maxScale,
+        liquidGlass: liquidGlass,
         precision: DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
         theme: Theme.of(context),
         textScaler: MediaQuery.textScalerOf(context),
@@ -91,9 +102,58 @@ LinearGradient _varioFillGradient(double maxScale) {
   );
 }
 
+double _markerY(double centerY, double value, double scale) =>
+    centerY - (value / scale) * (centerY);
+
+double _liquidSurfaceY(Size size, double x, double markerY, double fillHeight) {
+  final amplitude = math.min(
+    2.5,
+    math.min(size.width * 0.045, fillHeight * 0.16),
+  );
+  final phase = size.width == 0 ? 0.0 : (x / size.width) * 2 * math.pi;
+  return markerY + amplitude * math.sin(phase);
+}
+
+Path _liquidSurfacePath(Size size, double markerY, double fillHeight) {
+  final path = Path()..moveTo(0, _liquidSurfaceY(size, 0, markerY, fillHeight));
+  for (var i = 1; i <= 24; i++) {
+    final x = size.width * i / 24;
+    path.lineTo(x, _liquidSurfaceY(size, x, markerY, fillHeight));
+  }
+  return path;
+}
+
+Path _liquidFillPath(
+  Size size,
+  double centerY,
+  double value,
+  double fillHeight,
+  double markerY,
+) {
+  final path = Path();
+  if (value >= 0) {
+    path
+      ..addPath(_liquidSurfacePath(size, markerY, fillHeight), Offset.zero)
+      ..lineTo(size.width, centerY)
+      ..lineTo(0, centerY)
+      ..close();
+  } else {
+    path
+      ..moveTo(0, centerY)
+      ..lineTo(size.width, centerY);
+    for (var i = 24; i >= 0; i--) {
+      final x = size.width * i / 24;
+      path.lineTo(x, _liquidSurfaceY(size, x, markerY, fillHeight));
+    }
+    path.close();
+  }
+  return path;
+}
+
 class _VarioPainter extends CustomPainter {
   final double value;
   final double maxScale;
+  final bool liquidGlass;
   final DecimalPlaceRange? precision;
   final ThemeData theme;
   final TextScaler textScaler;
@@ -101,6 +161,7 @@ class _VarioPainter extends CustomPainter {
   _VarioPainter({
     required this.value,
     required this.maxScale,
+    required this.liquidGlass,
     required this.precision,
     required this.theme,
     required this.textScaler,
@@ -108,32 +169,99 @@ class _VarioPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final bg = Paint()..color = theme.colorScheme.surfaceContainerHighest;
-    canvas.drawRect(Offset.zero & size, bg);
-
+    final scale = maxScale > 0 && maxScale.isFinite ? maxScale : 1.0;
     final centerY = size.height / 2;
-    final clamped = value.clamp(-maxScale, maxScale);
-    final fillHeight = (clamped.abs() / maxScale) * (size.height / 2);
+    final clamped = value.clamp(-scale, scale);
+    final fillHeight = (clamped.abs() / scale) * (size.height / 2);
+    final vesselRect = Rect.fromLTRB(
+      2,
+      2,
+      math.max(2, size.width - 2),
+      math.max(2, size.height - 2),
+    );
+    final vessel = RRect.fromRectAndRadius(
+      vesselRect,
+      Radius.circular(math.min(size.width * 0.24, 18)),
+    );
+
+    if (liquidGlass) {
+      canvas.drawRect(
+        Offset.zero & size,
+        Paint()..color = theme.colorScheme.surface.withAlpha(20),
+      );
+      canvas.drawRRect(
+        vessel,
+        Paint()
+          ..color = Colors.black.withAlpha(24)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3,
+      );
+      canvas.drawRRect(
+        vessel,
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.topRight,
+            colors: [
+              Color(0x66FFFFFF),
+              Color(0x3383D8F4),
+              Color(0x55FFFFFF),
+              Color(0x2283D8F4),
+              Color(0x66FFFFFF),
+            ],
+            stops: [0, 0.16, 0.48, 0.82, 1],
+          ).createShader(vesselRect),
+      );
+      canvas.save();
+      canvas.clipRRect(vessel);
+    } else {
+      canvas.drawRect(
+        Offset.zero & size,
+        Paint()..color = theme.colorScheme.surfaceContainerHighest,
+      );
+    }
 
     // Fill bar from center with a gradient mapped to the full speed scale.
     final fillPaint = Paint()
-      ..shader = _varioFillGradient(maxScale).createShader(Offset.zero & size);
-    final Rect fillRect;
-    if (clamped >= 0) {
-      // Climb: fill upward from center.
-      fillRect = Rect.fromLTRB(0, centerY - fillHeight, size.width, centerY);
+      ..shader = _varioFillGradient(scale).createShader(Offset.zero & size);
+    if (liquidGlass) {
+      final markerY = _markerY(centerY, clamped, scale);
+      final liquidPath = _liquidFillPath(
+        size,
+        centerY,
+        clamped,
+        fillHeight,
+        markerY,
+      );
+      canvas.drawPath(liquidPath, fillPaint);
+      final surface = _liquidSurfacePath(size, markerY, fillHeight);
+      canvas.drawPath(
+        surface,
+        Paint()
+          ..color = Colors.black.withAlpha(100)
+          ..strokeWidth = 3
+          ..style = PaintingStyle.stroke,
+      );
+      canvas.drawPath(
+        surface,
+        Paint()
+          ..color = Colors.white.withAlpha(200)
+          ..strokeWidth = 1.4
+          ..style = PaintingStyle.stroke,
+      );
     } else {
-      // Sink: fill downward from center.
-      fillRect = Rect.fromLTRB(0, centerY, size.width, centerY + fillHeight);
+      final fillRect = clamped >= 0
+          ? Rect.fromLTRB(0, centerY - fillHeight, size.width, centerY)
+          : Rect.fromLTRB(0, centerY, size.width, centerY + fillHeight);
+      canvas.drawRect(fillRect, fillPaint);
     }
-    canvas.drawRect(fillRect, fillPaint);
 
     // Scale ticks every 1 m/s.
     final tickPaint = Paint()
       ..color = theme.colorScheme.onSurfaceVariant.withAlpha(90)
       ..strokeWidth = 1;
-    for (int i = -maxScale.toInt(); i <= maxScale.toInt(); i++) {
-      final y = centerY - (i / maxScale) * (size.height / 2);
+    for (int i = -scale.toInt(); i <= scale.toInt(); i++) {
+      final y = centerY - (i / scale) * (size.height / 2);
       final tickLen = (i % 5 == 0) ? size.width * 0.35 : size.width * 0.18;
       canvas.drawLine(Offset(0, y), Offset(tickLen, y), tickPaint);
       canvas.drawLine(
@@ -150,19 +278,21 @@ class _VarioPainter extends CustomPainter {
     canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), baseline);
 
     // Contrasting waterline marks the current vertical-speed position.
-    final markerY = centerY - (clamped / maxScale) * (size.height / 2);
-    final markerOutline = Paint()
-      ..color = Colors.black.withAlpha(210)
-      ..strokeWidth = 4;
-    canvas.drawLine(
-      Offset(0, markerY),
-      Offset(size.width, markerY),
-      markerOutline,
-    );
-    final marker = Paint()
-      ..color = Colors.white.withAlpha(240)
-      ..strokeWidth = 1.5;
-    canvas.drawLine(Offset(0, markerY), Offset(size.width, markerY), marker);
+    if (!liquidGlass) {
+      final markerY = _markerY(centerY, clamped, scale);
+      final markerOutline = Paint()
+        ..color = Colors.black.withAlpha(210)
+        ..strokeWidth = 4;
+      canvas.drawLine(
+        Offset(0, markerY),
+        Offset(size.width, markerY),
+        markerOutline,
+      );
+      final marker = Paint()
+        ..color = Colors.white.withAlpha(240)
+        ..strokeWidth = 1.5;
+      canvas.drawLine(Offset(0, markerY), Offset(size.width, markerY), marker);
+    }
 
     // Numeric readout.
     final tp = TextPainter(
@@ -195,12 +325,36 @@ class _VarioPainter extends CustomPainter {
       textScaler: textScaler,
     )..layout(maxWidth: size.width);
     unit.paint(canvas, Offset((size.width - unit.width) / 2, 2));
+
+    if (liquidGlass) {
+      canvas.restore();
+      canvas.save();
+      canvas.clipRRect(vessel);
+      final reflection = Paint()
+        ..color = Colors.white.withAlpha(100)
+        ..strokeWidth = math.max(1.0, size.width * 0.025).toDouble()
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(
+        Offset(size.width * 0.13, size.height * 0.08),
+        Offset(size.width * 0.13, size.height * 0.92),
+        reflection,
+      );
+      canvas.restore();
+      canvas.drawRRect(
+        vessel,
+        Paint()
+          ..color = Colors.white.withAlpha(190)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.3,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(_VarioPainter oldDelegate) {
     return value != oldDelegate.value ||
         maxScale != oldDelegate.maxScale ||
+        liquidGlass != oldDelegate.liquidGlass ||
         precision?.min != oldDelegate.precision?.min ||
         precision?.max != oldDelegate.precision?.max ||
         theme != oldDelegate.theme ||

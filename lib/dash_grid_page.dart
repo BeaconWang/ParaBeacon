@@ -1215,7 +1215,18 @@ class _DashGridPageState extends State<DashGridPage> {
   /// Opens the control chooser and, on selection, places the new control on
   /// the grid at the first free spot.
   Future<void> _addControlFromMenu() async {
-    final ControlType? type = await showAddControlSheet(context);
+    final controlCounts = <String, int>{};
+    for (final control in _controls) {
+      controlCounts.update(
+        control.type.id,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
+    }
+    final ControlType? type = await showAddControlSheet(
+      context,
+      controlCounts: controlCounts,
+    );
     if (type == null || !mounted) return;
 
     final position = _findFreeCell(type.defaultCols, type.defaultRows);

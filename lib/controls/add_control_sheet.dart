@@ -12,7 +12,10 @@ const Set<String> _debugOnlyControlIds = {'debug_sensor'};
 ///
 /// Returns the selected [ControlType] via [Navigator.pop], or null if
 /// dismissed.
-Future<ControlType?> showAddControlSheet(BuildContext context) {
+Future<ControlType?> showAddControlSheet(
+  BuildContext context, {
+  required Map<String, int> controlCounts,
+}) {
   return showModalBottomSheet<ControlType>(
     context: context,
     isScrollControlled: true,
@@ -21,12 +24,14 @@ Future<ControlType?> showAddControlSheet(BuildContext context) {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => const _AddControlSheet(),
+    builder: (context) => _AddControlSheet(controlCounts: controlCounts),
   );
 }
 
 class _AddControlSheet extends StatefulWidget {
-  const _AddControlSheet();
+  final Map<String, int> controlCounts;
+
+  const _AddControlSheet({required this.controlCounts});
 
   @override
   State<_AddControlSheet> createState() => _AddControlSheetState();
@@ -114,6 +119,7 @@ class _AddControlSheetState extends State<_AddControlSheet> {
                         return _DirectorySection(
                           directory: directory,
                           controls: controls,
+                          controlCounts: widget.controlCounts,
                           onSelected: (control) =>
                               Navigator.of(context).pop(control),
                         );
@@ -130,11 +136,13 @@ class _AddControlSheetState extends State<_AddControlSheet> {
 class _DirectorySection extends StatelessWidget {
   final ControlDirectory directory;
   final List<ControlType> controls;
+  final Map<String, int> controlCounts;
   final ValueChanged<ControlType> onSelected;
 
   const _DirectorySection({
     required this.directory,
     required this.controls,
+    required this.controlCounts,
     required this.onSelected,
   });
 
@@ -187,6 +195,7 @@ class _DirectorySection extends StatelessWidget {
               final control = controls[index];
               return _ControlTile(
                 control: control,
+                count: controlCounts[control.id] ?? 0,
                 onTap: () => onSelected(control),
               );
             },
@@ -198,9 +207,14 @@ class _DirectorySection extends StatelessWidget {
 
 class _ControlTile extends StatelessWidget {
   final ControlType control;
+  final int count;
   final VoidCallback onTap;
 
-  const _ControlTile({required this.control, required this.onTap});
+  const _ControlTile({
+    required this.control,
+    required this.count,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -224,6 +238,22 @@ class _ControlTile extends StatelessWidget {
                   style: theme.textTheme.bodyMedium,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                constraints: const BoxConstraints(minWidth: 24),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
                 ),
               ),
             ],

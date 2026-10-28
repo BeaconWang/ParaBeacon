@@ -149,6 +149,21 @@ class _VarioPainter extends CustomPainter {
       ..strokeWidth = 2;
     canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), baseline);
 
+    // Contrasting waterline marks the current vertical-speed position.
+    final markerY = centerY - (clamped / maxScale) * (size.height / 2);
+    final markerOutline = Paint()
+      ..color = Colors.black.withAlpha(210)
+      ..strokeWidth = 4;
+    canvas.drawLine(
+      Offset(0, markerY),
+      Offset(size.width, markerY),
+      markerOutline,
+    );
+    final marker = Paint()
+      ..color = Colors.white.withAlpha(240)
+      ..strokeWidth = 1.5;
+    canvas.drawLine(Offset(0, markerY), Offset(size.width, markerY), marker);
+
     // Numeric readout.
     final tp = TextPainter(
       text: TextSpan(

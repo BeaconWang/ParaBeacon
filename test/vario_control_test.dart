@@ -78,4 +78,31 @@ void main() {
     final greenRegion = await _pixelAt(tester, boundaryKey, 50, 69);
     expect(redRegion, isNot(greenRegion));
   });
+
+  testWidgets('draws the waterline at the current speed position', (
+    tester,
+  ) async {
+    const boundaryKey = ValueKey<String>('vario-waterline');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: RepaintBoundary(
+              key: boundaryKey,
+              child: const SizedBox(
+                width: 100,
+                height: 200,
+                child: VarioControl(verticalSpeed: 4, maxScale: 10),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final waterline = await _pixelAt(tester, boundaryKey, 50, 60);
+    final nearbyFill = await _pixelAt(tester, boundaryKey, 50, 54);
+    expect(waterline, isNot(nearbyFill));
+  });
 }

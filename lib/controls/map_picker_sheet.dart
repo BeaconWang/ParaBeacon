@@ -86,9 +86,8 @@ Future<void> showMapLocationSheet(
 class MapPickerDefaults {
   MapPickerDefaults._();
 
-  /// AMap (AutoNavi) is the default basemap: its tiles are the ones that load
-  /// reliably (and with local labels) in the region this app is used most.
-  static const String tileSourceId = 'amap';
+  /// AMap satellite imagery is the default basemap.
+  static const String tileSourceId = 'amap-sat';
 }
 
 class _MapPickerSheet extends StatefulWidget {

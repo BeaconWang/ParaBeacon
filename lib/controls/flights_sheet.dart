@@ -8,6 +8,7 @@ import '../data/flight_export_service.dart';
 import '../data/flight_library_io.dart';
 import '../data/flight_merge.dart';
 import '../data/flight_recorder.dart';
+import '../data/landing_point_flight_import.dart';
 import '../data/flight_report_service.dart';
 import '../data/flight_share_card_service.dart';
 import '../data/geo_name_settings.dart';
@@ -53,6 +54,118 @@ Future<void> showFlightsSheet(BuildContext context) {
     constraints: const BoxConstraints.expand(),
     builder: (context) => const _FlightsSheet(),
   );
+}
+
+Future<FlightTrack?> showFlightRecordPicker(BuildContext context) {
+  return showModalBottomSheet<FlightTrack>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    shape: const RoundedRectangleBorder(),
+    constraints: const BoxConstraints.expand(),
+    builder: (context) => const _FlightRecordPicker(),
+  );
+}
+
+class _FlightRecordPicker extends StatelessWidget {
+  const _FlightRecordPicker();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final recorder = FlightRecorder.instance;
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Text(
+              l10n.landingPointSelectFlight,
+              style: theme.textTheme.titleLarge,
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: AnimatedBuilder(
+              animation: recorder,
+              builder: (context, _) {
+                final tracks = recorder.tracks;
+                if (tracks.isEmpty) {
+                  return Center(child: Text(l10n.flightsNoneRecorded));
+                }
+                return ListView.separated(
+                  itemCount: tracks.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final track = tracks[index];
+                    final location = LandingPointFlightLocation.fromTrack(
+                      track,
+                    );
+                    final local = track.startTime.toLocal();
+                    final date = MaterialLocalizations.of(
+                      context,
+                    ).formatMediumDate(local);
+                    final time = MaterialLocalizations.of(
+                      context,
+                    ).formatTimeOfDay(TimeOfDay.fromDateTime(local));
+                    final route = <String>[
+                      if (track.takeoffSite?.trim().isNotEmpty ?? false)
+                        track.takeoffSite!.trim(),
+                      if (track.landingSite?.trim().isNotEmpty ?? false)
+                        track.landingSite!.trim(),
+                    ].join(' → ');
+                    final flightSummary = l10n.flightsListSubtitle(
+                      _formatPickerDuration(track.duration),
+                      (track.distanceM / 1000).toStringAsFixed(2),
+                      track.pointCount,
+                    );
+                    final locationSummary = location == null
+                        ? l10n.landingPointFlightNoLocation
+                        : '${location.latitude.toStringAsFixed(5)}, '
+                              '${location.longitude.toStringAsFixed(5)}';
+                    return ListTile(
+                      enabled: location != null,
+                      leading: Icon(
+                        Icons.flight,
+                        color: location == null
+                            ? theme.disabledColor
+                            : theme.colorScheme.primary,
+                      ),
+                      title: Text(
+                        route.isEmpty ? '$date · $time' : route,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        '$flightSummary · $locationSummary',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: location == null
+                          ? null
+                          : () => Navigator.of(context).pop(track),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _formatPickerDuration(Duration duration) {
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  final seconds = duration.inSeconds.remainder(60);
+  if (hours > 0) {
+    return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+  return '$minutes:${seconds.toString().padLeft(2, '0')}';
 }
 
 class _FlightsSheet extends StatefulWidget {
@@ -370,7 +483,10 @@ class _FlightsSheetState extends State<_FlightsSheet> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     child: Text(
                       l10n.flightButtonAuto,
                       style: theme.textTheme.labelSmall?.copyWith(

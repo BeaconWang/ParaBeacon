@@ -2560,6 +2560,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingPointUpdateFailed => '无法更新此降落点。';
 
   @override
+  String get landingPointImportFromFlight => '从飞行记录导入降落位置';
+
+  @override
+  String get landingPointSelectFlight => '选择飞行记录';
+
+  @override
+  String get landingPointFlightNoLocation => '此记录没有可用的降落位置';
+
+  @override
   String get landingPointsImport => '导入';
 
   @override
@@ -2579,7 +2588,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingPointsImportSaved => '已保存的降落点';
 
   @override
-  String get landingPointsImportFromFile => '导入文件中的降落点';
+  String get landingPointsImportFromFile => '导入的降落点';
 
   @override
   String get landingPointsImportLimit => '导入后将超过 100 个降落点的上限。请先删除部分已保存的降落点。';

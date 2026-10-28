@@ -5066,6 +5066,24 @@ abstract class AppLocalizations {
   /// **'This landing point could not be updated.'**
   String get landingPointUpdateFailed;
 
+  /// No description provided for @landingPointImportFromFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Import landing location from flight'**
+  String get landingPointImportFromFlight;
+
+  /// No description provided for @landingPointSelectFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a flight record'**
+  String get landingPointSelectFlight;
+
+  /// No description provided for @landingPointFlightNoLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'No recorded landing location'**
+  String get landingPointFlightNoLocation;
+
   /// No description provided for @landingPointsImport.
   ///
   /// In en, this message translates to:
@@ -5105,7 +5123,7 @@ abstract class AppLocalizations {
   /// No description provided for @landingPointsImportFromFile.
   ///
   /// In en, this message translates to:
-  /// **'From imported file'**
+  /// **'Imported point'**
   String get landingPointsImportFromFile;
 
   /// No description provided for @landingPointsImportLimit.

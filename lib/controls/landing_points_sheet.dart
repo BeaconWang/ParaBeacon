@@ -7,8 +7,10 @@ import 'package:latlong2/latlong.dart';
 import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/landing_point_store.dart';
+import '../data/landing_point_flight_import.dart';
 import '../data/landing_points_config_io.dart';
 import '../l10n/app_localizations.dart';
+import 'flights_sheet.dart' show showFlightRecordPicker;
 import 'landing_point_editor.dart';
 import 'map_control.dart';
 
@@ -132,6 +134,59 @@ class _LandingPointsSheet extends StatelessWidget {
     );
     if (point == null || !context.mounted) return;
     await _savePoint(context, point);
+  }
+
+  Future<void> _addFromFlight(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final track = await showFlightRecordPicker(context);
+    if (track == null || !context.mounted) return;
+    final location = LandingPointFlightLocation.fromTrack(track);
+    if (location == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.landingPointFlightNoLocation)),
+      );
+      return;
+    }
+    final point = await showLandingPointEditorDialog(
+      context,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      altitudeM: location.altitudeM,
+      capturedAt: location.capturedAt,
+    );
+    if (point == null || !context.mounted) return;
+
+    final store = LandingPointStore.instance;
+    await store.load();
+    if (!context.mounted) return;
+    final imported = LandingPointsBundle(points: [point]);
+    final conflicts = LandingPointsConfigIO.instance.findNameConflicts(
+      store.points,
+      imported.points,
+    );
+    final choices = conflicts.isEmpty
+        ? const <String, String>{}
+        : await _confirmLandingPointImport(context, l10n, conflicts);
+    if (!context.mounted || choices == null) return;
+
+    try {
+      final merged = LandingPointsConfigIO.instance.merge(
+        savedPoints: store.points,
+        savedDefaultId: store.defaultPoint?.id,
+        imported: imported,
+        conflictChoices: choices,
+      );
+      await store.applyImportMerge(merged.points, defaultId: merged.defaultId);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${point.name} · ${l10n.landingPointSaved}')),
+      );
+    } on LandingPointsLimitException {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImportLimit)));
+    }
   }
 
   Future<void> _savePoint(BuildContext context, LandingPoint point) async {
@@ -468,6 +523,15 @@ class _LandingPointsSheet extends StatelessWidget {
                   onPressed: () => _addFromMap(context),
                   icon: const Icon(Icons.map_outlined),
                   label: Text(l10n.landingPointPickMapTitle),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _addFromFlight(context),
+                  icon: const Icon(Icons.flight_land_outlined),
+                  label: Text(l10n.landingPointImportFromFlight),
                 ),
               ),
               const SizedBox(height: 8),

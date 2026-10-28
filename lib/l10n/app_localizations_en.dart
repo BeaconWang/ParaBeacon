@@ -2664,6 +2664,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'This landing point could not be updated.';
 
   @override
+  String get landingPointImportFromFlight =>
+      'Import landing location from flight';
+
+  @override
+  String get landingPointSelectFlight => 'Select a flight record';
+
+  @override
+  String get landingPointFlightNoLocation => 'No recorded landing location';
+
+  @override
   String get landingPointsImport => 'Import';
 
   @override
@@ -2684,7 +2694,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointsImportSaved => 'Saved point';
 
   @override
-  String get landingPointsImportFromFile => 'From imported file';
+  String get landingPointsImportFromFile => 'Imported point';
 
   @override
   String get landingPointsImportLimit =>

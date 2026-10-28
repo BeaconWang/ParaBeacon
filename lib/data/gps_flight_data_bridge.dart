@@ -56,9 +56,9 @@ class GpsFlightDataBridge {
   ///     notification and wake lock.
   ///   * iOS — background location updates, backed by the `location`
   ///     UIBackgroundMode and, if granted, "Always" authorization.
-  /// Android also uses its foreground service whenever the app leaves the
-  /// foreground. Without it, Android throttles background location updates,
-  /// which can prevent auto-flight detection from starting.
+  /// Android uses its foreground service while a flight is active, or while
+  /// the app is backgrounded and automatic flight detection is enabled. This
+  /// keeps background GPS flowing for recording and takeoff/landing detection.
   final FlightState flightState;
 
   StreamSubscription<Position>? _sub;
@@ -72,7 +72,8 @@ class GpsFlightDataBridge {
   bool _appIsBackgrounded = false;
 
   bool get _requiresBackgroundMode =>
-      flightState.isFlying || (Platform.isAndroid && _appIsBackgrounded);
+      flightState.isFlying ||
+      (Platform.isAndroid && _appIsBackgrounded && flightState.autoDetect);
 
   /// Timestamp of the last position we forwarded downstream, used by the
   /// app-level throttle to enforce [updateInterval] on every platform.

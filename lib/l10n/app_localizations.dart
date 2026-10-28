@@ -2276,6 +2276,114 @@ abstract class AppLocalizations {
   /// **'This removes every control from the dashboard. This cannot be undone.'**
   String get clearAllControlsMessage;
 
+  /// No description provided for @defaultDashboardFlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight'**
+  String get defaultDashboardFlight;
+
+  /// No description provided for @defaultDashboardNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get defaultDashboardNavigation;
+
+  /// No description provided for @defaultDashboardConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Conditions'**
+  String get defaultDashboardConditions;
+
+  /// No description provided for @dashboardTemplateFlightDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Vario, heading, altitude, speed and flight time'**
+  String get dashboardTemplateFlightDescription;
+
+  /// No description provided for @dashboardTemplateNavigationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Map, nearest landing point and take-off reference'**
+  String get dashboardTemplateNavigationDescription;
+
+  /// No description provided for @dashboardTemplateConditionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind, weather readings and climb profile'**
+  String get dashboardTemplateConditionsDescription;
+
+  /// No description provided for @dashboardTemplateLanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing Options'**
+  String get dashboardTemplateLanding;
+
+  /// No description provided for @dashboardTemplateLandingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Map with nearest, saved and take-off landing references'**
+  String get dashboardTemplateLandingDescription;
+
+  /// No description provided for @dashboardTemplateInstrumentConsole.
+  ///
+  /// In en, this message translates to:
+  /// **'Instrument Console'**
+  String get dashboardTemplateInstrumentConsole;
+
+  /// No description provided for @dashboardTemplateInstrumentConsoleDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight controls, live sensor monitor and pilot readouts'**
+  String get dashboardTemplateInstrumentConsoleDescription;
+
+  /// No description provided for @dashboardTemplateTakeoffCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Take-off Check'**
+  String get dashboardTemplateTakeoffCheck;
+
+  /// No description provided for @dashboardTemplateTakeoffCheckDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Wind, take-off reference, GPS status and map'**
+  String get dashboardTemplateTakeoffCheckDescription;
+
+  /// No description provided for @pageTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Page layout template'**
+  String get pageTemplate;
+
+  /// No description provided for @pageTemplateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace this page with a ready-to-use layout'**
+  String get pageTemplateSubtitle;
+
+  /// No description provided for @pageTemplateChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a template'**
+  String get pageTemplateChoose;
+
+  /// No description provided for @pageTemplateReplaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace this page layout?'**
+  String get pageTemplateReplaceTitle;
+
+  /// No description provided for @pageTemplateReplaceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Applying {template} replaces all controls on this page. Other pages, this page’s title and its icon stay unchanged. This cannot be undone.'**
+  String pageTemplateReplaceMessage(String template);
+
+  /// No description provided for @pageTemplateReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace layout'**
+  String get pageTemplateReplace;
+
   /// No description provided for @editMode.
   ///
   /// In en, this message translates to:

@@ -1173,6 +1173,69 @@ class AppLocalizationsEn extends AppLocalizations {
       'This removes every control from the dashboard. This cannot be undone.';
 
   @override
+  String get defaultDashboardFlight => 'Flight';
+
+  @override
+  String get defaultDashboardNavigation => 'Navigation';
+
+  @override
+  String get defaultDashboardConditions => 'Conditions';
+
+  @override
+  String get dashboardTemplateFlightDescription =>
+      'Vario, heading, altitude, speed and flight time';
+
+  @override
+  String get dashboardTemplateNavigationDescription =>
+      'Map, nearest landing point and take-off reference';
+
+  @override
+  String get dashboardTemplateConditionsDescription =>
+      'Wind, weather readings and climb profile';
+
+  @override
+  String get dashboardTemplateLanding => 'Landing Options';
+
+  @override
+  String get dashboardTemplateLandingDescription =>
+      'Map with nearest, saved and take-off landing references';
+
+  @override
+  String get dashboardTemplateInstrumentConsole => 'Instrument Console';
+
+  @override
+  String get dashboardTemplateInstrumentConsoleDescription =>
+      'Flight controls, live sensor monitor and pilot readouts';
+
+  @override
+  String get dashboardTemplateTakeoffCheck => 'Take-off Check';
+
+  @override
+  String get dashboardTemplateTakeoffCheckDescription =>
+      'Wind, take-off reference, GPS status and map';
+
+  @override
+  String get pageTemplate => 'Page layout template';
+
+  @override
+  String get pageTemplateSubtitle =>
+      'Replace this page with a ready-to-use layout';
+
+  @override
+  String get pageTemplateChoose => 'Choose a template';
+
+  @override
+  String get pageTemplateReplaceTitle => 'Replace this page layout?';
+
+  @override
+  String pageTemplateReplaceMessage(String template) {
+    return 'Applying $template replaces all controls on this page. Other pages, this page’s title and its icon stay unchanged. This cannot be undone.';
+  }
+
+  @override
+  String get pageTemplateReplace => 'Replace layout';
+
+  @override
   String get editMode => 'Edit Mode';
 
   @override

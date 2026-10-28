@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'controls/flights_sheet.dart';
 import 'controls/weather_sheet.dart';
+import 'data/dashboard_page_templates.dart';
 import 'l10n/app_localizations.dart';
 
 class DashboardMenuContent extends StatelessWidget {
@@ -15,6 +16,7 @@ class DashboardMenuContent extends StatelessWidget {
   final ValueChanged<double> onGridSizeChanged;
   final VoidCallback onToggleEditMode;
   final VoidCallback onAddControl;
+  final ValueChanged<DashboardPageTemplate> onApplyPageTemplate;
   final VoidCallback onAddPage;
   final VoidCallback onDeletePage;
   final VoidCallback onClearAll;
@@ -30,6 +32,7 @@ class DashboardMenuContent extends StatelessWidget {
     required this.onGridSizeChanged,
     required this.onToggleEditMode,
     required this.onAddControl,
+    required this.onApplyPageTemplate,
     required this.onAddPage,
     required this.onDeletePage,
     required this.onClearAll,
@@ -60,6 +63,100 @@ class DashboardMenuContent extends StatelessWidget {
         ),
         // Control- and page-editing items are only meaningful in edit mode.
         if (isEditMode) ...[
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.dashboard_customize_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.pageTemplate,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                          Text(
+                            l10n.pageTemplateSubtitle,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                    borderRadius: BorderRadius.circular(12),
+                    color: theme.colorScheme.surfaceContainerHighest,
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<DashboardPageTemplate>(
+                      value: null,
+                      hint: Text(l10n.pageTemplateChoose),
+                      isExpanded: true,
+                      menuMaxHeight: 360,
+                      borderRadius: BorderRadius.circular(12),
+                      items: DashboardPageTemplates.all
+                          .map(
+                            (template) => DropdownMenuItem(
+                              value: template,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    template.icon,
+                                    size: 20,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(template.titleOf(l10n)),
+                                        Text(
+                                          template.descriptionOf(l10n),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (template) {
+                        if (template != null) onApplyPageTemplate(template);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const Divider(height: 1),
           ListTile(
             leading: Icon(

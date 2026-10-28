@@ -392,6 +392,30 @@
   "clearAllControlsTitle": "Clear all controls?",
   "clearAllControlsMessage": "This removes every control from the dashboard. This cannot be undone.",
 
+  "defaultDashboardFlight": "Flight",
+  "defaultDashboardNavigation": "Navigation",
+  "defaultDashboardConditions": "Conditions",
+  "dashboardTemplateFlightDescription": "Vario, heading, altitude, speed and flight time",
+  "dashboardTemplateNavigationDescription": "Map, nearest landing point and take-off reference",
+  "dashboardTemplateConditionsDescription": "Wind, weather readings and climb profile",
+  "dashboardTemplateLanding": "Landing Options",
+  "dashboardTemplateLandingDescription": "Map with nearest, saved and take-off landing references",
+  "dashboardTemplateInstrumentConsole": "Instrument Console",
+  "dashboardTemplateInstrumentConsoleDescription": "Flight controls, live sensor monitor and pilot readouts",
+  "dashboardTemplateTakeoffCheck": "Take-off Check",
+  "dashboardTemplateTakeoffCheckDescription": "Wind, take-off reference, GPS status and map",
+  "pageTemplate": "Page layout template",
+  "pageTemplateSubtitle": "Replace this page with a ready-to-use layout",
+  "pageTemplateChoose": "Choose a template",
+  "pageTemplateReplaceTitle": "Replace this page layout?",
+  "pageTemplateReplaceMessage": "Applying {template} replaces all controls on this page. Other pages, this page’s title and its icon stay unchanged. This cannot be undone.",
+  "@pageTemplateReplaceMessage": {
+    "placeholders": {
+      "template": { "type": "String" }
+    }
+  },
+  "pageTemplateReplace": "Replace layout",
+
   "editMode": "Edit Mode",
   "pageOfPages": "Page {current} of {total}",
   "@pageOfPages": {

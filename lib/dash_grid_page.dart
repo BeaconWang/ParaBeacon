@@ -29,6 +29,7 @@ import 'controls/altitude_announcement_settings_sheet.dart';
 import 'controls/other_settings_sheet.dart';
 import 'controls/landing_points_sheet.dart';
 import 'data/aircraft_settings.dart';
+import 'data/dashboard_page_templates.dart';
 import 'data/live_tracking_settings.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_recorder.dart';
@@ -1156,6 +1157,61 @@ class _DashGridPageState extends State<DashGridPage> {
     );
   }
 
+  Future<void> _applyPageTemplate(DashboardPageTemplate template) async {
+    final targetPage = _pages[_currentPage];
+    if (targetPage.controls.isNotEmpty) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          final l10n = AppLocalizations.of(dialogContext);
+          return AlertDialog(
+            title: Text(l10n.pageTemplateReplaceTitle),
+            content: Text(
+              l10n.pageTemplateReplaceMessage(template.titleOf(l10n)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                ),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(l10n.pageTemplateReplace),
+              ),
+            ],
+          );
+        },
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    if (!_pages.contains(targetPage)) return;
+
+    final controls = DashboardPageTemplates.createControls(
+      template: template,
+      viewport: MediaQuery.of(context).size,
+      gridSize: _gridSize,
+      l10n: AppLocalizations.of(context),
+      nextInstanceId: () => 'ctrl_${_controlSeq++}',
+    );
+    setState(() {
+      targetPage.controls
+        ..clear()
+        ..addAll(controls);
+      _selectedControlId = null;
+      _activeControlId = null;
+      _controlKeys.clear();
+      _verticalGraphPointers.clear();
+      _verticalGraphGestureControlId = null;
+      _verticalGraphTwoFingerCenter = null;
+      _verticalGraphTwoFingerRemainder = 0.0;
+      _isEditMode = true;
+    });
+    _saveLayout();
+  }
+
   /// Opens the control chooser and, on selection, places the new control on
   /// the grid at the first free spot.
   Future<void> _addControlFromMenu() async {
@@ -2100,6 +2156,10 @@ class _DashGridPageState extends State<DashGridPage> {
                 },
                 onToggleEditMode: () => _onMenuAction('toggle_edit'),
                 onAddControl: () => _onMenuAction('add_control'),
+                onApplyPageTemplate: (template) {
+                  _closeMenu();
+                  _applyPageTemplate(template);
+                },
                 onAddPage: () => _onMenuAction('add_page'),
                 onDeletePage: () {
                   _closeMenu();

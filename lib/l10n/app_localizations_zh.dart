@@ -1113,6 +1113,63 @@ class AppLocalizationsZh extends AppLocalizations {
   String get clearAllControlsMessage => '这将从仪表盘中移除所有控件，且无法撤销。';
 
   @override
+  String get defaultDashboardFlight => '飞行仪表';
+
+  @override
+  String get defaultDashboardNavigation => '导航与降落';
+
+  @override
+  String get defaultDashboardConditions => '风况与环境';
+
+  @override
+  String get dashboardTemplateFlightDescription => '升降音、航向、高度、速度和飞行时间';
+
+  @override
+  String get dashboardTemplateNavigationDescription => '地图、最近降落点和起飞点参考';
+
+  @override
+  String get dashboardTemplateConditionsDescription => '风向、气象读数和爬升曲线';
+
+  @override
+  String get dashboardTemplateLanding => '降落点选择';
+
+  @override
+  String get dashboardTemplateLandingDescription => '地图、最近降落点、已保存降落点和起飞点参考';
+
+  @override
+  String get dashboardTemplateInstrumentConsole => '仪表与传感器';
+
+  @override
+  String get dashboardTemplateInstrumentConsoleDescription =>
+      '飞行控制、实时传感器监视和飞行员读数';
+
+  @override
+  String get dashboardTemplateTakeoffCheck => '起飞检查';
+
+  @override
+  String get dashboardTemplateTakeoffCheckDescription => '风况、起飞点参考、GPS 状态和地图';
+
+  @override
+  String get pageTemplate => '页面布局模板';
+
+  @override
+  String get pageTemplateSubtitle => '用现成布局替换当前页面';
+
+  @override
+  String get pageTemplateChoose => '选择模板';
+
+  @override
+  String get pageTemplateReplaceTitle => '替换当前页面布局？';
+
+  @override
+  String pageTemplateReplaceMessage(String template) {
+    return '应用“$template”将替换当前页面上的所有控件。其他页面以及本页标题和图标不会更改。此操作无法撤销。';
+  }
+
+  @override
+  String get pageTemplateReplace => '替换页面布局';
+
+  @override
   String get editMode => '编辑模式';
 
   @override

@@ -379,6 +379,30 @@
   "clearAllControlsTitle": "清除所有控件？",
   "clearAllControlsMessage": "这将从仪表盘中移除所有控件，且无法撤销。",
 
+  "defaultDashboardFlight": "飞行仪表",
+  "defaultDashboardNavigation": "导航与降落",
+  "defaultDashboardConditions": "风况与环境",
+  "dashboardTemplateFlightDescription": "升降音、航向、高度、速度和飞行时间",
+  "dashboardTemplateNavigationDescription": "地图、最近降落点和起飞点参考",
+  "dashboardTemplateConditionsDescription": "风向、气象读数和爬升曲线",
+  "dashboardTemplateLanding": "降落点选择",
+  "dashboardTemplateLandingDescription": "地图、最近降落点、已保存降落点和起飞点参考",
+  "dashboardTemplateInstrumentConsole": "仪表与传感器",
+  "dashboardTemplateInstrumentConsoleDescription": "飞行控制、实时传感器监视和飞行员读数",
+  "dashboardTemplateTakeoffCheck": "起飞检查",
+  "dashboardTemplateTakeoffCheckDescription": "风况、起飞点参考、GPS 状态和地图",
+  "pageTemplate": "页面布局模板",
+  "pageTemplateSubtitle": "用现成布局替换当前页面",
+  "pageTemplateChoose": "选择模板",
+  "pageTemplateReplaceTitle": "替换当前页面布局？",
+  "pageTemplateReplaceMessage": "应用“{template}”将替换当前页面上的所有控件。其他页面以及本页标题和图标不会更改。此操作无法撤销。",
+  "@pageTemplateReplaceMessage": {
+    "placeholders": {
+      "template": { "type": "String" }
+    }
+  },
+  "pageTemplateReplace": "替换页面布局",
+
   "editMode": "编辑模式",
   "pageOfPages": "第 {current} 页，共 {total} 页",
   "addControl": "添加控件",

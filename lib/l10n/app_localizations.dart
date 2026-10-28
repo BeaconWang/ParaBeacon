@@ -4598,6 +4598,12 @@ abstract class AppLocalizations {
   /// **'Nearest landing line color'**
   String get settingNearestLandingLineColor;
 
+  /// No description provided for @settingLandingDirectionArrowColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing direction arrow color'**
+  String get settingLandingDirectionArrowColor;
+
   /// No description provided for @colorPalettePreferencesTitle.
   ///
   /// In en, this message translates to:

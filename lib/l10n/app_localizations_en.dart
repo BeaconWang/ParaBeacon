@@ -2407,6 +2407,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingNearestLandingLineColor => 'Nearest landing line color';
 
   @override
+  String get settingLandingDirectionArrowColor =>
+      'Landing direction arrow color';
+
+  @override
   String get colorPalettePreferencesTitle => 'Color picker palette';
 
   @override

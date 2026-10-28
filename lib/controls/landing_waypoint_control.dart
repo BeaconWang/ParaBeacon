@@ -37,6 +37,7 @@ class LandingWaypointControl extends StatefulWidget {
     this.showEta = true,
     this.cardinal = false,
     this.relative = false,
+    this.arrowColor,
   });
 
   /// Which saved point to navigate to.
@@ -55,6 +56,9 @@ class LandingWaypointControl extends StatefulWidget {
   /// Express the bearing relative to the current heading instead of as an
   /// absolute compass bearing.
   final bool relative;
+
+  /// Color used for the target direction dart.
+  final Color? arrowColor;
 
   @override
   State<LandingWaypointControl> createState() => _LandingWaypointControlState();
@@ -253,6 +257,11 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
         ? Icons.where_to_vote
         : Icons.flight_land;
     final hasTarget = target != null;
+    final arrowColor =
+        widget.arrowColor ??
+        (widget.reference == LandingReference.defaultPoint
+            ? const Color(0xFFF44336)
+            : const Color(0xFF9C27B0));
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -286,6 +295,7 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
                   children: [
                     Expanded(
                       child: _Body(
+                        arrowColor: arrowColor,
                         showBearing: widget.showBearing,
                         showDistance: widget.showDistance,
                         bearingAngle: bearingAngle,
@@ -551,6 +561,7 @@ class _Header extends StatelessWidget {
 
 class _Body extends StatelessWidget {
   const _Body({
+    required this.arrowColor,
     required this.showBearing,
     required this.showDistance,
     required this.bearingAngle,
@@ -564,6 +575,7 @@ class _Body extends StatelessWidget {
     required this.scale,
   });
 
+  final Color arrowColor;
   final bool showBearing;
   final bool showDistance;
   final double? bearingAngle;
@@ -631,6 +643,7 @@ class _Body extends StatelessWidget {
           children: [
             _CompassDial(
               size: dialSize,
+              arrowColor: arrowColor,
               angle: bearingAngle,
               relative: relative,
               readout: bearingText,
@@ -788,6 +801,7 @@ class _MetricChip extends StatelessWidget {
 class _CompassDial extends StatelessWidget {
   const _CompassDial({
     required this.size,
+    required this.arrowColor,
     required this.angle,
     required this.relative,
     required this.readout,
@@ -796,6 +810,7 @@ class _CompassDial extends StatelessWidget {
   });
 
   final double size;
+  final Color arrowColor;
   final double? angle;
   final bool relative;
   final String readout;
@@ -816,7 +831,7 @@ class _CompassDial extends StatelessWidget {
               angleDegrees: angle,
               relative: relative,
               ring: theme.colorScheme.outlineVariant.withAlpha(140),
-              arrow: const Color(0xFF4C9AFF),
+              arrow: arrowColor,
               arrowOutline: theme.colorScheme.surface.withAlpha(140),
               hub: theme.colorScheme.onSurface.withAlpha(200),
               tick: theme.colorScheme.onSurfaceVariant.withAlpha(150),

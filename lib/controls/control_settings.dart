@@ -268,6 +268,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingDefaultLandingLineColor;
     case 'nearestLandingLineColor':
       return l10n.settingNearestLandingLineColor;
+    case 'directionArrowColor':
+      return l10n.settingLandingDirectionArrowColor;
     case 'showScale':
       return l10n.settingShowScale;
     case 'showAirspace':
@@ -760,8 +762,22 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       },
     ),
   ],
-  'default_landing_waypoint': _landingWaypointSettings,
-  'nearest_landing_waypoint': _landingWaypointSettings,
+  'default_landing_waypoint': [
+    ..._landingWaypointSettings,
+    ControlSetting.color(
+      key: 'directionArrowColor',
+      label: 'Direction arrow color',
+      defaultValue: 0xFFF44336,
+    ),
+  ],
+  'nearest_landing_waypoint': [
+    ..._landingWaypointSettings,
+    ControlSetting.color(
+      key: 'directionArrowColor',
+      label: 'Direction arrow color',
+      defaultValue: 0xFF9C27B0,
+    ),
+  ],
   'clock': [
     ControlSetting.toggle(
       key: 'showSeconds',

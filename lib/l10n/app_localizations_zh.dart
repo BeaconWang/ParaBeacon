@@ -2317,6 +2317,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingNearestLandingLineColor => '距离最近降落点连线颜色';
 
   @override
+  String get settingLandingDirectionArrowColor => '降落点方向箭头颜色';
+
+  @override
   String get colorPalettePreferencesTitle => '颜色选择器调色板';
 
   @override

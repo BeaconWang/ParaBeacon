@@ -1,12 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/control_catalog.dart';
+import 'package:parabeacon/controls/control_settings.dart';
 import 'package:parabeacon/controls/control_settings_sheet.dart';
 import 'package:parabeacon/data/color_palette_settings.dart';
 import 'package:parabeacon/controls/placed_control.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 
 void main() {
+  test('landing widgets have separately configurable arrow colors', () {
+    final defaultLanding = PlacedControl.fromType(
+      ControlCatalog.byId('default_landing_waypoint')!,
+      instanceId: 'default-landing-color-test',
+    );
+    final nearestLanding = PlacedControl.fromType(
+      ControlCatalog.byId('nearest_landing_waypoint')!,
+      instanceId: 'nearest-landing-color-test',
+    );
+
+    expect(defaultLanding.intSetting('directionArrowColor'), 0xFFF44336);
+    expect(nearestLanding.intSetting('directionArrowColor'), 0xFF9C27B0);
+    expect(
+      settingsSchemaFor(
+        'default_landing_waypoint',
+      ).where((setting) => setting.key == 'directionArrowColor').single.kind,
+      SettingKind.color,
+    );
+    expect(
+      settingsSchemaFor(
+        'nearest_landing_waypoint',
+      ).where((setting) => setting.key == 'directionArrowColor').single.kind,
+      SettingKind.color,
+    );
+  });
+
   test('13 HSL schemes meet color limits and evenly space hues', () {
     expect(ColorPaletteSettings.presets, hasLength(13));
     expect(ColorPaletteSettings.defaultSchemeId, 'high-saturation');

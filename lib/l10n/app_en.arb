@@ -906,6 +906,7 @@
   "settingTakeoffLineColor": "Take-off line color",
   "settingDefaultLandingLineColor": "Default landing line color",
   "settingNearestLandingLineColor": "Nearest landing line color",
+  "settingLandingDirectionArrowColor": "Landing direction arrow color",
   "colorPalettePreferencesTitle": "Color picker palette",
   "colorPalettePreferencesSubtitle": "{count} preset colors in every picker",
   "@colorPalettePreferencesSubtitle": {

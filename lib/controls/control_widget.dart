@@ -391,6 +391,9 @@ class ControlWidget extends StatelessWidget {
           showEta: control.boolSetting('showEta', fallback: true),
           cardinal: control.setting('format') == 'cardinal',
           relative: control.setting('bearingReference') == 'relative',
+          arrowColor: Color(
+            control.intSetting('directionArrowColor', fallback: 0xFFF44336),
+          ),
         );
       case 'nearest_landing_waypoint':
         return LandingWaypointControl(
@@ -402,6 +405,9 @@ class ControlWidget extends StatelessWidget {
           showEta: control.boolSetting('showEta', fallback: true),
           cardinal: control.setting('format') == 'cardinal',
           relative: control.setting('bearingReference') == 'relative',
+          arrowColor: Color(
+            control.intSetting('directionArrowColor', fallback: 0xFF9C27B0),
+          ),
         );
       case 'debug_sensor':
         return const DebugSensorControl();

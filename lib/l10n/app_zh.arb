@@ -831,6 +831,7 @@
   "settingTakeoffLineColor": "起飞点连线颜色",
   "settingDefaultLandingLineColor": "默认降落点连线颜色",
   "settingNearestLandingLineColor": "距离最近降落点连线颜色",
+  "settingLandingDirectionArrowColor": "降落点方向箭头颜色",
   "colorPalettePreferencesTitle": "颜色选择器调色板",
   "colorPalettePreferencesSubtitle": "所有选择器显示 {count} 种预设颜色",
   "@colorPalettePreferencesSubtitle": {

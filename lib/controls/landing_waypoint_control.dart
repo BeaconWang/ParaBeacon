@@ -214,6 +214,7 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
             elevationChange,
             altitudeUnit,
             precision: altitudePrecision,
+            showPositiveSign: false,
           );
 
     final glideText = requiredGlide == null
@@ -228,23 +229,18 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
 
     final etaText = etaSeconds == null ? '--' : _formatDuration(etaSeconds);
 
-    // Secondary metrics shown as chips (distance is the hero, bearing is the
-    // dial). Order is stable regardless of which are enabled.
-    final chips = <_Metric>[
+    // Secondary metrics share a row below the distance readout.
+    final metrics = <_Metric>[
       if (widget.showGlide)
         _Metric(
-          icon: Icons.trending_down,
           label: l10n.waypointRequiredGlideRatioLabel,
           value: glideText,
-          unit: '',
           color: theme.colorScheme.onSurface,
         ),
       if (widget.showEta)
         _Metric(
-          icon: Icons.schedule,
           label: l10n.waypointEtaLabel,
           value: etaText,
-          unit: '',
           color: theme.colorScheme.onSurface,
         ),
     ];
@@ -299,7 +295,7 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
                         distanceUnit: distanceUnitLabel,
                         distanceLabel: l10n.takeoffDistanceLabel,
                         bearingLabel: l10n.waypointBearingLabel,
-                        chips: chips,
+                        metrics: metrics,
                         scale: scale,
                       ),
                     ),
@@ -564,7 +560,7 @@ class _Body extends StatelessWidget {
     required this.distanceUnit,
     required this.distanceLabel,
     required this.bearingLabel,
-    required this.chips,
+    required this.metrics,
     required this.scale,
   });
 
@@ -577,7 +573,7 @@ class _Body extends StatelessWidget {
   final String distanceUnit;
   final String distanceLabel;
   final String bearingLabel;
-  final List<_Metric> chips;
+  final List<_Metric> metrics;
   final double scale;
 
   @override
@@ -586,38 +582,49 @@ class _Body extends StatelessWidget {
       builder: (context, constraints) {
         final h = constraints.maxHeight;
         final w = constraints.maxWidth;
+        final contentScale = math.min(
+          scale,
+          (h / 72).clamp(0.45, 1.5).toDouble(),
+        );
         final dialSize = showBearing
-            ? math.min(h, w * 0.42).clamp(40.0, 110.0).toDouble()
+            ? math.min(
+                math.max(0.0, h - 10 * contentScale),
+                math.min(w * 0.34, 96 * contentScale),
+              )
             : 0.0;
 
         final rightColumn = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (showDistance) ...[
+            if (showDistance)
               _HeroValue(
                 label: distanceLabel,
                 value: distanceText,
                 unit: distanceUnit,
-                scale: scale,
+                scale: contentScale,
               ),
-              if (chips.isNotEmpty) SizedBox(height: 8 * scale),
-            ],
-            if (chips.isNotEmpty)
-              Wrap(
-                spacing: 6 * scale,
-                runSpacing: 6 * scale,
+            if (metrics.isNotEmpty) ...[
+              if (showDistance) SizedBox(height: 4 * contentScale),
+              Row(
                 children: [
-                  for (final m in chips) _MetricChip(metric: m, scale: scale),
+                  for (var index = 0; index < metrics.length; index++) ...[
+                    if (index > 0) SizedBox(width: 4 * contentScale),
+                    Expanded(
+                      child: _MetricChip(
+                        metric: metrics[index],
+                        scale: contentScale,
+                      ),
+                    ),
+                  ],
                 ],
               ),
+            ],
           ],
         );
 
-        if (!showBearing) {
-          return Align(alignment: Alignment.centerLeft, child: rightColumn);
-        }
+        if (!showBearing) return rightColumn;
 
         return Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -628,9 +635,9 @@ class _Body extends StatelessWidget {
               relative: relative,
               readout: bearingText,
               label: bearingLabel,
-              scale: scale,
+              scale: contentScale,
             ),
-            SizedBox(width: 12 * scale),
+            SizedBox(width: 8 * contentScale),
             Expanded(child: rightColumn),
           ],
         );
@@ -639,7 +646,7 @@ class _Body extends StatelessWidget {
   }
 }
 
-/// Big primary readout (value + small trailing unit) with a caption above.
+/// Primary distance readout arranged on one baseline to preserve vertical room.
 class _HeroValue extends StatelessWidget {
   const _HeroValue({
     required this.label,
@@ -656,80 +663,70 @@ class _HeroValue extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label.toUpperCase(),
-          maxLines: 1,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontSize: 9.5 * scale,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-            height: 1.0,
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label.toUpperCase(),
+            maxLines: 1,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 9.5 * scale,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.6,
+              height: 1.0,
+            ),
           ),
-        ),
-        SizedBox(height: 2 * scale),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                value,
-                maxLines: 1,
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontSize: 38 * scale,
+          SizedBox(width: 6 * scale),
+          Text(
+            value,
+            maxLines: 1,
+            style: TextStyle(
+              color: theme.colorScheme.primary,
+              fontSize: 34 * scale,
+              fontWeight: FontWeight.w700,
+              height: 1.0,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          if (unit.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(left: 4 * scale),
+              child: Text(
+                unit,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 13 * scale,
                   fontWeight: FontWeight.w700,
-                  height: 1.0,
-                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
-              if (unit.isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(left: 4 * scale),
-                  child: Text(
-                    unit,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 13 * scale,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
+            ),
+        ],
+      ),
     );
   }
 }
 
-/// A single computed metric (icon + label + value + optional unit).
+/// A computed secondary metric shown beneath the primary distance.
 @immutable
 class _Metric {
   const _Metric({
-    required this.icon,
     required this.label,
     required this.value,
-    required this.unit,
     required this.color,
   });
 
-  final IconData icon;
   final String label;
   final String value;
-  final String unit;
   final Color color;
 }
 
-/// Compact rounded chip used for the secondary metrics.
+/// Compact equal-height cell used by the secondary-metric row.
 class _MetricChip extends StatelessWidget {
   const _MetricChip({required this.metric, required this.scale});
 
@@ -740,67 +737,45 @@ class _MetricChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 5 * scale),
+      padding: EdgeInsets.symmetric(horizontal: 6 * scale, vertical: 3 * scale),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withAlpha(90),
-        borderRadius: BorderRadius.circular(8 * scale),
+        borderRadius: BorderRadius.circular(7 * scale),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            metric.icon,
-            size: 13 * scale,
-            color: theme.colorScheme.onSurfaceVariant,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              metric.label.toUpperCase(),
+              maxLines: 1,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 7.5 * scale,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+                height: 1.0,
+              ),
+            ),
           ),
-          SizedBox(width: 5 * scale),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                metric.label.toUpperCase(),
-                maxLines: 1,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 7.5 * scale,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.4,
-                  height: 1.0,
-                ),
+          SizedBox(height: 2 * scale),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              metric.value,
+              maxLines: 1,
+              style: TextStyle(
+                color: metric.color,
+                fontSize: 14 * scale,
+                fontWeight: FontWeight.w700,
+                height: 1.0,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
-              SizedBox(height: 1 * scale),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    metric.value,
-                    maxLines: 1,
-                    style: TextStyle(
-                      color: metric.color,
-                      fontSize: 15 * scale,
-                      fontWeight: FontWeight.w700,
-                      height: 1.0,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  if (metric.unit.isNotEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(left: 2 * scale),
-                      child: Text(
-                        metric.unit,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 9 * scale,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
+            ),
           ),
         ],
       ),

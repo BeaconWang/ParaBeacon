@@ -52,6 +52,15 @@ void main() {
       ),
       '+12.345',
     );
+    expect(
+      UnitValues.formatAltitudeDifference(
+        12.345,
+        'm',
+        precision: const DecimalPlaceRange(1, 3),
+        showPositiveSign: false,
+      ),
+      '12.345',
+    );
   });
 
   test('decimal settings are independent for numeric fields', () {

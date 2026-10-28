@@ -99,18 +99,19 @@ class UnitValues {
     double meters,
     String unit, {
     DecimalPlaceRange? precision,
+    bool showPositiveSign = true,
   }) {
     final converted = convert(meters, UnitDimension.altitude, unit);
     if (precision == null) {
       final rounded = converted.round();
-      return rounded >= 0 ? '+$rounded' : '$rounded';
+      return showPositiveSign && rounded >= 0 ? '+$rounded' : '$rounded';
     }
     final value = formatDecimalValue(
       converted,
       autoDecimals: 0,
       range: precision,
     );
-    return converted >= 0 ? '+$value' : value;
+    return showPositiveSign && converted >= 0 ? '+$value' : value;
   }
 
   static String symbol(UnitDimension dimension, String unit) {

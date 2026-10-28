@@ -33,6 +33,7 @@ class LandingWaypointControl extends StatefulWidget {
     required this.reference,
     this.showDistance = true,
     this.showBearing = true,
+    this.showBearingString = true,
     this.showElevation = true,
     this.showGlide = true,
     this.showEta = true,
@@ -46,6 +47,7 @@ class LandingWaypointControl extends StatefulWidget {
 
   final bool showDistance;
   final bool showBearing;
+  final bool showBearingString;
   final bool showElevation;
   final bool showGlide;
   final bool showEta;
@@ -300,6 +302,7 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
                       child: _Body(
                         arrowColor: arrowColor,
                         showBearing: widget.showBearing,
+                        showBearingString: widget.showBearingString,
                         showDistance: widget.showDistance,
                         bearingAngle: bearingAngle,
                         relative: widget.relative,
@@ -566,6 +569,7 @@ class _Body extends StatelessWidget {
   const _Body({
     required this.arrowColor,
     required this.showBearing,
+    required this.showBearingString,
     required this.showDistance,
     required this.bearingAngle,
     required this.relative,
@@ -580,10 +584,11 @@ class _Body extends StatelessWidget {
 
   final Color arrowColor;
   final bool showBearing;
+  final bool showBearingString;
   final bool showDistance;
   final double? bearingAngle;
   final bool relative;
-  final String bearingText;
+  final String? bearingText;
   final String distanceText;
   final String distanceUnit;
   final String distanceLabel;
@@ -649,7 +654,7 @@ class _Body extends StatelessWidget {
               arrowColor: arrowColor,
               angle: bearingAngle,
               relative: relative,
-              readout: bearingText,
+              readout: showBearingString ? bearingText : null,
               label: bearingLabel,
               scale: contentScale,
             ),
@@ -816,7 +821,7 @@ class _CompassDial extends StatelessWidget {
   final Color arrowColor;
   final double? angle;
   final bool relative;
-  final String readout;
+  final String? readout;
   final String label;
   final double scale;
 
@@ -840,17 +845,19 @@ class _CompassDial extends StatelessWidget {
               tick: theme.colorScheme.onSurfaceVariant.withAlpha(150),
             ),
             child: Center(
-              child: Text(
-                readout,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface,
-                  fontSize: size * 0.2,
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
+              child: readout == null
+                  ? null
+                  : Text(
+                      readout!,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: size * 0.2,
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
             ),
           ),
         ),

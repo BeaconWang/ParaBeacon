@@ -20,6 +20,15 @@ void main() {
 
     expect(defaultLanding.intSetting('directionArrowColor'), 0xFFF44336);
     expect(nearestLanding.intSetting('directionArrowColor'), 0xFF9C27B0);
+    for (final landing in [defaultLanding, nearestLanding]) {
+      expect(landing.setting('bearingReference'), 'relative');
+      expect(landing.setting('format'), 'cardinal');
+      final format = settingsSchemaFor(
+        landing.type.id,
+      ).singleWhere((setting) => setting.key == 'format');
+      expect(format.options.keys, containsAll(['bearing', 'cardinal', 'none']));
+      expect(format.defaultValue, 'cardinal');
+    }
     expect(
       settingsSchemaFor(
         'default_landing_waypoint',
@@ -32,6 +41,21 @@ void main() {
       ).where((setting) => setting.key == 'directionArrowColor').single.kind,
       SettingKind.color,
     );
+  });
+
+  test('legacy landing degree format migrates to cardinal', () {
+    for (final typeId in [
+      'default_landing_waypoint',
+      'nearest_landing_waypoint',
+    ]) {
+      final control = PlacedControl.fromJson({
+        'typeId': typeId,
+        'settings': {'format': 'degrees', 'bearingReference': 'absolute'},
+      })!;
+
+      expect(control.setting('format'), 'cardinal');
+      expect(control.setting('bearingReference'), 'absolute');
+    }
   });
 
   test('13 HSL schemes meet color limits and evenly space hues', () {

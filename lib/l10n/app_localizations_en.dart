@@ -1651,6 +1651,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingAltitudeDifferenceLabel => 'Altitude Diff';
 
   @override
+  String get landingRelativeAhead => 'Ahead';
+
+  @override
+  String get landingRelativeRightFront => 'Right front';
+
+  @override
+  String get landingRelativeRight => 'Right';
+
+  @override
+  String get landingRelativeRightBack => 'Right back';
+
+  @override
+  String get landingRelativeBehind => 'Behind';
+
+  @override
+  String get landingRelativeLeftBack => 'Left back';
+
+  @override
+  String get landingRelativeLeft => 'Left';
+
+  @override
+  String get landingRelativeLeftFront => 'Left front';
+
+  @override
   String get waypointBearingLabel => 'BRG';
 
   @override
@@ -2187,7 +2211,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingFormatDegrees => 'Degrees (0-360°)';
 
   @override
+  String get settingFormatBearing => 'Bearing';
+
+  @override
   String get settingFormatCardinal => 'Cardinal (N, NE, …)';
+
+  @override
+  String get settingFormatNone => 'None';
 
   @override
   String get settingBearingReference => 'Direction';

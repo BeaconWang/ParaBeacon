@@ -1580,6 +1580,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingAltitudeDifferenceLabel => '高度差';
 
   @override
+  String get landingRelativeAhead => '前方';
+
+  @override
+  String get landingRelativeRightFront => '右前方';
+
+  @override
+  String get landingRelativeRight => '右侧';
+
+  @override
+  String get landingRelativeRightBack => '右后方';
+
+  @override
+  String get landingRelativeBehind => '后方';
+
+  @override
+  String get landingRelativeLeftBack => '左后方';
+
+  @override
+  String get landingRelativeLeft => '左侧';
+
+  @override
+  String get landingRelativeLeftFront => '左前方';
+
+  @override
   String get waypointBearingLabel => '方位';
 
   @override
@@ -2099,7 +2123,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingFormatDegrees => '度数（0-360°）';
 
   @override
+  String get settingFormatBearing => '方位角';
+
+  @override
   String get settingFormatCardinal => '方位（N、NE …）';
+
+  @override
+  String get settingFormatNone => '不显示';
 
   @override
   String get settingBearingReference => '方向基准';

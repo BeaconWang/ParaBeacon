@@ -420,12 +420,16 @@ String? _settingOptionLabel(
           return l10n.settingTimeFormat12h;
       }
       return null;
-    case 'format': // heading / wind_direction
+    case 'format': // heading / wind_direction / landing waypoint
       switch (optionKey) {
         case 'degrees':
           return l10n.settingFormatDegrees;
+        case 'bearing':
+          return l10n.settingFormatBearing;
         case 'cardinal':
           return l10n.settingFormatCardinal;
+        case 'none':
+          return l10n.settingFormatNone;
       }
       return null;
     case 'bearingReference':
@@ -631,7 +635,7 @@ const List<ControlSetting> _landingWaypointSettings = [
   ControlSetting.choice(
     key: 'bearingReference',
     label: 'Direction',
-    defaultValue: 'absolute',
+    defaultValue: 'relative',
     options: {
       'absolute': 'Absolute (compass)',
       'relative': 'Relative (to heading)',
@@ -640,10 +644,11 @@ const List<ControlSetting> _landingWaypointSettings = [
   ControlSetting.choice(
     key: 'format',
     label: 'Format',
-    defaultValue: 'degrees',
+    defaultValue: 'cardinal',
     options: {
-      'degrees': 'Degrees (0-360°)',
+      'bearing': 'Bearing',
       'cardinal': 'Cardinal (N, NE, …)',
+      'none': 'None',
     },
   ),
 ];

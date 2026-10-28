@@ -10,6 +10,7 @@ import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'data_value_control.dart' show LandingReference;
 import 'decimal_places.dart';
+import 'waypoint_bearing_labels.dart';
 
 /// Navigation widget for a landing waypoint — either the user's **default**
 /// landing point or the **nearest** saved landing point.
@@ -35,8 +36,8 @@ class LandingWaypointControl extends StatefulWidget {
     this.showElevation = true,
     this.showGlide = true,
     this.showEta = true,
-    this.cardinal = false,
-    this.relative = false,
+    this.cardinal = true,
+    this.relative = true,
     this.arrowColor,
   });
 
@@ -179,10 +180,12 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
     final bearingText = bearingAngle == null
         ? '--'
         : widget.cardinal
-        ? _cardinal8(
-            bearingAngle,
-            chinese: Localizations.localeOf(context).languageCode == 'zh',
-          )
+        ? widget.relative
+              ? relativeBearingPositionLabel(l10n, bearingAngle)
+              : _cardinal8(
+                  bearingAngle,
+                  chinese: Localizations.localeOf(context).languageCode == 'zh',
+                )
         : '${formatDecimalValue(bearingAngle, autoDecimals: 0, range: DecimalPlacesScope.rangeOf(context, 'bearingDecimals'))}°';
 
     final altitudePrecision = DecimalPlacesScope.rangeOf(
@@ -840,6 +843,7 @@ class _CompassDial extends StatelessWidget {
               child: Text(
                 readout,
                 maxLines: 1,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: theme.colorScheme.onSurface,
                   fontSize: size * 0.2,

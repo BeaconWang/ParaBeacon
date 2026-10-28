@@ -385,7 +385,9 @@ class ControlWidget extends StatelessWidget {
         return LandingWaypointControl(
           reference: LandingReference.defaultPoint,
           showDistance: control.boolSetting('showDistance', fallback: true),
-          showBearing: control.boolSetting('showBearingDir', fallback: true),
+          showBearing:
+              control.boolSetting('showBearingDir', fallback: true) &&
+              control.setting('format') != 'none',
           showElevation: control.boolSetting('showElevation', fallback: true),
           showGlide: control.boolSetting('showGlide', fallback: true),
           showEta: control.boolSetting('showEta', fallback: true),
@@ -399,7 +401,9 @@ class ControlWidget extends StatelessWidget {
         return LandingWaypointControl(
           reference: LandingReference.nearest,
           showDistance: control.boolSetting('showDistance', fallback: true),
-          showBearing: control.boolSetting('showBearingDir', fallback: true),
+          showBearing:
+              control.boolSetting('showBearingDir', fallback: true) &&
+              control.setting('format') != 'none',
           showElevation: control.boolSetting('showElevation', fallback: true),
           showGlide: control.boolSetting('showGlide', fallback: true),
           showEta: control.boolSetting('showEta', fallback: true),

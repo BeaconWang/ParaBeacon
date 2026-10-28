@@ -144,6 +144,11 @@ class PlacedControl {
         }
       }
       saved.forEach((k, v) => settings[k.toString()] = v);
+      if ((typeId == 'default_landing_waypoint' ||
+              typeId == 'nearest_landing_waypoint') &&
+          settings['format'] == 'degrees') {
+        settings['format'] = 'cardinal';
+      }
       if (typeId == 'map') {
         const legacySettingKeys = {
           'showLastLandingLine': 'showNearestLandingLine',

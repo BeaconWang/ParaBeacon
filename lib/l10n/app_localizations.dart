@@ -3152,6 +3152,54 @@ abstract class AppLocalizations {
   /// **'Altitude Diff'**
   String get landingAltitudeDifferenceLabel;
 
+  /// No description provided for @landingRelativeAhead.
+  ///
+  /// In en, this message translates to:
+  /// **'Ahead'**
+  String get landingRelativeAhead;
+
+  /// No description provided for @landingRelativeRightFront.
+  ///
+  /// In en, this message translates to:
+  /// **'Right front'**
+  String get landingRelativeRightFront;
+
+  /// No description provided for @landingRelativeRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get landingRelativeRight;
+
+  /// No description provided for @landingRelativeRightBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Right back'**
+  String get landingRelativeRightBack;
+
+  /// No description provided for @landingRelativeBehind.
+  ///
+  /// In en, this message translates to:
+  /// **'Behind'**
+  String get landingRelativeBehind;
+
+  /// No description provided for @landingRelativeLeftBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Left back'**
+  String get landingRelativeLeftBack;
+
+  /// No description provided for @landingRelativeLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get landingRelativeLeft;
+
+  /// No description provided for @landingRelativeLeftFront.
+  ///
+  /// In en, this message translates to:
+  /// **'Left front'**
+  String get landingRelativeLeftFront;
+
   /// No description provided for @waypointBearingLabel.
   ///
   /// In en, this message translates to:
@@ -4166,11 +4214,23 @@ abstract class AppLocalizations {
   /// **'Degrees (0-360°)'**
   String get settingFormatDegrees;
 
+  /// No description provided for @settingFormatBearing.
+  ///
+  /// In en, this message translates to:
+  /// **'Bearing'**
+  String get settingFormatBearing;
+
   /// No description provided for @settingFormatCardinal.
   ///
   /// In en, this message translates to:
   /// **'Cardinal (N, NE, …)'**
   String get settingFormatCardinal;
+
+  /// No description provided for @settingFormatNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get settingFormatNone;
 
   /// No description provided for @settingBearingReference.
   ///

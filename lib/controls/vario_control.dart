@@ -36,14 +36,20 @@ class VarioControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final value = verticalSpeed ?? FlightDataProvider.of(context).verticalSpeed;
-    return CustomPaint(
-      painter: _VarioPainter(
-        value: value,
-        maxScale: maxScale,
-        liquidGlass: liquidGlass,
-        precision: DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
-        theme: Theme.of(context),
-        textScaler: MediaQuery.textScalerOf(context),
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: value, end: value),
+      duration: liquidGlass ? const Duration(milliseconds: 480) : Duration.zero,
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedValue, child) => CustomPaint(
+        painter: _VarioPainter(
+          value: animatedValue,
+          maxScale: maxScale,
+          liquidGlass: liquidGlass,
+          precision: DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
+          theme: Theme.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        ),
+        child: child,
       ),
       child: const SizedBox.expand(),
     );
@@ -106,10 +112,9 @@ double _markerY(double centerY, double value, double scale) =>
     centerY - (value / scale) * (centerY);
 
 double _liquidSurfaceY(Size size, double x, double markerY, double fillHeight) {
-  final amplitude = math.min(
-    2.5,
-    math.min(size.width * 0.045, fillHeight * 0.16),
-  );
+  final amplitude = math
+      .min(1.8, math.min(size.width * 0.035, fillHeight * 0.12))
+      .toDouble();
   final phase = size.width == 0 ? 0.0 : (x / size.width) * 2 * math.pi;
   return markerY + amplitude * math.sin(phase);
 }
@@ -234,21 +239,6 @@ class _VarioPainter extends CustomPainter {
         markerY,
       );
       canvas.drawPath(liquidPath, fillPaint);
-      final surface = _liquidSurfacePath(size, markerY, fillHeight);
-      canvas.drawPath(
-        surface,
-        Paint()
-          ..color = Colors.black.withAlpha(100)
-          ..strokeWidth = 3
-          ..style = PaintingStyle.stroke,
-      );
-      canvas.drawPath(
-        surface,
-        Paint()
-          ..color = Colors.white.withAlpha(200)
-          ..strokeWidth = 1.4
-          ..style = PaintingStyle.stroke,
-      );
     } else {
       final fillRect = clamped >= 0
           ? Rect.fromLTRB(0, centerY - fillHeight, size.width, centerY)
@@ -277,22 +267,20 @@ class _VarioPainter extends CustomPainter {
       ..strokeWidth = 2;
     canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), baseline);
 
-    // Contrasting waterline marks the current vertical-speed position.
-    if (!liquidGlass) {
-      final markerY = _markerY(centerY, clamped, scale);
-      final markerOutline = Paint()
-        ..color = Colors.black.withAlpha(210)
-        ..strokeWidth = 4;
-      canvas.drawLine(
-        Offset(0, markerY),
-        Offset(size.width, markerY),
-        markerOutline,
-      );
-      final marker = Paint()
-        ..color = Colors.white.withAlpha(240)
-        ..strokeWidth = 1.5;
-      canvas.drawLine(Offset(0, markerY), Offset(size.width, markerY), marker);
-    }
+    // Keep the current-speed marker straight even when the liquid edge ripples.
+    final markerY = _markerY(centerY, clamped, scale);
+    final markerOutline = Paint()
+      ..color = Colors.black.withAlpha(210)
+      ..strokeWidth = 4;
+    canvas.drawLine(
+      Offset(0, markerY),
+      Offset(size.width, markerY),
+      markerOutline,
+    );
+    final marker = Paint()
+      ..color = Colors.white.withAlpha(240)
+      ..strokeWidth = 1.5;
+    canvas.drawLine(Offset(0, markerY), Offset(size.width, markerY), marker);
 
     // Numeric readout.
     final tp = TextPainter(

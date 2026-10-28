@@ -102,7 +102,11 @@ void main() {
               child: const SizedBox(
                 width: 100,
                 height: 200,
-                child: VarioControl(verticalSpeed: 4, maxScale: 10),
+                child: VarioControl(
+                  verticalSpeed: 4,
+                  maxScale: 10,
+                  liquidGlass: true,
+                ),
               ),
             ),
           ),
@@ -112,8 +116,10 @@ void main() {
     await tester.pump();
 
     final waterline = await _pixelAt(tester, boundaryKey, 50, 60);
+    final straightAcrossVessel = await _pixelAt(tester, boundaryKey, 25, 60);
     final nearbyFill = await _pixelAt(tester, boundaryKey, 50, 54);
     expect(waterline, isNot(nearbyFill));
+    expect(straightAcrossVessel.g, greaterThan(0.8));
   });
 
   testWidgets('glass/liquid mode paints a translucent bottle housing', (
@@ -149,5 +155,43 @@ void main() {
     final standardBackground = await render(false);
     final glassBackground = await render(true);
     expect(glassBackground, isNot(standardBackground));
+  });
+
+  testWidgets('glass liquid fill eases toward a new speed value', (
+    tester,
+  ) async {
+    const boundaryKey = ValueKey<String>('vario-fluid-transition');
+
+    Future<void> render(double speed) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: RepaintBoundary(
+                key: boundaryKey,
+                child: SizedBox(
+                  width: 100,
+                  height: 200,
+                  child: VarioControl(
+                    verticalSpeed: speed,
+                    maxScale: 10,
+                    liquidGlass: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    await render(0);
+    await tester.pump();
+    await render(8);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 240));
+
+    final inFlightMarker = await _pixelAt(tester, boundaryKey, 50, 30);
+    expect(inFlightMarker.g, greaterThan(0.8));
   });
 }

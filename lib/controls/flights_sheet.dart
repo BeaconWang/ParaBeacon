@@ -349,6 +349,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
               ),
             ),
       isThreeLine: route.isNotEmpty,
+      titleAlignment: ListTileTitleAlignment.center,
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

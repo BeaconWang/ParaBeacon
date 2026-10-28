@@ -7,9 +7,9 @@ import 'decimal_places.dart';
 ///
 /// The column represents vertical speed (climb/sink) in m/s on a symmetric
 /// scale (default +/-[maxScale] m/s). The bar fills from the center baseline:
-/// climb fills upward, sink fills downward. Colors follow XCTrack's mapping:
-/// strong climb is red, moderate climb orange, gentle climb green, and sink
-/// is blue.
+/// climb fills upward, sink fills downward. Fill colors are interpolated across
+/// fixed vertical-speed stops from blue-black sink through gray to red-purple
+/// climb.
 ///
 /// Reads from the unified [FlightDataProvider]. An optional [verticalSpeed]
 /// override can be supplied (e.g. for tests/previews).
@@ -39,17 +39,56 @@ class VarioControl extends StatelessWidget {
   }
 }
 
-/// Maps a vertical speed (m/s) to a fill color, following XCTrack's scheme.
+/// Fixed vertical-speed stops used to color the bar continuously.
+const _varioColorStops = <(double, Color)>[
+  (-10.0, Color(0xFF000B1E)), // blue-black
+  (-7.0, Color(0xFF0D47A1)), // dark blue
+  (-3.0, Color(0xFF00BCD4)), // cyan blue
+  (0.0, Color(0xFF9E9E9E)), // gray
+  (3.0, Color(0xFF4CAF50)), // green
+  (7.0, Color(0xFFF44336)), // red
+  (10.0, Color(0xFF4A0033)), // dark purplish red
+];
+
+/// Maps vertical speed (m/s) to a linearly interpolated fill color.
 Color varioColorFor(double v) {
-  if (v >= 3.0) {
-    return const Color(0xFFFFA0A0); // strong climb - red
-  } else if (v >= 2.0) {
-    return const Color(0xFFFFD0A0); // moderate climb - orange
-  } else if (v >= 0.0) {
-    return const Color(0xFFA0FFA0); // gentle climb - green
-  } else {
-    return const Color(0xFFA0B0FF); // sink - blue
+  if (v.isNaN) return _varioColorStops[3].$2;
+  if (v <= _varioColorStops.first.$1) return _varioColorStops.first.$2;
+  if (v >= _varioColorStops.last.$1) return _varioColorStops.last.$2;
+
+  for (int i = 0; i < _varioColorStops.length - 1; i++) {
+    final lower = _varioColorStops[i];
+    final upper = _varioColorStops[i + 1];
+    if (v == lower.$1) return lower.$2;
+    if (v <= upper.$1) {
+      final t = (v - lower.$1) / (upper.$1 - lower.$1);
+      return Color.lerp(lower.$2, upper.$2, t)!;
+    }
   }
+  return _varioColorStops.last.$2;
+}
+
+LinearGradient _varioFillGradient(double maxScale) {
+  final scale = maxScale > 0 && maxScale.isFinite ? maxScale : 1.0;
+  final colors = <Color>[varioColorFor(scale)];
+  final stops = <double>[0.0];
+
+  for (final stop in _varioColorStops.reversed) {
+    final speed = stop.$1;
+    if (speed < scale && speed > -scale) {
+      colors.add(stop.$2);
+      stops.add((scale - speed) / (2 * scale));
+    }
+  }
+
+  colors.add(varioColorFor(-scale));
+  stops.add(1.0);
+  return LinearGradient(
+    colors: colors,
+    stops: stops,
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
 }
 
 class _VarioPainter extends CustomPainter {
@@ -76,8 +115,9 @@ class _VarioPainter extends CustomPainter {
     final clamped = value.clamp(-maxScale, maxScale);
     final fillHeight = (clamped.abs() / maxScale) * (size.height / 2);
 
-    // Fill bar from center.
-    final fillPaint = Paint()..color = varioColorFor(value);
+    // Fill bar from center with a gradient mapped to the full speed scale.
+    final fillPaint = Paint()
+      ..shader = _varioFillGradient(maxScale).createShader(Offset.zero & size);
     final Rect fillRect;
     if (clamped >= 0) {
       // Climb: fill upward from center.

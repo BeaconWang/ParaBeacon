@@ -759,7 +759,13 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     final derivedMetrics = <(String, String)>[
       (l10n.dataMonitorGlideRatio, glideRatio),
       (l10n.dataMonitorHeading, _cardinal8(data.heading)),
-      (l10n.dataMonitorWindDir, _cardinal8(data.windDirection)),
+      (
+        l10n.dataMonitorWindDir,
+        _cardinal8(
+          data.windDirection,
+          chinese: Localizations.localeOf(context).languageCode == 'zh',
+        ),
+      ),
       (l10n.dataMonitorBaroGpsDelta, altitudeDelta),
       (l10n.dataMonitorTotalEnergy, '$totalEnergyAltitude m'),
     ];
@@ -951,8 +957,10 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     );
   }
 
-  String _cardinal8(double degrees) {
-    const labels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  String _cardinal8(double degrees, {bool chinese = false}) {
+    const englishLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const chineseLabels = ['北', '东北', '东', '东南', '南', '西南', '西', '西北'];
+    final labels = chinese ? chineseLabels : englishLabels;
     final normalized = ((degrees % 360) + 360) % 360;
     return labels[((normalized / 45).round()) % 8];
   }

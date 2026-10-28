@@ -115,7 +115,13 @@ class DataMonitorControl extends StatelessWidget {
         ),
       ),
       _Row(l10n.dataMonitorHeading, _cardinal8(d.heading)),
-      _Row(l10n.dataMonitorWindDir, _cardinal8(d.windDirection)),
+      _Row(
+        l10n.dataMonitorWindDir,
+        _cardinal8(
+          d.windDirection,
+          chinese: Localizations.localeOf(context).languageCode == 'zh',
+        ),
+      ),
       _Row(
         l10n.dataMonitorBaroGpsDelta,
         _altitudeDelta(
@@ -296,8 +302,10 @@ class DataMonitorControl extends StatelessWidget {
   }
 
   /// 8-point compass label for a bearing in degrees.
-  static String _cardinal8(double degrees) {
-    const labels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  static String _cardinal8(double degrees, {bool chinese = false}) {
+    const englishLabels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const chineseLabels = ['北', '东北', '东', '东南', '南', '西南', '西', '西北'];
+    final labels = chinese ? chineseLabels : englishLabels;
     final normalized = ((degrees % 360) + 360) % 360;
     final index = ((normalized / 45.0).round()) % 8;
     return labels[index];

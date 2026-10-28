@@ -816,7 +816,10 @@ class WindDirectionControl extends StatelessWidget {
     final data = FlightDataProvider.of(context);
     final String value;
     if (cardinal) {
-      value = _cardinal8(data.windDirection);
+      value = _cardinal8(
+        data.windDirection,
+        chinese: Localizations.localeOf(context).languageCode == 'zh',
+      );
     } else {
       value = _formatDegrees(
         data.windDirection,

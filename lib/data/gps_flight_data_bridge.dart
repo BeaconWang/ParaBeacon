@@ -51,17 +51,14 @@ class GpsFlightDataBridge {
   final Duration updateInterval;
 
   /// The shared flight-session state. While a flight is in progress the GPS
-  /// stream is (re)opened in a *background-resilient* configuration so the
-  /// track keeps recording with the screen off or the app backgrounded:
+  /// stream is (re)opened in a *background-resilient* configuration:
   ///   * Android — a location foreground service with a persistent
-  ///     notification (holding a wake lock), which is what actually keeps GPS
-  ///     and the recording loop alive once the activity is no longer in the
-  ///     foreground.
-  ///   * iOS — background location updates (`allowBackgroundLocationUpdates`,
-  ///     never auto-paused), backed by the `location` UIBackgroundMode and, if
-  ///     the user granted it, "Always" authorization.
-  /// When no flight is in progress the stream runs in the lightweight
-  /// foreground-only configuration to save battery.
+  ///     notification and wake lock.
+  ///   * iOS — background location updates, backed by the `location`
+  ///     UIBackgroundMode and, if granted, "Always" authorization.
+  /// Android also uses its foreground service whenever the app leaves the
+  /// foreground. Without it, Android throttles background location updates,
+  /// which can prevent auto-flight detection from starting.
   final FlightState flightState;
 
   StreamSubscription<Position>? _sub;
@@ -70,11 +67,12 @@ class GpsFlightDataBridge {
   bool _attached = false;
   bool _hadFix = false;
 
-  /// Whether the currently-open stream is running in the background-resilient
-  /// configuration (foreground service on Android, background updates on iOS).
-  /// Tracks [flightState] so a state change only tears down / reopens the
-  /// native stream when the required configuration actually changes.
+  /// Whether the currently-open stream is using background-resilient settings.
   bool _backgroundMode = false;
+  bool _appIsBackgrounded = false;
+
+  bool get _requiresBackgroundMode =>
+      flightState.isFlying || (Platform.isAndroid && _appIsBackgrounded);
 
   /// Timestamp of the last position we forwarded downstream, used by the
   /// app-level throttle to enforce [updateInterval] on every platform.
@@ -101,10 +99,9 @@ class GpsFlightDataBridge {
     if (kIsWeb) return;
     if (!(Platform.isAndroid || Platform.isIOS)) return;
 
-    // React to flight start/stop: entering a flight upgrades the stream to the
-    // background-resilient configuration (foreground service / background
-    // updates) so the track keeps recording with the screen off, and leaving
-    // it drops back to the lightweight foreground-only stream.
+    // React to flight start/stop and app lifecycle changes so Android can
+    // switch to a location foreground service before background throttling
+    // pauses the stream. iOS only needs background updates during a flight.
     flightState.addListener(_onFlightStateChanged);
 
     try {
@@ -130,6 +127,21 @@ class GpsFlightDataBridge {
     } catch (_) {
       // Location unavailable: silently give up; the app keeps running on
       // whatever the BLE sensor / simulator is providing.
+    }
+  }
+
+  /// Updates the Android location service when the app leaves or returns to the
+  /// foreground. `inactive` is included so the service starts before Android
+  /// applies background location throttling.
+  void onAppLifecycleStateChanged(AppLifecycleState state) {
+    if (!Platform.isAndroid) return;
+
+    final appIsBackgrounded = state != AppLifecycleState.resumed;
+    if (_appIsBackgrounded == appIsBackgrounded) return;
+    _appIsBackgrounded = appIsBackgrounded;
+
+    if (_sub != null && _requiresBackgroundMode != _backgroundMode) {
+      _startStream();
     }
   }
 
@@ -161,9 +173,9 @@ class GpsFlightDataBridge {
   void _startStream() {
     _sub?.cancel();
     _lastEmit = null;
-    // Snapshot the configuration this stream is opened with so a later flight
-    // start/stop knows whether the native stream has to be reopened.
-    _backgroundMode = flightState.isFlying;
+    // Snapshot the configuration this stream is opened with so flight or app
+    // lifecycle changes can reopen it only when the native mode must change.
+    _backgroundMode = _requiresBackgroundMode;
     _sub =
         Geolocator.getPositionStream(
           locationSettings: _buildLocationSettings(background: _backgroundMode),
@@ -184,19 +196,15 @@ class GpsFlightDataBridge {
 
   /// Reacts to a flight starting or stopping.
   ///
-  /// Starting a flight upgrades the location stream to the background-resilient
-  /// configuration (Android foreground service / iOS background updates) so
-  /// the track keeps recording with the screen off or the app backgrounded;
-  /// stopping drops back to the lightweight foreground-only stream. The native
-  /// stream is only torn down and reopened when the required configuration
-  /// actually changes, so toggling other flight state (e.g. auto-detect) is a
-  /// no-op here.
+  /// Starting a flight upgrades the stream to background-resilient settings.
+  /// Stopping drops back to foreground-only settings only when the Android app
+  /// itself is still in the foreground. Other flight-state changes are a no-op.
   void _onFlightStateChanged() {
     // Nothing to do if we never managed to open a stream (unsupported
     // platform, permission denied, or location services off — the
     // service-status watcher will open it later in whatever mode is current).
     if (_sub == null) return;
-    if (flightState.isFlying == _backgroundMode) return;
+    if (_requiresBackgroundMode == _backgroundMode) return;
     // Re-request permission best-effort when entering a flight: background /
     // "Always" location is what actually keeps the foreground service and
     // background updates delivering fixes. Fire-and-forget so a slow prompt
@@ -231,9 +239,9 @@ class GpsFlightDataBridge {
   /// platforms (e.g. iOS) whose native stream is distance-driven rather than
   /// time-driven.
   ///
-  /// When [background] is true (a flight is in progress) the stream is
-  /// configured to survive the screen turning off and the app being
-  /// backgrounded:
+  /// When [background] is true (a flight is in progress, or Android is
+  /// backgrounded) the stream is configured to survive the screen turning off
+  /// and the app being backgrounded:
   ///   * Android — starts a location foreground service with a persistent,
   ///     non-dismissible notification and holds a wake lock so the CPU (and
   ///     therefore GPS + the recording loop) keeps running.

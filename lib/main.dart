@@ -315,6 +315,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _gpsBridge.onAppLifecycleStateChanged(state);
     if (state == AppLifecycleState.resumed) {
       // Re-assert fullscreen: some system events (permission prompts, task
       // switcher, etc.) can bring the status/nav bars back.

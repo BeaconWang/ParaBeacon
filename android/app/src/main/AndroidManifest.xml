@@ -28,9 +28,9 @@
 
     <!-- Background execution: keep GPS/vario/BLE working with the screen off or
          the app backgrounded. WAKE_LOCK keeps the CPU alive (also used by the
-         keep-awake wakelock). When a flight starts the geolocator stream is
-         (re)opened with a foreground-service configuration, which starts the
-         plugin's GeolocatorLocationService (declared with
+         keep-awake wakelock). During a flight, or whenever the app leaves the
+         foreground, the geolocator stream is (re)opened with a foreground-service
+         configuration, which starts the plugin's GeolocatorLocationService (declared with
          foregroundServiceType="location" in the geolocator_android manifest and
          merged in here) so location + recording survive the screen turning off.
          FOREGROUND_SERVICE / FOREGROUND_SERVICE_LOCATION authorize that service

@@ -816,7 +816,9 @@ class _CompassDial extends StatelessWidget {
               angleDegrees: angle,
               relative: relative,
               ring: theme.colorScheme.outlineVariant.withAlpha(140),
-              arrow: theme.colorScheme.primary,
+              arrow: const Color(0xFF4C9AFF),
+              arrowOutline: theme.colorScheme.surface.withAlpha(140),
+              hub: theme.colorScheme.onSurface.withAlpha(200),
               tick: theme.colorScheme.onSurfaceVariant.withAlpha(150),
             ),
             child: Center(
@@ -855,6 +857,8 @@ class _CompassPainter extends CustomPainter {
     required this.relative,
     required this.ring,
     required this.arrow,
+    required this.arrowOutline,
+    required this.hub,
     required this.tick,
   });
 
@@ -862,12 +866,15 @@ class _CompassPainter extends CustomPainter {
   final bool relative;
   final Color ring;
   final Color arrow;
+  final Color arrowOutline;
+  final Color hub;
   final Color tick;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
+    if (radius <= 1) return;
 
     // Outer ring.
     final ringPaint = Paint()
@@ -876,61 +883,85 @@ class _CompassPainter extends CustomPainter {
       ..color = ring;
     canvas.drawCircle(center, radius - ringPaint.strokeWidth / 2, ringPaint);
 
-    // Cardinal/ahead ticks.
+    // The top marker identifies north in absolute mode and forward in relative mode.
     final tickPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = math.max(1.0, radius * 0.045)
       ..strokeCap = StrokeCap.round
       ..color = tick;
-    for (var i = 0; i < 4; i++) {
+    for (var i = 1; i < 4; i++) {
       final theta = i * math.pi / 2 - math.pi / 2;
       final outer = center + Offset(math.cos(theta), math.sin(theta)) * radius;
-      final innerLen = i == 0 ? radius * 0.78 : radius * 0.86;
       final inner =
-          center + Offset(math.cos(theta), math.sin(theta)) * innerLen;
+          center + Offset(math.cos(theta), math.sin(theta)) * radius * 0.86;
       canvas.drawLine(inner, outer, tickPaint);
     }
+    final topY = center.dy - radius;
+    final referenceMarker = Path()
+      ..moveTo(center.dx, topY + radius * 0.16)
+      ..lineTo(center.dx - radius * 0.09, topY)
+      ..lineTo(center.dx + radius * 0.09, topY)
+      ..close();
+    canvas.drawPath(
+      referenceMarker,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = tick,
+    );
 
+    canvas.drawCircle(
+      center,
+      (radius * 0.06).clamp(2.0, 6.0),
+      Paint()..color = hub,
+    );
     if (angleDegrees == null) return;
 
-    // Arrow pointing to the target. 0° = top; clockwise.
+    // Match the two-tone dart pointer used by the compass control.
+    // 0° = top; clockwise.
     final theta = (angleDegrees! - 90) * math.pi / 180;
-    final dir = Offset(math.cos(theta), math.sin(theta));
-    final perp = Offset(-dir.dy, dir.dx);
-    final tip = center + dir * (radius * 0.62);
-    final tailLen = radius * 0.5;
-    final tail = center - dir * tailLen;
-    final headHalf = radius * 0.2;
-    final headBase = center + dir * (radius * 0.28);
+    const wingAngle = 140.0 * math.pi / 180.0;
+    final arrowRadius = radius * 0.82;
+    final wingRadius = arrowRadius * 0.9;
+    final tailRadius = arrowRadius * 0.4;
 
-    final arrowPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..color = arrow;
-    final linePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = math.max(1.6, radius * 0.09)
-      ..strokeCap = StrokeCap.round
-      ..color = arrow;
+    Offset polar(double angle, double r) => Offset(
+      center.dx + r * math.cos(angle),
+      center.dy + r * math.sin(angle),
+    );
 
-    // Shaft from tail to the base of the head.
-    canvas.drawLine(tail, headBase, linePaint);
+    final tip = polar(theta, arrowRadius);
+    final leftWing = polar(theta - wingAngle, wingRadius);
+    final rightWing = polar(theta + wingAngle, wingRadius);
+    final tail = polar(theta + math.pi, tailRadius);
+    final darkColor = Color.lerp(arrow, Colors.black, 0.28)!;
 
-    // Triangular arrowhead.
-    final head = Path()
+    final leftHalf = Path()
       ..moveTo(tip.dx, tip.dy)
-      ..lineTo(
-        headBase.dx + perp.dx * headHalf,
-        headBase.dy + perp.dy * headHalf,
-      )
-      ..lineTo(
-        headBase.dx - perp.dx * headHalf,
-        headBase.dy - perp.dy * headHalf,
-      )
+      ..lineTo(leftWing.dx, leftWing.dy)
+      ..lineTo(tail.dx, tail.dy)
       ..close();
-    canvas.drawPath(head, arrowPaint);
+    final rightHalf = Path()
+      ..moveTo(tip.dx, tip.dy)
+      ..lineTo(rightWing.dx, rightWing.dy)
+      ..lineTo(tail.dx, tail.dy)
+      ..close();
+    canvas.drawPath(leftHalf, Paint()..color = arrow);
+    canvas.drawPath(rightHalf, Paint()..color = darkColor);
 
-    // Pivot dot.
-    canvas.drawCircle(center, math.max(1.5, radius * 0.07), arrowPaint);
+    final outline = Path()
+      ..moveTo(tip.dx, tip.dy)
+      ..lineTo(leftWing.dx, leftWing.dy)
+      ..lineTo(tail.dx, tail.dy)
+      ..lineTo(rightWing.dx, rightWing.dy)
+      ..close();
+    canvas.drawPath(
+      outline,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = (radius * 0.012).clamp(0.8, 2.0)
+        ..strokeJoin = StrokeJoin.round
+        ..color = arrowOutline,
+    );
   }
 
   @override
@@ -939,6 +970,8 @@ class _CompassPainter extends CustomPainter {
       old.relative != relative ||
       old.ring != ring ||
       old.arrow != arrow ||
+      old.arrowOutline != arrowOutline ||
+      old.hub != hub ||
       old.tick != tick;
 }
 

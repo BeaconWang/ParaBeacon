@@ -2204,6 +2204,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowAutoDetect => '显示自动检测复选框';
 
   @override
+  String get settingShowFlightTime => '显示飞行时间';
+
+  @override
+  String get settingShowRecordingStats => '显示记录点数和距离';
+
+  @override
   String get settingShowDistance => '显示距离';
 
   @override

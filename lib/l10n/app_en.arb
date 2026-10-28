@@ -871,6 +871,8 @@
   "settingBearingRelative": "Relative (to heading)",
   "settingShowSeconds": "Show seconds",
   "settingShowAutoDetect": "Show auto-detect checkbox",
+  "settingShowFlightTime": "Show flight time",
+  "settingShowRecordingStats": "Show recording points and distance",
   "settingShowDistance": "Show distance",
   "settingShowBearingMetric": "Show bearing",
   "settingShowElevation": "Show elevation change",

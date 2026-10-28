@@ -4370,6 +4370,18 @@ abstract class AppLocalizations {
   /// **'Show auto-detect checkbox'**
   String get settingShowAutoDetect;
 
+  /// No description provided for @settingShowFlightTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Show flight time'**
+  String get settingShowFlightTime;
+
+  /// No description provided for @settingShowRecordingStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Show recording points and distance'**
+  String get settingShowRecordingStats;
+
   /// No description provided for @settingShowDistance.
   ///
   /// In en, this message translates to:

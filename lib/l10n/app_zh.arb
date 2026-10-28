@@ -796,6 +796,8 @@
   "settingBearingRelative": "相对方位（相对航向）",
   "settingShowSeconds": "显示秒",
   "settingShowAutoDetect": "显示自动检测复选框",
+  "settingShowFlightTime": "显示飞行时间",
+  "settingShowRecordingStats": "显示记录点数和距离",
   "settingShowDistance": "显示距离",
   "settingShowBearingMetric": "显示方位",
   "settingShowElevation": "显示高度差",

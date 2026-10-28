@@ -182,6 +182,10 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowSeconds;
     case 'showAutoDetect':
       return l10n.settingShowAutoDetect;
+    case 'showFlightTime':
+      return l10n.settingShowFlightTime;
+    case 'showRecordingStats':
+      return l10n.settingShowRecordingStats;
     case 'showDistance':
       return l10n.settingShowDistance;
     case 'showBearingDir':

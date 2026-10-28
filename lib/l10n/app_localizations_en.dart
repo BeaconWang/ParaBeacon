@@ -2298,6 +2298,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowAutoDetect => 'Show auto-detect checkbox';
 
   @override
+  String get settingShowFlightTime => 'Show flight time';
+
+  @override
+  String get settingShowRecordingStats => 'Show recording points and distance';
+
+  @override
   String get settingShowDistance => 'Show distance';
 
   @override

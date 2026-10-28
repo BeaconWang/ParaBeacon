@@ -141,8 +141,8 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlTakeoffWaypoint;
     case 'default_landing_waypoint':
       return l10n.controlDefaultLandingWaypoint;
-    case 'last_landing_waypoint':
-      return l10n.controlLastLandingWaypoint;
+    case 'nearest_landing_waypoint':
+      return l10n.controlNearestLandingWaypoint;
     case 'compass_wind':
       return l10n.controlCompassWind;
     default:
@@ -401,7 +401,7 @@ class ControlCatalog {
           defaultRows: 3,
         ),
         ControlType(
-          id: 'last_landing_waypoint',
+          id: 'nearest_landing_waypoint',
           label: 'Nearest Landing Point',
           icon: Icons.flight_land,
           kind: ControlKind.widget,

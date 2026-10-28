@@ -1559,7 +1559,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlDefaultLandingWaypoint => '默认降落点';
 
   @override
-  String get controlLastLandingWaypoint => '最近降落点';
+  String get controlNearestLandingWaypoint => '最近降落点';
 
   @override
   String get takeoffPointLabel => '起飞点';
@@ -2287,7 +2287,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowDefaultLandingLine => '显示到默认降落点的连线';
 
   @override
-  String get settingShowLastLandingLine => '显示到距离最近降落点的连线';
+  String get settingShowNearestLandingLine => '显示到距离最近降落点的连线';
 
   @override
   String get settingTakeoffPointColor => '起飞点标记颜色';
@@ -2296,7 +2296,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingDefaultLandingPointColor => '默认降落点标记颜色';
 
   @override
-  String get settingLastLandingPointColor => '距离最近降落点标记颜色';
+  String get settingNearestLandingPointColor => '距离最近降落点标记颜色';
 
   @override
   String get settingTakeoffLineColor => '起飞点连线颜色';
@@ -2305,7 +2305,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingDefaultLandingLineColor => '默认降落点连线颜色';
 
   @override
-  String get settingLastLandingLineColor => '距离最近降落点连线颜色';
+  String get settingNearestLandingLineColor => '距离最近降落点连线颜色';
 
   @override
   String get colorPalettePreferencesTitle => '颜色选择器调色板';

@@ -173,4 +173,23 @@ void main() {
     expect(control.boolSetting('showNearestLandingPoint'), isFalse);
     expect(mapType.id, control.type.id);
   });
+
+  test('legacy LastLanding map setting keys migrate to NearestLanding keys', () {
+    final control = PlacedControl.fromJson({
+      'typeId': 'map',
+      'settings': {
+        'showLastLandingLine': true,
+        'showNearestLandingLine': false,
+        'lastLandingPointColor': 0xFF123456,
+        'lastLandingLineColor': 0xFF654321,
+      },
+    })!;
+
+    expect(control.boolSetting('showNearestLandingLine'), isFalse);
+    expect(control.settings['nearestLandingPointColor'], 0xFF123456);
+    expect(control.settings['nearestLandingLineColor'], 0xFF654321);
+    expect(control.settings.containsKey('showLastLandingLine'), isFalse);
+    expect(control.settings.containsKey('lastLandingPointColor'), isFalse);
+    expect(control.settings.containsKey('lastLandingLineColor'), isFalse);
+  });
 }

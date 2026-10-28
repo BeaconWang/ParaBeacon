@@ -83,7 +83,7 @@ class _LandingPointsSheet extends StatelessWidget {
                         showDefaultLandingPoint: false,
                         showNearestLandingPoint: false,
                         showDefaultLandingLine: false,
-                        showLastLandingLine: false,
+                        showNearestLandingLine: false,
                         showScale: false,
                         showLegend: false,
                         showZoomLevel: false,

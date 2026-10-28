@@ -229,13 +229,13 @@ class MapControl extends StatefulWidget {
   final bool showDefaultLandingPoint;
   final bool showNearestLandingPoint;
   final bool showDefaultLandingLine;
-  final bool showLastLandingLine;
+  final bool showNearestLandingLine;
   final Color takeoffPointColor;
   final Color defaultLandingPointColor;
-  final Color lastLandingPointColor;
+  final Color nearestLandingPointColor;
   final Color takeoffLineColor;
   final Color defaultLandingLineColor;
-  final Color lastLandingLineColor;
+  final Color nearestLandingLineColor;
 
   /// Draw the ground-distance scale ruler (bottom-left).
   final bool showScale;
@@ -290,13 +290,13 @@ class MapControl extends StatefulWidget {
     this.showDefaultLandingPoint = true,
     this.showNearestLandingPoint = true,
     this.showDefaultLandingLine = false,
-    this.showLastLandingLine = false,
+    this.showNearestLandingLine = false,
     this.takeoffPointColor = const Color(0xFF43A047),
     this.defaultLandingPointColor = const Color(0xFFF44336),
-    this.lastLandingPointColor = const Color(0xFF9C27B0),
+    this.nearestLandingPointColor = const Color(0xFF9C27B0),
     this.takeoffLineColor = const Color(0xFF43A047),
     this.defaultLandingLineColor = const Color(0xFFF44336),
-    this.lastLandingLineColor = const Color(0xFF9C27B0),
+    this.nearestLandingLineColor = const Color(0xFF9C27B0),
     this.showScale = true,
     this.showLegend = false,
     this.showZoomLevel = true,
@@ -698,14 +698,14 @@ class _MapControlState extends State<MapControl> {
       );
     }
     if (hasFix &&
-        widget.showLastLandingLine &&
+        widget.showNearestLandingLine &&
         nearestLandingPos != null &&
         (nearestIsDifferent || !widget.showDefaultLandingLine)) {
       connectionLines.add(
         _buildConnectionLine(
           renderPos,
           nearestLandingPos,
-          widget.lastLandingLineColor,
+          widget.nearestLandingLineColor,
         ),
       );
     }
@@ -744,7 +744,7 @@ class _MapControlState extends State<MapControl> {
           alignment: _savedPointMarkerAlignment,
           child: _SavedPointMarker(
             label: nearestLanding!.name,
-            color: widget.lastLandingPointColor,
+            color: widget.nearestLandingPointColor,
             heart: false,
           ),
         ),

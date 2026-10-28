@@ -3110,11 +3110,11 @@ abstract class AppLocalizations {
   /// **'Default Landing Point'**
   String get controlDefaultLandingWaypoint;
 
-  /// No description provided for @controlLastLandingWaypoint.
+  /// No description provided for @controlNearestLandingWaypoint.
   ///
   /// In en, this message translates to:
   /// **'Nearest Landing Point'**
-  String get controlLastLandingWaypoint;
+  String get controlNearestLandingWaypoint;
 
   /// No description provided for @takeoffPointLabel.
   ///
@@ -4538,11 +4538,11 @@ abstract class AppLocalizations {
   /// **'Show line to default landing point'**
   String get settingShowDefaultLandingLine;
 
-  /// No description provided for @settingShowLastLandingLine.
+  /// No description provided for @settingShowNearestLandingLine.
   ///
   /// In en, this message translates to:
   /// **'Show line to nearest landing point'**
-  String get settingShowLastLandingLine;
+  String get settingShowNearestLandingLine;
 
   /// No description provided for @settingTakeoffPointColor.
   ///
@@ -4556,11 +4556,11 @@ abstract class AppLocalizations {
   /// **'Default landing marker color'**
   String get settingDefaultLandingPointColor;
 
-  /// No description provided for @settingLastLandingPointColor.
+  /// No description provided for @settingNearestLandingPointColor.
   ///
   /// In en, this message translates to:
   /// **'Nearest landing marker color'**
-  String get settingLastLandingPointColor;
+  String get settingNearestLandingPointColor;
 
   /// No description provided for @settingTakeoffLineColor.
   ///
@@ -4574,11 +4574,11 @@ abstract class AppLocalizations {
   /// **'Default landing line color'**
   String get settingDefaultLandingLineColor;
 
-  /// No description provided for @settingLastLandingLineColor.
+  /// No description provided for @settingNearestLandingLineColor.
   ///
   /// In en, this message translates to:
   /// **'Nearest landing line color'**
-  String get settingLastLandingLineColor;
+  String get settingNearestLandingLineColor;
 
   /// No description provided for @colorPalettePreferencesTitle.
   ///

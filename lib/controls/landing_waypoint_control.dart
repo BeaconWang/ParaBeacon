@@ -12,7 +12,7 @@ import 'data_value_control.dart' show LandingReference;
 import 'decimal_places.dart';
 
 /// Navigation widget for a landing waypoint — either the user's **default**
-/// landing point or the **last** (nearest saved) landing point.
+/// landing point or the **nearest** saved landing point.
 ///
 /// It shows, for the selected destination, any combination of:
 /// distance, bearing, elevation change (height above the point), required
@@ -234,7 +234,7 @@ class _LandingWaypointControlState extends State<LandingWaypointControl> {
     ];
 
     final title = switch (widget.reference) {
-      LandingReference.nearest => l10n.controlLastLandingWaypoint,
+      LandingReference.nearest => l10n.controlNearestLandingWaypoint,
       LandingReference.defaultPoint => l10n.controlDefaultLandingWaypoint,
     };
     final headerIcon = widget.reference == LandingReference.defaultPoint

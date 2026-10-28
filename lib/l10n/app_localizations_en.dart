@@ -1630,7 +1630,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlDefaultLandingWaypoint => 'Default Landing Point';
 
   @override
-  String get controlLastLandingWaypoint => 'Nearest Landing Point';
+  String get controlNearestLandingWaypoint => 'Nearest Landing Point';
 
   @override
   String get takeoffPointLabel => 'HOME';
@@ -2376,7 +2376,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show line to default landing point';
 
   @override
-  String get settingShowLastLandingLine => 'Show line to nearest landing point';
+  String get settingShowNearestLandingLine =>
+      'Show line to nearest landing point';
 
   @override
   String get settingTakeoffPointColor => 'Take-off marker color';
@@ -2385,7 +2386,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingDefaultLandingPointColor => 'Default landing marker color';
 
   @override
-  String get settingLastLandingPointColor => 'Nearest landing marker color';
+  String get settingNearestLandingPointColor => 'Nearest landing marker color';
 
   @override
   String get settingTakeoffLineColor => 'Take-off line color';
@@ -2394,7 +2395,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingDefaultLandingLineColor => 'Default landing line color';
 
   @override
-  String get settingLastLandingLineColor => 'Nearest landing line color';
+  String get settingNearestLandingLineColor => 'Nearest landing line color';
 
   @override
   String get colorPalettePreferencesTitle => 'Color picker palette';

@@ -121,8 +121,11 @@ class PlacedControl {
   /// Rebuilds a control from [toJson] output. Returns null if the type id is
   /// no longer known (e.g. a control removed from the catalog).
   static PlacedControl? fromJson(Map<String, dynamic> json) {
-    final typeId = json['typeId'] as String?;
-    if (typeId == null) return null;
+    final savedTypeId = json['typeId'] as String?;
+    if (savedTypeId == null) return null;
+    final typeId = savedTypeId == 'last_landing_waypoint'
+        ? 'nearest_landing_waypoint'
+        : savedTypeId;
     final type = ControlCatalog.byId(typeId);
     if (type == null) return null;
 
@@ -141,6 +144,21 @@ class PlacedControl {
         }
       }
       saved.forEach((k, v) => settings[k.toString()] = v);
+      if (typeId == 'map') {
+        const legacySettingKeys = {
+          'showLastLandingLine': 'showNearestLandingLine',
+          'lastLandingPointColor': 'nearestLandingPointColor',
+          'lastLandingLineColor': 'nearestLandingLineColor',
+        };
+        for (final entry in legacySettingKeys.entries) {
+          if (saved.containsKey(entry.key)) {
+            if (!saved.containsKey(entry.value)) {
+              settings[entry.value] = saved[entry.key];
+            }
+            settings.remove(entry.key);
+          }
+        }
+      }
     }
 
     return PlacedControl(

@@ -51,6 +51,18 @@ void main() {
     expect(restored.currentPage, 1);
   });
 
+  test('legacy last landing widget ID migrates to nearest landing', () {
+    final restored = PlacedControl.fromJson({
+      'instanceId': 'legacy-nearest',
+      'typeId': 'last_landing_waypoint',
+      'settings': {'showEta': false},
+    })!;
+
+    expect(restored.type.id, 'nearest_landing_waypoint');
+    expect(restored.settings['showEta'], isFalse);
+    expect(restored.toJson()['typeId'], 'nearest_landing_waypoint');
+  });
+
   test('rejects unsupported versions and malformed layouts', () {
     expect(
       () => io.parseBundle(

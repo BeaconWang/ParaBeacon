@@ -254,20 +254,20 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowNearestLandingPoint;
     case 'showDefaultLandingLine':
       return l10n.settingShowDefaultLandingLine;
-    case 'showLastLandingLine':
-      return l10n.settingShowLastLandingLine;
+    case 'showNearestLandingLine':
+      return l10n.settingShowNearestLandingLine;
     case 'takeoffPointColor':
       return l10n.settingTakeoffPointColor;
     case 'defaultLandingPointColor':
       return l10n.settingDefaultLandingPointColor;
-    case 'lastLandingPointColor':
-      return l10n.settingLastLandingPointColor;
+    case 'nearestLandingPointColor':
+      return l10n.settingNearestLandingPointColor;
     case 'takeoffLineColor':
       return l10n.settingTakeoffLineColor;
     case 'defaultLandingLineColor':
       return l10n.settingDefaultLandingLineColor;
-    case 'lastLandingLineColor':
-      return l10n.settingLastLandingLineColor;
+    case 'nearestLandingLineColor':
+      return l10n.settingNearestLandingLineColor;
     case 'showScale':
       return l10n.settingShowScale;
     case 'showAirspace':
@@ -761,7 +761,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ),
   ],
   'default_landing_waypoint': _landingWaypointSettings,
-  'last_landing_waypoint': _landingWaypointSettings,
+  'nearest_landing_waypoint': _landingWaypointSettings,
   'clock': [
     ControlSetting.toggle(
       key: 'showSeconds',
@@ -1014,7 +1014,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       defaultValue: true,
     ),
     ControlSetting.color(
-      key: 'lastLandingPointColor',
+      key: 'nearestLandingPointColor',
       label: 'Nearest landing marker color',
       defaultValue: 0xFF9C27B0,
       visibleWhenKey: 'showNearestLandingPoint',
@@ -1042,15 +1042,15 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       visibleWhenKey: 'showDefaultLandingLine',
     ),
     ControlSetting.toggle(
-      key: 'showLastLandingLine',
+      key: 'showNearestLandingLine',
       label: 'Show line to nearest landing point',
       defaultValue: false,
     ),
     ControlSetting.color(
-      key: 'lastLandingLineColor',
+      key: 'nearestLandingLineColor',
       label: 'Nearest landing line color',
       defaultValue: 0xFF9C27B0,
-      visibleWhenKey: 'showLastLandingLine',
+      visibleWhenKey: 'showNearestLandingLine',
     ),
     ControlSetting.toggle(
       key: 'showScale',
@@ -1223,7 +1223,7 @@ const Map<String, List<ControlSetting>> _decimalSettings = {
     ControlSetting.decimalRange(key: 'bearingDecimals', label: 'Bearing'),
   ],
   'default_landing_waypoint': _landingWaypointDecimals,
-  'last_landing_waypoint': _landingWaypointDecimals,
+  'nearest_landing_waypoint': _landingWaypointDecimals,
   'status_line': [
     ControlSetting.decimalRange(key: 'accuracyDecimals', label: 'GPS accuracy'),
   ],
@@ -1324,7 +1324,7 @@ const Set<String> _controlsWithoutTitle = {
   'climb_avg',
   'takeoff_waypoint',
   'default_landing_waypoint',
-  'last_landing_waypoint',
+  'nearest_landing_waypoint',
   'debug_sensor',
   'data_monitor',
   'flight_button',
@@ -1348,7 +1348,7 @@ const Map<String, UnitDimension> _unitDimensions = {
   'distance_to_takeoff': UnitDimension.distance,
   'takeoff_waypoint': UnitDimension.distance,
   'default_landing_waypoint': UnitDimension.distance,
-  'last_landing_waypoint': UnitDimension.distance,
+  'nearest_landing_waypoint': UnitDimension.distance,
   'gps_accuracy': UnitDimension.altitude,
   'pressure': UnitDimension.pressure,
   'temperature': UnitDimension.temperature,

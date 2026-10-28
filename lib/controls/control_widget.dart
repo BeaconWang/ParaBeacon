@@ -392,7 +392,7 @@ class ControlWidget extends StatelessWidget {
           cardinal: control.setting('format') == 'cardinal',
           relative: control.setting('bearingReference') == 'relative',
         );
-      case 'last_landing_waypoint':
+      case 'nearest_landing_waypoint':
         return LandingWaypointControl(
           reference: LandingReference.nearest,
           showDistance: control.boolSetting('showDistance', fallback: true),
@@ -504,8 +504,8 @@ class ControlWidget extends StatelessWidget {
               'showDefaultLandingLine',
               fallback: false,
             ),
-            showLastLandingLine: control.boolSetting(
-              'showLastLandingLine',
+            showNearestLandingLine: control.boolSetting(
+              'showNearestLandingLine',
               fallback: false,
             ),
             takeoffPointColor: mapColor('takeoffPointColor', 0xFF43A047),
@@ -513,8 +513,8 @@ class ControlWidget extends StatelessWidget {
               'defaultLandingPointColor',
               0xFFF44336,
             ),
-            lastLandingPointColor: mapColor(
-              'lastLandingPointColor',
+            nearestLandingPointColor: mapColor(
+              'nearestLandingPointColor',
               0xFF9C27B0,
             ),
             takeoffLineColor: mapColor('takeoffLineColor', 0xFF43A047),
@@ -522,7 +522,7 @@ class ControlWidget extends StatelessWidget {
               'defaultLandingLineColor',
               0xFFF44336,
             ),
-            lastLandingLineColor: mapColor('lastLandingLineColor', 0xFF9C27B0),
+            nearestLandingLineColor: mapColor('nearestLandingLineColor', 0xFF9C27B0),
             showScale: control.boolSetting('showScale', fallback: true),
             showTrack: control.boolSetting('showTrack', fallback: true),
             showThermal: control.boolSetting('showThermal', fallback: true),

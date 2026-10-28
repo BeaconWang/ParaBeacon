@@ -5066,6 +5066,54 @@ abstract class AppLocalizations {
   /// **'This landing point could not be updated.'**
   String get landingPointUpdateFailed;
 
+  /// No description provided for @landingPointsImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get landingPointsImport;
+
+  /// No description provided for @landingPointsExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get landingPointsExport;
+
+  /// No description provided for @landingPointsImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace saved landing points?'**
+  String get landingPointsImportTitle;
+
+  /// No description provided for @landingPointsImportConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This will replace all saved landing points and the default destination.'**
+  String get landingPointsImportConfirmation;
+
+  /// No description provided for @landingPointsImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing points imported.'**
+  String get landingPointsImported;
+
+  /// No description provided for @landingPointsImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to import these landing points. Check that the file is valid and compatible.'**
+  String get landingPointsImportFailed;
+
+  /// No description provided for @landingPointsExported.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing points are ready to share.'**
+  String get landingPointsExported;
+
+  /// No description provided for @landingPointsExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to export landing points.'**
+  String get landingPointsExportFailed;
+
   /// No description provided for @mapTakeoffLabel.
   ///
   /// In en, this message translates to:

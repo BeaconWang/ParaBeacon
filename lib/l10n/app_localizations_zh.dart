@@ -2560,6 +2560,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingPointUpdateFailed => '无法更新此降落点。';
 
   @override
+  String get landingPointsImport => '导入';
+
+  @override
+  String get landingPointsExport => '导出';
+
+  @override
+  String get landingPointsImportTitle => '替换已保存的降落点？';
+
+  @override
+  String get landingPointsImportConfirmation => '此操作将替换所有已保存的降落点和默认目的地。';
+
+  @override
+  String get landingPointsImported => '降落点已导入。';
+
+  @override
+  String get landingPointsImportFailed => '无法导入这些降落点，请检查文件是否有效且兼容。';
+
+  @override
+  String get landingPointsExported => '降落点文件已准备好分享。';
+
+  @override
+  String get landingPointsExportFailed => '无法导出降落点。';
+
+  @override
   String get mapTakeoffLabel => '起飞点';
 
   @override

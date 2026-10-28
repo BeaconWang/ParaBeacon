@@ -1,9 +1,13 @@
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/landing_point_store.dart';
+import '../data/landing_points_config_io.dart';
 import '../l10n/app_localizations.dart';
 import 'landing_point_editor.dart';
 import 'map_control.dart';
@@ -168,6 +172,143 @@ class _LandingPointsSheet extends StatelessWidget {
     );
   }
 
+  Future<bool?> _chooseExportDestination(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    final isAndroid =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    if (!isAndroid) return Future.value(false);
+    return showModalBottomSheet<bool>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.flightsExportDestinationTitle,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: Text(l10n.flightsExportDestinationDownloads),
+              onTap: () => Navigator.of(context).pop(true),
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: Text(l10n.flightsExportDestinationShare),
+              onTap: () => Navigator.of(context).pop(false),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportLandingPoints(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final saveToDownloads = await _chooseExportDestination(context, l10n);
+      if (!context.mounted || saveToDownloads == null) return;
+      final store = LandingPointStore.instance;
+      final exported = await LandingPointsConfigIO.instance.exportAndShare(
+        store.points,
+        defaultId: store.defaultPoint?.id,
+        saveToDownloads: saveToDownloads,
+      );
+      if (!context.mounted || !exported) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            saveToDownloads
+                ? l10n.flightsExportSavedToDownloads
+                : l10n.landingPointsExported,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsExportFailed)));
+    }
+  }
+
+  Future<void> _importLandingPoints(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final isAndroid =
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      final result = await FilePicker.platform.pickFiles(
+        dialogTitle: l10n.landingPointsImport,
+        type: isAndroid ? FileType.any : FileType.custom,
+        allowedExtensions: isAndroid ? null : [LandingPointsConfigIO.extension],
+        withData: true,
+      );
+      if (!context.mounted || result == null || result.files.isEmpty) return;
+      final file = result.files.single;
+      if (file.size <= 0 || file.size > LandingPointsConfigIO.maxFileBytes) {
+        throw const FormatException();
+      }
+      final bytes = file.bytes;
+      final path = file.path;
+      if (bytes == null && path == null) throw const FormatException();
+      final imported = bytes != null
+          ? LandingPointsConfigIO.instance.parseBundle(bytes)
+          : await LandingPointsConfigIO.instance.importFile(path!);
+      if (!context.mounted) return;
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.landingPointsImportTitle),
+          content: Text(l10n.landingPointsImportConfirmation),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.landingPointsImport),
+            ),
+          ],
+        ),
+      );
+      if (!context.mounted || confirmed != true) return;
+
+      await LandingPointStore.instance.replaceAll(
+        imported.points,
+        defaultId: imported.defaultId,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImported)));
+    } catch (_) {
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.landingPointsImport),
+          content: Text(l10n.landingPointsImportFailed),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.cancel),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   bool _hasValidFix(FlightData data) =>
       data.hasFix &&
       data.latitude.isFinite &&
@@ -219,6 +360,26 @@ class _LandingPointsSheet extends StatelessWidget {
                   icon: const Icon(Icons.map_outlined),
                   label: Text(l10n.landingPointPickMapTitle),
                 ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _importLandingPoints(context),
+                      icon: const Icon(Icons.file_download_outlined),
+                      label: Text(l10n.landingPointsImport),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _exportLandingPoints(context),
+                      icon: const Icon(Icons.file_upload_outlined),
+                      label: Text(l10n.landingPointsExport),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               Expanded(

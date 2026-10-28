@@ -2664,6 +2664,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'This landing point could not be updated.';
 
   @override
+  String get landingPointsImport => 'Import';
+
+  @override
+  String get landingPointsExport => 'Export';
+
+  @override
+  String get landingPointsImportTitle => 'Replace saved landing points?';
+
+  @override
+  String get landingPointsImportConfirmation =>
+      'This will replace all saved landing points and the default destination.';
+
+  @override
+  String get landingPointsImported => 'Landing points imported.';
+
+  @override
+  String get landingPointsImportFailed =>
+      'Unable to import these landing points. Check that the file is valid and compatible.';
+
+  @override
+  String get landingPointsExported => 'Landing points are ready to share.';
+
+  @override
+  String get landingPointsExportFailed => 'Unable to export landing points.';
+
+  @override
   String get mapTakeoffLabel => 'Take-off';
 
   @override

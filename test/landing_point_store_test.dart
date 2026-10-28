@@ -118,6 +118,18 @@ void main() {
         final persisted = jsonDecode(raw!) as Map;
         expect(persisted['defaultId'], defaultPoint.id);
         expect(persisted.containsKey('lastId'), isFalse);
+
+        await store.replaceAll([nearbyPoint], defaultId: nearbyPoint.id);
+        expect(store.points.map((point) => point.id), [nearbyPoint.id]);
+        expect(store.defaultPoint?.id, nearbyPoint.id);
+        final replaced =
+            jsonDecode(
+                  (await SharedPreferences.getInstance()).getString(
+                    'pb.landingPoints.v1',
+                  )!,
+                )
+                as Map;
+        expect(replaced['defaultId'], nearbyPoint.id);
       },
     );
   });

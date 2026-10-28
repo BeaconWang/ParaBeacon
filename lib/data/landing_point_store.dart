@@ -248,6 +248,27 @@ class LandingPointStore extends ChangeNotifier {
     return true;
   }
 
+  Future<void> replaceAll(
+    List<LandingPoint> points, {
+    String? defaultId,
+  }) async {
+    await load();
+    if (points.length > maxEntries) {
+      throw ArgumentError.value(points.length, 'points', 'Too many entries.');
+    }
+    final ids = points.map((point) => point.id).toSet();
+    if (ids.length != points.length ||
+        (defaultId != null && !ids.contains(defaultId))) {
+      throw ArgumentError('Landing-point references must be unique and valid.');
+    }
+    _points
+      ..clear()
+      ..addAll(points);
+    _defaultId = defaultId;
+    notifyListeners();
+    await _persist();
+  }
+
   Future<void> setDefault(String? id) async {
     await load();
     if (id != null && _byId(id) == null) return;

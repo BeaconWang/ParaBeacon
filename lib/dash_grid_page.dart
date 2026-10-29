@@ -21,6 +21,7 @@ import 'controls/control_context_menu.dart';
 import 'controls/control_settings_sheet.dart';
 import 'controls/control_widget.dart';
 import 'controls/display_settings_sheet.dart';
+import 'controls/desktop_scrolling.dart';
 import 'controls/unit_settings_sheet.dart';
 import 'controls/dash_page.dart';
 import 'controls/placed_control.dart';
@@ -1657,25 +1658,28 @@ class _DashGridPageState extends State<DashGridPage> {
                   }
                   return false;
                 },
-                child: PageView.builder(
-                  controller: _pageController,
-                  physics: _isEditMode
-                      ? const NeverScrollableScrollPhysics()
-                      : const PageScrollPhysics(),
-                  itemCount: _pages.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPage = index;
-                      _selectedControlId = null;
-                      // Leaving a page re-locks whichever control the user had
-                      // unlocked on it, so returning to it starts fresh.
-                      _activeControlId = null;
-                    });
-                    // Persist the last-viewed page so re-launching the app
-                    // returns the user to where they left off.
-                    _saveLayout();
-                  },
-                  itemBuilder: (context, index) => _buildPageContent(index),
+                child: ScrollConfiguration(
+                  behavior: const MouseDragScrollBehavior(),
+                  child: PageView.builder(
+                    controller: _pageController,
+                    physics: _isEditMode
+                        ? const NeverScrollableScrollPhysics()
+                        : const PageScrollPhysics(),
+                    itemCount: _pages.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                        _selectedControlId = null;
+                        // Leaving a page re-locks whichever control the user had
+                        // unlocked on it, so returning to it starts fresh.
+                        _activeControlId = null;
+                      });
+                      // Persist the last-viewed page so re-launching the app
+                      // returns the user to where they left off.
+                      _saveLayout();
+                    },
+                    itemBuilder: (context, index) => _buildPageContent(index),
+                  ),
                 ),
               ),
             ),

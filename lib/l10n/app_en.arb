@@ -431,23 +431,7 @@
 
   "editMode": "Edit Mode",
   "interfaceLock": "Lock interface",
-  "interfaceUnlockTitle": "Interface locked",
-  "interfaceUnlockInstructions": "Tap 1, then 2, then 3 to unlock.",
-  "interfaceUnlockCountdown": "Returning to dashboard in {seconds}s",
-  "@interfaceUnlockCountdown": {
-    "placeholders": { "seconds": { "type": "int" } }
-  },
-  "interfaceUnlockProgress": "Steps completed: {current} of {total}",
-  "@interfaceUnlockProgress": {
-    "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
-    }
-  },
-  "interfaceUnlockButton": "Unlock step {step}",
-  "@interfaceUnlockButton": {
-    "placeholders": { "step": { "type": "int" } }
-  },
+  "interfaceUnlockInstructions": "Slide to unlock",
   "pageOfPages": "Page {current} of {total}",
   "@pageOfPages": {
     "placeholders": {

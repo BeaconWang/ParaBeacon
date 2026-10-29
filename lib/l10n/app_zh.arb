@@ -415,11 +415,7 @@
 
   "editMode": "编辑模式",
   "interfaceLock": "锁定界面",
-  "interfaceUnlockTitle": "界面已锁定",
-  "interfaceUnlockInstructions": "按顺序点击 1、2、3 解锁。",
-  "interfaceUnlockCountdown": "将在 {seconds} 秒后返回仪表盘",
-  "interfaceUnlockProgress": "已完成 {current}/{total} 步",
-  "interfaceUnlockButton": "解锁第 {step} 步",
+  "interfaceUnlockInstructions": "滑动解锁",
   "pageOfPages": "第 {current} 页，共 {total} 页",
   "addControl": "添加控件",
   "addPage": "添加页面",

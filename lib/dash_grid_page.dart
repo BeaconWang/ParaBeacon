@@ -70,12 +70,11 @@ class _DashGridPageState extends State<DashGridPage> {
 
   bool _isInterfaceLocked = false;
   bool _unlockPageVisible = false;
-  int _unlockStep = 0;
-  int _unlockSecondsRemaining = _interfaceUnlockTimeout.inSeconds;
+  bool _unlockControlsVisible = false;
+  double _unlockSliderProgress = 0.0;
   int _interfaceLockReturnPage = 0;
-  Timer? _interfaceUnlockTimer;
-  static const Duration _interfaceUnlockTimeout = Duration(seconds: 15);
-  static const List<int> _interfaceUnlockSequence = [1, 2, 3];
+  Timer? _unlockScreenIdleTimer;
+  static const Duration _unlockScreenIdleTimeout = Duration(seconds: 10);
 
   bool get _canLockInterface =>
       FlightState.instance.isFlying || FlightState.instance.autoDetect;
@@ -407,7 +406,7 @@ class _DashGridPageState extends State<DashGridPage> {
   @override
   void dispose() {
     _pageIndicatorHideTimer?.cancel();
-    _interfaceUnlockTimer?.cancel();
+    _unlockScreenIdleTimer?.cancel();
     FlightState.instance.removeListener(_onFlightStateChanged);
     _pageController.dispose();
     super.dispose();
@@ -415,12 +414,12 @@ class _DashGridPageState extends State<DashGridPage> {
 
   void _lockInterface() {
     if (_isInterfaceLocked || !_canLockInterface) return;
-    _interfaceUnlockTimer?.cancel();
+    _unlockScreenIdleTimer?.cancel();
     setState(() {
       _isInterfaceLocked = true;
       _unlockPageVisible = false;
-      _unlockStep = 0;
-      _unlockSecondsRemaining = _interfaceUnlockTimeout.inSeconds;
+      _unlockControlsVisible = false;
+      _unlockSliderProgress = 0.0;
       _interfaceLockReturnPage = _pages.length - 1;
       _isEditMode = false;
       _menuOpen = false;
@@ -437,18 +436,20 @@ class _DashGridPageState extends State<DashGridPage> {
       if (!_unlockPageVisible) {
         setState(() {
           _unlockPageVisible = true;
-          _unlockStep = 0;
-          _unlockSecondsRemaining = _interfaceUnlockTimeout.inSeconds;
+          _unlockControlsVisible = true;
+          _unlockSliderProgress = 0.0;
         });
-        _startInterfaceUnlockTimer();
+        _startUnlockScreenIdleTimer();
       }
       return;
     }
     if (index < 0 || index >= _pages.length) return;
 
-    _interfaceUnlockTimer?.cancel();
+    _unlockScreenIdleTimer?.cancel();
     setState(() {
       _unlockPageVisible = false;
+      _unlockControlsVisible = false;
+      _unlockSliderProgress = 0.0;
       _currentPage = index;
       _selectedControlId = null;
       _activeControlId = null;
@@ -456,63 +457,60 @@ class _DashGridPageState extends State<DashGridPage> {
     _saveLayout();
   }
 
-  void _startInterfaceUnlockTimer() {
-    _interfaceUnlockTimer?.cancel();
-    _interfaceUnlockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted || !_isInterfaceLocked || !_unlockPageVisible) {
-        timer.cancel();
-        return;
-      }
-      if (_unlockSecondsRemaining <= 1) {
-        timer.cancel();
-        _returnToLastDashboardPage();
-        return;
-      }
-      setState(() => _unlockSecondsRemaining--);
+  void _startUnlockScreenIdleTimer() {
+    _unlockScreenIdleTimer?.cancel();
+    _unlockScreenIdleTimer = Timer(_unlockScreenIdleTimeout, () {
+      if (!mounted || !_isInterfaceLocked || !_unlockPageVisible) return;
+      setState(() {
+        _unlockControlsVisible = false;
+        _unlockSliderProgress = 0.0;
+      });
     });
   }
 
-  void _onUnlockSequenceTap(int value) {
+  void _revealUnlockScreen() {
     if (!_isInterfaceLocked || !_unlockPageVisible) return;
-    final isFinalStep = _unlockStep == _interfaceUnlockSequence.length - 1;
-    if (value != _interfaceUnlockSequence[_unlockStep]) {
-      setState(() => _unlockStep = 0);
+    setState(() {
+      _unlockControlsVisible = true;
+      _unlockSliderProgress = 0.0;
+    });
+    _startUnlockScreenIdleTimer();
+  }
+
+  void _updateUnlockSlider(DragUpdateDetails details, double maxTravel) {
+    if (!_isInterfaceLocked || !_unlockPageVisible || !_unlockControlsVisible) {
       return;
     }
-    if (isFinalStep) {
+    if (maxTravel <= 0) return;
+    setState(() {
+      _unlockSliderProgress =
+          (_unlockSliderProgress + details.delta.dx / maxTravel)
+              .clamp(0.0, 1.0)
+              .toDouble();
+    });
+  }
+
+  void _finishUnlockSlider() {
+    if (_unlockSliderProgress >= 0.85) {
       _unlockInterface();
-    } else {
-      setState(() => _unlockStep++);
+      return;
     }
+    setState(() => _unlockSliderProgress = 0.0);
   }
 
   void _unlockInterface() {
-    _interfaceUnlockTimer?.cancel();
+    _unlockScreenIdleTimer?.cancel();
     final targetPage = _interfaceLockReturnPage
         .clamp(0, _pages.length - 1)
         .toInt();
     setState(() {
       _isInterfaceLocked = false;
       _unlockPageVisible = false;
-      _unlockStep = 0;
+      _unlockControlsVisible = false;
+      _unlockSliderProgress = 0.0;
       _currentPage = targetPage;
     });
     _saveLayout();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _pageController.hasClients) {
-        _pageController.jumpToPage(targetPage);
-      }
-    });
-  }
-
-  void _returnToLastDashboardPage() {
-    final targetPage = (_pages.length - 1).clamp(0, _pages.length - 1).toInt();
-    setState(() {
-      _unlockPageVisible = false;
-      _unlockStep = 0;
-      _unlockSecondsRemaining = _interfaceUnlockTimeout.inSeconds;
-      _currentPage = targetPage;
-    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _pageController.hasClients) {
         _pageController.jumpToPage(targetPage);
@@ -1764,6 +1762,7 @@ class _DashGridPageState extends State<DashGridPage> {
         _handleBackDismiss();
       },
       child: Scaffold(
+        backgroundColor: _unlockPageVisible ? Colors.black : null,
         body: Stack(
           children: [
             // Pages (tabs). Swipe horizontally to switch pages in view mode;
@@ -1891,7 +1890,8 @@ class _DashGridPageState extends State<DashGridPage> {
             //
             // In view mode the indicator auto-fades one second after the last
             // page swipe; in edit mode it stays fully visible.
-            if (_pages.length > 1 || _isEditMode || _isInterfaceLocked)
+            if (!_unlockPageVisible &&
+                (_pages.length > 1 || _isEditMode || _isInterfaceLocked))
               Positioned(
                 left: 0,
                 right: 0,
@@ -1939,78 +1939,101 @@ class _DashGridPageState extends State<DashGridPage> {
   Widget _buildUnlockPage() {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return SafeArea(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.lock_outline,
-                  size: 64,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.interfaceUnlockTitle,
-                  style: theme.textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.interfaceUnlockInstructions,
-                  style: theme.textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.interfaceUnlockCountdown(_unlockSecondsRemaining),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  l10n.interfaceUnlockProgress(
-                    _unlockStep,
-                    _interfaceUnlockSequence.length,
-                  ),
-                  style: theme.textTheme.labelLarge,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: _interfaceUnlockSequence.map((value) {
-                    final completed = _unlockStep > value - 1;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Semantics(
-                        label: l10n.interfaceUnlockButton(value),
-                        button: true,
-                        child: SizedBox(
-                          width: 68,
-                          height: 68,
-                          child: FilledButton.tonal(
-                            onPressed: () => _onUnlockSequenceTap(value),
-                            child: completed
-                                ? const Icon(Icons.check, size: 28)
-                                : Text(
-                                    '$value',
-                                    style: theme.textTheme.headlineSmall,
+    final sliderWidth = (MediaQuery.of(context).size.width - 32)
+        .clamp(120.0, 320.0)
+        .toDouble();
+
+    return GestureDetector(
+      key: const ValueKey('interfaceUnlockScreen'),
+      behavior: HitTestBehavior.opaque,
+      onDoubleTap: _revealUnlockScreen,
+      child: ColoredBox(
+        color: Colors.black,
+        child: SafeArea(
+          child: _unlockControlsVisible
+              ? Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 36),
+                    child: SizedBox(
+                      width: sliderWidth,
+                      height: 68,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          const handleWidth = 56.0;
+                          const inset = 6.0;
+                          final maxTravel =
+                              (constraints.maxWidth - handleWidth - inset * 2)
+                                  .clamp(0.0, double.infinity)
+                                  .toDouble();
+                          final handleLeft =
+                              inset + _unlockSliderProgress * maxTravel;
+                          return GestureDetector(
+                            key: const ValueKey('interfaceUnlockSlider'),
+                            behavior: HitTestBehavior.opaque,
+                            onHorizontalDragStart: (_) =>
+                                _startUnlockScreenIdleTimer(),
+                            onHorizontalDragUpdate: (details) {
+                              _updateUnlockSlider(details, maxTravel);
+                              _startUnlockScreenIdleTimer();
+                            },
+                            onHorizontalDragEnd: (_) => _finishUnlockSlider(),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF202124),
+                                borderRadius: BorderRadius.circular(36),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 58,
+                                    ),
+                                    child: Text(
+                                      l10n.interfaceUnlockInstructions,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(color: Colors.white70),
+                                    ),
                                   ),
-                          ),
-                        ),
+                                  const Positioned(
+                                    right: 10,
+                                    child: Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: Colors.white38,
+                                      size: 28,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    left: handleLeft,
+                                    top: inset,
+                                    bottom: inset,
+                                    child: Container(
+                                      width: handleWidth,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF168A52),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.lock_open_rounded,
+                                        color: Colors.white,
+                                        size: 26,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
+                    ),
+                  ),
+                )
+              : const SizedBox.expand(),
         ),
       ),
     );

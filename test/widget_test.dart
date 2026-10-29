@@ -228,7 +228,7 @@ void main() {
   });
 
   testWidgets(
-    'Interface lock exposes a timed unlock page and action sequence',
+    'Interface lock hides its slider and reveals it again on double-tap',
     (WidgetTester tester) async {
       FlightState.instance.stop();
       FlightState.instance.setAutoDetect(true);
@@ -258,23 +258,26 @@ void main() {
         final pageView = find.byType(PageView);
         await tester.drag(pageView, const Offset(-600, 0));
         await tester.pumpAndSettle();
-        expect(find.text('Interface locked'), findsOneWidget);
+        expect(find.text('Slide to unlock'), findsOneWidget);
 
-        await tester.pump(const Duration(seconds: 15));
-        await tester.pumpAndSettle();
-        expect(find.text('Interface locked'), findsNothing);
-        expect(find.text('Lock interface'), findsNothing);
+        await tester.pump(const Duration(seconds: 10));
+        await tester.pump();
+        expect(find.text('Slide to unlock'), findsNothing);
 
-        await tester.drag(pageView, const Offset(-600, 0));
-        await tester.pumpAndSettle();
-        expect(find.text('Interface locked'), findsOneWidget);
+        final lockScreen = find.byKey(const ValueKey('interfaceUnlockScreen'));
+        final screenCenter = tester.getCenter(lockScreen);
+        await tester.tapAt(screenCenter);
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.tapAt(screenCenter);
+        await tester.pump();
+        expect(find.text('Slide to unlock'), findsOneWidget);
 
-        for (final step in ['1', '2', '3']) {
-          await tester.tap(find.text(step));
-          await tester.pump();
-        }
+        await tester.drag(
+          find.byKey(const ValueKey('interfaceUnlockSlider')),
+          const Offset(320, 0),
+        );
         await tester.pumpAndSettle();
-        expect(find.text('Interface locked'), findsNothing);
+        expect(find.text('Slide to unlock'), findsNothing);
 
         await tester.drag(
           find.byType(GestureDetector).first,

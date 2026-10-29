@@ -19,11 +19,11 @@ void main() {
   test('only the two imported page templates are available', () {
     expect(DashboardPageTemplates.all, [
       DashboardPageTemplate.defaultLayout,
-      DashboardPageTemplate.goLanding,
+      DashboardPageTemplate.land,
     ]);
     final l10n = AppLocalizationsEn();
     expect(DashboardPageTemplate.defaultLayout.titleOf(l10n), 'Default');
-    expect(DashboardPageTemplate.goLanding.titleOf(l10n), 'Land');
+    expect(DashboardPageTemplate.land.titleOf(l10n), 'Land');
   });
 
   for (final template in DashboardPageTemplates.all) {
@@ -77,7 +77,7 @@ void main() {
     final defaultControls = _createControls(
       DashboardPageTemplate.defaultLayout,
     );
-    final landingControls = _createControls(DashboardPageTemplate.goLanding);
+    final landingControls = _createControls(DashboardPageTemplate.land);
     final defaultByType = {
       for (final control in defaultControls) control.type.id: control,
     };
@@ -113,6 +113,7 @@ void main() {
     expect(landingByType['map']!.rows, 11);
     expect(landingByType['map']!.settings['tracklogMinutes'], 30.0);
     expect(landingByType['map']!.settings['showBearing'], isTrue);
+    expect(landingByType['map']!.settings['showTakeoffLine'], isTrue);
   });
 
   testWidgets('edit menu offers and applies each imported page template', (
@@ -153,7 +154,7 @@ void main() {
     await tester.tap(find.text('Land'));
     await tester.pumpAndSettle();
 
-    expect(selectedTemplate, DashboardPageTemplate.goLanding);
+    expect(selectedTemplate, DashboardPageTemplate.land);
   });
 }
 

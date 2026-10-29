@@ -6,23 +6,23 @@ import '../controls/placed_control.dart';
 import '../l10n/app_localizations.dart';
 import 'imported_page_template_data.dart';
 
-enum DashboardPageTemplate { defaultLayout, goLanding }
+enum DashboardPageTemplate { defaultLayout, land }
 
 extension DashboardPageTemplateDetails on DashboardPageTemplate {
   IconData get icon => switch (this) {
     DashboardPageTemplate.defaultLayout => Icons.dashboard_outlined,
-    DashboardPageTemplate.goLanding => Icons.flight_land,
+    DashboardPageTemplate.land => Icons.flight_land,
   };
 
   String titleOf(AppLocalizations _) => switch (this) {
     DashboardPageTemplate.defaultLayout => 'Default',
-    DashboardPageTemplate.goLanding => 'Land',
+    DashboardPageTemplate.land => 'Land',
   };
 
   String descriptionOf(AppLocalizations l10n) => switch (this) {
     DashboardPageTemplate.defaultLayout =>
       l10n.dashboardTemplateFlightDescription,
-    DashboardPageTemplate.goLanding => l10n.dashboardTemplateLandingDescription,
+    DashboardPageTemplate.land => l10n.dashboardTemplateLandingDescription,
   };
 }
 
@@ -34,19 +34,22 @@ class DashboardPageTemplates {
   static final Map<DashboardPageTemplate, List<PlacedControl>> _sourceControls =
       {
         for (final template in all)
-          template: _loadSourceControls(_templateJson(template)),
+          template: _loadSourceControls(
+            pageTemplatesJson,
+            _templatePageIndex(template),
+          ),
       };
 
-  static String _templateJson(DashboardPageTemplate template) =>
+  static int _templatePageIndex(DashboardPageTemplate template) =>
       switch (template) {
-        DashboardPageTemplate.defaultLayout => defaultTemplateJson,
-        DashboardPageTemplate.goLanding => goLandingTemplateJson,
+        DashboardPageTemplate.defaultLayout => 0,
+        DashboardPageTemplate.land => 1,
       };
 
-  static List<PlacedControl> _loadSourceControls(String json) {
+  static List<PlacedControl> _loadSourceControls(String json, int pageIndex) {
     final bundle = jsonDecode(json) as Map<String, dynamic>;
     final pages = bundle['pages'] as List<dynamic>;
-    final page = pages.single as Map<String, dynamic>;
+    final page = pages[pageIndex] as Map<String, dynamic>;
     final controls = page['controls'] as List<dynamic>;
     return controls
         .map(
@@ -147,7 +150,7 @@ class DashboardPageTemplates {
         'compass_wind',
         'vertical_graph',
       ],
-      DashboardPageTemplate.goLanding => const [
+      DashboardPageTemplate.land => const [
         'map',
         'default_landing_waypoint',
         'nearest_landing_waypoint',

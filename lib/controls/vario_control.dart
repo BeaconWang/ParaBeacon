@@ -219,19 +219,30 @@ class _VarioPainter extends CustomPainter {
     canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), baseline);
 
     // Keep the current-speed level marker straight in both display styles.
+    // A soft shadow and dark outline separate it from every palette color,
+    // while the bright rounded core keeps the water surface crisp at a glance.
     final markerY = _markerY(centerY, clamped, scale);
+    final markerStart = Offset(4, markerY);
+    final markerEnd = Offset(size.width - 4, markerY);
+    final markerShadow = Paint()
+      ..color = Colors.black.withAlpha(100)
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 8
+      ..maskFilter = MaskFilter.blur(
+        BlurStyle.normal,
+        math.max(1.5, size.width * 0.025).toDouble(),
+      );
+    canvas.drawLine(markerStart, markerEnd, markerShadow);
     final markerOutline = Paint()
-      ..color = Colors.black.withAlpha(210)
-      ..strokeWidth = 4;
-    canvas.drawLine(
-      Offset(0, markerY),
-      Offset(size.width, markerY),
-      markerOutline,
-    );
+      ..color = const Color(0xF20B1723)
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 5;
+    canvas.drawLine(markerStart, markerEnd, markerOutline);
     final marker = Paint()
-      ..color = Colors.white.withAlpha(240)
-      ..strokeWidth = 1.5;
-    canvas.drawLine(Offset(0, markerY), Offset(size.width, markerY), marker);
+      ..color = Colors.white
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 2.4;
+    canvas.drawLine(markerStart, markerEnd, marker);
 
     // Numeric readout.
     final tp = TextPainter(

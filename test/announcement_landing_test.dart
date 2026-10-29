@@ -22,11 +22,8 @@ class _TestFlightDataView extends ChangeNotifier implements FlightDataView {
   );
 }
 
-Future<void> _waitForSpeechCount(List<Object?> speeches, int count) async {
-  for (var i = 0; i < 200 && speeches.length < count; i++) {
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-  }
-}
+Future<void> _waitForSpeech(Completer<void> speech) =>
+    speech.future.timeout(const Duration(seconds: 2));
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -37,11 +34,16 @@ void main() {
     final messenger =
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     final speeches = <Object?>[];
+    final speechEvents = [Completer<void>(), Completer<void>()];
     messenger.setMockMethodCallHandler(const MethodChannel('flutter_tts'), (
       call,
     ) async {
       if (call.method == 'isLanguageAvailable') return true;
-      if (call.method == 'speak') speeches.add(call.arguments);
+      if (call.method == 'speak') {
+        speeches.add(call.arguments);
+        final event = speechEvents[speeches.length - 1];
+        if (!event.isCompleted) event.complete();
+      }
       return 1;
     });
     addTearDown(() {
@@ -76,11 +78,11 @@ void main() {
     addTearDown(speaker.dispose);
 
     flightState.start();
-    await _waitForSpeechCount(speeches, 1);
+    await _waitForSpeech(speechEvents[0]);
     expect(speeches, hasLength(1));
 
     flightState.stop();
-    await _waitForSpeechCount(speeches, 2);
+    await _waitForSpeech(speechEvents[1]);
     expect(speeches, hasLength(2));
     expect(speeches.last.toString(), contains('Landing'));
   });

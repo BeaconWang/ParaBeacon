@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,11 +22,8 @@ class _TestFlightDataView extends ChangeNotifier implements FlightDataView {
   );
 }
 
-Future<void> _waitForSpeech(List<Object?> speeches) async {
-  for (var i = 0; i < 200 && speeches.isEmpty; i++) {
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-  }
-}
+Future<void> _waitForSpeech(Completer<void> speech) =>
+    speech.future.timeout(const Duration(seconds: 2));
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -37,13 +36,17 @@ void main() {
       final messenger =
           TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
       final speeches = <Object?>[];
+      final speechEvent = Completer<void>();
       final volumes = <Object?>[];
       messenger.setMockMethodCallHandler(const MethodChannel('flutter_tts'), (
         call,
       ) async {
         if (call.method == 'isLanguageAvailable') return true;
         if (call.method == 'setVolume') volumes.add(call.arguments);
-        if (call.method == 'speak') speeches.add(call.arguments);
+        if (call.method == 'speak') {
+          speeches.add(call.arguments);
+          if (!speechEvent.isCompleted) speechEvent.complete();
+        }
         return 1;
       });
       addTearDown(() {
@@ -98,7 +101,7 @@ void main() {
         flightState.stop();
       });
 
-      await _waitForSpeech(speeches);
+      await _waitForSpeech(speechEvent);
       expect(speeches, hasLength(1));
       expect(speeches.single, contains('Configured threshold reached'));
       expect(volumes, [0.35]);

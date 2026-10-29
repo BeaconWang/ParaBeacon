@@ -11,6 +11,7 @@ import '../data/raw_flight_data_source.dart';
 import '../data/takeoff_reference.dart';
 import '../data/sun_times.dart';
 import '../data/unit_settings.dart';
+import '../data/vertical_speed_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
 
@@ -56,6 +57,10 @@ class DataValueControl extends StatelessWidget {
   /// indicate the data source). Ignored when [showTitle] is false.
   final IconData? captionIcon;
 
+  /// Optional small text rendered after the caption/title. Ignored when
+  /// [showTitle] is false.
+  final String? captionSuffix;
+
   const DataValueControl({
     super.key,
     required this.title,
@@ -64,6 +69,7 @@ class DataValueControl extends StatelessWidget {
     this.state = ValueState.neutral,
     this.showTitle = true,
     this.captionIcon,
+    this.captionSuffix,
   });
 
   Color _valueColor(ThemeData theme) {
@@ -133,6 +139,17 @@ class DataValueControl extends StatelessWidget {
                       maxLines: 1,
                       style: labelStyle,
                     ),
+                    if (captionSuffix != null) ...[
+                      SizedBox(width: labelSize * 0.3),
+                      Text(
+                        captionSuffix!,
+                        maxLines: 1,
+                        style: labelStyle.copyWith(
+                          fontSize: labelSize * 0.72,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
                     if (captionIcon != null) ...[
                       SizedBox(width: labelSize * 0.3),
                       Icon(
@@ -215,13 +232,24 @@ class VerticalSpeedControl extends StatelessWidget {
       UnitDimension.verticalSpeed,
       unit,
     );
-    return DataValueControl(
-      title: AppLocalizations.of(context).controlVerticalSpeed,
-      value:
-          '${displayValue >= 0 ? '+' : ''}${_displayNumber(context, v, UnitDimension.verticalSpeed, unit)}',
-      unit: UnitValues.symbol(UnitDimension.verticalSpeed, unit),
-      state: state,
-      showTitle: showTitle,
+    return ListenableBuilder(
+      listenable: VerticalSpeedSettings.instance,
+      builder: (context, _) {
+        final averageSeconds =
+            VerticalSpeedSettings.instance.averageWindowSeconds;
+        final averageLabel = averageSeconds == averageSeconds.roundToDouble()
+            ? averageSeconds.toStringAsFixed(0)
+            : averageSeconds.toStringAsFixed(1);
+        return DataValueControl(
+          title: AppLocalizations.of(context).controlVerticalSpeed,
+          value:
+              '${displayValue >= 0 ? '+' : ''}${_displayNumber(context, v, UnitDimension.verticalSpeed, unit)}',
+          unit: UnitValues.symbol(UnitDimension.verticalSpeed, unit),
+          state: state,
+          showTitle: showTitle,
+          captionSuffix: 'in${averageLabel}s',
+        );
+      },
     );
   }
 }

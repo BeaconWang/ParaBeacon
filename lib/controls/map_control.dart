@@ -21,6 +21,7 @@ import '../data/solar_position.dart';
 import '../data/thermal_detector.dart';
 import '../data/vario_color_palette.dart';
 import '../data/vario_color_scale.dart';
+import '../data/vario_color_settings.dart';
 import '../data/wind_estimator.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
@@ -415,6 +416,8 @@ class _MapControlState extends State<MapControl> {
     TakeoffReference.instance.addListener(_onExternalChange);
     // Refresh the legend when the vario thresholds change.
     VarioSoundSettings.instance.addListener(_onThresholdsChanged);
+    VarioColorSettings.instance.addListener(_onExternalChange);
+    unawaited(VarioColorSettings.instance.load());
     // React to the debug simulator being toggled on/off: when it turns on the
     // map should immediately switch to the simulated position (highest
     // priority), and when it turns off fall back to real device GPS / BLE.
@@ -484,6 +487,7 @@ class _MapControlState extends State<MapControl> {
     LandingPointStore.instance.removeListener(_onExternalChange);
     TakeoffReference.instance.removeListener(_onExternalChange);
     VarioSoundSettings.instance.removeListener(_onThresholdsChanged);
+    VarioColorSettings.instance.removeListener(_onExternalChange);
     DebugSettings.instance.removeListener(_onExternalChange);
     super.dispose();
   }

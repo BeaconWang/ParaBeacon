@@ -2099,6 +2099,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingScaleMax => '量程（最大值）';
 
   @override
+  String get settingVarioColorMinus10 => '−10 m/s 颜色';
+
+  @override
+  String get settingVarioColorMinus7 => '−7 m/s 颜色';
+
+  @override
+  String get settingVarioColorMinus3 => '−3 m/s 颜色';
+
+  @override
+  String get settingVarioColorZero => '0 m/s 颜色';
+
+  @override
+  String get settingVarioColorPlus3 => '+3 m/s 颜色';
+
+  @override
+  String get settingVarioColorPlus7 => '+7 m/s 颜色';
+
+  @override
+  String get settingVarioColorPlus10 => '+10 m/s 颜色';
+
+  @override
+  String get settingVarioColorsGlobalNote => '这些颜色由所有 Vario bar 和地图飞行轨迹线共享。';
+
+  @override
   String get settingAveragingInterval => '平均时长';
 
   @override

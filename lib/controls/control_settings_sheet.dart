@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../data/color_palette_settings.dart';
+import '../data/vario_color_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
 import 'control_settings.dart';
@@ -111,6 +114,16 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
               ],
             ),
             const SizedBox(height: 8),
+            if (control.type.id == 'vario')
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  l10n.settingVarioColorsGlobalNote,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             if (_schema.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
@@ -300,7 +313,87 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
           value: value,
           onColorSelected: (argb) => _set(setting.key, argb),
         );
+
+      case SettingKind.globalColor:
+        final index = VarioColorSettings.indexForKey(setting.key);
+        if (index == null) return const SizedBox.shrink();
+        return _GlobalVarioColorSettingEditor(
+          key: ValueKey(setting.key),
+          label: label,
+          colorIndex: index,
+        );
     }
+  }
+}
+
+class _GlobalVarioColorSettingEditor extends StatefulWidget {
+  const _GlobalVarioColorSettingEditor({
+    super.key,
+    required this.label,
+    required this.colorIndex,
+  });
+
+  final String label;
+  final int colorIndex;
+
+  @override
+  State<_GlobalVarioColorSettingEditor> createState() =>
+      _GlobalVarioColorSettingEditorState();
+}
+
+class _GlobalVarioColorSettingEditorState
+    extends State<_GlobalVarioColorSettingEditor> {
+  @override
+  void initState() {
+    super.initState();
+    VarioColorSettings.instance.addListener(_onSettingsChanged);
+    ColorPaletteSettings.instance.addListener(_onSettingsChanged);
+    unawaited(VarioColorSettings.instance.load());
+    unawaited(ColorPaletteSettings.instance.load());
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    VarioColorSettings.instance.removeListener(_onSettingsChanged);
+    ColorPaletteSettings.instance.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = VarioColorSettings.instance;
+    final currentColor = settings.colorAt(widget.colorIndex);
+    final colors = <int>{
+      currentColor,
+      VarioColorSettings.defaultColors[widget.colorIndex],
+      ...ColorPaletteSettings.instance.visiblePresetColors,
+    }.toList(growable: false);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.label),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: colors.map((argb) {
+              return _ColorSwatch(
+                argb: argb,
+                selected: argb == currentColor,
+                onTap: () =>
+                    unawaited(settings.setColor(widget.colorIndex, argb)),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
   }
 }
 

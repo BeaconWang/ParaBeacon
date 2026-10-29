@@ -1,44 +1,58 @@
 import 'package:flutter/material.dart';
 
+import 'vario_color_settings.dart';
+
 const double varioColorMinSpeed = -10.0;
 const double varioColorMaxSpeed = 10.0;
 
-const varioColorStops = <(double, Color)>[
-  (varioColorMinSpeed, Color(0xFF000B1E)),
-  (-7.0, Color(0xFF0D47A1)),
-  (-3.0, Color(0xFF00BCD4)),
-  (0.0, Color(0xFF9E9E9E)),
-  (3.0, Color(0xFF4CAF50)),
-  (7.0, Color(0xFFF44336)),
-  (varioColorMaxSpeed, Color(0xFF4A0033)),
+const List<double> _varioColorSpeeds = [
+  varioColorMinSpeed,
+  -7.0,
+  -3.0,
+  0.0,
+  3.0,
+  7.0,
+  varioColorMaxSpeed,
 ];
 
-/// Maps vertical speed (m/s) to the Vario bar's interpolated color.
-Color varioColorFor(double v) {
-  if (v.isNaN) return varioColorStops[3].$2;
-  if (v <= varioColorStops.first.$1) return varioColorStops.first.$2;
-  if (v >= varioColorStops.last.$1) return varioColorStops.last.$2;
+List<(double, Color)> get varioColorStops =>
+    varioColorStopsFor(VarioColorSettings.instance.colors);
 
-  for (int i = 0; i < varioColorStops.length - 1; i++) {
-    final lower = varioColorStops[i];
-    final upper = varioColorStops[i + 1];
+List<(double, Color)> varioColorStopsFor(List<int> colors) => [
+  for (var i = 0; i < _varioColorSpeeds.length; i++)
+    (_varioColorSpeeds[i], Color(colors[i])),
+];
+
+/// Maps vertical speed (m/s) to an interpolated color from the shared palette.
+Color varioColorFor(double v, {List<int>? colors}) {
+  final stops = varioColorStopsFor(
+    colors ?? VarioColorSettings.instance.colors,
+  );
+  if (v.isNaN) return stops[3].$2;
+  if (v <= stops.first.$1) return stops.first.$2;
+  if (v >= stops.last.$1) return stops.last.$2;
+
+  for (int i = 0; i < stops.length - 1; i++) {
+    final lower = stops[i];
+    final upper = stops[i + 1];
     if (v == lower.$1) return lower.$2;
     if (v <= upper.$1) {
       final t = (v - lower.$1) / (upper.$1 - lower.$1);
       return Color.lerp(lower.$2, upper.$2, t)!;
     }
   }
-  return varioColorStops.last.$2;
+  return stops.last.$2;
 }
 
-/// Samples the Vario palette from its minimum to maximum speed.
+/// Samples the shared palette from its minimum to maximum speed.
 List<Color> sampleVarioColorGradient(int steps) {
   final count = steps < 2 ? 2 : steps;
+  final colors = VarioColorSettings.instance.colors;
   return List.generate(count, (i) {
     final fraction = i / (count - 1);
     final speed =
         varioColorMinSpeed +
         (varioColorMaxSpeed - varioColorMinSpeed) * fraction;
-    return varioColorFor(speed);
+    return varioColorFor(speed, colors: colors);
   });
 }

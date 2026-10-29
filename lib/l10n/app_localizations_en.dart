@@ -2190,6 +2190,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingScaleMax => 'Scale (max)';
 
   @override
+  String get settingVarioColorMinus10 => 'Color at −10 m/s';
+
+  @override
+  String get settingVarioColorMinus7 => 'Color at −7 m/s';
+
+  @override
+  String get settingVarioColorMinus3 => 'Color at −3 m/s';
+
+  @override
+  String get settingVarioColorZero => 'Color at 0 m/s';
+
+  @override
+  String get settingVarioColorPlus3 => 'Color at +3 m/s';
+
+  @override
+  String get settingVarioColorPlus7 => 'Color at +7 m/s';
+
+  @override
+  String get settingVarioColorPlus10 => 'Color at +10 m/s';
+
+  @override
+  String get settingVarioColorsGlobalNote =>
+      'Shared by all Vario bars and the map flight path.';
+
+  @override
   String get settingAveragingInterval => 'Averaging interval';
 
   @override

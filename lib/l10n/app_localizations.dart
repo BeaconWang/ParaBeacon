@@ -4154,6 +4154,54 @@ abstract class AppLocalizations {
   /// **'Scale (max)'**
   String get settingScaleMax;
 
+  /// No description provided for @settingVarioColorMinus10.
+  ///
+  /// In en, this message translates to:
+  /// **'Color at −10 m/s'**
+  String get settingVarioColorMinus10;
+
+  /// No description provided for @settingVarioColorMinus7.
+  ///
+  /// In en, this message translates to:
+  /// **'Color at −7 m/s'**
+  String get settingVarioColorMinus7;
+
+  /// No description provided for @settingVarioColorMinus3.
+  ///
+  /// In en, this message translates to:
+  /// **'Color at −3 m/s'**
+  String get settingVarioColorMinus3;
+
+  /// No description provided for @settingVarioColorZero.
+  ///
+  /// In en, this message translates to:
+  /// **'Color at 0 m/s'**
+  String get settingVarioColorZero;
+
+  /// No description provided for @settingVarioColorPlus3.
+  ///
+  /// In en, this message translates to:
+  /// **'Color at +3 m/s'**
+  String get settingVarioColorPlus3;
+
+  /// No description provided for @settingVarioColorPlus7.
+  ///
+  /// In en, this message translates to:
+  /// **'Color at +7 m/s'**
+  String get settingVarioColorPlus7;
+
+  /// No description provided for @settingVarioColorPlus10.
+  ///
+  /// In en, this message translates to:
+  /// **'Color at +10 m/s'**
+  String get settingVarioColorPlus10;
+
+  /// No description provided for @settingVarioColorsGlobalNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared by all Vario bars and the map flight path.'**
+  String get settingVarioColorsGlobalNote;
+
   /// No description provided for @settingAveragingInterval.
   ///
   /// In en, this message translates to:

@@ -4,7 +4,7 @@ import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
 
 /// The kind of UI editor a setting uses.
-enum SettingKind { toggle, slider, choice, color, decimalRange }
+enum SettingKind { toggle, slider, choice, color, globalColor, decimalRange }
 
 /// Definition of a single configurable setting for a control.
 ///
@@ -108,6 +108,18 @@ class ControlSetting {
        options = const {},
        maxDecimalPlaces = 0;
 
+  /// A color choice stored in app-wide settings rather than on this control.
+  const ControlSetting.globalColor({required this.key, required this.label})
+    : kind = SettingKind.globalColor,
+      defaultValue = 0,
+      min = 0,
+      max = 1,
+      divisions = null,
+      unit = '',
+      options = const {},
+      maxDecimalPlaces = 0,
+      visibleWhenKey = null;
+
   /// Localized label for this setting, resolved from the current [l10n] by the
   /// stable [key]. Falls back to the hardcoded English [label] for any key not
   /// (yet) present in the translations, so unmapped settings still render.
@@ -170,6 +182,20 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingBackgroundOpacity;
     case 'textColor':
       return l10n.settingTextColor;
+    case 'varioColorMinus10':
+      return l10n.settingVarioColorMinus10;
+    case 'varioColorMinus7':
+      return l10n.settingVarioColorMinus7;
+    case 'varioColorMinus3':
+      return l10n.settingVarioColorMinus3;
+    case 'varioColorZero':
+      return l10n.settingVarioColorZero;
+    case 'varioColorPlus3':
+      return l10n.settingVarioColorPlus3;
+    case 'varioColorPlus7':
+      return l10n.settingVarioColorPlus7;
+    case 'varioColorPlus10':
+      return l10n.settingVarioColorPlus10;
     case 'maxScale':
       return l10n.settingScaleMax;
     case 'avgInterval':
@@ -695,6 +721,31 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ),
   ],
   'vario': [
+    ControlSetting.globalColor(
+      key: 'varioColorMinus10',
+      label: 'Color at −10 m/s',
+    ),
+    ControlSetting.globalColor(
+      key: 'varioColorMinus7',
+      label: 'Color at −7 m/s',
+    ),
+    ControlSetting.globalColor(
+      key: 'varioColorMinus3',
+      label: 'Color at −3 m/s',
+    ),
+    ControlSetting.globalColor(key: 'varioColorZero', label: 'Color at 0 m/s'),
+    ControlSetting.globalColor(
+      key: 'varioColorPlus3',
+      label: 'Color at +3 m/s',
+    ),
+    ControlSetting.globalColor(
+      key: 'varioColorPlus7',
+      label: 'Color at +7 m/s',
+    ),
+    ControlSetting.globalColor(
+      key: 'varioColorPlus10',
+      label: 'Color at +10 m/s',
+    ),
     ControlSetting.slider(
       key: 'maxScale',
       label: 'Scale (max)',
@@ -1389,6 +1440,7 @@ List<ControlSetting> settingsSchemaFor(String typeId) {
 Map<String, dynamic> defaultSettingsFor(String typeId) {
   final map = <String, dynamic>{};
   for (final setting in settingsSchemaFor(typeId)) {
+    if (setting.kind == SettingKind.globalColor) continue;
     map[setting.key] = setting.defaultValue;
   }
   return map;

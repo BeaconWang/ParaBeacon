@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/flight_data_provider.dart';
 import '../data/vario_color_palette.dart';
+import '../data/vario_color_settings.dart';
 import 'decimal_places.dart';
 
 export '../data/vario_color_palette.dart' show varioColorFor;
@@ -39,32 +42,44 @@ class VarioControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final value = verticalSpeed ?? FlightDataProvider.of(context).verticalSpeed;
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: value, end: value),
-      duration: liquidGlass ? const Duration(milliseconds: 480) : Duration.zero,
-      curve: Curves.easeOutCubic,
-      builder: (context, animatedValue, child) => CustomPaint(
-        painter: _VarioPainter(
-          value: animatedValue,
-          maxScale: maxScale,
-          liquidGlass: liquidGlass,
-          precision: DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
-          theme: Theme.of(context),
-          textScaler: MediaQuery.textScalerOf(context),
-        ),
-        child: child,
-      ),
+    final colorSettings = VarioColorSettings.instance;
+    unawaited(colorSettings.load());
+    return AnimatedBuilder(
+      animation: colorSettings,
+      builder: (context, child) {
+        final palette = colorSettings.colors;
+        return TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: value, end: value),
+          duration: liquidGlass
+              ? const Duration(milliseconds: 480)
+              : Duration.zero,
+          curve: Curves.easeOutCubic,
+          builder: (context, animatedValue, child) => CustomPaint(
+            painter: _VarioPainter(
+              value: animatedValue,
+              maxScale: maxScale,
+              liquidGlass: liquidGlass,
+              palette: palette,
+              precision: DecimalPlacesScope.rangeOf(context, 'valueDecimals'),
+              theme: Theme.of(context),
+              textScaler: MediaQuery.textScalerOf(context),
+            ),
+            child: child,
+          ),
+          child: child,
+        );
+      },
       child: const SizedBox.expand(),
     );
   }
 }
 
-LinearGradient _varioFillGradient(double maxScale) {
+LinearGradient _varioFillGradient(double maxScale, List<int> palette) {
   final scale = maxScale > 0 && maxScale.isFinite ? maxScale : 1.0;
-  final colors = <Color>[varioColorFor(scale)];
+  final colors = <Color>[varioColorFor(scale, colors: palette)];
   final stops = <double>[0.0];
 
-  for (final stop in varioColorStops.reversed) {
+  for (final stop in varioColorStopsFor(palette).reversed) {
     final speed = stop.$1;
     if (speed < scale && speed > -scale) {
       colors.add(stop.$2);
@@ -72,7 +87,7 @@ LinearGradient _varioFillGradient(double maxScale) {
     }
   }
 
-  colors.add(varioColorFor(-scale));
+  colors.add(varioColorFor(-scale, colors: palette));
   stops.add(1.0);
   return LinearGradient(
     colors: colors,
@@ -96,6 +111,7 @@ class _VarioPainter extends CustomPainter {
   final double value;
   final double maxScale;
   final bool liquidGlass;
+  final List<int> palette;
   final DecimalPlaceRange? precision;
   final ThemeData theme;
   final TextScaler textScaler;
@@ -104,6 +120,7 @@ class _VarioPainter extends CustomPainter {
     required this.value,
     required this.maxScale,
     required this.liquidGlass,
+    required this.palette,
     required this.precision,
     required this.theme,
     required this.textScaler,
@@ -165,7 +182,10 @@ class _VarioPainter extends CustomPainter {
 
     // Fill bar from center with a gradient mapped to the full speed scale.
     final fillPaint = Paint()
-      ..shader = _varioFillGradient(scale).createShader(Offset.zero & size);
+      ..shader = _varioFillGradient(
+        scale,
+        palette,
+      ).createShader(Offset.zero & size);
     if (liquidGlass) {
       final markerY = _markerY(centerY, clamped, scale);
       final liquidPath = _liquidFillPath(size, centerY, clamped, markerY);
@@ -274,6 +294,7 @@ class _VarioPainter extends CustomPainter {
     return value != oldDelegate.value ||
         maxScale != oldDelegate.maxScale ||
         liquidGlass != oldDelegate.liquidGlass ||
+        !listEquals(palette, oldDelegate.palette) ||
         precision?.min != oldDelegate.precision?.min ||
         precision?.max != oldDelegate.precision?.max ||
         theme != oldDelegate.theme ||

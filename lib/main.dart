@@ -38,6 +38,7 @@ import 'data/sensors/internal_sensor_bridge.dart';
 import 'data/sensors/internal_sensor_service.dart';
 import 'data/share_card_settings.dart';
 import 'data/vertical_speed_settings.dart';
+import 'data/vario_color_settings.dart';
 import 'data/takeoff_reference.dart';
 import 'data/unit_settings.dart';
 import 'data/xcontest_auth_service.dart';
@@ -149,6 +150,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     FlightState.instance.loadSettings();
     LandingPointStore.instance.load();
     ColorPaletteSettings.instance.load();
+    VarioColorSettings.instance.load();
     // Load persisted units and display precision before dashboard controls render.
     UnitSettings.instance.load();
     DisplaySettings.instance.load();

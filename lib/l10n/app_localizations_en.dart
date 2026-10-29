@@ -1273,6 +1273,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editMode => 'Edit Mode';
 
   @override
+  String get interfaceLock => 'Lock interface';
+
+  @override
+  String get interfaceUnlockTitle => 'Interface locked';
+
+  @override
+  String get interfaceUnlockInstructions => 'Tap 1, then 2, then 3 to unlock.';
+
+  @override
+  String interfaceUnlockCountdown(int seconds) {
+    return 'Returning to dashboard in ${seconds}s';
+  }
+
+  @override
+  String interfaceUnlockProgress(int current, int total) {
+    return 'Steps completed: $current of $total';
+  }
+
+  @override
+  String interfaceUnlockButton(int step) {
+    return 'Unlock step $step';
+  }
+
+  @override
   String pageOfPages(int current, int total) {
     return 'Page $current of $total';
   }

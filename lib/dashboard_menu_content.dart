@@ -9,6 +9,7 @@ import 'l10n/app_localizations.dart';
 
 class DashboardMenuContent extends StatelessWidget {
   final bool isEditMode;
+  final bool canLockInterface;
   final int pageIndex;
   final int pageCount;
   final double gridSize;
@@ -20,11 +21,13 @@ class DashboardMenuContent extends StatelessWidget {
   final VoidCallback onAddPage;
   final VoidCallback onDeletePage;
   final VoidCallback onClearAll;
+  final VoidCallback onLockInterface;
   final VoidCallback onOpenPreferences;
 
   const DashboardMenuContent({
     super.key,
     required this.isEditMode,
+    required this.canLockInterface,
     required this.pageIndex,
     required this.pageCount,
     required this.gridSize,
@@ -36,6 +39,7 @@ class DashboardMenuContent extends StatelessWidget {
     required this.onAddPage,
     required this.onDeletePage,
     required this.onClearAll,
+    required this.onLockInterface,
     required this.onOpenPreferences,
   });
 
@@ -61,6 +65,15 @@ class DashboardMenuContent extends StatelessWidget {
           value: isEditMode,
           onChanged: (_) => onToggleEditMode(),
         ),
+        if (canLockInterface) ...[
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.lock_outline, color: theme.colorScheme.primary),
+            title: Text(l10n.interfaceLock),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: onLockInterface,
+          ),
+        ],
         // Control- and page-editing items are only meaningful in edit mode.
         if (isEditMode) ...[
           const Divider(height: 1),

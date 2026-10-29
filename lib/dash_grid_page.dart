@@ -34,6 +34,7 @@ import 'data/dashboard_page_templates.dart';
 import 'data/live_tracking_settings.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_recorder.dart';
+import 'data/flight_state.dart';
 import 'data/landing_point_store.dart';
 import 'data/layout_config_io.dart';
 import 'data/layout_store.dart';
@@ -66,6 +67,18 @@ class _DashGridPageState extends State<DashGridPage> {
   int _currentPage = 0;
   int _pageSeq = 1;
   late final PageController _pageController;
+
+  bool _isInterfaceLocked = false;
+  bool _unlockPageVisible = false;
+  int _unlockStep = 0;
+  int _unlockSecondsRemaining = _interfaceUnlockTimeout.inSeconds;
+  int _interfaceLockReturnPage = 0;
+  Timer? _interfaceUnlockTimer;
+  static const Duration _interfaceUnlockTimeout = Duration(seconds: 15);
+  static const List<int> _interfaceUnlockSequence = [1, 2, 3];
+
+  bool get _canLockInterface =>
+      FlightState.instance.isFlying || FlightState.instance.autoDetect;
 
   // Auto-hide state for the bottom page indicator in view mode. The indicator
   // is revealed while the user is swiping between pages and then fades out
@@ -141,7 +154,12 @@ class _DashGridPageState extends State<DashGridPage> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    FlightState.instance.addListener(_onFlightStateChanged);
     _loadLayout();
+  }
+
+  void _onFlightStateChanged() {
+    if (mounted) setState(() {});
   }
 
   /// Restores the saved dashboard layout (pages, controls, grid size,
@@ -389,8 +407,117 @@ class _DashGridPageState extends State<DashGridPage> {
   @override
   void dispose() {
     _pageIndicatorHideTimer?.cancel();
+    _interfaceUnlockTimer?.cancel();
+    FlightState.instance.removeListener(_onFlightStateChanged);
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _lockInterface() {
+    if (_isInterfaceLocked || !_canLockInterface) return;
+    _interfaceUnlockTimer?.cancel();
+    setState(() {
+      _isInterfaceLocked = true;
+      _unlockPageVisible = false;
+      _unlockStep = 0;
+      _unlockSecondsRemaining = _interfaceUnlockTimeout.inSeconds;
+      _interfaceLockReturnPage = _pages.length - 1;
+      _isEditMode = false;
+      _menuOpen = false;
+      _dragOffset = 0;
+      _selectedControlId = null;
+      _activeControlId = null;
+      _pageIndicatorHideTimer?.cancel();
+      _pageIndicatorVisible = true;
+    });
+  }
+
+  void _onDashboardPageChanged(int index) {
+    if (_isInterfaceLocked && index == _pages.length) {
+      if (!_unlockPageVisible) {
+        setState(() {
+          _unlockPageVisible = true;
+          _unlockStep = 0;
+          _unlockSecondsRemaining = _interfaceUnlockTimeout.inSeconds;
+        });
+        _startInterfaceUnlockTimer();
+      }
+      return;
+    }
+    if (index < 0 || index >= _pages.length) return;
+
+    _interfaceUnlockTimer?.cancel();
+    setState(() {
+      _unlockPageVisible = false;
+      _currentPage = index;
+      _selectedControlId = null;
+      _activeControlId = null;
+    });
+    _saveLayout();
+  }
+
+  void _startInterfaceUnlockTimer() {
+    _interfaceUnlockTimer?.cancel();
+    _interfaceUnlockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || !_isInterfaceLocked || !_unlockPageVisible) {
+        timer.cancel();
+        return;
+      }
+      if (_unlockSecondsRemaining <= 1) {
+        timer.cancel();
+        _returnToLastDashboardPage();
+        return;
+      }
+      setState(() => _unlockSecondsRemaining--);
+    });
+  }
+
+  void _onUnlockSequenceTap(int value) {
+    if (!_isInterfaceLocked || !_unlockPageVisible) return;
+    final isFinalStep = _unlockStep == _interfaceUnlockSequence.length - 1;
+    if (value != _interfaceUnlockSequence[_unlockStep]) {
+      setState(() => _unlockStep = 0);
+      return;
+    }
+    if (isFinalStep) {
+      _unlockInterface();
+    } else {
+      setState(() => _unlockStep++);
+    }
+  }
+
+  void _unlockInterface() {
+    _interfaceUnlockTimer?.cancel();
+    final targetPage = _interfaceLockReturnPage
+        .clamp(0, _pages.length - 1)
+        .toInt();
+    setState(() {
+      _isInterfaceLocked = false;
+      _unlockPageVisible = false;
+      _unlockStep = 0;
+      _currentPage = targetPage;
+    });
+    _saveLayout();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _pageController.hasClients) {
+        _pageController.jumpToPage(targetPage);
+      }
+    });
+  }
+
+  void _returnToLastDashboardPage() {
+    final targetPage = (_pages.length - 1).clamp(0, _pages.length - 1).toInt();
+    setState(() {
+      _unlockPageVisible = false;
+      _unlockStep = 0;
+      _unlockSecondsRemaining = _interfaceUnlockTimeout.inSeconds;
+      _currentPage = targetPage;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _pageController.hasClients) {
+        _pageController.jumpToPage(targetPage);
+      }
+    });
   }
 
   /// Reveals the bottom page indicator and (re)arms the auto-hide timer so it
@@ -419,6 +546,7 @@ class _DashGridPageState extends State<DashGridPage> {
   }
 
   void _openMenu() {
+    if (_isInterfaceLocked) return;
     setState(() {
       _menuOpen = true;
       _dragOffset = _menuHeight;
@@ -518,6 +646,10 @@ class _DashGridPageState extends State<DashGridPage> {
       case 'preferences':
         _closeMenu();
         await _openPreferences();
+        break;
+      case 'lock_interface':
+        _closeMenu();
+        _lockInterface();
         break;
     }
   }
@@ -1642,7 +1774,7 @@ class _DashGridPageState extends State<DashGridPage> {
                 // bottom page indicator while the user is actively swiping
                 // and fade it back out one second after the swipe settles.
                 onNotification: (notification) {
-                  if (_isEditMode) return false;
+                  if (_isEditMode || _isInterfaceLocked) return false;
                   // Only react to horizontal (page) scroll — the PageView is
                   // horizontal, and nested controls (lists, maps) are vertical
                   // or don't emit ScrollNotifications, so this filter keeps
@@ -1665,20 +1797,12 @@ class _DashGridPageState extends State<DashGridPage> {
                     physics: _isEditMode
                         ? const NeverScrollableScrollPhysics()
                         : const PageScrollPhysics(),
-                    itemCount: _pages.length,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentPage = index;
-                        _selectedControlId = null;
-                        // Leaving a page re-locks whichever control the user had
-                        // unlocked on it, so returning to it starts fresh.
-                        _activeControlId = null;
-                      });
-                      // Persist the last-viewed page so re-launching the app
-                      // returns the user to where they left off.
-                      _saveLayout();
-                    },
-                    itemBuilder: (context, index) => _buildPageContent(index),
+                    itemCount: _pages.length + (_isInterfaceLocked ? 1 : 0),
+                    onPageChanged: _onDashboardPageChanged,
+                    itemBuilder: (context, index) =>
+                        _isInterfaceLocked && index == _pages.length
+                        ? _buildUnlockPage()
+                        : _buildPageContent(index),
                   ),
                 ),
               ),
@@ -1767,26 +1891,31 @@ class _DashGridPageState extends State<DashGridPage> {
             //
             // In view mode the indicator auto-fades one second after the last
             // page swipe; in edit mode it stays fully visible.
-            if (_pages.length > 1 || _isEditMode)
+            if (_pages.length > 1 || _isEditMode || _isInterfaceLocked)
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 16,
                 child: IgnorePointer(
                   ignoring:
-                      _menuOpen || (!_isEditMode && !_pageIndicatorVisible),
+                      _isInterfaceLocked ||
+                      _menuOpen ||
+                      (!_isEditMode && !_pageIndicatorVisible),
                   child: AnimatedOpacity(
                     duration: _pageIndicatorFadeDuration,
                     opacity: _menuOpen
                         ? 0.0
-                        : ((_isEditMode || _pageIndicatorVisible) ? 1.0 : 0.0),
+                        : ((_isEditMode ||
+                                  _isInterfaceLocked ||
+                                  _pageIndicatorVisible)
+                              ? 1.0
+                              : 0.0),
                     child: _buildPageIndicator(),
                   ),
                 ),
               ),
 
-            // Dim overlay when menu is open
-            if (_effectiveMenuOffset > 0 || _menuOpen)
+            if (!_isInterfaceLocked && (_effectiveMenuOffset > 0 || _menuOpen))
               Positioned.fill(
                 child: GestureDetector(
                   onTap: _closeMenu,
@@ -1794,14 +1923,94 @@ class _DashGridPageState extends State<DashGridPage> {
                 ),
               ),
 
-            // Top swipe menu panel
-            Positioned(
-              left: 0,
-              right: 0,
-              top: _effectiveMenuOffset - _menuHeight,
-              child: _buildMenuPanel(),
-            ),
+            if (!_isInterfaceLocked)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: _effectiveMenuOffset - _menuHeight,
+                child: _buildMenuPanel(),
+              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnlockPage() {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  size: 64,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.interfaceUnlockTitle,
+                  style: theme.textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.interfaceUnlockInstructions,
+                  style: theme.textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.interfaceUnlockCountdown(_unlockSecondsRemaining),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  l10n.interfaceUnlockProgress(
+                    _unlockStep,
+                    _interfaceUnlockSequence.length,
+                  ),
+                  style: theme.textTheme.labelLarge,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: _interfaceUnlockSequence.map((value) {
+                    final completed = _unlockStep > value - 1;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Semantics(
+                        label: l10n.interfaceUnlockButton(value),
+                        button: true,
+                        child: SizedBox(
+                          width: 68,
+                          height: 68,
+                          child: FilledButton.tonal(
+                            onPressed: () => _onUnlockSequenceTap(value),
+                            child: completed
+                                ? const Icon(Icons.check, size: 28)
+                                : Text(
+                                    '$value',
+                                    style: theme.textTheme.headlineSmall,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1812,31 +2021,34 @@ class _DashGridPageState extends State<DashGridPage> {
     final page = _pages[pageIndex];
     return Stack(
       children: [
-        // Fullscreen main panel: drag down to open menu, tap to dismiss.
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () {
-              if (_menuOpen) {
-                _closeMenu();
-              } else if (_selectedControlId != null ||
-                  _activeControlId != null) {
-                setState(() {
-                  _selectedControlId = null;
-                  // Tapping outside any control re-locks it, matching how
-                  // tapping outside deselects a control in edit mode.
-                  _activeControlId = null;
-                });
-              }
-            },
-            onVerticalDragStart: _menuOpen ? null : _onDragStart,
-            onVerticalDragUpdate: _menuOpen ? null : _onDragUpdate,
-            onVerticalDragEnd: _menuOpen ? null : _onDragEnd,
+            onTap: _isInterfaceLocked
+                ? null
+                : () {
+                    if (_menuOpen) {
+                      _closeMenu();
+                    } else if (_selectedControlId != null ||
+                        _activeControlId != null) {
+                      setState(() {
+                        _selectedControlId = null;
+                        _activeControlId = null;
+                      });
+                    }
+                  },
+            onVerticalDragStart: _isInterfaceLocked || _menuOpen
+                ? null
+                : _onDragStart,
+            onVerticalDragUpdate: _isInterfaceLocked || _menuOpen
+                ? null
+                : _onDragUpdate,
+            onVerticalDragEnd: _isInterfaceLocked || _menuOpen
+                ? null
+                : _onDragEnd,
             child: const SizedBox.expand(),
           ),
         ),
-
-        // Placed controls layer for this page.
         ..._buildPlacedControls(page.controls),
       ],
     );
@@ -1848,11 +2060,13 @@ class _DashGridPageState extends State<DashGridPage> {
   /// mode opens the icon picker to customize its header icon.
   Widget _buildPageIndicator() {
     final theme = Theme.of(context);
+    final indicatorCount = _pages.length + (_isInterfaceLocked ? 1 : 0);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_pages.length, (i) {
-        final active = i == _currentPage;
-        final page = _pages[i];
+      children: List.generate(indicatorCount, (i) {
+        final isUnlockPage = _isInterfaceLocked && i == _pages.length;
+        final active = isUnlockPage ? _unlockPageVisible : i == _currentPage;
+        final icon = isUnlockPage ? Icons.lock_open : _pages[i].icon;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 3),
           child: Material(
@@ -1862,17 +2076,20 @@ class _DashGridPageState extends State<DashGridPage> {
             shape: const StadiumBorder(),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
-              onTap: () {
-                if (active) {
-                  if (_isEditMode) _customizePageIcon(page);
-                } else {
-                  _pageController.animateToPage(
-                    i,
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                  );
-                }
-              },
+              onTap: _isInterfaceLocked
+                  ? null
+                  : () {
+                      final page = _pages[i];
+                      if (active) {
+                        if (_isEditMode) _customizePageIcon(page);
+                      } else {
+                        _pageController.animateToPage(
+                          i,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOutCubic,
+                        );
+                      }
+                    },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: EdgeInsets.symmetric(
@@ -1880,7 +2097,7 @@ class _DashGridPageState extends State<DashGridPage> {
                   vertical: 6,
                 ),
                 child: Icon(
-                  page.icon,
+                  icon,
                   size: 18,
                   color: active
                       ? theme.colorScheme.onPrimary
@@ -2017,7 +2234,9 @@ class _DashGridPageState extends State<DashGridPage> {
         top: outerTop,
         width: outerWidth,
         height: outerHeight,
-        child: _isEditMode
+        child: _isInterfaceLocked
+            ? IgnorePointer(child: child)
+            : _isEditMode
             ? Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -2189,6 +2408,7 @@ class _DashGridPageState extends State<DashGridPage> {
             Flexible(
               child: DashboardMenuContent(
                 isEditMode: _isEditMode,
+                canLockInterface: _canLockInterface,
                 pageIndex: _currentPage,
                 pageCount: _pages.length,
                 gridSize: _gridSize,
@@ -2212,6 +2432,7 @@ class _DashGridPageState extends State<DashGridPage> {
                   _closeMenu();
                   _clearAllControls();
                 },
+                onLockInterface: () => _onMenuAction('lock_interface'),
                 onOpenPreferences: () => _onMenuAction('preferences'),
               ),
             ),

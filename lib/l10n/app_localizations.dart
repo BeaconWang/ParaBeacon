@@ -2450,6 +2450,42 @@ abstract class AppLocalizations {
   /// **'Edit Mode'**
   String get editMode;
 
+  /// No description provided for @interfaceLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock interface'**
+  String get interfaceLock;
+
+  /// No description provided for @interfaceUnlockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface locked'**
+  String get interfaceUnlockTitle;
+
+  /// No description provided for @interfaceUnlockInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap 1, then 2, then 3 to unlock.'**
+  String get interfaceUnlockInstructions;
+
+  /// No description provided for @interfaceUnlockCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Returning to dashboard in {seconds}s'**
+  String interfaceUnlockCountdown(int seconds);
+
+  /// No description provided for @interfaceUnlockProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps completed: {current} of {total}'**
+  String interfaceUnlockProgress(int current, int total);
+
+  /// No description provided for @interfaceUnlockButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock step {step}'**
+  String interfaceUnlockButton(int step);
+
   /// No description provided for @pageOfPages.
   ///
   /// In en, this message translates to:

@@ -226,6 +226,66 @@ void main() {
       expect(find.byType(SwitchListTile), findsOneWidget);
     });
   });
+
+  testWidgets(
+    'Interface lock exposes a timed unlock page and action sequence',
+    (WidgetTester tester) async {
+      FlightState.instance.stop();
+      FlightState.instance.setAutoDetect(true);
+
+      await runWithWindowsPlatform(() async {
+        await tester.pumpWidget(const ParaBeaconApp());
+        await tester.pumpAndSettle();
+        await _declineBlankPromptIfVisible(tester);
+
+        await tester.drag(
+          find.byType(GestureDetector).first,
+          const Offset(0, 600),
+        );
+        await tester.pump();
+        expect(find.text('Lock interface'), findsOneWidget);
+
+        FlightState.instance.setAutoDetect(false);
+        await tester.pump();
+        expect(find.text('Lock interface'), findsNothing);
+        FlightState.instance.setAutoDetect(true);
+        await tester.pump();
+        expect(find.text('Lock interface'), findsOneWidget);
+        await tester.ensureVisible(find.text('Lock interface'));
+        await tester.tap(find.text('Lock interface'));
+        await tester.pumpAndSettle();
+
+        final pageView = find.byType(PageView);
+        await tester.drag(pageView, const Offset(-600, 0));
+        await tester.pumpAndSettle();
+        expect(find.text('Interface locked'), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 15));
+        await tester.pumpAndSettle();
+        expect(find.text('Interface locked'), findsNothing);
+        expect(find.text('Lock interface'), findsNothing);
+
+        await tester.drag(pageView, const Offset(-600, 0));
+        await tester.pumpAndSettle();
+        expect(find.text('Interface locked'), findsOneWidget);
+
+        for (final step in ['1', '2', '3']) {
+          await tester.tap(find.text(step));
+          await tester.pump();
+        }
+        await tester.pumpAndSettle();
+        expect(find.text('Interface locked'), findsNothing);
+
+        await tester.drag(
+          find.byType(GestureDetector).first,
+          const Offset(0, 600),
+        );
+        await tester.pump();
+        expect(find.text('Lock interface'), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 500));
+      });
+    },
+  );
 }
 
 Future<void> _declineBlankPromptIfVisible(WidgetTester tester) async {

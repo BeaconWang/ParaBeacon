@@ -1206,6 +1206,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editMode => '编辑模式';
 
   @override
+  String get interfaceLock => '锁定界面';
+
+  @override
+  String get interfaceUnlockTitle => '界面已锁定';
+
+  @override
+  String get interfaceUnlockInstructions => '按顺序点击 1、2、3 解锁。';
+
+  @override
+  String interfaceUnlockCountdown(int seconds) {
+    return '将在 $seconds 秒后返回仪表盘';
+  }
+
+  @override
+  String interfaceUnlockProgress(int current, int total) {
+    return '已完成 $current/$total 步';
+  }
+
+  @override
+  String interfaceUnlockButton(int step) {
+    return '解锁第 $step 步';
+  }
+
+  @override
   String pageOfPages(int current, int total) {
     return '第 $current 页，共 $total 页';
   }

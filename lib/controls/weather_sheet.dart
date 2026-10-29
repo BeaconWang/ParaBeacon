@@ -28,8 +28,9 @@ import 'map_picker_sheet.dart';
 Future<void> showWeatherSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
-    useSafeArea: true,
+    useSafeArea: false,
     // Background driven by the theme's bottomSheetTheme (see other sheets).
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),

@@ -1,6 +1,7 @@
 {
   "api_base_url": "https://api.myparabeacon-proxy.com",
   "session_start_endpoint": "/v1/flight/start",
+  "session_stop_endpoint": "/v1/flight/{session_id}/stop",
   "points_endpoint": "/v1/flight/{session_id}/points",
   "auth_endpoint": null,
   "websocket_url": null,

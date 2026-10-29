@@ -3529,7 +3529,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sensorPreferInternal => '优先使用内置传感器';
 
   @override
-  String get sensorPreferInternalSubtitle => '优先使用本设备的内置气压计';
+  String get sensorPreferInternalSubtitle =>
+      '启用后可使用本设备的内置气压计。iOS 可能请求运动权限；不会读取健康数据。';
 
   @override
   String get sensorNoInternalBarometer => '本设备未检测到内置气压计';

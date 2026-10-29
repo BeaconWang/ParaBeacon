@@ -22,7 +22,7 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>ParaBeacon uses your location to show your position on the map and track your flight.</string>
 	<key>NSMotionUsageDescription</key>
-	<string>ParaBeacon reads this device’s built-in barometer to measure altitude and vertical speed (vario).</string>
+	<string>ParaBeacon uses motion access only for barometric altitude and vertical speed; it does not access Health data.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

@@ -228,7 +228,7 @@ class LiveTrackingService extends ChangeNotifier {
   bool get isConfigured => _configured;
 
   void configure(LiveTrackingConfig? config) {
-    if (_sessionId != null || _starting) {
+    if (_sessionId != null || _starting || _endingSessions.isNotEmpty) {
       throw StateError(
         'Cannot replace live-tracking config while a session runs.',
       );
@@ -261,6 +261,9 @@ class LiveTrackingService extends ChangeNotifier {
   bool _starting = false;
   bool _uploading = false;
   bool _flushWhileIdle = false;
+  Future<void>? _uploadFuture;
+  final Set<String> _endingSessions = <String>{};
+  Future<void> _sessionEndTail = Future<void>.value();
   bool _disposed = false;
   int _retryAttempt = 0;
   int _bindingEpoch = 0;
@@ -292,6 +295,8 @@ class LiveTrackingService extends ChangeNotifier {
 
   void unbind() {
     _bindingEpoch++;
+    final sessionId = _sessionId;
+    if (sessionId != null) _queueSessionEnd(sessionId);
     _sessionId = null;
     _flushWhileIdle = false;
     _uploadTimer?.cancel();
@@ -362,13 +367,14 @@ class LiveTrackingService extends ChangeNotifier {
     }
     if (_sessionId != null || _starting) {
       _flushWhileIdle = _sessionId != null && (_isEnabled?.call() ?? false);
+      final sessionId = _sessionId;
+      if (sessionId != null) _queueSessionEnd(sessionId);
       _sessionId = null;
       _retryTimer?.cancel();
       _retryTimer = null;
       _uploadTimer?.cancel();
       _uploadTimer = null;
       _setState(LiveTrackingConnectionState.disconnected);
-      unawaited(_flushPending());
     } else {
       _retryTimer?.cancel();
       _retryTimer = null;
@@ -413,6 +419,7 @@ class LiveTrackingService extends ChangeNotifier {
         throw const LiveTrackingProxyException('invalid_session_response');
       }
       if (bindingEpoch != _bindingEpoch || !_shouldTrack) {
+        _queueSessionEnd(sessionId.trim());
         _setState(LiveTrackingConnectionState.disconnected);
         return;
       }
@@ -454,7 +461,17 @@ class LiveTrackingService extends ChangeNotifier {
     }
   }
 
-  Future<void> _flushPending() async {
+  Future<void> _flushPending() {
+    final active = _uploadFuture;
+    if (active != null) return active;
+    final task = _flushPendingOnce();
+    _uploadFuture = task;
+    return task.whenComplete(() {
+      if (identical(_uploadFuture, task)) _uploadFuture = null;
+    });
+  }
+
+  Future<void> _flushPendingOnce() async {
     if (_disposed ||
         _uploading ||
         _pending.isEmpty ||
@@ -515,6 +532,45 @@ class LiveTrackingService extends ChangeNotifier {
     } finally {
       _uploading = false;
     }
+  }
+
+  void _queueSessionEnd(String sessionId) {
+    if (sessionId.isEmpty || !_endingSessions.add(sessionId)) return;
+    final stopUri = _config.sessionStopUri(sessionId);
+    _sessionEndTail = _sessionEndTail.then((_) async {
+      try {
+        _flushWhileIdle = true;
+        await _flushPending();
+        final pendingCount = _pending.length;
+        _pending.removeWhere((queued) => queued.sessionId == sessionId);
+        if (_pending.length != pendingCount) {
+          _lastErrorCode ??= 'final_points_dropped';
+          await _persistQueue();
+        }
+        final response = await _sendJson(
+          method: 'POST',
+          uri: stopUri,
+          body: {
+            'session_id': sessionId,
+            'end_time': DateTime.now().toUtc().toIso8601String(),
+          },
+        );
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          throw LiveTrackingProxyException(
+            'session_stop_http_${response.statusCode}',
+          );
+        }
+      } on Object catch (error) {
+        _lastErrorCode = _errorCode(error);
+      } finally {
+        _endingSessions.remove(sessionId);
+        if (_pending.isEmpty) _flushWhileIdle = false;
+        if (_sessionId == null) {
+          _setState(LiveTrackingConnectionState.disconnected);
+        }
+        _notify();
+      }
+    });
   }
 
   Future<http.Response> _sendJson({
@@ -596,6 +652,7 @@ class LiveTrackingService extends ChangeNotifier {
     unbind();
     _retryTimer?.cancel();
     _uploadTimer?.cancel();
+    await _sessionEndTail.catchError((Object _) {});
     await _saveTail.catchError((Object _) {});
     if (_ownsHttpClient) _httpClient.close();
     _disposed = true;

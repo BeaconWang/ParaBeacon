@@ -176,15 +176,12 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
             contentPadding: EdgeInsets.zero,
             title: Text(l10n.sensorPreferInternal),
             subtitle: Text(
-              internalAvailable
+              internalAvailable || !_internal.enabled
                   ? l10n.sensorPreferInternalSubtitle
                   : l10n.sensorNoInternalBarometer,
             ),
-            // Only usable when the device actually has a barometer; reflect the
-            // real state so the toggle greys out when there is nothing to use.
-            value: _internal.enabled && internalAvailable,
-            onChanged:
-                internalAvailable ? (v) => _internal.setEnabled(v) : null,
+            value: _internal.enabled,
+            onChanged: (v) => _internal.setEnabled(v),
           ),
         ],
       ],

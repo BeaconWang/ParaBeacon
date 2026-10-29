@@ -19,7 +19,8 @@ import '../ble/sensor_readings.dart';
 /// feed and, when the user prefers it, use it ahead of an external BLE sensor.
 ///
 /// Platform behavior:
-/// - **iOS / Android**: subscribes to the barometer when the hardware has one.
+/// - **iOS / Android**: subscribes only when the user enables the internal
+///   sensor; iOS defaults to opt-in because Core Motion may show a privacy prompt.
 /// - **Other platforms**: [supported] is false and every method is a no-op.
 ///
 /// Availability is discovered at runtime: there is no synchronous "has a
@@ -63,9 +64,10 @@ class InternalSensorService extends ChangeNotifier {
   bool get available => _available;
 
   /// User preference: prefer the internal barometer over an external BLE
-  /// sensor. Persisted. Defaults to true so an available internal sensor is
-  /// used first, matching the "use the internal sensor first" behavior.
-  bool _enabled = true;
+  /// sensor. Persisted. iOS defaults off so Core Motion is accessed only after
+  /// the user explicitly enables the feature; other mobile platforms retain the
+  /// existing enabled-by-default behavior.
+  bool _enabled = defaultTargetPlatform != TargetPlatform.iOS;
   bool get enabled => _enabled;
 
   /// Whether the internal sensor is currently the preferred, usable feed.
@@ -126,14 +128,14 @@ class InternalSensorService extends ChangeNotifier {
 
     try {
       final sp = await SharedPreferences.getInstance();
-      _enabled = sp.getBool(_spEnabled) ?? true;
+      _enabled = sp.getBool(_spEnabled) ?? _enabled;
       final ref = sp.getDouble(_spReferencePressure);
       if (ref != null && ref.isFinite && _isPlausibleReference(ref)) {
         _referencePressurePa = ref;
       }
     } catch (_) {}
 
-    if (!supported) {
+    if (!supported || !_enabled) {
       notifyListeners();
       return;
     }
@@ -143,12 +145,13 @@ class InternalSensorService extends ChangeNotifier {
   }
 
   void _subscribe() {
-    _baroSub?.cancel();
+    if (!supported || !_enabled || _baroSub != null) return;
     try {
       _baroSub = barometerEventStream(samplingPeriod: _samplingPeriod).listen(
         _onBarometer,
         onError: (_) {
-          // No barometer on this device (or it went away): mark unavailable.
+          // No barometer on this device (or access was denied): mark unavailable.
+          _baroSub = null;
           _available = false;
           notifyListeners();
         },
@@ -158,6 +161,17 @@ class InternalSensorService extends ChangeNotifier {
       _available = false;
       notifyListeners();
     }
+  }
+
+  void _stopSubscription() {
+    _baroSub?.cancel();
+    _baroSub = null;
+    _available = false;
+    _lastAltitude = null;
+    _lastSampleAt = null;
+    _lastPressurePa = null;
+    _vario = 0.0;
+    readings = SensorReadings.empty();
   }
 
   void _onBarometer(BarometerEvent event) {
@@ -201,6 +215,13 @@ class InternalSensorService extends ChangeNotifier {
   Future<void> setEnabled(bool value) async {
     if (_enabled == value) return;
     _enabled = value;
+    if (_initialized && supported) {
+      if (value) {
+        _subscribe();
+      } else {
+        _stopSubscription();
+      }
+    }
     try {
       final sp = await SharedPreferences.getInstance();
       await sp.setBool(_spEnabled, value);

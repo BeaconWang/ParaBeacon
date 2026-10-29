@@ -6823,7 +6823,7 @@ abstract class AppLocalizations {
   /// No description provided for @sensorPreferInternalSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Use this device’s built-in barometer first'**
+  /// **'Enable the built-in barometer when you want to use it. iOS may request Motion access; no Health data is read.'**
   String get sensorPreferInternalSubtitle;
 
   /// No description provided for @sensorNoInternalBarometer.

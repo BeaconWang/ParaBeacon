@@ -3664,7 +3664,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sensorPreferInternalSubtitle =>
-      'Use this device’s built-in barometer first';
+      'Enable the built-in barometer when you want to use it. iOS may request Motion access; no Health data is read.';
 
   @override
   String get sensorNoInternalBarometer =>

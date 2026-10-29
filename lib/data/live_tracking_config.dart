@@ -7,6 +7,7 @@ class LiveTrackingConfig {
   LiveTrackingConfig({
     required this.apiBaseUri,
     required this.sessionStartUri,
+    required this.sessionStopEndpointTemplate,
     required this.pointsEndpointTemplate,
     required this.authEndpointUri,
     required this.webSocketUri,
@@ -21,6 +22,11 @@ class LiveTrackingConfig {
       sessionStartUri,
       apiBaseUri,
       'session_start_endpoint',
+    );
+    _validateSameOriginHttps(
+      sessionStopUri('__config_check__'),
+      apiBaseUri,
+      'session_stop_endpoint',
     );
     _validateSameOriginHttps(
       pointsUri('__config_check__'),
@@ -55,6 +61,7 @@ class LiveTrackingConfig {
 
   final Uri apiBaseUri;
   final Uri sessionStartUri;
+  final String sessionStopEndpointTemplate;
   final String pointsEndpointTemplate;
   final Uri? authEndpointUri;
   final Uri? webSocketUri;
@@ -63,6 +70,15 @@ class LiveTrackingConfig {
   final Duration uploadInterval;
   final int maximumBatchPoints;
   final int maximumBufferedPoints;
+
+  Uri sessionStopUri(String sessionId) {
+    if (sessionId.isEmpty) throw ArgumentError.value(sessionId, 'sessionId');
+    final endpoint = sessionStopEndpointTemplate.replaceAll(
+      '{session_id}',
+      Uri.encodeComponent(sessionId),
+    );
+    return _resolveUri(apiBaseUri, endpoint, 'session_stop_endpoint');
+  }
 
   Uri pointsUri(String sessionId) {
     if (sessionId.isEmpty) throw ArgumentError.value(sessionId, 'sessionId');
@@ -116,6 +132,14 @@ class LiveTrackingConfig {
       requiredString('session_start_endpoint'),
       'session_start_endpoint',
     );
+    final sessionStopEndpointTemplate = requiredString(
+      'session_stop_endpoint',
+    );
+    if (!sessionStopEndpointTemplate.contains('{session_id}')) {
+      throw const FormatException(
+        'session_stop_endpoint must contain {session_id}.',
+      );
+    }
     final pointsEndpointTemplate = requiredString('points_endpoint');
     if (!pointsEndpointTemplate.contains('{session_id}')) {
       throw const FormatException('points_endpoint must contain {session_id}.');
@@ -154,6 +178,7 @@ class LiveTrackingConfig {
     return LiveTrackingConfig(
       apiBaseUri: apiBaseUri,
       sessionStartUri: sessionStartUri,
+      sessionStopEndpointTemplate: sessionStopEndpointTemplate,
       pointsEndpointTemplate: pointsEndpointTemplate,
       authEndpointUri: authEndpointUri,
       webSocketUri: webSocketUri,

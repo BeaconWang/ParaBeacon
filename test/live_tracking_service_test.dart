@@ -30,6 +30,10 @@ void main() {
       Uri.https('api.myparabeacon-proxy.com', '/v1/flight/start'),
     );
     expect(
+      config.sessionStopUri('flight-123'),
+      Uri.https('api.myparabeacon-proxy.com', '/v1/flight/flight-123/stop'),
+    );
+    expect(
       config.pointsUri('flight-123'),
       Uri.https('api.myparabeacon-proxy.com', '/v1/flight/flight-123/points'),
     );
@@ -147,6 +151,13 @@ void main() {
             headers: {'content-type': 'application/json'},
           );
         }
+        if (request.url.path == '/v1/flight/session-123/stop') {
+          expect(request.method, 'POST');
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['session_id'], 'session-123');
+          expect(DateTime.tryParse(body['end_time'] as String), isNotNull);
+          return http.Response('', 204);
+        }
         expect(request.url.path, '/v1/flight/session-123/points');
         expect(request.method, 'POST');
         final body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -203,6 +214,7 @@ void main() {
       FlightState.instance.stop();
       await pumpEventQueue(times: 10);
       expect(service.state, LiveTrackingConnectionState.disconnected);
+      expect(requests.last.url.path, '/v1/flight/session-123/stop');
       await service.shutdown();
       client.close();
       data.dispose();
@@ -253,6 +265,7 @@ Map<String, Object?> _configJson({
 }) => {
   'api_base_url': apiBaseUrl,
   'session_start_endpoint': '/v1/flight/start',
+  'session_stop_endpoint': '/v1/flight/{session_id}/stop',
   'points_endpoint': '/v1/flight/{session_id}/points',
   'auth_endpoint': authEndpoint,
   'websocket_url': webSocketUrl,

@@ -1275,7 +1275,7 @@
   "sensorEnableBluetooth": "启用蓝牙传感器",
   "sensorEnableBluetoothSubtitle": "扫描并连接外部传感器",
   "sensorPreferInternal": "优先使用内置传感器",
-  "sensorPreferInternalSubtitle": "优先使用本设备的内置气压计",
+  "sensorPreferInternalSubtitle": "启用后可使用本设备的内置气压计。iOS 可能请求运动权限；不会读取健康数据。",
   "sensorNoInternalBarometer": "本设备未检测到内置气压计",
   "sensorInternalSection": "内置传感器",
   "sensorStatus": "状态",

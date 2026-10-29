@@ -16,25 +16,27 @@
          by the Map control's device GPS (geolocator) across all SDK levels. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Background location (Android 10+): requested for automatic detection
-         and background-only location access. A location foreground service
-         started while the app is visible can continue with foreground location
-         access; starting that service from the background requires this grant. -->
+    <!-- Background location (Android 10+): lets the flight recorder keep
+         receiving GPS fixes once the app is backgrounded / the screen is off.
+         Granted separately by the user ("Allow all the time"); the app still
+         works with only foreground ("while in use") permission, but the track
+         may pause when fully backgrounded without this. -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- Required to download online map tiles for the Map control. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Background execution: during a flight or while Android automatic
-         detection is enabled, geolocator starts its location foreground service
-         with an ongoing notification. The service declaration and
-         foregroundServiceType="location" are supplied by geolocator_android
-         and merged into the final manifest. WAKE_LOCK permits the plugin's CPU
-         wake lock while tracking; the screen-awake wakelock is separate.
-         FOREGROUND_SERVICE is required for foreground services; Android 14+
-         location services also require FOREGROUND_SERVICE_LOCATION. Android 13+
-         POST_NOTIFICATIONS is requested at runtime for notification-drawer
-         visibility, but denying it does not itself prevent starting the service. -->
+    <!-- Background execution: keep GPS/vario/BLE working with the screen off or
+         the app backgrounded. WAKE_LOCK keeps the CPU alive (also used by the
+         keep-awake wakelock). During a flight, or when the app is backgrounded
+         with automatic flight detection enabled, the geolocator stream is
+         (re)opened with a foreground-service
+         configuration, which starts the plugin's GeolocatorLocationService (declared with
+         foregroundServiceType="location" in the geolocator_android manifest and
+         merged in here) so location + recording survive the screen turning off.
+         FOREGROUND_SERVICE / FOREGROUND_SERVICE_LOCATION authorize that service
+         on Android 10+/14+, and POST_NOTIFICATIONS (Android 13+) is required to
+         show its persistent notification. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />

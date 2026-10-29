@@ -4,7 +4,6 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart' as permissions;
 
 import '../l10n/app_localizations.dart';
 import '../theme/locale_controller.dart';
@@ -57,9 +56,9 @@ class GpsFlightDataBridge {
   ///     notification and wake lock.
   ///   * iOS — background location updates, backed by the `location`
   ///     UIBackgroundMode and, if granted, "Always" authorization.
-  /// Android uses its foreground service while a flight is active or automatic
-  /// flight detection is enabled. Enabling detection while the app is visible
-  /// starts the service before the app backgrounds.
+  /// Android uses its foreground service while a flight is active, or while
+  /// the app is backgrounded and automatic flight detection is enabled. This
+  /// keeps background GPS flowing for recording and takeoff/landing detection.
   final FlightState flightState;
 
   StreamSubscription<Position>? _sub;
@@ -67,13 +66,14 @@ class GpsFlightDataBridge {
 
   bool _attached = false;
   bool _hadFix = false;
-  bool _lastAutoDetect = false;
 
   /// Whether the currently-open stream is using background-resilient settings.
   bool _backgroundMode = false;
+  bool _appIsBackgrounded = false;
 
   bool get _requiresBackgroundMode =>
-      flightState.isFlying || (Platform.isAndroid && flightState.autoDetect);
+      flightState.isFlying ||
+      (Platform.isAndroid && _appIsBackgrounded && flightState.autoDetect);
 
   /// Timestamp of the last position we forwarded downstream, used by the
   /// app-level throttle to enforce [updateInterval] on every platform.
@@ -103,7 +103,6 @@ class GpsFlightDataBridge {
     // React to flight start/stop and app lifecycle changes so Android can
     // switch to a location foreground service before background throttling
     // pauses the stream. iOS only needs background updates during a flight.
-    _lastAutoDetect = flightState.autoDetect;
     flightState.addListener(_onFlightStateChanged);
 
     try {
@@ -121,13 +120,9 @@ class GpsFlightDataBridge {
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        _watchServiceStatus();
         return;
       }
 
-      if (Platform.isAndroid) {
-        await _requestAndroidTrackingPermissions();
-      }
       _startStream();
       _watchServiceStatus();
     } catch (_) {
@@ -136,59 +131,18 @@ class GpsFlightDataBridge {
     }
   }
 
-  Future<void> _requestAndroidTrackingPermissions() async {
-    try {
-      final notification = await permissions.Permission.notification.status;
-      if (!notification.isGranted) {
-        await permissions.Permission.notification.request();
-      }
-    } catch (_) {
-      // Notification permission is not required to continue foreground tracking.
-    }
-
-    if (!flightState.autoDetect && !flightState.isFlying) return;
-    await _requestAndroidBackgroundLocationPermission();
-  }
-
-  Future<void> _requestAndroidBackgroundLocationPermission() async {
-    try {
-      final foregroundLocation = await Geolocator.checkPermission();
-      if (foregroundLocation == LocationPermission.denied ||
-          foregroundLocation == LocationPermission.deniedForever) {
-        return;
-      }
-      final backgroundLocation = await permissions.Permission.locationAlways.status;
-      if (!backgroundLocation.isGranted) {
-        await permissions.Permission.locationAlways.request();
-      }
-    } catch (_) {
-      // Keep foreground location available if background permission is declined.
-    }
-  }
-
-  /// Rechecks permissions after returning from system settings and restores a
-  /// missing Android location stream.
+  /// Updates the Android location service when the app leaves or returns to the
+  /// foreground. `inactive` is included so the service starts before Android
+  /// applies background location throttling.
   void onAppLifecycleStateChanged(AppLifecycleState state) {
-    if (!Platform.isAndroid ||
-        state != AppLifecycleState.resumed ||
-        _sub != null) {
-      return;
-    }
-    unawaited(_resumeLocationStream());
-  }
+    if (!Platform.isAndroid) return;
 
-  Future<void> _resumeLocationStream() async {
-    try {
-      if (!await Geolocator.isLocationServiceEnabled()) return;
-      final permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return;
-      }
+    final appIsBackgrounded = state != AppLifecycleState.resumed;
+    if (_appIsBackgrounded == appIsBackgrounded) return;
+    _appIsBackgrounded = appIsBackgrounded;
+
+    if (_sub != null && _requiresBackgroundMode != _backgroundMode) {
       _startStream();
-      _watchServiceStatus();
-    } catch (_) {
-      // The next resume or service-status event can retry.
     }
   }
 
@@ -247,27 +201,25 @@ class GpsFlightDataBridge {
   /// Stopping drops back to foreground-only settings only when the Android app
   /// itself is still in the foreground. Other flight-state changes are a no-op.
   void _onFlightStateChanged() {
-    final autoDetectEnabled = flightState.autoDetect;
-    final autoDetectJustEnabled = autoDetectEnabled && !_lastAutoDetect;
-    _lastAutoDetect = autoDetectEnabled;
-    if (Platform.isAndroid && autoDetectJustEnabled) {
-      unawaited(_requestAndroidBackgroundLocationPermission());
-    }
-
     // Nothing to do if we never managed to open a stream (unsupported
     // platform, permission denied, or location services off — the
     // service-status watcher will open it later in whatever mode is current).
     if (_sub == null) return;
     if (_requiresBackgroundMode == _backgroundMode) return;
-    if (flightState.isFlying && Platform.isIOS) {
+    // Re-request permission best-effort when entering a flight: background /
+    // "Always" location is what actually keeps the foreground service and
+    // background updates delivering fixes. Fire-and-forget so a slow prompt
+    // never blocks the flight from starting.
+    if (flightState.isFlying) {
       _ensureBackgroundPermission();
     }
     _startStream();
   }
 
-  /// Best-effort iOS upgrade to background ("Always") location authorization
-  /// when a flight starts. If the user declines, keep running with the current
-  /// authorization.
+  /// Best-effort upgrade to background ("Always") location authorization, used
+  /// when a flight starts. On both platforms this is what unlocks reliable
+  /// screen-off / backgrounded location delivery; if the user declines we keep
+  /// running on whatever authorization we already have.
   Future<void> _ensureBackgroundPermission() async {
     try {
       final permission = await Geolocator.checkPermission();
@@ -288,8 +240,9 @@ class GpsFlightDataBridge {
   /// platforms (e.g. iOS) whose native stream is distance-driven rather than
   /// time-driven.
   ///
-  /// When [background] is true (a flight is in progress, or Android automatic
-  /// flight detection is enabled) the stream uses background-resilient settings:
+  /// When [background] is true (a flight is in progress, or Android is
+  /// backgrounded) the stream is configured to survive the screen turning off
+  /// and the app being backgrounded:
   ///   * Android — starts a location foreground service with a persistent,
   ///     non-dismissible notification and holds a wake lock so the CPU (and
   ///     therefore GPS + the recording loop) keeps running.

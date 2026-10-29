@@ -57,9 +57,9 @@ class DataValueControl extends StatelessWidget {
   /// indicate the data source). Ignored when [showTitle] is false.
   final IconData? captionIcon;
 
-  /// Optional small text rendered after the caption/title. Ignored when
+  /// Optional compact badge rendered after the caption/title. Ignored when
   /// [showTitle] is false.
-  final String? captionSuffix;
+  final String? captionBadge;
 
   const DataValueControl({
     super.key,
@@ -69,7 +69,7 @@ class DataValueControl extends StatelessWidget {
     this.state = ValueState.neutral,
     this.showTitle = true,
     this.captionIcon,
-    this.captionSuffix,
+    this.captionBadge,
   });
 
   Color _valueColor(ThemeData theme) {
@@ -139,14 +139,26 @@ class DataValueControl extends StatelessWidget {
                       maxLines: 1,
                       style: labelStyle,
                     ),
-                    if (captionSuffix != null) ...[
-                      SizedBox(width: labelSize * 0.3),
-                      Text(
-                        captionSuffix!,
-                        maxLines: 1,
-                        style: labelStyle.copyWith(
-                          fontSize: labelSize * 0.72,
-                          letterSpacing: 0,
+                    if (captionBadge != null) ...[
+                      SizedBox(width: labelSize * 0.55),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: labelSize * 0.45,
+                          vertical: labelSize * 0.12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          captionBadge!,
+                          maxLines: 1,
+                          style: labelStyle.copyWith(
+                            fontSize: labelSize * 0.68,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0,
+                          ),
                         ),
                       ),
                     ],
@@ -237,9 +249,7 @@ class VerticalSpeedControl extends StatelessWidget {
       builder: (context, _) {
         final averageSeconds =
             VerticalSpeedSettings.instance.averageWindowSeconds;
-        final averageLabel = averageSeconds == averageSeconds.roundToDouble()
-            ? averageSeconds.toStringAsFixed(0)
-            : averageSeconds.toStringAsFixed(1);
+        final averageLabel = averageSeconds.toStringAsFixed(1);
         return DataValueControl(
           title: AppLocalizations.of(context).controlVerticalSpeed,
           value:
@@ -247,7 +257,9 @@ class VerticalSpeedControl extends StatelessWidget {
           unit: UnitValues.symbol(UnitDimension.verticalSpeed, unit),
           state: state,
           showTitle: showTitle,
-          captionSuffix: 'in${averageLabel}s',
+          captionBadge: AppLocalizations.of(
+            context,
+          ).verticalSpeedAverageWindowBadge(averageLabel),
         );
       },
     );

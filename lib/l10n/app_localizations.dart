@@ -458,6 +458,12 @@ abstract class AppLocalizations {
   /// **'Vertical speed averaging window'**
   String get verticalSpeedAverageWindow;
 
+  /// No description provided for @verticalSpeedAverageWindowBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'AVG · {seconds} s'**
+  String verticalSpeedAverageWindowBadge(String seconds);
+
   /// No description provided for @flightDetailOutlierFilter.
   ///
   /// In en, this message translates to:

@@ -63,6 +63,7 @@
   "shareCardFlatDesign": "扁平风格分享卡片",
   "shareCardFlatDesignSubtitle": "使用扁平设计，而不是玻璃风格",
   "verticalSpeedAverageWindow": "垂直速度平均时长",
+  "verticalSpeedAverageWindowBadge": "平均 · {seconds} 秒",
   "flightDetailOutlierFilter": "过滤爬升/下降异常值",
   "flightDetailOutlierFilterSubtitle": "仅在飞行详情中使用局部中位数/MAD 检测；不会更改已保存的样本。",
   "flightDetailOutlierSensitivity": "MAD 灵敏度",

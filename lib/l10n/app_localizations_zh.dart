@@ -191,6 +191,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get verticalSpeedAverageWindow => '垂直速度平均时长';
 
   @override
+  String verticalSpeedAverageWindowBadge(String seconds) {
+    return '平均 · $seconds 秒';
+  }
+
+  @override
   String get flightDetailOutlierFilter => '过滤爬升/下降异常值';
 
   @override

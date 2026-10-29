@@ -199,6 +199,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verticalSpeedAverageWindow => 'Vertical speed averaging window';
 
   @override
+  String verticalSpeedAverageWindowBadge(String seconds) {
+    return 'AVG · $seconds s';
+  }
+
+  @override
   String get flightDetailOutlierFilter => 'Filter climb/sink outliers';
 
   @override

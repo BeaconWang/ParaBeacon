@@ -452,6 +452,12 @@ abstract class AppLocalizations {
   /// **'Use a flat design instead of the glass style'**
   String get shareCardFlatDesignSubtitle;
 
+  /// No description provided for @verticalSpeedAverageWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical speed averaging window'**
+  String get verticalSpeedAverageWindow;
+
   /// No description provided for @flightDetailOutlierFilter.
   ///
   /// In en, this message translates to:

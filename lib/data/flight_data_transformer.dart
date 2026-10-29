@@ -34,7 +34,9 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
   final RawFlightDataSource rawSource;
 
   /// Trailing window over which the raw vertical speed is averaged.
-  final Duration verticalSpeedWindow;
+  Duration _verticalSpeedWindow;
+
+  Duration get verticalSpeedWindow => _verticalSpeedWindow;
 
   /// Timestamped *raw input* vertical-speed samples within
   /// [verticalSpeedWindow], oldest first.
@@ -58,13 +60,27 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
 
   FlightDataTransformer({
     required this.rawSource,
-    this.verticalSpeedWindow = const Duration(seconds: 2),
-  }) {
+    Duration verticalSpeedWindow = const Duration(seconds: 2),
+  }) : _verticalSpeedWindow = _clampVerticalSpeedWindow(verticalSpeedWindow) {
     _windEstimator = WindEstimator(
       trimSpeedKmh: _aircraftSettings.trimSpeedKmh,
     );
     _aircraftSettings.addListener(_onAircraftSettingsChanged);
     _attach();
+  }
+
+  static Duration _clampVerticalSpeedWindow(Duration window) =>
+      Duration(milliseconds: window.inMilliseconds.clamp(500, 3000));
+
+  void setVerticalSpeedWindow(Duration window) {
+    final normalized = _clampVerticalSpeedWindow(window);
+    if (_verticalSpeedWindow == normalized) return;
+    _verticalSpeedWindow = normalized;
+
+    final now = DateTime.now();
+    _discardExpiredSamples(now.subtract(_verticalSpeedWindow));
+    _data = _data.copyWith(verticalSpeed: _timeWeightedMean(now));
+    notifyListeners();
   }
 
   void _onAircraftSettingsChanged() {
@@ -162,11 +178,14 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
 
     _vsSamples.add(_VsSample(when, raw));
 
-    final cutoff = when.subtract(verticalSpeedWindow);
+    _discardExpiredSamples(when.subtract(verticalSpeedWindow));
+    return _timeWeightedMean(when);
+  }
+
+  void _discardExpiredSamples(DateTime cutoff) {
     while (_vsSamples.length > 1 && _vsSamples.first.time.isBefore(cutoff)) {
       _vsSamples.removeAt(0);
     }
-    return _timeWeightedMean(when);
   }
 
   /// Time-weighted (zero-order hold) mean of the buffered samples up to [now].
@@ -180,10 +199,12 @@ class FlightDataTransformer extends ChangeNotifier implements FlightDataView {
 
     var weightedSum = 0.0;
     var totalWeight = 0.0;
+    final cutoff = now.subtract(verticalSpeedWindow);
     for (var i = 0; i < _vsSamples.length; i++) {
       final current = _vsSamples[i];
+      final from = current.time.isBefore(cutoff) ? cutoff : current.time;
       final until = i + 1 < _vsSamples.length ? _vsSamples[i + 1].time : now;
-      var dtMicros = until.difference(current.time).inMicroseconds;
+      var dtMicros = until.difference(from).inMicroseconds;
       if (dtMicros < 0) dtMicros = 0; // guard against out-of-order timestamps
       final w = dtMicros.toDouble();
       weightedSum += current.value * w;

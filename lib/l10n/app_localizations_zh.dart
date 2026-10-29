@@ -188,6 +188,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareCardFlatDesignSubtitle => '使用扁平设计，而不是玻璃风格';
 
   @override
+  String get verticalSpeedAverageWindow => '垂直速度平均时长';
+
+  @override
   String get flightDetailOutlierFilter => '过滤爬升/下降异常值';
 
   @override

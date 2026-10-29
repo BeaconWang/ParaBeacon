@@ -196,6 +196,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use a flat design instead of the glass style';
 
   @override
+  String get verticalSpeedAverageWindow => 'Vertical speed averaging window';
+
+  @override
   String get flightDetailOutlierFilter => 'Filter climb/sink outliers';
 
   @override

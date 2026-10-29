@@ -37,6 +37,7 @@ import 'data/recording_settings.dart';
 import 'data/sensors/internal_sensor_bridge.dart';
 import 'data/sensors/internal_sensor_service.dart';
 import 'data/share_card_settings.dart';
+import 'data/vertical_speed_settings.dart';
 import 'data/takeoff_reference.dart';
 import 'data/unit_settings.dart';
 import 'data/xcontest_auth_service.dart';
@@ -86,8 +87,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   late final BluetoothSensorFlightDataSource _dataSource;
 
   // Data-transform layer: wraps [_dataSource] and derives display-ready values
-  // (e.g. the trailing-2s-average vertical speed). Controls, the vario audio
-  // and the recorder all read from this so they share the same transforms.
+  // (e.g. the configured trailing-window average vertical speed). Controls, the
+  // vario audio and the recorder all read from this shared transform.
   //   [control] <- [_transformer] <- [_dataSource] <- [raw data]
   late final FlightDataTransformer _transformer;
   late final LiveTrackingService _liveTracking;
@@ -172,6 +173,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // (controls, recorder, vario audio) reads the transformed feed so they all
     // see the same derived values (e.g. the averaged vertical speed).
     _transformer = FlightDataTransformer(rawSource: _dataSource);
+    VerticalSpeedSettings.instance.addListener(_onVerticalSpeedSettingsChanged);
+    unawaited(VerticalSpeedSettings.instance.load());
     TakeoffReference.instance.bind(_transformer);
 
     // Bring up the BLE sensor service (best-effort; no-op on desktop/web) and
@@ -273,10 +276,19 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _bleAnnouncements.dispose();
     _varioAudio.dispose();
     _altitudeAnnouncements.dispose();
+    VerticalSpeedSettings.instance.removeListener(
+      _onVerticalSpeedSettingsChanged,
+    );
     TakeoffReference.instance.unbind();
     _transformer.dispose();
     _dataSource.dispose();
     super.dispose();
+  }
+
+  void _onVerticalSpeedSettingsChanged() {
+    _transformer.setVerticalSpeedWindow(
+      VerticalSpeedSettings.instance.verticalSpeedWindow,
+    );
   }
 
   void _onFlightRecorderChanged() {

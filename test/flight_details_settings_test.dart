@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/other_settings_sheet.dart';
 import 'package:parabeacon/data/flight_details_settings.dart';
+import 'package:parabeacon/data/vertical_speed_settings.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,12 +33,41 @@ void main() {
     expect(preferences.getDouble('pb.flightDetails.maximumVerticalSpeed'), 25);
   });
 
+  test(
+    'vertical-speed averaging window defaults and persists in tenths',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = VerticalSpeedSettings.instance;
+      await settings.load();
+
+      expect(settings.averageWindowSeconds, 2.0);
+      expect(settings.verticalSpeedWindow, const Duration(seconds: 2));
+
+      await settings.setAverageWindowSeconds(2.46);
+      expect(settings.averageWindowSeconds, 2.5);
+      expect(settings.verticalSpeedWindow, const Duration(milliseconds: 2500));
+
+      await settings.setAverageWindowSeconds(0);
+      expect(settings.averageWindowSeconds, 0.5);
+      await settings.setAverageWindowSeconds(6);
+      expect(settings.averageWindowSeconds, 3.0);
+
+      final preferences = await SharedPreferences.getInstance();
+      expect(
+        preferences.getInt('pb.verticalSpeed.averageWindowDeciseconds'),
+        30,
+      );
+    },
+  );
+
   testWidgets('Other Settings exposes the default-on filter and parameters', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
     final settings = FlightDetailsSettings.instance;
+    final verticalSpeedSettings = VerticalSpeedSettings.instance;
     await settings.setFilterVarioOutliers(true);
+    await verticalSpeedSettings.setAverageWindowSeconds(2.0);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -65,13 +95,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Filter climb/sink outliers'), findsOneWidget);
-    expect(find.byType(Slider), findsNWidgets(3));
+    expect(find.text('Vertical speed averaging window'), findsOneWidget);
+    expect(find.byType(Slider), findsNWidgets(4));
     expect(settings.filterVarioOutliers, isTrue);
+
+    final averagingSlider = tester.widget<Slider>(find.byType(Slider).first);
+    expect(averagingSlider.min, 0.5);
+    expect(averagingSlider.max, 3);
+    expect(averagingSlider.divisions, 25);
+    averagingSlider.onChanged!(2.5);
+    await tester.pumpAndSettle();
+    expect(verticalSpeedSettings.averageWindowSeconds, 2.5);
 
     await tester.tap(find.text('Filter climb/sink outliers'));
     await tester.pumpAndSettle();
 
     expect(settings.filterVarioOutliers, isFalse);
-    expect(find.byType(Slider), findsNothing);
+    expect(find.byType(Slider), findsOneWidget);
   });
 }

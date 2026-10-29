@@ -6,6 +6,7 @@ import '../data/flight_store.dart';
 import '../data/flight_details_settings.dart';
 import '../data/map_tile_cache.dart';
 import '../data/share_card_settings.dart';
+import '../data/vertical_speed_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'color_palette_settings_sheet.dart';
 import 'map_control.dart' show MapTileSources;
@@ -243,6 +244,7 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
       animation: Listenable.merge([
         ShareCardSettings.instance,
         FlightDetailsSettings.instance,
+        VerticalSpeedSettings.instance,
       ]),
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
@@ -286,6 +288,18 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                     subtitle: Text(l10n.shareCardFlatDesignSubtitle),
                     value: ShareCardSettings.instance.flatDesign,
                     onChanged: ShareCardSettings.instance.setFlatDesign,
+                  ),
+                  _buildOutlierSlider(
+                    theme: theme,
+                    title: l10n.verticalSpeedAverageWindow,
+                    value: VerticalSpeedSettings.instance.averageWindowSeconds,
+                    min: 0.5,
+                    max: 3,
+                    divisions: 25,
+                    valueLabel:
+                        '${VerticalSpeedSettings.instance.averageWindowSeconds.toStringAsFixed(1)} s',
+                    onChanged:
+                        VerticalSpeedSettings.instance.setAverageWindowSeconds,
                   ),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,

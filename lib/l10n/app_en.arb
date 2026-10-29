@@ -63,6 +63,7 @@
   "otherSettingsSubtitle": "Additional preferences",
   "shareCardFlatDesign": "Flat share cards",
   "shareCardFlatDesignSubtitle": "Use a flat design instead of the glass style",
+  "verticalSpeedAverageWindow": "Vertical speed averaging window",
   "flightDetailOutlierFilter": "Filter climb/sink outliers",
   "flightDetailOutlierFilterSubtitle": "Use a local median/MAD check for flight details only. Saved samples are never changed.",
   "flightDetailOutlierSensitivity": "MAD sensitivity",

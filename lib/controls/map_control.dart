@@ -19,6 +19,7 @@ import '../data/offline_tiles_service.dart';
 import '../data/map_tile_cache.dart';
 import '../data/solar_position.dart';
 import '../data/thermal_detector.dart';
+import '../data/vario_color_palette.dart';
 import '../data/vario_color_scale.dart';
 import '../data/wind_estimator.dart';
 import '../l10n/app_localizations.dart';
@@ -387,9 +388,8 @@ class _MapControlState extends State<MapControl> {
   List<AirspaceProximity> _airspaceProximity = const [];
   StreamSubscription<List<AirspaceProximity>>? _airspaceSub;
 
-  /// Vario → colour scale for the flight track. Rebuilt from the live
-  /// [VarioSoundSettings] thresholds whenever the user changes them, so the
-  /// track (and legend) recolour dynamically.
+  /// Live vario thresholds used by the map legend. The track and gradient
+  /// colors use the shared Vario bar palette.
   late VarioColorScale _varioScale = _buildVarioScale();
 
   VarioColorScale _buildVarioScale() {
@@ -413,7 +413,7 @@ class _MapControlState extends State<MapControl> {
     FlightRecorder.instance.addListener(_onExternalChange);
     LandingPointStore.instance.addListener(_onExternalChange);
     TakeoffReference.instance.addListener(_onExternalChange);
-    // Recolour the track/legend when the vario thresholds change.
+    // Refresh the legend when the vario thresholds change.
     VarioSoundSettings.instance.addListener(_onThresholdsChanged);
     // React to the debug simulator being toggled on/off: when it turns on the
     // map should immediately switch to the simulated position (highest
@@ -1155,9 +1155,9 @@ class _MapControlState extends State<MapControl> {
     final strokeWidth = 3.0 * widget.lineThickness;
     final out = <Polyline>[];
     int runStart = 0;
-    // A segment's colour is derived from the vario at its *end* point via the
-    // threshold-aware [VarioColorScale].
-    Color runColor = _varioScale.colorFor(vario(1));
+    // A segment's colour is derived from the vario at its *end* point using
+    // the same palette as the Vario bar.
+    Color runColor = varioColorFor(vario(1));
 
     void flush(int endExclusive) {
       if (endExclusive - runStart < 2) return;
@@ -1171,7 +1171,7 @@ class _MapControlState extends State<MapControl> {
     }
 
     for (int i = 2; i < pts.length; i++) {
-      final c = _varioScale.colorFor(vario(i));
+      final c = varioColorFor(vario(i));
       if (c != runColor) {
         flush(i);
         runStart = i - 1; // share the endpoint for visual continuity
@@ -1917,10 +1917,8 @@ class _VarioLegend extends StatelessWidget {
     // Fractions (0..1 over the visualisation range) at which the threshold
     // ticks sit, so the labels line up with the gradient bar.
     double frac(double mps) =>
-        ((mps - scale.colorMin) / (scale.colorMax - scale.colorMin)).clamp(
-          0.0,
-          1.0,
-        );
+        ((mps - varioColorMinSpeed) / (varioColorMaxSpeed - varioColorMinSpeed))
+            .clamp(0.0, 1.0);
 
     const barWidth = 220.0;
 
@@ -1946,21 +1944,21 @@ class _VarioLegend extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          // Gradient bar sampled from the scale.
+          // Gradient bar sampled from the Vario bar palette.
           ClipRRect(
             borderRadius: BorderRadius.circular(3),
             child: Container(
               width: barWidth,
               height: 8,
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: scale.sampleGradient(24)),
+                gradient: LinearGradient(colors: sampleVarioColorGradient(24)),
               ),
             ),
           ),
           const SizedBox(height: 2),
           // Tick labels: colorMin · sink · 0 · lift · colorMax, positioned to
-          // align with their value on the bar. Endpoints and thresholds are all
-          // derived from the scale (nothing hard-coded).
+          // align with their value on the Vario bar palette. Thresholds remain
+          // live from the scale.
           SizedBox(
             width: barWidth,
             height: 11,
@@ -1969,7 +1967,7 @@ class _VarioLegend extends StatelessWidget {
               children: [
                 _tick(
                   0.0,
-                  fmt(scale.colorMin, colorMinPrecision),
+                  fmt(varioColorMinSpeed, colorMinPrecision),
                   labelStyle,
                   barWidth,
                   Alignment.centerLeft,
@@ -1991,7 +1989,7 @@ class _VarioLegend extends StatelessWidget {
                 ),
                 _tick(
                   1.0,
-                  fmt(scale.colorMax, colorMaxPrecision),
+                  fmt(varioColorMaxSpeed, colorMaxPrecision),
                   labelStyle,
                   barWidth,
                   Alignment.centerRight,

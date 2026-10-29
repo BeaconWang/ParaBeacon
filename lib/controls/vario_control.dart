@@ -3,7 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../data/flight_data_provider.dart';
+import '../data/vario_color_palette.dart';
 import 'decimal_places.dart';
+
+export '../data/vario_color_palette.dart' show varioColorFor;
 
 /// A vertical Vario column gauge, inspired by XCTrack's `WVarioColumn`.
 ///
@@ -56,41 +59,12 @@ class VarioControl extends StatelessWidget {
   }
 }
 
-/// Fixed vertical-speed stops used to color the bar continuously.
-const _varioColorStops = <(double, Color)>[
-  (-10.0, Color(0xFF000B1E)), // blue-black
-  (-7.0, Color(0xFF0D47A1)), // dark blue
-  (-3.0, Color(0xFF00BCD4)), // cyan blue
-  (0.0, Color(0xFF9E9E9E)), // gray
-  (3.0, Color(0xFF4CAF50)), // green
-  (7.0, Color(0xFFF44336)), // red
-  (10.0, Color(0xFF4A0033)), // dark purplish red
-];
-
-/// Maps vertical speed (m/s) to a linearly interpolated fill color.
-Color varioColorFor(double v) {
-  if (v.isNaN) return _varioColorStops[3].$2;
-  if (v <= _varioColorStops.first.$1) return _varioColorStops.first.$2;
-  if (v >= _varioColorStops.last.$1) return _varioColorStops.last.$2;
-
-  for (int i = 0; i < _varioColorStops.length - 1; i++) {
-    final lower = _varioColorStops[i];
-    final upper = _varioColorStops[i + 1];
-    if (v == lower.$1) return lower.$2;
-    if (v <= upper.$1) {
-      final t = (v - lower.$1) / (upper.$1 - lower.$1);
-      return Color.lerp(lower.$2, upper.$2, t)!;
-    }
-  }
-  return _varioColorStops.last.$2;
-}
-
 LinearGradient _varioFillGradient(double maxScale) {
   final scale = maxScale > 0 && maxScale.isFinite ? maxScale : 1.0;
   final colors = <Color>[varioColorFor(scale)];
   final stops = <double>[0.0];
 
-  for (final stop in _varioColorStops.reversed) {
+  for (final stop in varioColorStops.reversed) {
     final speed = stop.$1;
     if (speed < scale && speed > -scale) {
       colors.add(stop.$2);

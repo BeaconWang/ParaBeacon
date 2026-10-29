@@ -822,6 +822,7 @@ class _MapControlState extends State<MapControl> {
                     color: theme.colorScheme.onSurface.withAlpha(90),
                     labelColor: theme.colorScheme.onSurfaceVariant,
                     distancePrecision: gridDistancePrecision,
+                    labelBottom: widget.showScale ? 62 : 34,
                   ),
 
                 // Airspace polygons (below track/markers so labels stay legible).
@@ -1520,11 +1521,13 @@ class _DashedGridLayer extends StatelessWidget {
     required this.color,
     required this.labelColor,
     required this.distancePrecision,
+    required this.labelBottom,
   });
 
   final Color color;
   final Color labelColor;
   final DecimalPlaceRange? distancePrecision;
+  final double labelBottom;
 
   /// Picks a "nice" ground distance (metres) from a 1-2-5 series such that the
   /// visible span is divided into a comfortable number of cells.
@@ -1596,7 +1599,7 @@ class _DashedGridLayer extends StatelessWidget {
           // and screen-fixed regardless of map rotation.
           Positioned(
             left: 8,
-            bottom: 34,
+            bottom: labelBottom,
             child: _GridScaleLabel(
               text: 'Grid ${_formatDistance(stepMeters, distancePrecision)}',
               color: labelColor,

@@ -149,6 +149,10 @@ class FlightData {
 
   static const FlightData empty = FlightData();
 
+  /// Altitude used for flight statistics: pressure altitude first, then GPS,
+  /// then the effective altitude retained for older or source-agnostic records.
+  double get preferredAltitude => baroAltitude ?? gpsAltitude ?? altitude;
+
   FlightData copyWith({
     double? verticalSpeed,
     double? groundSpeed,

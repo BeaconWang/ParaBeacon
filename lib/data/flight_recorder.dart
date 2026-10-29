@@ -302,12 +302,9 @@ class FlightTrack {
   double? _baroMaxClimb;
   double? _baroMaxSink;
   bool? _hasBaroData;
-  DateTime? _gpsVarioWindowStart;
-  double? _gpsVarioWindowPreviousAltitude;
-  double _gpsVarioWindowChange = 0.0;
-  DateTime? _baroVarioWindowStart;
-  double? _baroVarioWindowPreviousAltitude;
-  double _baroVarioWindowChange = 0.0;
+  DateTime? _varioWindowStart;
+  double? _varioWindowPreviousAltitude;
+  double _varioWindowChange = 0.0;
   double? _maxAltGainM;
   double? _elevationDropM;
   double? _firstSampleAltitude;
@@ -331,7 +328,7 @@ class FlightTrack {
   /// Cumulative distance between successive, chronologically increasing fixes.
   double get distanceM => _distanceM;
 
-  /// Highest / lowest GNSS altitude seen (meters). Zero before any sample.
+  /// Highest / lowest barometric-first altitude seen (meters). Zero before any sample.
   double get maxAltitude =>
       _maxAltitude == double.negativeInfinity ? 0.0 : _maxAltitude;
   double get minAltitude =>
@@ -404,12 +401,9 @@ class FlightTrack {
     _baroMaxClimb = null;
     _baroMaxSink = null;
     _hasBaroData = null;
-    _gpsVarioWindowStart = null;
-    _gpsVarioWindowPreviousAltitude = null;
-    _gpsVarioWindowChange = 0.0;
-    _baroVarioWindowStart = null;
-    _baroVarioWindowPreviousAltitude = null;
-    _baroVarioWindowChange = 0.0;
+    _varioWindowStart = null;
+    _varioWindowPreviousAltitude = null;
+    _varioWindowChange = 0.0;
     _maxAltGainM = null;
     _elevationDropM = null;
     _firstSampleAltitude = null;
@@ -463,19 +457,15 @@ class FlightTrack {
       // No data was recorded across the gap: neither distance nor vario
       // windows may bridge it.
       _lastFixSample = null;
-      _gpsVarioWindowStart = null;
-      _gpsVarioWindowPreviousAltitude = null;
-      _gpsVarioWindowChange = 0.0;
-      _baroVarioWindowStart = null;
-      _baroVarioWindowPreviousAltitude = null;
-      _baroVarioWindowChange = 0.0;
+      _varioWindowStart = null;
+      _varioWindowPreviousAltitude = null;
+      _varioWindowChange = 0.0;
     }
 
-    final endpointAltitude = s.data.baroAltitude ?? s.data.gpsAltitude;
-    if (prev == null) _takeoffAltitude = endpointAltitude;
-    _landingAltitude = endpointAltitude;
+    final alt = s.data.preferredAltitude;
+    if (prev == null) _takeoffAltitude = alt;
+    _landingAltitude = alt;
 
-    final alt = s.data.gpsAltitude ?? s.data.altitude;
     _maxAltGainM ??= 0.0;
     if (_minAltitude != double.infinity) {
       final gain = alt - _minAltitude;
@@ -486,19 +476,8 @@ class FlightTrack {
     if (alt > _maxAltitude) _maxAltitude = alt;
     if (alt < _minAltitude) _minAltitude = alt;
 
-    _foldVarioWindow(time: s.time, altitude: alt, barometric: false);
-    final baroAlt = s.data.baroAltitude;
-    _hasBaroData = baroAlt != null && baroAlt != 0;
-    if (baroAlt != null && baroAlt != 0) {
-      _foldVarioWindow(time: s.time, altitude: baroAlt, barometric: true);
-    }
-    if (_hasBaroData == true) {
-      _maxClimb = _baroMaxClimb ?? 0.0;
-      _maxSink = _baroMaxSink ?? 0.0;
-    } else {
-      _maxClimb = _gpsMaxClimb ?? 0.0;
-      _maxSink = _gpsMaxSink ?? 0.0;
-    }
+    _foldVarioWindow(time: s.time, altitude: alt);
+    if (s.data.baroAltitude != null) _hasBaroData = true;
 
     if (s.data.hasFix) {
       _takeoffLat ??= s.data.latitude;
@@ -519,57 +498,27 @@ class FlightTrack {
     }
   }
 
-  void _foldVarioWindow({
-    required DateTime time,
-    required double altitude,
-    required bool barometric,
-  }) {
-    final start = barometric ? _baroVarioWindowStart : _gpsVarioWindowStart;
-    final previous = barometric
-        ? _baroVarioWindowPreviousAltitude
-        : _gpsVarioWindowPreviousAltitude;
+  void _foldVarioWindow({required DateTime time, required double altitude}) {
+    final start = _varioWindowStart;
+    final previous = _varioWindowPreviousAltitude;
     if (start == null || previous == null) {
-      if (barometric) {
-        _baroVarioWindowStart = time;
-        _baroVarioWindowPreviousAltitude = altitude;
-        _baroVarioWindowChange = 0.0;
-      } else {
-        _gpsVarioWindowStart = time;
-        _gpsVarioWindowPreviousAltitude = altitude;
-        _gpsVarioWindowChange = 0.0;
-      }
+      _varioWindowStart = time;
+      _varioWindowPreviousAltitude = altitude;
+      _varioWindowChange = 0.0;
       return;
     }
 
-    if (barometric) {
-      _baroVarioWindowChange += altitude - previous;
-      _baroVarioWindowPreviousAltitude = altitude;
-    } else {
-      _gpsVarioWindowChange += altitude - previous;
-      _gpsVarioWindowPreviousAltitude = altitude;
-    }
+    _varioWindowChange += altitude - previous;
+    _varioWindowPreviousAltitude = altitude;
 
     final elapsed = time.difference(start);
     if (elapsed < const Duration(seconds: 30)) return;
-    final change = barometric ? _baroVarioWindowChange : _gpsVarioWindowChange;
-    final rate = change / (elapsed.inMilliseconds / 1000.0);
-    if (barometric) {
-      final maxClimb = _baroMaxClimb ?? 0.0;
-      final maxSink = _baroMaxSink ?? 0.0;
-      if (rate > maxClimb) _baroMaxClimb = rate;
-      if (rate < maxSink) _baroMaxSink = rate;
-      _baroVarioWindowStart = null;
-      _baroVarioWindowPreviousAltitude = null;
-      _baroVarioWindowChange = 0.0;
-    } else {
-      final maxClimb = _gpsMaxClimb ?? 0.0;
-      final maxSink = _gpsMaxSink ?? 0.0;
-      if (rate > maxClimb) _gpsMaxClimb = rate;
-      if (rate < maxSink) _gpsMaxSink = rate;
-      _gpsVarioWindowStart = null;
-      _gpsVarioWindowPreviousAltitude = null;
-      _gpsVarioWindowChange = 0.0;
-    }
+    final rate = _varioWindowChange / (elapsed.inMilliseconds / 1000.0);
+    if (rate > _maxClimb) _maxClimb = rate;
+    if (rate < _maxSink) _maxSink = rate;
+    _varioWindowStart = null;
+    _varioWindowPreviousAltitude = null;
+    _varioWindowChange = 0.0;
   }
 
   /// Serializes the track's summary (no per-sample data) to a JSON map. Used

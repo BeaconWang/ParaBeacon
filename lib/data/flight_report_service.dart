@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
 import 'flight_derived_stats.dart';
+import 'flight_details_settings.dart';
 import 'flight_file_output_service.dart';
 import 'flight_recorder.dart';
 
@@ -32,7 +33,14 @@ class FlightReportService {
   /// when the app locale needs non-Latin glyphs (e.g. Chinese) a matching
   /// font is loaded so the content renders in the current language.
   Future<List<int>> buildPdf(FlightTrack track, AppLocalizations l10n) async {
-    final stats = FlightDerivedStats.compute(track);
+    final settings = FlightDetailsSettings.instance;
+    final stats = FlightDerivedStats.compute(
+      track,
+      filterVarioOutliers: settings.filterVarioOutliers,
+      madMultiplier: settings.madMultiplier,
+      windowSeconds: settings.windowSeconds,
+      maximumVerticalSpeedMs: settings.maximumVerticalSpeedMs,
+    );
     final theme = await _themeFor(l10n);
     final doc = pw.Document();
 

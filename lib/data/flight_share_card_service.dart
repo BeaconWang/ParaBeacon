@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
 import 'flight_derived_stats.dart';
+import 'flight_details_settings.dart';
 import 'flight_file_output_service.dart';
 import 'flight_recorder.dart';
 import 'share_card_settings.dart';
@@ -37,7 +38,14 @@ class FlightShareCardService {
     AppLocalizations l10n, {
     required ColorScheme colorScheme,
   }) async {
-    final stats = FlightDerivedStats.compute(track);
+    final settings = FlightDetailsSettings.instance;
+    final stats = FlightDerivedStats.compute(
+      track,
+      filterVarioOutliers: settings.filterVarioOutliers,
+      madMultiplier: settings.madMultiplier,
+      windowSeconds: settings.windowSeconds,
+      maximumVerticalSpeedMs: settings.maximumVerticalSpeedMs,
+    );
     final cardHeight = math
         .max(
           _minHeight,

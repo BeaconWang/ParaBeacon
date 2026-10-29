@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:parabeacon/data/flight_data.dart';
+import 'package:parabeacon/data/flight_details_settings.dart';
 import 'package:parabeacon/data/flight_recorder.dart';
 import 'package:parabeacon/data/flight_report_service.dart';
 import 'package:parabeacon/data/flight_share_card_service.dart';
@@ -85,6 +86,45 @@ void main() {
       expect(text, contains('Paraglider'));
       expect(text, isNot(contains('Category only in export')));
     });
+
+    test(
+      'share card and PDF use the current flight-detail outlier setting',
+      () async {
+        final settings = FlightDetailsSettings.instance;
+        final track = _outlierTrack();
+        final l10n = AppLocalizationsEn();
+
+        await settings.setFilterVarioOutliers(true);
+        final filteredPdf = await FlightReportService.instance.buildPdf(
+          track,
+          l10n,
+        );
+        final filteredPdfText = _decodePdfStreams(filteredPdf);
+        expect(filteredPdfText, contains('1.0 m/s'));
+        expect(filteredPdfText, isNot(contains('6.4 m/s')));
+        final filteredCard = await FlightShareCardService.instance.renderPng(
+          track,
+          l10n,
+          colorScheme: ColorScheme.dark(),
+        );
+
+        await settings.setFilterVarioOutliers(false);
+        final unfilteredPdf = await FlightReportService.instance.buildPdf(
+          track,
+          l10n,
+        );
+        final unfilteredPdfText = _decodePdfStreams(unfilteredPdf);
+        expect(unfilteredPdfText, contains('6.4 m/s'));
+        final unfilteredCard = await FlightShareCardService.instance.renderPng(
+          track,
+          l10n,
+          colorScheme: ColorScheme.dark(),
+        );
+        expect(unfilteredCard, isNot(equals(filteredCard)));
+
+        await settings.setFilterVarioOutliers(true);
+      },
+    );
 
     test('renders a content-sized grouped share card', () async {
       final bytes = await FlightShareCardService.instance.renderPng(
@@ -168,6 +208,30 @@ String _decodePdfStreams(List<int> bytes) {
   return RegExp(
     r'\(([^()]*)\)',
   ).allMatches(decoded.toString()).map((match) => match.group(1)!).join(' ');
+}
+
+FlightTrack _outlierTrack() {
+  final start = DateTime.utc(2026, 10, 1, 9);
+  final rates = [0.0, 1.0, 1.0, 1.0, 1.0, 50.0, 1.0, 1.0, 1.0, 1.0];
+  final track = FlightTrack(startTime: start);
+  for (var index = 0; index < rates.length; index++) {
+    track.add(
+      FlightSample(
+        time: start.add(Duration(seconds: index)),
+        data: FlightData(
+          verticalSpeed: rates[index],
+          altitude: 500,
+          baroAltitude: 500,
+          gpsAltitude: 500,
+          latitude: 22.8 + index * 0.0001,
+          longitude: 114.7 + index * 0.0001,
+          groundSpeed: 36,
+          hasFix: true,
+        ),
+      ),
+    );
+  }
+  return track;
 }
 
 FlightTrack _completeTrack() {

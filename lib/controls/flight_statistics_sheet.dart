@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../data/flight_derived_stats.dart';
+import '../data/flight_details_settings.dart';
 import '../data/flight_recorder.dart';
 import '../data/flight_statistics.dart';
 import '../data/flight_statistics_share_card_service.dart';
@@ -36,6 +37,23 @@ enum _StatsPriority { summary, detailed }
 
 enum _StatisticsExportDestination { downloads, share }
 
+typedef _OutlierFilterOptions = ({
+  bool enabled,
+  double madMultiplier,
+  int windowSeconds,
+  double maximumVerticalSpeedMs,
+});
+
+_OutlierFilterOptions _currentOutlierFilterOptions() {
+  final settings = FlightDetailsSettings.instance;
+  return (
+    enabled: settings.filterVarioOutliers,
+    madMultiplier: settings.madMultiplier,
+    windowSeconds: settings.windowSeconds,
+    maximumVerticalSpeedMs: settings.maximumVerticalSpeedMs,
+  );
+}
+
 class _FlightStatisticsSheet extends StatefulWidget {
   const _FlightStatisticsSheet({required this.tracks, required this.selected});
 
@@ -55,6 +73,7 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
   String? _detailsError;
   int _completedFlights = 0;
   int _detailedFlights = 0;
+  _OutlierFilterOptions? _detailsFilterOptions;
   int _jobId = 0;
   bool _shareWhenDetailedReady = false;
   bool _isSharingCard = false;
@@ -94,6 +113,7 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
           includeDetailed: false,
         );
         _detailsComplete = false;
+        _detailsFilterOptions = null;
         _detailsError = null;
         _completedFlights = 0;
         _detailedFlights = 0;
@@ -107,6 +127,8 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
   Future<void> _startDetailedWork() async {
     _stopDetailedWork();
     final jobId = _jobId;
+    final filterOptions = _currentOutlierFilterOptions();
+    _detailsFilterOptions = filterOptions;
     _stats = FlightStatistics.compute(widget.tracks, includeDetailed: false);
     _completedFlights = 0;
     _detailedFlights = widget.tracks.where((track) => track.hasSamples).length;
@@ -129,7 +151,7 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
     });
 
     if (kIsWeb) {
-      await _computeDetailedOnWeb(jobId);
+      await _computeDetailedOnWeb(jobId, filterOptions);
       return;
     }
 
@@ -154,7 +176,14 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
     try {
       final worker = await Isolate.spawn<List<Object?>>(
         _computeFlightDetailsInWorker,
-        <Object?>[widget.tracks, resultsPort.sendPort],
+        <Object?>[
+          widget.tracks,
+          resultsPort.sendPort,
+          filterOptions.enabled,
+          filterOptions.madMultiplier,
+          filterOptions.windowSeconds,
+          filterOptions.maximumVerticalSpeedMs,
+        ],
         onError: errorsPort.sendPort,
         onExit: exitPort.sendPort,
         errorsAreFatal: true,
@@ -169,13 +198,16 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
     }
   }
 
-  Future<void> _computeDetailedOnWeb(int jobId) async {
+  Future<void> _computeDetailedOnWeb(
+    int jobId,
+    _OutlierFilterOptions filterOptions,
+  ) async {
     try {
       for (var i = 0; i < widget.tracks.length; i++) {
         if (!mounted || _jobId != jobId || !_isComputing) return;
         final track = widget.tracks[i];
         if (!track.hasSamples) continue;
-        final details = FlightDerivedStats.compute(track);
+        final details = _computeDetailedStats(track, filterOptions);
         if (!mounted || _jobId != jobId || !_isComputing) return;
         setState(() {
           _stats.addDetailedTrackStats(track, details);
@@ -233,6 +265,10 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
 
   void _shareAfterDetailsReady(int jobId) {
     if (!mounted || _jobId != jobId || !_shareWhenDetailedReady) return;
+    if (_detailsFilterOptions != _currentOutlierFilterOptions()) {
+      unawaited(_startDetailedWork());
+      return;
+    }
     _shareWhenDetailedReady = false;
     if (!_detailsComplete) {
       _showSnack(AppLocalizations.of(context).statsCalculationFailed);
@@ -243,6 +279,12 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
 
   void _requestStatisticsShareCard() {
     if (_isSharingCard || _stats.isEmpty) return;
+    if (_detailsComplete &&
+        _detailsFilterOptions != _currentOutlierFilterOptions()) {
+      _shareWhenDetailedReady = true;
+      unawaited(_startDetailedWork());
+      return;
+    }
     if (_isComputing) {
       setState(() => _shareWhenDetailedReady = true);
       return;
@@ -550,15 +592,32 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
   }
 }
 
+FlightDerivedStats _computeDetailedStats(
+  FlightTrack track,
+  _OutlierFilterOptions options,
+) => FlightDerivedStats.compute(
+  track,
+  filterVarioOutliers: options.enabled,
+  madMultiplier: options.madMultiplier,
+  windowSeconds: options.windowSeconds,
+  maximumVerticalSpeedMs: options.maximumVerticalSpeedMs,
+);
+
 @pragma('vm:entry-point')
 void _computeFlightDetailsInWorker(List<Object?> args) {
   final tracks = args[0] as List<FlightTrack>;
   final sendPort = args[1] as SendPort;
+  final options = (
+    enabled: args[2] as bool,
+    madMultiplier: args[3] as double,
+    windowSeconds: args[4] as int,
+    maximumVerticalSpeedMs: args[5] as double,
+  );
   try {
     for (var i = 0; i < tracks.length; i++) {
       final track = tracks[i];
       if (track.hasSamples) {
-        sendPort.send(<Object?>[i, FlightDerivedStats.compute(track)]);
+        sendPort.send(<Object?>[i, _computeDetailedStats(track, options)]);
       }
     }
     sendPort.send(const <Object?>[-1, null]);

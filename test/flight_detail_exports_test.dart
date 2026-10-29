@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:parabeacon/data/flight_data.dart';
+import 'package:parabeacon/data/flight_derived_stats.dart';
 import 'package:parabeacon/data/flight_details_settings.dart';
 import 'package:parabeacon/data/flight_recorder.dart';
 import 'package:parabeacon/data/flight_report_service.dart';
@@ -144,6 +145,61 @@ void main() {
       expect(data.getUint32(16), 1080);
       expect(data.getUint32(20), greaterThan(1920));
     });
+
+    test(
+      'statistics share card reflects filtered detailed flight data',
+      () async {
+        final settings = FlightDetailsSettings.instance;
+        final track = _outlierTrack();
+        final l10n = AppLocalizationsEn();
+
+        await settings.setFilterVarioOutliers(true);
+        final filteredStats = FlightStatistics.compute([
+          track,
+        ], includeDetailed: false);
+        filteredStats.addDetailedTrackStats(
+          track,
+          FlightDerivedStats.compute(
+            track,
+            filterVarioOutliers: settings.filterVarioOutliers,
+            madMultiplier: settings.madMultiplier,
+            windowSeconds: settings.windowSeconds,
+            maximumVerticalSpeedMs: settings.maximumVerticalSpeedMs,
+          ),
+        );
+        expect(filteredStats.totalThermals, 2);
+
+        await settings.setFilterVarioOutliers(false);
+        final unfilteredStats = FlightStatistics.compute([
+          track,
+        ], includeDetailed: false);
+        unfilteredStats.addDetailedTrackStats(
+          track,
+          FlightDerivedStats.compute(track),
+        );
+        expect(unfilteredStats.totalThermals, 1);
+
+        final filteredCard = await FlightStatisticsShareCardService.instance
+            .renderPng(
+              filteredStats,
+              l10n,
+              selected: false,
+              locale: 'en',
+              colorScheme: ColorScheme.dark(),
+            );
+        final unfilteredCard = await FlightStatisticsShareCardService.instance
+            .renderPng(
+              unfilteredStats,
+              l10n,
+              selected: false,
+              locale: 'en',
+              colorScheme: ColorScheme.dark(),
+            );
+        expect(filteredCard, isNotEmpty);
+        expect(unfilteredCard, isNotEmpty);
+        await settings.setFilterVarioOutliers(true);
+      },
+    );
 
     test('renders a detailed statistics share image', () async {
       final stats = FlightStatistics.compute([_completeTrack()]);

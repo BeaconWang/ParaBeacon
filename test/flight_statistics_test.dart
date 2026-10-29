@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/flight_statistics_sheet.dart';
 import 'package:parabeacon/data/flight_data.dart';
 import 'package:parabeacon/data/flight_derived_stats.dart';
+import 'package:parabeacon/data/flight_details_settings.dart';
 import 'package:parabeacon/data/flight_recorder.dart';
 import 'package:parabeacon/data/flight_statistics.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
+import 'package:parabeacon/l10n/app_localizations_en.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +31,72 @@ void main() {
       expect(summary.totalAltitudeGainedM, full.totalAltitudeGainedM);
       expect(summary.avgSpeedKph, full.avgSpeedKph);
       expect(summary.maxSpeedKph?.value, full.maxSpeedKph?.value);
+    });
+
+    testWidgets('detailed flight statistics apply the enabled outlier filter', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = FlightDetailsSettings.instance;
+      await settings.load();
+      await settings.setFilterVarioOutliers(true);
+      await settings.setMadMultiplier(4);
+      await settings.setWindowSeconds(30);
+      await settings.setMaximumVerticalSpeedMs(20);
+      final track = _outlierTrack();
+      final l10n = AppLocalizationsEn();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showFlightStatisticsSheet(
+                    context,
+                    tracks: [track],
+                    selected: false,
+                  ),
+                  child: const Text('Open stats'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open stats'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Detailed stats'));
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text(l10n.statsTotalThermals),
+        240,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      final totalThermalsRow = find
+          .ancestor(
+            of: find.text(l10n.statsTotalThermals),
+            matching: find.byType(Row),
+          )
+          .first;
+      final rowTexts = tester.widgetList<Text>(
+        find.descendant(of: totalThermalsRow, matching: find.byType(Text)),
+      );
+      expect(rowTexts.last.data, '2');
     });
 
     testWidgets(
@@ -161,6 +230,29 @@ FlightTrack _aircraftTrack({String? manufacturer, String? model}) {
   return FlightTrack(startTime: DateTime.utc(2026, 10, 20))
     ..aircraftManufacturer = manufacturer
     ..aircraftModel = model;
+}
+
+FlightTrack _outlierTrack() {
+  final start = DateTime.utc(2026, 10, 20, 10);
+  final rates = [0.0, 1.0, 1.0, 1.0, 1.0, 50.0, 1.0, 1.0, 1.0, 1.0];
+  final track = FlightTrack(startTime: start);
+  for (var index = 0; index < rates.length; index++) {
+    track.add(
+      FlightSample(
+        time: start.add(Duration(seconds: index)),
+        data: FlightData(
+          verticalSpeed: rates[index],
+          latitude: 46.0,
+          longitude: 7.0 + index * 0.0001,
+          altitude: 1000,
+          gpsAltitude: 1000,
+          groundSpeed: 36,
+          hasFix: true,
+        ),
+      ),
+    );
+  }
+  return track;
 }
 
 FlightTrack _track() {

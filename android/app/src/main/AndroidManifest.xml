@@ -38,6 +38,10 @@
          on Android 10+/14+, and POST_NOTIFICATIONS (Android 13+) is required to
          show its persistent notification. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Android 6+ asks the user to exempt flight tracking from Doze battery
+         restrictions when a flight starts. MIUI may still require its own
+         battery/autostart settings to be enabled manually. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart' hide ServiceStatus;
 
 import '../l10n/app_localizations.dart';
 import '../theme/locale_controller.dart';
@@ -63,9 +64,13 @@ class GpsFlightDataBridge {
 
   StreamSubscription<Position>? _sub;
   StreamSubscription<ServiceStatus>? _serviceStatusSub;
+  Timer? _restartTimer;
 
   bool _attached = false;
   bool _hadFix = false;
+  bool _batteryOptimizationPromptAttempted = false;
+  int _streamGeneration = 0;
+  int _restartAttempt = 0;
 
   /// Whether the currently-open stream is using background-resilient settings.
   bool _backgroundMode = false;
@@ -138,31 +143,36 @@ class GpsFlightDataBridge {
     if (!Platform.isAndroid) return;
 
     final appIsBackgrounded = state != AppLifecycleState.resumed;
-    if (_appIsBackgrounded == appIsBackgrounded) return;
+    final lifecycleChanged = _appIsBackgrounded != appIsBackgrounded;
     _appIsBackgrounded = appIsBackgrounded;
 
-    if (_sub != null && _requiresBackgroundMode != _backgroundMode) {
+    if (state == AppLifecycleState.resumed && flightState.isFlying) {
+      unawaited(_requestBatteryOptimizationExemption());
+    }
+    if (state == AppLifecycleState.resumed && _requiresBackgroundMode) {
+      // Recreate the location FGS on return; some OEMs stop the plugin service
+      // while the UI is paused without closing the Dart stream cleanly.
       _startStream();
+    } else if (_sub != null &&
+        lifecycleChanged &&
+        _requiresBackgroundMode != _backgroundMode) {
+      _startStream();
+    } else if (state == AppLifecycleState.resumed && _sub == null) {
+      unawaited(_reopenStreamIfAvailable());
     }
   }
 
   void _watchServiceStatus() {
-    _serviceStatusSub ??= Geolocator.getServiceStatusStream().listen((
-      status,
-    ) async {
-      if (status == ServiceStatus.enabled && _sub == null) {
-        // User re-enabled location: (re)check permission and start streaming.
-        var permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied ||
-            permission == LocationPermission.deniedForever) {
-          return;
-        }
-        _startStream();
+    _serviceStatusSub ??= Geolocator.getServiceStatusStream().listen((status) {
+      if (status == ServiceStatus.enabled) {
+        unawaited(_reopenStreamIfAvailable());
       } else if (status == ServiceStatus.disabled) {
-        // Services went away: mark the fix lost and stop the stream (the
-        // service-status listener will restart it when they come back).
-        _sub?.cancel();
+        _streamGeneration++;
+        _restartTimer?.cancel();
+        _restartTimer = null;
+        final sub = _sub;
         _sub = null;
+        if (sub != null) unawaited(sub.cancel());
         if (_hadFix) {
           _hadFix = false;
           source.reportGpsFixLost();
@@ -171,28 +181,75 @@ class GpsFlightDataBridge {
     }, onError: (_) {});
   }
 
+  Future<void> _reopenStreamIfAvailable() async {
+    if (!_attached || _sub != null) return;
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        _watchServiceStatus();
+        return;
+      }
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+      _startStream();
+    } catch (_) {
+      _scheduleStreamRestart();
+    }
+  }
+
   void _startStream() {
-    _sub?.cancel();
+    _restartTimer?.cancel();
+    _restartTimer = null;
+    final generation = ++_streamGeneration;
+    final previousSub = _sub;
+    _sub = null;
+    if (previousSub != null) unawaited(previousSub.cancel());
     _lastEmit = null;
     // Snapshot the configuration this stream is opened with so flight or app
     // lifecycle changes can reopen it only when the native mode must change.
     _backgroundMode = _requiresBackgroundMode;
-    _sub =
-        Geolocator.getPositionStream(
-          locationSettings: _buildLocationSettings(background: _backgroundMode),
-        ).listen(
-          _onPosition,
-          onError: (_) {
-            // Transient stream error: cancel; the service-status watcher (or a
-            // subsequent attach()) will restart it.
-            _sub?.cancel();
-            _sub = null;
-            if (_hadFix) {
-              _hadFix = false;
-              source.reportGpsFixLost();
-            }
-          },
-        );
+    try {
+      _sub =
+          Geolocator.getPositionStream(
+            locationSettings: _buildLocationSettings(
+              background: _backgroundMode,
+            ),
+          ).listen(
+            (position) {
+              if (generation != _streamGeneration) return;
+              _restartAttempt = 0;
+              _restartTimer?.cancel();
+              _restartTimer = null;
+              _onPosition(position);
+            },
+            onError: (_) {
+              if (generation != _streamGeneration) return;
+              _sub = null;
+              if (_hadFix) {
+                _hadFix = false;
+                source.reportGpsFixLost();
+              }
+              _scheduleStreamRestart();
+            },
+          );
+    } catch (_) {
+      if (generation == _streamGeneration) {
+        _sub = null;
+        _scheduleStreamRestart();
+      }
+    }
+  }
+
+  void _scheduleStreamRestart() {
+    if (!_attached || _restartTimer != null) return;
+    final delaySeconds = _restartAttempt >= 5 ? 30 : 1 << _restartAttempt;
+    _restartAttempt++;
+    _restartTimer = Timer(Duration(seconds: delaySeconds), () {
+      _restartTimer = null;
+      unawaited(_reopenStreamIfAvailable());
+    });
   }
 
   /// Reacts to a flight starting or stopping.
@@ -201,32 +258,44 @@ class GpsFlightDataBridge {
   /// Stopping drops back to foreground-only settings only when the Android app
   /// itself is still in the foreground. Other flight-state changes are a no-op.
   void _onFlightStateChanged() {
-    // Nothing to do if we never managed to open a stream (unsupported
-    // platform, permission denied, or location services off — the
-    // service-status watcher will open it later in whatever mode is current).
-    if (_sub == null) return;
-    if (_requiresBackgroundMode == _backgroundMode) return;
-    // Re-request permission best-effort when entering a flight: background /
-    // "Always" location is what actually keeps the foreground service and
-    // background updates delivering fixes. Fire-and-forget so a slow prompt
-    // never blocks the flight from starting.
     if (flightState.isFlying) {
-      _ensureBackgroundPermission();
+      if (Platform.isAndroid && !_appIsBackgrounded) {
+        unawaited(_requestBatteryOptimizationExemption());
+      } else if (Platform.isIOS) {
+        unawaited(_ensureBackgroundPermission());
+      }
     }
+
+    if (_sub == null) {
+      unawaited(_reopenStreamIfAvailable());
+      return;
+    }
+    if (_requiresBackgroundMode == _backgroundMode) return;
     _startStream();
   }
 
-  /// Best-effort upgrade to background ("Always") location authorization, used
-  /// when a flight starts. On both platforms this is what unlocks reliable
-  /// screen-off / backgrounded location delivery; if the user declines we keep
-  /// running on whatever authorization we already have.
+  /// Offers Android's system battery-optimization exemption when the user
+  /// starts a flight. OEM-specific controls (such as MIUI autostart and
+  /// battery restrictions) remain under the user's device settings.
+  Future<void> _requestBatteryOptimizationExemption() async {
+    if (!_attached || _batteryOptimizationPromptAttempted) return;
+    _batteryOptimizationPromptAttempted = true;
+    try {
+      final status = await Permission.ignoreBatteryOptimizations.status;
+      if (!status.isGranted && !_appIsBackgrounded) {
+        await Permission.ignoreBatteryOptimizations.request();
+      }
+    } catch (_) {
+      // A denied or unsupported exemption must not prevent the flight stream.
+    }
+  }
+
+  /// Best-effort upgrade to iOS "Always" location authorization when a flight
+  /// starts. If the user declines, keep running on the current authorization.
   Future<void> _ensureBackgroundPermission() async {
     try {
       final permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.whileInUse) {
-        // Ask to extend to "Always" so background updates continue once the
-        // app leaves the foreground. Declining is fine — foreground-service
-        // recording still works while the app/session is alive.
         await Geolocator.requestPermission();
       }
     } catch (_) {
@@ -369,10 +438,15 @@ class GpsFlightDataBridge {
   void dispose() {
     if (!_attached) return;
     _attached = false;
+    _streamGeneration++;
+    _restartTimer?.cancel();
+    _restartTimer = null;
     flightState.removeListener(_onFlightStateChanged);
-    _sub?.cancel();
+    final sub = _sub;
     _sub = null;
-    _serviceStatusSub?.cancel();
+    if (sub != null) unawaited(sub.cancel());
+    final serviceStatusSub = _serviceStatusSub;
     _serviceStatusSub = null;
+    if (serviceStatusSub != null) unawaited(serviceStatusSub.cancel());
   }
 }

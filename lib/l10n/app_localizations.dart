@@ -452,6 +452,36 @@ abstract class AppLocalizations {
   /// **'Use a flat design instead of the glass style'**
   String get shareCardFlatDesignSubtitle;
 
+  /// No description provided for @flightDetailOutlierFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter climb/sink outliers'**
+  String get flightDetailOutlierFilter;
+
+  /// No description provided for @flightDetailOutlierFilterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a local median/MAD check for flight details only. Saved samples are never changed.'**
+  String get flightDetailOutlierFilterSubtitle;
+
+  /// No description provided for @flightDetailOutlierSensitivity.
+  ///
+  /// In en, this message translates to:
+  /// **'MAD sensitivity'**
+  String get flightDetailOutlierSensitivity;
+
+  /// No description provided for @flightDetailOutlierWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparison window'**
+  String get flightDetailOutlierWindow;
+
+  /// No description provided for @flightDetailOutlierMaximumRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum vertical speed'**
+  String get flightDetailOutlierMaximumRate;
+
   /// No description provided for @unitAltitude.
   ///
   /// In en, this message translates to:

@@ -22,6 +22,7 @@ import 'data/device_battery_service.dart';
 import 'data/display_settings.dart';
 import 'data/flight_data_provider.dart';
 import 'data/flight_data_transformer.dart';
+import 'data/flight_details_settings.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/gps_flight_data_bridge.dart';
@@ -151,6 +152,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     UnitSettings.instance.load();
     DisplaySettings.instance.load();
     ShareCardSettings.instance.load();
+    FlightDetailsSettings.instance.load();
     // Load the persisted theme preset before the first frame paints. The
     // MaterialApp below listens to ThemeController so setTheme(...) at any
     // later time rebuilds the whole tree with the new palette.

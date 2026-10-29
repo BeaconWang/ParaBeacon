@@ -196,6 +196,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use a flat design instead of the glass style';
 
   @override
+  String get flightDetailOutlierFilter => 'Filter climb/sink outliers';
+
+  @override
+  String get flightDetailOutlierFilterSubtitle =>
+      'Use a local median/MAD check for flight details only. Saved samples are never changed.';
+
+  @override
+  String get flightDetailOutlierSensitivity => 'MAD sensitivity';
+
+  @override
+  String get flightDetailOutlierWindow => 'Comparison window';
+
+  @override
+  String get flightDetailOutlierMaximumRate => 'Maximum vertical speed';
+
+  @override
   String get unitAltitude => 'Altitude';
 
   @override

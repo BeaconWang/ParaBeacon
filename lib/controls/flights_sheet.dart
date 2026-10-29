@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/flight_aircraft_editor.dart';
 import '../data/flight_derived_stats.dart';
+import '../data/flight_details_settings.dart';
 import '../data/flight_export_service.dart';
 import '../data/flight_library_io.dart';
 import '../data/flight_merge.dart';
@@ -2167,13 +2168,28 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 }
 
 Future<FlightDerivedStats> _computeFlightDetails(FlightTrack track) async {
+  final settings = FlightDetailsSettings.instance;
+  final request = FlightDetailsStatsRequest(
+    track: track,
+    filterVarioOutliers: settings.filterVarioOutliers,
+    madMultiplier: settings.madMultiplier,
+    windowSeconds: settings.windowSeconds,
+    maximumVerticalSpeedMs: settings.maximumVerticalSpeedMs,
+  );
   if (kIsWeb) {
     await Future<void>.delayed(Duration.zero);
-    return FlightDerivedStats.compute(track);
+    return _flightDerivedStatsWorker(request);
   }
-  return compute(_flightDerivedStatsWorker, track);
+  return compute(_flightDerivedStatsWorker, request);
 }
 
 @pragma('vm:entry-point')
-FlightDerivedStats _flightDerivedStatsWorker(FlightTrack track) =>
-    FlightDerivedStats.compute(track);
+FlightDerivedStats _flightDerivedStatsWorker(
+  FlightDetailsStatsRequest request,
+) => FlightDerivedStats.compute(
+  request.track,
+  filterVarioOutliers: request.filterVarioOutliers,
+  madMultiplier: request.madMultiplier,
+  windowSeconds: request.windowSeconds,
+  maximumVerticalSpeedMs: request.maximumVerticalSpeedMs,
+);

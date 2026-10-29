@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/color_palette_settings.dart';
 import '../data/flight_recorder.dart';
 import '../data/flight_store.dart';
+import '../data/flight_details_settings.dart';
 import '../data/map_tile_cache.dart';
 import '../data/share_card_settings.dart';
 import '../l10n/app_localizations.dart';
@@ -203,10 +204,46 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
     );
   }
 
+  Widget _buildOutlierSlider({
+    required ThemeData theme,
+    required String title,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required String valueLabel,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(title, style: theme.textTheme.bodyMedium)),
+              Text(valueLabel, style: theme.textTheme.bodyMedium),
+            ],
+          ),
+          Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: ShareCardSettings.instance,
+      animation: Listenable.merge([
+        ShareCardSettings.instance,
+        FlightDetailsSettings.instance,
+      ]),
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
         final theme = Theme.of(context);
@@ -250,6 +287,59 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                     value: ShareCardSettings.instance.flatDesign,
                     onChanged: ShareCardSettings.instance.setFlatDesign,
                   ),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: Icon(
+                      Icons.filter_alt_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    title: Text(l10n.flightDetailOutlierFilter),
+                    subtitle: Text(l10n.flightDetailOutlierFilterSubtitle),
+                    value: FlightDetailsSettings.instance.filterVarioOutliers,
+                    onChanged:
+                        FlightDetailsSettings.instance.setFilterVarioOutliers,
+                  ),
+                  if (FlightDetailsSettings.instance.filterVarioOutliers) ...[
+                    _buildOutlierSlider(
+                      theme: theme,
+                      title: l10n.flightDetailOutlierSensitivity,
+                      value: FlightDetailsSettings.instance.madMultiplier,
+                      min: 2,
+                      max: 8,
+                      divisions: 12,
+                      valueLabel:
+                          '${FlightDetailsSettings.instance.madMultiplier.toStringAsFixed(1)}×',
+                      onChanged:
+                          FlightDetailsSettings.instance.setMadMultiplier,
+                    ),
+                    _buildOutlierSlider(
+                      theme: theme,
+                      title: l10n.flightDetailOutlierWindow,
+                      value: FlightDetailsSettings.instance.windowSeconds
+                          .toDouble(),
+                      min: 10,
+                      max: 120,
+                      divisions: 11,
+                      valueLabel:
+                          '${FlightDetailsSettings.instance.windowSeconds} s',
+                      onChanged:
+                          FlightDetailsSettings.instance.setWindowSeconds,
+                    ),
+                    _buildOutlierSlider(
+                      theme: theme,
+                      title: l10n.flightDetailOutlierMaximumRate,
+                      value:
+                          FlightDetailsSettings.instance.maximumVerticalSpeedMs,
+                      min: 5,
+                      max: 40,
+                      divisions: 35,
+                      valueLabel:
+                          '${FlightDetailsSettings.instance.maximumVerticalSpeedMs.toStringAsFixed(1)} m/s',
+                      onChanged: FlightDetailsSettings
+                          .instance
+                          .setMaximumVerticalSpeedMs,
+                    ),
+                  ],
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(

@@ -16,6 +16,23 @@ String flightSlug(FlightTrack track) {
       '${two(t.hour)}${two(t.minute)}';
 }
 
+/// Parameters passed to the flight-details statistics worker.
+class FlightDetailsStatsRequest {
+  const FlightDetailsStatsRequest({
+    required this.track,
+    this.filterVarioOutliers = false,
+    this.madMultiplier = 4.0,
+    this.windowSeconds = 30,
+    this.maximumVerticalSpeedMs = 20.0,
+  });
+
+  final FlightTrack track;
+  final bool filterVarioOutliers;
+  final double madMultiplier;
+  final int windowSeconds;
+  final double maximumVerticalSpeedMs;
+}
+
 /// Performance metrics derived from a [FlightTrack].
 ///
 /// The shared tracklog and route fields follow XCTrack's sources and algorithms;
@@ -175,7 +192,16 @@ class FlightDerivedStats {
   static const double _movingSpeedKph = 2.0;
 
   /// Computes the derived stats for [track]. Cheap enough to call on demand.
-  factory FlightDerivedStats.compute(FlightTrack track) {
+  ///
+  /// Outlier filtering is opt-in so aggregate/export callers retain their current
+  /// behavior; the flight-details view supplies its persisted filter settings.
+  factory FlightDerivedStats.compute(
+    FlightTrack track, {
+    bool filterVarioOutliers = false,
+    double madMultiplier = 4.0,
+    int windowSeconds = 30,
+    double maximumVerticalSpeedMs = 20.0,
+  }) {
     final s = track.samples.where((sample) => sample.data.hasFix).toList();
     if (s.length < 2) {
       // Summary-only or trivial track: surface what the summary already knows.
@@ -204,6 +230,15 @@ class FlightDerivedStats {
 
     final first = s.first;
     final last = s.last;
+    final outlierSampleIndexes = filterVarioOutliers
+        ? _detectVarioOutliers(
+            track,
+            s,
+            madMultiplier: madMultiplier,
+            windowSeconds: windowSeconds,
+            maximumVerticalSpeedMs: maximumVerticalSpeedMs,
+          )
+        : const <int>{};
 
     double trackDist = 0;
     double maxFromStart = 0;
@@ -217,8 +252,8 @@ class FlightDerivedStats {
     double gained = 0;
     double lost = 0;
 
-    // XCTrack's max gain and elevation drop use GNSS altitude.
-    final launchAlt = _xctrackAltitude(first);
+    // All altitude-derived statistics share the track's barometric-first source.
+    final launchAlt = _statisticsAltitude(first);
     double minSoFar = launchAlt;
     double maxAltGain = 0;
 
@@ -265,20 +300,19 @@ class FlightDerivedStats {
 
       if (b.data.groundSpeed > maxSpeed) maxSpeed = b.data.groundSpeed;
 
-      final dAlt = b.data.altitude - a.data.altitude;
+      final dAlt = _statisticsAltitude(b) - _statisticsAltitude(a);
       if (dAlt > 0) {
         gained += dAlt;
       } else {
         lost += -dAlt;
       }
 
-      // XCTrack's max altitude gain uses GNSS altitude.
-      final alt = _xctrackAltitude(b);
+      final alt = _statisticsAltitude(b);
       final gain = alt - minSoFar;
       if (gain > maxAltGain) maxAltGain = gain;
       if (alt < minSoFar) minSoFar = alt;
 
-      final v = b.data.verticalSpeed;
+      final v = outlierSampleIndexes.contains(i) ? 0.0 : b.data.verticalSpeed;
       if (v > 0) {
         climbSum += v;
         climbCount++;
@@ -363,7 +397,7 @@ class FlightDerivedStats {
       threeTurnpointM: routes.threeTurnpointM,
       threeTurnpointLegsM: routes.threeTurnpointLegsM,
       maxAltGainM: maxAltGain,
-      elevationDropM: launchAlt - _xctrackAltitude(last),
+      elevationDropM: launchAlt - _statisticsAltitude(last),
     );
   }
 
@@ -599,8 +633,8 @@ class FlightDerivedStats {
     return cross * cross / segmentLengthSquared;
   }
 
-  static double _xctrackAltitude(FlightSample sample) =>
-      sample.data.gpsAltitude ?? sample.data.altitude;
+  static double _statisticsAltitude(FlightSample sample) =>
+      sample.data.preferredAltitude;
 
   static double _haversineM(
     double lat1,
@@ -622,6 +656,127 @@ class FlightDerivedStats {
   }
 
   static double _rad(double deg) => deg * (math.pi / 180.0);
+}
+
+Set<int> _detectVarioOutliers(
+  FlightTrack track,
+  List<FlightSample> samples, {
+  required double madMultiplier,
+  required int windowSeconds,
+  required double maximumVerticalSpeedMs,
+}) {
+  final multiplier = madMultiplier.clamp(2.0, 8.0).toDouble();
+  final window = Duration(seconds: windowSeconds.clamp(10, 120));
+  final maxRate = maximumVerticalSpeedMs.clamp(5.0, 40.0).toDouble();
+  final points = <_VarioSample>[];
+  var segment = 0;
+
+  for (var i = 1; i < samples.length; i++) {
+    final previous = samples[i - 1];
+    final current = samples[i];
+    if (current.time.difference(previous.time).inMilliseconds <= 0) continue;
+    if (track.hasDataGaps &&
+        track.crossesDataGap(previous.time, current.time)) {
+      segment++;
+      continue;
+    }
+    points.add(
+      _VarioSample(
+        sampleIndex: i,
+        time: current.time,
+        rate: current.data.verticalSpeed,
+        segment: segment,
+      ),
+    );
+  }
+  points.sort((a, b) => a.time.compareTo(b.time));
+
+  final outliers = <int>{};
+  for (final point in points) {
+    if (!point.rate.isFinite || point.rate.abs() > maxRate) {
+      outliers.add(point.sampleIndex);
+    }
+  }
+
+  final radius = Duration(milliseconds: window.inMilliseconds ~/ 2);
+  var left = 0;
+  var right = 0;
+  for (var i = 0; i < points.length; i++) {
+    final point = points[i];
+    if (outliers.contains(point.sampleIndex)) continue;
+    final lower = point.time.subtract(radius);
+    final upper = point.time.add(radius);
+    while (left < points.length && points[left].time.isBefore(lower)) {
+      left++;
+    }
+    if (right < left) right = left;
+    while (right < points.length && !points[right].time.isAfter(upper)) {
+      right++;
+    }
+
+    final neighbors = <double>[];
+    for (var j = left; j < right; j++) {
+      final neighbor = points[j];
+      if (j == i ||
+          neighbor.segment != point.segment ||
+          !neighbor.rate.isFinite ||
+          neighbor.rate.abs() > maxRate) {
+        continue;
+      }
+      neighbors.add(neighbor.rate);
+    }
+    if (neighbors.length < 4) continue;
+
+    if (i == 0 || i == points.length - 1) continue;
+    final before = points[i - 1];
+    final after = points[i + 1];
+    if (before.segment != point.segment ||
+        after.segment != point.segment ||
+        before.time.isBefore(lower) ||
+        after.time.isAfter(upper) ||
+        !before.rate.isFinite ||
+        !after.rate.isFinite ||
+        before.rate.abs() > maxRate ||
+        after.rate.abs() > maxRate) {
+      continue;
+    }
+
+    final center = _median(neighbors);
+    final deviations = neighbors
+        .map((value) => (value - center).abs())
+        .toList();
+    final mad = _median(deviations);
+    final threshold = math.max(1.0, multiplier * 1.4826 * mad);
+    final isolatedSpike =
+        (point.rate - before.rate).abs() > threshold &&
+        (point.rate - after.rate).abs() > threshold &&
+        (before.rate - after.rate).abs() <= threshold;
+    if (isolatedSpike && (point.rate - center).abs() > threshold) {
+      outliers.add(point.sampleIndex);
+    }
+  }
+  return outliers;
+}
+
+double _median(List<double> values) {
+  final sorted = values.toList()..sort();
+  final middle = sorted.length ~/ 2;
+  if (sorted.length.isOdd) return sorted[middle];
+  return (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+class _VarioSample {
+  const _VarioSample({
+    required this.sampleIndex,
+    required this.time,
+    required this.rate,
+    required this.segment,
+  });
+
+  final int sampleIndex;
+  final DateTime time;
+  final double rate;
+  final int segment;
 }
 
 /// Internal result of [FlightDerivedStats._bestRoutes]: the best 3-turnpoint

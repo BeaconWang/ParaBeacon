@@ -188,6 +188,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareCardFlatDesignSubtitle => '使用扁平设计，而不是玻璃风格';
 
   @override
+  String get flightDetailOutlierFilter => '过滤爬升/下降异常值';
+
+  @override
+  String get flightDetailOutlierFilterSubtitle =>
+      '仅在飞行详情中使用局部中位数/MAD 检测；不会更改已保存的样本。';
+
+  @override
+  String get flightDetailOutlierSensitivity => 'MAD 灵敏度';
+
+  @override
+  String get flightDetailOutlierWindow => '对比时间窗口';
+
+  @override
+  String get flightDetailOutlierMaximumRate => '垂直速度上限';
+
+  @override
   String get unitAltitude => '高度';
 
   @override

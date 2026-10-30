@@ -79,6 +79,9 @@ class _DashGridPageState extends State<DashGridPage> {
   bool get _canLockInterface =>
       FlightState.instance.isFlying || FlightState.instance.autoDetect;
 
+  bool get _isBlackLockScreen =>
+      _isInterfaceLocked && _unlockPageVisible && !_unlockControlsVisible;
+
   // Auto-hide state for the bottom page indicator in view mode. The indicator
   // is revealed while the user is swiping between pages and then fades out
   // one second after the swipe settles, so it doesn't linger over the
@@ -1800,7 +1803,7 @@ class _DashGridPageState extends State<DashGridPage> {
                   behavior: const MouseDragScrollBehavior(),
                   child: PageView.builder(
                     controller: _pageController,
-                    physics: _isEditMode
+                    physics: _isEditMode || _isBlackLockScreen
                         ? const NeverScrollableScrollPhysics()
                         : const PageScrollPhysics(),
                     itemCount: _pages.length + (_isInterfaceLocked ? 1 : 0),

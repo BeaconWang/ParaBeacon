@@ -228,7 +228,7 @@ void main() {
   });
 
   testWidgets(
-    'Interface lock hides its slider and reveals it again on double-tap',
+    'Interface lock blocks swipes while black and reveals unlock on double-tap',
     (WidgetTester tester) async {
       FlightState.instance.stop();
       FlightState.instance.setAutoDetect(true);
@@ -264,18 +264,12 @@ void main() {
         await tester.pump();
         expect(find.text('Slide to unlock'), findsNothing);
 
-        await tester.drag(pageView, const Offset(-600, 0));
+        final lockScreen = find.byKey(const ValueKey('interfaceUnlockScreen'));
+        await tester.drag(lockScreen, const Offset(-600, 0));
         await tester.pumpAndSettle();
-        expect(find.byKey(const ValueKey('interfaceUnlockScreen')), findsNothing);
-
-        await tester.drag(pageView, const Offset(600, 0));
-        await tester.pumpAndSettle();
-        expect(find.text('Slide to unlock'), findsOneWidget);
-        await tester.pump(const Duration(seconds: 10));
-        await tester.pump();
+        expect(lockScreen, findsOneWidget);
         expect(find.text('Slide to unlock'), findsNothing);
 
-        final lockScreen = find.byKey(const ValueKey('interfaceUnlockScreen'));
         final screenCenter = tester.getCenter(lockScreen);
         await tester.tapAt(screenCenter);
         await tester.pump(const Duration(milliseconds: 100));

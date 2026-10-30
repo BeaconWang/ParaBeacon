@@ -11,12 +11,15 @@ class LiveTrackingSettings extends ChangeNotifier {
   static const _kShowPublic = 'Livetrack.ShowPublic';
   static const _kFlightPublic = 'Livetrack.FlightPublic';
   static const _kTemporaryDontShare = 'Internal.LiveTempDontShare';
+  static const _kReportSimulatedAsReal =
+      'Internal.LiveReportSimulatedAsReal';
 
   bool _enabled = false;
   bool _claimContest = true;
   bool _showPublic = true;
   bool _flightPublic = true;
   bool _temporaryDontShare = false;
+  bool _reportSimulatedAsReal = false;
   bool _loaded = false;
   bool _saving = false;
 
@@ -25,6 +28,12 @@ class LiveTrackingSettings extends ChangeNotifier {
   bool get showPublic => _showPublic;
   bool get flightPublic => _flightPublic;
   bool get temporaryDontShare => _temporaryDontShare;
+
+  /// Debug-only: when on, a simulated/mock feed is uploaded WITHOUT the
+  /// `simulation` flag, so XContest treats it as a real flight. Always `false`
+  /// in release builds - real users can never mislabel a mock feed as real.
+  bool get reportSimulatedAsReal =>
+      kReleaseMode ? false : _reportSimulatedAsReal;
   bool get isLoaded => _loaded;
   bool get isSaving => _saving;
   bool get isEffectivelyEnabled => _enabled && !_temporaryDontShare;
@@ -46,6 +55,9 @@ class LiveTrackingSettings extends ChangeNotifier {
       _flightPublic = preferences.getBool(_kFlightPublic) ?? _flightPublic;
       _temporaryDontShare =
           preferences.getBool(_kTemporaryDontShare) ?? _temporaryDontShare;
+      _reportSimulatedAsReal =
+          preferences.getBool(_kReportSimulatedAsReal) ??
+          _reportSimulatedAsReal;
     } catch (_) {
       // Keep defaults if local storage is unavailable.
     }
@@ -58,12 +70,16 @@ class LiveTrackingSettings extends ChangeNotifier {
     required bool showPublic,
     required bool flightPublic,
     required bool temporaryDontShare,
+    bool? reportSimulatedAsReal,
   }) async {
     _enabled = enabled;
     _claimContest = claimContest;
     _showPublic = showPublic;
     _flightPublic = flightPublic;
     _temporaryDontShare = temporaryDontShare;
+    if (reportSimulatedAsReal != null) {
+      _reportSimulatedAsReal = reportSimulatedAsReal;
+    }
     _saving = true;
     notifyListeners();
     try {
@@ -73,6 +89,10 @@ class LiveTrackingSettings extends ChangeNotifier {
       await preferences.setBool(_kShowPublic, _showPublic);
       await preferences.setBool(_kFlightPublic, _flightPublic);
       await preferences.setBool(_kTemporaryDontShare, _temporaryDontShare);
+      await preferences.setBool(
+        _kReportSimulatedAsReal,
+        _reportSimulatedAsReal,
+      );
     } catch (_) {
       // Keep the in-memory values and allow a later save to retry.
     } finally {

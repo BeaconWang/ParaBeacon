@@ -32,6 +32,8 @@ class _LiveTrackingSettingsSheetState
   bool _showPublic = LiveTrackingSettings.instance.showPublic;
   bool _flightPublic = LiveTrackingSettings.instance.flightPublic;
   bool _temporaryDontShare = LiveTrackingSettings.instance.temporaryDontShare;
+  bool _reportSimulatedAsReal =
+      LiveTrackingSettings.instance.reportSimulatedAsReal;
   bool _loading = true;
 
   @override
@@ -50,6 +52,7 @@ class _LiveTrackingSettingsSheetState
         _showPublic = settings.showPublic;
         _flightPublic = settings.flightPublic;
         _temporaryDontShare = settings.temporaryDontShare;
+        _reportSimulatedAsReal = settings.reportSimulatedAsReal;
         _loading = false;
       });
     });
@@ -67,6 +70,7 @@ class _LiveTrackingSettingsSheetState
       showPublic: _showPublic,
       flightPublic: _flightPublic,
       temporaryDontShare: _temporaryDontShare,
+      reportSimulatedAsReal: kDebugMode ? _reportSimulatedAsReal : null,
     );
     if (mounted) Navigator.of(context).pop();
   }
@@ -203,6 +207,26 @@ class _LiveTrackingSettingsSheetState
                                     setState(() => _temporaryDontShare = value),
                         ),
                       ),
+                      if (kDebugMode) ...[
+                        const SizedBox(height: 16),
+                        Card(
+                          child: SwitchListTile(
+                            secondary: const Icon(Icons.science_outlined),
+                            title: const Text('Report simulated as real'),
+                            subtitle: const Text(
+                              'Debug only: upload simulated locations without '
+                              'the "simulation" flag, so XContest treats the '
+                              'flight as real.',
+                            ),
+                            value: _reportSimulatedAsReal,
+                            onChanged: _loading
+                                ? null
+                                : (value) => setState(
+                                    () => _reportSimulatedAsReal = value,
+                                  ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       if (!signedIn)
                         _StatusMessage(

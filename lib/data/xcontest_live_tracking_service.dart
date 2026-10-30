@@ -207,13 +207,17 @@ class XContestLiveTrackingService extends ChangeNotifier {
       throw const FormatException('xcontest_auth_missing');
     }
 
-    final simulated = data!.isMockLocation;
+    // A mock feed is normally declared as a simulation; the debug-only
+    // "report simulated as real" toggle suppresses that flag.
+    final isMock = data!.isMockLocation;
+    final simulated =
+        isMock && !LiveTrackingSettings.instance.reportSimulatedAsReal;
     _gpsWaitTimer?.cancel();
     _gpsWaitTimer = null;
     _starting = true;
     final bindingEpoch = _bindingEpoch;
     _log('start: declaring flight (pilot $pilotId'
-        '${simulated ? ', simulated' : ''})');
+        '${isMock ? (simulated ? ', simulated' : ', mock-as-real') : ''})');
     _setState(LiveTrackingConnectionState.connecting);
     try {
       final settings = LiveTrackingSettings.instance;

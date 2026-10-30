@@ -4,6 +4,7 @@ import 'dart:ui' show PointMode;
 import 'package:flutter/material.dart';
 
 import '../data/flight_recorder.dart';
+import 'track_3d_map.dart';
 
 /// Renders a flight track as a projected 3D polyline: X/Y are the ground plane
 /// (meters east/north of the track centroid) and Z is altitude (meters above
@@ -137,6 +138,7 @@ class Track3DGeometryCache {
       yaw: yaw,
       pitch: pitch,
       zScale: zScale,
+      cameraDistance: cameraDistance,
       size: size,
       projected: projected,
       groundProjected: groundProjected,
@@ -149,11 +151,12 @@ class Track3DGeometryCache {
   }
 }
 
-class _Track3DGeometry {
+class _Track3DGeometry implements Track3DGroundProjector {
   const _Track3DGeometry({
     required this.yaw,
     required this.pitch,
     required this.zScale,
+    required this.cameraDistance,
     required this.size,
     required this.projected,
     required this.groundProjected,
@@ -166,6 +169,7 @@ class _Track3DGeometry {
   final double yaw;
   final double pitch;
   final double zScale;
+  final double cameraDistance;
   final Size size;
   final List<Offset> projected;
   final List<Offset> groundProjected;
@@ -178,6 +182,20 @@ class _Track3DGeometry {
     size.width / 2 + (point.dx - centerX) * scale,
     size.height / 2 + (point.dy - centerY) * scale,
   );
+
+  @override
+  Offset projectGround(double east, double north) {
+    final cosY = math.cos(yaw), sinY = math.sin(yaw);
+    final cosP = math.cos(pitch), sinP = math.sin(pitch);
+    final x1 = east * cosY - north * sinY;
+    final y1 = east * sinY + north * cosY;
+    final perspective =
+        cameraDistance / math.max(1.0, cameraDistance + y1 * cosP);
+    return Offset(
+      size.width / 2 + (x1 * perspective - centerX) * scale,
+      size.height / 2 + (-y1 * sinP * perspective - centerY) * scale,
+    );
+  }
 }
 
 class Track3DPainter extends CustomPainter {
@@ -194,6 +212,7 @@ class Track3DPainter extends CustomPainter {
     this.gapAfterIndices = const <int>{},
     this.cursorInGap = false,
     this.gapColor = const Color(0xFFFF9800),
+    this.groundMap,
   });
 
   final List<FlightSample> samples;
@@ -213,6 +232,7 @@ class Track3DPainter extends CustomPainter {
   /// Whether the playback cursor is currently inside a missing-data period.
   final bool cursorInGap;
   final Color gapColor;
+  final Track3DGroundMap? groundMap;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -235,6 +255,7 @@ class Track3DPainter extends CustomPainter {
     canvas.translate(size.width / 2, size.height / 2);
     canvas.scale(zoom);
     canvas.translate(-size.width / 2, -size.height / 2);
+    groundMap?.paint(canvas, geometry);
 
     // ── 4. Perspective ground grid, behind the flight track. ─────────────
     final gridPaint = Paint()
@@ -330,6 +351,33 @@ class Track3DPainter extends CustomPainter {
         ..strokeWidth = 2,
     );
     canvas.restore();
+    if (groundMap != null) _paintMapAttribution(canvas, size);
+  }
+
+  void _paintMapAttribution(Canvas canvas, Size size) {
+    final painter = TextPainter(
+      text: const TextSpan(
+        text: '© OpenStreetMap contributors',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    const padding = 5.0;
+    final rect = Rect.fromLTWH(
+      size.width - painter.width - padding * 2 - 8,
+      size.height - painter.height - padding * 2 - 8,
+      painter.width + padding * 2,
+      painter.height + padding * 2,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(4)),
+      Paint()..color = Colors.black.withAlpha(170),
+    );
+    painter.paint(canvas, Offset(rect.left + padding, rect.top + padding));
   }
 
   static void _drawDashed(Canvas canvas, Offset a, Offset b, Paint paint) {
@@ -367,6 +415,7 @@ class Track3DPainter extends CustomPainter {
         old.pitch != pitch ||
         old.zScale != zScale ||
         old.zoom != zoom ||
+        old.groundMap != groundMap ||
         old.cursorIndex != cursorIndex ||
         old.cursorInGap != cursorInGap ||
         old.gapAfterIndices != gapAfterIndices ||

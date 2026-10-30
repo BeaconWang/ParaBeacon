@@ -48,6 +48,8 @@ class MapTileCacheService {
     'carto-voyager',
     'amap',
     'amap-sat',
+    'opentopomap',
+    'esri-world-imagery',
   ];
   static const _legacySourceId = 'legacy';
 
@@ -79,11 +81,19 @@ class MapTileCacheService {
     if (host == 'a.tile.openstreetmap.fr' && uri.path.startsWith('/osmfr/')) {
       return 'osmfr';
     }
-    if (host == 'basemaps.cartocdn.com') {
+    if (host == 'basemaps.cartocdn.com' ||
+        host.endsWith('.basemaps.cartocdn.com')) {
       if (uri.path.startsWith('/dark_all/')) return 'carto-dark';
       if (uri.path.startsWith('/rastertiles/voyager/')) {
         return 'carto-voyager';
       }
+    }
+    if (host == 'a.tile.opentopomap.org') return 'opentopomap';
+    if (host == 'server.arcgisonline.com' &&
+        uri.path.startsWith(
+          '/ArcGIS/rest/services/World_Imagery/MapServer/tile/',
+        )) {
+      return 'esri-world-imagery';
     }
     if (host == 'webrd01.is.autonavi.com' &&
         uri.path == '/appmaptile' &&

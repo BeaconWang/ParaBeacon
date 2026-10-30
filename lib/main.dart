@@ -37,6 +37,7 @@ import 'data/recording_settings.dart';
 import 'data/sensors/internal_sensor_bridge.dart';
 import 'data/sensors/internal_sensor_service.dart';
 import 'data/share_card_settings.dart';
+import 'data/track_3d_settings.dart';
 import 'data/vertical_speed_settings.dart';
 import 'data/vario_color_settings.dart';
 import 'data/takeoff_reference.dart';
@@ -156,6 +157,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     DisplaySettings.instance.load();
     ShareCardSettings.instance.load();
     FlightDetailsSettings.instance.load();
+    Track3DSettings.instance.load();
     // Load the persisted theme preset before the first frame paints. The
     // MaterialApp below listens to ThemeController so setTheme(...) at any
     // later time rebuilds the whole tree with the new palette.

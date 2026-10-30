@@ -464,17 +464,29 @@ abstract class AppLocalizations {
   /// **'On: current grouped mobile layout. Off: classic layout from the older share card.'**
   String get shareCardCompactLayoutSubtitle;
 
-  /// No description provided for @shareCardAmapSatellite.
+  /// No description provided for @shareCardMapSource.
   ///
   /// In en, this message translates to:
-  /// **'AMap satellite map in share cards'**
-  String get shareCardAmapSatellite;
+  /// **'Share card map source'**
+  String get shareCardMapSource;
 
-  /// No description provided for @shareCardAmapSatelliteSubtitle.
+  /// No description provided for @shareCardMapSourceSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Add satellite imagery behind the flight track (map tiles are downloaded when sharing)'**
-  String get shareCardAmapSatelliteSubtitle;
+  /// **'Choose the basemap behind the flight track. None disables map tiles; selected tiles may be downloaded when sharing.'**
+  String get shareCardMapSourceSubtitle;
+
+  /// No description provided for @track3dGroundMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Map on 3D replay ground'**
+  String get track3dGroundMap;
+
+  /// No description provided for @track3dGroundMapSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show OpenStreetMap on the 3D ground; map tiles may be downloaded'**
+  String get track3dGroundMapSubtitle;
 
   /// No description provided for @verticalSpeedAverageWindow.
   ///
@@ -4705,6 +4717,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AMap Satellite'**
   String get settingMapSourceAmapSat;
+
+  /// No description provided for @settingMapSourceOpenTopoMap.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenTopoMap'**
+  String get settingMapSourceOpenTopoMap;
+
+  /// No description provided for @settingMapSourceEsriImagery.
+  ///
+  /// In en, this message translates to:
+  /// **'Esri World Imagery'**
+  String get settingMapSourceEsriImagery;
 
   /// No description provided for @settingRotation.
   ///

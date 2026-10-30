@@ -130,7 +130,7 @@ void main() {
 
     test('renders compact and classic share card layouts', () async {
       final settings = ShareCardSettings.instance;
-      await settings.setAmapSatelliteBackground(false);
+      await settings.setMapSourceId('none');
       await settings.setCompactLayout(true);
       final track = _completeTrack();
       final l10n = AppLocalizationsEn();

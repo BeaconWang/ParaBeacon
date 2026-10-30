@@ -194,10 +194,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareCardCompactLayoutSubtitle => '开启：当前分组式手机布局。关闭：旧版经典分享卡片布局。';
 
   @override
-  String get shareCardAmapSatellite => '分享卡片显示高德卫星地图';
+  String get shareCardMapSource => '分享卡片地图源';
 
   @override
-  String get shareCardAmapSatelliteSubtitle => '在飞行轨迹下方显示高德卫星影像（分享时会下载地图瓦片）';
+  String get shareCardMapSourceSubtitle =>
+      '选择飞行轨迹下方的底图。选择“无”将关闭地图瓦片；分享时可能会下载所选地图瓦片。';
+
+  @override
+  String get track3dGroundMap => '在 3D 回放地面显示地图';
+
+  @override
+  String get track3dGroundMapSubtitle => '在 3D 地面显示 OpenStreetMap；可能会下载地图瓦片';
 
   @override
   String get verticalSpeedAverageWindow => '垂直速度平均时长';
@@ -2375,6 +2382,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingMapSourceAmapSat => '高德卫星';
+
+  @override
+  String get settingMapSourceOpenTopoMap => 'OpenTopoMap 地形图';
+
+  @override
+  String get settingMapSourceEsriImagery => 'Esri 卫星影像';
 
   @override
   String get settingRotation => '旋转';

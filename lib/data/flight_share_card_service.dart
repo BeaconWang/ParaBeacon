@@ -388,16 +388,20 @@ class FlightShareCardService {
     canvas.save();
     canvas.clipRRect(rrect);
     final samples = track.samples.where((s) => s.data.hasFix).toList();
-    Offset? amapCenter;
-    double? amapScale;
-    var hasSatelliteTiles = false;
-    if (ShareCardSettings.instance.amapSatelliteBackground &&
-        samples.length >= 2) {
+    final selectedMapSourceId = ShareCardSettings.instance.mapSourceId;
+    final mapSource = selectedMapSourceId == 'none'
+        ? null
+        : MapSourceCatalog.byId(selectedMapSourceId);
+    Offset? mapCenter;
+    double? mapScale;
+    var hasMapTiles = false;
+    if (mapSource != null && samples.length >= 2) {
       final mapPoints = samples
           .map(
-            (sample) => _amapWorldCoordinate(
+            (sample) => _sourceWorldCoordinate(
               sample.data.latitude,
               sample.data.longitude,
+              mapSource,
             ),
           )
           .toList();
@@ -415,26 +419,27 @@ class FlightShareCardService {
       final spanY = math.max(1e-9, maxY - minY);
       final satelliteScale = math.min((boxW - 96) / spanX, (boxH - 96) / spanY);
       final satelliteCenter = Offset((minX + maxX) / 2, (minY + maxY) / 2);
-      amapScale = satelliteScale;
-      amapCenter = satelliteCenter;
-      hasSatelliteTiles = await _paintAmapSatelliteTiles(
+      mapScale = satelliteScale;
+      mapCenter = satelliteCenter;
+      hasMapTiles = await _paintMapTiles(
         canvas,
         rect,
+        source: mapSource,
         center: satelliteCenter,
         scale: satelliteScale,
       );
-      if (hasSatelliteTiles) {
+      if (hasMapTiles) {
         canvas.drawRect(
           rect,
           Paint()..color = Colors.black.withValues(alpha: 0.18),
         );
       }
     }
-    final mapForeground = hasSatelliteTiles
+    final mapForeground = hasMapTiles
         ? Colors.white
         : colorScheme.onSurfaceVariant;
     final gridPaint = Paint()
-      ..color = hasSatelliteTiles
+      ..color = hasMapTiles
           ? Colors.white.withValues(alpha: 0.18)
           : colorScheme.outlineVariant.withValues(alpha: 0.4)
       ..strokeWidth = 1;
@@ -472,13 +477,14 @@ class FlightShareCardService {
       final offY = top + (boxH - spanLat * scale) / 2;
 
       Offset project(double lat, double lon) {
-        final center = amapCenter;
-        final satelliteScale = amapScale;
-        if (center != null && satelliteScale != null) {
-          final point = _amapWorldCoordinate(lat, lon);
+        final center = mapCenter;
+        final selectedMapScale = mapScale;
+        final source = mapSource;
+        if (center != null && selectedMapScale != null && source != null) {
+          final point = _sourceWorldCoordinate(lat, lon, source);
           return Offset(
-            rect.center.dx + (point.dx - center.dx) * satelliteScale,
-            rect.center.dy + (point.dy - center.dy) * satelliteScale,
+            rect.center.dx + (point.dx - center.dx) * selectedMapScale,
+            rect.center.dy + (point.dy - center.dy) * selectedMapScale,
           );
         }
         return Offset(
@@ -556,24 +562,34 @@ class FlightShareCardService {
         color: mapForeground,
       );
     }
-    if (hasSatelliteTiles) {
+    if (hasMapTiles && mapSource != null) {
+      final attributionPainter = TextPainter(
+        text: TextSpan(
+          text: mapSource.attribution,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+        maxLines: 2,
+        ellipsis: '…',
+      )..layout(maxWidth: math.min(360, boxW - 48));
+      const inset = 8.0;
       final attributionRect = Rect.fromLTWH(
-        left + boxW - 150,
-        top + 14,
-        130,
-        30,
+        rect.right - attributionPainter.width - inset * 2 - 14,
+        rect.top + 14,
+        attributionPainter.width + inset * 2,
+        attributionPainter.height + inset * 2,
       );
       canvas.drawRRect(
         RRect.fromRectAndRadius(attributionRect, const Radius.circular(8)),
-        Paint()..color = Colors.black.withValues(alpha: 0.56),
+        Paint()..color = Colors.black.withValues(alpha: 0.62),
       );
-      _text(
+      attributionPainter.paint(
         canvas,
-        '© AutoNavi',
-        Offset(attributionRect.left + 9, attributionRect.top + 5),
-        fontSize: 16,
-        color: Colors.white,
-        weight: FontWeight.w600,
+        Offset(attributionRect.left + inset, attributionRect.top + inset),
       );
     }
 
@@ -581,26 +597,34 @@ class FlightShareCardService {
     return top + boxH;
   }
 
-  Offset _amapWorldCoordinate(double latitude, double longitude) {
-    final gcj = Gcj02.wgsToGcj(latitude, longitude);
-    final lat = gcj[0].clamp(-85.05112878, 85.05112878) * math.pi / 180;
-    final lon = gcj[1].clamp(-180.0, 180.0);
+  Offset _sourceWorldCoordinate(
+    double latitude,
+    double longitude,
+    MapSource source,
+  ) {
+    final coordinate = source.requiresGcjShift
+        ? Gcj02.wgsToGcj(latitude, longitude)
+        : [latitude, longitude];
+    final lat = coordinate[0].clamp(-85.05112878, 85.05112878) * math.pi / 180;
+    final lon = coordinate[1].clamp(-180.0, 180.0);
     final sinLatitude = math.sin(lat);
     final y =
         0.5 - math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * math.pi);
     return Offset((lon + 180) / 360, y.clamp(0.0, 1.0));
   }
 
-  Future<bool> _paintAmapSatelliteTiles(
+  Future<bool> _paintMapTiles(
     Canvas canvas,
     Rect rect, {
+    required MapSource source,
     required Offset center,
     required double scale,
   }) async {
-    final source = MapSourceCatalog.byId('amap-sat');
+    final template = source.url;
+    if (template == null || template.isEmpty) return false;
     final zoom = (math.log(scale / 256) / math.ln2)
         .floor()
-        .clamp(0, source.maxZoom.toInt())
+        .clamp(0, source.maxZoom.floor())
         .toInt();
     final tileCount = 1 << zoom;
     final west = center.dx - rect.width / (2 * scale);
@@ -615,20 +639,28 @@ class FlightShareCardService {
 
     final coordinates = [
       for (var x = minX; x <= maxX; x++)
-        for (var y = minY; y <= maxY; y++) (x, y),
+        for (var y = minY; y <= maxY; y++) (x: x, y: y),
     ];
     final tiles = await Future.wait(
       coordinates.map((coordinate) async {
-        final (x, y) = coordinate;
-        final url = source.url!
+        final x = coordinate.x;
+        final y = coordinate.y;
+        final url = template
             .replaceAll('{z}', '$zoom')
             .replaceAll('{x}', '$x')
             .replaceAll('{y}', '$y');
         try {
           final response = await MapTileCacheService.instance.httpClient
-              .get(Uri.parse(url))
+              .get(
+                Uri.parse(url),
+                headers: const {
+                  'User-Agent': 'ParaBeacon/0.1 (paraglider flight assistant)',
+                },
+              )
               .timeout(const Duration(seconds: 8));
-          if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
+          if (response.statusCode != 200 ||
+              response.bodyBytes.isEmpty ||
+              response.bodyBytes.length > 10 * 1024 * 1024) {
             return null;
           }
           final codec = await ui.instantiateImageCodec(response.bodyBytes);

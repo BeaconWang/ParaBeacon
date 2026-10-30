@@ -69,7 +69,7 @@ void main() {
     final verticalSpeedSettings = VerticalSpeedSettings.instance;
     final shareCardSettings = ShareCardSettings.instance;
     await shareCardSettings.load();
-    expect(shareCardSettings.amapSatelliteBackground, isTrue);
+    expect(shareCardSettings.mapSourceId, 'amap-sat');
     expect(shareCardSettings.compactLayout, isTrue);
     await settings.setFilterVarioOutliers(true);
     await verticalSpeedSettings.setAverageWindowSeconds(2.0);
@@ -101,7 +101,8 @@ void main() {
 
     expect(find.text('Filter climb/sink outliers'), findsOneWidget);
     expect(find.text('Vertical speed averaging window'), findsOneWidget);
-    expect(find.text('AMap satellite map in share cards'), findsOneWidget);
+    expect(find.text('Share card map source'), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
     expect(find.text('Compact share card layout'), findsOneWidget);
     expect(find.byType(Slider), findsNWidgets(4));
     expect(settings.filterVarioOutliers, isTrue);
@@ -110,9 +111,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(shareCardSettings.compactLayout, isFalse);
 
-    await tester.tap(find.text('AMap satellite map in share cards'));
+    final mapSourceDropdown = find.byType(DropdownButtonFormField<String>);
+    await tester.ensureVisible(mapSourceDropdown);
+    await tester.tap(mapSourceDropdown);
     await tester.pumpAndSettle();
-    expect(shareCardSettings.amapSatelliteBackground, isFalse);
+    await tester.tap(find.text('None (no basemap)').last);
+    await tester.pumpAndSettle();
+    expect(shareCardSettings.mapSourceId, 'none');
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getString('pb.shareCardMapSource'), 'none');
 
     final averagingSlider = tester.widget<Slider>(find.byType(Slider).first);
     expect(averagingSlider.min, 0.5);

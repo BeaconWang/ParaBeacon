@@ -5,7 +5,9 @@ import '../data/flight_recorder.dart';
 import '../data/flight_store.dart';
 import '../data/flight_details_settings.dart';
 import '../data/map_tile_cache.dart';
+import '../data/map_source.dart';
 import '../data/share_card_settings.dart';
+import '../data/track_3d_settings.dart';
 import '../data/vertical_speed_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'color_palette_settings_sheet.dart';
@@ -52,6 +54,8 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
     'carto-voyager' => l10n.settingMapSourceCartoVoyager,
     'amap' => l10n.settingMapSourceAmap,
     'amap-sat' => l10n.settingMapSourceAmapSat,
+    'opentopomap' => l10n.settingMapSourceOpenTopoMap,
+    'esri-world-imagery' => l10n.settingMapSourceEsriImagery,
     _ => id,
   };
 
@@ -243,6 +247,7 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
     return AnimatedBuilder(
       animation: Listenable.merge([
         ShareCardSettings.instance,
+        Track3DSettings.instance,
         FlightDetailsSettings.instance,
         VerticalSpeedSettings.instance,
       ]),
@@ -300,17 +305,68 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                     value: ShareCardSettings.instance.flatDesign,
                     onChanged: ShareCardSettings.instance.setFlatDesign,
                   ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.map_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.shareCardMapSource),
+                          subtitle: Text(l10n.shareCardMapSourceSubtitle),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 56, right: 8),
+                          child: DropdownButtonFormField<String>(
+                            initialValue:
+                                ShareCardSettings.instance.mapSourceId,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            items: [
+                              DropdownMenuItem(
+                                value: 'none',
+                                child: Text(l10n.settingMapSourceNone),
+                              ),
+                              for (final source
+                                  in MapSourceCatalog.secureRasterSources)
+                                DropdownMenuItem(
+                                  value: source.id,
+                                  child: Text(
+                                    _sourceLabel(l10n, source.id),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                            ],
+                            onChanged: (id) {
+                              if (id != null) {
+                                ShareCardSettings.instance.setMapSourceId(id);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
                     secondary: Icon(
-                      Icons.satellite_alt_outlined,
+                      Icons.terrain_outlined,
                       color: theme.colorScheme.primary,
                     ),
-                    title: Text(l10n.shareCardAmapSatellite),
-                    subtitle: Text(l10n.shareCardAmapSatelliteSubtitle),
-                    value: ShareCardSettings.instance.amapSatelliteBackground,
-                    onChanged:
-                        ShareCardSettings.instance.setAmapSatelliteBackground,
+                    title: Text(l10n.track3dGroundMap),
+                    subtitle: Text(l10n.track3dGroundMapSubtitle),
+                    value: Track3DSettings.instance.showGroundMap,
+                    onChanged: Track3DSettings.instance.setShowGroundMap,
                   ),
                   _buildOutlierSlider(
                     theme: theme,

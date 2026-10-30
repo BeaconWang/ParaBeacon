@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
@@ -7,8 +8,10 @@ import 'package:flutter/scheduler.dart';
 import '../audio/vario_audio_service.dart';
 import '../data/flight_data.dart';
 import '../data/flight_recorder.dart';
+import '../data/track_3d_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'replay_gaps.dart';
+import 'track_3d_map.dart';
 import 'track_3d_painter.dart';
 
 /// Opens a 3D replay of a completed [track] as a full-screen sheet.
@@ -46,6 +49,8 @@ class _Track3DSheetState extends State<_Track3DSheet>
   late final List<double> _sampleOffsetsMs;
   late final Track3DGeometryCache _geometryCache;
   late final Ticker _ticker;
+  Track3DGroundMap? _groundMap;
+  bool _loadingGroundMap = false;
 
   /// Missing-data periods (e.g. ground time between merged flights).
   late final List<ReplayGap> _gaps;
@@ -82,13 +87,48 @@ class _Track3DSheetState extends State<_Track3DSheet>
     _gaps = replayGapsFor(widget.track, _samples);
     _gapAfterIndices = {for (final gap in _gaps) gap.afterIndex};
     _ticker = createTicker(_onTick);
+    Track3DSettings.instance.addListener(_onTrack3DSettingsChanged);
+    if (Track3DSettings.instance.showGroundMap) {
+      unawaited(_loadGroundMap());
+    }
   }
 
   @override
   void dispose() {
+    Track3DSettings.instance.removeListener(_onTrack3DSettingsChanged);
+    _groundMap?.dispose();
     _stopAudio();
     _ticker.dispose();
     super.dispose();
+  }
+
+  void _onTrack3DSettingsChanged() {
+    if (!mounted) return;
+    setState(() {});
+    if (Track3DSettings.instance.showGroundMap &&
+        _groundMap == null &&
+        !_loadingGroundMap) {
+      unawaited(_loadGroundMap());
+    }
+  }
+
+  Future<void> _loadGroundMap() async {
+    if (_loadingGroundMap || !Track3DSettings.instance.showGroundMap) return;
+    _loadingGroundMap = true;
+    Track3DGroundMap? loadedMap;
+    try {
+      loadedMap = await Track3DGroundMap.load(_samples);
+    } catch (_) {
+      // The replay remains usable when map tiles are unavailable.
+    }
+    if (!mounted) {
+      loadedMap?.dispose();
+      return;
+    }
+    setState(() {
+      _groundMap = loadedMap;
+      _loadingGroundMap = false;
+    });
   }
 
   // ── Playback ─────────────────────────────────────────────────────────────
@@ -233,6 +273,9 @@ class _Track3DSheetState extends State<_Track3DSheet>
                     pitch: _pitch,
                     zScale: _zScale,
                     zoom: _zoom,
+                    groundMap: Track3DSettings.instance.showGroundMap
+                        ? _groundMap
+                        : null,
                     samples: _samples,
                     cursorIndex: _currentIndex(),
                     geometryCache: _geometryCache,
@@ -408,6 +451,7 @@ class _GestureCanvas extends StatefulWidget {
     required this.pitch,
     required this.zScale,
     required this.zoom,
+    required this.groundMap,
     required this.samples,
     required this.cursorIndex,
     required this.geometryCache,
@@ -421,6 +465,7 @@ class _GestureCanvas extends StatefulWidget {
   final double pitch;
   final double zScale;
   final double zoom;
+  final Track3DGroundMap? groundMap;
   final List<FlightSample> samples;
   final int cursorIndex;
   final Track3DGeometryCache geometryCache;
@@ -463,6 +508,7 @@ class _GestureCanvasState extends State<_GestureCanvas> {
             pitch: widget.pitch,
             zScale: widget.zScale,
             zoom: widget.zoom,
+            groundMap: widget.groundMap,
             cursorIndex: widget.cursorIndex,
             geometryCache: widget.geometryCache,
             gapAfterIndices: widget.gapAfterIndices,

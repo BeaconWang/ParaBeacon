@@ -203,11 +203,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'On: current grouped mobile layout. Off: classic layout from the older share card.';
 
   @override
-  String get shareCardAmapSatellite => 'AMap satellite map in share cards';
+  String get shareCardMapSource => 'Share card map source';
 
   @override
-  String get shareCardAmapSatelliteSubtitle =>
-      'Add satellite imagery behind the flight track (map tiles are downloaded when sharing)';
+  String get shareCardMapSourceSubtitle =>
+      'Choose the basemap behind the flight track. None disables map tiles; selected tiles may be downloaded when sharing.';
+
+  @override
+  String get track3dGroundMap => 'Map on 3D replay ground';
+
+  @override
+  String get track3dGroundMapSubtitle =>
+      'Show OpenStreetMap on the 3D ground; map tiles may be downloaded';
 
   @override
   String get verticalSpeedAverageWindow => 'Vertical speed averaging window';
@@ -2473,6 +2480,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingMapSourceAmapSat => 'AMap Satellite';
+
+  @override
+  String get settingMapSourceOpenTopoMap => 'OpenTopoMap';
+
+  @override
+  String get settingMapSourceEsriImagery => 'Esri World Imagery';
 
   @override
   String get settingRotation => 'Rotation';

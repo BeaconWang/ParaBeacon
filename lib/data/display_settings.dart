@@ -9,8 +9,8 @@ class DisplaySettings extends ChangeNotifier {
   static const _defaultPrecisionKey = 'pb.display.default_precision';
   static const _largerFontKey = 'pb.display.larger_font';
 
-  bool _defaultPrecisionEnabled = false;
-  bool _largerFontEnabled = false;
+  bool _defaultPrecisionEnabled = true;
+  bool _largerFontEnabled = true;
   bool _loaded = false;
 
   bool get defaultPrecisionEnabled => _defaultPrecisionEnabled;
@@ -21,10 +21,10 @@ class DisplaySettings extends ChangeNotifier {
     try {
       final preferences = await SharedPreferences.getInstance();
       _defaultPrecisionEnabled =
-          preferences.getBool(_defaultPrecisionKey) ?? false;
-      _largerFontEnabled = preferences.getBool(_largerFontKey) ?? false;
+          preferences.getBool(_defaultPrecisionKey) ?? true;
+      _largerFontEnabled = preferences.getBool(_largerFontKey) ?? true;
     } catch (_) {
-      // Keep the safe whole-number default if storage is unavailable.
+      // Keep the enabled defaults if storage is unavailable.
     }
     _loaded = true;
     notifyListeners();

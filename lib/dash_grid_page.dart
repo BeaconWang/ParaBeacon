@@ -415,6 +415,7 @@ class _DashGridPageState extends State<DashGridPage> {
   void _lockInterface() {
     if (_isInterfaceLocked || !_canLockInterface) return;
     _unlockScreenIdleTimer?.cancel();
+    final dashboardPageIndex = _currentPage;
     setState(() {
       _isInterfaceLocked = true;
       _unlockPageVisible = false;
@@ -429,10 +430,15 @@ class _DashGridPageState extends State<DashGridPage> {
       _pageIndicatorHideTimer?.cancel();
       _pageIndicatorVisible = true;
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _isInterfaceLocked && _pageController.hasClients) {
+        _pageController.jumpToPage(dashboardPageIndex + 1);
+      }
+    });
   }
 
   void _onDashboardPageChanged(int index) {
-    if (_isInterfaceLocked && index == _pages.length) {
+    if (_isInterfaceLocked && index == 0) {
       if (!_unlockPageVisible) {
         setState(() {
           _unlockPageVisible = true;
@@ -443,14 +449,15 @@ class _DashGridPageState extends State<DashGridPage> {
       }
       return;
     }
-    if (index < 0 || index >= _pages.length) return;
+    final dashboardPageIndex = index - (_isInterfaceLocked ? 1 : 0);
+    if (dashboardPageIndex < 0 || dashboardPageIndex >= _pages.length) return;
 
     _unlockScreenIdleTimer?.cancel();
     setState(() {
       _unlockPageVisible = false;
       _unlockControlsVisible = false;
       _unlockSliderProgress = 0.0;
-      _currentPage = index;
+      _currentPage = dashboardPageIndex;
       _selectedControlId = null;
       _activeControlId = null;
     });
@@ -1798,10 +1805,14 @@ class _DashGridPageState extends State<DashGridPage> {
                         : const PageScrollPhysics(),
                     itemCount: _pages.length + (_isInterfaceLocked ? 1 : 0),
                     onPageChanged: _onDashboardPageChanged,
-                    itemBuilder: (context, index) =>
-                        _isInterfaceLocked && index == _pages.length
-                        ? _buildUnlockPage()
-                        : _buildPageContent(index),
+                    itemBuilder: (context, index) {
+                      if (_isInterfaceLocked && index == 0) {
+                        return _buildUnlockPage();
+                      }
+                      final dashboardPageIndex =
+                          index - (_isInterfaceLocked ? 1 : 0);
+                      return _buildPageContent(dashboardPageIndex);
+                    },
                   ),
                 ),
               ),
@@ -2087,9 +2098,14 @@ class _DashGridPageState extends State<DashGridPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(indicatorCount, (i) {
-        final isUnlockPage = _isInterfaceLocked && i == _pages.length;
-        final active = isUnlockPage ? _unlockPageVisible : i == _currentPage;
-        final icon = isUnlockPage ? Icons.lock_open : _pages[i].icon;
+        final isUnlockPage = _isInterfaceLocked && i == 0;
+        final dashboardPageIndex = i - (_isInterfaceLocked ? 1 : 0);
+        final active = isUnlockPage
+            ? _unlockPageVisible
+            : dashboardPageIndex == _currentPage;
+        final icon = isUnlockPage
+            ? Icons.lock_open
+            : _pages[dashboardPageIndex].icon;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 3),
           child: Material(

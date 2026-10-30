@@ -256,10 +256,21 @@ void main() {
         await tester.pumpAndSettle();
 
         final pageView = find.byType(PageView);
-        await tester.drag(pageView, const Offset(-600, 0));
+        await tester.drag(pageView, const Offset(600, 0));
         await tester.pumpAndSettle();
         expect(find.text('Slide to unlock'), findsOneWidget);
 
+        await tester.pump(const Duration(seconds: 10));
+        await tester.pump();
+        expect(find.text('Slide to unlock'), findsNothing);
+
+        await tester.drag(pageView, const Offset(-600, 0));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('interfaceUnlockScreen')), findsNothing);
+
+        await tester.drag(pageView, const Offset(600, 0));
+        await tester.pumpAndSettle();
+        expect(find.text('Slide to unlock'), findsOneWidget);
         await tester.pump(const Duration(seconds: 10));
         await tester.pump();
         expect(find.text('Slide to unlock'), findsNothing);

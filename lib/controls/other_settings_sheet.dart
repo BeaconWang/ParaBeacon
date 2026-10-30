@@ -289,6 +289,18 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                     value: ShareCardSettings.instance.flatDesign,
                     onChanged: ShareCardSettings.instance.setFlatDesign,
                   ),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: Icon(
+                      Icons.satellite_alt_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    title: Text(l10n.shareCardAmapSatellite),
+                    subtitle: Text(l10n.shareCardAmapSatelliteSubtitle),
+                    value: ShareCardSettings.instance.amapSatelliteBackground,
+                    onChanged:
+                        ShareCardSettings.instance.setAmapSatelliteBackground,
+                  ),
                   _buildOutlierSlider(
                     theme: theme,
                     title: l10n.verticalSpeedAverageWindow,

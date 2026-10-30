@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/other_settings_sheet.dart';
 import 'package:parabeacon/data/flight_details_settings.dart';
+import 'package:parabeacon/data/share_card_settings.dart';
 import 'package:parabeacon/data/vertical_speed_settings.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -66,6 +67,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final settings = FlightDetailsSettings.instance;
     final verticalSpeedSettings = VerticalSpeedSettings.instance;
+    final shareCardSettings = ShareCardSettings.instance;
+    await shareCardSettings.load();
+    expect(shareCardSettings.amapSatelliteBackground, isTrue);
     await settings.setFilterVarioOutliers(true);
     await verticalSpeedSettings.setAverageWindowSeconds(2.0);
 
@@ -96,8 +100,13 @@ void main() {
 
     expect(find.text('Filter climb/sink outliers'), findsOneWidget);
     expect(find.text('Vertical speed averaging window'), findsOneWidget);
+    expect(find.text('AMap satellite map in share cards'), findsOneWidget);
     expect(find.byType(Slider), findsNWidgets(4));
     expect(settings.filterVarioOutliers, isTrue);
+
+    await tester.tap(find.text('AMap satellite map in share cards'));
+    await tester.pumpAndSettle();
+    expect(shareCardSettings.amapSatelliteBackground, isFalse);
 
     final averagingSlider = tester.widget<Slider>(find.byType(Slider).first);
     expect(averagingSlider.min, 0.5);

@@ -196,6 +196,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use a flat design instead of the glass style';
 
   @override
+  String get shareCardAmapSatellite => 'AMap satellite map in share cards';
+
+  @override
+  String get shareCardAmapSatelliteSubtitle =>
+      'Add satellite imagery behind the flight track (map tiles are downloaded when sharing)';
+
+  @override
   String get verticalSpeedAverageWindow => 'Vertical speed averaging window';
 
   @override

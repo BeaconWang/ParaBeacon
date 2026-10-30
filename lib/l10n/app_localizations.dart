@@ -452,6 +452,18 @@ abstract class AppLocalizations {
   /// **'Use a flat design instead of the glass style'**
   String get shareCardFlatDesignSubtitle;
 
+  /// No description provided for @shareCardAmapSatellite.
+  ///
+  /// In en, this message translates to:
+  /// **'AMap satellite map in share cards'**
+  String get shareCardAmapSatellite;
+
+  /// No description provided for @shareCardAmapSatelliteSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add satellite imagery behind the flight track (map tiles are downloaded when sharing)'**
+  String get shareCardAmapSatelliteSubtitle;
+
   /// No description provided for @verticalSpeedAverageWindow.
   ///
   /// In en, this message translates to:

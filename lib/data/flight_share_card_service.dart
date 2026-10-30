@@ -14,6 +14,9 @@ import 'flight_derived_stats.dart';
 import 'flight_details_settings.dart';
 import 'flight_file_output_service.dart';
 import 'flight_recorder.dart';
+import 'gcj02.dart';
+import 'map_source.dart';
+import 'map_tile_cache.dart';
 import 'share_card_settings.dart';
 
 /// Renders a portrait, content-sized 1080px-wide PNG "share card" and saves it
@@ -58,7 +61,13 @@ class FlightShareCardService {
 
     _paintBackground(canvas, size, colorScheme);
     _paintHeader(canvas, size, track, colorScheme);
-    final mapBottom = _paintTrackMap(canvas, size, track, l10n, colorScheme);
+    final mapBottom = await _paintTrackMap(
+      canvas,
+      size,
+      track,
+      l10n,
+      colorScheme,
+    );
     final profileBottom = _paintAltitudeProfile(
       canvas,
       size,
@@ -341,13 +350,13 @@ class FlightShareCardService {
   }
 
   /// Draws the track shape into a framed box and returns its bottom Y.
-  double _paintTrackMap(
+  Future<double> _paintTrackMap(
     Canvas canvas,
     Size size,
     FlightTrack track,
     AppLocalizations l10n,
     ColorScheme colorScheme,
-  ) {
+  ) async {
     const left = 60.0;
     const top = 230.0;
     final boxW = _w - 120.0;
@@ -358,8 +367,56 @@ class FlightShareCardService {
     _paintSurface(canvas, rrect, colorScheme);
     canvas.save();
     canvas.clipRRect(rrect);
+    final samples = track.samples.where((s) => s.data.hasFix).toList();
+    Offset? amapCenter;
+    double? amapScale;
+    var hasSatelliteTiles = false;
+    if (ShareCardSettings.instance.amapSatelliteBackground &&
+        samples.length >= 2) {
+      final mapPoints = samples
+          .map(
+            (sample) => _amapWorldCoordinate(
+              sample.data.latitude,
+              sample.data.longitude,
+            ),
+          )
+          .toList();
+      var minX = double.infinity;
+      var maxX = double.negativeInfinity;
+      var minY = double.infinity;
+      var maxY = double.negativeInfinity;
+      for (final point in mapPoints) {
+        minX = math.min(minX, point.dx);
+        maxX = math.max(maxX, point.dx);
+        minY = math.min(minY, point.dy);
+        maxY = math.max(maxY, point.dy);
+      }
+      final spanX = math.max(1e-9, maxX - minX);
+      final spanY = math.max(1e-9, maxY - minY);
+      final satelliteScale = math.min((boxW - 96) / spanX, (boxH - 96) / spanY);
+      final satelliteCenter = Offset((minX + maxX) / 2, (minY + maxY) / 2);
+      amapScale = satelliteScale;
+      amapCenter = satelliteCenter;
+      hasSatelliteTiles = await _paintAmapSatelliteTiles(
+        canvas,
+        rect,
+        center: satelliteCenter,
+        scale: satelliteScale,
+      );
+      if (hasSatelliteTiles) {
+        canvas.drawRect(
+          rect,
+          Paint()..color = Colors.black.withValues(alpha: 0.18),
+        );
+      }
+    }
+    final mapForeground = hasSatelliteTiles
+        ? Colors.white
+        : colorScheme.onSurfaceVariant;
     final gridPaint = Paint()
-      ..color = colorScheme.outlineVariant.withValues(alpha: 0.4)
+      ..color = hasSatelliteTiles
+          ? Colors.white.withValues(alpha: 0.18)
+          : colorScheme.outlineVariant.withValues(alpha: 0.4)
       ..strokeWidth = 1;
     for (var i = 1; i < 5; i++) {
       final x = left + boxW * i / 5;
@@ -372,11 +429,10 @@ class FlightShareCardService {
       l10n.flightReportTrackMap.toUpperCase(),
       Offset(left + 24, top + 18),
       fontSize: 20,
-      color: colorScheme.onSurfaceVariant,
+      color: mapForeground,
       weight: FontWeight.w700,
     );
 
-    final samples = track.samples.where((s) => s.data.hasFix).toList();
     if (samples.length >= 2) {
       double minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
       for (final s in samples) {
@@ -395,11 +451,21 @@ class FlightShareCardService {
       final offX = left + (boxW - spanLon * scale) / 2;
       final offY = top + (boxH - spanLat * scale) / 2;
 
-      Offset project(double lat, double lon) => Offset(
-        offX + (lon - minLon) * scale,
-        // Flip Y so north is up.
-        offY + (maxLat - lat) * scale,
-      );
+      Offset project(double lat, double lon) {
+        final center = amapCenter;
+        final satelliteScale = amapScale;
+        if (center != null && satelliteScale != null) {
+          final point = _amapWorldCoordinate(lat, lon);
+          return Offset(
+            rect.center.dx + (point.dx - center.dx) * satelliteScale,
+            rect.center.dy + (point.dy - center.dy) * satelliteScale,
+          );
+        }
+        return Offset(
+          offX + (lon - minLon) * scale,
+          offY + (maxLat - lat) * scale,
+        );
+      }
 
       // Colour the track by altitude so climbs/descents read at a glance.
       double minAlt = double.infinity, maxAlt = double.negativeInfinity;
@@ -450,7 +516,7 @@ class FlightShareCardService {
         l10n.flightDetailTakeoff,
         Offset(start.dx + 18, start.dy - 16),
         fontSize: 22,
-        color: colorScheme.onSurface,
+        color: mapForeground,
         weight: FontWeight.w600,
       );
       _text(
@@ -458,7 +524,7 @@ class FlightShareCardService {
         l10n.flightDetailLanding,
         Offset(end.dx + 18, end.dy - 16),
         fontSize: 22,
-        color: colorScheme.onSurface,
+        color: mapForeground,
         weight: FontWeight.w600,
       );
     } else {
@@ -467,12 +533,125 @@ class FlightShareCardService {
         l10n.flightShareCardNoTrack,
         Offset(left + boxW / 2 - 70, top + boxH / 2 - 20),
         fontSize: 32,
-        color: colorScheme.onSurfaceVariant,
+        color: mapForeground,
+      );
+    }
+    if (hasSatelliteTiles) {
+      final attributionRect = Rect.fromLTWH(
+        left + boxW - 150,
+        top + 14,
+        130,
+        30,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(attributionRect, const Radius.circular(8)),
+        Paint()..color = Colors.black.withValues(alpha: 0.56),
+      );
+      _text(
+        canvas,
+        '© AutoNavi',
+        Offset(attributionRect.left + 9, attributionRect.top + 5),
+        fontSize: 16,
+        color: Colors.white,
+        weight: FontWeight.w600,
       );
     }
 
     canvas.restore();
     return top + boxH;
+  }
+
+  Offset _amapWorldCoordinate(double latitude, double longitude) {
+    final gcj = Gcj02.wgsToGcj(latitude, longitude);
+    final lat = gcj[0].clamp(-85.05112878, 85.05112878) * math.pi / 180;
+    final lon = gcj[1].clamp(-180.0, 180.0);
+    final sinLatitude = math.sin(lat);
+    final y =
+        0.5 - math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * math.pi);
+    return Offset((lon + 180) / 360, y.clamp(0.0, 1.0));
+  }
+
+  Future<bool> _paintAmapSatelliteTiles(
+    Canvas canvas,
+    Rect rect, {
+    required Offset center,
+    required double scale,
+  }) async {
+    final source = MapSourceCatalog.byId('amap-sat');
+    final zoom = (math.log(scale / 256) / math.ln2)
+        .floor()
+        .clamp(0, source.maxZoom.toInt())
+        .toInt();
+    final tileCount = 1 << zoom;
+    final west = center.dx - rect.width / (2 * scale);
+    final east = center.dx + rect.width / (2 * scale);
+    final north = center.dy - rect.height / (2 * scale);
+    final south = center.dy + rect.height / (2 * scale);
+    final minX = (west * tileCount).floor().clamp(0, tileCount - 1).toInt();
+    final maxX = (east * tileCount).floor().clamp(0, tileCount - 1).toInt();
+    final minY = (north * tileCount).floor().clamp(0, tileCount - 1).toInt();
+    final maxY = (south * tileCount).floor().clamp(0, tileCount - 1).toInt();
+    if ((maxX - minX + 1) * (maxY - minY + 1) > 64) return false;
+
+    final coordinates = [
+      for (var x = minX; x <= maxX; x++)
+        for (var y = minY; y <= maxY; y++) (x, y),
+    ];
+    final tiles = await Future.wait(
+      coordinates.map((coordinate) async {
+        final (x, y) = coordinate;
+        final url = source.url!
+            .replaceAll('{z}', '$zoom')
+            .replaceAll('{x}', '$x')
+            .replaceAll('{y}', '$y');
+        try {
+          final response = await MapTileCacheService.instance.httpClient
+              .get(Uri.parse(url))
+              .timeout(const Duration(seconds: 8));
+          if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
+            return null;
+          }
+          final codec = await ui.instantiateImageCodec(response.bodyBytes);
+          try {
+            final frame = await codec.getNextFrame();
+            return (x: x, y: y, image: frame.image);
+          } finally {
+            codec.dispose();
+          }
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+
+    var paintedAny = false;
+    final tileSize = scale / tileCount;
+    for (final tile in tiles) {
+      if (tile == null) continue;
+      final destination = Rect.fromLTWH(
+        rect.center.dx + (tile.x / tileCount - center.dx) * scale,
+        rect.center.dy + (tile.y / tileCount - center.dy) * scale,
+        tileSize,
+        tileSize,
+      );
+      try {
+        canvas.drawImageRect(
+          tile.image,
+          Rect.fromLTWH(
+            0,
+            0,
+            tile.image.width.toDouble(),
+            tile.image.height.toDouble(),
+          ),
+          destination,
+          Paint()..filterQuality = FilterQuality.medium,
+        );
+        paintedAny = true;
+      } finally {
+        tile.image.dispose();
+      }
+    }
+    return paintedAny;
   }
 
   /// Draws an altitude-over-time profile (filled area chart) into a framed box

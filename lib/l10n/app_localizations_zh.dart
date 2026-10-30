@@ -188,6 +188,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareCardFlatDesignSubtitle => '使用扁平设计，而不是玻璃风格';
 
   @override
+  String get shareCardAmapSatellite => '分享卡片显示高德卫星地图';
+
+  @override
+  String get shareCardAmapSatelliteSubtitle => '在飞行轨迹下方显示高德卫星影像（分享时会下载地图瓦片）';
+
+  @override
   String get verticalSpeedAverageWindow => '垂直速度平均时长';
 
   @override

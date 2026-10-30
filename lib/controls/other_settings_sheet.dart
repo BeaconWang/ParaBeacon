@@ -281,6 +281,17 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
                     secondary: Icon(
+                      Icons.view_agenda_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    title: Text(l10n.shareCardCompactLayout),
+                    subtitle: Text(l10n.shareCardCompactLayoutSubtitle),
+                    value: ShareCardSettings.instance.compactLayout,
+                    onChanged: ShareCardSettings.instance.setCompactLayout,
+                  ),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: Icon(
                       Icons.layers_outlined,
                       color: theme.colorScheme.primary,
                     ),

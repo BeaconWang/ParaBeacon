@@ -188,6 +188,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareCardFlatDesignSubtitle => '使用扁平设计，而不是玻璃风格';
 
   @override
+  String get shareCardCompactLayout => '紧凑分享卡片布局';
+
+  @override
+  String get shareCardCompactLayoutSubtitle => '开启：当前分组式手机布局。关闭：旧版经典分享卡片布局。';
+
+  @override
   String get shareCardAmapSatellite => '分享卡片显示高德卫星地图';
 
   @override

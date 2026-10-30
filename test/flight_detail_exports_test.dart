@@ -12,6 +12,7 @@ import 'package:parabeacon/data/flight_recorder.dart';
 import 'package:parabeacon/data/flight_report_service.dart';
 import 'package:parabeacon/data/flight_share_card_service.dart';
 import 'package:parabeacon/data/flight_statistics.dart';
+import 'package:parabeacon/data/share_card_settings.dart';
 import 'package:parabeacon/data/flight_statistics_share_card_service.dart';
 import 'package:parabeacon/l10n/app_localizations_en.dart';
 
@@ -127,27 +128,43 @@ void main() {
       },
     );
 
-    test(
-      'renders a compact grouped share card that fits mobile screens',
-      () async {
-        final bytes = await FlightShareCardService.instance.renderPng(
-          _completeTrack(),
-          AppLocalizationsEn(),
-          colorScheme: ColorScheme.dark(),
-        );
-        final lightBytes = await FlightShareCardService.instance.renderPng(
-          _completeTrack(),
-          AppLocalizationsEn(),
-          colorScheme: ColorScheme.light(),
-        );
-        expect(lightBytes, isNot(equals(bytes)));
-        final data = ByteData.sublistView(Uint8List.fromList(bytes));
+    test('renders compact and classic share card layouts', () async {
+      final settings = ShareCardSettings.instance;
+      await settings.setAmapSatelliteBackground(false);
+      await settings.setCompactLayout(true);
+      final track = _completeTrack();
+      final l10n = AppLocalizationsEn();
+      final bytes = await FlightShareCardService.instance.renderPng(
+        track,
+        l10n,
+        colorScheme: ColorScheme.dark(),
+      );
+      final lightBytes = await FlightShareCardService.instance.renderPng(
+        track,
+        l10n,
+        colorScheme: ColorScheme.light(),
+      );
+      expect(lightBytes, isNot(equals(bytes)));
+      final compactData = ByteData.sublistView(Uint8List.fromList(bytes));
 
-        expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
-        expect(data.getUint32(16), 1080);
-        expect(data.getUint32(20), 1920);
-      },
-    );
+      expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
+      expect(compactData.getUint32(16), 1080);
+      expect(compactData.getUint32(20), 1920);
+
+      await settings.setCompactLayout(false);
+      final classicBytes = await FlightShareCardService.instance.renderPng(
+        track,
+        l10n,
+        colorScheme: ColorScheme.dark(),
+      );
+      final classicData = ByteData.sublistView(
+        Uint8List.fromList(classicBytes),
+      );
+      expect(classicData.getUint32(16), 1080);
+      expect(classicData.getUint32(20), greaterThan(1920));
+      expect(classicBytes, isNot(equals(bytes)));
+      await settings.setCompactLayout(true);
+    });
 
     test(
       'statistics share card reflects filtered detailed flight data',

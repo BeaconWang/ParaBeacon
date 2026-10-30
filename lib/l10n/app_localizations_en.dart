@@ -196,6 +196,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use a flat design instead of the glass style';
 
   @override
+  String get shareCardCompactLayout => 'Compact share card layout';
+
+  @override
+  String get shareCardCompactLayoutSubtitle =>
+      'On: current grouped mobile layout. Off: classic layout from the older share card.';
+
+  @override
   String get shareCardAmapSatellite => 'AMap satellite map in share cards';
 
   @override

@@ -70,6 +70,7 @@ void main() {
     final shareCardSettings = ShareCardSettings.instance;
     await shareCardSettings.load();
     expect(shareCardSettings.amapSatelliteBackground, isTrue);
+    expect(shareCardSettings.compactLayout, isTrue);
     await settings.setFilterVarioOutliers(true);
     await verticalSpeedSettings.setAverageWindowSeconds(2.0);
 
@@ -101,8 +102,13 @@ void main() {
     expect(find.text('Filter climb/sink outliers'), findsOneWidget);
     expect(find.text('Vertical speed averaging window'), findsOneWidget);
     expect(find.text('AMap satellite map in share cards'), findsOneWidget);
+    expect(find.text('Compact share card layout'), findsOneWidget);
     expect(find.byType(Slider), findsNWidgets(4));
     expect(settings.filterVarioOutliers, isTrue);
+
+    await tester.tap(find.text('Compact share card layout'));
+    await tester.pumpAndSettle();
+    expect(shareCardSettings.compactLayout, isFalse);
 
     await tester.tap(find.text('AMap satellite map in share cards'));
     await tester.pumpAndSettle();

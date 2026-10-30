@@ -452,6 +452,18 @@ abstract class AppLocalizations {
   /// **'Use a flat design instead of the glass style'**
   String get shareCardFlatDesignSubtitle;
 
+  /// No description provided for @shareCardCompactLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact share card layout'**
+  String get shareCardCompactLayout;
+
+  /// No description provided for @shareCardCompactLayoutSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On: current grouped mobile layout. Off: classic layout from the older share card.'**
+  String get shareCardCompactLayoutSubtitle;
+
   /// No description provided for @shareCardAmapSatellite.
   ///
   /// In en, this message translates to:

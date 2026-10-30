@@ -63,6 +63,8 @@
   "otherSettingsSubtitle": "Additional preferences",
   "shareCardFlatDesign": "Flat share cards",
   "shareCardFlatDesignSubtitle": "Use a flat design instead of the glass style",
+  "shareCardCompactLayout": "Compact share card layout",
+  "shareCardCompactLayoutSubtitle": "On: current grouped mobile layout. Off: classic layout from the older share card.",
   "shareCardAmapSatellite": "AMap satellite map in share cards",
   "shareCardAmapSatelliteSubtitle": "Add satellite imagery behind the flight track (map tiles are downloaded when sharing)",
   "verticalSpeedAverageWindow": "Vertical speed averaging window",

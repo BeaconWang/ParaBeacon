@@ -1,36 +1,62 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'map_source.dart';
+
 class Track3DSettings extends ChangeNotifier {
   Track3DSettings._();
 
   static final Track3DSettings instance = Track3DSettings._();
-  static const _groundMapKey = 'pb.track3d.groundMap';
+  static const _mapSourceKey = 'pb.track3d.mapSource';
+  static const _legacyGroundMapKey = 'pb.track3d.groundMap';
 
-  bool _showGroundMap = false;
+  String _mapSourceId = 'none';
   bool _loaded = false;
 
-  bool get showGroundMap => _showGroundMap;
+  String get mapSourceId => _mapSourceId;
 
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
     try {
       final preferences = await SharedPreferences.getInstance();
-      _showGroundMap = preferences.getBool(_groundMapKey) ?? false;
+      final savedMapSource = preferences.getString(_mapSourceKey);
+      if (savedMapSource != null) {
+        _mapSourceId = _normalizeMapSourceId(savedMapSource);
+        if (_mapSourceId != savedMapSource) {
+          await preferences.setString(_mapSourceKey, _mapSourceId);
+        }
+      } else {
+        final legacyEnabled = preferences.getBool(_legacyGroundMapKey);
+        _mapSourceId = legacyEnabled == true ? 'osm' : 'none';
+        if (legacyEnabled != null) {
+          await preferences.setString(_mapSourceKey, _mapSourceId);
+        }
+      }
+      await preferences.remove(_legacyGroundMapKey);
     } catch (_) {
-      // Keep map downloads disabled when preference storage is unavailable.
+      // Keep the map layer disabled when preference storage is unavailable.
     }
     notifyListeners();
   }
 
-  Future<void> setShowGroundMap(bool enabled) async {
-    if (_showGroundMap == enabled) return;
-    _showGroundMap = enabled;
+  String _normalizeMapSourceId(String id) {
+    if (id == 'none' ||
+        MapSourceCatalog.secureRasterSources.any((source) => source.id == id)) {
+      return id;
+    }
+    return 'none';
+  }
+
+  Future<void> setMapSourceId(String id) async {
+    final normalized = _normalizeMapSourceId(id);
+    if (_mapSourceId == normalized) return;
+    _mapSourceId = normalized;
     notifyListeners();
     try {
       final preferences = await SharedPreferences.getInstance();
-      await preferences.setBool(_groundMapKey, enabled);
+      await preferences.setString(_mapSourceKey, normalized);
+      await preferences.remove(_legacyGroundMapKey);
     } catch (_) {
       // The in-memory choice still applies for this session.
     }

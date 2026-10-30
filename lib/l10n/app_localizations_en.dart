@@ -210,13 +210,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose the basemap behind the flight track. None disables map tiles; selected tiles may be downloaded when sharing.';
 
   @override
-  String get track3dGroundMap => 'Map on 3D replay ground';
-
-  @override
-  String get track3dGroundMapSubtitle =>
-      'Show OpenStreetMap on the 3D ground; map tiles may be downloaded';
-
-  @override
   String get verticalSpeedAverageWindow => 'Vertical speed averaging window';
 
   @override
@@ -3715,6 +3708,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get replay3dTitle => '3D Replay';
+
+  @override
+  String get replay3dMapSource => '3D replay map source';
 
   @override
   String get replay3dResetView => 'Reset view';

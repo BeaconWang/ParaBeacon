@@ -5,12 +5,15 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../data/flight_recorder.dart';
+import '../data/gcj02.dart';
+import '../data/map_source.dart';
 import '../data/map_tile_cache.dart';
 import '../data/offline_tiles_service.dart';
 
 class Track3DGroundMap {
   Track3DGroundMap._({
     required this.image,
+    required this.source,
     required this.zoom,
     required this.centerLatitude,
     required this.centerLongitude,
@@ -22,10 +25,10 @@ class Track3DGroundMap {
   static const _tileSize = 256;
   static const _maxTiles = 64;
   static const _maxImageDimension = 4096;
-  static const _mapTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   static const _maxTileBytes = 10 * 1024 * 1024;
 
   final ui.Image image;
+  final MapSource source;
   final int zoom;
   final double centerLatitude;
   final double centerLongitude;
@@ -33,8 +36,15 @@ class Track3DGroundMap {
   final double originPixelY;
   final double halfExtentMeters;
 
-  static Future<Track3DGroundMap?> load(List<FlightSample> samples) async {
-    if (samples.length < 2) return null;
+  static Future<Track3DGroundMap?> load(
+    List<FlightSample> samples,
+    MapSource source,
+  ) async {
+    if (samples.length < 2 || source.type != MapSourceType.rasterTiles) {
+      return null;
+    }
+    final tileUrlTemplate = source.url;
+    if (tileUrlTemplate == null || tileUrlTemplate.isEmpty) return null;
 
     var latitudeSum = 0.0;
     var longitudeSum = 0.0;
@@ -44,6 +54,11 @@ class Track3DGroundMap {
     }
     final centerLatitude = latitudeSum / samples.length;
     final centerLongitude = longitudeSum / samples.length;
+    final providerCenter = _providerCoordinate(
+      centerLatitude,
+      centerLongitude,
+      source,
+    );
     const metersPerDegreeLatitude = 111320.0;
     final metersPerDegreeLongitude =
         metersPerDegreeLatitude * math.cos(centerLatitude * math.pi / 180);
@@ -64,7 +79,7 @@ class Track3DGroundMap {
     }
     final trackSpan = math.max(maxEast - minEast, maxNorth - minNorth);
     final halfExtentMeters = math.max(50.0, trackSpan * 0.75);
-    final safeLatitude = centerLatitude.clamp(-85.05112878, 85.05112878);
+    final safeLatitude = providerCenter[0].clamp(-85.05112878, 85.05112878);
     final cosineLatitude = math.cos(safeLatitude * math.pi / 180).abs();
     final desiredZoom =
         (math.log(
@@ -75,7 +90,7 @@ class Track3DGroundMap {
                 ) /
                 math.ln2)
             .floor();
-    var zoom = desiredZoom.clamp(2, 18);
+    var zoom = desiredZoom.clamp(2, source.maxZoom.floor());
 
     late int minTileX;
     late int maxTileX;
@@ -85,19 +100,19 @@ class Track3DGroundMap {
     while (true) {
       worldSize = _tileSize * (1 << zoom).toDouble();
       final west = _worldX(
-        centerLongitude - halfExtentMeters / metersPerDegreeLongitude,
+        providerCenter[1] - halfExtentMeters / metersPerDegreeLongitude,
         worldSize,
       );
       final east = _worldX(
-        centerLongitude + halfExtentMeters / metersPerDegreeLongitude,
+        providerCenter[1] + halfExtentMeters / metersPerDegreeLongitude,
         worldSize,
       );
       final north = _worldY(
-        centerLatitude + halfExtentMeters / metersPerDegreeLatitude,
+        providerCenter[0] + halfExtentMeters / metersPerDegreeLatitude,
         worldSize,
       );
       final south = _worldY(
-        centerLatitude - halfExtentMeters / metersPerDegreeLatitude,
+        providerCenter[0] - halfExtentMeters / metersPerDegreeLatitude,
         worldSize,
       );
       final tileCount = 1 << zoom;
@@ -125,7 +140,13 @@ class Track3DGroundMap {
     Future<void> loadWorker() async {
       while (nextIndex < coordinates.length) {
         final coordinate = coordinates[nextIndex++];
-        final bytes = await _tileBytes(zoom, coordinate.x, coordinate.y);
+        final bytes = await _tileBytes(
+          zoom,
+          coordinate.x,
+          coordinate.y,
+          source,
+          tileUrlTemplate,
+        );
         if (bytes == null) continue;
         final image = await _decodeTile(bytes);
         if (image != null) {
@@ -166,6 +187,7 @@ class Track3DGroundMap {
       final image = await picture.toImage(imageWidth, imageHeight);
       return Track3DGroundMap._(
         image: image,
+        source: source,
         zoom: zoom,
         centerLatitude: centerLatitude,
         centerLongitude: centerLongitude,
@@ -243,20 +265,36 @@ class Track3DGroundMap {
       -85.05112878,
       85.05112878,
     );
+    final providerCoordinate = _providerCoordinate(latitude, longitude, source);
     final worldSize = _tileSize * (1 << zoom).toDouble();
     return Offset(
-      _worldX(longitude, worldSize) - originPixelX,
-      _worldY(latitude, worldSize) - originPixelY,
+      _worldX(providerCoordinate[1], worldSize) - originPixelX,
+      _worldY(providerCoordinate[0], worldSize) - originPixelY,
     );
   }
 
-  static Future<Uint8List?> _tileBytes(int zoom, int x, int y) async {
+  static List<double> _providerCoordinate(
+    double latitude,
+    double longitude,
+    MapSource source,
+  ) => source.requiresGcjShift
+      ? Gcj02.wgsToGcj(latitude, longitude)
+      : [latitude, longitude];
+
+  static Future<Uint8List?> _tileBytes(
+    int zoom,
+    int x,
+    int y,
+    MapSource source,
+    String tileUrlTemplate,
+  ) async {
     try {
       final offline = OfflineTilesService.instance.getTile(z: zoom, x: x, y: y);
       if (offline != null && offline.isNotEmpty) return offline;
     } catch (_) {}
 
-    final url = _mapTileUrl
+    if (source.type != MapSourceType.rasterTiles) return null;
+    final url = tileUrlTemplate
         .replaceAll('{z}', '$zoom')
         .replaceAll('{x}', '$x')
         .replaceAll('{y}', '$y');
@@ -264,7 +302,9 @@ class Track3DGroundMap {
       final response = await MapTileCacheService.instance.httpClient
           .get(
             Uri.parse(url),
-            headers: const {'user-agent': 'com.beacon.parabeacon'},
+            headers: const {
+              'User-Agent': 'ParaBeacon/0.1 (paraglider flight assistant)',
+            },
           )
           .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200 ||

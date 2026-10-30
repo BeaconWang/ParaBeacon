@@ -338,6 +338,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('1 missing-data period · 10m 00s'), findsOneWidget);
+      expect(find.byTooltip('3D replay map source'), findsOneWidget);
+      await tester.tap(find.byTooltip('3D replay map source'));
+      await tester.pumpAndSettle();
+      expect(find.text('None (no basemap)'), findsOneWidget);
+      expect(find.text('OpenStreetMap'), findsOneWidget);
+      await tester.tap(find.text('None (no basemap)'));
+      await tester.pumpAndSettle();
       await _seekToFraction(tester, 0.5);
       expect(find.byKey(const ValueKey('replay-gap-banner')), findsOneWidget);
       // Readouts show "No data" for altitude, speed and vario.

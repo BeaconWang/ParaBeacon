@@ -351,21 +351,26 @@ class Track3DPainter extends CustomPainter {
         ..strokeWidth = 2,
     );
     canvas.restore();
-    if (groundMap != null) _paintMapAttribution(canvas, size);
+    final mapAttribution = groundMap?.source.attribution;
+    if (mapAttribution != null) {
+      _paintMapAttribution(canvas, size, mapAttribution);
+    }
   }
 
-  void _paintMapAttribution(Canvas canvas, Size size) {
+  void _paintMapAttribution(Canvas canvas, Size size, String attribution) {
     final painter = TextPainter(
-      text: const TextSpan(
-        text: '© OpenStreetMap contributors',
-        style: TextStyle(
+      text: TextSpan(
+        text: attribution,
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 10,
           fontWeight: FontWeight.w500,
         ),
       ),
       textDirection: TextDirection.ltr,
-    )..layout();
+      maxLines: 2,
+      ellipsis: '…',
+    )..layout(maxWidth: math.max(1, size.width - 24));
     const padding = 5.0;
     final rect = Rect.fromLTWH(
       size.width - painter.width - padding * 2 - 8,

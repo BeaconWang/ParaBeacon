@@ -67,8 +67,6 @@
   "shareCardCompactLayoutSubtitle": "On: current grouped mobile layout. Off: classic layout from the older share card.",
   "shareCardMapSource": "Share card map source",
   "shareCardMapSourceSubtitle": "Choose the basemap behind the flight track. None disables map tiles; selected tiles may be downloaded when sharing.",
-  "track3dGroundMap": "Map on 3D replay ground",
-  "track3dGroundMapSubtitle": "Show OpenStreetMap on the 3D ground; map tiles may be downloaded",
   "verticalSpeedAverageWindow": "Vertical speed averaging window",
   "verticalSpeedAverageWindowBadge": "AVG · {seconds} s",
   "@verticalSpeedAverageWindowBadge": {
@@ -1492,6 +1490,7 @@
   },
 
   "replay3dTitle": "3D Replay",
+  "replay3dMapSource": "3D replay map source",
   "replay3dResetView": "Reset view",
   "replay3dStatAlt": "ALT",
   "replay3dStatSpd": "SPD",

@@ -201,12 +201,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '选择飞行轨迹下方的底图。选择“无”将关闭地图瓦片；分享时可能会下载所选地图瓦片。';
 
   @override
-  String get track3dGroundMap => '在 3D 回放地面显示地图';
-
-  @override
-  String get track3dGroundMapSubtitle => '在 3D 地面显示 OpenStreetMap；可能会下载地图瓦片';
-
-  @override
   String get verticalSpeedAverageWindow => '垂直速度平均时长';
 
   @override
@@ -3579,6 +3573,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get replay3dTitle => '3D 回放';
+
+  @override
+  String get replay3dMapSource => '3D 回放地图源';
 
   @override
   String get replay3dResetView => '重置视角';

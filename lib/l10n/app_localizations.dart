@@ -476,18 +476,6 @@ abstract class AppLocalizations {
   /// **'Choose the basemap behind the flight track. None disables map tiles; selected tiles may be downloaded when sharing.'**
   String get shareCardMapSourceSubtitle;
 
-  /// No description provided for @track3dGroundMap.
-  ///
-  /// In en, this message translates to:
-  /// **'Map on 3D replay ground'**
-  String get track3dGroundMap;
-
-  /// No description provided for @track3dGroundMapSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Show OpenStreetMap on the 3D ground; map tiles may be downloaded'**
-  String get track3dGroundMapSubtitle;
-
   /// No description provided for @verticalSpeedAverageWindow.
   ///
   /// In en, this message translates to:
@@ -6915,6 +6903,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'3D Replay'**
   String get replay3dTitle;
+
+  /// No description provided for @replay3dMapSource.
+  ///
+  /// In en, this message translates to:
+  /// **'3D replay map source'**
+  String get replay3dMapSource;
 
   /// No description provided for @replay3dResetView.
   ///

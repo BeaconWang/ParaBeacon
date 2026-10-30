@@ -7,7 +7,6 @@ import '../data/flight_details_settings.dart';
 import '../data/map_tile_cache.dart';
 import '../data/map_source.dart';
 import '../data/share_card_settings.dart';
-import '../data/track_3d_settings.dart';
 import '../data/vertical_speed_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'color_palette_settings_sheet.dart';
@@ -247,7 +246,6 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
     return AnimatedBuilder(
       animation: Listenable.merge([
         ShareCardSettings.instance,
-        Track3DSettings.instance,
         FlightDetailsSettings.instance,
         VerticalSpeedSettings.instance,
       ]),
@@ -356,17 +354,6 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                         ),
                       ],
                     ),
-                  ),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    secondary: Icon(
-                      Icons.terrain_outlined,
-                      color: theme.colorScheme.primary,
-                    ),
-                    title: Text(l10n.track3dGroundMap),
-                    subtitle: Text(l10n.track3dGroundMapSubtitle),
-                    value: Track3DSettings.instance.showGroundMap,
-                    onChanged: Track3DSettings.instance.setShowGroundMap,
                   ),
                   _buildOutlierSlider(
                     theme: theme,

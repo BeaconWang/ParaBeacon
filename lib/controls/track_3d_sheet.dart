@@ -8,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 import '../audio/vario_audio_service.dart';
 import '../data/flight_data.dart';
 import '../data/flight_recorder.dart';
+import '../data/map_source.dart';
 import '../data/track_3d_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'replay_gaps.dart';
@@ -50,7 +51,8 @@ class _Track3DSheetState extends State<_Track3DSheet>
   late final Track3DGeometryCache _geometryCache;
   late final Ticker _ticker;
   Track3DGroundMap? _groundMap;
-  bool _loadingGroundMap = false;
+  int _groundMapLoadGeneration = 0;
+  String? _loadingGroundMapSourceId;
 
   /// Missing-data periods (e.g. ground time between merged flights).
   late final List<ReplayGap> _gaps;
@@ -88,8 +90,9 @@ class _Track3DSheetState extends State<_Track3DSheet>
     _gapAfterIndices = {for (final gap in _gaps) gap.afterIndex};
     _ticker = createTicker(_onTick);
     Track3DSettings.instance.addListener(_onTrack3DSettingsChanged);
-    if (Track3DSettings.instance.showGroundMap) {
-      unawaited(_loadGroundMap());
+    final mapSourceId = Track3DSettings.instance.mapSourceId;
+    if (mapSourceId != 'none') {
+      unawaited(_loadGroundMap(mapSourceId));
     }
   }
 
@@ -104,30 +107,52 @@ class _Track3DSheetState extends State<_Track3DSheet>
 
   void _onTrack3DSettingsChanged() {
     if (!mounted) return;
-    setState(() {});
-    if (Track3DSettings.instance.showGroundMap &&
-        _groundMap == null &&
-        !_loadingGroundMap) {
-      unawaited(_loadGroundMap());
+    final sourceId = Track3DSettings.instance.mapSourceId;
+    if (sourceId == 'none') {
+      _groundMap?.dispose();
+      _groundMap = null;
+      _groundMapLoadGeneration++;
+      _loadingGroundMapSourceId = null;
+      setState(() {});
+      return;
     }
+    if (_groundMap?.source.id == sourceId ||
+        _loadingGroundMapSourceId == sourceId) {
+      setState(() {});
+      return;
+    }
+    _groundMap?.dispose();
+    _groundMap = null;
+    setState(() {});
+    unawaited(_loadGroundMap(sourceId));
   }
 
-  Future<void> _loadGroundMap() async {
-    if (_loadingGroundMap || !Track3DSettings.instance.showGroundMap) return;
-    _loadingGroundMap = true;
+  Future<void> _loadGroundMap(String sourceId) async {
+    if (sourceId == 'none' ||
+        Track3DSettings.instance.mapSourceId != sourceId ||
+        _loadingGroundMapSourceId == sourceId) {
+      return;
+    }
+    final generation = ++_groundMapLoadGeneration;
+    _loadingGroundMapSourceId = sourceId;
     Track3DGroundMap? loadedMap;
     try {
-      loadedMap = await Track3DGroundMap.load(_samples);
+      loadedMap = await Track3DGroundMap.load(
+        _samples,
+        MapSourceCatalog.byId(sourceId),
+      );
     } catch (_) {
       // The replay remains usable when map tiles are unavailable.
     }
-    if (!mounted) {
+    if (!mounted ||
+        generation != _groundMapLoadGeneration ||
+        Track3DSettings.instance.mapSourceId != sourceId) {
       loadedMap?.dispose();
       return;
     }
     setState(() {
       _groundMap = loadedMap;
-      _loadingGroundMap = false;
+      _loadingGroundMapSourceId = null;
     });
   }
 
@@ -220,6 +245,19 @@ class _Track3DSheetState extends State<_Track3DSheet>
     return (low - 1).clamp(0, _samples.length - 1).toInt();
   }
 
+  String _mapSourceLabel(AppLocalizations l10n, String id) => switch (id) {
+    'none' => l10n.settingMapSourceNone,
+    'osm' => l10n.settingMapSourceOsm,
+    'osmfr' => l10n.settingMapSourceOsmFr,
+    'carto-dark' => l10n.settingMapSourceCartoDark,
+    'carto-voyager' => l10n.settingMapSourceCartoVoyager,
+    'amap' => l10n.settingMapSourceAmap,
+    'amap-sat' => l10n.settingMapSourceAmapSat,
+    'opentopomap' => l10n.settingMapSourceOpenTopoMap,
+    'esri-world-imagery' => l10n.settingMapSourceEsriImagery,
+    _ => id,
+  };
+
   // ── Build ────────────────────────────────────────────────────────────────
 
   @override
@@ -244,6 +282,23 @@ class _Track3DSheetState extends State<_Track3DSheet>
                     l10n.replay3dTitle,
                     style: theme.textTheme.titleLarge,
                   ),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.map_outlined),
+                  tooltip: l10n.replay3dMapSource,
+                  initialValue: Track3DSettings.instance.mapSourceId,
+                  onSelected: Track3DSettings.instance.setMapSourceId,
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'none',
+                      child: Text(l10n.settingMapSourceNone),
+                    ),
+                    for (final source in MapSourceCatalog.secureRasterSources)
+                      PopupMenuItem(
+                        value: source.id,
+                        child: Text(_mapSourceLabel(l10n, source.id)),
+                      ),
+                  ],
                 ),
                 IconButton(
                   icon: const Icon(Icons.center_focus_strong),
@@ -273,9 +328,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
                     pitch: _pitch,
                     zScale: _zScale,
                     zoom: _zoom,
-                    groundMap: Track3DSettings.instance.showGroundMap
-                        ? _groundMap
-                        : null,
+                    groundMap: _groundMap,
                     samples: _samples,
                     cursorIndex: _currentIndex(),
                     geometryCache: _geometryCache,

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -13,8 +14,8 @@ import 'track_3d_painter.dart';
 /// Opens a 3D replay of a completed [track] as a full-screen sheet.
 ///
 /// The track is rendered as a projected 3D polyline (X/Y ground plane, Z =
-/// altitude) that the user can orbit (single-finger drag) and vertically
-/// exaggerate (pinch). A playback cursor animates along the track with optional
+/// altitude) that the user can orbit (single-finger drag) and zoom (pinch or
+/// mouse wheel). A playback cursor animates along the track with optional
 /// vario-audio sync, mirroring [showFlightReplaySheet].
 ///
 /// Only flights that still carry per-sample data can be replayed; the caller
@@ -53,7 +54,8 @@ class _Track3DSheetState extends State<_Track3DSheet>
   // Camera orientation.
   double _yaw = -0.6; // radians, around the vertical (Z) axis
   double _pitch = 0.9; // radians, tilt toward the horizon
-  double _zScale = 1.0; // vertical exaggeration (0.1 .. 3.0)
+  double _zScale = 1.0; // vertical exaggeration
+  double _zoom = 1.0; // uniform scene zoom (0.5 .. 4.0)
 
   // Playback.
   double _cursorMs = 0.0;
@@ -210,6 +212,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
                     _yaw = -0.6;
                     _pitch = 0.9;
                     _zScale = 1.0;
+                    _zoom = 1.0;
                   }),
                 ),
                 IconButton(
@@ -229,6 +232,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
                     yaw: _yaw,
                     pitch: _pitch,
                     zScale: _zScale,
+                    zoom: _zoom,
                     samples: _samples,
                     cursorIndex: _currentIndex(),
                     geometryCache: _geometryCache,
@@ -239,7 +243,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
                       _pitch = (_pitch + dy * 0.01).clamp(0.15, 1.45);
                     }),
                     onZoom: (factor) => setState(() {
-                      _zScale = (_zScale * factor).clamp(0.1, 3.0);
+                      _zoom = (_zoom * factor).clamp(0.5, 4.0);
                     }),
                   ),
                 ),
@@ -286,9 +290,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
           _stat(
             theme,
             l10n.replay3dStatVario,
-            inGap
-                ? noData
-                : '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)} m/s',
+            inGap ? noData : '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)} m/s',
           ),
         ],
       ),
@@ -398,13 +400,14 @@ class _Track3DSheetState extends State<_Track3DSheet>
   }
 }
 
-/// Handles orbit (single-finger drag) and vertical-exaggeration (pinch)
-/// gestures over the 3D [Track3DPainter].
+/// Handles orbit (single-finger drag) and whole-scene zoom (pinch or mouse
+/// wheel) over the 3D [Track3DPainter].
 class _GestureCanvas extends StatefulWidget {
   const _GestureCanvas({
     required this.yaw,
     required this.pitch,
     required this.zScale,
+    required this.zoom,
     required this.samples,
     required this.cursorIndex,
     required this.geometryCache,
@@ -417,6 +420,7 @@ class _GestureCanvas extends StatefulWidget {
   final double yaw;
   final double pitch;
   final double zScale;
+  final double zoom;
   final List<FlightSample> samples;
   final int cursorIndex;
   final Track3DGeometryCache geometryCache;
@@ -435,32 +439,40 @@ class _GestureCanvasState extends State<_GestureCanvas> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return GestureDetector(
-      onScaleStart: (_) => _lastScale = 1.0,
-      onScaleUpdate: (d) {
-        if (d.pointerCount >= 2) {
-          final factor = d.scale / (_lastScale == 0 ? 1 : _lastScale);
-          _lastScale = d.scale;
-          widget.onZoom(factor);
-        } else {
-          widget.onOrbit(d.focalPointDelta.dx, d.focalPointDelta.dy);
+    return Listener(
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent) {
+          widget.onZoom(math.exp(-event.scrollDelta.dy * 0.0015));
         }
       },
-      child: CustomPaint(
-        painter: Track3DPainter(
-          samples: widget.samples,
-          yaw: widget.yaw,
-          pitch: widget.pitch,
-          zScale: widget.zScale,
-          cursorIndex: widget.cursorIndex,
-          geometryCache: widget.geometryCache,
-          gapAfterIndices: widget.gapAfterIndices,
-          cursorInGap: widget.cursorInGap,
-          gapColor: replayGapColor,
-          gridColor: theme.colorScheme.onSurface.withAlpha(64),
-          background: theme.colorScheme.surface,
+      child: GestureDetector(
+        onScaleStart: (_) => _lastScale = 1.0,
+        onScaleUpdate: (d) {
+          if (d.pointerCount >= 2) {
+            final factor = d.scale / (_lastScale == 0 ? 1 : _lastScale);
+            _lastScale = d.scale;
+            widget.onZoom(factor);
+          } else {
+            widget.onOrbit(d.focalPointDelta.dx, d.focalPointDelta.dy);
+          }
+        },
+        child: CustomPaint(
+          painter: Track3DPainter(
+            samples: widget.samples,
+            yaw: widget.yaw,
+            pitch: widget.pitch,
+            zScale: widget.zScale,
+            zoom: widget.zoom,
+            cursorIndex: widget.cursorIndex,
+            geometryCache: widget.geometryCache,
+            gapAfterIndices: widget.gapAfterIndices,
+            cursorInGap: widget.cursorInGap,
+            gapColor: replayGapColor,
+            gridColor: theme.colorScheme.onSurface.withAlpha(64),
+            background: theme.colorScheme.surface,
+          ),
+          size: Size.infinite,
         ),
-        size: Size.infinite,
       ),
     );
   }

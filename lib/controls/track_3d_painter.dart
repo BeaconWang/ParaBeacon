@@ -7,7 +7,8 @@ import '../data/flight_recorder.dart';
 
 /// Renders a flight track as a projected 3D polyline: X/Y are the ground plane
 /// (meters east/north of the track centroid) and Z is altitude (meters above
-/// the track's minimum), with an adjustable vertical exaggeration.
+/// the track's minimum), with uniform view zoom and adjustable vertical
+/// exaggeration.
 ///
 /// The projection is a simple yaw→pitch orthographic camera — enough to give a
 /// readable sense of thermalling and glides without a full 3D engine. The line
@@ -185,6 +186,7 @@ class Track3DPainter extends CustomPainter {
     required this.yaw,
     required this.pitch,
     required this.zScale,
+    required this.zoom,
     required this.cursorIndex,
     required this.geometryCache,
     required this.gridColor,
@@ -198,6 +200,7 @@ class Track3DPainter extends CustomPainter {
   final double yaw;
   final double pitch;
   final double zScale;
+  final double zoom;
   final int cursorIndex;
   final Track3DGeometryCache geometryCache;
   final Color gridColor;
@@ -226,6 +229,12 @@ class Track3DPainter extends CustomPainter {
     final groundProjected = geometry.groundProjected;
     final gridSegments = geometry.gridSegments;
     Offset toScreen(Offset p) => geometry.toScreen(p);
+
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    canvas.translate(size.width / 2, size.height / 2);
+    canvas.scale(zoom);
+    canvas.translate(-size.width / 2, -size.height / 2);
 
     // ── 4. Perspective ground grid, behind the flight track. ─────────────
     final gridPaint = Paint()
@@ -320,6 +329,7 @@ class Track3DPainter extends CustomPainter {
         ..color = cursorColor
         ..strokeWidth = 2,
     );
+    canvas.restore();
   }
 
   static void _drawDashed(Canvas canvas, Offset a, Offset b, Paint paint) {
@@ -356,6 +366,7 @@ class Track3DPainter extends CustomPainter {
         old.yaw != yaw ||
         old.pitch != pitch ||
         old.zScale != zScale ||
+        old.zoom != zoom ||
         old.cursorIndex != cursorIndex ||
         old.cursorInGap != cursorInGap ||
         old.gapAfterIndices != gapAfterIndices ||

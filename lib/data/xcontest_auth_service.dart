@@ -40,6 +40,7 @@ class XContestAuthService extends ChangeNotifier {
   bool get isLoaded => _loaded;
   bool get isLoading => _loading;
   bool get isSignedIn => _token != null && _token!.isNotEmpty;
+  String? get accessToken => _token;
   String? get username => _username;
   String? get uid => _uid;
   String? get fullName => _fullName;

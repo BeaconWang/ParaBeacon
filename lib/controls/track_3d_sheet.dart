@@ -53,6 +53,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
   Track3DGroundMap? _groundMap;
   int _groundMapLoadGeneration = 0;
   String? _loadingGroundMapSourceId;
+  int? _loadingGroundMapZoomOffset;
 
   /// Missing-data periods (e.g. ground time between merged flights).
   late final List<ReplayGap> _gaps;
@@ -113,47 +114,97 @@ class _Track3DSheetState extends State<_Track3DSheet>
       _groundMap = null;
       _groundMapLoadGeneration++;
       _loadingGroundMapSourceId = null;
+      _loadingGroundMapZoomOffset = null;
       setState(() {});
       return;
     }
-    if (_groundMap?.source.id == sourceId ||
-        _loadingGroundMapSourceId == sourceId) {
+    final zoomOffset = Track3DGroundMap.zoomOffsetFor(_zoom);
+    if ((_groundMap?.source.id == sourceId &&
+            _groundMap?.zoomLevelOffset == zoomOffset) ||
+        (_loadingGroundMapSourceId == sourceId &&
+            _loadingGroundMapZoomOffset == zoomOffset)) {
       setState(() {});
       return;
     }
-    _groundMap?.dispose();
-    _groundMap = null;
+    if (_groundMap?.source.id != sourceId) {
+      _groundMap?.dispose();
+      _groundMap = null;
+    }
     setState(() {});
     unawaited(_loadGroundMap(sourceId));
   }
 
   Future<void> _loadGroundMap(String sourceId) async {
+    final zoomOffset = Track3DGroundMap.zoomOffsetFor(_zoom);
     if (sourceId == 'none' ||
         Track3DSettings.instance.mapSourceId != sourceId ||
-        _loadingGroundMapSourceId == sourceId) {
+        (_loadingGroundMapSourceId == sourceId &&
+            _loadingGroundMapZoomOffset == zoomOffset) ||
+        (_groundMap?.source.id == sourceId &&
+            _groundMap?.zoomLevelOffset == zoomOffset)) {
       return;
     }
     final generation = ++_groundMapLoadGeneration;
     _loadingGroundMapSourceId = sourceId;
+    _loadingGroundMapZoomOffset = zoomOffset;
     Track3DGroundMap? loadedMap;
     try {
       loadedMap = await Track3DGroundMap.load(
         _samples,
         MapSourceCatalog.byId(sourceId),
+        zoomLevelOffset: zoomOffset,
       );
     } catch (_) {
       // The replay remains usable when map tiles are unavailable.
     }
     if (!mounted ||
         generation != _groundMapLoadGeneration ||
-        Track3DSettings.instance.mapSourceId != sourceId) {
+        Track3DSettings.instance.mapSourceId != sourceId ||
+        Track3DGroundMap.zoomOffsetFor(_zoom) != zoomOffset) {
       loadedMap?.dispose();
       return;
     }
+    final previousMap = _groundMap;
     setState(() {
-      _groundMap = loadedMap;
+      if (loadedMap != null) _groundMap = loadedMap;
       _loadingGroundMapSourceId = null;
+      _loadingGroundMapZoomOffset = null;
     });
+    if (loadedMap != null && previousMap != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        previousMap.dispose();
+      });
+    }
+  }
+
+  void _setSceneZoom(double zoom) {
+    final nextZoom = zoom.clamp(0.5, 4.0).toDouble();
+    if (_zoom == nextZoom) return;
+    setState(() => _zoom = nextZoom);
+    _ensureGroundMapResolution();
+  }
+
+  void _ensureGroundMapResolution() {
+    final sourceId = Track3DSettings.instance.mapSourceId;
+    if (sourceId == 'none') return;
+    final zoomOffset = Track3DGroundMap.zoomOffsetFor(_zoom);
+    if ((_groundMap?.source.id == sourceId &&
+            _groundMap?.zoomLevelOffset == zoomOffset) ||
+        (_loadingGroundMapSourceId == sourceId &&
+            _loadingGroundMapZoomOffset == zoomOffset)) {
+      return;
+    }
+    unawaited(_loadGroundMap(sourceId));
+  }
+
+  void _resetView() {
+    setState(() {
+      _yaw = -0.6;
+      _pitch = 0.9;
+      _zScale = 1.0;
+      _zoom = 1.0;
+    });
+    _ensureGroundMapResolution();
   }
 
   // ── Playback ─────────────────────────────────────────────────────────────
@@ -303,12 +354,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
                 IconButton(
                   icon: const Icon(Icons.center_focus_strong),
                   tooltip: l10n.replay3dResetView,
-                  onPressed: () => setState(() {
-                    _yaw = -0.6;
-                    _pitch = 0.9;
-                    _zScale = 1.0;
-                    _zoom = 1.0;
-                  }),
+                  onPressed: _resetView,
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -338,9 +384,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
                       _yaw += dx * 0.01;
                       _pitch = (_pitch + dy * 0.01).clamp(0.15, 1.45);
                     }),
-                    onZoom: (factor) => setState(() {
-                      _zoom = (_zoom * factor).clamp(0.5, 4.0);
-                    }),
+                    onZoom: (factor) => _setSceneZoom(_zoom * factor),
                   ),
                 ),
                 if (activeGap != null)

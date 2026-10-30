@@ -29,6 +29,7 @@ class Track3DGeometryCache {
     required double yaw,
     required double pitch,
     required double zScale,
+    required double zoom,
     required Size size,
   }) {
     final cached = _cached;
@@ -36,6 +37,7 @@ class Track3DGeometryCache {
         cached.yaw == yaw &&
         cached.pitch == pitch &&
         cached.zScale == zScale &&
+        cached.zoom == zoom &&
         cached.size == size) {
       return cached;
     }
@@ -134,18 +136,25 @@ class Track3DGeometryCache {
       (size.width - pad * 2) / spanX,
       (size.height - pad * 2) / spanY,
     );
+    final centerX = (minX + maxX) / 2;
+    final centerY = (minY + maxY) / 2;
+    Offset cameraZoom(Offset point) => Offset(
+      centerX + (point.dx - centerX) * zoom,
+      centerY + (point.dy - centerY) * zoom,
+    );
     _cached = _Track3DGeometry(
       yaw: yaw,
       pitch: pitch,
       zScale: zScale,
+      zoom: zoom,
       cameraDistance: cameraDistance,
       size: size,
-      projected: projected,
-      groundProjected: groundProjected,
-      gridSegments: gridSegments,
+      projected: [for (final point in projected) cameraZoom(point)],
+      groundProjected: [for (final point in groundProjected) cameraZoom(point)],
+      gridSegments: [for (final point in gridSegments) cameraZoom(point)],
       scale: scale,
-      centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2,
+      centerX: centerX,
+      centerY: centerY,
     );
     return _cached!;
   }
@@ -156,6 +165,7 @@ class _Track3DGeometry implements Track3DGroundProjector {
     required this.yaw,
     required this.pitch,
     required this.zScale,
+    required this.zoom,
     required this.cameraDistance,
     required this.size,
     required this.projected,
@@ -169,6 +179,7 @@ class _Track3DGeometry implements Track3DGroundProjector {
   final double yaw;
   final double pitch;
   final double zScale;
+  final double zoom;
   final double cameraDistance;
   final Size size;
   final List<Offset> projected;
@@ -192,8 +203,8 @@ class _Track3DGeometry implements Track3DGroundProjector {
     final perspective =
         cameraDistance / math.max(1.0, cameraDistance + y1 * cosP);
     return Offset(
-      size.width / 2 + (x1 * perspective - centerX) * scale,
-      size.height / 2 + (-y1 * sinP * perspective - centerY) * scale,
+      size.width / 2 + (x1 * perspective - centerX) * scale * zoom,
+      size.height / 2 + (-y1 * sinP * perspective - centerY) * scale * zoom,
     );
   }
 }
@@ -243,6 +254,7 @@ class Track3DPainter extends CustomPainter {
       yaw: yaw,
       pitch: pitch,
       zScale: zScale,
+      zoom: zoom,
       size: size,
     );
     final projected = geometry.projected;
@@ -252,9 +264,6 @@ class Track3DPainter extends CustomPainter {
 
     canvas.save();
     canvas.clipRect(Offset.zero & size);
-    canvas.translate(size.width / 2, size.height / 2);
-    canvas.scale(zoom);
-    canvas.translate(-size.width / 2, -size.height / 2);
     groundMap?.paint(canvas, geometry);
 
     // ── 4. Perspective ground grid, behind the flight track. ─────────────

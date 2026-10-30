@@ -15,6 +15,7 @@ class Track3DGroundMap {
     required this.image,
     required this.source,
     required this.zoom,
+    required this.zoomLevelOffset,
     required this.centerLatitude,
     required this.centerLongitude,
     required this.originPixelX,
@@ -30,16 +31,21 @@ class Track3DGroundMap {
   final ui.Image image;
   final MapSource source;
   final int zoom;
+  final int zoomLevelOffset;
   final double centerLatitude;
   final double centerLongitude;
   final double originPixelX;
   final double originPixelY;
   final double halfExtentMeters;
 
+  static int zoomOffsetFor(double cameraZoom) =>
+      math.max(0, (math.log(cameraZoom) / math.ln2).round()).toInt();
+
   static Future<Track3DGroundMap?> load(
     List<FlightSample> samples,
-    MapSource source,
-  ) async {
+    MapSource source, {
+    int zoomLevelOffset = 0,
+  }) async {
     if (samples.length < 2 || source.type != MapSourceType.rasterTiles) {
       return null;
     }
@@ -90,7 +96,9 @@ class Track3DGroundMap {
                 ) /
                 math.ln2)
             .floor();
-    var zoom = desiredZoom.clamp(2, source.maxZoom.floor());
+    var zoom = (desiredZoom + zoomLevelOffset)
+        .clamp(2, source.maxZoom.floor())
+        .toInt();
 
     late int minTileX;
     late int maxTileX;
@@ -189,6 +197,7 @@ class Track3DGroundMap {
         image: image,
         source: source,
         zoom: zoom,
+        zoomLevelOffset: zoomLevelOffset,
         centerLatitude: centerLatitude,
         centerLongitude: centerLongitude,
         originPixelX: minTileX * _tileSize.toDouble(),

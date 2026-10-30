@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
 import '../data/xcontest_live_tracking_service.dart';
@@ -264,6 +265,10 @@ class _LiveTrackingSettingsSheetState
                           settings.isSaving ? l10n.saving : l10n.save,
                         ),
                       ),
+                      if (kDebugMode) ...[
+                        const SizedBox(height: 24),
+                        _DebugLogPanel(tracking: tracking),
+                      ],
                     ],
                   ),
                 ),
@@ -299,6 +304,69 @@ class _StatusMessage extends StatelessWidget {
           Expanded(child: Text(message)),
         ],
       ),
+    );
+  }
+}
+
+/// Debug-only tail of the live-tracking lifecycle log. Rebuilds with the
+/// service (which notifies on every logged line); newest line stays in view.
+class _DebugLogPanel extends StatelessWidget {
+  const _DebugLogPanel({required this.tracking});
+
+  final XContestLiveTrackingService tracking;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final lines = tracking.debugLog;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.bug_report_outlined,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Debug log (${lines.length})',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          height: 180,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: lines.isEmpty
+              ? Text(
+                  'No events yet.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              : SingleChildScrollView(
+                  reverse: true,
+                  child: SelectableText(
+                    lines.join('\n'),
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+        ),
+      ],
     );
   }
 }

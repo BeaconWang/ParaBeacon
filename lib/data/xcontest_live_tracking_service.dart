@@ -52,6 +52,29 @@ class XContestLiveTrackingService extends ChangeNotifier {
   /// normal path finishes as soon as the ack or the drain completes).
   static const Duration _landingTimeout = Duration(seconds: 60);
 
+  /// Most recent debug log lines, newest last. Only populated in debug builds
+  /// (see [_log]); rendered at the bottom of the Live tracking settings sheet.
+  static const int _maxLogLines = 200;
+  final List<String> _debugLog = <String>[];
+
+  /// Immutable snapshot of the debug log, oldest first.
+  List<String> get debugLog => List<String>.unmodifiable(_debugLog);
+
+  /// Appends a timestamped line to [debugLog]. No-op in release builds so the
+  /// buffer never grows in production.
+  void _log(String message) {
+    if (!kDebugMode) return;
+    final now = DateTime.now();
+    String two(int v) => v.toString().padLeft(2, '0');
+    final stamp =
+        '${two(now.hour)}:${two(now.minute)}:${two(now.second)}.${now.millisecond.toString().padLeft(3, '0')}';
+    _debugLog.add('$stamp  $message');
+    if (_debugLog.length > _maxLogLines) {
+      _debugLog.removeRange(0, _debugLog.length - _maxLogLines);
+    }
+    _notify();
+  }
+
   bool _configured = false;
   bool _disposed = false;
   LiveTrackingConnectionState _state =
@@ -181,6 +204,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
 
     _starting = true;
     final bindingEpoch = _bindingEpoch;
+    _log('start: declaring flight (pilot $pilotId)');
     _setState(LiveTrackingConnectionState.connecting);
     try {
       final settings = LiveTrackingSettings.instance;
@@ -226,6 +250,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
       _sessionId =
           declaration.flightId.isEmpty ? uri.toString() : declaration.flightId;
 
+      _log('socket open: ${uri.host}');
       final now = DateTime.now().millisecondsSinceEpoch;
       client.connect(now); // c1.b(): handshake, resend options/follows
       client.onTakeoff('', now); // r0.j()+r0.g(): flying, start flushing
@@ -349,7 +374,10 @@ class XContestLiveTrackingService extends ChangeNotifier {
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final client = _client;
       if (client == null) return;
-      client.tick(DateTime.now().millisecondsSinceEpoch);
+      final events = client.tick(DateTime.now().millisecondsSinceEpoch);
+      for (final event in events) {
+        _log(event);
+      }
       // The landing is complete once the server acknowledges it, or once the
       // whole buffer has drained after the `xcLanding` went out.
       if (_ending &&
@@ -375,6 +403,8 @@ class XContestLiveTrackingService extends ChangeNotifier {
     }
     if (_ending) return;
     _ending = true;
+    _log('landing: draining ${client.queue.length + client.inflight.length} '
+        'point(s) then sending xcLanding');
     // c1.q(): the next drained flush emits `xcLanding` instead of a chunk.
     client.setLanded();
     _startTicker(); // keep draining even if the flush timer was idle
@@ -393,6 +423,10 @@ class XContestLiveTrackingService extends ChangeNotifier {
     _tickTimer = null;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    final ack = _client?.landingAck;
+    _log(ack != null
+        ? 'landed: ack xcFlightId=${ack.xcFlightId}'
+        : 'flight finished (socket closed)');
     final wire = _wire;
     _wire = null;
     await wire?.close();
@@ -412,6 +446,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
   void _onSocketClosed(Object? error) {
     if (_disposed || _ending || _client == null || !_shouldTrack) return;
     _lastErrorCode = 'xcontest_socket_closed';
+    _log('socket closed${error != null ? ': $error' : ''}');
     _client!.onDisconnected(DateTime.now().millisecondsSinceEpoch);
     _setState(LiveTrackingConnectionState.reconnecting);
     _scheduleReconnect();
@@ -422,6 +457,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
     final exponent = _retryAttempt.clamp(0, 5).toInt();
     final delay = Duration(seconds: (2 * (1 << exponent)).clamp(2, 60));
     _retryAttempt++;
+    _log('reconnect in ${delay.inSeconds}s (attempt $_retryAttempt)');
     _reconnectTimer = Timer(delay, () {
       _reconnectTimer = null;
       if (_client == null) {
@@ -476,6 +512,8 @@ class XContestLiveTrackingService extends ChangeNotifier {
   void _setState(LiveTrackingConnectionState next) {
     if (_state == next) return;
     _state = next;
+    _log('state -> ${next.name}'
+        '${_lastErrorCode != null ? ' ($_lastErrorCode)' : ''}');
     _notify();
   }
 

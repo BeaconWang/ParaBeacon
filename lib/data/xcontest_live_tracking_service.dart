@@ -93,6 +93,12 @@ class XContestLiveTrackingService extends ChangeNotifier {
   Timer? _tickTimer;
   Timer? _reconnectTimer;
   Timer? _landingTimer;
+  Timer? _gpsWaitTimer;
+
+  /// How often to re-check for a usable GPS fix before a flight can start. A
+  /// fresh valid fix triggers [_onDataChanged] immediately; this timer is only
+  /// a fallback for when the data stream goes quiet.
+  static const Duration _gpsWaitInterval = Duration(seconds: 3);
   Future<void>? _lifecycleFuture;
   bool _starting = false;
   bool _ending = false;
@@ -193,15 +199,15 @@ class XContestLiveTrackingService extends ChangeNotifier {
     final token = XContestAuthService.instance.accessToken;
     final pilotId = _pilotId?.call()?.trim();
     if (fix == null) {
-      _lastErrorCode = 'gps_unavailable';
-      _setState(LiveTrackingConnectionState.reconnecting);
-      _scheduleReconnect();
+      _waitForGps();
       return;
     }
     if (token == null || token.isEmpty || pilotId == null || pilotId.isEmpty) {
       throw const FormatException('xcontest_auth_missing');
     }
 
+    _gpsWaitTimer?.cancel();
+    _gpsWaitTimer = null;
     _starting = true;
     final bindingEpoch = _bindingEpoch;
     _log('start: declaring flight (pilot $pilotId)');
@@ -262,6 +268,25 @@ class XContestLiveTrackingService extends ChangeNotifier {
     } finally {
       _starting = false;
     }
+  }
+
+  /// No usable GPS fix yet: keep showing "connecting" and re-check on a short
+  /// fixed cadence. This deliberately avoids the exponential socket backoff
+  /// ([_scheduleReconnect]) so sharing starts promptly once GPS appears -
+  /// a fresh fix also re-triggers via [_onDataChanged] without waiting.
+  void _waitForGps() {
+    if (_lastErrorCode != 'gps_unavailable') {
+      _log('waiting for GPS fix');
+    }
+    _lastErrorCode = 'gps_unavailable';
+    _setState(LiveTrackingConnectionState.connecting);
+    if (_gpsWaitTimer != null || _disposed || _ending) return;
+    _gpsWaitTimer = Timer(_gpsWaitInterval, () {
+      _gpsWaitTimer = null;
+      if (_shouldTrack && _client == null && !_starting && !_ending) {
+        _queueLifecycleSync();
+      }
+    });
   }
 
   Future<FlightDeclared> _declareFlight(
@@ -395,6 +420,8 @@ class XContestLiveTrackingService extends ChangeNotifier {
   Future<void> _stopFlight() async {
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _gpsWaitTimer?.cancel();
+    _gpsWaitTimer = null;
     final client = _client;
     if (client == null) {
       _starting = false;
@@ -423,6 +450,8 @@ class XContestLiveTrackingService extends ChangeNotifier {
     _tickTimer = null;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _gpsWaitTimer?.cancel();
+    _gpsWaitTimer = null;
     final ack = _client?.landingAck;
     _log(ack != null
         ? 'landed: ack xcFlightId=${ack.xcFlightId}'
@@ -550,6 +579,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
       _tickTimer?.cancel();
       _reconnectTimer?.cancel();
       _landingTimer?.cancel();
+      _gpsWaitTimer?.cancel();
       _wire?.close();
       _httpClient?.close();
     }

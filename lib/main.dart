@@ -38,6 +38,7 @@ import 'data/sensors/internal_sensor_bridge.dart';
 import 'data/sensors/internal_sensor_service.dart';
 import 'data/share_card_settings.dart';
 import 'data/track_3d_settings.dart';
+import 'data/user_agent_settings.dart';
 import 'data/vertical_speed_settings.dart';
 import 'data/vario_color_settings.dart';
 import 'data/takeoff_reference.dart';
@@ -52,6 +53,7 @@ export 'dash_grid_page.dart' show DashGridPage, DashGridPainter;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await UserAgentSettings.instance.load();
   try {
     final trackingConfig = await const LiveTrackingConfigLoader().load();
     LiveTrackingService.instance.configure(trackingConfig);

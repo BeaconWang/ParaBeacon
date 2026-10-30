@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 
+import 'user_agent_settings.dart';
+
 // ── Overview ──────────────────────────────────────────────────────────────────
 //
 // This file holds the *unified weather model*: every vendor adapter
@@ -50,8 +52,7 @@ class WxParse {
   /// Numeric coercion. Some vendors (wttr.in j1) deliver every value as a
   /// string; Open-Meteo/OpenWeatherMap deliver numbers. Accepts both — and
   /// null / garbage degrades to the fallback instead of throwing.
-  static double d(Object? v, [double fallback = 0]) =>
-      dOrNull(v) ?? fallback;
+  static double d(Object? v, [double fallback = 0]) => dOrNull(v) ?? fallback;
 
   /// Nullable variant: null (or non-numeric) stays null — used for the
   /// extended metric fields that not every provider supplies.
@@ -77,10 +78,9 @@ class WxParse {
 
   /// Vendor epoch is seconds since the Unix epoch (OpenWeatherMap,
   /// WeatherAPI.com); returns local-wall-clock-independent DateTime (UTC).
-  static DateTime? epoch(Object? v) =>
-      v is num && v > 0
-          ? DateTime.fromMillisecondsSinceEpoch(v.toInt() * 1000)
-          : null;
+  static DateTime? epoch(Object? v) => v is num && v > 0
+      ? DateTime.fromMillisecondsSinceEpoch(v.toInt() * 1000)
+      : null;
 
   static Map<String, dynamic> mapOf(Map<String, dynamic> j, String key) =>
       (j[key] is Map ? j[key] as Map : const {}).cast<String, dynamic>();
@@ -197,8 +197,18 @@ WeatherKind weatherKindFromWapiCode(int code) {
       return WeatherKind.rain;
     case 1069 || 1072 || 1198 || 1201 || 1237 || 1249 || 1252:
       return WeatherKind.freezing;
-    case 1114 || 1117 || 1210 || 1213 || 1216 || 1219 || 1222 || 1225 ||
-        1255 || 1258 || 1261 || 1262:
+    case 1114 ||
+        1117 ||
+        1210 ||
+        1213 ||
+        1216 ||
+        1219 ||
+        1222 ||
+        1225 ||
+        1255 ||
+        1258 ||
+        1261 ||
+        1262:
       return WeatherKind.snow;
     case 1087 || 1273 || 1276 || 1279 || 1282:
       return WeatherKind.thunder;
@@ -222,8 +232,19 @@ WeatherKind weatherKindFromWwoCode(int code) {
       return WeatherKind.drizzle;
     case 299 || 302 || 305 || 308:
       return WeatherKind.rain;
-    case 182 || 185 || 311 || 314 || 317 || 320 || 350 || 362 || 365 ||
-        374 || 377 || 392 || 395:
+    case 182 ||
+        185 ||
+        311 ||
+        314 ||
+        317 ||
+        320 ||
+        350 ||
+        362 ||
+        365 ||
+        374 ||
+        377 ||
+        392 ||
+        395:
       return WeatherKind.freezing;
     case 179 || 323 || 326 || 329 || 332 || 335 || 338 || 368 || 371:
       return WeatherKind.snow;
@@ -566,16 +587,16 @@ List<WindAloftLevel> windAloftLevels({
   final ground = (elevationMeters ?? 0).round();
 
   double? Function(WeatherHour) groundReader(int meters) => switch (meters) {
-        10 => (WeatherHour h) => h.windSpeed,
-        80 => (WeatherHour h) => h.windSpeed80m,
-        _ => (WeatherHour h) => h.windSpeed120m,
-      };
+    10 => (WeatherHour h) => h.windSpeed,
+    80 => (WeatherHour h) => h.windSpeed80m,
+    _ => (WeatherHour h) => h.windSpeed120m,
+  };
 
   double? Function(WeatherHour) groundDirection(int meters) => switch (meters) {
-        10 => (WeatherHour h) => h.windDirection,
-        80 => (WeatherHour h) => h.windDirection80m,
-        _ => (WeatherHour h) => h.windDirection120m,
-      };
+    10 => (WeatherHour h) => h.windDirection,
+    80 => (WeatherHour h) => h.windDirection80m,
+    _ => (WeatherHour h) => h.windDirection120m,
+  };
 
   final levels = <WindAloftLevel>[
     for (final meters in kWindAloftGroundLevels)
@@ -664,7 +685,7 @@ class WeatherService {
   static const String _host = 'api.open-meteo.com';
   static const String _path = '/v1/forecast';
 
-  final http.Client _client = http.Client();
+  final http.Client _client = UserAgentHttpClient();
 
   /// Fetches current conditions, the next [hours] hourly slots and [days]
   /// daily summaries for [lat]/[lon]. Throws [WeatherException] on failure so
@@ -680,15 +701,15 @@ class WeatherService {
       'longitude': lon.toStringAsFixed(4),
       'current':
           'temperature_2m,apparent_temperature,relative_humidity_2m,is_day,'
-              'precipitation,weather_code,cloud_cover,surface_pressure,'
-              'wind_speed_10m,wind_direction_10m,wind_gusts_10m',
+          'precipitation,weather_code,cloud_cover,surface_pressure,'
+          'wind_speed_10m,wind_direction_10m,wind_gusts_10m',
       'hourly':
           'temperature_2m,precipitation_probability,precipitation,weather_code,'
-              'wind_speed_10m,wind_direction_10m,wind_gusts_10m',
+          'wind_speed_10m,wind_direction_10m,wind_gusts_10m',
       'daily':
           'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,'
-              'precipitation_probability_max,wind_speed_10m_max,'
-              'wind_gusts_10m_max,wind_direction_10m_dominant',
+          'precipitation_probability_max,wind_speed_10m_max,'
+          'wind_gusts_10m_max,wind_direction_10m_dominant',
       'timezone': 'auto',
       'forecast_hours': '$hours',
       'forecast_days': '$days',
@@ -750,16 +771,18 @@ class OpenMeteoBasicParse {
       final t = DateTime.tryParse('${times[i]}');
       if (t == null) continue;
       final s = WxParse.mapAt(hourlyRaw, i);
-      hourly.add(WeatherHour(
-        time: t,
-        temperature: WxParse.d(s['temperature_2m']),
-        precipProbability: WxParse.d(s['precipitation_probability']),
-        precipitation: WxParse.d(s['precipitation']),
-        windSpeed: WxParse.d(s['wind_speed_10m']),
-        windDirection: WxParse.d(s['wind_direction_10m']),
-        windGusts: WxParse.d(s['wind_gusts_10m']),
-        kind: weatherKindFromWmo(WxParse.i(s['weather_code']) ?? -1),
-      ));
+      hourly.add(
+        WeatherHour(
+          time: t,
+          temperature: WxParse.d(s['temperature_2m']),
+          precipProbability: WxParse.d(s['precipitation_probability']),
+          precipitation: WxParse.d(s['precipitation']),
+          windSpeed: WxParse.d(s['wind_speed_10m']),
+          windDirection: WxParse.d(s['wind_direction_10m']),
+          windGusts: WxParse.d(s['wind_gusts_10m']),
+          kind: weatherKindFromWmo(WxParse.i(s['weather_code']) ?? -1),
+        ),
+      );
     }
 
     final dailyRaw = WxParse.mapOf(j, 'daily');
@@ -769,17 +792,19 @@ class OpenMeteoBasicParse {
       final d = DateTime.tryParse('${dayTimes[i]}');
       if (d == null) continue;
       final s = WxParse.mapAt(dailyRaw, i);
-      daily.add(WeatherDay(
-        date: d,
-        tMax: WxParse.d(s['temperature_2m_max']),
-        tMin: WxParse.d(s['temperature_2m_min']),
-        precipSum: WxParse.d(s['precipitation_sum']),
-        precipProbability: WxParse.d(s['precipitation_probability_max']),
-        windMax: WxParse.d(s['wind_speed_10m_max']),
-        windGustsMax: WxParse.d(s['wind_gusts_10m_max']),
-        windDirectionDominant: WxParse.d(s['wind_direction_10m_dominant']),
-        kind: weatherKindFromWmo(WxParse.i(s['weather_code']) ?? -1),
-      ));
+      daily.add(
+        WeatherDay(
+          date: d,
+          tMax: WxParse.d(s['temperature_2m_max']),
+          tMin: WxParse.d(s['temperature_2m_min']),
+          precipSum: WxParse.d(s['precipitation_sum']),
+          precipProbability: WxParse.d(s['precipitation_probability_max']),
+          windMax: WxParse.d(s['wind_speed_10m_max']),
+          windGustsMax: WxParse.d(s['wind_gusts_10m_max']),
+          windDirectionDominant: WxParse.d(s['wind_direction_10m_dominant']),
+          kind: weatherKindFromWmo(WxParse.i(s['weather_code']) ?? -1),
+        ),
+      );
     }
 
     return WeatherData(current: current, hourly: hourly, daily: daily);

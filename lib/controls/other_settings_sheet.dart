@@ -7,6 +7,7 @@ import '../data/flight_details_settings.dart';
 import '../data/map_tile_cache.dart';
 import '../data/map_source.dart';
 import '../data/share_card_settings.dart';
+import '../data/user_agent_settings.dart';
 import '../data/vertical_speed_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'color_palette_settings_sheet.dart';
@@ -60,6 +61,65 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
 
   String _details(AppLocalizations l10n, MapTileCacheStats stats) => l10n
       .mapCacheSizeDetails(_formatMapCacheSize(stats.bytes), stats.tileCount);
+
+  Future<void> _editUserAgent() async {
+    final settings = UserAgentSettings.instance;
+    final controller = TextEditingController(text: settings.userAgent);
+    var invalid = false;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(AppLocalizations.of(context).networkUserAgentTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(AppLocalizations.of(context).networkUserAgentSubtitle),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                minLines: 2,
+                maxLines: 4,
+                maxLength: 512,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  errorText: invalid
+                      ? AppLocalizations.of(context).networkUserAgentInvalid
+                      : null,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await settings.resetToChromeDefault();
+                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+              },
+              child: Text(AppLocalizations.of(context).networkUserAgentReset),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(AppLocalizations.of(context).cancel),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final saved = await settings.setUserAgent(controller.text);
+                if (!saved) {
+                  setDialogState(() => invalid = true);
+                  return;
+                }
+                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+              },
+              child: Text(AppLocalizations.of(context).save),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+  }
 
   Future<void> _clearMapTileCache() async {
     final l10n = AppLocalizations.of(context);
@@ -246,6 +306,7 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
     return AnimatedBuilder(
       animation: Listenable.merge([
         ShareCardSettings.instance,
+        UserAgentSettings.instance,
         FlightDetailsSettings.instance,
         VerticalSpeedSettings.instance,
       ]),
@@ -354,6 +415,21 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                         ),
                       ],
                     ),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      Icons.language,
+                      color: theme.colorScheme.primary,
+                    ),
+                    title: Text(l10n.networkUserAgentTitle),
+                    subtitle: Text(
+                      UserAgentSettings.instance.userAgent,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.edit_outlined),
+                    onTap: _editUserAgent,
                   ),
                   _buildOutlierSlider(
                     theme: theme,

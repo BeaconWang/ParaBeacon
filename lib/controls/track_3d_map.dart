@@ -309,12 +309,7 @@ class Track3DGroundMap {
         .replaceAll('{y}', '$y');
     try {
       final response = await MapTileCacheService.instance.httpClient
-          .get(
-            Uri.parse(url),
-            headers: const {
-              'User-Agent': 'ParaBeacon/0.1 (paraglider flight assistant)',
-            },
-          )
+          .get(Uri.parse(url))
           .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200 ||
           response.bodyBytes.isEmpty ||

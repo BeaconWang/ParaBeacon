@@ -189,6 +189,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otherSettingsSubtitle => 'Additional preferences';
 
   @override
+  String get networkUserAgentTitle => 'Network User-Agent';
+
+  @override
+  String get networkUserAgentSubtitle =>
+      'Applied to app network requests. Nominatim requests retain ParaBeacon identification; browsers and native map SDKs may override it.';
+
+  @override
+  String get networkUserAgentInvalid =>
+      'Enter a valid User-Agent (1–512 characters, no control characters).';
+
+  @override
+  String get networkUserAgentReset => 'Use Chrome default';
+
+  @override
   String get shareCardFlatDesign => 'Flat share cards';
 
   @override

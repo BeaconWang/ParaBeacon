@@ -5,9 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+import 'user_agent_settings.dart';
+
 class XContestAuthService extends ChangeNotifier {
   XContestAuthService._({http.Client? client, FlutterSecureStorage? storage})
-    : _client = client ?? http.Client(),
+    : _client = client == null
+          ? UserAgentHttpClient()
+          : UserAgentHttpClient(innerClient: client),
       _storage = storage ?? const FlutterSecureStorage();
 
   static final XContestAuthService instance = XContestAuthService._();

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/other_settings_sheet.dart';
 import 'package:parabeacon/data/flight_details_settings.dart';
 import 'package:parabeacon/data/share_card_settings.dart';
+import 'package:parabeacon/data/user_agent_settings.dart';
 import 'package:parabeacon/data/vertical_speed_settings.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,7 +70,12 @@ void main() {
     final verticalSpeedSettings = VerticalSpeedSettings.instance;
     final shareCardSettings = ShareCardSettings.instance;
     await shareCardSettings.load();
+    await UserAgentSettings.instance.load();
     expect(shareCardSettings.mapSourceId, 'none');
+    expect(
+      UserAgentSettings.instance.userAgent,
+      UserAgentSettings.chromeDefault,
+    );
     expect(shareCardSettings.compactLayout, isTrue);
     await settings.setFilterVarioOutliers(true);
     await verticalSpeedSettings.setAverageWindowSeconds(2.0);
@@ -102,12 +108,28 @@ void main() {
     expect(find.text('Filter climb/sink outliers'), findsOneWidget);
     expect(find.text('Vertical speed averaging window'), findsOneWidget);
     expect(find.text('Share card map source'), findsOneWidget);
+    expect(find.text('Network User-Agent'), findsOneWidget);
     expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
     expect(find.text('Compact share card layout'), findsOneWidget);
     expect(find.byType(Slider), findsNWidgets(4));
     expect(settings.filterVarioOutliers, isTrue);
 
-    await tester.tap(find.text('Compact share card layout'));
+    final userAgentTile = find.text('Network User-Agent');
+    await tester.ensureVisible(userAgentTile);
+    await tester.tap(userAgentTile);
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('Use Chrome default'), findsOneWidget);
+    await tester.tap(find.text('Use Chrome default'));
+    await tester.pumpAndSettle();
+    expect(
+      UserAgentSettings.instance.userAgent,
+      UserAgentSettings.chromeDefault,
+    );
+
+    final compactLayoutTile = find.text('Compact share card layout');
+    await tester.ensureVisible(compactLayoutTile);
+    await tester.tap(compactLayoutTile);
     await tester.pumpAndSettle();
     expect(shareCardSettings.compactLayout, isFalse);
 

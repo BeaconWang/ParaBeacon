@@ -182,6 +182,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get otherSettingsSubtitle => '更多偏好设置';
 
   @override
+  String get networkUserAgentTitle => '网络 User-Agent';
+
+  @override
+  String get networkUserAgentSubtitle =>
+      '应用网络请求将使用此值。Nominatim 请求仍会附加 ParaBeacon 标识；浏览器和原生地图 SDK 可能会覆盖此设置。';
+
+  @override
+  String get networkUserAgentInvalid => '请输入有效的 User-Agent（1–512 个字符，不含控制字符）。';
+
+  @override
+  String get networkUserAgentReset => '使用 Chrome 默认值';
+
+  @override
   String get shareCardFlatDesign => '扁平风格分享卡片';
 
   @override

@@ -488,9 +488,8 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                             maxNativeZoom: offlineActive
                                 ? 19
                                 : src.maxZoom.round(),
-                            // Rely on flutter_map's own User-Agent (see the
-                            // note in MapControl): a custom header is dropped
-                            // on Android and breaks OSM's usage policy check.
+                            // Provides a package identity fallback; the shared
+                            // map-cache client applies the configured UA.
                             userAgentPackageName: 'com.beacon.parabeacon',
                           ),
                         if (_fixedMarker case final marker?)

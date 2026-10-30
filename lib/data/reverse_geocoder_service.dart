@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'gcj02.dart';
 import 'geo_name_settings.dart';
+import 'user_agent_settings.dart';
 
 /// Resolves a latitude/longitude to a short human place name via the AMap
 /// (AutoNavi) reverse-geocoding web service.
@@ -24,7 +25,7 @@ class ReverseGeocoderService {
   static const String _host = 'restapi.amap.com';
   static const String _path = '/v3/geocode/regeo';
 
-  final http.Client _client = http.Client();
+  final http.Client _client = UserAgentHttpClient();
 
   /// Reverse-geocodes WGS-84 [lat]/[lon] to a short place name, or null when
   /// geocoding is not configured, the request fails, or no name is found.
@@ -50,8 +51,7 @@ class ReverseGeocoderService {
     assert(uri.host == _host);
 
     try {
-      final resp =
-          await _client.get(uri).timeout(const Duration(seconds: 8));
+      final resp = await _client.get(uri).timeout(const Duration(seconds: 8));
       if (resp.statusCode != 200) return null;
       final body = jsonDecode(resp.body);
       if (body is! Map || body['status'] != '1') return null;
@@ -76,10 +76,12 @@ class ReverseGeocoderService {
       final district = _str(comp['district']);
       final city = _firstStr(comp['city']);
       final province = _str(comp['province']);
-      final parts = [township, district, city, province]
-          .where((e) => e != null && e.isNotEmpty)
-          .cast<String>()
-          .toList();
+      final parts = [
+        township,
+        district,
+        city,
+        province,
+      ].where((e) => e != null && e.isNotEmpty).cast<String>().toList();
       if (parts.isNotEmpty) {
         // Use the two most specific, e.g. "City · Township".
         return parts.take(2).join(' · ');

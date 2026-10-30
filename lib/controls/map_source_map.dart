@@ -6,6 +6,7 @@ import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 
 import '../data/gcj02.dart';
 import '../data/map_source.dart';
+import '../data/map_tile_cache.dart';
 
 /// Simple runtime map view for the provider catalog.
 ///
@@ -84,6 +85,7 @@ class MapSourceMap extends StatelessWidget {
       children: [
         TileLayer(
           urlTemplate: template,
+          tileProvider: MapTileCacheProvider(),
           maxNativeZoom: source.maxZoom.round(),
           userAgentPackageName: userAgentPackageName,
         ),

@@ -529,12 +529,8 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
                           maxNativeZoom: offlineActive
                               ? 19
                               : _src.maxZoom.round(),
-                          // Rely on flutter_map's own User-Agent (formatted from
-                          // this package name) rather than a custom
-                          // NetworkTileProvider(headers:). Passing a `const`
-                          // headers map threw "Cannot modify unmodifiable map"
-                          // (flutter_map merges into it), and a custom UA is also
-                          // silently dropped on Android — see MapControl's note.
+                          // Provides a package identity fallback; the shared
+                          // map-cache client applies the configured UA.
                           userAgentPackageName: 'com.beacon.parabeacon',
                         ),
                       PolylineLayer(polylines: _buildTrackPolylines()),
@@ -1929,8 +1925,7 @@ class _ReplayTrimTimelinePainter extends CustomPainter {
     void drawRun(int endExclusive) {
       if (endExclusive - runStart < 1) return;
       final area = Path()..moveTo(points[runStart].dx, timeline.bottom);
-      final profile = Path()
-        ..moveTo(points[runStart].dx, points[runStart].dy);
+      final profile = Path()..moveTo(points[runStart].dx, points[runStart].dy);
       for (var i = runStart; i < endExclusive; i++) {
         area.lineTo(points[i].dx, points[i].dy);
         if (i > runStart) profile.lineTo(points[i].dx, points[i].dy);

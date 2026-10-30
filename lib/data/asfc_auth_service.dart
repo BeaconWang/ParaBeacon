@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+import 'user_agent_settings.dart';
+
 String? _asString(Object? value) {
   if (value is String && value.trim().isNotEmpty) return value.trim();
   return value is num ? value.toString() : null;
@@ -415,7 +417,7 @@ class AsfcAuthService extends ChangeNotifier {
     _profileErrorMessage = null;
     notifyListeners();
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .get(
             _profileUri,
             headers: {'Accept': 'application/json', 'token': _token!},
@@ -465,7 +467,7 @@ class AsfcAuthService extends ChangeNotifier {
     _certificateInfoLoading = true;
     notifyListeners();
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .get(
             _certificateInfoUri,
             headers: {'Accept': 'application/json', 'token': _token!},
@@ -500,7 +502,7 @@ class AsfcAuthService extends ChangeNotifier {
     _certificateCoachesLoading = true;
     notifyListeners();
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .get(
             _certificateCoachesUri,
             headers: {'Accept': 'application/json', 'token': _token!},
@@ -536,7 +538,7 @@ class AsfcAuthService extends ChangeNotifier {
     _agenciesLoading = true;
     notifyListeners();
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .get(
             _agenciesUri,
             headers: {'Accept': 'application/json', 'token': _token!},
@@ -572,7 +574,7 @@ class AsfcAuthService extends ChangeNotifier {
     _flightRecordsLoading = true;
     notifyListeners();
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .get(
             _flightRecordListUri.replace(
               queryParameters: {'page': '$page', 'type': 'CUSTOMER'},
@@ -622,7 +624,7 @@ class AsfcAuthService extends ChangeNotifier {
         _pilotTrainingRecordsFailed = true;
         return pilotTrainingRecords;
       }
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .get(
             _pilotTrainingRecordListUri.replace(
               queryParameters: {'userId': '$userId'},
@@ -713,7 +715,7 @@ class AsfcAuthService extends ChangeNotifier {
     _pilotTrainingRecordSubmitFailed = false;
     notifyListeners();
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .post(
             _pilotTrainingRecordSaveUri,
             headers: {
@@ -741,7 +743,7 @@ class AsfcAuthService extends ChangeNotifier {
   Future<AsfcFlightRecord?> loadFlightRecordDetail(int id) async {
     if (!isSignedIn || id <= 0) return null;
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .get(
             _flightRecordDetailUri.replace(queryParameters: {'id': '$id'}),
             headers: {'Accept': 'application/json', 'token': _token!},
@@ -814,7 +816,7 @@ class AsfcAuthService extends ChangeNotifier {
         'coachId': coachId,
       };
       if (id != null && id > 0) payload['id'] = id;
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .post(
             _flightRecordSaveUri,
             headers: {
@@ -851,7 +853,7 @@ class AsfcAuthService extends ChangeNotifier {
   Future<bool> deleteFlightRecord(int id) async {
     if (!isSignedIn || id <= 0) return false;
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .get(
             _flightRecordDeleteUri.replace(queryParameters: {'id': '$id'}),
             headers: {'Accept': 'application/json', 'token': _token!},
@@ -891,7 +893,7 @@ class AsfcAuthService extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .get(
             _captchaUri.replace(queryParameters: {'mobile': normalizedMobile}),
             headers: const {'Accept': 'image/*, application/json'},
@@ -938,7 +940,7 @@ class AsfcAuthService extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .get(
             _sendSmsCodeUri.replace(
               queryParameters: {
@@ -1000,7 +1002,7 @@ class AsfcAuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .post(
             _loginUri,
             headers: const {
@@ -1114,9 +1116,9 @@ class AsfcAuthService extends ChangeNotifier {
         ..files.add(
           http.MultipartFile.fromBytes('filedata', bytes, filename: filename),
         );
-      final response = await request.send().timeout(
-        const Duration(seconds: 30),
-      );
+      final response = await UserAgentSettings.sharedClient
+          .send(request)
+          .timeout(const Duration(seconds: 30));
       final body = await response.stream.bytesToString();
       final decoded = _decodeMap(body);
       final status = decoded?['status']?.toString().toLowerCase();
@@ -1211,7 +1213,7 @@ class AsfcAuthService extends ChangeNotifier {
     }
 
     try {
-      final response = await http
+      final response = await UserAgentSettings.sharedClient
           .post(
             parasailLicenseId > 0
                 ? _certificateUpgradeUri

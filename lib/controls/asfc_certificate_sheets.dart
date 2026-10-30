@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
+import '../data/user_agent_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'certificate_application_sheet.dart';
 import 'pilot_training_records_sheet.dart';
@@ -252,7 +253,12 @@ class _AsfcCertificateDetailsSheetState
                                   ),
                                 )
                               : CircleAvatar(
-                                  backgroundImage: NetworkImage(photoUrl),
+                                  backgroundImage: NetworkImage(
+                                    photoUrl,
+                                    headers: UserAgentSettings
+                                        .instance
+                                        .requestHeaders,
+                                  ),
                                 ),
                           height: 72,
                         ),
@@ -514,6 +520,7 @@ class _CertificateCardPreview extends StatelessWidget {
                 (imageUri.scheme == 'http' || imageUri.scheme == 'https')
             ? Image.network(
                 photoUrl!,
+                headers: UserAgentSettings.instance.requestHeaders,
                 width: portraitWidth,
                 height: portraitHeight,
                 fit: BoxFit.cover,
@@ -1041,6 +1048,7 @@ class _CertificateDocumentRow extends StatelessWidget {
                 maxScale: 5,
                 child: Image.network(
                   imageUrl,
+                  headers: UserAgentSettings.instance.requestHeaders,
                   fit: BoxFit.contain,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
@@ -1083,12 +1091,14 @@ class _CertificateDocumentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedImageUrl = _resolvedImageUrl;
     final isNetworkImage = resolvedImageUrl != null;
-    final imageWidth =
-        (MediaQuery.sizeOf(context).width * 0.4).clamp(96.0, 180.0).toDouble();
+    final imageWidth = (MediaQuery.sizeOf(context).width * 0.4)
+        .clamp(96.0, 180.0)
+        .toDouble();
     final imageHeight = imageWidth * 0.7;
     final image = isNetworkImage
         ? Image.network(
             resolvedImageUrl,
+            headers: UserAgentSettings.instance.requestHeaders,
             width: imageWidth,
             height: imageHeight,
             fit: BoxFit.contain,

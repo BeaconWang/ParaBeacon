@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'user_agent_settings.dart';
 import 'weather_service.dart' show WeatherException, WeatherError;
 
 /// Free geocoding (place name → latitude/longitude) via OpenStreetMap's
@@ -13,18 +14,15 @@ import 'weather_service.dart' show WeatherException, WeatherError;
 ///    exclusively as a URL *query parameter* (never a host, path or
 ///    header), so no user input can steer the request anywhere else —
 ///    no SSRF surface.
-///  * Nominatim's usage policy requires requests to identify the
-///    application (User-Agent) and limits burden: queries are debounced
-///    by the caller (300 ms) and capped at 8 results.
+///  * Nominatim's usage policy requires application identification. The shared
+///    User-Agent client adds a ParaBeacon identifier for this host and limits
+///    burden: queries are debounced (300 ms) and capped at 8 results.
 class GeocodingService {
   GeocodingService._();
   static final GeocodingService instance = GeocodingService._();
 
   /// The ONLY host this service will ever contact.
   static const String _host = 'nominatim.openstreetmap.org';
-
-  static const String _userAgent =
-      'ParaBeacon/0.1 (paraglider flight assistant)';
 
   /// Max accepted length of a user query (Nominatim is comfortable with
   /// far more; the cap only guards against accidental pastes).
@@ -34,14 +32,16 @@ class GeocodingService {
   /// dropdown scannable and the response small).
   static const int _limit = 8;
 
-  final http.Client _client = http.Client();
+  final http.Client _client = UserAgentHttpClient();
 
   /// Resolves [rawQuery] into up to 8 candidate places, best match first.
   /// Returns an empty list when nothing matches. Throws
   /// [WeatherException] on network/transport failure — an empty result set
   /// is NOT an error.
-  Future<List<GeocodedPlace>> search(String rawQuery,
-      {String language = 'en'}) async {
+  Future<List<GeocodedPlace>> search(
+    String rawQuery, {
+    String language = 'en',
+  }) async {
     final q = _sanitize(rawQuery);
     if (q.isEmpty) return const [];
 
@@ -58,15 +58,7 @@ class GeocodingService {
     final http.Response resp;
     try {
       resp = await _client
-          .get(
-            uri,
-            headers: {
-              // Nominatim policy: identify the application. Never sent to
-              // any other host (headers are per-request here).
-              'User-Agent': _userAgent,
-              'Accept-Language': language,
-            },
-          )
+          .get(uri, headers: {'Accept-Language': language})
           .timeout(const Duration(seconds: 12));
     } catch (_) {
       throw const WeatherException(WeatherError.network);
@@ -110,13 +102,7 @@ class GeocodingService {
     assert(uri.host == _host);
     try {
       final resp = await _client
-          .get(
-            uri,
-            headers: {
-              'User-Agent': _userAgent,
-              'Accept-Language': language,
-            },
-          )
+          .get(uri, headers: {'Accept-Language': language})
           .timeout(const Duration(seconds: 8));
       if (resp.statusCode != 200) return null;
       final decoded = jsonDecode(resp.body);

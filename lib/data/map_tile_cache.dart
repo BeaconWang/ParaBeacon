@@ -14,6 +14,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'gcj02.dart';
 import 'offline_tiles_service.dart';
+import 'user_agent_settings.dart';
 
 /// A snapshot of the app-wide persistent map-tile cache.
 class MapTileCacheStats {
@@ -400,13 +401,17 @@ class OfflineFirstTileProvider extends TileProvider {
 }
 
 class _MapTileCacheClient extends http.BaseClient {
-  _MapTileCacheClient(this._cache) : _client = RetryClient(http.Client());
+  _MapTileCacheClient(this._cache)
+    : _client = RetryClient(UserAgentHttpClient());
 
   final MapTileCacheService _cache;
   final http.Client _client;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    request.headers['User-Agent'] = UserAgentSettings.instance.forRequest(
+      request.url,
+    );
     if (request.method != 'GET') return _client.send(request);
 
     final generation = _cache.generation;

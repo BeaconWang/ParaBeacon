@@ -440,6 +440,30 @@ abstract class AppLocalizations {
   /// **'Additional preferences'**
   String get otherSettingsSubtitle;
 
+  /// No description provided for @networkUserAgentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Network User-Agent'**
+  String get networkUserAgentTitle;
+
+  /// No description provided for @networkUserAgentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied to app network requests. Nominatim requests retain ParaBeacon identification; browsers and native map SDKs may override it.'**
+  String get networkUserAgentSubtitle;
+
+  /// No description provided for @networkUserAgentInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid User-Agent (1–512 characters, no control characters).'**
+  String get networkUserAgentInvalid;
+
+  /// No description provided for @networkUserAgentReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Chrome default'**
+  String get networkUserAgentReset;
+
   /// No description provided for @shareCardFlatDesign.
   ///
   /// In en, this message translates to:

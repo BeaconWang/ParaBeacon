@@ -9,6 +9,7 @@ import 'flight_data.dart';
 import 'flight_state.dart';
 import 'live_tracking_config.dart';
 import 'live_tracking_proxy_auth_service.dart';
+import 'user_agent_settings.dart';
 
 @immutable
 class LiveTrackpoint {
@@ -199,13 +200,15 @@ class LiveTrackingService extends ChangeNotifier {
        _authProvider = authProvider,
        _pointStore =
            pointStore ?? SharedPreferencesLiveTrackingProxyPointStore(),
-       _httpClient = httpClient ?? http.Client(),
+       _httpClient = httpClient == null
+           ? UserAgentHttpClient()
+           : UserAgentHttpClient(innerClient: httpClient),
        _ownsHttpClient = httpClient == null;
 
   LiveTrackingService._singleton()
     : _authProvider = LiveTrackingProxyAuthService.instance,
       _pointStore = SharedPreferencesLiveTrackingProxyPointStore(),
-      _httpClient = http.Client(),
+      _httpClient = UserAgentHttpClient(),
       _ownsHttpClient = true;
 
   static final LiveTrackingService instance = LiveTrackingService._singleton();

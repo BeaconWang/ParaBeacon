@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 
 import 'weather_service.dart';
+import 'user_agent_settings.dart';
 import 'weather_units.dart';
 
 // ── Provider contract (strategy pattern) ─────────────────────────────────────
@@ -90,7 +91,7 @@ abstract class WeatherProvider {
 /// and status → [WeatherError] mapping. Hosts are compile-time constants, so
 /// no adapter can ever be steered at an internal endpoint (no SSRF surface).
 class WeatherHttp {
-  final http.Client _client = http.Client();
+  final http.Client _client = UserAgentHttpClient();
 
   /// GETs [uri] (host must be a compile-time constant) and decodes the JSON
   /// body. Throws [WeatherException] on transport/status/parse failure.
@@ -253,9 +254,9 @@ class OpenMeteoProvider extends WeatherProvider {
   /// `wind_speed_<hPa>hPa` / `wind_direction_<hPa>hPa` columns for every
   /// requested pressure level.
   static List<String> get _pressureLevelParams => [
-        for (final hPa in kWindAloftPressureLevels) 'wind_speed_${hPa}hPa',
-        for (final hPa in kWindAloftPressureLevels) 'wind_direction_${hPa}hPa',
-      ];
+    for (final hPa in kWindAloftPressureLevels) 'wind_speed_${hPa}hPa',
+    for (final hPa in kWindAloftPressureLevels) 'wind_direction_${hPa}hPa',
+  ];
 
   static const String _dailyParams =
       'weather_code,temperature_2m_max,temperature_2m_min,'
@@ -300,8 +301,7 @@ class OpenMeteoProvider extends WeatherProvider {
       'hourly': _hourlyParams,
       'daily': _dailyParams,
       'timezone': 'auto',
-      'forecast_days':
-          '${request.forecastDays.clamp(1, maxForecastDays)}',
+      'forecast_days': '${request.forecastDays.clamp(1, maxForecastDays)}',
       if (request.pastDays > 0)
         'past_days': '${request.pastDays.clamp(0, maxPastDays)}',
       // `best_match` is the API default; request `models` only for a real
@@ -346,37 +346,39 @@ class OpenMeteoProvider extends WeatherProvider {
       if (t == null) continue;
       final s = WxParse.mapAt(hourlyRaw, i);
       final isDayFlag = WxParse.i(s['is_day']);
-      hourly.add(WeatherHour(
-        time: t,
-        temperature: WxParse.d(s['temperature_2m']),
-        precipProbability: WxParse.d(s['precipitation_probability']),
-        precipitation: WxParse.d(s['precipitation']),
-        windSpeed: WxParse.d(s['wind_speed_10m']),
-        windDirection: WxParse.d(s['wind_direction_10m']),
-        windGusts: WxParse.d(s['wind_gusts_10m']),
-        kind: weatherKindFromWmo(WxParse.i(s['weather_code']) ?? -1),
-        apparentTemperature: WxParse.dOrNull(s['apparent_temperature']),
-        relativeHumidity: WxParse.dOrNull(s['relative_humidity_2m']),
-        rain: WxParse.dOrNull(s['rain']),
-        snowfall: WxParse.dOrNull(s['snowfall']),
-        cloudCover: WxParse.dOrNull(s['cloud_cover']),
-        cloudLow: WxParse.dOrNull(s['cloud_cover_low']),
-        cloudMid: WxParse.dOrNull(s['cloud_cover_mid']),
-        cloudHigh: WxParse.dOrNull(s['cloud_cover_high']),
-        visibility: WxParse.dOrNull(s['visibility']),
-        windSpeed80m: WxParse.dOrNull(s['wind_speed_80m']),
-        windSpeed120m: WxParse.dOrNull(s['wind_speed_120m']),
-        windDirection80m: WxParse.dOrNull(s['wind_direction_80m']),
-        windDirection120m: WxParse.dOrNull(s['wind_direction_120m']),
-        windSpeedByLevel: _parsePressureLevels(s, 'wind_speed'),
-        windDirectionByLevel: _parsePressureLevels(s, 'wind_direction'),
-        soilTemperature: WxParse.dOrNull(s['soil_temperature_0cm']),
-        shortwaveRadiation: WxParse.dOrNull(s['shortwave_radiation']),
-        soilMoisture: WxParse.dOrNull(s['soil_moisture_0_to_1cm']),
-        et0: WxParse.dOrNull(s['et0_fao_evapotranspiration']),
-        cape: WxParse.dOrNull(s['cape']),
-        isDay: isDayFlag == null ? null : isDayFlag != 0,
-      ));
+      hourly.add(
+        WeatherHour(
+          time: t,
+          temperature: WxParse.d(s['temperature_2m']),
+          precipProbability: WxParse.d(s['precipitation_probability']),
+          precipitation: WxParse.d(s['precipitation']),
+          windSpeed: WxParse.d(s['wind_speed_10m']),
+          windDirection: WxParse.d(s['wind_direction_10m']),
+          windGusts: WxParse.d(s['wind_gusts_10m']),
+          kind: weatherKindFromWmo(WxParse.i(s['weather_code']) ?? -1),
+          apparentTemperature: WxParse.dOrNull(s['apparent_temperature']),
+          relativeHumidity: WxParse.dOrNull(s['relative_humidity_2m']),
+          rain: WxParse.dOrNull(s['rain']),
+          snowfall: WxParse.dOrNull(s['snowfall']),
+          cloudCover: WxParse.dOrNull(s['cloud_cover']),
+          cloudLow: WxParse.dOrNull(s['cloud_cover_low']),
+          cloudMid: WxParse.dOrNull(s['cloud_cover_mid']),
+          cloudHigh: WxParse.dOrNull(s['cloud_cover_high']),
+          visibility: WxParse.dOrNull(s['visibility']),
+          windSpeed80m: WxParse.dOrNull(s['wind_speed_80m']),
+          windSpeed120m: WxParse.dOrNull(s['wind_speed_120m']),
+          windDirection80m: WxParse.dOrNull(s['wind_direction_80m']),
+          windDirection120m: WxParse.dOrNull(s['wind_direction_120m']),
+          windSpeedByLevel: _parsePressureLevels(s, 'wind_speed'),
+          windDirectionByLevel: _parsePressureLevels(s, 'wind_direction'),
+          soilTemperature: WxParse.dOrNull(s['soil_temperature_0cm']),
+          shortwaveRadiation: WxParse.dOrNull(s['shortwave_radiation']),
+          soilMoisture: WxParse.dOrNull(s['soil_moisture_0_to_1cm']),
+          et0: WxParse.dOrNull(s['et0_fao_evapotranspiration']),
+          cape: WxParse.dOrNull(s['cape']),
+          isDay: isDayFlag == null ? null : isDayFlag != 0,
+        ),
+      );
     }
 
     final dailyRaw = WxParse.mapOf(j, 'daily');
@@ -386,20 +388,22 @@ class OpenMeteoProvider extends WeatherProvider {
       final d = DateTime.tryParse('${dayTimes[i]}');
       if (d == null) continue;
       final s = WxParse.mapAt(dailyRaw, i);
-      daily.add(WeatherDay(
-        date: d,
-        tMax: WxParse.d(s['temperature_2m_max']),
-        tMin: WxParse.d(s['temperature_2m_min']),
-        precipSum: WxParse.d(s['precipitation_sum']),
-        precipProbability: WxParse.d(s['precipitation_probability_max']),
-        windMax: WxParse.d(s['wind_speed_10m_max']),
-        windGustsMax: WxParse.d(s['wind_gusts_10m_max']),
-        windDirectionDominant: WxParse.d(s['wind_direction_10m_dominant']),
-        kind: weatherKindFromWmo(WxParse.i(s['weather_code']) ?? -1),
-        sunrise: DateTime.tryParse('${s['sunrise']}'),
-        sunset: DateTime.tryParse('${s['sunset']}'),
-        snowfallSum: WxParse.dOrNull(s['snowfall_sum']),
-      ));
+      daily.add(
+        WeatherDay(
+          date: d,
+          tMax: WxParse.d(s['temperature_2m_max']),
+          tMin: WxParse.d(s['temperature_2m_min']),
+          precipSum: WxParse.d(s['precipitation_sum']),
+          precipProbability: WxParse.d(s['precipitation_probability_max']),
+          windMax: WxParse.d(s['wind_speed_10m_max']),
+          windGustsMax: WxParse.d(s['wind_gusts_10m_max']),
+          windDirectionDominant: WxParse.d(s['wind_direction_10m_dominant']),
+          kind: weatherKindFromWmo(WxParse.i(s['weather_code']) ?? -1),
+          sunrise: DateTime.tryParse('${s['sunrise']}'),
+          sunset: DateTime.tryParse('${s['sunset']}'),
+          snowfallSum: WxParse.dOrNull(s['snowfall_sum']),
+        ),
+      );
     }
 
     return WeatherData(
@@ -489,20 +493,20 @@ class OpenWeatherMapProvider extends WeatherProvider {
       temperature: WxParse.d(cur['temp']),
       apparentTemperature: WxParse.d(cur['feels_like']),
       humidity: WxParse.d(cur['humidity']),
-      precipitation: WxParse.d(cur['rain']?['1h']) + WxParse.d(cur['snow']?['1h']),
+      precipitation:
+          WxParse.d(cur['rain']?['1h']) + WxParse.d(cur['snow']?['1h']),
       cloudCover: WxParse.d(cur['clouds']),
       pressure: WxParse.d(cur['pressure']),
       windSpeed: WxParse.d(cur['wind_speed']) * 3.6, // m/s → km/h
       windDirection: WxParse.d(cur['wind_deg']),
       windGusts: WxParse.d(cur['wind_gust']) * 3.6, // m/s → km/h
-      isDay: dt != null &&
+      isDay:
+          dt != null &&
           sunrise != null &&
           sunset != null &&
           !dt.isBefore(sunrise) &&
           dt.isBefore(sunset),
-      kind: curWx == null
-          ? WeatherKind.unknown
-          : weatherKindFromOwmId(curWx),
+      kind: curWx == null ? WeatherKind.unknown : weatherKindFromOwmId(curWx),
     );
 
     final hourly = <WeatherHour>[];
@@ -512,17 +516,19 @@ class OpenWeatherMapProvider extends WeatherProvider {
       final t = WxParse.epoch(s['dt']);
       if (t == null) continue;
       final wx = _firstWeather(s);
-      hourly.add(WeatherHour(
-        time: t,
-        temperature: WxParse.d(s['temp']),
-        precipProbability: WxParse.d(s['pop']) * 100, // 0..1 → %
-        precipitation:
-            WxParse.d(s['rain']?['1h']) + WxParse.d(s['snow']?['1h']),
-        windSpeed: WxParse.d(s['wind_speed']) * 3.6,
-        windDirection: WxParse.d(s['wind_deg']),
-        windGusts: WxParse.d(s['wind_gust']) * 3.6,
-        kind: wx == null ? WeatherKind.unknown : weatherKindFromOwmId(wx),
-      ));
+      hourly.add(
+        WeatherHour(
+          time: t,
+          temperature: WxParse.d(s['temp']),
+          precipProbability: WxParse.d(s['pop']) * 100, // 0..1 → %
+          precipitation:
+              WxParse.d(s['rain']?['1h']) + WxParse.d(s['snow']?['1h']),
+          windSpeed: WxParse.d(s['wind_speed']) * 3.6,
+          windDirection: WxParse.d(s['wind_deg']),
+          windGusts: WxParse.d(s['wind_gust']) * 3.6,
+          kind: wx == null ? WeatherKind.unknown : weatherKindFromOwmId(wx),
+        ),
+      );
     }
 
     final daily = <WeatherDay>[];
@@ -533,17 +539,19 @@ class OpenWeatherMapProvider extends WeatherProvider {
       if (d == null) continue;
       final temp = WxParse.mapOf(s, 'temp');
       final wx = _firstWeather(s);
-      daily.add(WeatherDay(
-        date: d,
-        tMax: WxParse.d(temp['max']),
-        tMin: WxParse.d(temp['min']),
-        precipSum: WxParse.d(s['rain']) + WxParse.d(s['snow']),
-        precipProbability: WxParse.d(s['pop']) * 100,
-        windMax: WxParse.d(s['wind_speed']) * 3.6,
-        windGustsMax: WxParse.d(s['wind_gust']) * 3.6,
-        windDirectionDominant: WxParse.d(s['wind_deg']),
-        kind: wx == null ? WeatherKind.unknown : weatherKindFromOwmId(wx),
-      ));
+      daily.add(
+        WeatherDay(
+          date: d,
+          tMax: WxParse.d(temp['max']),
+          tMin: WxParse.d(temp['min']),
+          precipSum: WxParse.d(s['rain']) + WxParse.d(s['snow']),
+          precipProbability: WxParse.d(s['pop']) * 100,
+          windMax: WxParse.d(s['wind_speed']) * 3.6,
+          windGustsMax: WxParse.d(s['wind_gust']) * 3.6,
+          windDirectionDominant: WxParse.d(s['wind_deg']),
+          kind: wx == null ? WeatherKind.unknown : weatherKindFromOwmId(wx),
+        ),
+      );
     }
 
     return WeatherData(current: current, hourly: hourly, daily: daily);
@@ -589,7 +597,8 @@ class WeatherApiComProvider extends WeatherProvider {
     }
     final uri = Uri.https(_host, '/v1/forecast.json', {
       'key': key,
-      'q': '${request.lat.toStringAsFixed(4)},${request.lon.toStringAsFixed(4)}',
+      'q':
+          '${request.lat.toStringAsFixed(4)},${request.lon.toStringAsFixed(4)}',
       'days': '5',
       'aqi': 'no',
       'alerts': 'no',
@@ -625,10 +634,11 @@ class WeatherApiComProvider extends WeatherProvider {
     final nowEpoch = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 3600;
     final hourly = <WeatherHour>[];
     for (final day in WxParse.listOf(
-        WxParse.mapOf(j, 'forecast'), 'forecastday')) {
+      WxParse.mapOf(j, 'forecast'),
+      'forecastday',
+    )) {
       if (day is! Map || hourly.length >= 48) break;
-      for (final raw in WxParse.listOf(
-          day.cast<String, dynamic>(), 'hour')) {
+      for (final raw in WxParse.listOf(day.cast<String, dynamic>(), 'hour')) {
         if (raw is! Map || hourly.length >= 48) break;
         final s = raw.cast<String, dynamic>();
         final epoch = WxParse.i(s['time_epoch']);
@@ -636,24 +646,28 @@ class WeatherApiComProvider extends WeatherProvider {
         final t = WxParse.epoch(epoch);
         if (t == null) continue;
         final wx = _conditionCode(s);
-        hourly.add(WeatherHour(
-          time: t,
-          temperature: WxParse.d(s['temp_c']),
-          precipProbability: WxParse.d(s['chance_of_rain']),
-          precipitation: WxParse.d(s['precip_mm']),
-          windSpeed: WxParse.d(s['wind_kph']),
-          windDirection: WxParse.d(s['wind_degree']),
-          windGusts: WxParse.d(s['gust_kph']),
-          kind: wx == null
-              ? WeatherKind.unknown
-              : weatherKindFromWapiCode(wx),
-        ));
+        hourly.add(
+          WeatherHour(
+            time: t,
+            temperature: WxParse.d(s['temp_c']),
+            precipProbability: WxParse.d(s['chance_of_rain']),
+            precipitation: WxParse.d(s['precip_mm']),
+            windSpeed: WxParse.d(s['wind_kph']),
+            windDirection: WxParse.d(s['wind_degree']),
+            windGusts: WxParse.d(s['gust_kph']),
+            kind: wx == null
+                ? WeatherKind.unknown
+                : weatherKindFromWapiCode(wx),
+          ),
+        );
       }
     }
 
     final daily = <WeatherDay>[];
     for (final day in WxParse.listOf(
-        WxParse.mapOf(j, 'forecast'), 'forecastday')) {
+      WxParse.mapOf(j, 'forecast'),
+      'forecastday',
+    )) {
       if (day is! Map) continue;
       final s = day.cast<String, dynamic>();
       final d = DateTime.tryParse(WxParse.s(s['date']));
@@ -661,21 +675,21 @@ class WeatherApiComProvider extends WeatherProvider {
       final daySum = WxParse.mapOf(s, 'day');
       final wx = _conditionCode(daySum);
       final astro = WxParse.mapOf(s, 'astro');
-      daily.add(WeatherDay(
-        date: d,
-        tMax: WxParse.d(daySum['maxtemp_c']),
-        tMin: WxParse.d(daySum['mintemp_c']),
-        precipSum: WxParse.d(daySum['totalprecip_mm']),
-        precipProbability: WxParse.d(daySum['daily_chance_of_rain']),
-        windMax: WxParse.d(daySum['maxwind_kph']),
-        windGustsMax: WxParse.d(daySum['maxwind_kph']), // no gust field
-        windDirectionDominant: 0, // no dominant-direction field
-        kind: wx == null
-            ? WeatherKind.unknown
-            : weatherKindFromWapiCode(wx),
-        sunrise: _tryParseHm(d, astro['sunrise']),
-        sunset: _tryParseHm(d, astro['sunset']),
-      ));
+      daily.add(
+        WeatherDay(
+          date: d,
+          tMax: WxParse.d(daySum['maxtemp_c']),
+          tMin: WxParse.d(daySum['mintemp_c']),
+          precipSum: WxParse.d(daySum['totalprecip_mm']),
+          precipProbability: WxParse.d(daySum['daily_chance_of_rain']),
+          windMax: WxParse.d(daySum['maxwind_kph']),
+          windGustsMax: WxParse.d(daySum['maxwind_kph']), // no gust field
+          windDirectionDominant: 0, // no dominant-direction field
+          kind: wx == null ? WeatherKind.unknown : weatherKindFromWapiCode(wx),
+          sunrise: _tryParseHm(d, astro['sunrise']),
+          sunset: _tryParseHm(d, astro['sunset']),
+        ),
+      );
     }
 
     return WeatherData(current: current, hourly: hourly, daily: daily);
@@ -686,8 +700,10 @@ class WeatherApiComProvider extends WeatherProvider {
   static DateTime? _tryParseHm(DateTime date, Object? hhmm) {
     final s = WxParse.s(hhmm).trim();
     if (s.isEmpty) return null;
-    final m = RegExp(r'^(\d{1,2}):(\d{2})\s*(AM|PM)?$', caseSensitive: false)
-        .firstMatch(s);
+    final m = RegExp(
+      r'^(\d{1,2}):(\d{2})\s*(AM|PM)?$',
+      caseSensitive: false,
+    ).firstMatch(s);
     if (m == null) return null;
     var hour = int.tryParse(m.group(1)!) ?? 0;
     final minute = int.tryParse(m.group(2)!) ?? 0;
@@ -742,10 +758,9 @@ class WttrInProvider extends WeatherProvider {
   /// the numeric coercion.
   static WeatherData parse(Map<String, dynamic> j) {
     final curList = WxParse.listOf(j, 'current_condition');
-    final cur =
-        curList.isNotEmpty && curList.first is Map
-            ? (curList.first as Map).cast<String, dynamic>()
-            : <String, dynamic>{};
+    final cur = curList.isNotEmpty && curList.first is Map
+        ? (curList.first as Map).cast<String, dynamic>()
+        : <String, dynamic>{};
     final curSpeed = WxParse.d(cur['windspeedKmph']);
     final current = WeatherCurrent(
       temperature: WxParse.d(cur['temp_C']),
@@ -769,8 +784,7 @@ class WttrInProvider extends WeatherProvider {
 
     // j1 gives 3-hourly slots: "0", "300", … "2100" (hhmm, no padding).
     final now = DateTime.now();
-    final cutoff =
-        DateTime(now.year, now.month, now.day, now.hour - 1);
+    final cutoff = DateTime(now.year, now.month, now.day, now.hour - 1);
     final hourly = <WeatherHour>[];
     final daily = <WeatherDay>[];
 
@@ -786,22 +800,29 @@ class WttrInProvider extends WeatherProvider {
         final s = h.cast<String, dynamic>();
         final hhmm = WxParse.i(s['time']) ?? 0;
         final t = DateTime(
-            date.year, date.month, date.day, hhmm ~/ 100, hhmm % 100);
+          date.year,
+          date.month,
+          date.day,
+          hhmm ~/ 100,
+          hhmm % 100,
+        );
         // Skip today's already-elapsed slots so the strip starts at "Now".
         if (t.isBefore(cutoff)) continue;
         final speed = WxParse.d(s['windspeedKmph']);
-        slots.add(WeatherHour(
-          time: t,
-          temperature: WxParse.d(s['tempC']),
-          precipProbability: WxParse.d(s['chanceofrain']),
-          precipitation: WxParse.d(s['precipMM']),
-          windSpeed: speed,
-          windDirection: WxParse.d(s['winddirDegree']),
-          windGusts: s['WindGustKmph'] != null
-              ? WxParse.d(s['WindGustKmph'])
-              : speed,
-          kind: weatherKindFromWwoCode(WxParse.i(s['weatherCode']) ?? -1),
-        ));
+        slots.add(
+          WeatherHour(
+            time: t,
+            temperature: WxParse.d(s['tempC']),
+            precipProbability: WxParse.d(s['chanceofrain']),
+            precipitation: WxParse.d(s['precipMM']),
+            windSpeed: speed,
+            windDirection: WxParse.d(s['winddirDegree']),
+            windGusts: s['WindGustKmph'] != null
+                ? WxParse.d(s['WindGustKmph'])
+                : speed,
+            kind: weatherKindFromWwoCode(WxParse.i(s['weatherCode']) ?? -1),
+          ),
+        );
       }
 
       if (slots.isNotEmpty) {
@@ -818,22 +839,25 @@ class WttrInProvider extends WeatherProvider {
             midday = s;
           }
         }
-        daily.add(WeatherDay(
-          date: date,
-          tMax: WxParse.d(day['maxtempC']),
-          tMin: WxParse.d(day['mintempC']),
-          precipSum: slots.fold(0.0, (sum, s) => sum + s.precipitation),
-          precipProbability:
-              slots.fold(0.0, (m, s) => s.precipProbability > m
-                  ? s.precipProbability
-                  : m),
-          windMax: maxWind.windSpeed,
-          windGustsMax: slots.fold(0.0, (m, s) => s.windGusts > m
-              ? s.windGusts
-              : m),
-          windDirectionDominant: maxWind.windDirection,
-          kind: midday.kind,
-        ));
+        daily.add(
+          WeatherDay(
+            date: date,
+            tMax: WxParse.d(day['maxtempC']),
+            tMin: WxParse.d(day['mintempC']),
+            precipSum: slots.fold(0.0, (sum, s) => sum + s.precipitation),
+            precipProbability: slots.fold(
+              0.0,
+              (m, s) => s.precipProbability > m ? s.precipProbability : m,
+            ),
+            windMax: maxWind.windSpeed,
+            windGustsMax: slots.fold(
+              0.0,
+              (m, s) => s.windGusts > m ? s.windGusts : m,
+            ),
+            windDirectionDominant: maxWind.windDirection,
+            kind: midday.kind,
+          ),
+        );
       }
       hourly.addAll(slots);
     }

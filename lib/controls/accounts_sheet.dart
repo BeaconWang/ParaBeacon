@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
+import '../data/user_agent_settings.dart';
 import '../data/xcontest_auth_service.dart';
 import '../l10n/app_localizations.dart';
 import 'xcontest_login_sheet.dart';
@@ -59,7 +60,12 @@ class _ProfileAvatar extends StatelessWidget {
         : fallback.trim().substring(0, 1).toUpperCase();
     return CircleAvatar(
       radius: 30,
-      backgroundImage: imageUrl == null ? null : NetworkImage(imageUrl!),
+      backgroundImage: imageUrl == null
+          ? null
+          : NetworkImage(
+              imageUrl!,
+              headers: UserAgentSettings.instance.requestHeaders,
+            ),
       onBackgroundImageError: imageUrl == null ? null : (_, _) {},
       child: imageUrl == null ? Text(initial) : null,
     );

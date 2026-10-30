@@ -312,7 +312,9 @@ class _LandingPointsSheet extends StatelessWidget {
               child: Text(l10n.cancel),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop({}),
+              onPressed: () => Navigator.of(
+                dialogContext,
+              ).pop(const <String, String>{}),
               child: Text(l10n.landingPointsImport),
             ),
           ],

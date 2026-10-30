@@ -64,12 +64,12 @@ void main() {
   testWidgets('Other Settings exposes the default-on filter and parameters', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'pb.language': 'en'});
     final settings = FlightDetailsSettings.instance;
     final verticalSpeedSettings = VerticalSpeedSettings.instance;
     final shareCardSettings = ShareCardSettings.instance;
     await shareCardSettings.load();
-    expect(shareCardSettings.mapSourceId, 'amap-sat');
+    expect(shareCardSettings.mapSourceId, 'none');
     expect(shareCardSettings.compactLayout, isTrue);
     await settings.setFilterVarioOutliers(true);
     await verticalSpeedSettings.setAverageWindowSeconds(2.0);

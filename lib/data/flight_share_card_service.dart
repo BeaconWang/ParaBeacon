@@ -19,8 +19,8 @@ import 'map_source.dart';
 import 'map_tile_cache.dart';
 import 'share_card_settings.dart';
 
-/// Renders a portrait, content-sized 1080px-wide PNG "share card" and saves it
-/// it to the device photo gallery (falling back to the share sheet when the
+/// Renders a compact portrait PNG "share card" sized for a mobile screen and
+/// saves it to the device photo gallery (falling back to the share sheet when the
 /// gallery isn't available or permission is denied).
 ///
 /// Self-contained port of the reference project's share-card generator, adapted
@@ -52,7 +52,7 @@ class FlightShareCardService {
     final cardHeight = math
         .max(
           _minHeight,
-          994 + _estimatedStatsHeight(track, stats, l10n).ceil() + 140,
+          627 + _estimatedStatsHeight(track, stats, l10n).ceil() + 100,
         )
         .ceil();
     final recorder = ui.PictureRecorder();
@@ -73,7 +73,7 @@ class FlightShareCardService {
       size,
       track,
       l10n,
-      top: mapBottom + 28,
+      top: mapBottom + 12,
       colorScheme: colorScheme,
     );
     _paintStats(
@@ -82,7 +82,7 @@ class FlightShareCardService {
       track,
       stats,
       l10n,
-      top: profileBottom + 36,
+      top: profileBottom + 12,
       colorScheme: colorScheme,
     );
     _paintFooter(canvas, size, track, l10n, colorScheme);
@@ -358,9 +358,9 @@ class FlightShareCardService {
     ColorScheme colorScheme,
   ) async {
     const left = 60.0;
-    const top = 230.0;
+    const top = 210.0;
     final boxW = _w - 120.0;
-    const boxH = 470.0;
+    const boxH = 290.0;
     final rect = Rect.fromLTWH(left, top, boxW, boxH);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
@@ -667,7 +667,7 @@ class FlightShareCardService {
   }) {
     const left = 60.0;
     final boxW = _w - 120.0;
-    const boxH = 230.0;
+    const boxH = 124.0;
     final rect = Rect.fromLTWH(left, top, boxW, boxH);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(28));
 
@@ -676,8 +676,8 @@ class FlightShareCardService {
     _text(
       canvas,
       l10n.flightReportAltitudeProfile.toUpperCase(),
-      Offset(left + 28, top + 18),
-      fontSize: 24,
+      Offset(left + 20, top + 10),
+      fontSize: 18,
       color: colorScheme.onSurfaceVariant,
       weight: FontWeight.w600,
     );
@@ -699,8 +699,8 @@ class FlightShareCardService {
       final altSpan = math.max(1.0, maxAlt - minAlt);
 
       const padX = 40.0;
-      const padTop = 64.0;
-      const padBottom = 36.0;
+      const padTop = 40.0;
+      const padBottom = 24.0;
       final plotLeft = left + padX;
       final plotRight = left + boxW - padX;
       final plotTop = top + padTop;
@@ -767,15 +767,15 @@ class FlightShareCardService {
       _text(
         canvas,
         '${maxAlt.toStringAsFixed(0)} m',
-        Offset(plotLeft, plotTop - 30),
-        fontSize: 22,
+        Offset(plotRight - 90, plotTop - 20),
+        fontSize: 16,
         color: colorScheme.onSurfaceVariant,
       );
       _text(
         canvas,
         '${minAlt.toStringAsFixed(0)} m',
-        Offset(plotLeft, plotBottom + 4),
-        fontSize: 22,
+        Offset(plotLeft, plotBottom + 2),
+        fontSize: 16,
         color: colorScheme.onSurfaceVariant,
       );
     } else {
@@ -893,15 +893,6 @@ class FlightShareCardService {
     );
 
     if (track.hasSamples) {
-      _text(
-        canvas,
-        l10n.flightDetailPerformance.toUpperCase(),
-        Offset(60, y),
-        fontSize: 24,
-        color: colorScheme.primary,
-        weight: FontWeight.w700,
-      );
-      y += 44;
       y = _paintMetricSection(
         canvas,
         l10n.flightDetailRouteMetrics,
@@ -1171,10 +1162,9 @@ class FlightShareCardService {
     final telemetryCount = _telemetryEntries(track, l10n).length;
     if (telemetryCount > 0) counts.add(telemetryCount);
     return counts.fold<double>(
-          0,
-          (height, count) => height + 50 + ((count + 2) ~/ 3) * 104,
-        ) +
-        (track.hasSamples ? 44 : 0);
+      0,
+      (height, count) => height + 33 + ((count + 3) ~/ 4) * 56,
+    );
   }
 
   double _paintMetricSection(
@@ -1192,21 +1182,37 @@ class FlightShareCardService {
       accentColor ?? colorScheme.primary,
       0.26,
     )!;
+    const columns = 4;
+    const rowStride = 56.0;
+    const headerHeight = 28.0;
+    const sectionGap = 5.0;
+    final sectionWidth = _w - 120.0;
+    final cellWidth = sectionWidth / columns;
+    final rowCount = (entries.length + columns - 1) ~/ columns;
+    final sectionHeight = headerHeight + rowCount * rowStride;
+    final sectionRect = Rect.fromLTWH(left, top, sectionWidth, sectionHeight);
+    final section = RRect.fromRectAndRadius(
+      sectionRect,
+      const Radius.circular(18),
+    );
+    _paintSurface(
+      canvas,
+      section,
+      colorScheme,
+      elevated: true,
+      accentColor: sectionAccent,
+    );
     _text(
       canvas,
       label.toUpperCase(),
-      Offset(left, top),
-      fontSize: 22,
+      Offset(left + 14, top + 4),
+      fontSize: 18,
       color: sectionAccent,
       weight: FontWeight.w700,
     );
 
-    const columns = 3;
-    const cellHeight = 96.0;
-    const rowStride = 104.0;
-    final cellWidth = (_w - 120.0) / columns;
-    final dividerStart = Offset(left, top + 30);
-    final dividerEnd = Offset(left + _w - 120.0, top + 30);
+    final dividerStart = Offset(left + 12, top + 22);
+    final dividerEnd = Offset(left + sectionWidth - 12, top + 22);
     canvas.drawLine(
       dividerStart,
       dividerEnd,
@@ -1223,44 +1229,52 @@ class FlightShareCardService {
         )
         ..strokeWidth = 1.5,
     );
+
+    final fieldDividerPaint = Paint()
+      ..color = colorScheme.outlineVariant.withValues(alpha: 0.28)
+      ..strokeWidth = 1;
+    for (var row = 1; row < rowCount; row++) {
+      final y = top + headerHeight + row * rowStride;
+      canvas.drawLine(
+        Offset(left + 12, y),
+        Offset(left + sectionWidth - 12, y),
+        fieldDividerPaint,
+      );
+    }
     for (var i = 0; i < entries.length; i++) {
       final column = i % columns;
       final row = i ~/ columns;
       final x = left + column * cellWidth;
-      final y = top + 42 + row * rowStride;
-      final cellRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, y, cellWidth - 10, cellHeight),
-        const Radius.circular(14),
-      );
-      _paintSurface(
-        canvas,
-        cellRect,
-        colorScheme,
-        elevated: true,
-        accentColor: sectionAccent,
-      );
+      final y = top + headerHeight + row * rowStride;
+      if (column > 0) {
+        canvas.drawLine(
+          Offset(x, y + 5),
+          Offset(x, y + rowStride - 5),
+          fieldDividerPaint,
+        );
+      }
       _text(
         canvas,
         entries[i].$1,
-        Offset(x + 14, y + 9),
-        fontSize: 19,
+        Offset(x + 10, y + 3),
+        fontSize: 14,
         color: colorScheme.onSurfaceVariant,
         weight: FontWeight.w500,
-        maxWidth: cellWidth - 38,
+        maxWidth: cellWidth - 30,
+        maxLines: 1,
       );
       _text(
         canvas,
         entries[i].$2,
-        Offset(x + 14, y + 37),
-        fontSize: entries[i].$2.length > 22 ? 17 : 26,
+        Offset(x + 10, y + 20),
+        fontSize: entries[i].$2.length > 18 ? 15 : 19,
         color: colorScheme.onSurface,
         weight: FontWeight.w700,
-        maxWidth: cellWidth - 38,
+        maxWidth: cellWidth - 30,
         maxLines: 2,
       );
     }
-    final rowCount = (entries.length + columns - 1) ~/ columns;
-    return top + 50 + rowCount * rowStride;
+    return top + sectionHeight + sectionGap;
   }
 
   void _paintFooter(
@@ -1270,7 +1284,7 @@ class FlightShareCardService {
     AppLocalizations l10n,
     ColorScheme colorScheme,
   ) {
-    final footerY = size.height - 80;
+    final footerY = size.height - 32;
     canvas.drawLine(
       Offset(60, footerY - 28),
       Offset(_w - 60.0, footerY - 28),

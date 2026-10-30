@@ -147,6 +147,11 @@ class LiveClient {
   int? oldestUnsentS; // shown on the status line
   String? lastError;
 
+  /// Per-chunk side-band attached to every `xcSendChunkHP` (wind estimate and
+  /// detected XC activity). XCTrack rebuilds this each flush from the current
+  /// wind/activity (LiveProto$AdditionalInfo); callers keep it up to date.
+  AdditionalInfo addInfo = const AdditionalInfo();
+
   /// Uplink for JSON text frames: [Wire] offline, [WebSocketWire] for real.
   LiveWire? wire;
 
@@ -353,7 +358,7 @@ class LiveClient {
     oldestUnsentS = epochSeconds(inflight.first.timestamp);
 
     status = LiveStatus.liveSendingData;
-    return send(XCSendChunkHP(pointsHP: inflight, addInfo: const AdditionalInfo()));
+    return send(XCSendChunkHP(pointsHP: inflight, addInfo: addInfo));
   }
 
   Map<String, dynamic> _sendLanding() {

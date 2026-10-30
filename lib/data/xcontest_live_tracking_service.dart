@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../live/config.dart';
 import '../live/live_client.dart';
 import '../live/live_manager.dart';
+import '../live/proto.dart';
 import '../live/system_info.dart';
 import '../live/trackpoint.dart';
 import '../live/web_socket_wire.dart';
@@ -348,11 +349,30 @@ class XContestLiveTrackingService extends ChangeNotifier {
     // Once a landing is in progress we stop feeding new fixes so the buffer
     // can drain and the terminating `xcLanding` is reached.
     if (_ending || !_shouldTrack) return;
-    final fix = _toFix(_data?.data);
+    final snapshot = _data?.data;
+    final fix = _toFix(snapshot);
     if (fix == null) return;
+    // Attach the current wind to every chunk, like XCTrack's per-flush
+    // AdditionalInfo (LiveProto$AdditionalInfo).
+    if (snapshot != null) client.addInfo = _additionalInfo(snapshot);
     if (client.onLocation(fix, DateTime.now().millisecondsSinceEpoch)) {
       _notify();
     }
+  }
+
+  /// Builds the `addInfo` side-band for `xcSendChunkHP` from the latest fix.
+  ///
+  /// `windFromMs = [fromDirectionDeg, speedMs]` mirrors XCTrack's wind vector
+  /// (`info/k1` -> `WindInfo(fromDir, speed)`, copied verbatim into
+  /// `LiveProto$AdditionalInfo.windFromMs`). `xcActivity` has no ParaBeacon
+  /// equivalent, so it is left null.
+  AdditionalInfo _additionalInfo(FlightData data) {
+    final dir = data.windDirection;
+    final speedKph = data.windSpeed;
+    final hasWind =
+        dir.isFinite && speedKph.isFinite && speedKph > 0 && dir >= 0 && dir < 360;
+    if (!hasWind) return const AdditionalInfo();
+    return AdditionalInfo(windFromMs: <double>[dir, speedKph / 3.6]);
   }
 
   /// Whether a mock/simulated location feed may be shared. Real users must

@@ -170,6 +170,7 @@ class LiveClient {
     String gliderCat = 'FAI-3',
     bool tandem = false,
     bool faiCompliant = true,
+    bool? simulation,
   }) {
     return FlightOptions(
       position: LiveTrackpoint.fromFix(fix),
@@ -177,7 +178,9 @@ class LiveClient {
       glider: glider,
       gliderCat: gliderCat,
       tandem: tandem,
-      simulation: !fix.timeValid, // no valid GPS time -> replay
+      // Explicit override (e.g. a mock/simulated feed) wins; otherwise a fix
+      // with no valid GPS time is treated as a replay.
+      simulation: simulation ?? !fix.timeValid,
       flpublic: flightPublic,
       faiCompliant: faiCompliant,
     );

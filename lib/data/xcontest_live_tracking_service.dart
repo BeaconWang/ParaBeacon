@@ -12,6 +12,7 @@ import '../live/trackpoint.dart';
 import '../live/web_socket_wire.dart';
 import '../live/sha256.dart';
 import 'aircraft_settings.dart';
+import 'debug_settings.dart';
 import 'flight_data.dart';
 import 'flight_state.dart';
 import 'live_tracking_settings.dart';
@@ -206,11 +207,13 @@ class XContestLiveTrackingService extends ChangeNotifier {
       throw const FormatException('xcontest_auth_missing');
     }
 
+    final simulated = data!.isMockLocation;
     _gpsWaitTimer?.cancel();
     _gpsWaitTimer = null;
     _starting = true;
     final bindingEpoch = _bindingEpoch;
-    _log('start: declaring flight (pilot $pilotId)');
+    _log('start: declaring flight (pilot $pilotId'
+        '${simulated ? ', simulated' : ''})');
     _setState(LiveTrackingConnectionState.connecting);
     try {
       final settings = LiveTrackingSettings.instance;
@@ -230,6 +233,9 @@ class XContestLiveTrackingService extends ChangeNotifier {
         gliderCat: _gliderCategory(aircraft),
         tandem: aircraft.tandem,
         faiCompliant: true,
+        // Tell XContest this is a replay/simulation so a mock feed is never
+        // treated as a real contest flight.
+        simulation: simulated,
       );
       final declaration = await _declareFlight(options, token);
       final uri = Uri.tryParse(declaration.uri);
@@ -345,8 +351,15 @@ class XContestLiveTrackingService extends ChangeNotifier {
     }
   }
 
+  /// Whether a mock/simulated location feed may be shared. Real users must
+  /// never share OS-mocked positions, so this is only allowed while the
+  /// developer simulator is on - which is itself hard-disabled in release
+  /// builds ([DebugSettings.simulatorEnabled]).
+  bool get _allowMockLocations => DebugSettings.instance.simulatorEnabled;
+
   Fix? _toFix(FlightData? data) {
-    if (data == null || !data.hasFix || data.isMockLocation) return null;
+    if (data == null || !data.hasFix) return null;
+    if (data.isMockLocation && !_allowMockLocations) return null;
     final time = data.gpsTimestamp ?? data.timestamp;
     if (time == null ||
         !data.latitude.isFinite ||

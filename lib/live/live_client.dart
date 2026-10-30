@@ -277,11 +277,13 @@ class LiveClient {
   /// c1.g() - returns the delay in ms, or -1 when giving up.
   int scheduleReconnect(int nowMs) {
     if (landed) {
-      backoffMs *= 2;
+      // c1.smali:1047-1094 - check the give-up threshold against the current
+      // backoff BEFORE doubling, then double and use that as the delay.
       if (backoffMs > kBackoffGiveUpMs) {
         running = false; // "Giving up reconnecting."
         return -1;
       }
+      backoffMs *= 2;
       return backoffMs;
     }
     final gap = lastConnectMs == null ? 1 << 60 : nowMs - lastConnectMs!;

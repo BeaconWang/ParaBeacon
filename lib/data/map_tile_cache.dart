@@ -97,10 +97,11 @@ class MapTileCacheService {
             host == 'mt2.google.com' ||
             host == 'mt3.google.com') &&
         uri.path.startsWith('/vt')) {
-      // The Google templates embed the query in the path (`/vt/lyrs=y&x=…`)
-      // rather than after a `?`, so inspect the whole URL string for the layer
-      // flag instead of relying on parsed query parameters.
-      if (url.contains('lyrs=y')) return 'google-sat';
+      // The Google templates embed the query in the path rather than after a
+      // `?`, so inspect the whole URL string for the layer flag.
+      if (url.contains('lyrs=s') || url.contains('lyrs=y')) {
+        return 'google-sat';
+      }
       if (url.contains('lyrs=m')) return 'google';
     }
     if (host == 'server.arcgisonline.com' &&

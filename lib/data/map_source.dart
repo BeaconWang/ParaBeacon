@@ -167,7 +167,7 @@ class MapSourceCatalog {
     MapSource.raster(
       id: 'google-sat',
       label: 'Google Satellite',
-      url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&hl=en',
+      url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&hl=en',
       attribution: '© Google',
       maxZoom: 20,
     ),

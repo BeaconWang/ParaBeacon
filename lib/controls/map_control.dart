@@ -124,7 +124,7 @@ class MapTileSources {
       id: 'google-sat',
       label: 'Google Satellite',
       urlTemplate:
-          'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&hl=en',
+          'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&hl=en',
       attribution: '© Google',
       maxZoom: 20,
     ),

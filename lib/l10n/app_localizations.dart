@@ -4724,6 +4724,18 @@ abstract class AppLocalizations {
   /// **'Carto Voyager'**
   String get settingMapSourceCartoVoyager;
 
+  /// No description provided for @settingMapSourceGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Maps'**
+  String get settingMapSourceGoogle;
+
+  /// No description provided for @settingMapSourceGoogleSat.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Satellite'**
+  String get settingMapSourceGoogleSat;
+
   /// No description provided for @settingMapSourceAmap.
   ///
   /// In en, this message translates to:

@@ -936,6 +936,8 @@
   "settingMapSourceOsmFr": "OSM France",
   "settingMapSourceCartoDark": "Carto Dark",
   "settingMapSourceCartoVoyager": "Carto Voyager",
+  "settingMapSourceGoogle": "Google Maps",
+  "settingMapSourceGoogleSat": "Google Satellite",
   "settingMapSourceAmap": "AMap (AutoNavi)",
   "settingMapSourceAmapSat": "AMap Satellite",
   "settingMapSourceOpenTopoMap": "OpenTopoMap",

@@ -2388,6 +2388,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingMapSourceCartoVoyager => 'Carto Voyager';
 
   @override
+  String get settingMapSourceGoogle => '谷歌地图';
+
+  @override
+  String get settingMapSourceGoogleSat => '谷歌卫星';
+
+  @override
   String get settingMapSourceAmap => '高德地图';
 
   @override

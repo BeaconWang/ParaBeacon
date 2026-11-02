@@ -113,6 +113,22 @@ class MapTileSources {
       attribution: '© OSM · CARTO',
     ),
     MapTileSource(
+      id: 'google',
+      label: 'Google Maps',
+      urlTemplate:
+          'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en',
+      attribution: '© Google',
+      maxZoom: 20,
+    ),
+    MapTileSource(
+      id: 'google-sat',
+      label: 'Google Satellite',
+      urlTemplate:
+          'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&hl=en',
+      attribution: '© Google',
+      maxZoom: 20,
+    ),
+    MapTileSource(
       id: 'amap',
       label: '高德地图 (China)',
       urlTemplate:

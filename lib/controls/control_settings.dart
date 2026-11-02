@@ -526,6 +526,10 @@ String? _settingOptionLabel(
           return l10n.settingMapSourceCartoDark;
         case 'carto-voyager':
           return l10n.settingMapSourceCartoVoyager;
+        case 'google':
+          return l10n.settingMapSourceGoogle;
+        case 'google-sat':
+          return l10n.settingMapSourceGoogleSat;
         case 'amap':
           return l10n.settingMapSourceAmap;
         case 'amap-sat':
@@ -968,6 +972,8 @@ const Map<String, List<ControlSetting>> _typeSettings = {
         'osmfr': 'OSM France',
         'carto-dark': 'Carto Dark',
         'carto-voyager': 'Carto Voyager',
+        'google': 'Google Maps',
+        'google-sat': 'Google Satellite',
         'amap': '高德地图',
         'amap-sat': '高德卫星',
       },

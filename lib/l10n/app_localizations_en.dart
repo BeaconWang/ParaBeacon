@@ -2485,6 +2485,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingMapSourceCartoVoyager => 'Carto Voyager';
 
   @override
+  String get settingMapSourceGoogle => 'Google Maps';
+
+  @override
+  String get settingMapSourceGoogleSat => 'Google Satellite';
+
+  @override
   String get settingMapSourceAmap => 'AMap (AutoNavi)';
 
   @override

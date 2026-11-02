@@ -419,6 +419,8 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
     'osmfr' => l10n.settingMapSourceOsmFr,
     'carto-dark' => l10n.settingMapSourceCartoDark,
     'carto-voyager' => l10n.settingMapSourceCartoVoyager,
+    'google' => l10n.settingMapSourceGoogle,
+    'google-sat' => l10n.settingMapSourceGoogleSat,
     'amap' => l10n.settingMapSourceAmap,
     'amap-sat' => l10n.settingMapSourceAmapSat,
     _ => MapTileSources.byId(id).label,

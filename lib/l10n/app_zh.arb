@@ -858,6 +858,8 @@
   "settingMapSourceOsmFr": "OSM 法国",
   "settingMapSourceCartoDark": "Carto 暗色",
   "settingMapSourceCartoVoyager": "Carto Voyager",
+  "settingMapSourceGoogle": "谷歌地图",
+  "settingMapSourceGoogleSat": "谷歌卫星",
   "settingMapSourceAmap": "高德地图",
   "settingMapSourceAmapSat": "高德卫星",
   "settingMapSourceOpenTopoMap": "OpenTopoMap 地形图",

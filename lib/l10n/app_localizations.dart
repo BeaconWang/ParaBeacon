@@ -797,7 +797,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingShowPublicSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Allow your live position to be visible publicly'**
+  /// **'Show other public pilots on the map'**
   String get liveTrackingShowPublicSubtitle;
 
   /// No description provided for @liveTrackingFlightPublic.

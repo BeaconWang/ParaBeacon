@@ -180,8 +180,14 @@ class _LiveTrackingSettingsSheetState
                               value: _showPublic,
                               onChanged: _loading
                                   ? null
-                                  : (value) =>
-                                        setState(() => _showPublic = value),
+                                  : (value) {
+                                      setState(() => _showPublic = value);
+                                      // Instant apply: hot-updates xcSetOptions
+                                      // mid-flight so other pilots start/stop
+                                      // showing on the map without Save.
+                                      LiveTrackingSettings.instance
+                                          .setShowPublic(value);
+                                    },
                             ),
                             const Divider(height: 1),
                             SwitchListTile(

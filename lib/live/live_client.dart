@@ -271,16 +271,33 @@ class LiveClient {
   /// c1.b(ws, headers)
   void onConnected() {
     status = LiveStatus.liveWaiting;
+    _sendOptions();
+    sendFollows();
+    final pending =
+        mgr.messages.where((m) => m.status == 'SENT').map((m) => m.uuid).toList();
+    if (pending.isNotEmpty) send(XCGetMessageStatus(uuids: pending));
+  }
+
+  void _sendOptions() {
     send(XCSetOptions(
       options: ConnOptions(
         knownFlights: mgr.follows.keys.toList(),
         receiveAllPositions: receiveAllPositions,
       ),
     ));
-    sendFollows();
-    final pending =
-        mgr.messages.where((m) => m.status == 'SENT').map((m) => m.uuid).toList();
-    if (pending.isNotEmpty) send(XCGetMessageStatus(uuids: pending));
+  }
+
+  /// Hot-update "Show public tracking" mid-flight. Resends `xcSetOptions` with
+  /// the new `receiveAllPositions` so the server starts/stops streaming other
+  /// pilots' positions without reconnecting. No-op if unchanged or not yet
+  /// connected (the value is picked up by [onConnected] on connect).
+  void setReceiveAllPositions(int nowMs, bool value) {
+    if (receiveAllPositions == value) return;
+    receiveAllPositions = value;
+    if (wire != null) {
+      _sendOptions();
+      onLog?.call('-> xcSetOptions: receiveAllPositions=$value');
+    }
   }
 
   /// c1.c()

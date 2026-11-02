@@ -23,6 +23,7 @@ import '../data/vario_color_palette.dart';
 import '../data/vario_color_scale.dart';
 import '../data/vario_color_settings.dart';
 import '../data/wind_estimator.dart';
+import '../data/xcontest_live_tracking_service.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
 
@@ -264,6 +265,11 @@ class MapControl extends StatefulWidget {
   /// MapControl never creates or persists landing points.
   final ValueChanged<LatLng>? onMapTap;
 
+  /// Draw other public/followed pilots streamed from XContest live tracking
+  /// (only visible while "Show public tracking" is on and a live session is
+  /// active). Fed from [XContestLiveTrackingService.otherPilots].
+  final bool showOtherPilots;
+
   /// Optional WGS-84 location marker, for map-based selection flows.
   final LatLng? selectionMarker;
 
@@ -306,6 +312,7 @@ class MapControl extends StatefulWidget {
     this.showStatus = true,
     this.active = false,
     this.onMapTap,
+    this.showOtherPilots = true,
     this.selectionMarker,
   });
 
@@ -422,6 +429,8 @@ class _MapControlState extends State<MapControl> {
     // map should immediately switch to the simulated position (highest
     // priority), and when it turns off fall back to real device GPS / BLE.
     DebugSettings.instance.addListener(_onExternalChange);
+    // Redraw when other public pilots' positions change.
+    XContestLiveTrackingService.instance.addListener(_onExternalChange);
   }
 
   @override
@@ -489,6 +498,7 @@ class _MapControlState extends State<MapControl> {
     VarioSoundSettings.instance.removeListener(_onThresholdsChanged);
     VarioColorSettings.instance.removeListener(_onExternalChange);
     DebugSettings.instance.removeListener(_onExternalChange);
+    XContestLiveTrackingService.instance.removeListener(_onExternalChange);
     super.dispose();
   }
 
@@ -766,6 +776,23 @@ class _MapControlState extends State<MapControl> {
         ),
     ];
 
+    // Other public/followed pilots from XContest live tracking.
+    final otherPilotMarkers = <Marker>[
+      if (widget.showOtherPilots)
+        for (final pilot in XContestLiveTrackingService.instance.otherPilots)
+          Marker(
+            point: _shift(LatLng(pilot.lat, pilot.lon), widget.tileSource),
+            width: 120,
+            height: 56,
+            alignment: Alignment.topCenter,
+            child: _OtherPilotMarker(
+              name: pilot.name,
+              color: Color(pilot.colorArgb),
+              landed: pilot.landed,
+            ),
+          ),
+    ];
+
     return _SuppressPageSwipe(
       child: Stack(
         children: [
@@ -846,6 +873,10 @@ class _MapControlState extends State<MapControl> {
                 // climb-coloured core dots (current + N latest thermals).
                 if (widget.showThermal)
                   CircleLayer(circles: _buildThermalCircles()),
+
+                // Other public pilots (drawn under our own position marker).
+                if (otherPilotMarkers.isNotEmpty)
+                  MarkerLayer(markers: otherPilotMarkers),
 
                 if (hasFix && widget.initialCenter == null)
                   MarkerLayer(
@@ -1747,6 +1778,69 @@ class _AlwaysWinHorizontalDragRecognizer
 
   @override
   String get debugDescription => 'suppressPageSwipe';
+}
+
+/// Marker for another public/followed pilot from XContest live tracking: a
+/// coloured paraglider glyph with the pilot's name below it. Dimmed once the
+/// pilot has landed.
+class _OtherPilotMarker extends StatelessWidget {
+  const _OtherPilotMarker({
+    required this.name,
+    required this.color,
+    required this.landed,
+  });
+
+  final String name;
+  final Color color;
+  final bool landed;
+
+  @override
+  Widget build(BuildContext context) {
+    final opacity = landed ? 0.45 : 1.0;
+    return Opacity(
+      opacity: opacity,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: const [
+                BoxShadow(color: Colors.black38, blurRadius: 2, offset: Offset(0, 1)),
+              ],
+            ),
+            child: const Icon(
+              Icons.paragliding,
+              size: 14,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SavedPointMarker extends StatelessWidget {

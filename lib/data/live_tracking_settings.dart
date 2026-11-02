@@ -118,6 +118,21 @@ class LiveTrackingSettings extends ChangeNotifier {
     }
   }
 
+  /// Immediately applies and persists "Show public tracking", independent of
+  /// the Save button. The live service hot-updates `xcSetOptions` mid-flight
+  /// from this, so other pilots start/stop appearing on the map at once.
+  Future<void> setShowPublic(bool value) async {
+    if (_showPublic == value) return;
+    _showPublic = value;
+    notifyListeners();
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(_kShowPublic, value);
+    } catch (_) {
+      // In-memory value still applies; persistence can retry later.
+    }
+  }
+
   /// Immediately applies and persists the "Temporarily stop sharing" pause,
   /// independent of the Save button. The live-tracking service reads this per
   /// fix, so the pause/resume takes effect at once (XCTrack reads its

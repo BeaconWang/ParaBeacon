@@ -123,7 +123,7 @@
   "liveTrackingClaimContest": "Claim contest flight",
   "liveTrackingClaimContestSubtitle": "Claim the flight for an XContest competition",
   "liveTrackingShowPublic": "Show public tracking",
-  "liveTrackingShowPublicSubtitle": "Allow your live position to be visible publicly",
+  "liveTrackingShowPublicSubtitle": "Show other public pilots on the map",
   "liveTrackingFlightPublic": "Make flight public",
   "liveTrackingFlightPublicSubtitle": "Publish the completed flight on XContest",
   "liveTrackingTemporaryDisable": "Temporarily stop sharing",

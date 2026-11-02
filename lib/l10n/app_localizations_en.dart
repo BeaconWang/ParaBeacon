@@ -385,7 +385,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingShowPublicSubtitle =>
-      'Allow your live position to be visible publicly';
+      'Show other public pilots on the map';
 
   @override
   String get liveTrackingFlightPublic => 'Make flight public';

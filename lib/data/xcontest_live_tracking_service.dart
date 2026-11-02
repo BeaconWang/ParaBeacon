@@ -29,6 +29,37 @@ enum LiveTrackingConnectionState {
   disconnected,
 }
 
+/// One other public/followed pilot currently known to the live session,
+/// flattened from [LiveManager]'s `positions` + `infos` for rendering on the
+/// map. Only populated while "Show public tracking" is on (the server streams
+/// these via `flightPositions`/`flightInfos` in response to
+/// `receiveAllPositions`).
+class LiveOtherPilot {
+  final String flightId;
+  final double lat;
+  final double lon;
+  final String name;
+  final String glider;
+  final int altitude;
+  final bool landed;
+
+  /// Stable per-flight marker colour (ARGB) assigned by [LiveManager.colour].
+  final int colorArgb;
+  final DateTime? time;
+
+  const LiveOtherPilot({
+    required this.flightId,
+    required this.lat,
+    required this.lon,
+    required this.name,
+    required this.glider,
+    required this.altitude,
+    required this.landed,
+    required this.colorArgb,
+    this.time,
+  });
+}
+
 /// Bridges ParaBeacon's flight-data stream to XCTrack's native livetrack
 /// protocol (the `lib/live` port of the `xcshare` reference).
 ///
@@ -91,7 +122,16 @@ class XContestLiveTrackingService extends ChangeNotifier {
   String? Function()? _pilotId;
 
   LiveClient? _client;
+  LiveManager? _mgr;
   WebSocketWire? _wire;
+
+  List<LiveOtherPilot> _otherPilots = const <LiveOtherPilot>[];
+
+  /// Other public pilots currently known (empty unless "Show public tracking"
+  /// is on and the server is streaming positions). Rebuilt whenever the live
+  /// manager receives `flightPositions`/`flightInfos`; listeners (the map) are
+  /// notified via [notifyListeners].
+  List<LiveOtherPilot> get otherPilots => _otherPilots;
   Timer? _tickTimer;
   Timer? _reconnectTimer;
   Timer? _landingTimer;
@@ -193,6 +233,12 @@ class XContestLiveTrackingService extends ChangeNotifier {
 
   Future<void> _syncLifecycle() async {
     if (!_configured) return;
+    // Hot-apply "Show public tracking" to a running session without
+    // reconnecting (resends xcSetOptions).
+    _client?.setReceiveAllPositions(
+      DateTime.now().millisecondsSinceEpoch,
+      LiveTrackingSettings.instance.showPublic,
+    );
     if (_shouldTrack) {
       if (_client != null || _starting || _ending) return;
       // After a server termination, hold off re-declaring until the cooldown
@@ -263,8 +309,10 @@ class XContestLiveTrackingService extends ChangeNotifier {
     try {
       final settings = LiveTrackingSettings.instance;
       final aircraft = AircraftSettings.instance;
+      final mgr = LiveManager()
+        ..addListener((_) => _rebuildOtherPilots());
       final client = LiveClient(
-        LiveManager(),
+        mgr,
         shareWhenNotFlying: false,
         claimContest: settings.claimContest,
         flightPublic: settings.flightPublic,
@@ -307,6 +355,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
       }
 
       _client = client;
+      _mgr = mgr;
       _wire = wire;
       _socketUri = uri;
       _sessionId =
@@ -466,6 +515,50 @@ class XContestLiveTrackingService extends ChangeNotifier {
     );
   }
 
+  /// Flatten the live manager's `positions` (+ `infos` for names) into the
+  /// immutable [otherPilots] feed and notify listeners (the map). Called from
+  /// the manager's change callback whenever `flightPositions`/`flightInfos`
+  /// arrive. Our own flight is excluded by id.
+  void _rebuildOtherPilots() {
+    final mgr = _mgr;
+    if (mgr == null) {
+      if (_otherPilots.isNotEmpty) {
+        _otherPilots = const <LiveOtherPilot>[];
+        _notify();
+      }
+      return;
+    }
+    final own = _sessionId;
+    final pilots = <LiveOtherPilot>[];
+    mgr.positions.forEach((flightId, pos) {
+      if (flightId == own) return;
+      final lat = pos.point.lat;
+      final lon = pos.point.lon;
+      if (!lat.isFinite || !lon.isFinite) return;
+      final info = mgr.infos[flightId];
+      final name = info == null
+          ? flightId
+          : (info.user.fullname.isNotEmpty
+              ? info.user.fullname
+              : (info.user.username.isNotEmpty
+                  ? info.user.username
+                  : flightId));
+      pilots.add(LiveOtherPilot(
+        flightId: flightId,
+        lat: lat,
+        lon: lon,
+        name: name,
+        glider: info?.glider ?? '',
+        altitude: pos.point.gpsAlt,
+        landed: pos.landed,
+        colorArgb: mgr.colour(flightId),
+        time: pos.point.timestamp,
+      ));
+    });
+    _otherPilots = List<LiveOtherPilot>.unmodifiable(pilots);
+    _notify();
+  }
+
   String _gliderCategory(AircraftSettings aircraft) {
     const rigid = <String, String>{
       '11': 'RPF',
@@ -557,6 +650,10 @@ class XContestLiveTrackingService extends ChangeNotifier {
     await wire?.close();
     _client?.stop();
     _client = null;
+    _mgr = null;
+    if (_otherPilots.isNotEmpty) {
+      _otherPilots = const <LiveOtherPilot>[];
+    }
     _socketUri = null;
     _sessionId = null;
     _ending = false;

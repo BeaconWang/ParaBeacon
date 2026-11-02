@@ -119,7 +119,7 @@
   "liveTrackingClaimContest": "认领竞赛飞行",
   "liveTrackingClaimContestSubtitle": "将飞行认领到 XContest 竞赛中",
   "liveTrackingShowPublic": "显示公开追踪",
-  "liveTrackingShowPublicSubtitle": "允许他人公开查看实时位置",
+  "liveTrackingShowPublicSubtitle": "在地图上显示其他公开飞行员",
   "liveTrackingFlightPublic": "公开飞行",
   "liveTrackingFlightPublicSubtitle": "在 XContest 发布已完成的飞行",
   "liveTrackingTemporaryDisable": "暂时停止分享",

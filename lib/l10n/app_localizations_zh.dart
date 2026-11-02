@@ -366,7 +366,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingShowPublic => '显示公开追踪';
 
   @override
-  String get liveTrackingShowPublicSubtitle => '允许他人公开查看实时位置';
+  String get liveTrackingShowPublicSubtitle => '在地图上显示其他公开飞行员';
 
   @override
   String get liveTrackingFlightPublic => '公开飞行';

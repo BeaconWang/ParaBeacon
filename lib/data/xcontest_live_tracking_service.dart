@@ -221,6 +221,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
   // =======================================================================
   void _queueLifecycleSync() {
     if (_disposed) return;
+    if (!LiveTrackingSettings.instance.showPublic) _clearOtherPilots();
     _lifecycleFuture = (_lifecycleFuture ?? Future<void>.value())
         .catchError((Object _) {})
         .then((_) => _syncLifecycle())
@@ -519,13 +520,20 @@ class XContestLiveTrackingService extends ChangeNotifier {
   /// immutable [otherPilots] feed and notify listeners (the map). Called from
   /// the manager's change callback whenever `flightPositions`/`flightInfos`
   /// arrive. Our own flight is excluded by id.
+  void _clearOtherPilots() {
+    if (_otherPilots.isEmpty) return;
+    _otherPilots = const <LiveOtherPilot>[];
+    _notify();
+  }
+
   void _rebuildOtherPilots() {
+    if (!LiveTrackingSettings.instance.showPublic) {
+      _clearOtherPilots();
+      return;
+    }
     final mgr = _mgr;
     if (mgr == null) {
-      if (_otherPilots.isNotEmpty) {
-        _otherPilots = const <LiveOtherPilot>[];
-        _notify();
-      }
+      _clearOtherPilots();
       return;
     }
     final own = _sessionId;

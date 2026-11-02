@@ -12,7 +12,7 @@ import '../data/landing_points_config_io.dart';
 import '../l10n/app_localizations.dart';
 import 'flights_sheet.dart' show showFlightRecordPicker;
 import 'landing_point_editor.dart';
-import 'map_control.dart';
+import 'map_picker_sheet.dart' show showMapPickerSheet;
 
 Future<void> showLandingPointsSheet(BuildContext context) async {
   await LandingPointStore.instance.load();
@@ -49,75 +49,27 @@ class _LandingPointsSheet extends StatelessWidget {
     await _savePoint(context, point);
   }
 
+  /// Opens the shared full-screen map picker so the user can choose a landing
+  /// location and switch the basemap (defaulting to the locale basemap: AMap
+  /// satellite for Chinese, Google satellite otherwise). Returns the picked
+  /// WGS-84 position, or null when cancelled.
   Future<LatLng?> _pickMapLocation(
     BuildContext context,
     LatLng initialPosition,
-  ) {
-    final l10n = AppLocalizations.of(context);
-    var selectedPosition = initialPosition;
-    return showDialog<LatLng>(
-      context: context,
-      builder: (dialogContext) {
-        final size = MediaQuery.sizeOf(dialogContext);
-        return StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
-            title: Text(l10n.landingPointPickMapTitle),
-            content: SizedBox(
-              width: size.width * 0.8,
-              height: size.height * 0.58,
-              child: Column(
-                children: [
-                  Text(l10n.landingPointPickPrompt),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: MapControl(
-                        active: true,
-                        follow: false,
-                        initialZoom: 13,
-                        initialCenter: initialPosition,
-                        selectionMarker: selectedPosition,
-                        showTrack: false,
-                        showThermal: false,
-                        showAirspace: false,
-                        showWind: false,
-                        showSun: false,
-                        showBearing: false,
-                        showTakeoffLine: false,
-                        showTakeoffPoint: false,
-                        showDefaultLandingPoint: false,
-                        showNearestLandingPoint: false,
-                        showDefaultLandingLine: false,
-                        showNearestLandingLine: false,
-                        showScale: false,
-                        showLegend: false,
-                        showZoomLevel: false,
-                        showAttribution: false,
-                        showStatus: false,
-                        onMapTap: (point) =>
-                            setDialogState(() => selectedPosition = point),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(l10n.cancel),
-              ),
-              FilledButton(
-                onPressed: () =>
-                    Navigator.of(dialogContext).pop(selectedPosition),
-                child: Text(l10n.landingPointApply),
-              ),
-            ],
-          ),
-        );
-      },
+  ) async {
+    final data = FlightDataProvider.of(context);
+    final hasFix = _hasValidFix(data);
+    final currentFix = hasFix ? (data.latitude, data.longitude) : null;
+    final picked = await showMapPickerSheet(
+      context,
+      initialLat: initialPosition.latitude,
+      initialLon: initialPosition.longitude,
+      resolveCurrentLocation: currentFix == null
+          ? null
+          : () async => currentFix,
     );
+    if (picked == null) return null;
+    return LatLng(picked.$1, picked.$2);
   }
 
   Future<void> _addFromMap(BuildContext context) async {

@@ -18,11 +18,19 @@ class DebugSettings extends ChangeNotifier {
 
   // ── Persistence keys ──────────────────────────────────────────────────────
   static const _kSimulatorEnabled = 'pb.debug.simulatorEnabled';
-  static const _kFakeChinaLocation = 'pb.debug.fakeChinaLocation';
+  static const _kSimStartLat = 'pb.debug.simStartLat';
+  static const _kSimStartLon = 'pb.debug.simStartLon';
+
+  /// Default simulated-flight start point (lat, lon). Near Huizhou/Shenzhen,
+  /// Guangdong - over Chinese territory so it aligns with the AMap/GCJ-02 tile
+  /// sources. Used until the user enters their own coordinates.
+  static const double defaultSimStartLat = 22.821567;
+  static const double defaultSimStartLon = 114.700167;
 
   // ── Current values (defaults) ─────────────────────────────────────────────
   bool _simulatorEnabled = false;
-  bool _fakeChinaLocation = false;
+  double _simStartLat = defaultSimStartLat;
+  double _simStartLon = defaultSimStartLon;
 
   /// Whether the simulated flight-data source may run as a fallback feed.
   /// Defaults to `false` (disabled).
@@ -32,11 +40,13 @@ class DebugSettings extends ChangeNotifier {
   /// runtime toggle. The simulator is a development-only feed.
   bool get simulatorEnabled => kReleaseMode ? false : _simulatorEnabled;
 
-  /// Whether the simulated flight data should originate from a location in
-  /// China (instead of the default European start point). Only meaningful
-  /// while [simulatorEnabled] is true; like the simulator it is a
-  /// development-only feed and is always `false` in release builds.
-  bool get fakeChinaLocation => kReleaseMode ? false : _fakeChinaLocation;
+  /// Latitude of the simulated-flight start point. Defaults to
+  /// [defaultSimStartLat].
+  double get simStartLat => _simStartLat;
+
+  /// Longitude of the simulated-flight start point. Defaults to
+  /// [defaultSimStartLon].
+  double get simStartLon => _simStartLon;
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -56,8 +66,8 @@ class DebugSettings extends ChangeNotifier {
     try {
       final sp = await SharedPreferences.getInstance();
       _simulatorEnabled = sp.getBool(_kSimulatorEnabled) ?? _simulatorEnabled;
-      _fakeChinaLocation =
-          sp.getBool(_kFakeChinaLocation) ?? _fakeChinaLocation;
+      _simStartLat = sp.getDouble(_kSimStartLat) ?? _simStartLat;
+      _simStartLon = sp.getDouble(_kSimStartLon) ?? _simStartLon;
     } catch (_) {
       // Storage unavailable: keep defaults.
     }
@@ -76,23 +86,37 @@ class DebugSettings extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Enables or disables the "fake China location" for the simulator and
-  /// persists it.
-  ///
-  /// No-op in release builds — like the simulator itself this is a
-  /// development-only feed.
-  void setFakeChinaLocation(bool enabled) {
-    if (kReleaseMode) return;
-    if (_fakeChinaLocation == enabled) return;
-    _fakeChinaLocation = enabled;
-    _persistBool(_kFakeChinaLocation, enabled);
-    notifyListeners();
-  }
-
   void _persistBool(String key, bool value) async {
     try {
       final sp = await SharedPreferences.getInstance();
       await sp.setBool(key, value);
+    } catch (_) {}
+  }
+
+  /// Sets the custom simulated-flight start point and persists it. Invalid
+  /// (out-of-range / non-finite) coordinates are ignored. No-op in release.
+  void setSimStartLocation(double lat, double lon) {
+    if (kReleaseMode) return;
+    if (!lat.isFinite ||
+        !lon.isFinite ||
+        lat < -90 ||
+        lat > 90 ||
+        lon < -180 ||
+        lon > 180) {
+      return;
+    }
+    if (_simStartLat == lat && _simStartLon == lon) return;
+    _simStartLat = lat;
+    _simStartLon = lon;
+    _persistDouble(_kSimStartLat, lat);
+    _persistDouble(_kSimStartLon, lon);
+    notifyListeners();
+  }
+
+  void _persistDouble(String key, double value) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setDouble(key, value);
     } catch (_) {}
   }
 }

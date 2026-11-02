@@ -379,8 +379,9 @@
   "debug": "Debug",
   "simulatedFlightData": "Simulated flight data",
   "simulatedFlightDataSubtitle": "Feed fake sensor values when no BLE device is connected",
-  "fakeGpsInChina": "Fake GPS location in China",
-  "fakeGpsInChinaSubtitle": "Start the simulated flight over China (near Chengdu)",
+  "simStartLocation": "Start location",
+  "simStartLatitude": "Latitude",
+  "simStartLongitude": "Longitude",
 
   "trackRecordingSmart": "Smart (default)",
   "trackRecordingSmartSubtitle": "At least 1 s apart, and only when moved ≥ 3 m or altitude changed ≥ 1 m",

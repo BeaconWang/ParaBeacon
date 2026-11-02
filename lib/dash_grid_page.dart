@@ -1044,25 +1044,8 @@ class _DashGridPageState extends State<DashGridPage> {
                               setSheetState(() {});
                             },
                           ),
-                          SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            secondary: Icon(
-                              Icons.public,
-                              color: theme.colorScheme.primary,
-                            ),
-                            title: Text(l10n.fakeGpsInChina),
-                            subtitle: Text(l10n.fakeGpsInChinaSubtitle),
-                            value: DebugSettings.instance.fakeChinaLocation,
-                            // Only meaningful while the simulator is running.
-                            onChanged: DebugSettings.instance.simulatorEnabled
-                                ? (on) {
-                                    DebugSettings.instance.setFakeChinaLocation(
-                                      on,
-                                    );
-                                    setSheetState(() {});
-                                  }
-                                : null,
-                          ),
+                          if (DebugSettings.instance.simulatorEnabled)
+                            const _SimStartLocationFields(),
                         ],
                         const Divider(height: 1),
                         ListTile(
@@ -2632,5 +2615,108 @@ class DashGridPainter extends CustomPainter {
     return cellWidth != oldDelegate.cellWidth ||
         cellHeight != oldDelegate.cellHeight ||
         lineColor != oldDelegate.lineColor;
+  }
+}
+
+/// Editable latitude/longitude inputs for the simulated-flight start point
+/// (debug only). Commits valid coordinates to [DebugSettings.setSimStartLocation]
+/// on submit / focus loss; invalid input is reverted on the next rebuild.
+class _SimStartLocationFields extends StatefulWidget {
+  const _SimStartLocationFields();
+
+  @override
+  State<_SimStartLocationFields> createState() =>
+      _SimStartLocationFieldsState();
+}
+
+class _SimStartLocationFieldsState extends State<_SimStartLocationFields> {
+  late final TextEditingController _latCtrl;
+  late final TextEditingController _lonCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _latCtrl = TextEditingController(
+      text: DebugSettings.instance.simStartLat.toStringAsFixed(6),
+    );
+    _lonCtrl = TextEditingController(
+      text: DebugSettings.instance.simStartLon.toStringAsFixed(6),
+    );
+  }
+
+  @override
+  void dispose() {
+    _latCtrl.dispose();
+    _lonCtrl.dispose();
+    super.dispose();
+  }
+
+  void _commit() {
+    final lat = double.tryParse(_latCtrl.text.trim());
+    final lon = double.tryParse(_lonCtrl.text.trim());
+    final current = DebugSettings.instance;
+    if (lat != null && lon != null) {
+      current.setSimStartLocation(lat, lon);
+    }
+    // Reflect the stored (possibly-unchanged / clamped) values back into the
+    // fields so invalid input doesn't linger.
+    _latCtrl.text = current.simStartLat.toStringAsFixed(6);
+    _lonCtrl.text = current.simStartLon.toStringAsFixed(6);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    const inputType = TextInputType.numberWithOptions(
+      decimal: true,
+      signed: true,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(left: 40, bottom: 8, top: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.simStartLocation,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _latCtrl,
+                  keyboardType: inputType,
+                  decoration: InputDecoration(
+                    labelText: l10n.simStartLatitude,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onEditingComplete: _commit,
+                  onTapOutside: (_) => _commit(),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _lonCtrl,
+                  keyboardType: inputType,
+                  decoration: InputDecoration(
+                    labelText: l10n.simStartLongitude,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onEditingComplete: _commit,
+                  onTapOutside: (_) => _commit(),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

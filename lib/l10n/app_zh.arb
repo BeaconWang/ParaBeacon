@@ -369,8 +369,9 @@
   "debug": "调试",
   "simulatedFlightData": "模拟飞行数据",
   "simulatedFlightDataSubtitle": "当没有连接 BLE 设备时输入模拟传感器数值",
-  "fakeGpsInChina": "在中国伪造 GPS 位置",
-  "fakeGpsInChinaSubtitle": "在中国上空（成都附近）开始模拟飞行",
+  "simStartLocation": "起始位置",
+  "simStartLatitude": "纬度",
+  "simStartLongitude": "经度",
 
   "trackRecordingSmart": "智能（默认）",
   "trackRecordingSmartSubtitle": "至少间隔 1 秒，且仅在移动 ≥ 3 米或高度变化 ≥ 1 米时记录",

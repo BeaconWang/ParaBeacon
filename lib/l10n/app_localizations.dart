@@ -2234,17 +2234,23 @@ abstract class AppLocalizations {
   /// **'Feed fake sensor values when no BLE device is connected'**
   String get simulatedFlightDataSubtitle;
 
-  /// No description provided for @fakeGpsInChina.
+  /// No description provided for @simStartLocation.
   ///
   /// In en, this message translates to:
-  /// **'Fake GPS location in China'**
-  String get fakeGpsInChina;
+  /// **'Start location'**
+  String get simStartLocation;
 
-  /// No description provided for @fakeGpsInChinaSubtitle.
+  /// No description provided for @simStartLatitude.
   ///
   /// In en, this message translates to:
-  /// **'Start the simulated flight over China (near Chengdu)'**
-  String get fakeGpsInChinaSubtitle;
+  /// **'Latitude'**
+  String get simStartLatitude;
+
+  /// No description provided for @simStartLongitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get simStartLongitude;
 
   /// No description provided for @trackRecordingSmart.
   ///

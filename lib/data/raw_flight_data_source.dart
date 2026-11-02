@@ -202,8 +202,8 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   final Duration tickInterval;
   final math.Random _rand = math.Random();
 
-  /// Debug preferences that decide where the synthetic track starts (Europe by
-  /// default, or a location in China when [DebugSettings.fakeChinaLocation]).
+  /// Debug preferences that decide where the synthetic track starts
+  /// ([DebugSettings.simStartLat]/[DebugSettings.simStartLon]).
   final DebugSettings _debug;
 
   Timer? _timer;
@@ -213,18 +213,8 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   double _headingTarget = 90.0;
   double _windDirTarget = 270.0;
 
-  // Default (European) start point — Lausanne, Switzerland.
-  static const double _defaultLat = 46.5197;
-  static const double _defaultLon = 6.6323;
-
-  // Fake China start point — near Chengdu, Sichuan. Used when the debug
-  // "fake China location" toggle is on so the synthetic flight sits over
-  // Chinese territory (and aligns with the AMap/GCJ-02 tile sources).
-  static const double _chinaLat = 30.6570;
-  static const double _chinaLon = 104.0657;
-
-  double _lat = _defaultLat;
-  double _lon = _defaultLon;
+  double _lat = DebugSettings.defaultSimStartLat;
+  double _lon = DebugSettings.defaultSimStartLon;
 
   SimulatedFlightDataSource({
     this.tickInterval = const Duration(milliseconds: 100),
@@ -233,16 +223,11 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     _applyStartLocation();
   }
 
-  /// Positions the initial synthetic coordinates according to the current
-  /// [DebugSettings.fakeChinaLocation] preference.
+  /// Positions the initial synthetic coordinates at the configured start point
+  /// ([DebugSettings.simStartLat]/[DebugSettings.simStartLon]).
   void _applyStartLocation() {
-    if (_debug.fakeChinaLocation) {
-      _lat = _chinaLat;
-      _lon = _chinaLon;
-    } else {
-      _lat = _defaultLat;
-      _lon = _defaultLon;
-    }
+    _lat = _debug.simStartLat;
+    _lon = _debug.simStartLon;
   }
 
   @override
@@ -384,13 +369,13 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   BluetoothSensorFlightDataSource({DebugSettings? debugSettings})
     : _debug = debugSettings ?? DebugSettings.instance {
     // React to the simulator toggle being flipped at runtime.
-    _lastFakeChinaLocation = _debug.fakeChinaLocation;
     _debug.addListener(_onDebugSettingsChanged);
   }
 
-  /// Last-seen value of [DebugSettings.fakeChinaLocation] so we can detect a
-  /// change and restart the simulator at the new start location.
-  bool _lastFakeChinaLocation = false;
+  /// Last-seen start point, so editing the coordinates while the simulator is
+  /// running restarts it at the new location.
+  double _lastSimStartLat = DebugSettings.instance.simStartLat;
+  double _lastSimStartLon = DebugSettings.instance.simStartLon;
 
   /// A bluetooth-tier feed is considered active while a sensor (real BLE or the
   /// development simulator) is connected and streaming; this makes the raw
@@ -406,14 +391,17 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
 
   void _onDebugSettingsChanged() {
     if (_realSensorActive || _internalSensorActive) {
-      _lastFakeChinaLocation = _debug.fakeChinaLocation;
+      _lastSimStartLat = _debug.simStartLat;
+      _lastSimStartLon = _debug.simStartLon;
       return;
     }
-    // If the "fake China location" toggle changed while the simulator is
-    // running, recreate the simulator so it starts from the new location.
-    final chinaChanged = _debug.fakeChinaLocation != _lastFakeChinaLocation;
-    _lastFakeChinaLocation = _debug.fakeChinaLocation;
-    if (chinaChanged && _debug.simulatorEnabled) {
+    // If the start coordinates changed while the simulator is running,
+    // recreate it so it starts from the new location.
+    final startChanged = _debug.simStartLat != _lastSimStartLat ||
+        _debug.simStartLon != _lastSimStartLon;
+    _lastSimStartLat = _debug.simStartLat;
+    _lastSimStartLon = _debug.simStartLon;
+    if (startChanged && _debug.simulatorEnabled) {
       _sim?.removeListener(_onSim);
       _sim?.stop();
       _sim?.dispose();

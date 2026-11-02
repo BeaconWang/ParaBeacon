@@ -1137,11 +1137,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Feed fake sensor values when no BLE device is connected';
 
   @override
-  String get fakeGpsInChina => 'Fake GPS location in China';
+  String get simStartLocation => 'Start location';
 
   @override
-  String get fakeGpsInChinaSubtitle =>
-      'Start the simulated flight over China (near Chengdu)';
+  String get simStartLatitude => 'Latitude';
+
+  @override
+  String get simStartLongitude => 'Longitude';
 
   @override
   String get trackRecordingSmart => 'Smart (default)';

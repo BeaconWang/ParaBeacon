@@ -1092,10 +1092,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get simulatedFlightDataSubtitle => '当没有连接 BLE 设备时输入模拟传感器数值';
 
   @override
-  String get fakeGpsInChina => '在中国伪造 GPS 位置';
+  String get simStartLocation => '起始位置';
 
   @override
-  String get fakeGpsInChinaSubtitle => '在中国上空（成都附近）开始模拟飞行';
+  String get simStartLatitude => '纬度';
+
+  @override
+  String get simStartLongitude => '经度';
 
   @override
   String get trackRecordingSmart => '智能（默认）';

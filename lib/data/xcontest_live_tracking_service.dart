@@ -104,6 +104,13 @@ class XContestLiveTrackingService extends ChangeNotifier {
   Future<void>? _lifecycleFuture;
   bool _starting = false;
   bool _ending = false;
+
+  /// Set once the server ends the flight (close reason `terminated`, a
+  /// `flightTerminated` frame, or a 404 on the now-defunct flight socket).
+  /// Blocks auto-restart for the *current* flight so a following GPS fix does
+  /// not immediately declare a duplicate; cleared when the pilot lands or
+  /// disables sharing (i.e. once [_shouldTrack] goes false).
+  bool _sessionTerminated = false;
   int _retryAttempt = 0;
   int _bindingEpoch = 0;
   Uri? _socketUri;
@@ -183,10 +190,16 @@ class XContestLiveTrackingService extends ChangeNotifier {
   Future<void> _syncLifecycle() async {
     if (!_configured) return;
     if (_shouldTrack) {
+      // The server ended this flight; don't silently re-declare a new one on
+      // the next fix. The pilot must land or re-arm sharing to reset.
+      if (_sessionTerminated) return;
       // A new flight must not resurrect a session that is still landing.
       if (_client == null && !_starting && !_ending) await _startFlight();
       return;
     }
+    // No longer tracking (landed or sharing disabled): clear the terminal
+    // latch so the next genuine flight can start fresh.
+    _sessionTerminated = false;
     if ((_client != null || _starting) && !_ending) {
       await _stopFlight();
     }
@@ -215,6 +228,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
         isMock && !LiveTrackingSettings.instance.reportSimulatedAsReal;
     _gpsWaitTimer?.cancel();
     _gpsWaitTimer = null;
+    _sessionTerminated = false;
     _starting = true;
     final bindingEpoch = _bindingEpoch;
     _log('start: declaring flight (pilot $pilotId'
@@ -443,9 +457,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
       // Server ended the flight while the socket was still up: stop cleanly
       // (no restart) rather than keep streaming into a dead session.
       if (!_ending && client.terminatedByServer) {
-        _lastErrorCode = 'xcontest_flight_terminated';
-        _log('flight terminated by server - stopping');
-        unawaited(_finishFlight(allowRestart: false));
+        _stopTerminated('xcontest_flight_terminated');
         return;
       }
       // The landing is complete once the server acknowledges it, or once the
@@ -522,18 +534,41 @@ class XContestLiveTrackingService extends ChangeNotifier {
   void _onSocketClosed(Object? error) {
     if (_disposed || _ending || _client == null || !_shouldTrack) return;
     _log('socket closed${error != null ? ': $error' : ''}');
-    // If the server explicitly terminated the flight, reconnecting to the same
-    // socket is pointless - tear the session down instead of looping forever.
-    if (_client!.terminatedByServer) {
-      _lastErrorCode = 'xcontest_flight_terminated';
-      _log('flight terminated by server - stopping');
-      unawaited(_finishFlight(allowRestart: false));
+    // The server ends a flight either with a `flightTerminated` frame or by
+    // closing the socket with a `terminated` reason (observed: close 1000
+    // [{"tag":"terminated"}]). In both cases the flight's WebSocket URI is
+    // now defunct (reconnecting 404s), so tear down instead of looping.
+    if (_client!.terminatedByServer || _isTerminatedClose(error)) {
+      _stopTerminated('xcontest_flight_terminated');
       return;
     }
     _lastErrorCode = 'xcontest_socket_closed';
     _client!.onDisconnected(DateTime.now().millisecondsSinceEpoch);
     _setState(LiveTrackingConnectionState.reconnecting);
     _scheduleReconnect();
+  }
+
+  /// A clean server close that signals the flight is over (not a transient
+  /// network drop). Transient drops report code 1006 / no reason.
+  bool _isTerminatedClose(Object? error) {
+    final text = error?.toString().toLowerCase();
+    return text != null && text.contains('terminated');
+  }
+
+  /// A reconnect handshake failure that means the flight socket no longer
+  /// exists (HTTP 404) or is refused (401/403) - retrying cannot recover it.
+  bool _isDefunctSocket(Object error) {
+    final text = error.toString();
+    return text.contains('404') ||
+        text.contains('401') ||
+        text.contains('403');
+  }
+
+  void _stopTerminated(String code) {
+    _sessionTerminated = true;
+    _lastErrorCode = code;
+    _log('flight terminated by server - stopping (no reconnect)');
+    unawaited(_finishFlight(allowRestart: false));
   }
 
   void _scheduleReconnect() {
@@ -580,8 +615,14 @@ class XContestLiveTrackingService extends ChangeNotifier {
       _log('reconnected to ${uri.host}');
       _setState(LiveTrackingConnectionState.active);
     } on Object catch (error) {
-      _lastErrorCode = 'xcontest_socket_connect_failed';
       _log('reconnect failed: $error');
+      // The flight socket URI is single-use: a 404 (or auth rejection) means
+      // the flight is gone server-side, so stop rather than loop forever.
+      if (_isDefunctSocket(error)) {
+        _stopTerminated('xcontest_flight_terminated');
+        return;
+      }
+      _lastErrorCode = 'xcontest_socket_connect_failed';
       _setState(LiveTrackingConnectionState.reconnecting);
       _scheduleReconnect();
     }

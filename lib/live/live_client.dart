@@ -438,42 +438,51 @@ class LiveClient {
       case SvrLandingAck():
         landingAck = frame;
         status = LiveStatus.liveLandingAcknowledged;
-        onLog?.call('landingAck xcFlightId=${frame.xcFlightId}');
+        onLog?.call('<- landingAck xcFlightId=${frame.xcFlightId}');
       case SvrFlightInfos():
         mgr.applyInfos(frame.infos);
+        onLog?.call('<- flightInfos (${frame.infos.length})');
       case SvrFlightPositions():
         mgr.applyPositions(frame.positions);
+        onLog?.call('<- flightPositions (${frame.positions.length})');
       case SvrFlightChunk():
         if (frame.flightId != null) mgr.applyChunk(frame.flightId!, frame.trackChunk);
+        onLog?.call('<- flightChunk');
       case SvrMessage():
         final ack = mgr.handleMessage(frame);
         if (ack != null) send(ack); // ack immediately (i1.m)
+        onLog?.call('<- message');
       case SvrAckMsg():
         mgr.onMsgAck(frame.uuid, 'DELIVERED');
+        onLog?.call('<- ackMsg');
       case SvrAckMsgSvr():
         mgr.onMsgAck(frame.uuid, 'SERVER_ACK');
+        onLog?.call('<- ackMsgSvr');
       case SvrServerInfo():
         mgr.followingCount = frame.following;
-        final before = sendIntervalMs;
         applyInterval(frame.interval);
-        if (sendIntervalMs != before) {
-          onLog?.call('serverInfo: send interval -> ${sendIntervalMs ~/ 1000}s '
-              '(following ${frame.following})');
-        }
+        onLog?.call('<- serverInfo: interval=${frame.interval}s '
+            '-> send every ${sendIntervalMs ~/ 1000}s (following ${frame.following})');
       case SvrError():
         lastError = frame.error;
-        onLog?.call('server error: ${frame.error}');
+        onLog?.call('<- server error: ${frame.error}');
       case SvrFlightTerminated():
         terminatedByServer = true;
-        onLog?.call('flightTerminated by server');
+        onLog?.call('<- flightTerminated by server');
       case SvrUnknownFrame():
-        break;
+        onLog?.call('<- UNKNOWN frame "${frame.tag}": ${_previewRaw(frame.raw)}');
       default:
-        break;
+        onLog?.call('<- ${frame.tag}');
     }
   }
 
   /// c1.smali:4987-5561
+  /// Short, safe preview of an unrecognised server frame for the debug log.
+  String _previewRaw(Map<String, dynamic> raw) {
+    final text = raw.keys.take(8).join(',');
+    return text.length > 120 ? '${text.substring(0, 120)}…' : text;
+  }
+
   void _onAckChunk(SvrAckChunk ack) {
     if (inflight.isNotEmpty && ack.lastTstamp != null) {
       final cutoff = epochSeconds(ack.lastTstamp!);

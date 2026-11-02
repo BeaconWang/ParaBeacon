@@ -188,11 +188,14 @@ class XCSetOptions implements OutFrame {
   @override
   Map<String, dynamic> toJson() => <String, dynamic>{
         'tag': tag,
-        'options': <String, dynamic>{
-          'contents': <String, dynamic>{
-            'knownFlights': options.knownFlights,
-            'receiveAllPositions': options.receiveAllPositions,
-          },
+        // The `options` field is @SerializedName("contents") and the
+        // ConnOptions object is the value directly - i.e. a top-level
+        // `contents`, NOT `options.contents`
+        // (LiveProto$XCSetOptions.smali:10-13). The server rejects the nested
+        // form with: parsing ProtoXcSetOptions failed, key "contents" not found.
+        'contents': <String, dynamic>{
+          'knownFlights': options.knownFlights,
+          'receiveAllPositions': options.receiveAllPositions,
         },
       };
 }

@@ -434,10 +434,47 @@ class LiveClient {
   // downlink
   // =======================================================================
   /// c1.d(ws, text) -> LiveDeserializer -> c1.l(frame)
+  ///
+  /// The server batches frames as a JSON **array** of objects
+  /// (e.g. `[{"tag":"ackChunk",...},{"tag":"serverInfo",...}]`); a lone object
+  /// is also accepted. Each element is dispatched in order. Robust against
+  /// malformed input: a decode/parse failure is logged, never thrown, so one
+  /// bad frame cannot kill the receive path (an exception here would escape
+  /// the socket stream listener and be swallowed by the zone, hiding every
+  /// later frame).
   void onText(String text) {
     stats['framesRecv'] = (stats['framesRecv'] ?? 0) + 1;
-    dispatch(LiveDeserializer.parseMap(jsonDecode(text) as Map<String, dynamic>));
+    try {
+      final decoded = jsonDecode(text);
+      if (decoded is List) {
+        for (final element in decoded) {
+          _dispatchOne(element);
+        }
+      } else {
+        _dispatchOne(decoded);
+      }
+    } on Object catch (error) {
+      onLog?.call('<- parse error: $error on ${_preview(text)}');
+    }
   }
+
+  void _dispatchOne(Object? node) {
+    if (node is Map<String, dynamic>) {
+      dispatch(LiveDeserializer.parseMap(node));
+    } else {
+      onLog?.call('<- non-object frame element: ${_preview('$node')}');
+    }
+  }
+
+  /// Raw non-text (binary) frame from the socket. The livetrack protocol is
+  /// JSON text, so this should never happen - log it rather than drop silently.
+  void onBinary(int byteCount) {
+    stats['framesRecv'] = (stats['framesRecv'] ?? 0) + 1;
+    onLog?.call('<- binary frame ($byteCount B) - ignored');
+  }
+
+  String _preview(String text) =>
+      text.length > 160 ? '${text.substring(0, 160)}…' : text;
 
   /// c1.l(p0) - the big switch over server frame types.
   void dispatch(SvrFrame frame) {

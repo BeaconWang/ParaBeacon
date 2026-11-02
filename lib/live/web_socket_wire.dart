@@ -55,7 +55,11 @@ class WebSocketWire implements LiveWire {
     await channel.ready;
     _sub = channel.stream.listen(
       (dynamic message) {
-        if (message is String) client.onText(message);
+        if (message is String) {
+          client.onText(message);
+        } else if (message is List<int>) {
+          client.onBinary(message.length);
+        }
       },
       onError: (Object? error) {
         _channel = null;

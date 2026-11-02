@@ -352,20 +352,29 @@ class LiveClient {
   }
 
   /// j8/n - the batching worker on the LiveWorkerThread handler.
+  ///
+  /// Mirrors the reference `c1` single-deque model: points stay in [queue]
+  /// until the server confirms them with an `ackChunk`. Every flush re-sends
+  /// the front of the queue (up to [kMaxChunkPoints]), so *newly appended*
+  /// fixes are always included even while an earlier batch is still unacked.
+  /// `ackChunk` then removes the confirmed prefix from the front of the queue
+  /// (see [_onAckChunk]). This is what keeps the live track advancing instead
+  /// of freezing on a stuck in-flight batch.
   Map<String, dynamic>? flush(int nowMs) {
     if (wire == null) return null;
 
-    if (inflight.isEmpty && queue.isEmpty) {
+    if (queue.isEmpty) {
+      inflight = <LiveTrackpointHP>[];
       oldestUnsentS = null;
       if (landed) return _sendLanding();
       if (running) status = LiveStatus.liveWaiting;
       return null;
     }
 
-    if (inflight.isEmpty) {
-      final n = queue.length < kMaxChunkPoints ? queue.length : kMaxChunkPoints;
-      inflight = <LiveTrackpointHP>[for (var i = 0; i < n; i++) queue.removeFirst()];
-    }
+    final n = queue.length < kMaxChunkPoints ? queue.length : kMaxChunkPoints;
+    // The batch we are sending now; the points REMAIN in the queue until an
+    // ackChunk trims them. `inflight` is kept only for status/landing checks.
+    inflight = <LiveTrackpointHP>[for (final p in queue.take(n)) p];
     oldestUnsentS = epochSeconds(inflight.first.timestamp);
 
     status = LiveStatus.liveSendingData;
@@ -377,9 +386,9 @@ class LiveClient {
     return send(XCLanding(claimContest: claimContest, faiCompliant: true));
   }
 
-  /// True once nothing is buffered and nothing is awaiting an `ackChunk`.
-  /// The landing frame is only sent after this becomes true (see [flush]).
-  bool get isDrained => queue.isEmpty && inflight.isEmpty;
+  /// True once the queue is empty - every point has been acknowledged. The
+  /// landing frame is only sent after this becomes true (see [flush]).
+  bool get isDrained => queue.isEmpty;
 
   Map<String, dynamic> sendFollows() => send(mgr.buildFollowFrame());
 
@@ -476,26 +485,34 @@ class LiveClient {
     }
   }
 
-  /// c1.smali:4987-5561
   /// Short, safe preview of an unrecognised server frame for the debug log.
   String _previewRaw(Map<String, dynamic> raw) {
     final text = raw.keys.take(8).join(',');
     return text.length > 120 ? '${text.substring(0, 120)}…' : text;
   }
 
+  /// `ackChunk` confirms every point up to and including `lastTstamp`. Mirror
+  /// the reference (c1.smali:5187-5296): remove the confirmed prefix from the
+  /// FRONT of the queue with `removeFirst()`. Points stay queued (and keep
+  /// being re-sent) until this trims them, so a dropped/slow ack never freezes
+  /// the track - the next flush simply re-sends what is still pending.
   void _onAckChunk(SvrAckChunk ack) {
-    if (inflight.isNotEmpty && ack.lastTstamp != null) {
-      final cutoff = epochSeconds(ack.lastTstamp!);
-      final before = inflight.length;
-      inflight = inflight
-          .where((p) => epochSeconds(p.timestamp) > cutoff)
-          .toList();
-      oldestUnsentS = inflight.isEmpty ? null : epochSeconds(inflight.first.timestamp);
-      onLog?.call('ackChunk: ${before - inflight.length} pt(s) confirmed, '
-          '${inflight.length + queue.length} pending');
-    } else {
-      onLog?.call('ackChunk (empty)');
+    if (ack.lastTstamp == null) {
+      onLog?.call('<- ackChunk (empty)');
+      return;
     }
+    final cutoff = epochSeconds(ack.lastTstamp!);
+    var confirmed = 0;
+    while (queue.isNotEmpty &&
+        epochSeconds(queue.first.timestamp) <= cutoff) {
+      queue.removeFirst();
+      confirmed++;
+    }
+    inflight = inflight
+        .where((p) => epochSeconds(p.timestamp) > cutoff)
+        .toList();
+    oldestUnsentS = queue.isEmpty ? null : epochSeconds(queue.first.timestamp);
+    onLog?.call('<- ackChunk: $confirmed confirmed, ${queue.length} pending');
   }
 
   /// c1.smali:6080-6156 - server may retune the send period, 1..119 s.

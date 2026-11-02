@@ -120,8 +120,9 @@ class XContestLiveTrackingService extends ChangeNotifier {
   String? get lastErrorCode => _lastErrorCode;
   String? get sessionId => _sessionId;
   bool get isConfigured => _configured;
-  int get pendingPointCount =>
-      (_client?.queue.length ?? 0) + (_client?.inflight.length ?? 0);
+  // `inflight` is a view into the front of `queue` (points stay queued until
+  // acked), so the queue length alone is the true pending count.
+  int get pendingPointCount => _client?.queue.length ?? 0;
 
   void configure() {
     if (_client != null || _starting) {
@@ -487,7 +488,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
     }
     if (_ending) return;
     _ending = true;
-    _log('landing: draining ${client.queue.length + client.inflight.length} '
+    _log('landing: draining ${client.queue.length} '
         'point(s) then sending xcLanding');
     // c1.q(): the next drained flush emits `xcLanding` instead of a chunk.
     client.setLanded();

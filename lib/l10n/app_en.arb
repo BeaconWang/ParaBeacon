@@ -126,6 +126,7 @@
   "liveTrackingShowPublicSubtitle": "Show other public pilots on the map",
   "liveTrackingFlightPublic": "Make flight public",
   "liveTrackingFlightPublicSubtitle": "Publish the completed flight on XContest",
+  "liveTrackingFlightPublicLockedSubtitle": "Visibility is locked after live tracking starts. You can change it for the next flight.",
   "liveTrackingTemporaryDisable": "Temporarily stop sharing",
   "liveTrackingTemporaryDisableSubtitle": "Pause LiveTracking without changing the main setting",
   "liveTrackingTemporarilyDisabled": "LiveTracking is temporarily paused.",

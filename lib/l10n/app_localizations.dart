@@ -812,6 +812,12 @@ abstract class AppLocalizations {
   /// **'Publish the completed flight on XContest'**
   String get liveTrackingFlightPublicSubtitle;
 
+  /// No description provided for @liveTrackingFlightPublicLockedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility is locked after live tracking starts. You can change it for the next flight.'**
+  String get liveTrackingFlightPublicLockedSubtitle;
+
   /// No description provided for @liveTrackingTemporaryDisable.
   ///
   /// In en, this message translates to:

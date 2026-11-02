@@ -375,6 +375,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingFlightPublicSubtitle => '在 XContest 发布已完成的飞行';
 
   @override
+  String get liveTrackingFlightPublicLockedSubtitle =>
+      '实时追踪开始后，当前飞行的公开状态将锁定；可为下一次飞行更改。';
+
+  @override
   String get liveTrackingTemporaryDisable => '暂时停止分享';
 
   @override

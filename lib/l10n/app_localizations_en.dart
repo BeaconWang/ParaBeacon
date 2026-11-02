@@ -395,6 +395,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Publish the completed flight on XContest';
 
   @override
+  String get liveTrackingFlightPublicLockedSubtitle =>
+      'Visibility is locked after live tracking starts. You can change it for the next flight.';
+
+  @override
   String get liveTrackingTemporaryDisable => 'Temporarily stop sharing';
 
   @override

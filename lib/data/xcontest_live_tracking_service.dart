@@ -162,6 +162,10 @@ class XContestLiveTrackingService extends ChangeNotifier {
   LiveTrackingConnectionState get state => _state;
   String? get lastErrorCode => _lastErrorCode;
   String? get sessionId => _sessionId;
+
+  /// True once a live-flight declaration starts, and until that session finishes.
+  bool get isFlightSessionStarted => _starting || _client != null || _ending;
+
   bool get isConfigured => _configured;
   // `inflight` is a view into the front of `queue` (points stay queued until
   // acked), so the queue length alone is the true pending count.
@@ -303,6 +307,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
     _terminatedRetryTimer?.cancel();
     _terminatedRetryTimer = null;
     _starting = true;
+    _notify();
     final bindingEpoch = _bindingEpoch;
     _log('start: declaring flight (pilot $pilotId'
         '${isMock ? (simulated ? ', simulated' : ', mock-as-real') : ''})');
@@ -373,6 +378,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
       _onDataChanged(); // queue the fix that triggered the start
     } finally {
       _starting = false;
+      _notify();
     }
   }
 

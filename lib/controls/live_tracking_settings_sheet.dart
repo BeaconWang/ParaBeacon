@@ -88,6 +88,7 @@ class _LiveTrackingSettingsSheetState
       builder: (context, _) {
         final signedIn = auth.isSignedIn;
         final canEnable = signedIn && !_temporaryDontShare;
+        final flightPublicLocked = tracking.isFlightSessionStarted;
         return Material(
           color: theme.colorScheme.surface,
           child: SafeArea(
@@ -193,10 +194,12 @@ class _LiveTrackingSettingsSheetState
                             SwitchListTile(
                               title: Text(l10n.liveTrackingFlightPublic),
                               subtitle: Text(
-                                l10n.liveTrackingFlightPublicSubtitle,
+                                flightPublicLocked
+                                    ? l10n.liveTrackingFlightPublicLockedSubtitle
+                                    : l10n.liveTrackingFlightPublicSubtitle,
                               ),
                               value: _flightPublic,
-                              onChanged: _loading
+                              onChanged: _loading || flightPublicLocked
                                   ? null
                                   : (value) =>
                                         setState(() => _flightPublic = value),

@@ -9,6 +9,7 @@ import '../audio/vario_audio_service.dart';
 import '../data/flight_data.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
+import '../data/map_source.dart' show defaultMapSourceIdForLocale;
 import '../data/map_tile_cache.dart';
 import '../data/offline_tiles_service.dart';
 import '../l10n/app_localizations.dart';
@@ -148,9 +149,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
     super.didChangeDependencies();
     if (_tileSourceInitialized) return;
     _tileSourceInitialized = true;
-    _tileSourceId = Localizations.localeOf(context).languageCode == 'zh'
-        ? 'amap-sat'
-        : 'osm';
+    _tileSourceId = defaultMapSourceIdForLocale();
   }
 
   void _computeExtrema() {

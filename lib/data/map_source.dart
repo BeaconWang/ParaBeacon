@@ -1,5 +1,26 @@
 import 'package:flutter/foundation.dart';
 
+import '../theme/app_languages.dart';
+import '../theme/locale_controller.dart';
+
+/// The default basemap id for the active app language, shared by every feature
+/// that displays a map (map control, pickers, flight replay, share card …).
+///
+/// Chinese users default to AMap satellite (correctly aligned and reachable
+/// inside China); everyone else defaults to Google satellite. Both ids exist
+/// in `MapTileSources` (flutter_map) and [MapSourceCatalog] so the same value
+/// is valid wherever a basemap is resolved.
+String defaultMapSourceIdForLocale() =>
+    _localePrefersChineseMaps ? 'amap-sat' : 'google-sat';
+
+bool get _localePrefersChineseMaps {
+  final language = LocaleController.instance.current;
+  return language == AppLanguage.chineseSimplified ||
+      (language == AppLanguage.system &&
+          PlatformDispatcher.instance.locale.languageCode.toLowerCase() ==
+              'zh');
+}
+
 /// Rendering backend required by a map source.
 enum MapSourceType { rasterTiles, vectorStyle }
 
@@ -135,6 +156,20 @@ class MapSourceCatalog {
           'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       attribution: 'Tiles © Esri and its contributors',
       maxZoom: 23,
+    ),
+    MapSource.raster(
+      id: 'google',
+      label: 'Google Maps',
+      url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en',
+      attribution: '© Google',
+      maxZoom: 20,
+    ),
+    MapSource.raster(
+      id: 'google-sat',
+      label: 'Google Satellite',
+      url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&hl=en',
+      attribution: '© Google',
+      maxZoom: 20,
     ),
     MapSource.raster(
       id: 'amap',

@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+import '../data/map_source.dart';
 import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
-import '../theme/app_languages.dart';
-import '../theme/locale_controller.dart';
 
 /// The kind of UI editor a setting uses.
 enum SettingKind { toggle, slider, choice, color, globalColor, decimalRange }
@@ -1432,17 +1431,10 @@ const Map<String, UnitDimension> _unitDimensions = {
 
 /// The default map tile-source id for a newly-added Map control.
 ///
-/// Chinese users default to AMap satellite (which aligns correctly inside
-/// China and is reachable there); everyone else defaults to Google Satellite.
-String defaultMapTileSourceId() {
-  final language = LocaleController.instance.current;
-  final isChinese =
-      language == AppLanguage.chineseSimplified ||
-      (language == AppLanguage.system &&
-          PlatformDispatcher.instance.locale.languageCode.toLowerCase() ==
-              'zh');
-  return isChinese ? 'amap-sat' : 'google-sat';
-}
+/// Delegates to the shared [defaultMapSourceIdForLocale] so every map-bearing
+/// feature agrees on the language default (Chinese → AMap satellite, otherwise
+/// Google satellite).
+String defaultMapTileSourceId() => defaultMapSourceIdForLocale();
 
 /// Returns the full ordered list of settings for a control type id
 /// (common settings first, then type-specific ones).

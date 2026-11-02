@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../theme/app_languages.dart';
 import '../theme/locale_controller.dart';
 import 'map_source.dart';
 
@@ -67,15 +66,7 @@ class ShareCardSettings extends ChangeNotifier {
     notifyListeners();
   }
 
-  String get _languageDefaultMapSourceId {
-    final language = LocaleController.instance.current;
-    final isChinese =
-        language == AppLanguage.chineseSimplified ||
-        (language == AppLanguage.system &&
-            PlatformDispatcher.instance.locale.languageCode.toLowerCase() ==
-                'zh');
-    return isChinese ? 'amap-sat' : 'none';
-  }
+  String get _languageDefaultMapSourceId => defaultMapSourceIdForLocale();
 
   void _onLanguageChanged() {
     if (_mapSourceExplicit) return;

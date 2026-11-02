@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../data/gcj02.dart';
 import '../data/geocoding_service.dart';
+import '../data/map_source.dart' show defaultMapSourceIdForLocale;
 import '../data/map_tile_cache.dart';
 import '../data/offline_tiles_service.dart';
 import '../data/weather_favorites.dart';
@@ -32,7 +33,7 @@ Future<(double, double)?> showMapPickerSheet(
   BuildContext context, {
   double? initialLat,
   double? initialLon,
-  String initialTileSourceId = MapPickerDefaults.tileSourceId,
+  String? initialTileSourceId,
   CurrentLocationResolver? resolveCurrentLocation,
 }) {
   return showModalBottomSheet<(double, double)>(
@@ -44,7 +45,8 @@ Future<(double, double)?> showMapPickerSheet(
     builder: (context) => _MapPickerSheet(
       initialLat: initialLat,
       initialLon: initialLon,
-      initialTileSourceId: initialTileSourceId,
+      initialTileSourceId:
+          initialTileSourceId ?? MapPickerDefaults.tileSourceId,
       resolveCurrentLocation: resolveCurrentLocation,
     ),
   );
@@ -86,8 +88,9 @@ Future<void> showMapLocationSheet(
 class MapPickerDefaults {
   MapPickerDefaults._();
 
-  /// AMap satellite imagery is the default basemap.
-  static const String tileSourceId = 'amap-sat';
+  /// Language-aware default basemap: AMap satellite for Chinese users, Google
+  /// satellite otherwise (see [defaultMapSourceIdForLocale]).
+  static String get tileSourceId => defaultMapSourceIdForLocale();
 }
 
 class _MapPickerSheet extends StatefulWidget {

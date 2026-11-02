@@ -47,6 +47,8 @@ class MapTileCacheService {
     'osmfr',
     'carto-dark',
     'carto-voyager',
+    'google',
+    'google-sat',
     'amap',
     'amap-sat',
     'opentopomap',
@@ -90,6 +92,15 @@ class MapTileCacheService {
       }
     }
     if (host == 'a.tile.opentopomap.org') return 'opentopomap';
+    if ((host == 'mt0.google.com' ||
+            host == 'mt1.google.com' ||
+            host == 'mt2.google.com' ||
+            host == 'mt3.google.com') &&
+        uri.path == '/vt') {
+      final lyrs = uri.queryParameters['lyrs'];
+      if (lyrs == 'm') return 'google';
+      if (lyrs == 'y') return 'google-sat';
+    }
     if (host == 'server.arcgisonline.com' &&
         uri.path.startsWith(
           '/ArcGIS/rest/services/World_Imagery/MapServer/tile/',

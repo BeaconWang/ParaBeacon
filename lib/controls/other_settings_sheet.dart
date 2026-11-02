@@ -72,6 +72,7 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          scrollable: true,
           title: Text(AppLocalizations.of(context).networkUserAgentTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,

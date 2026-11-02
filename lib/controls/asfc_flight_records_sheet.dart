@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
+import 'keyboard_avoidance.dart';
 
 Future<void> showAsfcFlightRecordsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -363,7 +364,8 @@ class _AsfcFlightRecordFormState extends State<_AsfcFlightRecordForm> {
       child: SafeArea(
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: KeyboardInsetPadding(
+            child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
             children: [
               Row(
@@ -435,6 +437,7 @@ class _AsfcFlightRecordFormState extends State<_AsfcFlightRecordForm> {
                 label: Text(l10n.submit),
               ),
             ],
+            ),
           ),
         ),
       ),

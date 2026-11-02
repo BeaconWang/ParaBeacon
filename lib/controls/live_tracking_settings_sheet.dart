@@ -149,7 +149,15 @@ class _LiveTrackingSettingsSheetState
                               value: _enabled,
                               onChanged: _loading || !signedIn
                                   ? null
-                                  : (value) => setState(() => _enabled = value),
+                                  : (value) {
+                                      setState(() => _enabled = value);
+                                      // Apply + persist immediately so the
+                                      // master switch takes effect at once -
+                                      // turning it off mid-flight stops
+                                      // sharing without waiting for Save.
+                                      LiveTrackingSettings.instance
+                                          .setEnabled(value);
+                                    },
                             ),
                             const Divider(height: 1),
                             SwitchListTile(

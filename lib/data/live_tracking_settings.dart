@@ -101,6 +101,23 @@ class LiveTrackingSettings extends ChangeNotifier {
     }
   }
 
+  /// Immediately applies and persists the master "Enable LiveTracking" switch,
+  /// independent of the Save button. XCTrack observes its `Livetrack.Enabled`
+  /// config live (`TrackService.j()` starts/stops the sender the instant it
+  /// changes), so toggling here must take effect at once: turning it off
+  /// mid-flight stops sharing immediately. Does not touch other settings.
+  Future<void> setEnabled(bool value) async {
+    if (_enabled == value) return;
+    _enabled = value;
+    notifyListeners();
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(_kEnabled, value);
+    } catch (_) {
+      // In-memory value still applies; persistence can retry later.
+    }
+  }
+
   /// Immediately applies and persists the "Temporarily stop sharing" pause,
   /// independent of the Save button. The live-tracking service reads this per
   /// fix, so the pause/resume takes effect at once (XCTrack reads its

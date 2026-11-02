@@ -105,12 +105,15 @@ class XContestLiveTrackingService extends ChangeNotifier {
   bool _starting = false;
   bool _ending = false;
 
-  /// Set once the server ends the flight (close reason `terminated`, a
-  /// `flightTerminated` frame, or a 404 on the now-defunct flight socket).
-  /// Blocks auto-restart for the *current* flight so a following GPS fix does
-  /// not immediately declare a duplicate; cleared when the pilot lands or
-  /// disables sharing (i.e. once [_shouldTrack] goes false).
-  bool _sessionTerminated = false;
+  /// After the server ends a flight (close reason `terminated`, a
+  /// `flightTerminated` frame, or a 404/401/403 on the flight socket) we wait
+  /// this long before declaring a fresh flight, so a persistent rejection
+  /// cannot spam `POST /flight`. XCTrack force-lands and starts a new flight on
+  /// termination; this is the same intent with a rate limit. Cleared the moment
+  /// sharing is disabled or the pilot lands (so a deliberate re-arm is instant).
+  static const Duration _terminatedCooldown = Duration(seconds: 60);
+  int _terminatedCooldownUntilMs = 0;
+  Timer? _terminatedRetryTimer;
   int _retryAttempt = 0;
   int _bindingEpoch = 0;
   Uri? _socketUri;
@@ -191,19 +194,40 @@ class XContestLiveTrackingService extends ChangeNotifier {
   Future<void> _syncLifecycle() async {
     if (!_configured) return;
     if (_shouldTrack) {
-      // The server ended this flight; don't silently re-declare a new one on
-      // the next fix. The pilot must land or re-arm sharing to reset.
-      if (_sessionTerminated) return;
-      // A new flight must not resurrect a session that is still landing.
-      if (_client == null && !_starting && !_ending) await _startFlight();
+      if (_client != null || _starting || _ending) return;
+      // After a server termination, hold off re-declaring until the cooldown
+      // elapses (then auto-recover), instead of blocking forever.
+      final now = DateTime.now().millisecondsSinceEpoch;
+      if (now < _terminatedCooldownUntilMs) {
+        _armTerminatedRetry(_terminatedCooldownUntilMs - now);
+        return;
+      }
+      await _startFlight();
       return;
     }
-    // No longer tracking (landed or sharing disabled): clear the terminal
-    // latch so the next genuine flight can start fresh.
-    _sessionTerminated = false;
+    // No longer tracking (landed or sharing disabled): clear the cooldown so
+    // the next genuine flight - or a deliberate re-enable - starts at once.
+    _terminatedCooldownUntilMs = 0;
+    _terminatedRetryTimer?.cancel();
+    _terminatedRetryTimer = null;
     if ((_client != null || _starting) && !_ending) {
       await _stopFlight();
     }
+  }
+
+  /// Re-run the lifecycle once the termination cooldown expires so a flight
+  /// auto-restarts without needing a new GPS fix or a settings toggle.
+  void _armTerminatedRetry(int delayMs) {
+    _terminatedRetryTimer?.cancel();
+    _terminatedRetryTimer = Timer(
+      Duration(milliseconds: delayMs.clamp(0, 60000)),
+      () {
+        _terminatedRetryTimer = null;
+        if (_shouldTrack && _client == null && !_starting && !_ending) {
+          _queueLifecycleSync();
+        }
+      },
+    );
   }
 
   // =======================================================================
@@ -229,7 +253,8 @@ class XContestLiveTrackingService extends ChangeNotifier {
         isMock && !LiveTrackingSettings.instance.reportSimulatedAsReal;
     _gpsWaitTimer?.cancel();
     _gpsWaitTimer = null;
-    _sessionTerminated = false;
+    _terminatedRetryTimer?.cancel();
+    _terminatedRetryTimer = null;
     _starting = true;
     final bindingEpoch = _bindingEpoch;
     _log('start: declaring flight (pilot $pilotId'
@@ -243,6 +268,8 @@ class XContestLiveTrackingService extends ChangeNotifier {
         shareWhenNotFlying: false,
         claimContest: settings.claimContest,
         flightPublic: settings.flightPublic,
+        // "Show public tracking" -> xcSetOptions.receiveAllPositions.
+        receiveAllPositions: settings.showPublic,
         token: token,
         epoch0Ms: DateTime.now().millisecondsSinceEpoch,
       )
@@ -577,10 +604,11 @@ class XContestLiveTrackingService extends ChangeNotifier {
   }
 
   void _stopTerminated(String code) {
-    _sessionTerminated = true;
+    _terminatedCooldownUntilMs =
+        DateTime.now().millisecondsSinceEpoch + _terminatedCooldown.inMilliseconds;
     _lastErrorCode = code;
-    _log('flight terminated by server - stopping (no reconnect)');
-    unawaited(_finishFlight(allowRestart: false));
+    _log('flight terminated by server - retry in ${_terminatedCooldown.inSeconds}s');
+    unawaited(_finishFlight(allowRestart: true));
   }
 
   void _scheduleReconnect() {
@@ -673,6 +701,8 @@ class XContestLiveTrackingService extends ChangeNotifier {
     _reconnectTimer = null;
     _landingTimer?.cancel();
     _landingTimer = null;
+    _terminatedRetryTimer?.cancel();
+    _terminatedRetryTimer = null;
     _ending = false; // force an immediate teardown, no landing wait
     await _finishFlight();
     _httpClient?.close();
@@ -690,6 +720,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
       _reconnectTimer?.cancel();
       _landingTimer?.cancel();
       _gpsWaitTimer?.cancel();
+      _terminatedRetryTimer?.cancel();
       _wire?.close();
       _httpClient?.close();
     }

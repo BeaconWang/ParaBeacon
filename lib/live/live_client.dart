@@ -92,6 +92,11 @@ class LiveClient {
   /// the flight (rest/apis/LivetrackApi$FlightOptions.smali:80-84).
   bool flightPublic;
 
+  /// Livetrack.ShowPublic -> the `receiveAllPositions` argument of
+  /// `xcSetOptions` (live/i1.smali:4909-4937, LiveProto$XCSetOptions). When
+  /// true the server streams every public pilot's positions back to us.
+  bool receiveAllPositions;
+
   final String token;
 
   /// wall-clock epoch ms of virtual t=0 (demo clock helper)
@@ -102,6 +107,7 @@ class LiveClient {
     this.shareWhenNotFlying = true,
     this.claimContest = false,
     this.flightPublic = false,
+    this.receiveAllPositions = false,
     this.token = 'demo-token',
     this.epoch0Ms = 0,
   });
@@ -268,7 +274,7 @@ class LiveClient {
     send(XCSetOptions(
       options: ConnOptions(
         knownFlights: mgr.follows.keys.toList(),
-        receiveAllPositions: false,
+        receiveAllPositions: receiveAllPositions,
       ),
     ));
     sendFollows();

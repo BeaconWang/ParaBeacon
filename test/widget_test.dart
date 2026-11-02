@@ -161,6 +161,8 @@ void main() {
       await tester.tap(preferences);
       await tester.pumpAndSettle();
 
+      expect(find.text('LiveTracking'), findsNothing);
+
       final autoFlightSettings = find.text('Auto take-off / landing');
       await tester.ensureVisible(autoFlightSettings);
       await tester.tap(autoFlightSettings);

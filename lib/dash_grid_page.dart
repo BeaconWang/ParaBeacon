@@ -39,6 +39,7 @@ import 'data/landing_point_store.dart';
 import 'data/layout_config_io.dart';
 import 'data/layout_store.dart';
 import 'data/recording_settings.dart';
+import 'data/xcontest_auth_service.dart';
 import 'theme/locale_controller.dart';
 import 'theme/theme_controller.dart';
 import 'theme/theme_settings_sheet.dart';
@@ -811,26 +812,42 @@ class _DashGridPageState extends State<DashGridPage> {
                             setSheetState(() {});
                           },
                         ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.track_changes,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.liveTracking),
-                          subtitle: Text(
-                            LiveTrackingSettings.instance.enabled
-                                ? l10n.liveTrackingReady
-                                : l10n.liveTrackingSubtitle,
-                          ),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await showLiveTrackingSettingsSheet(context);
-                            setSheetState(() {});
+                        AnimatedBuilder(
+                          animation: XContestAuthService.instance,
+                          builder: (context, _) {
+                            final auth = XContestAuthService.instance;
+                            if (!auth.isLoaded || !auth.isSignedIn) {
+                              return const SizedBox.shrink();
+                            }
+                            return Column(
+                              children: [
+                                const Divider(height: 1),
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: Icon(
+                                    Icons.track_changes,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  title: Text(l10n.liveTracking),
+                                  subtitle: Text(
+                                    LiveTrackingSettings.instance.enabled
+                                        ? l10n.liveTrackingReady
+                                        : l10n.liveTrackingSubtitle,
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.chevron_right,
+                                    size: 20,
+                                  ),
+                                  onTap: () async {
+                                    await showLiveTrackingSettingsSheet(context);
+                                    setSheetState(() {});
+                                  },
+                                ),
+                                const Divider(height: 1),
+                              ],
+                            );
                           },
                         ),
-                        const Divider(height: 1),
                         sectionHeading(l10n.preferencesSectionMapDisplay),
                         ListTile(
                           contentPadding: EdgeInsets.zero,

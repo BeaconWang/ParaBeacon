@@ -203,8 +203,13 @@ class _LiveTrackingSettingsSheetState
                           value: _temporaryDontShare,
                           onChanged: _loading
                               ? null
-                              : (value) =>
-                                    setState(() => _temporaryDontShare = value),
+                              : (value) {
+                                  setState(() => _temporaryDontShare = value);
+                                  // Apply + persist immediately so the pause
+                                  // takes effect without waiting for Save.
+                                  LiveTrackingSettings.instance
+                                      .setTemporaryDontShare(value);
+                                },
                         ),
                       ),
                       if (kDebugMode) ...[

@@ -100,4 +100,20 @@ class LiveTrackingSettings extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Immediately applies and persists the "Temporarily stop sharing" pause,
+  /// independent of the Save button. The live-tracking service reads this per
+  /// fix, so the pause/resume takes effect at once (XCTrack reads its
+  /// `Internal.LiveTempDontShare` config live). Does not touch other settings.
+  Future<void> setTemporaryDontShare(bool value) async {
+    if (_temporaryDontShare == value) return;
+    _temporaryDontShare = value;
+    notifyListeners();
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(_kTemporaryDontShare, value);
+    } catch (_) {
+      // In-memory value still applies; persistence can retry later.
+    }
+  }
 }

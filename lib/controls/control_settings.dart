@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 
 import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
+import '../theme/app_languages.dart';
+import '../theme/locale_controller.dart';
 
 /// The kind of UI editor a setting uses.
 enum SettingKind { toggle, slider, choice, color, globalColor, decimalRange }
@@ -1428,6 +1430,20 @@ const Map<String, UnitDimension> _unitDimensions = {
   'compass_wind': UnitDimension.speed,
 };
 
+/// The default map tile-source id for a newly-added Map control.
+///
+/// Chinese users default to AMap satellite (which aligns correctly inside
+/// China and is reachable there); everyone else defaults to Google Satellite.
+String defaultMapTileSourceId() {
+  final language = LocaleController.instance.current;
+  final isChinese =
+      language == AppLanguage.chineseSimplified ||
+      (language == AppLanguage.system &&
+          PlatformDispatcher.instance.locale.languageCode.toLowerCase() ==
+              'zh');
+  return isChinese ? 'amap-sat' : 'google-sat';
+}
+
 /// Returns the full ordered list of settings for a control type id
 /// (common settings first, then type-specific ones).
 List<ControlSetting> settingsSchemaFor(String typeId) {
@@ -1436,7 +1452,18 @@ List<ControlSetting> settingsSchemaFor(String typeId) {
   return [
     for (final setting in _commonSettings)
       if (!(hidesTitle && setting.key == 'showTitle')) setting,
-    ...(_typeSettings[typeId] ?? const []),
+    for (final setting in (_typeSettings[typeId] ?? const []))
+      // The map source default depends on the active language, so it is
+      // resolved here instead of being baked statically into the schema.
+      if (typeId == 'map' && setting.key == 'tileSource')
+        ControlSetting.choice(
+          key: setting.key,
+          label: setting.label,
+          defaultValue: defaultMapTileSourceId(),
+          options: setting.options,
+        )
+      else
+        setting,
     ...(_decimalSettings[typeId] ?? const []),
     if (dimension != null) _unitSetting(dimension),
   ];

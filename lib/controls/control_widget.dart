@@ -6,6 +6,7 @@ import 'takeoff_waypoint_control.dart';
 import 'landing_waypoint_control.dart';
 import '../l10n/app_localizations.dart';
 import 'placed_control.dart';
+import 'control_settings.dart';
 import 'data_value_control.dart';
 import 'compass_wind_control.dart';
 import 'status_line_control.dart';
@@ -474,7 +475,7 @@ class ControlWidget extends StatelessWidget {
             active: isSelected || isControlled,
             follow: control.boolSetting('follow', fallback: true),
             initialZoom: control.doubleSetting('zoom', fallback: 17.0),
-            tileSource: source is String ? source : 'amap-sat',
+            tileSource: source is String ? source : defaultMapTileSourceId(),
             trackUp: rot == 'track',
             showNorth: control.boolSetting('showNorth', fallback: false),
             pilotArrowCoef:

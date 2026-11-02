@@ -245,7 +245,10 @@ class XContestLiveTrackingService extends ChangeNotifier {
         flightPublic: settings.flightPublic,
         token: token,
         epoch0Ms: DateTime.now().millisecondsSinceEpoch,
-      )..onLog = _log;
+      )
+        ..onLog = _log
+        // Respect a pause that is already active when the flight starts.
+        ..tempDontShare = settings.temporaryDontShare;
       final options = client.buildFlightOptions(
         fix,
         device: const IgcSystemInfo(),
@@ -364,6 +367,14 @@ class XContestLiveTrackingService extends ChangeNotifier {
     // Once a landing is in progress we stop feeding new fixes so the buffer
     // can drain and the terminating `xcLanding` is reached.
     if (_ending || !_shouldTrack) return;
+    // "Temporarily stop sharing" pauses point uploads without ending the
+    // flight: feed the flag to the client, which keeps the socket alive but
+    // skips queueing fixes (LiveClient.onLocation / Internal.LiveTempDontShare).
+    final paused = LiveTrackingSettings.instance.temporaryDontShare;
+    if (paused != client.tempDontShare) {
+      client.tempDontShare = paused;
+      _log(paused ? 'sharing paused (temporary)' : 'sharing resumed');
+    }
     final snapshot = _data?.data;
     final fix = _toFix(snapshot);
     if (fix == null) return;

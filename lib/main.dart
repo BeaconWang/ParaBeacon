@@ -211,8 +211,12 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _liveTracking.bind(
       data: _transformer,
       flightState: FlightState.instance,
+      // The flight lifecycle depends only on sharing being enabled + signed
+      // in. "Temporarily stop sharing" does NOT end the flight; it pauses
+      // point uploads via LiveClient.tempDontShare (see the service), so the
+      // socket/flight stays alive and the pilot can resume seamlessly.
       isEnabled: () =>
-          LiveTrackingSettings.instance.isEffectivelyEnabled &&
+          LiveTrackingSettings.instance.enabled &&
           XContestAuthService.instance.isSignedIn,
       pilotId: () => XContestAuthService.instance.uid,
       eligibilitySource: Listenable.merge([

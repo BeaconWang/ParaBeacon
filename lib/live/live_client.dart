@@ -328,7 +328,16 @@ class LiveClient {
 
   /// c1.h(loc) - the hot path, called for every GPS fix.
   bool onLocation(Fix fix, int nowMs) {
+    // c1.m(loc): only flying + valid fixes are eligible.
     if (!_accept(fix)) return false;
+    // A valid fix means the data feed is alive, so keep the connection
+    // considered active even while sharing is paused (prevents the idle
+    // watchdog from dropping the socket during a temporary pause).
+    lastActivityMs = nowMs;
+    // Internal.LiveTempDontShare (c1.smali:2470-2498): when sharing is paused
+    // the point is simply NOT queued - the socket and flight stay alive, so
+    // the pilot can resume without starting a new flight.
+    if (tempDontShare) return false;
     final point = LiveTrackpointHP.fromFix(fix);
     // drop duplicates / out-of-order fixes (c1.smali:2496-2591)
     if (lastPoint != null &&
@@ -337,15 +346,14 @@ class LiveClient {
     }
     queue.addLast(point);
     lastPoint = point;
-    lastActivityMs = nowMs;
     return true;
   }
 
-  /// c1.m(loc)
+  /// c1.m(loc) - eligibility gate: flying (or share-when-not-flying) + valid
+  /// GPS time. `Internal.LiveTempDontShare` is intentionally NOT checked here
+  /// (it is a separate pause handled in [onLocation]), matching the reference
+  /// where `m()` and the `W3` gate are distinct.
   bool _accept(Fix fix) {
-    // Internal.LiveTempDontShare - hard gate, even while flying
-    // (live/c1.smali:2470, :2637, :4868).
-    if (tempDontShare) return false;
     if (!fix.timeValid) return false;
     if (!flying && !shareWhenNotFlying) return false;
     return true;

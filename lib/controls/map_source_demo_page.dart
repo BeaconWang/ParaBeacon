@@ -14,9 +14,7 @@ class MapSourceDemoPage extends StatefulWidget {
 }
 
 class _MapSourceDemoPageState extends State<MapSourceDemoPage> {
-  late final MapSourceManager _manager = MapSourceManager(
-    initialSourceId: 'openfreemap-liberty',
-  );
+  late final MapSourceManager _manager = MapSourceManager();
 
   @override
   void dispose() {

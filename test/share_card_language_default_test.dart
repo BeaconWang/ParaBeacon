@@ -22,7 +22,7 @@ void main() {
       expect(preferences.containsKey('pb.shareCardMapSource'), isFalse);
 
       await locale.setLanguage(AppLanguage.english);
-      expect(settings.mapSourceId, 'none');
+      expect(settings.mapSourceId, 'google-sat');
       await locale.setLanguage(AppLanguage.chineseSimplified);
       expect(settings.mapSourceId, 'amap-sat');
 

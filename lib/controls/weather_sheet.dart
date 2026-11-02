@@ -182,10 +182,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
   }
 
   /// Changes the query options and re-fetches (location unchanged).
-  void _refetch({
-    WeatherModel? model,
-    int? pastDays,
-  }) {
+  void _refetch({WeatherModel? model, int? pastDays}) {
     if (!mounted) return;
     setState(() {
       if (model != null) _model = model;
@@ -307,14 +304,11 @@ class _WeatherSheetState extends State<_WeatherSheet> {
   /// forecast for it. The picker hands back WGS-84 coordinates.
   Future<void> _pickOnMap() async {
     _searchFocus.unfocus();
-    final languageCode = Localizations.localeOf(context).languageCode;
     final picked = await showMapPickerSheet(
       context,
       initialLat: _lat,
       initialLon: _lon,
-      initialTileSourceId: languageCode == 'zh'
-          ? 'amap'
-          : MapPickerDefaults.tileSourceId,
+      initialTileSourceId: MapPickerDefaults.tileSourceId,
       resolveCurrentLocation: _resolveCurrentFix,
     );
     if (!mounted || picked == null) return;
@@ -398,8 +392,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                    child: Text(l10n.weatherFavorites,
-                        style: Theme.of(context).textTheme.titleLarge),
+                    child: Text(
+                      l10n.weatherFavorites,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                   ),
                   if (places.isEmpty)
                     Padding(
@@ -425,14 +421,18 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.drive_file_rename_outline,
-                                      size: 20),
+                                  icon: const Icon(
+                                    Icons.drive_file_rename_outline,
+                                    size: 20,
+                                  ),
                                   tooltip: l10n.weatherFavoriteRename,
                                   onPressed: () => _renameFavorite(p),
                                 ),
                                 IconButton(
-                                  icon:
-                                      const Icon(Icons.delete_outline, size: 20),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    size: 20,
+                                  ),
                                   tooltip: l10n.delete,
                                   onPressed: () =>
                                       _favorites.removeSpot(p.lat, p.lon),
@@ -575,9 +575,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 4),
       child: Row(
         children: [
-          Expanded(
-            child: _buildSearchField(l10n),
-          ),
+          Expanded(child: _buildSearchField(l10n)),
           _actionButton(
             icon: _locating ? null : Icons.my_location,
             busy: _locating,
@@ -599,8 +597,9 @@ class _WeatherSheetState extends State<_WeatherSheet> {
           _actionButton(
             icon: Icons.refresh,
             tooltip: l10n.weatherRefresh,
-            onPressed:
-                _phase == _Phase.loading ? null : () => _load(keepLocation: true),
+            onPressed: _phase == _Phase.loading
+                ? null
+                : () => _load(keepLocation: true),
           ),
           _actionButton(
             icon: Icons.close,
@@ -627,7 +626,9 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               width: 18,
               height: 18,
               child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white70),
+                strokeWidth: 2,
+                color: Colors.white70,
+              ),
             )
           : Icon(icon, color: color),
       iconSize: 22,
@@ -678,9 +679,9 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               dense: true,
               contentPadding: EdgeInsets.zero,
               leading: Icon(saved ? Icons.star_outline : Icons.star, size: 20),
-              title: Text(saved
-                  ? l10n.weatherFavoriteRemove
-                  : l10n.weatherFavoriteAdd),
+              title: Text(
+                saved ? l10n.weatherFavoriteRemove : l10n.weatherFavoriteAdd,
+              ),
             ),
           ),
         if (saved)
@@ -689,8 +690,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
             child: ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading:
-                  const Icon(Icons.drive_file_rename_outline, size: 20),
+              leading: const Icon(Icons.drive_file_rename_outline, size: 20),
               title: Text(l10n.weatherFavoriteRename),
             ),
           ),
@@ -704,11 +704,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
           for (final p in places)
             PopupMenuItem<Object>(
               value: p,
-              child: Text(
-                p.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
           const PopupMenuDivider(),
           PopupMenuItem<Object>(
@@ -758,7 +754,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
             const SizedBox(
               width: 14,
               height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white70,
+              ),
             )
           else if (_searchController.text.isNotEmpty)
             GestureDetector(
@@ -791,42 +790,45 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               ),
             )
           : _searchResults.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Text(
-                        l10n.weatherNoResults,
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      itemCount: _searchResults.length,
-                      itemBuilder: (context, i) {
-                        final place = _searchResults[i];
-                        return ListTile(
-                          dense: true,
-                          leading: const Icon(Icons.place_outlined,
-                              size: 18, color: Colors.white54),
-                          title: Text(
-                            place.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 14),
-                          ),
-                          subtitle: Text(
-                            place.displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: Colors.white.withAlpha(130),
-                                fontSize: 11),
-                          ),
-                          onTap: () => _selectPlace(place),
-                        );
-                      },
+          ? Padding(
+              padding: const EdgeInsets.all(14),
+              child: Text(
+                l10n.weatherNoResults,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            )
+          : ListView.builder(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: _searchResults.length,
+              itemBuilder: (context, i) {
+                final place = _searchResults[i];
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(
+                    Icons.place_outlined,
+                    size: 18,
+                    color: Colors.white54,
+                  ),
+                  title: Text(
+                    place.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  subtitle: Text(
+                    place.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(130),
+                      fontSize: 11,
                     ),
+                  ),
+                  onTap: () => _selectPlace(place),
+                );
+              },
+            ),
     );
   }
 
@@ -850,14 +852,8 @@ class _WeatherSheetState extends State<_WeatherSheet> {
 
   Widget _buildError(AppLocalizations l10n) {
     final (icon, message) = switch (_errorKind) {
-      _ErrorKind.noFix => (
-          Icons.location_disabled_outlined,
-          l10n.weatherNoGps,
-        ),
-      _ErrorKind.network => (
-          Icons.cloud_off_outlined,
-          l10n.weatherLoadFailed,
-        ),
+      _ErrorKind.noFix => (Icons.location_disabled_outlined, l10n.weatherNoGps),
+      _ErrorKind.network => (Icons.cloud_off_outlined, l10n.weatherLoadFailed),
     };
     return Center(
       child: Column(
@@ -1063,7 +1059,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               child: Center(
                 child: Text(
                   l10n.weatherSubtitle,
-                  style: TextStyle(color: Colors.white.withAlpha(140), fontSize: 12),
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(140),
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ),
@@ -1085,8 +1084,11 @@ class _WeatherSheetState extends State<_WeatherSheet> {
     return i < 0 ? 0 : i;
   }
 
-  Widget _pillToggle(String label,
-      {required bool selected, required VoidCallback onTap}) {
+  Widget _pillToggle(
+    String label, {
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
@@ -1095,9 +1097,7 @@ class _WeatherSheetState extends State<_WeatherSheet> {
         decoration: BoxDecoration(
           color: selected ? Colors.white.withAlpha(50) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? Colors.white54 : Colors.white24,
-          ),
+          border: Border.all(color: selected ? Colors.white54 : Colors.white24),
         ),
         child: Text(
           label,
@@ -1128,8 +1128,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                   color: m == _model ? Colors.orangeAccent : Colors.white54,
                 ),
                 const SizedBox(width: 8),
-                Text(m.label,
-                    style: const TextStyle(color: Colors.white, fontSize: 13)),
+                Text(
+                  m.label,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
               ],
             ),
           ),
@@ -1176,7 +1178,9 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  d == 0 ? l10n.weatherPastDaysOff : l10n.weatherPastDaysShort(d),
+                  d == 0
+                      ? l10n.weatherPastDaysOff
+                      : l10n.weatherPastDaysShort(d),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
               ],
@@ -1194,8 +1198,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
           children: [
             const Icon(Icons.history, size: 13, color: Colors.white70),
             const SizedBox(width: 4),
-            Text(label,
-                style: const TextStyle(color: Colors.white70, fontSize: 11)),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
+            ),
           ],
         ),
       ),
@@ -1232,9 +1238,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               Text(
                 label,
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600),
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Icon(kindIcon(day.kind), size: 22, color: Colors.orangeAccent),
               Text(
@@ -1243,24 +1250,36 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               ),
               Text(
                 _fmtTemp(day.tMin),
-                style: TextStyle(color: Colors.white.withAlpha(150), fontSize: 11),
+                style: TextStyle(
+                  color: Colors.white.withAlpha(150),
+                  fontSize: 11,
+                ),
               ),
               if (day.precipProbability > 0)
                 Text(
                   l10n.weatherPrecipProbability(day.precipProbability.round()),
-                  style: const TextStyle(color: Colors.lightBlueAccent, fontSize: 10),
+                  style: const TextStyle(
+                    color: Colors.lightBlueAccent,
+                    fontSize: 10,
+                  ),
                 ),
               const Spacer(),
               if (day.sunrise != null)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.wb_twilight, size: 10, color: Colors.amberAccent),
+                    const Icon(
+                      Icons.wb_twilight,
+                      size: 10,
+                      color: Colors.amberAccent,
+                    ),
                     const SizedBox(width: 2),
                     Text(
                       df.format(day.sunrise!),
                       style: TextStyle(
-                          color: Colors.white.withAlpha(180), fontSize: 9),
+                        color: Colors.white.withAlpha(180),
+                        fontSize: 9,
+                      ),
                     ),
                   ],
                 ),
@@ -1268,12 +1287,18 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.nightlight_outlined, size: 10, color: Colors.indigoAccent),
+                    const Icon(
+                      Icons.nightlight_outlined,
+                      size: 10,
+                      color: Colors.indigoAccent,
+                    ),
                     const SizedBox(width: 2),
                     Text(
                       df.format(day.sunset!),
                       style: TextStyle(
-                          color: Colors.white.withAlpha(180), fontSize: 9),
+                        color: Colors.white.withAlpha(180),
+                        fontSize: 9,
+                      ),
                     ),
                   ],
                 ),
@@ -1297,7 +1322,11 @@ class _WeatherSheetState extends State<_WeatherSheet> {
       child: Row(
         children: [
           if (data?.servedByFallback == true) ...[
-            Icon(Icons.swap_horiz, size: 12, color: Colors.orangeAccent.withAlpha(200)),
+            Icon(
+              Icons.swap_horiz,
+              size: 12,
+              color: Colors.orangeAccent.withAlpha(200),
+            ),
             const SizedBox(width: 4),
           ],
           Expanded(
@@ -1305,7 +1334,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
               parts.join('  ·  '),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: Colors.white.withAlpha(120), fontSize: 10),
+              style: TextStyle(
+                color: Colors.white.withAlpha(120),
+                fontSize: 10,
+              ),
             ),
           ),
         ],
@@ -1334,8 +1366,10 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(l10n.weatherUnits,
-                        style: Theme.of(sheetContext).textTheme.titleLarge),
+                    Text(
+                      l10n.weatherUnits,
+                      style: Theme.of(sheetContext).textTheme.titleLarge,
+                    ),
                     const SizedBox(height: 12),
                     _unitGroup<TemperatureUnit>(
                       title: l10n.weatherUnitTemperature,
@@ -1343,7 +1377,9 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                       selected: settings.temperature,
                       label: (u) => u.symbol,
                       onSelect: (u) {
-                        settings.setTemperature(u).then((_) => _onUnitsChanged());
+                        settings
+                            .setTemperature(u)
+                            .then((_) => _onUnitsChanged());
                         setSheetState(() {});
                       },
                     ),
@@ -1365,7 +1401,9 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                       selected: settings.precipitation,
                       label: (u) => u.symbol,
                       onSelect: (u) {
-                        settings.setPrecipitation(u).then((_) => _onUnitsChanged());
+                        settings
+                            .setPrecipitation(u)
+                            .then((_) => _onUnitsChanged());
                         setSheetState(() {});
                       },
                     ),
@@ -1462,8 +1500,11 @@ class _NowcastPanel extends StatelessWidget {
           // Header: place + scrub state.
           Row(
             children: [
-              const Icon(Icons.location_on_outlined,
-                  size: 14, color: Colors.white54),
+              const Icon(
+                Icons.location_on_outlined,
+                size: 14,
+                color: Colors.white54,
+              ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -1471,9 +1512,10 @@ class _NowcastPanel extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600),
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               if (onBackToNow != null && slot != null)
@@ -1481,8 +1523,10 @@ class _NowcastPanel extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   onTap: onBackToNow,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orangeAccent.withAlpha(60),
                       borderRadius: BorderRadius.circular(12),
@@ -1493,7 +1537,9 @@ class _NowcastPanel extends StatelessWidget {
                         Text(
                           fmtHour(slot!.time),
                           style: const TextStyle(
-                              color: Colors.white, fontSize: 11),
+                            color: Colors.white,
+                            fontSize: 11,
+                          ),
                         ),
                         const SizedBox(width: 4),
                         const Icon(Icons.close, size: 12, color: Colors.white),
@@ -1527,8 +1573,11 @@ class _NowcastPanel extends StatelessWidget {
                         const SizedBox(width: 10),
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
-                          child: Icon(kindIcon(kind, isDay: isDay),
-                              size: 32, color: Colors.orangeAccent),
+                          child: Icon(
+                            kindIcon(kind, isDay: isDay),
+                            size: 32,
+                            color: Colors.orangeAccent,
+                          ),
                         ),
                       ],
                     ),
@@ -1536,12 +1585,16 @@ class _NowcastPanel extends StatelessWidget {
                     Text(
                       kindLabel(l10n, kind),
                       style: TextStyle(
-                          color: Colors.white.withAlpha(220), fontSize: 14),
+                        color: Colors.white.withAlpha(220),
+                        fontSize: 14,
+                      ),
                     ),
                     Text(
                       l10n.weatherFeelsLike(feels.round()),
                       style: TextStyle(
-                          color: Colors.white.withAlpha(150), fontSize: 12),
+                        color: Colors.white.withAlpha(150),
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -1574,19 +1627,13 @@ class _NowcastPanel extends StatelessWidget {
     final chips = <(String, String)>[
       (
         l10n.weatherHumidity,
-        '${(h?.relativeHumidity ?? cur.humidity).round()}%'
+        '${(h?.relativeHumidity ?? cur.humidity).round()}%',
       ),
-      (
-        l10n.weatherCloudCover,
-        '${(h?.cloudCover ?? cur.cloudCover).round()}%'
-      ),
-      (
-        l10n.weatherPressure,
-        '${cur.pressure.round()} hPa'
-      ),
+      (l10n.weatherCloudCover, '${(h?.cloudCover ?? cur.cloudCover).round()}%'),
+      (l10n.weatherPressure, '${cur.pressure.round()} hPa'),
       (
         l10n.weatherPrecipitation,
-        _fmtAmount(h?.precipitation ?? cur.precipitation)
+        _fmtAmount(h?.precipitation ?? cur.precipitation),
       ),
     ];
     if (h?.rain != null) chips.add((l10n.weatherRain, _fmtAmount(h!.rain!)));
@@ -1596,7 +1643,7 @@ class _NowcastPanel extends StatelessWidget {
     if (h?.visibility != null) {
       chips.add((
         l10n.weatherVisibility,
-        '${(h!.visibility! / 1000).toStringAsFixed(1)} km'
+        '${(h!.visibility! / 1000).toStringAsFixed(1)} km',
       ));
     }
     if (h?.windSpeed80m != null) {
@@ -1612,12 +1659,15 @@ class _NowcastPanel extends StatelessWidget {
       chips.add((l10n.weatherSoilTemp, fmtTemp(h!.soilTemperature!)));
     }
     if (h?.shortwaveRadiation != null) {
-      chips.add((l10n.weatherRadiation, '${h!.shortwaveRadiation!.round()} W/m²'));
+      chips.add((
+        l10n.weatherRadiation,
+        '${h!.shortwaveRadiation!.round()} W/m²',
+      ));
     }
     if (h?.soilMoisture != null) {
       chips.add((
         l10n.weatherSoilMoisture,
-        '${(h!.soilMoisture! * 100).toStringAsFixed(1)}%'
+        '${(h!.soilMoisture! * 100).toStringAsFixed(1)}%',
       ));
     }
     if (h?.et0 != null) {
@@ -1725,22 +1775,25 @@ class _ForecastSectionState extends State<_ForecastSection> {
   static const double _tabHeight = 26;
   static const double _indicatorHeight = 12;
 
-  static const TextStyle _dimStyle =
-      TextStyle(color: Colors.white54, fontSize: 11);
+  static const TextStyle _dimStyle = TextStyle(
+    color: Colors.white54,
+    fontSize: 11,
+  );
   static const TextStyle _brightStyle = TextStyle(
     color: Colors.white,
     fontSize: 11,
     fontWeight: FontWeight.w600,
   );
-  static const TextStyle _detailStyle =
-      TextStyle(color: Colors.white54, fontSize: 10);
+  static const TextStyle _detailStyle = TextStyle(
+    color: Colors.white54,
+    fontSize: 10,
+  );
 
   final PageController _controller = PageController();
   int _page = 0;
 
   /// Days actually rendered: the horizon capped at [_ForecastSection.maxDays].
-  int get _dayCount =>
-      math.min(widget.days.length, _ForecastSection.maxDays);
+  int get _dayCount => math.min(widget.days.length, _ForecastSection.maxDays);
 
   @override
   void dispose() {
@@ -1906,7 +1959,11 @@ class _ForecastSectionState extends State<_ForecastSection> {
                       style: const TextStyle(color: Colors.white, fontSize: 11),
                     ),
                   ),
-                  Icon(kindIcon(day.kind), size: 14, color: Colors.orangeAccent),
+                  Icon(
+                    kindIcon(day.kind),
+                    size: 14,
+                    color: Colors.orangeAccent,
+                  ),
                   const SizedBox(width: 8),
                   Text(widget.fmtTemp(day.tMin), style: _dimStyle),
                   const Text(' / ', style: _dimStyle),
@@ -1915,9 +1972,12 @@ class _ForecastSectionState extends State<_ForecastSection> {
                   if (day.precipProbability > 0)
                     Text(
                       l10n.weatherPrecipProbability(
-                          day.precipProbability.round()),
+                        day.precipProbability.round(),
+                      ),
                       style: const TextStyle(
-                          color: Colors.lightBlueAccent, fontSize: 10),
+                        color: Colors.lightBlueAccent,
+                        fontSize: 10,
+                      ),
                     ),
                   const SizedBox(width: 8),
                   SizedBox(
@@ -1928,8 +1988,12 @@ class _ForecastSectionState extends State<_ForecastSection> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: _gustHeatColor(WeatherUnits.windToKmh(
-                            day.windMax, widget.units.wind)),
+                        color: _gustHeatColor(
+                          WeatherUnits.windToKmh(
+                            day.windMax,
+                            widget.units.wind,
+                          ),
+                        ),
                         fontSize: 11,
                       ),
                     ),
@@ -1978,8 +2042,11 @@ class _ForecastSectionState extends State<_ForecastSection> {
         ],
         if (day.sunset != null) ...[
           const SizedBox(width: 6),
-          const Icon(Icons.nightlight_outlined,
-              size: 10, color: Colors.indigoAccent),
+          const Icon(
+            Icons.nightlight_outlined,
+            size: 10,
+            color: Colors.indigoAccent,
+          ),
           Text(_sunTime.format(day.sunset!), style: _detailStyle),
         ],
       ],
@@ -2081,12 +2148,16 @@ class _WindAloftGrid extends StatelessWidget {
       builder: (context, constraints) {
         final available = math.max(0.0, constraints.maxWidth - _gutterWidth);
         final fits = (available / _minColumnWidth).floor();
-        final columns =
-            math.min(math.min(math.max(1, fits), _maxColumns), hours.length);
+        final columns = math.min(
+          math.min(math.max(1, fits), _maxColumns),
+          hours.length,
+        );
         // Keep the anchor hour leftmost, unless that would run past the end
         // of the series (then show the last full window).
-        final start =
-            math.min(math.max(0, anchorIndex), hours.length - columns);
+        final start = math.min(
+          math.max(0, anchorIndex),
+          hours.length - columns,
+        );
         final columnWidth = available / columns;
         final scaleMax = _scaleMax(start, columns, rows);
 
@@ -2165,16 +2236,11 @@ class _WindAloftGrid extends StatelessWidget {
 
   // ── Hour columns ───────────────────────────────────────────────────────────
 
-  Widget _buildColumn(
-    int index,
-    List<WindAloftLevel> rows,
-    double? scaleMax,
-  ) {
+  Widget _buildColumn(int index, List<WindAloftLevel> rows, double? scaleMax) {
     final hour = hours[index];
     final selected = index == anchorIndex;
     final past = nowIndex >= 0 && index < nowIndex;
-    final dayStart =
-        index > 0 && hours[index - 1].time.day != hour.time.day;
+    final dayStart = index > 0 && hours[index - 1].time.day != hour.time.day;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -2192,8 +2258,9 @@ class _WindAloftGrid extends StatelessWidget {
                       DateFormat('HH', locale).format(hour.time),
                       style: TextStyle(
                         fontSize: 10,
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: selected
                             ? Colors.orangeAccent
                             : (dayStart ? Colors.white : Colors.white54),
@@ -2260,7 +2327,10 @@ class _WindAloftGrid extends StatelessWidget {
       return const SizedBox(
         height: _rowHeight,
         child: Center(
-          child: Text('–', style: TextStyle(color: Colors.white24, fontSize: 10)),
+          child: Text(
+            '–',
+            style: TextStyle(color: Colors.white24, fontSize: 10),
+          ),
         ),
       );
     }
@@ -2417,8 +2487,12 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
       final now = _nowIndex;
       if (now < 0) return;
       final target =
-          (now * _HourlyDetailTable._colWidth - _scroll.position.viewportDimension / 2)
-              .clamp(0.0, math.max(0, _scroll.position.maxScrollExtent).toDouble());
+          (now * _HourlyDetailTable._colWidth -
+                  _scroll.position.viewportDimension / 2)
+              .clamp(
+                0.0,
+                math.max(0, _scroll.position.maxScrollExtent).toDouble(),
+              );
       _scroll.jumpTo(target);
       _autoScrolled = true;
     });
@@ -2454,7 +2528,8 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                   scrollDirection: Axis.horizontal,
                   itemExtent: _HourlyDetailTable._colWidth,
                   itemCount: widget.hours.length,
-                  itemBuilder: (context, i) => _buildColumn(i, locale, units, now),
+                  itemBuilder: (context, i) =>
+                      _buildColumn(i, locale, units, now),
                 ),
               ),
             ],
@@ -2483,8 +2558,10 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
             ),
             if (unit != null) ...[
               const SizedBox(width: 2),
-              Text(unit,
-                  style: const TextStyle(color: Colors.white38, fontSize: 8)),
+              Text(
+                unit,
+                style: const TextStyle(color: Colors.white38, fontSize: 8),
+              ),
             ],
           ],
         ),
@@ -2513,22 +2590,36 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                       l10n.weatherRowHours,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          const TextStyle(color: Colors.white54, fontSize: 10),
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 10,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          _gutterLabel(_HourlyDetailTable._tempH, l10n.weatherRowTemperature,
-              units.temperature.symbol),
-          _gutterLabel(_HourlyDetailTable._rainH, l10n.weatherRowRain,
-              units.precipitation.symbol),
           _gutterLabel(
-              _HourlyDetailTable._windH, l10n.weatherRowWind, units.wind.symbol),
+            _HourlyDetailTable._tempH,
+            l10n.weatherRowTemperature,
+            units.temperature.symbol,
+          ),
           _gutterLabel(
-              _HourlyDetailTable._gustH, l10n.weatherRowGusts, units.wind.symbol),
+            _HourlyDetailTable._rainH,
+            l10n.weatherRowRain,
+            units.precipitation.symbol,
+          ),
+          _gutterLabel(
+            _HourlyDetailTable._windH,
+            l10n.weatherRowWind,
+            units.wind.symbol,
+          ),
+          _gutterLabel(
+            _HourlyDetailTable._gustH,
+            l10n.weatherRowGusts,
+            units.wind.symbol,
+          ),
           _gutterLabel(_HourlyDetailTable._dirH, l10n.weatherRowWindDir, null),
         ],
       ),
@@ -2581,15 +2672,19 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                   _HourlyDetailTable._tempH,
                   dayStart: dayStart,
                   past: past,
-                  band: _tempPaletteColor(WeatherUnits.temperatureToCelsius(
-                          h.temperature, units.temperature))
-                      .withAlpha(44),
+                  band: _tempPaletteColor(
+                    WeatherUnits.temperatureToCelsius(
+                      h.temperature,
+                      units.temperature,
+                    ),
+                  ).withAlpha(44),
                   child: Text(
                     '${h.temperature.round()}°',
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600),
+                      color: Colors.white,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 _buildRainCell(h, units, dayStart, past),
@@ -2607,14 +2702,15 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
                   dayStart: dayStart,
                   past: past,
                   band: _gustHeatColor(
-                          WeatherUnits.windToKmh(h.windGusts, units.wind))
-                      .withAlpha(190),
+                    WeatherUnits.windToKmh(h.windGusts, units.wind),
+                  ).withAlpha(190),
                   child: Text(
                     '${h.windGusts.round()}',
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600),
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 _cell(
@@ -2654,8 +2750,12 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
     );
   }
 
-  Widget _buildRainCell(WeatherHour h, WeatherUnits units, bool dayStart,
-      bool past) {
+  Widget _buildRainCell(
+    WeatherHour h,
+    WeatherUnits units,
+    bool dayStart,
+    bool past,
+  ) {
     final v = h.precipitation;
     final hasRain = v >= 0.05;
     return _cell(
@@ -2665,16 +2765,19 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
       child: hasRain
           ? Text(
               v.toStringAsFixed(
-                  units.precipitation == PrecipitationUnit.inch ? 2 : 1),
+                units.precipitation == PrecipitationUnit.inch ? 2 : 1,
+              ),
               style: const TextStyle(
-                  color: Colors.lightBlueAccent,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600),
+                color: Colors.lightBlueAccent,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+              ),
             )
           : null,
       rainBar: hasRain
-          ? Colors.lightBlueAccent
-              .withAlpha(((v / 4).clamp(0.12, 1.0) * 255).round())
+          ? Colors.lightBlueAccent.withAlpha(
+              ((v / 4).clamp(0.12, 1.0) * 255).round(),
+            )
           : null,
     );
   }
@@ -2703,10 +2806,11 @@ class _HourlyDetailTableState extends State<_HourlyDetailTable> {
               child: Text(
                 DateFormat('EEE d', locale).format(t).toUpperCase(),
                 style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.2),
+                  color: Colors.white70,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                ),
               ),
             ),
           ),
@@ -2831,14 +2935,18 @@ class _WindBadge extends StatelessWidget {
         children: [
           _WindArrow(direction: direction, size: 28),
           const SizedBox(height: 4),
-          Text(speed,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600)),
-          Text(gusts,
-              style: TextStyle(
-                  color: Colors.white.withAlpha(150), fontSize: 10)),
+          Text(
+            speed,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            gusts,
+            style: TextStyle(color: Colors.white.withAlpha(150), fontSize: 10),
+          ),
         ],
       ),
     );
@@ -2865,11 +2973,7 @@ class _WindArrow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Transform.rotate(
       angle: (direction + 180) * math.pi / 180,
-      child: Icon(
-        Icons.arrow_upward,
-        size: size,
-        color: color,
-      ),
+      child: Icon(Icons.arrow_upward, size: size, color: color),
     );
   }
 }
@@ -2893,16 +2997,16 @@ class _MetricChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(
-                color: Colors.white.withAlpha(140), fontSize: 10),
+            style: TextStyle(color: Colors.white.withAlpha(140), fontSize: 10),
           ),
           const SizedBox(width: 5),
           Text(
             value,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600),
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

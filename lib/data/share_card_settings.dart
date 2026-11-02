@@ -18,7 +18,7 @@ class ShareCardSettings extends ChangeNotifier {
 
   bool _flatDesign = false;
   bool _compactLayout = true;
-  String _mapSourceId = 'none';
+  String _mapSourceId = defaultMapSourceIdForLocale();
   bool _mapSourceExplicit = false;
   bool _loaded = false;
 

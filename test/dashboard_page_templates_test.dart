@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/dashboard_menu_content.dart';
 import 'package:parabeacon/data/dashboard_page_templates.dart';
+import 'package:parabeacon/data/map_source.dart'
+    show defaultMapSourceIdForLocale;
 import 'package:parabeacon/controls/placed_control.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 import 'package:parabeacon/l10n/app_localizations_en.dart';
@@ -90,7 +92,10 @@ void main() {
     expect(defaultByType['map']!.row, 0);
     expect(defaultByType['map']!.cols, 12);
     expect(defaultByType['map']!.rows, 8);
-    expect(defaultByType['map']!.settings['tileSource'], 'amap-sat');
+    expect(
+      defaultByType['map']!.settings['tileSource'],
+      defaultMapSourceIdForLocale(),
+    );
     expect(defaultByType['map']!.settings['showAirspace'], isTrue);
     expect(defaultByType['vario']!.settings['liquidGlass'], isTrue);
     expect(
@@ -129,6 +134,7 @@ void main() {
         home: Scaffold(
           body: DashboardMenuContent(
             isEditMode: true,
+            canLockInterface: false,
             pageIndex: 0,
             pageCount: 1,
             gridSize: 32,
@@ -140,6 +146,7 @@ void main() {
             onAddPage: () {},
             onDeletePage: () {},
             onClearAll: () {},
+            onLockInterface: () {},
             onOpenPreferences: () {},
           ),
         ),

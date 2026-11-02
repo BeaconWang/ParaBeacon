@@ -17,6 +17,7 @@ import '../data/landing_point_store.dart';
 import '../data/takeoff_reference.dart';
 import '../data/offline_tiles_service.dart';
 import '../data/map_tile_cache.dart';
+import '../data/map_source.dart' show defaultMapSourceIdForLocale;
 import '../data/solar_position.dart';
 import '../data/thermal_detector.dart';
 import '../data/vario_color_palette.dart';
@@ -115,16 +116,14 @@ class MapTileSources {
     MapTileSource(
       id: 'google',
       label: 'Google Maps',
-      urlTemplate:
-          'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en',
+      urlTemplate: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en',
       attribution: '© Google',
       maxZoom: 20,
     ),
     MapTileSource(
       id: 'google-sat',
       label: 'Google Satellite',
-      urlTemplate:
-          'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&hl=en',
+      urlTemplate: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&hl=en',
       attribution: '© Google',
       maxZoom: 20,
     ),
@@ -146,11 +145,12 @@ class MapTileSources {
     ),
   ];
 
-  /// Looks up a source by id, defaulting to AMap satellite.
+  /// Looks up a source by id, defaulting to the active locale's satellite map.
   static MapTileSource byId(String id) {
     return all.firstWhere(
       (s) => s.id == id,
-      orElse: () => all.firstWhere((s) => s.id == 'amap-sat'),
+      orElse: () =>
+          all.firstWhere((s) => s.id == defaultMapSourceIdForLocale()),
     );
   }
 }
@@ -184,8 +184,10 @@ class MapControl extends StatefulWidget {
   /// Whether the map re-centers on the current position as it updates.
   final bool follow;
 
-  /// Tile source id (see [MapTileSources]).
-  final String tileSource;
+  /// Explicit tile source id, or the current locale default when omitted.
+  final String? _tileSource;
+
+  String get tileSource => _tileSource ?? defaultMapSourceIdForLocale();
 
   /// Draw the recorded flight track (coloured by vertical speed).
   final bool showTrack;
@@ -294,7 +296,7 @@ class MapControl extends StatefulWidget {
     this.initialZoom = 17.0,
     this.initialCenter,
     this.follow = true,
-    this.tileSource = 'amap-sat',
+    String? tileSource,
     this.showTrack = true,
     this.showThermal = true,
     this.showAirspace = true,
@@ -330,7 +332,7 @@ class MapControl extends StatefulWidget {
     this.onMapTap,
     this.showOtherPilots = true,
     this.selectionMarker,
-  });
+  }) : _tileSource = tileSource;
 
   @override
   State<MapControl> createState() => _MapControlState();
@@ -1826,14 +1828,14 @@ class _OtherPilotMarker extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2),
               boxShadow: const [
-                BoxShadow(color: Colors.black38, blurRadius: 2, offset: Offset(0, 1)),
+                BoxShadow(
+                  color: Colors.black38,
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
               ],
             ),
-            child: const Icon(
-              Icons.paragliding,
-              size: 14,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.paragliding, size: 14, color: Colors.white),
           ),
           const SizedBox(height: 2),
           Container(

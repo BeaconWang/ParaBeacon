@@ -236,8 +236,10 @@ class MapSourceCatalog {
 /// Persist [selectedId] with the app's existing settings store if selection
 /// should survive an app restart.
 class MapSourceManager extends ChangeNotifier {
-  MapSourceManager({String initialSourceId = 'osm'})
-    : _selectedId = MapSourceCatalog.byId(initialSourceId).id;
+  MapSourceManager({String? initialSourceId})
+    : _selectedId = MapSourceCatalog.byId(
+        initialSourceId ?? defaultMapSourceIdForLocale(),
+      ).id;
 
   String _selectedId;
 

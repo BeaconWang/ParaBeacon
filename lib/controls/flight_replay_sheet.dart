@@ -51,7 +51,7 @@ class _FlightReplaySheet extends StatefulWidget {
 class _FlightReplaySheetState extends State<_FlightReplaySheet>
     with SingleTickerProviderStateMixin {
   /// Tile source used for the replay basemap. Users can switch it in replay.
-  String _tileSourceId = 'osm';
+  String _tileSourceId = defaultMapSourceIdForLocale();
   bool _tileSourceInitialized = false;
 
   final MapController _map = MapController();

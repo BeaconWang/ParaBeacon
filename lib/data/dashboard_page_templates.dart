@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../controls/placed_control.dart';
 import '../l10n/app_localizations.dart';
 import 'imported_page_template_data.dart';
+import 'map_source.dart' show defaultMapSourceIdForLocale;
 
 enum DashboardPageTemplate { defaultLayout, land }
 
@@ -52,10 +53,15 @@ class DashboardPageTemplates {
     final page = pages[pageIndex] as Map<String, dynamic>;
     final controls = page['controls'] as List<dynamic>;
     return controls
-        .map(
-          (control) =>
-              PlacedControl.fromJson(Map<String, dynamic>.from(control as Map)),
-        )
+        .map((control) {
+          final json = Map<String, dynamic>.from(control as Map);
+          if (json['typeId'] == 'map' && json['settings'] is Map) {
+            final settings = Map<String, dynamic>.from(json['settings'] as Map);
+            settings['tileSource'] = defaultMapSourceIdForLocale();
+            json['settings'] = settings;
+          }
+          return PlacedControl.fromJson(json);
+        })
         .whereType<PlacedControl>()
         .toList(growable: false);
   }
@@ -198,6 +204,10 @@ class DashboardPageTemplates {
     required int cols,
     required int rows,
   }) {
+    final settings = Map<String, dynamic>.from(source.settings);
+    if (source.type.id == 'map') {
+      settings['tileSource'] = defaultMapSourceIdForLocale();
+    }
     return PlacedControl(
       instanceId: instanceId,
       type: source.type,
@@ -205,7 +215,7 @@ class DashboardPageTemplates {
       row: row,
       cols: cols,
       rows: rows,
-      settings: Map<String, dynamic>.from(source.settings),
+      settings: settings,
     );
   }
 }

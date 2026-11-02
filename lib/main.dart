@@ -51,6 +51,7 @@ export 'dash_grid_page.dart' show DashGridPage, DashGridPainter;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await LocaleController.instance.load();
   await UserAgentSettings.instance.load();
   XContestLiveTrackingService.instance.configure();
   // Restore offline maps after the first frame so opening the app is not held
@@ -156,10 +157,6 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // MaterialApp below listens to ThemeController so setTheme(...) at any
     // later time rebuilds the whole tree with the new palette.
     ThemeController.instance.load();
-    // Load the persisted language selection before the first frame paints.
-    // The MaterialApp below listens to LocaleController so setLanguage(...) at
-    // any later time rebuilds the whole tree with the new locale.
-    LocaleController.instance.load();
 
     // Bluetooth-sensor tier is the raw feed; a debug override (installed via the
     // Debug Sensor control) always wins over it (Debug > Bluetooth sensor).

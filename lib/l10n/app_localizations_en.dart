@@ -381,6 +381,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Claim the flight for an XContest competition';
 
   @override
+  String get liveTrackingClaimContestLockedSubtitle =>
+      'Contest claiming is locked after live tracking starts. You can change it for the next flight.';
+
+  @override
   String get liveTrackingShowPublic => 'Show public tracking';
 
   @override

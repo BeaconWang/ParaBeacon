@@ -788,6 +788,12 @@ abstract class AppLocalizations {
   /// **'Claim the flight for an XContest competition'**
   String get liveTrackingClaimContestSubtitle;
 
+  /// No description provided for @liveTrackingClaimContestLockedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contest claiming is locked after live tracking starts. You can change it for the next flight.'**
+  String get liveTrackingClaimContestLockedSubtitle;
+
   /// No description provided for @liveTrackingShowPublic.
   ///
   /// In en, this message translates to:

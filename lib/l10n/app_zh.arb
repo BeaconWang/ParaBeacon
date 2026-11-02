@@ -118,6 +118,7 @@
   "liveTrackingFailed": "无法启动实时追踪，请检查代理配置和账户。",
   "liveTrackingClaimContest": "认领竞赛飞行",
   "liveTrackingClaimContestSubtitle": "将飞行认领到 XContest 竞赛中",
+  "liveTrackingClaimContestLockedSubtitle": "实时追踪开始后，当前飞行的竞赛认领状态将锁定；可为下一次飞行更改。",
   "liveTrackingShowPublic": "显示公开追踪",
   "liveTrackingShowPublicSubtitle": "在地图上显示其他公开飞行员",
   "liveTrackingFlightPublic": "公开飞行",

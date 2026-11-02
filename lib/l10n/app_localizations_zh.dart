@@ -363,6 +363,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingClaimContestSubtitle => '将飞行认领到 XContest 竞赛中';
 
   @override
+  String get liveTrackingClaimContestLockedSubtitle =>
+      '实时追踪开始后，当前飞行的竞赛认领状态将锁定；可为下一次飞行更改。';
+
+  @override
   String get liveTrackingShowPublic => '显示公开追踪';
 
   @override

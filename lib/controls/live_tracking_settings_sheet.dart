@@ -164,10 +164,13 @@ class _LiveTrackingSettingsSheetState
                             SwitchListTile(
                               title: Text(l10n.liveTrackingClaimContest),
                               subtitle: Text(
-                                l10n.liveTrackingClaimContestSubtitle,
+                                flightPublicLocked
+                                    ? l10n.liveTrackingClaimContestLockedSubtitle
+                                    : l10n.liveTrackingClaimContestSubtitle,
                               ),
                               value: _claimContest,
-                              onChanged: _loading || !signedIn
+                              onChanged:
+                                  _loading || !signedIn || flightPublicLocked
                                   ? null
                                   : (value) =>
                                         setState(() => _claimContest = value),

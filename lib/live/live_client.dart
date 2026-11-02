@@ -155,6 +155,15 @@ class LiveClient {
   /// Uplink for JSON text frames: [Wire] offline, [WebSocketWire] for real.
   LiveWire? wire;
 
+  /// Optional sink for human-readable events about notable *inbound* server
+  /// frames (serverInfo interval, error, flightTerminated, acks). Lets the
+  /// host surface why a session stalled without parsing the wire itself.
+  void Function(String message)? onLog;
+
+  /// Set when the server sends `flightTerminated` for this flight - the
+  /// session is over and reconnecting to the same socket is pointless.
+  bool terminatedByServer = false;
+
   final Map<String, int> stats = <String, int>{
     'chunks': 0,
     'points': 0,
@@ -429,6 +438,7 @@ class LiveClient {
       case SvrLandingAck():
         landingAck = frame;
         status = LiveStatus.liveLandingAcknowledged;
+        onLog?.call('landingAck xcFlightId=${frame.xcFlightId}');
       case SvrFlightInfos():
         mgr.applyInfos(frame.infos);
       case SvrFlightPositions():
@@ -444,11 +454,18 @@ class LiveClient {
         mgr.onMsgAck(frame.uuid, 'SERVER_ACK');
       case SvrServerInfo():
         mgr.followingCount = frame.following;
+        final before = sendIntervalMs;
         applyInterval(frame.interval);
+        if (sendIntervalMs != before) {
+          onLog?.call('serverInfo: send interval -> ${sendIntervalMs ~/ 1000}s '
+              '(following ${frame.following})');
+        }
       case SvrError():
         lastError = frame.error;
+        onLog?.call('server error: ${frame.error}');
       case SvrFlightTerminated():
-        break;
+        terminatedByServer = true;
+        onLog?.call('flightTerminated by server');
       case SvrUnknownFrame():
         break;
       default:
@@ -460,10 +477,15 @@ class LiveClient {
   void _onAckChunk(SvrAckChunk ack) {
     if (inflight.isNotEmpty && ack.lastTstamp != null) {
       final cutoff = epochSeconds(ack.lastTstamp!);
+      final before = inflight.length;
       inflight = inflight
           .where((p) => epochSeconds(p.timestamp) > cutoff)
           .toList();
       oldestUnsentS = inflight.isEmpty ? null : epochSeconds(inflight.first.timestamp);
+      onLog?.call('ackChunk: ${before - inflight.length} pt(s) confirmed, '
+          '${inflight.length + queue.length} pending');
+    } else {
+      onLog?.call('ackChunk (empty)');
     }
   }
 
@@ -488,7 +510,13 @@ class LiveClient {
     if (dueFlush) {
       final sent = flush(nowMs);
       _lastFlushMs = nowMs;
-      if (sent != null) events.add('flush -> ${sent['tag']} (${sent['bytes']} B)');
+      if (sent != null) {
+        final tag = sent['tag'];
+        // After a chunk flush `inflight` holds exactly the points just sent.
+        events.add(tag == 'xcSendChunkHP'
+            ? 'flush -> xcSendChunkHP (${inflight.length} pt, ${sent['bytes']} B)'
+            : 'flush -> $tag (${sent['bytes']} B)');
+      }
     }
 
     if (lastNearbyMs == null || nowMs - lastNearbyMs! >= kNearbyFlarmPeriodMs) {

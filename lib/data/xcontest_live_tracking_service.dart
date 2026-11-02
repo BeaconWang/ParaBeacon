@@ -230,7 +230,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
         flightPublic: settings.flightPublic,
         token: token,
         epoch0Ms: DateTime.now().millisecondsSinceEpoch,
-      );
+      )..onLog = _log;
       final options = client.buildFlightOptions(
         fix,
         device: const IgcSystemInfo(),
@@ -440,6 +440,14 @@ class XContestLiveTrackingService extends ChangeNotifier {
       for (final event in events) {
         _log(event);
       }
+      // Server ended the flight while the socket was still up: stop cleanly
+      // (no restart) rather than keep streaming into a dead session.
+      if (!_ending && client.terminatedByServer) {
+        _lastErrorCode = 'xcontest_flight_terminated';
+        _log('flight terminated by server - stopping');
+        unawaited(_finishFlight(allowRestart: false));
+        return;
+      }
       // The landing is complete once the server acknowledges it, or once the
       // whole buffer has drained after the `xcLanding` went out.
       if (_ending &&
@@ -479,7 +487,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
     });
   }
 
-  Future<void> _finishFlight() async {
+  Future<void> _finishFlight({bool allowRestart = true}) async {
     if (!_ending && _client == null) return;
     _landingTimer?.cancel();
     _landingTimer = null;
@@ -502,8 +510,10 @@ class XContestLiveTrackingService extends ChangeNotifier {
     _sessionId = null;
     _ending = false;
     if (!_disposed) _setState(LiveTrackingConnectionState.disconnected);
-    // A new flight may have become eligible while we were landing.
-    _queueLifecycleSync();
+    // A new flight may have become eligible while we were landing. A
+    // server-terminated flight must NOT auto-restart, or we would immediately
+    // declare a duplicate flight / hammer the API; the pilot re-arms manually.
+    if (allowRestart) _queueLifecycleSync();
   }
 
   // =======================================================================
@@ -511,8 +521,16 @@ class XContestLiveTrackingService extends ChangeNotifier {
   // =======================================================================
   void _onSocketClosed(Object? error) {
     if (_disposed || _ending || _client == null || !_shouldTrack) return;
-    _lastErrorCode = 'xcontest_socket_closed';
     _log('socket closed${error != null ? ': $error' : ''}');
+    // If the server explicitly terminated the flight, reconnecting to the same
+    // socket is pointless - tear the session down instead of looping forever.
+    if (_client!.terminatedByServer) {
+      _lastErrorCode = 'xcontest_flight_terminated';
+      _log('flight terminated by server - stopping');
+      unawaited(_finishFlight(allowRestart: false));
+      return;
+    }
+    _lastErrorCode = 'xcontest_socket_closed';
     _client!.onDisconnected(DateTime.now().millisecondsSinceEpoch);
     _setState(LiveTrackingConnectionState.reconnecting);
     _scheduleReconnect();
@@ -559,9 +577,11 @@ class XContestLiveTrackingService extends ChangeNotifier {
       client.flush(now);
       _retryAttempt = 0;
       _lastErrorCode = null;
+      _log('reconnected to ${uri.host}');
       _setState(LiveTrackingConnectionState.active);
-    } on Object catch (_) {
+    } on Object catch (error) {
       _lastErrorCode = 'xcontest_socket_connect_failed';
+      _log('reconnect failed: $error');
       _setState(LiveTrackingConnectionState.reconnecting);
       _scheduleReconnect();
     }

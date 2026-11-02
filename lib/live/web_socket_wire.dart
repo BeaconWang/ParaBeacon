@@ -43,9 +43,14 @@ class WebSocketWire implements LiveWire {
   Future<void> connect(
     Uri uri, {
     Map<String, String> headers = const <String, String>{},
+    Duration? pingInterval = const Duration(seconds: 30),
   }) async {
     await close();
-    final channel = connectWebSocket(uri, headers: headers);
+    final channel = connectWebSocket(
+      uri,
+      headers: headers,
+      pingInterval: pingInterval,
+    );
     _channel = channel;
     await channel.ready;
     _sub = channel.stream.listen(
@@ -57,8 +62,18 @@ class WebSocketWire implements LiveWire {
         onClosed?.call(error);
       },
       onDone: () {
+        // Surface the WebSocket close code/reason so the caller can tell a
+        // server-initiated close (e.g. flight terminated, auth) apart from a
+        // transient network drop.
+        final code = channel.closeCode;
+        final reason = channel.closeReason;
         _channel = null;
-        onClosed?.call(null);
+        onClosed?.call(
+          code == null && (reason == null || reason.isEmpty)
+              ? null
+              : 'close ${code ?? '?'}'
+                  '${reason != null && reason.isNotEmpty ? ' $reason' : ''}',
+        );
       },
       cancelOnError: false,
     );

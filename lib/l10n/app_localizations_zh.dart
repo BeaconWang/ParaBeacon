@@ -322,6 +322,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingSubtitle => '通过 XContest 分享实时飞行位置';
 
   @override
+  String get positionSharingTitle => '位置共享';
+
+  @override
+  String get positionSharingShareAction => '共享我的位置';
+
+  @override
+  String positionSharingCountdown(int seconds) {
+    return '此提示将在 $seconds 秒后关闭';
+  }
+
+  @override
+  String get positionSharingPromptBody =>
+      '位置上传目前已暂停；只有选择共享后才会恢复。实时追踪仅在飞行期间发送位置。';
+
+  @override
+  String get positionSharingDisableAction => '停用位置共享';
+
+  @override
+  String get positionSharingDisableSubtitle => '暂时暂停共享；下次打开应用时会再次显示此提示。';
+
+  @override
   String get liveTrackingEnabled => '启用实时追踪';
 
   @override

@@ -11,6 +11,7 @@ import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
 import 'controls/announcement_caption_overlay.dart';
 import 'controls/keyboard_avoidance.dart';
+import 'controls/position_sharing_dialog.dart';
 import 'dash_grid_page.dart';
 import 'data/aircraft_settings.dart';
 import 'data/airspace_store.dart';
@@ -120,6 +121,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final FlightRecorder _flightRecorder = FlightRecorder.instance;
   bool _landingPromptVisible = false;
+  bool _startupPositionSharingPromptScheduled = false;
 
   @override
   void initState() {
@@ -128,12 +130,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // temporarily shows the system bars (e.g. after a permission dialog or
     // when the user returns from another app).
     WidgetsBinding.instance.addObserver(this);
-    // Restore the ASFC session from platform secure storage. The account sheet
-    // remains usable while this best-effort read completes.
+    // Restore accounts and tracking preferences, then offer an explicit
+    // position-sharing choice only for a session already signed in at launch.
     AsfcAuthService.instance.load();
-    // Restore the XContest OAuth session from platform secure storage.
-    XContestAuthService.instance.load();
-    LiveTrackingSettings.instance.load();
+    unawaited(_loadAndPromptPositionSharing());
     // Restore the aircraft preferences before the Preferences sheet opens.
     AircraftSettings.instance.load();
     // Load persisted debug preferences (e.g. the simulated-source toggle,
@@ -282,6 +282,44 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _transformer.dispose();
     _dataSource.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadAndPromptPositionSharing() async {
+    final auth = XContestAuthService.instance;
+    try {
+      await Future.wait([auth.load(), LiveTrackingSettings.instance.load()]);
+    } catch (_) {
+      return;
+    }
+    if (!mounted ||
+        !auth.isSignedIn ||
+        _startupPositionSharingPromptScheduled) {
+      return;
+    }
+    _startupPositionSharingPromptScheduled = true;
+    await LiveTrackingSettings.instance.setTemporaryDontShare(true);
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _navigatorKey.currentContext;
+      if (!mounted || context == null) return;
+      unawaited(_showPositionSharingPrompt(context));
+    });
+  }
+
+  Future<void> _showPositionSharingPrompt(BuildContext context) async {
+    final choice = await showPositionSharingDialog(context);
+    if (!mounted) return;
+    switch (choice) {
+      case PositionSharingChoice.share:
+        await LiveTrackingSettings.instance.setTemporaryDontShare(false);
+        await LiveTrackingSettings.instance.setEnabled(true);
+      case PositionSharingChoice.disable:
+        await LiveTrackingSettings.instance.setEnabled(false);
+        await LiveTrackingSettings.instance.setTemporaryDontShare(true);
+      case PositionSharingChoice.timedOut:
+      case null:
+        break;
+    }
   }
 
   void _onVerticalSpeedSettingsChanged() {

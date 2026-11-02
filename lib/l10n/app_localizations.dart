@@ -710,6 +710,42 @@ abstract class AppLocalizations {
   /// **'Share your live flight with XContest'**
   String get liveTrackingSubtitle;
 
+  /// No description provided for @positionSharingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Position sharing'**
+  String get positionSharingTitle;
+
+  /// No description provided for @positionSharingShareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share my position'**
+  String get positionSharingShareAction;
+
+  /// No description provided for @positionSharingCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'This prompt closes in {seconds} sec'**
+  String positionSharingCountdown(int seconds);
+
+  /// No description provided for @positionSharingPromptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Position uploads are paused until you choose to share. LiveTracking only sends during an active flight.'**
+  String get positionSharingPromptBody;
+
+  /// No description provided for @positionSharingDisableAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable sharing'**
+  String get positionSharingDisableAction;
+
+  /// No description provided for @positionSharingDisableSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause sharing for now. This prompt will appear again the next time you open the app.'**
+  String get positionSharingDisableSubtitle;
+
   /// No description provided for @liveTrackingEnabled.
   ///
   /// In en, this message translates to:

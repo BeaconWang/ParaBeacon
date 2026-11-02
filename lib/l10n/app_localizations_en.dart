@@ -333,6 +333,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveTrackingSubtitle => 'Share your live flight with XContest';
 
   @override
+  String get positionSharingTitle => 'Position sharing';
+
+  @override
+  String get positionSharingShareAction => 'Share my position';
+
+  @override
+  String positionSharingCountdown(int seconds) {
+    return 'This prompt closes in $seconds sec';
+  }
+
+  @override
+  String get positionSharingPromptBody =>
+      'Position uploads are paused until you choose to share. LiveTracking only sends during an active flight.';
+
+  @override
+  String get positionSharingDisableAction => 'Disable sharing';
+
+  @override
+  String get positionSharingDisableSubtitle =>
+      'Pause sharing for now. This prompt will appear again the next time you open the app.';
+
+  @override
   String get liveTrackingEnabled => 'Enable LiveTracking';
 
   @override

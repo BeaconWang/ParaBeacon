@@ -109,6 +109,19 @@
   "aircraftSubtitle": "Configure aircraft type, model and flight performance",
   "liveTracking": "LiveTracking",
   "liveTrackingSubtitle": "Share your live flight with XContest",
+  "positionSharingTitle": "Position sharing",
+  "positionSharingShareAction": "Share my position",
+  "positionSharingCountdown": "This prompt closes in {seconds} sec",
+  "@positionSharingCountdown": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "positionSharingPromptBody": "Position uploads are paused until you choose to share. LiveTracking only sends during an active flight.",
+  "positionSharingDisableAction": "Disable sharing",
+  "positionSharingDisableSubtitle": "Pause sharing for now. This prompt will appear again the next time you open the app.",
   "liveTrackingEnabled": "Enable LiveTracking",
   "liveTrackingEnabledSubtitle": "Send active-flight telemetry through your ParaBeacon proxy",
   "liveTrackingRequiresXContest": "Sign in to XContest to enable LiveTracking.",

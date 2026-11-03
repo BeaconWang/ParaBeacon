@@ -4052,6 +4052,36 @@ abstract class AppLocalizations {
   /// **'Wind direction'**
   String get debugSensorWindDirection;
 
+  /// No description provided for @androidFlightPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow background flight tracking?'**
+  String get androidFlightPermissionsTitle;
+
+  /// No description provided for @androidFlightPermissionsBatteryWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery usage: If ParaBeacon is restricted by battery management, Android may stop the app while it is in the background, interrupting flight recording. Set battery usage to Unrestricted to reduce this risk.'**
+  String get androidFlightPermissionsBatteryWarning;
+
+  /// No description provided for @androidFlightPermissionsLocationWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Background location: Without Allow all the time access, Android may pause or stop GPS updates while ParaBeacon is in the background or the screen is off, preventing continuous flight-data recording.'**
+  String get androidFlightPermissionsLocationWarning;
+
+  /// No description provided for @androidFlightPermissionsDontAskAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t show this explanation again'**
+  String get androidFlightPermissionsDontAskAgain;
+
+  /// No description provided for @androidFlightPermissionsContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get androidFlightPermissionsContinue;
+
   /// No description provided for @flightButtonStart.
   ///
   /// In en, this message translates to:

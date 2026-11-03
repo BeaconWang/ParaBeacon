@@ -120,6 +120,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final FlightRecorder _flightRecorder = FlightRecorder.instance;
   bool _landingPromptVisible = false;
+  bool _androidPermissionRationaleVisible = false;
   bool _startupPositionSharingPromptScheduled = false;
 
   @override
@@ -143,7 +144,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // mode, default = smart/current logic) so the recorder uses the user's
     // choice from the first fix.
     RecordingSettings.instance.load();
-    FlightState.instance.loadSettings();
+    final flightSettingsLoad = FlightState.instance.loadSettings();
     LandingPointStore.instance.load();
     ColorPaletteSettings.instance.load();
     VarioColorSettings.instance.load();
@@ -195,11 +196,17 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // continuously feeds position updates into the "other" raw tier — so the
     // map, recorder and every other control read a live GPS position through
     // the same FlightDataProvider they already use.
-    _gpsBridge = GpsFlightDataBridge(source: _dataSource);
+    _gpsBridge = GpsFlightDataBridge(
+      source: _dataSource,
+      onAndroidPermissionRationale: _showAndroidPermissionRationale,
+    );
     // Fire-and-forget: permission + service checks are async but must not
     // block startup, and any failure silently falls back to whatever other
     // source (BLE sensor / simulator) is providing.
-    _gpsBridge.attach();
+    final gpsAttach = _gpsBridge.attach();
+    unawaited(
+      _checkAndroidPermissionsForAutoDetection(flightSettingsLoad, gpsAttach),
+    );
 
     // Route the shared, transformed GPS feed through Cshare's native XContest
     // LiveTrack protocol only while the user has enabled sharing and a flight
@@ -318,6 +325,85 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       case PositionSharingChoice.timedOut:
       case null:
         break;
+    }
+  }
+
+  Future<void> _checkAndroidPermissionsForAutoDetection(
+    Future<void> flightSettingsLoad,
+    Future<void> gpsAttach,
+  ) async {
+    await flightSettingsLoad;
+    await WidgetsBinding.instance.endOfFrame;
+    await gpsAttach;
+    if (!mounted || !FlightState.instance.autoDetect) return;
+    await _gpsBridge.checkAndroidFlightPermissions();
+  }
+
+  Future<AndroidPermissionPromptChoice> _showAndroidPermissionRationale({
+    required bool backgroundLocationMissing,
+    required bool batteryExemptionMissing,
+  }) async {
+    if (!mounted || _androidPermissionRationaleVisible) {
+      return AndroidPermissionPromptChoice.dismiss;
+    }
+    final context = _navigatorKey.currentContext;
+    if (context == null) return AndroidPermissionPromptChoice.dismiss;
+
+    _androidPermissionRationaleVisible = true;
+    var dontAskAgain = false;
+    try {
+      final l10n = AppLocalizations.of(context);
+      return await showDialog<AndroidPermissionPromptChoice>(
+            context: context,
+            builder: (dialogContext) => StatefulBuilder(
+              builder: (context, setDialogState) => AlertDialog(
+                title: Text(l10n.androidFlightPermissionsTitle),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (batteryExemptionMissing)
+                      Text(l10n.androidFlightPermissionsBatteryWarning),
+                    if (batteryExemptionMissing && backgroundLocationMissing)
+                      const SizedBox(height: 10),
+                    if (backgroundLocationMissing)
+                      Text(l10n.androidFlightPermissionsLocationWarning),
+                    const SizedBox(height: 12),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: dontAskAgain,
+                      title: Text(l10n.androidFlightPermissionsDontAskAgain),
+                      onChanged: (value) =>
+                          setDialogState(() => dontAskAgain = value ?? false),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(
+                      dontAskAgain
+                          ? AndroidPermissionPromptChoice.dismissAndDontAskAgain
+                          : AndroidPermissionPromptChoice.dismiss,
+                    ),
+                    child: Text(l10n.cancel),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(
+                      dontAskAgain
+                          ? AndroidPermissionPromptChoice
+                                .continueAndDontAskAgain
+                          : AndroidPermissionPromptChoice.continueRequest,
+                    ),
+                    child: Text(l10n.androidFlightPermissionsContinue),
+                  ),
+                ],
+              ),
+            ),
+          ) ??
+          AndroidPermissionPromptChoice.dismiss;
+    } finally {
+      _androidPermissionRationaleVisible = false;
     }
   }
 

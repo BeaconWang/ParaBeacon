@@ -2138,6 +2138,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debugSensorWindDirection => 'Wind direction';
 
   @override
+  String get androidFlightPermissionsTitle =>
+      'Allow background flight tracking?';
+
+  @override
+  String get androidFlightPermissionsBatteryWarning =>
+      'Battery usage: If ParaBeacon is restricted by battery management, Android may stop the app while it is in the background, interrupting flight recording. Set battery usage to Unrestricted to reduce this risk.';
+
+  @override
+  String get androidFlightPermissionsLocationWarning =>
+      'Background location: Without Allow all the time access, Android may pause or stop GPS updates while ParaBeacon is in the background or the screen is off, preventing continuous flight-data recording.';
+
+  @override
+  String get androidFlightPermissionsDontAskAgain =>
+      'Don\'t show this explanation again';
+
+  @override
+  String get androidFlightPermissionsContinue => 'Continue';
+
+  @override
   String get flightButtonStart => 'START';
 
   @override

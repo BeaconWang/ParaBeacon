@@ -821,6 +821,11 @@
   "debugSensorWindSpeed": "Wind speed",
   "debugSensorWindDirection": "Wind direction",
 
+  "androidFlightPermissionsTitle": "Allow background flight tracking?",
+  "androidFlightPermissionsBatteryWarning": "Battery usage: If ParaBeacon is restricted by battery management, Android may stop the app while it is in the background, interrupting flight recording. Set battery usage to Unrestricted to reduce this risk.",
+  "androidFlightPermissionsLocationWarning": "Background location: Without Allow all the time access, Android may pause or stop GPS updates while ParaBeacon is in the background or the screen is off, preventing continuous flight-data recording.",
+  "androidFlightPermissionsDontAskAgain": "Don't show this explanation again",
+  "androidFlightPermissionsContinue": "Continue",
   "flightButtonStart": "START",
   "flightButtonStop": "STOP",
   "flightButtonAuto": "AUTO",

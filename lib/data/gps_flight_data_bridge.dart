@@ -12,6 +12,13 @@ import '../theme/locale_controller.dart';
 import 'flight_state.dart';
 import 'raw_flight_data_source.dart';
 
+enum AndroidPermissionPromptChoice {
+  continueRequest,
+  continueAndDontAskAgain,
+  dismiss,
+  dismissAndDontAskAgain,
+}
+
 /// Continuously streams the device GPS into the app-wide flight-data source.
 ///
 /// This is the counterpart of [BleFlightDataBridge] for device GPS: whenever
@@ -62,6 +69,11 @@ class GpsFlightDataBridge {
   /// the app is backgrounded and automatic flight detection is enabled. This
   /// keeps background GPS flowing for recording and takeoff/landing detection.
   final FlightState flightState;
+  final Future<AndroidPermissionPromptChoice> Function({
+    required bool backgroundLocationMissing,
+    required bool batteryExemptionMissing,
+  })?
+  onAndroidPermissionRationale;
 
   StreamSubscription<Position>? _sub;
   StreamSubscription<ServiceStatus>? _serviceStatusSub;
@@ -71,9 +83,13 @@ class GpsFlightDataBridge {
       'android_background_location_prompt_attempted';
   static const _batteryOptimizationPromptKey =
       'android_battery_optimization_prompt_attempted';
+  static const _dontShowAndroidPermissionRationaleKey =
+      'android_permission_rationale_dont_show_again';
 
   bool _attached = false;
   bool _hadFix = false;
+  bool _lastObservedAutoDetect = false;
+  bool _lastObservedFlying = false;
   bool _androidFlightPermissionPromptInProgress = false;
   int _streamGeneration = 0;
   int _restartAttempt = 0;
@@ -96,6 +112,7 @@ class GpsFlightDataBridge {
     this.accuracy = LocationAccuracy.bestForNavigation,
     this.updateInterval = const Duration(seconds: 1),
     FlightState? flightState,
+    this.onAndroidPermissionRationale,
   }) : flightState = flightState ?? FlightState.instance;
 
   /// Starts requesting the location permission (once) and, on success, opens
@@ -111,9 +128,10 @@ class GpsFlightDataBridge {
     if (kIsWeb) return;
     if (!(Platform.isAndroid || Platform.isIOS)) return;
 
-    // React to flight start/stop and app lifecycle changes so Android can
-    // switch to a location foreground service before background throttling
-    // pauses the stream. iOS only needs background updates during a flight.
+    // React to flight and auto-detection changes so the location stream can
+    // switch modes and permission checks follow the user's selected workflow.
+    _lastObservedAutoDetect = flightState.autoDetect;
+    _lastObservedFlying = flightState.isFlying;
     flightState.addListener(_onFlightStateChanged);
 
     try {
@@ -152,9 +170,6 @@ class GpsFlightDataBridge {
     final lifecycleChanged = _appIsBackgrounded != appIsBackgrounded;
     _appIsBackgrounded = appIsBackgrounded;
 
-    if (state == AppLifecycleState.resumed && flightState.isFlying) {
-      unawaited(_requestAndroidFlightPermissions());
-    }
     if (state == AppLifecycleState.resumed && _requiresBackgroundMode) {
       // Recreate the location FGS on return; some OEMs stop the plugin service
       // while the UI is paused without closing the Dart stream cleanly.
@@ -258,18 +273,28 @@ class GpsFlightDataBridge {
     });
   }
 
-  /// Reacts to a flight starting or stopping.
-  ///
-  /// Starting a flight upgrades the stream to background-resilient settings.
-  /// Stopping drops back to foreground-only settings only when the Android app
-  /// itself is still in the foreground. Other flight-state changes are a no-op.
+  /// Checks Android's missing flight permissions when auto-detection is enabled
+  /// or when a manually started flight begins with auto-detection disabled.
+  Future<void> checkAndroidFlightPermissions() =>
+      _requestAndroidFlightPermissions();
+
+  /// Reacts to auto-detection and flight-state changes. The Android permission
+  /// check is deliberately tied to the two supported user workflows rather than
+  /// every transition to an active flight (automatic takeoff shares that state).
   void _onFlightStateChanged() {
-    if (flightState.isFlying) {
-      if (Platform.isAndroid && !_appIsBackgrounded) {
-        unawaited(_requestAndroidFlightPermissions());
-      } else if (Platform.isIOS) {
-        unawaited(_ensureBackgroundPermission());
-      }
+    final autoDetect = flightState.autoDetect;
+    final isFlying = flightState.isFlying;
+    final autoDetectionEnabled = autoDetect && !_lastObservedAutoDetect;
+    final flightJustStarted = isFlying && !_lastObservedFlying;
+    _lastObservedAutoDetect = autoDetect;
+    _lastObservedFlying = isFlying;
+
+    if (Platform.isAndroid &&
+        !_appIsBackgrounded &&
+        (autoDetectionEnabled || (flightJustStarted && !autoDetect))) {
+      unawaited(_requestAndroidFlightPermissions());
+    } else if (Platform.isIOS && flightJustStarted) {
+      unawaited(_ensureBackgroundPermission());
     }
 
     if (_sub == null) {
@@ -285,13 +310,43 @@ class GpsFlightDataBridge {
   Future<void> _requestAndroidFlightPermissions() async {
     if (!_attached ||
         !Platform.isAndroid ||
+        _appIsBackgrounded ||
         _androidFlightPermissionPromptInProgress) {
       return;
     }
     _androidFlightPermissionPromptInProgress = true;
     try {
+      final backgroundLocationGranted =
+          (await Permission.locationAlways.status).isGranted;
+      final batteryExemptionGranted =
+          (await Permission.ignoreBatteryOptimizations.status).isGranted;
+      if (backgroundLocationGranted && batteryExemptionGranted) return;
+
+      final preferences = await SharedPreferences.getInstance();
+      if (preferences.getBool(_dontShowAndroidPermissionRationaleKey) ??
+          false) {
+        return;
+      }
+
+      final choice =
+          await onAndroidPermissionRationale?.call(
+            backgroundLocationMissing: !backgroundLocationGranted,
+            batteryExemptionMissing: !batteryExemptionGranted,
+          ) ??
+          AndroidPermissionPromptChoice.continueRequest;
+      if (choice == AndroidPermissionPromptChoice.continueAndDontAskAgain ||
+          choice == AndroidPermissionPromptChoice.dismissAndDontAskAgain) {
+        await preferences.setBool(_dontShowAndroidPermissionRationaleKey, true);
+      }
+      if (choice == AndroidPermissionPromptChoice.dismiss ||
+          choice == AndroidPermissionPromptChoice.dismissAndDontAskAgain) {
+        return;
+      }
+
       await _requestAndroidBackgroundLocationPermission();
       await _requestBatteryOptimizationExemption();
+    } catch (_) {
+      // A missing or declined permission must not interrupt the flight stream.
     } finally {
       _androidFlightPermissionPromptInProgress = false;
     }

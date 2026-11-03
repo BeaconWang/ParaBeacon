@@ -2053,6 +2053,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugSensorWindDirection => '风向';
 
   @override
+  String get androidFlightPermissionsTitle => '允许后台飞行追踪？';
+
+  @override
+  String get androidFlightPermissionsBatteryWarning =>
+      '电池管理：如果 ParaBeacon 受到电池使用限制，Android 可能会在应用进入后台后停止应用运行，导致飞行记录中断。建议将电池使用方式设为“不受限制”以降低此风险。';
+
+  @override
+  String get androidFlightPermissionsLocationWarning =>
+      '后台定位：如果未授予“始终允许”定位权限，Android 可能会在 ParaBeacon 进入后台或屏幕关闭时暂停或停止 GPS 更新，导致飞行数据无法连续记录。';
+
+  @override
+  String get androidFlightPermissionsDontAskAgain => '不再显示此说明';
+
+  @override
+  String get androidFlightPermissionsContinue => '继续';
+
+  @override
   String get flightButtonStart => '开始';
 
   @override

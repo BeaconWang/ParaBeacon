@@ -1176,6 +1176,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get simStartLongitude => 'Longitude';
 
   @override
+  String get simFollowTaskRoute => 'Fly competition task route';
+
+  @override
+  String get simFollowTaskRouteSubtitle =>
+      'Simulate flying along the active task path (takeoff → turnpoints → goal)';
+
+  @override
+  String get simFollowTaskRouteNoTask => 'Load a competition task first';
+
+  @override
   String get trackRecordingSmart => 'Smart (default)';
 
   @override

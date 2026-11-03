@@ -3,8 +3,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
+import 'competition/competition_task.dart';
+import 'competition/competition_task_store.dart';
 import 'debug_settings.dart';
 import 'flight_data.dart';
+import 'geo_math.dart';
 
 /// A set of manual overrides for individual flight-data fields.
 ///
@@ -216,6 +219,13 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   double _lat = DebugSettings.defaultSimStartLat;
   double _lon = DebugSettings.defaultSimStartLon;
 
+  /// Ordered task path to fly as `(latitude, longitude, radiusMeters)`, or null
+  /// when not following a competition task (random-drift mode).
+  List<(double, double, double)>? _route;
+
+  /// Index of the leg target the simulator is currently flying toward.
+  int _routeIndex = 0;
+
   SimulatedFlightDataSource({
     this.tickInterval = const Duration(milliseconds: 100),
     DebugSettings? debugSettings,
@@ -235,7 +245,34 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     // Re-apply the start location each time the simulator (re)starts so
     // toggling the China switch takes effect on the next run.
     _applyStartLocation();
+    _buildRoute();
     _timer ??= Timer.periodic(tickInterval, (_) => _tick());
+  }
+
+  /// Builds (or clears) the task-following route from the active competition
+  /// task. When enabled and a task with turnpoints exists, the synthetic track
+  /// starts at the first turnpoint (takeoff) and heads to each following point
+  /// in order; otherwise the simulator keeps its random-drift behaviour.
+  void _buildRoute() {
+    _route = null;
+    _routeIndex = 0;
+    if (!_debug.simulateTaskRoute) return;
+    final CompetitionTask? task = CompetitionTaskStore.instance.task;
+    final tps = task?.turnpoints;
+    if (tps == null || tps.isEmpty) return;
+    _route = [
+      for (final tp in tps)
+        if (tp.latitude.isFinite && tp.longitude.isFinite)
+          (tp.latitude, tp.longitude, tp.radiusMeters),
+    ];
+    if (_route!.isEmpty) {
+      _route = null;
+      return;
+    }
+    // Start on the first turnpoint and aim at the next one.
+    _lat = _route!.first.$1;
+    _lon = _route!.first.$2;
+    _routeIndex = _route!.length > 1 ? 1 : 0;
   }
 
   @override
@@ -247,11 +284,17 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   void _tick() {
     final prev = rawData;
 
+    final followingRoute = _route != null && _route!.isNotEmpty;
+
     // Occasionally pick new targets to create gentle, believable motion.
     if (_rand.nextDouble() < 0.03) {
       _vsTarget = (_rand.nextDouble() * 2 - 1) * 6.0; // -6..+6 m/s
     }
-    if (_rand.nextDouble() < 0.02) {
+    if (followingRoute) {
+      // Steer toward the current leg target, advancing when its cylinder is
+      // entered; keeps the random vertical/wind motion for realism.
+      _steerAlongRoute();
+    } else if (_rand.nextDouble() < 0.02) {
       _headingTarget = _rand.nextDouble() * 360.0;
     }
     if (_rand.nextDouble() < 0.01) {
@@ -259,7 +302,13 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     }
 
     final vs = prev.verticalSpeed + (_vsTarget - prev.verticalSpeed) * 0.08;
-    final heading = _lerpAngle(prev.heading, _headingTarget, 0.05);
+    // Turn more decisively when navigating a task leg so the track actually
+    // enters each cylinder rather than orbiting it.
+    final heading = _lerpAngle(
+      prev.heading,
+      _headingTarget,
+      followingRoute ? 0.2 : 0.05,
+    );
     final windDir = _lerpAngle(prev.windDirection, _windDirTarget, 0.03);
 
     // Integrate altitude from vertical speed (dt = tickInterval).
@@ -316,6 +365,26 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
         gpsTimestamp: now,
       ),
     );
+  }
+
+  /// Points [_headingTarget] at the current task leg target and advances to the
+  /// next leg once the simulator is within ~20 m of the target centre (which
+  /// guarantees the turnpoint cylinder is entered for any radius). After the
+  /// final point is reached it stops steering, so the track simply continues
+  /// straight past goal on its last heading.
+  void _steerAlongRoute() {
+    final route = _route;
+    if (route == null || route.isEmpty) return;
+    if (_routeIndex >= route.length) return; // completed: keep last heading
+    final target = route[_routeIndex];
+    final dist = GeoMath.distanceMeters(_lat, _lon, target.$1, target.$2);
+    const reachMeters = 20.0;
+    if (dist <= reachMeters) {
+      _routeIndex++;
+      if (_routeIndex >= route.length) return;
+    }
+    final next = route[_routeIndex];
+    _headingTarget = GeoMath.bearingDegrees(_lat, _lon, next.$1, next.$2);
   }
 
   /// Linearly interpolates between two angles taking the shortest path.
@@ -377,6 +446,10 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
   double _lastSimStartLat = DebugSettings.instance.simStartLat;
   double _lastSimStartLon = DebugSettings.instance.simStartLon;
 
+  /// Last-seen task-follow toggle, so flipping it while the simulator is
+  /// running restarts it to (re)build or drop the task route.
+  bool _lastSimTaskRoute = DebugSettings.instance.simulateTaskRoute;
+
   /// A bluetooth-tier feed is considered active while a sensor (real BLE or the
   /// development simulator) is connected and streaming; this makes the raw
   /// vertical speed resolve to [FlightDataPriority.bluetoothSensor] rather than
@@ -393,14 +466,18 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
     if (_realSensorActive || _internalSensorActive) {
       _lastSimStartLat = _debug.simStartLat;
       _lastSimStartLon = _debug.simStartLon;
+      _lastSimTaskRoute = _debug.simulateTaskRoute;
       return;
     }
-    // If the start coordinates changed while the simulator is running,
-    // recreate it so it starts from the new location.
+    // If the start coordinates or the task-follow toggle changed while the
+    // simulator is running, recreate it so it restarts from the new location
+    // and (re)builds or drops the task route.
     final startChanged = _debug.simStartLat != _lastSimStartLat ||
-        _debug.simStartLon != _lastSimStartLon;
+        _debug.simStartLon != _lastSimStartLon ||
+        _debug.simulateTaskRoute != _lastSimTaskRoute;
     _lastSimStartLat = _debug.simStartLat;
     _lastSimStartLon = _debug.simStartLon;
+    _lastSimTaskRoute = _debug.simulateTaskRoute;
     if (startChanged && _debug.simulatorEnabled) {
       _sim?.removeListener(_onSim);
       _sim?.stop();

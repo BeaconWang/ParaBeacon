@@ -1130,6 +1130,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get simStartLongitude => '经度';
 
   @override
+  String get simFollowTaskRoute => '按竞赛航线模拟飞行';
+
+  @override
+  String get simFollowTaskRouteSubtitle => '沿当前竞赛航线模拟飞行（起飞点 → 航点 → 终点）';
+
+  @override
+  String get simFollowTaskRouteNoTask => '请先载入竞赛任务';
+
+  @override
   String get trackRecordingSmart => '智能（默认）';
 
   @override

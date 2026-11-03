@@ -397,6 +397,9 @@
   "simStartLocation": "Start location",
   "simStartLatitude": "Latitude",
   "simStartLongitude": "Longitude",
+  "simFollowTaskRoute": "Fly competition task route",
+  "simFollowTaskRouteSubtitle": "Simulate flying along the active task path (takeoff \u2192 turnpoints \u2192 goal)",
+  "simFollowTaskRouteNoTask": "Load a competition task first",
 
   "trackRecordingSmart": "Smart (default)",
   "trackRecordingSmartSubtitle": "At least 1 s apart, and only when moved ≥ 3 m or altitude changed ≥ 1 m",

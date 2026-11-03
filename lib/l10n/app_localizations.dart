@@ -2300,6 +2300,24 @@ abstract class AppLocalizations {
   /// **'Longitude'**
   String get simStartLongitude;
 
+  /// No description provided for @simFollowTaskRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Fly competition task route'**
+  String get simFollowTaskRoute;
+
+  /// No description provided for @simFollowTaskRouteSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate flying along the active task path (takeoff → turnpoints → goal)'**
+  String get simFollowTaskRouteSubtitle;
+
+  /// No description provided for @simFollowTaskRouteNoTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Load a competition task first'**
+  String get simFollowTaskRouteNoTask;
+
   /// No description provided for @trackRecordingSmart.
   ///
   /// In en, this message translates to:

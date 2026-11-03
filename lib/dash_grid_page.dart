@@ -1146,6 +1146,37 @@ class _DashGridPageState extends State<DashGridPage> {
                             ),
                             if (DebugSettings.instance.simulatorEnabled)
                               const _SimStartLocationFields(),
+                            if (DebugSettings.instance.simulatorEnabled)
+                              Builder(
+                                builder: (context) {
+                                  final hasTask =
+                                      CompetitionTaskStore.instance.hasTask;
+                                  return SwitchListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    secondary: Icon(
+                                      Icons.route_outlined,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    title: Text(l10n.simFollowTaskRoute),
+                                    subtitle: Text(
+                                      hasTask
+                                          ? l10n.simFollowTaskRouteSubtitle
+                                          : l10n.simFollowTaskRouteNoTask,
+                                    ),
+                                    value:
+                                        DebugSettings
+                                            .instance
+                                            .simulateTaskRoute,
+                                    onChanged: hasTask
+                                        ? (on) {
+                                            DebugSettings.instance
+                                                .setSimulateTaskRoute(on);
+                                            setSheetState(() {});
+                                          }
+                                        : null,
+                                  );
+                                },
+                              ),
                           ],
                           const Divider(height: 1),
                           ListTile(

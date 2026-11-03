@@ -20,6 +20,7 @@ class DebugSettings extends ChangeNotifier {
   static const _kSimulatorEnabled = 'pb.debug.simulatorEnabled';
   static const _kSimStartLat = 'pb.debug.simStartLat';
   static const _kSimStartLon = 'pb.debug.simStartLon';
+  static const _kSimTaskRoute = 'pb.debug.simTaskRoute';
 
   /// Default simulated-flight start point (lat, lon). Near Huizhou/Shenzhen,
   /// Guangdong - over Chinese territory so it aligns with the AMap/GCJ-02 tile
@@ -31,6 +32,7 @@ class DebugSettings extends ChangeNotifier {
   bool _simulatorEnabled = false;
   double _simStartLat = defaultSimStartLat;
   double _simStartLon = defaultSimStartLon;
+  bool _simulateTaskRoute = false;
 
   /// Whether the simulated flight-data source may run as a fallback feed.
   /// Defaults to `false` (disabled).
@@ -47,6 +49,11 @@ class DebugSettings extends ChangeNotifier {
   /// Longitude of the simulated-flight start point. Defaults to
   /// [defaultSimStartLon].
   double get simStartLon => _simStartLon;
+
+  /// When true (and a competition task exists), the simulator flies along the
+  /// active task path — takeoff through the turnpoints to goal — instead of a
+  /// random drift. Defaults to `false`. Always `false` in release builds.
+  bool get simulateTaskRoute => kReleaseMode ? false : _simulateTaskRoute;
 
   bool _loaded = false;
   bool get isLoaded => _loaded;
@@ -68,6 +75,7 @@ class DebugSettings extends ChangeNotifier {
       _simulatorEnabled = sp.getBool(_kSimulatorEnabled) ?? _simulatorEnabled;
       _simStartLat = sp.getDouble(_kSimStartLat) ?? _simStartLat;
       _simStartLon = sp.getDouble(_kSimStartLon) ?? _simStartLon;
+      _simulateTaskRoute = sp.getBool(_kSimTaskRoute) ?? _simulateTaskRoute;
     } catch (_) {
       // Storage unavailable: keep defaults.
     }
@@ -83,6 +91,16 @@ class DebugSettings extends ChangeNotifier {
     if (_simulatorEnabled == enabled) return;
     _simulatorEnabled = enabled;
     _persistBool(_kSimulatorEnabled, enabled);
+    notifyListeners();
+  }
+
+  /// Enables or disables flying the simulator along the active competition
+  /// task path, and persists it. No-op in release builds.
+  void setSimulateTaskRoute(bool enabled) {
+    if (kReleaseMode) return;
+    if (_simulateTaskRoute == enabled) return;
+    _simulateTaskRoute = enabled;
+    _persistBool(_kSimTaskRoute, enabled);
     notifyListeners();
   }
 

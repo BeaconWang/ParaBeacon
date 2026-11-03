@@ -387,6 +387,9 @@
   "simStartLocation": "起始位置",
   "simStartLatitude": "纬度",
   "simStartLongitude": "经度",
+  "simFollowTaskRoute": "按竞赛航线模拟飞行",
+  "simFollowTaskRouteSubtitle": "沿当前竞赛航线模拟飞行（起飞点 → 航点 → 终点）",
+  "simFollowTaskRouteNoTask": "请先载入竞赛任务",
 
   "trackRecordingSmart": "智能（默认）",
   "trackRecordingSmartSubtitle": "至少间隔 1 秒，且仅在移动 ≥ 3 米或高度变化 ≥ 1 米时记录",

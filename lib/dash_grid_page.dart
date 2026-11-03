@@ -16,6 +16,7 @@ import 'controls/auto_flight_settings_sheet.dart';
 import 'controls/live_tracking_settings_sheet.dart';
 import 'controls/add_control_sheet.dart';
 import 'controls/bluetooth_sensor_sheet.dart';
+import 'controls/keyboard_inset.dart';
 import 'controls/control_catalog.dart';
 import 'controls/control_context_menu.dart';
 import 'controls/control_settings_sheet.dart';
@@ -724,362 +725,371 @@ class _DashGridPageState extends State<DashGridPage> {
               padding: const EdgeInsets.only(top: 12, bottom: 4),
               child: Text(title, style: theme.textTheme.titleMedium),
             );
-            return SafeArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Pinned header with a close button.
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.settings_outlined,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            l10n.preferences,
-                            style: theme.textTheme.titleLarge,
+            return KeyboardInset(
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Pinned header with a close button.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.settings_outlined,
+                            color: theme.colorScheme.primary,
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          tooltip: l10n.close,
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              l10n.preferences,
+                              style: theme.textTheme.titleLarge,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            tooltip: l10n.close,
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const Divider(height: 1),
-                  // Scrollable settings content fills the rest of the screen.
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                      children: [
-                        sectionHeading(l10n.preferencesSectionAccountFlight),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.account_circle_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.accounts),
-                          subtitle: Text(l10n.accountsSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await showAccountsSheet(context);
-                            setSheetState(() {});
-                          },
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.flight,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.aircraft),
-                          subtitle: Text(
-                            AircraftSettings.instance.manufacturer
-                                        .trim()
-                                        .isEmpty &&
-                                    AircraftSettings.instance.model
-                                        .trim()
-                                        .isEmpty
-                                ? l10n.aircraftSubtitle
-                                : AircraftSettings.instance.displayName,
-                          ),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await showAircraftSettingsSheet(context);
-                            setSheetState(() {});
-                          },
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.flight_takeoff,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.flightAutoSettingsTitle),
-                          subtitle: Text(l10n.flightAutoSettingsSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await showAutoFlightSettingsSheet(context);
-                            setSheetState(() {});
-                          },
-                        ),
-                        AnimatedBuilder(
-                          animation: XContestAuthService.instance,
-                          builder: (context, _) {
-                            final auth = XContestAuthService.instance;
-                            if (!auth.isLoaded || !auth.isSignedIn) {
-                              return const SizedBox.shrink();
-                            }
-                            return Column(
-                              children: [
-                                const Divider(height: 1),
-                                ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: Icon(
-                                    Icons.track_changes,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                  title: Text(l10n.liveTracking),
-                                  subtitle: Text(
-                                    LiveTrackingSettings.instance.enabled
-                                        ? l10n.liveTrackingReady
-                                        : l10n.liveTrackingSubtitle,
-                                  ),
-                                  trailing: const Icon(
-                                    Icons.chevron_right,
-                                    size: 20,
-                                  ),
-                                  onTap: () async {
-                                    await showLiveTrackingSettingsSheet(context);
-                                    setSheetState(() {});
-                                  },
-                                ),
-                                const Divider(height: 1),
-                              ],
-                            );
-                          },
-                        ),
-                        sectionHeading(l10n.preferencesSectionMapDisplay),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.place_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.landingPointsTitle),
-                          subtitle: Text(
-                            LandingPointStore.instance.defaultPoint?.name ??
-                                l10n.landingPointsSubtitle,
-                          ),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await showLandingPointsSheet(context);
-                            setSheetState(() {});
-                          },
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.straighten,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.units),
-                          subtitle: Text(l10n.unitsSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () => showUnitSettingsSheet(context),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.display_settings_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.displaySettings),
-                          subtitle: Text(l10n.displaySettingsSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () => showDisplaySettingsSheet(context),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.palette_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.theme),
-                          subtitle: Text(
-                            ThemeController.instance.current.labelOf(l10n),
-                          ),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await showThemeSettingsSheet(context);
-                            // Refresh the subtitle in the still-open Preferences
-                            // sheet so it reflects the newly-selected theme.
-                            setSheetState(() {});
-                          },
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.language,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.language),
-                          subtitle: Text(
-                            LocaleController.instance.current.labelOf(l10n),
-                          ),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await showLanguageSettingsSheet(context);
-                            // Refresh the subtitle in the still-open Preferences
-                            // sheet so it reflects the newly-selected language.
-                            setSheetState(() {});
-                          },
-                        ),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.more_horiz,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.otherSettings),
-                          subtitle: Text(l10n.otherSettingsSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await showOtherSettingsSheet(context);
-                            setSheetState(() {});
-                          },
-                        ),
-                        const Divider(height: 1),
-                        sectionHeading(l10n.interfaceConfiguration),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.file_download_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.interfaceConfigurationImport),
-                          onTap: _importDashboardConfiguration,
-                        ),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.file_upload_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.interfaceConfigurationExport),
-                          onTap: _exportDashboardConfiguration,
-                        ),
-                        const Divider(height: 1),
-                        sectionHeading(l10n.preferencesSectionSensorsRecording),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.bluetooth,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.bluetoothSensor),
-                          subtitle: Text(l10n.bluetoothSensorSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () => showBluetoothSensorSheet(context),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.timeline,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.trackRecording),
-                          subtitle: Text(
-                            l10n.trackRecordingSubtitle(
-                              RecordingSettings.instance.intervalMode ==
-                                      RecordingIntervalMode.fixed1s
-                                  ? l10n.recordingIntervalEvery1s
-                                  : l10n.recordingIntervalSmart,
-                              RecordingSettings.instance.detail ==
-                                      RecordingDetail.full
-                                  ? l10n.recordingDetailFull
-                                  : l10n.recordingDetailXcTrack,
-                            ),
-                          ),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () async {
-                            await _showRecordingSettingsSheet(context);
-                            setSheetState(() {});
-                          },
-                        ),
-                        const Divider(height: 1),
-                        sectionHeading(l10n.preferencesSectionAudio),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.graphic_eq,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.varioSoundSettings),
-                          subtitle: Text(l10n.varioSoundSettingsSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () => showVarioSoundSettingsSheet(context),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.record_voice_over,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.altitudeAnnouncementTitle),
-                          subtitle: Text(l10n.altitudeAnnouncementSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () =>
-                              showAltitudeAnnouncementSettingsSheet(context),
-                        ),
-                        // Debug tools are only compiled/shown in debug builds.
-                        if (kDebugMode) ...[
-                          const Divider(height: 1),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12, bottom: 4),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.bug_report_outlined,
-                                  color: theme.colorScheme.primary,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  l10n.debug,
-                                  style: theme.textTheme.titleMedium,
-                                ),
-                              ],
-                            ),
-                          ),
-                          SwitchListTile(
+                    const Divider(height: 1),
+                    // Scrollable settings content fills the rest of the screen.
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                        children: [
+                          sectionHeading(l10n.preferencesSectionAccountFlight),
+                          ListTile(
                             contentPadding: EdgeInsets.zero,
-                            secondary: Icon(
-                              Icons.sensors,
+                            leading: Icon(
+                              Icons.account_circle_outlined,
                               color: theme.colorScheme.primary,
                             ),
-                            title: Text(l10n.simulatedFlightData),
-                            subtitle: Text(l10n.simulatedFlightDataSubtitle),
-                            value: DebugSettings.instance.simulatorEnabled,
-                            onChanged: (on) {
-                              DebugSettings.instance.setSimulatorEnabled(on);
+                            title: Text(l10n.accounts),
+                            subtitle: Text(l10n.accountsSubtitle),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () async {
+                              await showAccountsSheet(context);
                               setSheetState(() {});
                             },
                           ),
-                          if (DebugSettings.instance.simulatorEnabled)
-                            const _SimStartLocationFields(),
-                        ],
-                        const Divider(height: 1),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.info_outline,
-                            color: theme.colorScheme.primary,
+                          const Divider(height: 1),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.flight,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.aircraft),
+                            subtitle: Text(
+                              AircraftSettings.instance.manufacturer
+                                          .trim()
+                                          .isEmpty &&
+                                      AircraftSettings.instance.model
+                                          .trim()
+                                          .isEmpty
+                                  ? l10n.aircraftSubtitle
+                                  : AircraftSettings.instance.displayName,
+                            ),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () async {
+                              await showAircraftSettingsSheet(context);
+                              setSheetState(() {});
+                            },
                           ),
-                          title: Text(l10n.about),
-                          subtitle: Text(l10n.aboutSubtitle),
-                          trailing: const Icon(Icons.chevron_right, size: 20),
-                          onTap: () => showAboutSheet(context),
-                        ),
-                      ],
+                          const Divider(height: 1),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.flight_takeoff,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.flightAutoSettingsTitle),
+                            subtitle: Text(l10n.flightAutoSettingsSubtitle),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () async {
+                              await showAutoFlightSettingsSheet(context);
+                              setSheetState(() {});
+                            },
+                          ),
+                          AnimatedBuilder(
+                            animation: XContestAuthService.instance,
+                            builder: (context, _) {
+                              final auth = XContestAuthService.instance;
+                              if (!auth.isLoaded || !auth.isSignedIn) {
+                                return const SizedBox.shrink();
+                              }
+                              return Column(
+                                children: [
+                                  const Divider(height: 1),
+                                  ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: Icon(
+                                      Icons.track_changes,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    title: Text(l10n.liveTracking),
+                                    subtitle: Text(
+                                      LiveTrackingSettings.instance.enabled
+                                          ? l10n.liveTrackingReady
+                                          : l10n.liveTrackingSubtitle,
+                                    ),
+                                    trailing: const Icon(
+                                      Icons.chevron_right,
+                                      size: 20,
+                                    ),
+                                    onTap: () async {
+                                      await showLiveTrackingSettingsSheet(
+                                        context,
+                                      );
+                                      setSheetState(() {});
+                                    },
+                                  ),
+                                  const Divider(height: 1),
+                                ],
+                              );
+                            },
+                          ),
+                          sectionHeading(l10n.preferencesSectionMapDisplay),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.place_outlined,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.landingPointsTitle),
+                            subtitle: Text(
+                              LandingPointStore.instance.defaultPoint?.name ??
+                                  l10n.landingPointsSubtitle,
+                            ),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () async {
+                              await showLandingPointsSheet(context);
+                              setSheetState(() {});
+                            },
+                          ),
+                          const Divider(height: 1),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.straighten,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.units),
+                            subtitle: Text(l10n.unitsSubtitle),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () => showUnitSettingsSheet(context),
+                          ),
+                          const Divider(height: 1),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.display_settings_outlined,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.displaySettings),
+                            subtitle: Text(l10n.displaySettingsSubtitle),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () => showDisplaySettingsSheet(context),
+                          ),
+                          const Divider(height: 1),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.palette_outlined,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.theme),
+                            subtitle: Text(
+                              ThemeController.instance.current.labelOf(l10n),
+                            ),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () async {
+                              await showThemeSettingsSheet(context);
+                              // Refresh the subtitle in the still-open Preferences
+                              // sheet so it reflects the newly-selected theme.
+                              setSheetState(() {});
+                            },
+                          ),
+                          const Divider(height: 1),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.language,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.language),
+                            subtitle: Text(
+                              LocaleController.instance.current.labelOf(l10n),
+                            ),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () async {
+                              await showLanguageSettingsSheet(context);
+                              // Refresh the subtitle in the still-open Preferences
+                              // sheet so it reflects the newly-selected language.
+                              setSheetState(() {});
+                            },
+                          ),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.more_horiz,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.otherSettings),
+                            subtitle: Text(l10n.otherSettingsSubtitle),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () async {
+                              await showOtherSettingsSheet(context);
+                              setSheetState(() {});
+                            },
+                          ),
+                          const Divider(height: 1),
+                          sectionHeading(l10n.interfaceConfiguration),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.file_download_outlined,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.interfaceConfigurationImport),
+                            onTap: _importDashboardConfiguration,
+                          ),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.file_upload_outlined,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.interfaceConfigurationExport),
+                            onTap: _exportDashboardConfiguration,
+                          ),
+                          const Divider(height: 1),
+                          sectionHeading(
+                            l10n.preferencesSectionSensorsRecording,
+                          ),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.bluetooth,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.bluetoothSensor),
+                            subtitle: Text(l10n.bluetoothSensorSubtitle),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () => showBluetoothSensorSheet(context),
+                          ),
+                          const Divider(height: 1),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.timeline,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.trackRecording),
+                            subtitle: Text(
+                              l10n.trackRecordingSubtitle(
+                                RecordingSettings.instance.intervalMode ==
+                                        RecordingIntervalMode.fixed1s
+                                    ? l10n.recordingIntervalEvery1s
+                                    : l10n.recordingIntervalSmart,
+                                RecordingSettings.instance.detail ==
+                                        RecordingDetail.full
+                                    ? l10n.recordingDetailFull
+                                    : l10n.recordingDetailXcTrack,
+                              ),
+                            ),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () async {
+                              await _showRecordingSettingsSheet(context);
+                              setSheetState(() {});
+                            },
+                          ),
+                          const Divider(height: 1),
+                          sectionHeading(l10n.preferencesSectionAudio),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.graphic_eq,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.varioSoundSettings),
+                            subtitle: Text(l10n.varioSoundSettingsSubtitle),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () => showVarioSoundSettingsSheet(context),
+                          ),
+                          const Divider(height: 1),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.record_voice_over,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.altitudeAnnouncementTitle),
+                            subtitle: Text(l10n.altitudeAnnouncementSubtitle),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () =>
+                                showAltitudeAnnouncementSettingsSheet(context),
+                          ),
+                          // Debug tools are only compiled/shown in debug builds.
+                          if (kDebugMode) ...[
+                            const Divider(height: 1),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 12,
+                                bottom: 4,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.bug_report_outlined,
+                                    color: theme.colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    l10n.debug,
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              secondary: Icon(
+                                Icons.sensors,
+                                color: theme.colorScheme.primary,
+                              ),
+                              title: Text(l10n.simulatedFlightData),
+                              subtitle: Text(l10n.simulatedFlightDataSubtitle),
+                              value: DebugSettings.instance.simulatorEnabled,
+                              onChanged: (on) {
+                                DebugSettings.instance.setSimulatorEnabled(on);
+                                setSheetState(() {});
+                              },
+                            ),
+                            if (DebugSettings.instance.simulatorEnabled)
+                              const _SimStartLocationFields(),
+                          ],
+                          const Divider(height: 1),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.info_outline,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(l10n.about),
+                            subtitle: Text(l10n.aboutSubtitle),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () => showAboutSheet(context),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },

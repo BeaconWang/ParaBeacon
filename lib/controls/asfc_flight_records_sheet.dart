@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
+import 'keyboard_inset.dart';
 
 Future<void> showAsfcFlightRecordsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -18,7 +19,8 @@ class _AsfcFlightRecordsSheet extends StatefulWidget {
   const _AsfcFlightRecordsSheet();
 
   @override
-  State<_AsfcFlightRecordsSheet> createState() => _AsfcFlightRecordsSheetState();
+  State<_AsfcFlightRecordsSheet> createState() =>
+      _AsfcFlightRecordsSheetState();
 }
 
 class _AsfcFlightRecordsSheetState extends State<_AsfcFlightRecordsSheet> {
@@ -67,8 +69,14 @@ class _AsfcFlightRecordsSheetState extends State<_AsfcFlightRecordsSheet> {
         title: Text(l10n.asfcFlightDeleteTitle),
         content: Text(l10n.asfcFlightDeleteConfirmation),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.delete),
+          ),
         ],
       ),
     );
@@ -104,7 +112,12 @@ class _AsfcFlightRecordsSheetState extends State<_AsfcFlightRecordsSheet> {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
                   ),
-                  Expanded(child: Text(l10n.asfcFlightRecords, style: theme.textTheme.titleLarge)),
+                  Expanded(
+                    child: Text(
+                      l10n.asfcFlightRecords,
+                      style: theme.textTheme.titleLarge,
+                    ),
+                  ),
                   IconButton(
                     tooltip: l10n.refresh,
                     onPressed: _auth.isFlightRecordsLoading
@@ -114,7 +127,9 @@ class _AsfcFlightRecordsSheetState extends State<_AsfcFlightRecordsSheet> {
                   ),
                   IconButton(
                     tooltip: l10n.asfcFlightSubmit,
-                    onPressed: _auth.isFlightRecordSubmitting ? null : _addRecord,
+                    onPressed: _auth.isFlightRecordSubmitting
+                        ? null
+                        : _addRecord,
                     icon: const Icon(Icons.add),
                   ),
                 ],
@@ -134,7 +149,10 @@ class _AsfcFlightRecordsSheetState extends State<_AsfcFlightRecordsSheet> {
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: theme.colorScheme.primaryContainer,
-                            child: Icon(Icons.flight_takeoff, color: theme.colorScheme.onPrimaryContainer),
+                            child: Icon(
+                              Icons.flight_takeoff,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
                           ),
                           title: Text(record.trainTime),
                           subtitle: Text(
@@ -147,8 +165,14 @@ class _AsfcFlightRecordsSheetState extends State<_AsfcFlightRecordsSheet> {
                               if (value == 'delete') _deleteRecord(record);
                             },
                             itemBuilder: (_) => [
-                              PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
-                              PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Text(l10n.edit),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text(l10n.delete),
+                              ),
                             ],
                           ),
                           onTap: () => _showDetails(record),
@@ -176,17 +200,31 @@ class _AsfcFlightRecordsSheetState extends State<_AsfcFlightRecordsSheet> {
               _detail(l10n.asfcFlightAddress, record.address),
               _detail(l10n.asfcFlightModel, record.brandNo),
               _detail(l10n.asfcFlightTask, record.taskName),
-              _detail(l10n.asfcFlightTime, '${record.startTime} – ${record.endTime}'),
-              _detail(l10n.asfcFlightSeatType, record.seatTypeName.isEmpty ? record.seatType : record.seatTypeName),
+              _detail(
+                l10n.asfcFlightTime,
+                '${record.startTime} – ${record.endTime}',
+              ),
+              _detail(
+                l10n.asfcFlightSeatType,
+                record.seatTypeName.isEmpty
+                    ? record.seatType
+                    : record.seatTypeName,
+              ),
               _detail(l10n.asfcFlightTakeoffMode, record.takeoffMode),
               _detail(l10n.asfcFlightSortie, record.sortie),
               _detail(l10n.asfcFlightAgency, record.coachAgencyName),
               _detail(l10n.asfcFlightCoach, record.coachName),
-              if (record.signinDescription.isNotEmpty) _detail(l10n.asfcFlightSignin, record.signinDescription),
+              if (record.signinDescription.isNotEmpty)
+                _detail(l10n.asfcFlightSignin, record.signinDescription),
             ],
           ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.close))],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.close),
+          ),
+        ],
       ),
     );
   }
@@ -269,7 +307,8 @@ class _AsfcFlightRecordFormState extends State<_AsfcFlightRecordForm> {
     if (mounted) {
       setState(() {
         for (final agency in agencies) {
-          if (agency.id == r.coachAgencyId || agency.name == r.coachAgencyName) {
+          if (agency.id == r.coachAgencyId ||
+              agency.name == r.coachAgencyName) {
             _agency = agency;
             break;
           }
@@ -308,7 +347,9 @@ class _AsfcFlightRecordFormState extends State<_AsfcFlightRecordForm> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final l10n = AppLocalizations.of(context);
     if (_agency == null || _coach == null || _takeoffMode.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.asfcFlightSelectionRequired)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.asfcFlightSelectionRequired)));
       return;
     }
     final success = await _auth.saveFlightRecord(
@@ -330,17 +371,22 @@ class _AsfcFlightRecordFormState extends State<_AsfcFlightRecordForm> {
       Navigator.pop(context, true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_auth.errorMessage ?? l10n.asfcFlightSaveFailed)),
+        SnackBar(
+          content: Text(_auth.errorMessage ?? l10n.asfcFlightSaveFailed),
+        ),
       );
     }
   }
 
-  InputDecoration _decoration(String label, IconData icon) => InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-      );
+  InputDecoration _decoration(String label, IconData icon) =>
+      InputDecoration(labelText: label, prefixIcon: Icon(icon));
 
-  Widget _field(String name, String label, IconData icon, {TextInputType? type}) {
+  Widget _field(
+    String name,
+    String label,
+    IconData icon, {
+    TextInputType? type,
+  }) {
     return TextFormField(
       controller: _controller(name),
       keyboardType: type,
@@ -355,86 +401,179 @@ class _AsfcFlightRecordFormState extends State<_AsfcFlightRecordForm> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final coaches = _auth.certificateCoaches
-        .where((coach) => _agency == null || coach.agencyId == 0 || coach.agencyId == _agency!.id || coach.agencyName == _agency!.name)
+        .where(
+          (coach) =>
+              _agency == null ||
+              coach.agencyId == 0 ||
+              coach.agencyId == _agency!.id ||
+              coach.agencyName == _agency!.name,
+        )
         .toList();
-    if (_coach != null && !coaches.any((coach) => coach.id == _coach!.id)) coaches.insert(0, _coach!);
-    return Material(
-      color: theme.colorScheme.surface,
-      child: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-            children: [
-              Row(
-                children: [
-                  Expanded(child: Text(widget.record == null ? l10n.asfcFlightSubmit : l10n.asfcFlightEdit, style: theme.textTheme.titleLarge)),
-                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
-                ],
-              ),
-              _field('trainTime', l10n.asfcFlightDate, Icons.calendar_today_outlined),
-              const SizedBox(height: 12),
-              _field('address', l10n.asfcFlightAddress, Icons.location_on_outlined),
-              const SizedBox(height: 12),
-              _field('brandNo', l10n.asfcFlightModel, Icons.flight_outlined),
-              const SizedBox(height: 12),
-              _field('taskName', l10n.asfcFlightTask, Icons.assignment_outlined),
-              const SizedBox(height: 12),
-              _field('startTime', l10n.asfcFlightStartTime, Icons.play_arrow_outlined),
-              const SizedBox(height: 12),
-              _field('endTime', l10n.asfcFlightEndTime, Icons.stop_outlined),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _seatType,
-                decoration: _decoration(l10n.asfcFlightSeatType, Icons.event_seat_outlined),
-                items: [
-                  DropdownMenuItem(value: 'FRONT', child: Text(l10n.asfcFlightFrontSeat)),
-                  DropdownMenuItem(value: 'BACK', child: Text(l10n.asfcFlightBackSeat)),
-                ],
-                onChanged: (value) => setState(() => _seatType = value ?? 'FRONT'),
-              ),
-              const SizedBox(height: 12),
-              _field('sortie', l10n.asfcFlightSortie, Icons.repeat_outlined, type: TextInputType.number),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _takeoffMode.isEmpty ? null : _takeoffMode,
-                decoration: _decoration(l10n.asfcFlightTakeoffMode, Icons.flight_takeoff_outlined),
-                items: ['FOOT', 'CAR', 'OTHER']
-                    .map((value) => DropdownMenuItem(value: value, child: Text(value)))
-                    .toList(),
-                validator: (value) => _required(value),
-                onChanged: (value) => setState(() => _takeoffMode = value ?? ''),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<AsfcAgency>(
-                initialValue: _agency,
-                decoration: _decoration(l10n.asfcFlightAgency, Icons.school_outlined),
-                hint: Text(_auth.isAgenciesLoading ? l10n.asfcFlightLoading : l10n.asfcFlightSelectAgency),
-                items: _auth.agencies.map((agency) => DropdownMenuItem(value: agency, child: Text(agency.name))).toList(),
-                validator: (_) => _agency == null ? l10n.asfcFlightRequired : null,
-                onChanged: (value) => setState(() {
-                  _agency = value;
-                  _coach = null;
-                }),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<AsfcCoach>(
-                initialValue: coaches.any((coach) => coach.id == _coach?.id) ? _coach : null,
-                decoration: _decoration(l10n.asfcFlightCoach, Icons.person_search_outlined),
-                hint: Text(_auth.isCertificateCoachesLoading ? l10n.asfcFlightLoading : l10n.asfcFlightSelectCoach),
-                items: coaches.map((coach) => DropdownMenuItem(value: coach, child: Text(coach.name))).toList(),
-                validator: (_) => _coach == null ? l10n.asfcFlightRequired : null,
-                onChanged: (value) => setState(() => _coach = value),
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: _auth.isFlightRecordSubmitting ? null : _submit,
-                icon: _auth.isFlightRecordSubmitting
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.cloud_upload_outlined),
-                label: Text(l10n.submit),
-              ),
-            ],
+    if (_coach != null && !coaches.any((coach) => coach.id == _coach!.id))
+      coaches.insert(0, _coach!);
+    return KeyboardInset(
+      child: Material(
+        color: theme.colorScheme.surface,
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.record == null
+                            ? l10n.asfcFlightSubmit
+                            : l10n.asfcFlightEdit,
+                        style: theme.textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                _field(
+                  'trainTime',
+                  l10n.asfcFlightDate,
+                  Icons.calendar_today_outlined,
+                ),
+                const SizedBox(height: 12),
+                _field(
+                  'address',
+                  l10n.asfcFlightAddress,
+                  Icons.location_on_outlined,
+                ),
+                const SizedBox(height: 12),
+                _field('brandNo', l10n.asfcFlightModel, Icons.flight_outlined),
+                const SizedBox(height: 12),
+                _field(
+                  'taskName',
+                  l10n.asfcFlightTask,
+                  Icons.assignment_outlined,
+                ),
+                const SizedBox(height: 12),
+                _field(
+                  'startTime',
+                  l10n.asfcFlightStartTime,
+                  Icons.play_arrow_outlined,
+                ),
+                const SizedBox(height: 12),
+                _field('endTime', l10n.asfcFlightEndTime, Icons.stop_outlined),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _seatType,
+                  decoration: _decoration(
+                    l10n.asfcFlightSeatType,
+                    Icons.event_seat_outlined,
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'FRONT',
+                      child: Text(l10n.asfcFlightFrontSeat),
+                    ),
+                    DropdownMenuItem(
+                      value: 'BACK',
+                      child: Text(l10n.asfcFlightBackSeat),
+                    ),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _seatType = value ?? 'FRONT'),
+                ),
+                const SizedBox(height: 12),
+                _field(
+                  'sortie',
+                  l10n.asfcFlightSortie,
+                  Icons.repeat_outlined,
+                  type: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _takeoffMode.isEmpty ? null : _takeoffMode,
+                  decoration: _decoration(
+                    l10n.asfcFlightTakeoffMode,
+                    Icons.flight_takeoff_outlined,
+                  ),
+                  items: ['FOOT', 'CAR', 'OTHER']
+                      .map(
+                        (value) =>
+                            DropdownMenuItem(value: value, child: Text(value)),
+                      )
+                      .toList(),
+                  validator: (value) => _required(value),
+                  onChanged: (value) =>
+                      setState(() => _takeoffMode = value ?? ''),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<AsfcAgency>(
+                  initialValue: _agency,
+                  decoration: _decoration(
+                    l10n.asfcFlightAgency,
+                    Icons.school_outlined,
+                  ),
+                  hint: Text(
+                    _auth.isAgenciesLoading
+                        ? l10n.asfcFlightLoading
+                        : l10n.asfcFlightSelectAgency,
+                  ),
+                  items: _auth.agencies
+                      .map(
+                        (agency) => DropdownMenuItem(
+                          value: agency,
+                          child: Text(agency.name),
+                        ),
+                      )
+                      .toList(),
+                  validator: (_) =>
+                      _agency == null ? l10n.asfcFlightRequired : null,
+                  onChanged: (value) => setState(() {
+                    _agency = value;
+                    _coach = null;
+                  }),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<AsfcCoach>(
+                  initialValue: coaches.any((coach) => coach.id == _coach?.id)
+                      ? _coach
+                      : null,
+                  decoration: _decoration(
+                    l10n.asfcFlightCoach,
+                    Icons.person_search_outlined,
+                  ),
+                  hint: Text(
+                    _auth.isCertificateCoachesLoading
+                        ? l10n.asfcFlightLoading
+                        : l10n.asfcFlightSelectCoach,
+                  ),
+                  items: coaches
+                      .map(
+                        (coach) => DropdownMenuItem(
+                          value: coach,
+                          child: Text(coach.name),
+                        ),
+                      )
+                      .toList(),
+                  validator: (_) =>
+                      _coach == null ? l10n.asfcFlightRequired : null,
+                  onChanged: (value) => setState(() => _coach = value),
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: _auth.isFlightRecordSubmitting ? null : _submit,
+                  icon: _auth.isFlightRecordSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.cloud_upload_outlined),
+                  label: Text(l10n.submit),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
+import 'keyboard_inset.dart';
 
 Future<void> showCertificateApplicationSheet(
   BuildContext context, {
@@ -496,205 +497,211 @@ class _CertificateApplicationSheetState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return Material(
-      color: theme.colorScheme.surface,
-      child: SafeArea(
-        child: Column(
-          children: [
-            SizedBox(
-              height: 64,
-              child: Row(
-                children: [
-                  IconButton(
-                    tooltip: l10n.close,
-                    onPressed: _submitting
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                  Expanded(
-                    child: Text(
-                      widget.upgrade
-                          ? l10n.certificateUpgrade
-                          : l10n.certificateApplication,
-                      style: theme.textTheme.titleLarge,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+    return KeyboardInset(
+      child: Material(
+        color: theme.colorScheme.surface,
+        child: SafeArea(
+          child: Column(
+            children: [
+              SizedBox(
+                height: 64,
+                child: Row(
                   children: [
-                    Text(
-                      l10n.certificateApplicationSubtitle,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    if (_loadingExistingData || _loadingCoaches) ...[
-                      const SizedBox(height: 12),
-                      const LinearProgressIndicator(),
-                    ],
-                    const SizedBox(height: 20),
-                    _textField(
-                      l10n,
-                      'fullName',
-                      l10n.certificateFullName,
-                      Icons.person_outline,
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: _sex,
-                      decoration: _decoration(
-                        l10n.certificateGender,
-                        Icons.wc_outlined,
-                      ),
-                      items: [
-                        DropdownMenuItem(
-                          value: 'MAN',
-                          child: Text(l10n.certificateMale),
-                        ),
-                        DropdownMenuItem(
-                          value: 'WOMAN',
-                          child: Text(l10n.certificateFemale),
-                        ),
-                      ],
-                      onChanged: _submitting
+                    IconButton(
+                      tooltip: l10n.close,
+                      onPressed: _submitting
                           ? null
-                          : (value) => setState(() => _sex = value ?? 'MAN'),
+                          : () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
                     ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'birthday',
-                      l10n.certificateBirthday,
-                      Icons.calendar_today_outlined,
-                      hintText: 'YYYY-MM-DD',
-                    ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'country',
-                      l10n.certificateCountry,
-                      Icons.flag_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'ethnicityCode',
-                      l10n.certificateEthnicity,
-                      Icons.groups_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'credentialsNumber',
-                      l10n.certificateIdNumber,
-                      Icons.badge_outlined,
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'mobile',
-                      l10n.certificateMobile,
-                      Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                    ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'email',
-                      l10n.certificateEmail,
-                      Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'address',
-                      l10n.certificateAddress,
-                      Icons.home_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'area',
-                      l10n.certificateArea,
-                      Icons.location_on_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'agencyName',
-                      l10n.certificateAgency,
-                      Icons.school_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    _coachField(l10n),
-                    const SizedBox(height: 20),
-                    Text(
-                      l10n.certificateDocuments,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    _photoTile(groupPhoto: false),
-                    const SizedBox(height: 8),
-                    _photoTile(groupPhoto: true),
-                    const SizedBox(height: 20),
-                    Text(
-                      l10n.certificateEmergencyContact,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    _textField(
-                      l10n,
-                      'urgentContactName',
-                      l10n.certificateContactName,
-                      Icons.contact_phone_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'urgentContactPhone',
-                      l10n.certificateContactPhone,
-                      Icons.phone_callback_outlined,
-                      keyboardType: TextInputType.phone,
-                    ),
-                    const SizedBox(height: 12),
-                    _textField(
-                      l10n,
-                      'urgentBloodType',
-                      l10n.certificateBloodType,
-                      Icons.bloodtype_outlined,
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton.icon(
-                      onPressed:
-                          _submitting ||
-                              _uploadingLicensePhoto ||
-                              _uploadingGroupPhoto
-                          ? null
-                          : _submit,
-                      icon: _submitting
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send_outlined),
-                      label: Text(
-                        _submitting ? l10n.submitting : l10n.submitApplication,
+                    Expanded(
+                      child: Text(
+                        widget.upgrade
+                            ? l10n.certificateUpgrade
+                            : l10n.certificateApplication,
+                        style: theme.textTheme.titleLarge,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+              const Divider(height: 1),
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                    children: [
+                      Text(
+                        l10n.certificateApplicationSubtitle,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      if (_loadingExistingData || _loadingCoaches) ...[
+                        const SizedBox(height: 12),
+                        const LinearProgressIndicator(),
+                      ],
+                      const SizedBox(height: 20),
+                      _textField(
+                        l10n,
+                        'fullName',
+                        l10n.certificateFullName,
+                        Icons.person_outline,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: _sex,
+                        decoration: _decoration(
+                          l10n.certificateGender,
+                          Icons.wc_outlined,
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'MAN',
+                            child: Text(l10n.certificateMale),
+                          ),
+                          DropdownMenuItem(
+                            value: 'WOMAN',
+                            child: Text(l10n.certificateFemale),
+                          ),
+                        ],
+                        onChanged: _submitting
+                            ? null
+                            : (value) => setState(() => _sex = value ?? 'MAN'),
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'birthday',
+                        l10n.certificateBirthday,
+                        Icons.calendar_today_outlined,
+                        hintText: 'YYYY-MM-DD',
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'country',
+                        l10n.certificateCountry,
+                        Icons.flag_outlined,
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'ethnicityCode',
+                        l10n.certificateEthnicity,
+                        Icons.groups_outlined,
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'credentialsNumber',
+                        l10n.certificateIdNumber,
+                        Icons.badge_outlined,
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'mobile',
+                        l10n.certificateMobile,
+                        Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'email',
+                        l10n.certificateEmail,
+                        Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'address',
+                        l10n.certificateAddress,
+                        Icons.home_outlined,
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'area',
+                        l10n.certificateArea,
+                        Icons.location_on_outlined,
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'agencyName',
+                        l10n.certificateAgency,
+                        Icons.school_outlined,
+                      ),
+                      const SizedBox(height: 12),
+                      _coachField(l10n),
+                      const SizedBox(height: 20),
+                      Text(
+                        l10n.certificateDocuments,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      _photoTile(groupPhoto: false),
+                      const SizedBox(height: 8),
+                      _photoTile(groupPhoto: true),
+                      const SizedBox(height: 20),
+                      Text(
+                        l10n.certificateEmergencyContact,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      _textField(
+                        l10n,
+                        'urgentContactName',
+                        l10n.certificateContactName,
+                        Icons.contact_phone_outlined,
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'urgentContactPhone',
+                        l10n.certificateContactPhone,
+                        Icons.phone_callback_outlined,
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 12),
+                      _textField(
+                        l10n,
+                        'urgentBloodType',
+                        l10n.certificateBloodType,
+                        Icons.bloodtype_outlined,
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed:
+                            _submitting ||
+                                _uploadingLicensePhoto ||
+                                _uploadingGroupPhoto
+                            ? null
+                            : _submit,
+                        icon: _submitting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.send_outlined),
+                        label: Text(
+                          _submitting
+                              ? l10n.submitting
+                              : l10n.submitApplication,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

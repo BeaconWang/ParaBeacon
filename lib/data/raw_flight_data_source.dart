@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'competition/competition_task.dart';
 import 'competition/competition_task_store.dart';
+import 'competition/task_optimizer.dart';
 import 'debug_settings.dart';
 import 'flight_data.dart';
 import 'geo_math.dart';
@@ -219,9 +220,13 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   double _lat = DebugSettings.defaultSimStartLat;
   double _lon = DebugSettings.defaultSimStartLon;
 
-  /// Ordered task path to fly as `(latitude, longitude, radiusMeters)`, or null
-  /// when not following a competition task (random-drift mode).
-  List<(double, double, double)>? _route;
+  /// Ordered task legs to fly, or null when not following a competition task
+  /// (random-drift mode). Each leg steers toward the turnpoint's optimized
+  /// touch point `(tLat, tLon)` — the shortest-path point on its cylinder — and
+  /// is "reached" once the aircraft is inside the cylinder centred at
+  /// `(cLat, cLon)` with radius `r`.
+  List<({double tLat, double tLon, double cLat, double cLon, double r})>?
+  _route;
 
   /// Index of the leg target the simulator is currently flying toward.
   int _routeIndex = 0;
@@ -251,28 +256,50 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
 
   /// Builds (or clears) the task-following route from the active competition
   /// task. When enabled and a task with turnpoints exists, the synthetic track
-  /// starts at the first turnpoint (takeoff) and heads to each following point
-  /// in order; otherwise the simulator keeps its random-drift behaviour.
+  /// flies the **shortest legal route**: it steers toward each turnpoint's
+  /// optimized touch point (the point on its cylinder that minimizes the total
+  /// path), grazing the cylinders in order from takeoff to goal. Falls back to
+  /// cylinder centres if an optimized route is unavailable; otherwise the
+  /// simulator keeps its random-drift behaviour.
   void _buildRoute() {
     _route = null;
     _routeIndex = 0;
     if (!_debug.simulateTaskRoute) return;
     final CompetitionTask? task = CompetitionTaskStore.instance.task;
     final tps = task?.turnpoints;
-    if (tps == null || tps.isEmpty) return;
-    _route = [
-      for (final tp in tps)
-        if (tp.latitude.isFinite && tp.longitude.isFinite)
-          (tp.latitude, tp.longitude, tp.radiusMeters),
-    ];
-    if (_route!.isEmpty) {
-      _route = null;
-      return;
+    if (task == null || tps == null || tps.isEmpty) return;
+
+    // Prefer the store's cached optimized touch points (same geometry the map
+    // draws); recompute if the cache is missing or stale.
+    var optimized = CompetitionTaskStore.instance.optimized;
+    if (optimized == null ||
+        optimized.optimizedLat.length != tps.length) {
+      optimized = TaskOptimizer.optimize(task);
     }
-    // Start on the first turnpoint and aim at the next one.
-    _lat = _route!.first.$1;
-    _lon = _route!.first.$2;
-    _routeIndex = _route!.length > 1 ? 1 : 0;
+
+    final legs =
+        <({double tLat, double tLon, double cLat, double cLon, double r})>[];
+    for (var i = 0; i < tps.length; i++) {
+      final tp = tps[i];
+      if (!tp.latitude.isFinite || !tp.longitude.isFinite) continue;
+      final hasTouch = optimized.optimizedLat.length > i;
+      final tLat = hasTouch ? optimized.optimizedLat[i] : tp.latitude;
+      final tLon = hasTouch ? optimized.optimizedLon[i] : tp.longitude;
+      legs.add((
+        tLat: tLat.isFinite ? tLat : tp.latitude,
+        tLon: tLon.isFinite ? tLon : tp.longitude,
+        cLat: tp.latitude,
+        cLon: tp.longitude,
+        r: tp.radiusMeters,
+      ));
+    }
+    if (legs.isEmpty) return;
+
+    _route = legs;
+    // Start on the first turnpoint's touch point and aim at the next leg.
+    _lat = legs.first.tLat;
+    _lon = legs.first.tLon;
+    _routeIndex = legs.length > 1 ? 1 : 0;
   }
 
   @override
@@ -367,24 +394,30 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     );
   }
 
-  /// Points [_headingTarget] at the current task leg target and advances to the
-  /// next leg once the simulator is within ~20 m of the target centre (which
-  /// guarantees the turnpoint cylinder is entered for any radius). After the
-  /// final point is reached it stops steering, so the track simply continues
-  /// straight past goal on its last heading.
+  /// Steers [_headingTarget] toward the current leg's optimized touch point and
+  /// advances to the next leg once the cylinder is achieved. A leg counts as
+  /// achieved when the aircraft is inside the cylinder (centre distance within
+  /// `radius`, which matches the competition tracker) or has effectively
+  /// reached the touch point (handles zero-radius / line goals). After the
+  /// final leg is achieved it stops steering, so the track continues straight
+  /// past goal on its last heading.
   void _steerAlongRoute() {
     final route = _route;
     if (route == null || route.isEmpty) return;
     if (_routeIndex >= route.length) return; // completed: keep last heading
-    final target = route[_routeIndex];
-    final dist = GeoMath.distanceMeters(_lat, _lon, target.$1, target.$2);
-    const reachMeters = 20.0;
-    if (dist <= reachMeters) {
+
+    final leg = route[_routeIndex];
+    final toCentre = GeoMath.distanceMeters(_lat, _lon, leg.cLat, leg.cLon);
+    final toTouch = GeoMath.distanceMeters(_lat, _lon, leg.tLat, leg.tLon);
+    // Grazing the optimized touch point puts the aircraft on the cylinder edge
+    // (centre distance ≈ radius); a 1 m slack absorbs the discrete step size.
+    final achieved = toCentre <= leg.r + 1.0 || toTouch <= 8.0;
+    if (achieved) {
       _routeIndex++;
       if (_routeIndex >= route.length) return;
     }
     final next = route[_routeIndex];
-    _headingTarget = GeoMath.bearingDegrees(_lat, _lon, next.$1, next.$2);
+    _headingTarget = GeoMath.bearingDegrees(_lat, _lon, next.tLat, next.tLon);
   }
 
   /// Linearly interpolates between two angles taking the shortest path.

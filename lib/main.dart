@@ -342,7 +342,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   Future<void> _openAndroidPermissionSettings({required bool location}) async {
     try {
       if (location) {
-        await _gpsBridge.openBackgroundLocationSettings();
+        await _gpsBridge.requestBackgroundLocationPermission();
+        await _refreshAndroidPermissionDialogStatus();
       } else {
         await _gpsBridge.openBatteryOptimizationSettings();
       }

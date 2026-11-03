@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart' hide ServiceStatus;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
@@ -304,6 +305,31 @@ class GpsFlightDataBridge {
       backgroundLocationGranted: status['backgroundLocationGranted'] ?? false,
       batteryExemptionGranted: status['batteryExemptionGranted'] ?? false,
     );
+  }
+
+  /// Starts Android's background-location permission flow so the system can
+  /// present its "Allow all the time" choice. Android 11+ may route the request
+  /// to App info; fall back to that screen if Android reports it as permanent.
+  Future<void> requestBackgroundLocationPermission() async {
+    if (!Platform.isAndroid) return;
+
+    var foreground = await Permission.locationWhenInUse.status;
+    if (!foreground.isGranted) {
+      foreground = await Permission.locationWhenInUse.request();
+    }
+    if (!foreground.isGranted) return;
+
+    var background = await Permission.locationAlways.status;
+    if (background.isGranted) return;
+    if (background.isPermanentlyDenied || background.isRestricted) {
+      await openBackgroundLocationSettings();
+      return;
+    }
+
+    background = await Permission.locationAlways.request();
+    if (background.isPermanentlyDenied || background.isRestricted) {
+      await openBackgroundLocationSettings();
+    }
   }
 
   Future<void> openBackgroundLocationSettings() =>

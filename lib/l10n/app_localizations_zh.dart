@@ -3969,13 +3969,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altimeterQnhReset => '重置为标准 QNH';
 
   @override
-  String get altimeterQnhSensorUnavailable => '没有内置气压计读数';
+  String get altimeterQnhSensorUnavailable => '未检测到气压计';
 
   @override
-  String get altimeterQnhSensorDisabled => '内置气压计已禁用';
+  String get altimeterQnhSensorDisabled => '设备气压计已关闭';
 
   @override
   String get altimeterQnhNoReading => '暂无读数';
+
+  @override
+  String get altimeterQnhSourceLabel => '气压来源';
+
+  @override
+  String get altimeterQnhSourceInternal => '设备气压计';
+
+  @override
+  String get altimeterQnhSourceBluetooth => '蓝牙传感器';
+
+  @override
+  String get altimeterQnhSourceLive => '正在读取实时气压';
+
+  @override
+  String get altimeterQnhSourceBluetoothLive => '正在从蓝牙传感器读取气压';
+
+  @override
+  String get altimeterQnhSourceWaiting => '正在等待传感器气压数据…';
+
+  @override
+  String get altimeterQnhUseDeviceBarometer => '使用设备气压计';
+
+  @override
+  String get altimeterQnhUseDeviceBarometerDescription => '关闭后，气压数据来自已连接的蓝牙传感器';
 
   @override
   String get sensorTitle => '传感器';

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../data/ble/ble_sensor_service.dart';
+import '../data/sensors/barometer_source.dart';
 import '../data/sensors/internal_sensor_service.dart';
 import '../l10n/app_localizations.dart';
 
@@ -26,12 +28,14 @@ class _AltimeterQnhSettingsSheet extends StatefulWidget {
 
 class _AltimeterQnhSettingsSheetState
     extends State<_AltimeterQnhSettingsSheet> {
-  final InternalSensorService _sensor = InternalSensorService.instance;
+  final InternalSensorService _internal = InternalSensorService.instance;
+  final BleSensorService _ble = BleSensorService.instance;
 
   @override
   void initState() {
     super.initState();
-    _sensor.init();
+    _internal.init();
+    _ble.init();
   }
 
   @override
@@ -40,8 +44,14 @@ class _AltimeterQnhSettingsSheetState
     final l10n = AppLocalizations.of(context);
 
     return AnimatedBuilder(
-      animation: _sensor,
+      animation: BarometerSource.listenable,
       builder: (context, _) {
+        final source = BarometerSource.resolve();
+        final pressureHpa = source.pressureHpa;
+        final altitudeM = pressureHpa == null
+            ? null
+            : _internal.altitudeFromPressureHpa(pressureHpa);
+
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -66,7 +76,11 @@ class _AltimeterQnhSettingsSheetState
                   ],
                 ),
                 const SizedBox(height: 8),
-                _statusCard(theme, l10n),
+                _statusCard(theme, l10n, source),
+                if (_internal.supported) ...[
+                  const SizedBox(height: 8),
+                  _deviceBarometerToggle(theme, l10n),
+                ],
                 const SizedBox(height: 16),
                 _sectionLabel(theme, l10n.altimeterQnhCurrent),
                 const SizedBox(height: 8),
@@ -75,25 +89,25 @@ class _AltimeterQnhSettingsSheetState
                     theme,
                     Icons.adjust,
                     l10n.altimeterQnhManual,
-                    '${_sensor.referencePressureHpa.toStringAsFixed(2)} hPa',
+                    '${_internal.referencePressureHpa.toStringAsFixed(2)} hPa',
                   ),
                   const Divider(height: 1),
                   _valueRow(
                     theme,
                     Icons.compress,
                     l10n.sensorFieldPressure,
-                    _sensor.lastPressureHpa == null
+                    pressureHpa == null
                         ? l10n.altimeterQnhNoReading
-                        : '${_sensor.lastPressureHpa!.toStringAsFixed(2)} hPa',
+                        : '${pressureHpa.toStringAsFixed(2)} hPa',
                   ),
                   const Divider(height: 1),
                   _valueRow(
                     theme,
                     Icons.terrain,
                     l10n.sensorFieldAltitude,
-                    _sensor.readings.altitudeM == null
+                    altitudeM == null
                         ? l10n.altimeterQnhNoReading
-                        : '${_sensor.readings.altitudeM!.toStringAsFixed(0)} m',
+                        : '${altitudeM.toStringAsFixed(0)} m',
                   ),
                 ]),
                 const SizedBox(height: 16),
@@ -115,18 +129,18 @@ class _AltimeterQnhSettingsSheetState
                     title: Text(l10n.sensorCalibrateTitle),
                     subtitle: Text(l10n.sensorCalibrateDescription),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: _sensor.lastPressureHpa == null
-                        ? null
-                        : () => _calibrateToAltitude(l10n),
+                    onTap: source.hasPressure
+                        ? () => _calibrateToAltitude(l10n, source, altitudeM)
+                        : null,
                   ),
-                  if (_sensor.isCalibrated) ...[
+                  if (_internal.isCalibrated) ...[
                     const Divider(height: 1),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.restart_alt),
                       title: Text(l10n.altimeterQnhReset),
                       subtitle: Text(l10n.sensorCalibrationStandard),
-                      onTap: () => _sensor.resetCalibration(),
+                      onTap: () => _internal.resetCalibration(),
                     ),
                   ],
                 ]),
@@ -145,35 +159,89 @@ class _AltimeterQnhSettingsSheetState
     );
   }
 
-  Widget _statusCard(ThemeData theme, AppLocalizations l10n) {
-    final available = _sensor.available;
-    final enabled = _sensor.enabled;
-    final color = available && enabled
+  /// Describes which barometer the altimeter is currently reading from.
+  Widget _statusCard(
+    ThemeData theme,
+    AppLocalizations l10n,
+    BarometerSource source,
+  ) {
+    final live = source.hasPressure;
+    final color = live
         ? theme.colorScheme.primary
         : theme.colorScheme.onSurfaceVariant;
-    final status = !available
-        ? l10n.altimeterQnhSensorUnavailable
-        : !enabled
-            ? l10n.altimeterQnhSensorDisabled
-            : l10n.sensorBarometerConnected;
+
+    final IconData icon;
+    final String title;
+    final String subtitle;
+    switch (source.kind) {
+      case BarometerSourceKind.internal:
+        icon = live ? Icons.sensors : Icons.sensors_off;
+        title = l10n.altimeterQnhSourceInternal;
+        subtitle = live
+            ? l10n.altimeterQnhSourceLive
+            : l10n.altimeterQnhSensorDisabled;
+        break;
+      case BarometerSourceKind.bluetooth:
+        icon = live ? Icons.bluetooth_connected : Icons.bluetooth_searching;
+        title = source.deviceName?.isNotEmpty == true
+            ? source.deviceName!
+            : l10n.altimeterQnhSourceBluetooth;
+        subtitle = live
+            ? l10n.altimeterQnhSourceBluetoothLive
+            : l10n.altimeterQnhSourceWaiting;
+        break;
+      case BarometerSourceKind.none:
+        icon = Icons.sensors_off;
+        title = l10n.altimeterQnhSensorUnavailable;
+        subtitle = l10n.altimeterQnhNoReading;
+        break;
+    }
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            Icon(
-              available && enabled ? Icons.sensors : Icons.sensors_off,
-              color: color,
-            ),
-            const SizedBox(width: 10),
-            Expanded(child: Text(status)),
-            Switch(
-              value: enabled,
-              onChanged: _sensor.supported ? _sensor.setEnabled : null,
+            Icon(icon, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.altimeterQnhSourceLabel,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Text(title, style: theme.textTheme.titleSmall),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Toggle for the on-device barometer. When off, the altimeter falls back to
+  /// an external Bluetooth barometer (if connected).
+  Widget _deviceBarometerToggle(ThemeData theme, AppLocalizations l10n) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: SwitchListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+        secondary: Icon(Icons.phone_android, color: theme.colorScheme.primary),
+        title: Text(l10n.altimeterQnhUseDeviceBarometer),
+        subtitle: Text(l10n.altimeterQnhUseDeviceBarometerDescription),
+        value: _internal.enabled,
+        onChanged: _internal.supported ? _internal.setEnabled : null,
       ),
     );
   }
@@ -213,7 +281,7 @@ class _AltimeterQnhSettingsSheetState
 
   Future<void> _editQnh(AppLocalizations l10n) async {
     final controller = TextEditingController(
-      text: _sensor.referencePressureHpa.toStringAsFixed(2),
+      text: _internal.referencePressureHpa.toStringAsFixed(2),
     );
     String? error;
     final value = await showDialog<double>(
@@ -263,7 +331,7 @@ class _AltimeterQnhSettingsSheetState
     controller.dispose();
     if (value == null || !mounted) return;
 
-    final accepted = await _sensor.setReferencePressureHpa(value);
+    final accepted = await _internal.setReferencePressureHpa(value);
     if (!accepted && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.altimeterQnhManualInvalid)),
@@ -279,9 +347,16 @@ class _AltimeterQnhSettingsSheetState
     return value;
   }
 
-  Future<void> _calibrateToAltitude(AppLocalizations l10n) async {
+  Future<void> _calibrateToAltitude(
+    AppLocalizations l10n,
+    BarometerSource source,
+    double? currentAltitudeM,
+  ) async {
+    final pressurePa = source.pressurePa;
+    if (pressurePa == null) return;
+
     final controller = TextEditingController(
-      text: _sensor.readings.altitudeM?.toStringAsFixed(0) ?? '',
+      text: currentAltitudeM?.toStringAsFixed(0) ?? '',
     );
     final value = await showDialog<double>(
       context: context,
@@ -320,7 +395,12 @@ class _AltimeterQnhSettingsSheetState
     controller.dispose();
     if (value == null || !mounted) return;
 
-    final accepted = await _sensor.calibrateToAltitude(value);
+    // Calibrate the shared QNH reference against the active source's pressure
+    // (device barometer or Bluetooth sensor).
+    final accepted = await _internal.calibrateToAltitudeFromPressure(
+      pressurePa,
+      value,
+    );
     if (!accepted && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.sensorCalibrateFailed)),

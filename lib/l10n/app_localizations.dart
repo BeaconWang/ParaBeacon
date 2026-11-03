@@ -7663,13 +7663,13 @@ abstract class AppLocalizations {
   /// No description provided for @altimeterQnhSensorUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'No internal barometer reading'**
+  /// **'No barometer detected'**
   String get altimeterQnhSensorUnavailable;
 
   /// No description provided for @altimeterQnhSensorDisabled.
   ///
   /// In en, this message translates to:
-  /// **'Internal barometer is disabled'**
+  /// **'Device barometer is off'**
   String get altimeterQnhSensorDisabled;
 
   /// No description provided for @altimeterQnhNoReading.
@@ -7677,6 +7677,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No reading'**
   String get altimeterQnhNoReading;
+
+  /// No description provided for @altimeterQnhSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Barometer source'**
+  String get altimeterQnhSourceLabel;
+
+  /// No description provided for @altimeterQnhSourceInternal.
+  ///
+  /// In en, this message translates to:
+  /// **'Device barometer'**
+  String get altimeterQnhSourceInternal;
+
+  /// No description provided for @altimeterQnhSourceBluetooth.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth sensor'**
+  String get altimeterQnhSourceBluetooth;
+
+  /// No description provided for @altimeterQnhSourceLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading live pressure'**
+  String get altimeterQnhSourceLive;
+
+  /// No description provided for @altimeterQnhSourceBluetoothLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading pressure from Bluetooth sensor'**
+  String get altimeterQnhSourceBluetoothLive;
+
+  /// No description provided for @altimeterQnhSourceWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for sensor pressure…'**
+  String get altimeterQnhSourceWaiting;
+
+  /// No description provided for @altimeterQnhUseDeviceBarometer.
+  ///
+  /// In en, this message translates to:
+  /// **'Use device barometer'**
+  String get altimeterQnhUseDeviceBarometer;
+
+  /// No description provided for @altimeterQnhUseDeviceBarometerDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, pressure comes from a connected Bluetooth sensor'**
+  String get altimeterQnhUseDeviceBarometerDescription;
 
   /// No description provided for @sensorTitle.
   ///

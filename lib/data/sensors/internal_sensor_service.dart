@@ -33,6 +33,11 @@ class InternalSensorService extends ChangeNotifier {
   static const _spEnabled = 'pb.internal.sensor.enabled';
   static const _spReferencePressure = 'pb.internal.sensor.reference_pressure_pa';
 
+  /// Sticky flag: set once the device barometer has produced at least one
+  /// reading, so the app can remember the hardware exists even after the user
+  /// turns internal sampling off.
+  static const _spHasBarometer = 'pb.internal.sensor.has_barometer';
+
   /// Sampling cadence for the barometer (~10 Hz) — enough to derive a usable
   /// vario without flooding the data layer.
   static const _samplingPeriod = Duration(milliseconds: 100);
@@ -62,6 +67,12 @@ class InternalSensorService extends ChangeNotifier {
   /// first sample arrives; stays false on hardware without a barometer.
   bool _available = false;
   bool get available => _available;
+
+  /// Whether the device barometer has ever produced a reading (sticky, even
+  /// after the user disables internal sampling). Lets the UI keep showing the
+  /// altimeter controls for a phone that genuinely has a barometer.
+  bool _hasBarometer = false;
+  bool get hasBarometer => _hasBarometer;
 
   /// User preference: prefer the internal barometer over an external BLE
   /// sensor. Persisted. iOS defaults off so Core Motion is accessed only after
@@ -129,6 +140,7 @@ class InternalSensorService extends ChangeNotifier {
     try {
       final sp = await SharedPreferences.getInstance();
       _enabled = sp.getBool(_spEnabled) ?? _enabled;
+      _hasBarometer = sp.getBool(_spHasBarometer) ?? false;
       final ref = sp.getDouble(_spReferencePressure);
       if (ref != null && ref.isFinite && _isPlausibleReference(ref)) {
         _referencePressurePa = ref;
@@ -204,6 +216,14 @@ class InternalSensorService extends ChangeNotifier {
     );
 
     _available = true;
+    if (!_hasBarometer) {
+      _hasBarometer = true;
+      // Persist best-effort so the altimeter controls stay available even
+      // after the user later disables internal sampling.
+      SharedPreferences.getInstance()
+          .then((sp) => sp.setBool(_spHasBarometer, true))
+          .catchError((_) => false);
+    }
     if (!_readingsCtrl.isClosed) _readingsCtrl.add(readings);
     // Notify so the panel UI reflects live values and (on the first sample)
     // the newly-discovered availability.
@@ -236,6 +256,20 @@ class InternalSensorService extends ChangeNotifier {
         (1.0 - math.pow(pressurePa / _referencePressurePa, 0.1903).toDouble());
   }
 
+  /// Public ISA altitude (metres) for an arbitrary pressure sample (Pa), using
+  /// the current QNH reference. Lets callers convert an external barometer's
+  /// pressure to altitude under the same reference. Returns null for invalid
+  /// input.
+  double? altitudeFromPressurePa(double pressurePa) {
+    if (!pressurePa.isFinite || pressurePa <= 0) return null;
+    final altitude = _pressureToAltitude(pressurePa);
+    return altitude.isFinite ? altitude : null;
+  }
+
+  /// As [altitudeFromPressurePa] but taking hectopascals (hPa / millibar).
+  double? altitudeFromPressureHpa(double pressureHpa) =>
+      altitudeFromPressurePa(pressureHpa * 100.0);
+
   /// Calibrates the altimeter so that the *current* barometric pressure maps to
   /// a known [altitudeM] (e.g. the elevation of your takeoff, read from a map
   /// or a GPS fix). This back-computes the reference sea-level pressure (QNH)
@@ -245,9 +279,20 @@ class InternalSensorService extends ChangeNotifier {
   /// reference pressure is implausible (so the caller can surface an error).
   Future<bool> calibrateToAltitude(double altitudeM) async {
     final pressurePa = _lastPressurePa;
-    if (pressurePa == null || !pressurePa.isFinite || pressurePa <= 0) {
-      return false;
-    }
+    if (pressurePa == null) return false;
+    return calibrateToAltitudeFromPressure(pressurePa, altitudeM);
+  }
+
+  /// Back-computes and applies a QNH reference from an explicit [pressurePa]
+  /// sample (e.g. from an external BLE barometer) and a known [altitudeM].
+  ///
+  /// Returns false when the inputs are invalid or the resulting reference
+  /// pressure is implausible.
+  Future<bool> calibrateToAltitudeFromPressure(
+    double pressurePa,
+    double altitudeM,
+  ) async {
+    if (!pressurePa.isFinite || pressurePa <= 0) return false;
     if (!altitudeM.isFinite) return false;
 
     // Invert the ISA formula: solve for the sea-level reference pressure P0

@@ -39,6 +39,7 @@ import 'data/debug_settings.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/sensors/internal_sensor_service.dart';
+import 'data/sensors/barometer_source.dart';
 import 'data/landing_point_store.dart';
 import 'data/competition/competition_task_store.dart';
 import 'data/layout_config_io.dart';
@@ -1018,32 +1019,43 @@ class _DashGridPageState extends State<DashGridPage> {
                           ),
                           const Divider(height: 1),
                           AnimatedBuilder(
-                            animation: InternalSensorService.instance,
-                            builder: (context, _) => ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: Icon(
-                                Icons.speed,
-                                color: theme.colorScheme.primary,
-                              ),
-                              title: Text(l10n.altimeterQnhSettings),
-                              subtitle: Text(
-                                l10n.altimeterQnhSettingsSubtitle(
-                                  InternalSensorService.instance
-                                      .referencePressureHpa
-                                      .toStringAsFixed(2),
-                                ),
-                              ),
-                              trailing: const Icon(
-                                Icons.chevron_right,
-                                size: 20,
-                              ),
-                              onTap: () async {
-                                await showAltimeterQnhSettingsSheet(context);
-                                setSheetState(() {});
-                              },
-                            ),
+                            animation: BarometerSource.listenable,
+                            builder: (context, _) {
+                              if (!BarometerSource.isAvailable) {
+                                return const SizedBox.shrink();
+                              }
+                              return Column(
+                                children: [
+                                  ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: Icon(
+                                      Icons.speed,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    title: Text(l10n.altimeterQnhSettings),
+                                    subtitle: Text(
+                                      l10n.altimeterQnhSettingsSubtitle(
+                                        InternalSensorService.instance
+                                            .referencePressureHpa
+                                            .toStringAsFixed(2),
+                                      ),
+                                    ),
+                                    trailing: const Icon(
+                                      Icons.chevron_right,
+                                      size: 20,
+                                    ),
+                                    onTap: () async {
+                                      await showAltimeterQnhSettingsSheet(
+                                        context,
+                                      );
+                                      setSheetState(() {});
+                                    },
+                                  ),
+                                  const Divider(height: 1),
+                                ],
+                              );
+                            },
                           ),
-                          const Divider(height: 1),
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: Icon(

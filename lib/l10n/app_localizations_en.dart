@@ -4118,13 +4118,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altimeterQnhReset => 'Reset to standard QNH';
 
   @override
-  String get altimeterQnhSensorUnavailable => 'No internal barometer reading';
+  String get altimeterQnhSensorUnavailable => 'No barometer detected';
 
   @override
-  String get altimeterQnhSensorDisabled => 'Internal barometer is disabled';
+  String get altimeterQnhSensorDisabled => 'Device barometer is off';
 
   @override
   String get altimeterQnhNoReading => 'No reading';
+
+  @override
+  String get altimeterQnhSourceLabel => 'Barometer source';
+
+  @override
+  String get altimeterQnhSourceInternal => 'Device barometer';
+
+  @override
+  String get altimeterQnhSourceBluetooth => 'Bluetooth sensor';
+
+  @override
+  String get altimeterQnhSourceLive => 'Reading live pressure';
+
+  @override
+  String get altimeterQnhSourceBluetoothLive =>
+      'Reading pressure from Bluetooth sensor';
+
+  @override
+  String get altimeterQnhSourceWaiting => 'Waiting for sensor pressure…';
+
+  @override
+  String get altimeterQnhUseDeviceBarometer => 'Use device barometer';
+
+  @override
+  String get altimeterQnhUseDeviceBarometerDescription =>
+      'When off, pressure comes from a connected Bluetooth sensor';
 
   @override
   String get sensorTitle => 'Sensor';

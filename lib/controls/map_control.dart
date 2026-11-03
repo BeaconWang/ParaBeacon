@@ -900,6 +900,12 @@ class _MapControlState extends State<MapControl> {
                 if (widget.showTask) ...[
                   CircleLayer(circles: _buildTaskCircles()),
                   PolylineLayer(polylines: _buildTaskPolylines()),
+                  // Real-time shortest route from the live position to goal,
+                  // with the current → next-turnpoint leg highlighted (dashed).
+                  if (wgs != null)
+                    PolylineLayer(
+                      polylines: _buildLiveRoutePolylines(wgs),
+                    ),
                   MarkerLayer(markers: _buildTaskMarkers()),
                 ],
 
@@ -1481,6 +1487,46 @@ class _MapControlState extends State<MapControl> {
         ),
       );
     }
+    return out;
+  }
+
+  /// Real-time shortest route from the current position [wgs] through the
+  /// remaining turnpoints to goal, drawn entirely with dashed lines. The first
+  /// leg (current position → next turnpoint) is highlighted in the amber accent
+  /// used for the next turnpoint; the rest of the route uses the task-route
+  /// colour. Returns an empty list when there is no task or it is complete.
+  List<Polyline> _buildLiveRoutePolylines(LatLng wgs) {
+    final route = CompetitionTaskStore.instance.liveRouteToGoal(
+      wgs.latitude,
+      wgs.longitude,
+    );
+    if (route == null || route.length < 2) return const [];
+
+    final points = [
+      for (final p in route) _shift(LatLng(p.$1, p.$2), widget.tileSource),
+    ];
+
+    final out = <Polyline>[];
+    // Remainder of the route: next turnpoint → … → goal (dashed).
+    if (points.length > 2) {
+      out.add(
+        Polyline(
+          points: points.sublist(1),
+          strokeWidth: 3.0 * widget.lineThickness,
+          color: _taskRouteColor.withAlpha(235),
+          pattern: StrokePattern.dashed(segments: const [12, 8]),
+        ),
+      );
+    }
+    // Highlighted first leg: current position → next turnpoint (dashed).
+    out.add(
+      Polyline(
+        points: points.sublist(0, 2),
+        strokeWidth: 4.0 * widget.lineThickness,
+        color: _TaskPointMarker._nextAccent,
+        pattern: StrokePattern.dashed(segments: const [10, 7]),
+      ),
+    );
     return out;
   }
 

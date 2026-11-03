@@ -230,6 +230,101 @@ abstract final class TaskOptimizer {
     );
   }
 
+  /// Optimized touch points for [remaining] turnpoints given a fixed start
+  /// anchor at [startLat]/[startLon] (typically the pilot's live position).
+  ///
+  /// Returns `[latList, lonList]` — the point on each remaining cylinder that
+  /// yields the shortest path `start → tp0 → tp1 → … → last`. The start anchor
+  /// itself is not included. Uses the same touch-point relaxation as [optimize]
+  /// but treats the start as the fixed predecessor of the first turnpoint, so
+  /// the first leg is optimized against where the pilot actually is.
+  static List<List<double>> optimizeFromStart(
+    double startLat,
+    double startLon,
+    List<Turnpoint> remaining,
+  ) {
+    final n = remaining.length;
+    if (n == 0) return const [<double>[], <double>[]];
+
+    // Reference origin = centroid of the start anchor + remaining centres.
+    var refLat = startLat;
+    var refLon = startLon;
+    for (final t in remaining) {
+      refLat += t.latitude;
+      refLon += t.longitude;
+    }
+    refLat /= (n + 1);
+    refLon /= (n + 1);
+
+    const metresPerDegLat = 111320.0;
+    final metresPerDegLon =
+        metresPerDegLat * math.cos(refLat * math.pi / 180.0).abs();
+    final safeLonScale = metresPerDegLon < 1e-6 ? 1e-6 : metresPerDegLon;
+
+    _PlanarPoint project(double lat, double lon) => _PlanarPoint(
+      (lon - refLon) * safeLonScale,
+      (lat - refLat) * metresPerDegLat,
+    );
+    List<double> unproject(_PlanarPoint p) => [
+      refLat + p.y / metresPerDegLat,
+      refLon + p.x / safeLonScale,
+    ];
+
+    final startP = project(startLat, startLon);
+    final centers = [
+      for (final t in remaining) project(t.latitude, t.longitude),
+    ];
+    final radii = [for (final t in remaining) t.radiusMeters];
+    final touch = [for (final c in centers) _PlanarPoint(c.x, c.y)];
+
+    for (var iteration = 0; iteration < 150; iteration++) {
+      var maxShift = 0.0;
+      for (var i = 0; i < n; i++) {
+        final radius = radii[i];
+        if (radius <= 0) continue;
+        final center = centers[i];
+        final prev = i == 0 ? startP : touch[i - 1];
+
+        double aimX;
+        double aimY;
+        if (i == n - 1) {
+          aimX = prev.x - center.x;
+          aimY = prev.y - center.y;
+        } else {
+          final next = touch[i + 1];
+          final toPrev = _normalize(prev.x - center.x, prev.y - center.y);
+          final toNext = _normalize(next.x - center.x, next.y - center.y);
+          aimX = toPrev[0] + toNext[0];
+          aimY = toPrev[1] + toNext[1];
+          if (aimX.abs() < 1e-9 && aimY.abs() < 1e-9) {
+            aimX = touch[i].x - center.x;
+            aimY = touch[i].y - center.y;
+          }
+        }
+        final norm = _normalize(aimX, aimY);
+        final newX = center.x + norm[0] * radius;
+        final newY = center.y + norm[1] * radius;
+        final shift = math.sqrt(
+          (newX - touch[i].x) * (newX - touch[i].x) +
+              (newY - touch[i].y) * (newY - touch[i].y),
+        );
+        if (shift > maxShift) maxShift = shift;
+        touch[i].x = newX;
+        touch[i].y = newY;
+      }
+      if (maxShift < 0.5) break;
+    }
+
+    final lats = <double>[];
+    final lons = <double>[];
+    for (final p in touch) {
+      final ll = unproject(p);
+      lats.add(ll[0]);
+      lons.add(ll[1]);
+    }
+    return [lats, lons];
+  }
+
   static List<double> _normalize(double x, double y) {
     final len = math.sqrt(x * x + y * y);
     if (len < 1e-9) return const [0.0, 0.0];

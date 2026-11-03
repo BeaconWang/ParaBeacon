@@ -265,6 +265,30 @@ class CompetitionTaskStore extends ChangeNotifier {
     return false;
   }
 
+  /// Real-time shortest route from [latitude]/[longitude] through the
+  /// remaining turnpoints to goal, as an ordered list of `(lat, lon)` points
+  /// beginning at the given position and ending at the goal touch point.
+  ///
+  /// Returns null when there is no task or the task is already complete. The
+  /// route is re-optimized against the current position, so the first leg
+  /// (current → next turnpoint) reflects where the pilot actually is.
+  List<(double, double)>? liveRouteToGoal(double latitude, double longitude) {
+    final task = _task;
+    final index = nextTurnpointIndex;
+    if (task == null || index == null) return null;
+    final remaining = task.turnpoints.sublist(index);
+    if (remaining.isEmpty) return null;
+    final pts = TaskOptimizer.optimizeFromStart(latitude, longitude, remaining);
+    final lats = pts[0];
+    final lons = pts[1];
+    if (lats.isEmpty) return null;
+    final out = <(double, double)>[(latitude, longitude)];
+    for (var i = 0; i < lats.length; i++) {
+      out.add((lats[i], lons[i]));
+    }
+    return out;
+  }
+
   /// Optimized distance (metres) from [latitude]/[longitude] to goal, routed
   /// through the remaining turnpoints. Null when no task/next turnpoint.
   double? remainingDistanceToGoal(double latitude, double longitude) {

@@ -3998,6 +3998,120 @@ abstract class AppLocalizations {
   /// **'Import .xctsk file'**
   String get competitionImportFile;
 
+  /// No description provided for @competitionScanQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get competitionScanQr;
+
+  /// No description provided for @competitionScanQrHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at an XCTrack task QR code.'**
+  String get competitionScanQrHint;
+
+  /// No description provided for @competitionScanImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR from image'**
+  String get competitionScanImage;
+
+  /// No description provided for @competitionScanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'QR scan failed.'**
+  String get competitionScanFailed;
+
+  /// No description provided for @competitionNoQrFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No QR code found in that image.'**
+  String get competitionNoQrFound;
+
+  /// No description provided for @competitionToggleTorch.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle torch'**
+  String get competitionToggleTorch;
+
+  /// No description provided for @competitionSwitchCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch camera'**
+  String get competitionSwitchCamera;
+
+  /// No description provided for @competitionDownloadUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Download from URL'**
+  String get competitionDownloadUrl;
+
+  /// No description provided for @competitionDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get competitionDownload;
+
+  /// No description provided for @competitionDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading task…'**
+  String get competitionDownloading;
+
+  /// No description provided for @competitionDownloadUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://… or task code'**
+  String get competitionDownloadUrlHint;
+
+  /// No description provided for @competitionDownloadUrlHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a link to an .xctsk file, an xctrack.org planner link, or an XContest task code.'**
+  String get competitionDownloadUrlHelp;
+
+  /// No description provided for @competitionDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed.'**
+  String get competitionDownloadFailed;
+
+  /// No description provided for @competitionDownloadInvalidUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'That link is not valid.'**
+  String get competitionDownloadInvalidUrl;
+
+  /// No description provided for @competitionDownloadBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'That address is not allowed.'**
+  String get competitionDownloadBlocked;
+
+  /// No description provided for @competitionDownloadTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'That task file is too large.'**
+  String get competitionDownloadTooLarge;
+
+  /// No description provided for @competitionShowQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Show QR code'**
+  String get competitionShowQr;
+
+  /// No description provided for @competitionShowQrHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this with XCTrack or another XCTSK app to load the task.'**
+  String get competitionShowQrHint;
+
+  /// No description provided for @competitionQrTooBig.
+  ///
+  /// In en, this message translates to:
+  /// **'Task too large for a QR code. Share the file instead.'**
+  String get competitionQrTooBig;
+
   /// No description provided for @competitionImportCode.
   ///
   /// In en, this message translates to:

@@ -1,15 +1,21 @@
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'dart:io' show File;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../data/competition/competition_task.dart';
+import '../data/competition/competition_task_downloader.dart';
 import '../data/competition/competition_task_io.dart';
 import '../data/competition/competition_task_store.dart';
+import '../data/competition/qr_image_decoder.dart';
 import '../data/landing_point_store.dart';
 import '../l10n/app_localizations.dart';
+import 'competition_task_qr_sheet.dart';
 import 'map_picker_sheet.dart';
+import 'qr_scanner_screen.dart';
 
 /// Opens the full-screen competition task editor / manager.
 Future<void> showCompetitionTaskSheet(BuildContext context) {
@@ -93,11 +99,23 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       icon: const Icon(Icons.more_vert),
       onSelected: (value) async {
         switch (value) {
+          case 'scan_qr':
+            await _scanQrCamera(l10n);
+            break;
+          case 'scan_image':
+            await _scanQrImage(l10n);
+            break;
+          case 'download_url':
+            await _downloadFromUrl(l10n);
+            break;
           case 'import_file':
             await _importFromFile(l10n);
             break;
           case 'import_code':
             await _importFromCode(l10n);
+            break;
+          case 'show_qr':
+            await _showQr(l10n);
             break;
           case 'export_file':
             await _exportFile(l10n);
@@ -113,16 +131,33 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       itemBuilder: (context) {
         final hasTask = _store.hasTask;
         return [
+          if (isCameraScanSupported)
+            PopupMenuItem(
+              value: 'scan_qr',
+              child: _menuRow(Icons.qr_code_scanner, l10n.competitionScanQr),
+            ),
+          PopupMenuItem(
+            value: 'scan_image',
+            child: _menuRow(Icons.image_outlined, l10n.competitionScanImage),
+          ),
+          PopupMenuItem(
+            value: 'download_url',
+            child: _menuRow(Icons.cloud_download_outlined, l10n.competitionDownloadUrl),
+          ),
           PopupMenuItem(
             value: 'import_file',
             child: _menuRow(Icons.file_open_outlined, l10n.competitionImportFile),
           ),
           PopupMenuItem(
             value: 'import_code',
-            child: _menuRow(Icons.qr_code_2, l10n.competitionImportCode),
+            child: _menuRow(Icons.content_paste, l10n.competitionImportCode),
           ),
           if (hasTask) ...[
             const PopupMenuDivider(),
+            PopupMenuItem(
+              value: 'show_qr',
+              child: _menuRow(Icons.qr_code_2, l10n.competitionShowQr),
+            ),
             PopupMenuItem(
               value: 'export_file',
               child: _menuRow(Icons.ios_share, l10n.competitionExportFile),
@@ -176,11 +211,34 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
               icon: const Icon(Icons.add_location_alt_outlined),
               label: Text(l10n.competitionAddTurnpoint),
             ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () => _importFromFile(l10n),
-              icon: const Icon(Icons.file_open_outlined),
-              label: Text(l10n.competitionImportFile),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: [
+                if (isCameraScanSupported)
+                  OutlinedButton.icon(
+                    onPressed: () => _scanQrCamera(l10n),
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: Text(l10n.competitionScanQr),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () => _scanQrImage(l10n),
+                  icon: const Icon(Icons.image_outlined),
+                  label: Text(l10n.competitionScanImage),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _downloadFromUrl(l10n),
+                  icon: const Icon(Icons.cloud_download_outlined),
+                  label: Text(l10n.competitionDownloadUrl),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _importFromFile(l10n),
+                  icon: const Icon(Icons.file_open_outlined),
+                  label: Text(l10n.competitionImportFile),
+                ),
+              ],
             ),
           ],
         ),
@@ -893,6 +951,138 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       initial: task.name,
     );
     if (name != null && mounted) await _store.setName(name);
+  }
+
+  Future<void> _applyLoadedText(AppLocalizations l10n, String? text) async {
+    if (text == null || text.trim().isEmpty || !mounted) return;
+    final task = CompetitionTask.tryParse(text);
+    if (task == null) {
+      _snack(l10n.competitionImportFailed);
+      return;
+    }
+    await _store.setTask(task);
+    if (mounted) _snack(l10n.competitionImported);
+  }
+
+  Future<void> _scanQrCamera(AppLocalizations l10n) async {
+    try {
+      final text = await scanQrWithCamera(context);
+      if (!mounted) return;
+      await _applyLoadedText(l10n, text);
+    } catch (_) {
+      if (mounted) _snack(l10n.competitionScanFailed);
+    }
+  }
+
+  Future<void> _scanQrImage(AppLocalizations l10n) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        dialogTitle: l10n.competitionScanImage,
+        type: FileType.image,
+        withData: true,
+      );
+      if (!mounted || result == null || result.files.isEmpty) return;
+      final file = result.files.single;
+      var bytes = file.bytes;
+      if (bytes == null && file.path != null) {
+        bytes = await File(file.path!).readAsBytes();
+      }
+      if (bytes == null || !mounted) {
+        if (mounted) _snack(l10n.competitionScanFailed);
+        return;
+      }
+      final text = await QrImageDecoder.decodeBytes(bytes);
+      if (!mounted) return;
+      if (text == null) {
+        _snack(l10n.competitionNoQrFound);
+        return;
+      }
+      await _applyLoadedText(l10n, text);
+    } catch (_) {
+      if (mounted) _snack(l10n.competitionScanFailed);
+    }
+  }
+
+  Future<void> _downloadFromUrl(AppLocalizations l10n) async {
+    final controller = TextEditingController();
+    final clip = await Clipboard.getData(Clipboard.kTextPlain);
+    final clipText = clip?.text?.trim() ?? '';
+    if (clipText.startsWith('http://') || clipText.startsWith('https://')) {
+      controller.text = clipText;
+    }
+    if (!mounted) {
+      controller.dispose();
+      return;
+    }
+    final input = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.competitionDownloadUrl),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                hintText: l10n.competitionDownloadUrlHint,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.competitionDownloadUrlHelp,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: Text(l10n.competitionDownload),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (input == null || input.trim().isEmpty || !mounted) return;
+
+    _snack(l10n.competitionDownloading);
+    final result = await CompetitionTaskDownloader.download(input);
+    if (!mounted) return;
+    if (result.ok) {
+      await _store.setTask(result.task!);
+      if (mounted) _snack(l10n.competitionImported);
+    } else {
+      _snack(_downloadErrorText(l10n, result.error!));
+    }
+  }
+
+  String _downloadErrorText(AppLocalizations l10n, TaskDownloadError error) {
+    switch (error) {
+      case TaskDownloadError.invalidUrl:
+        return l10n.competitionDownloadInvalidUrl;
+      case TaskDownloadError.blockedHost:
+        return l10n.competitionDownloadBlocked;
+      case TaskDownloadError.tooLarge:
+        return l10n.competitionDownloadTooLarge;
+      case TaskDownloadError.notATask:
+        return l10n.competitionImportFailed;
+      case TaskDownloadError.network:
+        return l10n.competitionDownloadFailed;
+    }
+  }
+
+  Future<void> _showQr(AppLocalizations l10n) async {
+    final task = _store.task;
+    if (task == null) return;
+    await showCompetitionTaskQr(context, task);
   }
 
   Future<void> _importFromFile(AppLocalizations l10n) async {

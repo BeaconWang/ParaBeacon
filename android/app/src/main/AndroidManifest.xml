@@ -26,6 +26,10 @@
     <!-- Required to download online map tiles for the Map control. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Camera: scanning competition-task QR codes (optional feature). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <!-- Background execution: keep GPS/vario/BLE working with the screen off or
          the app backgrounded. WAKE_LOCK keeps the CPU alive (also used by the
          keep-awake wakelock). During a flight, or when the app is backgrounded

@@ -2104,6 +2104,67 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionImportFile => 'Import .xctsk file';
 
   @override
+  String get competitionScanQr => 'Scan QR code';
+
+  @override
+  String get competitionScanQrHint =>
+      'Point the camera at an XCTrack task QR code.';
+
+  @override
+  String get competitionScanImage => 'Scan QR from image';
+
+  @override
+  String get competitionScanFailed => 'QR scan failed.';
+
+  @override
+  String get competitionNoQrFound => 'No QR code found in that image.';
+
+  @override
+  String get competitionToggleTorch => 'Toggle torch';
+
+  @override
+  String get competitionSwitchCamera => 'Switch camera';
+
+  @override
+  String get competitionDownloadUrl => 'Download from URL';
+
+  @override
+  String get competitionDownload => 'Download';
+
+  @override
+  String get competitionDownloading => 'Downloading task…';
+
+  @override
+  String get competitionDownloadUrlHint => 'https://… or task code';
+
+  @override
+  String get competitionDownloadUrlHelp =>
+      'Enter a link to an .xctsk file, an xctrack.org planner link, or an XContest task code.';
+
+  @override
+  String get competitionDownloadFailed => 'Download failed.';
+
+  @override
+  String get competitionDownloadInvalidUrl => 'That link is not valid.';
+
+  @override
+  String get competitionDownloadBlocked => 'That address is not allowed.';
+
+  @override
+  String get competitionDownloadTooLarge => 'That task file is too large.';
+
+  @override
+  String get competitionShowQr => 'Show QR code';
+
+  @override
+  String get competitionShowQrHint =>
+      'Scan this with XCTrack or another XCTSK app to load the task.';
+
+  @override
+  String get competitionQrTooBig =>
+      'Task too large for a QR code. Share the file instead.';
+
+  @override
   String get competitionImportCode => 'Import task code';
 
   @override

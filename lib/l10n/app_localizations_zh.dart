@@ -2020,6 +2020,64 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionImportFile => '导入 .xctsk 文件';
 
   @override
+  String get competitionScanQr => '扫描二维码';
+
+  @override
+  String get competitionScanQrHint => '将摄像头对准 XCTrack 航线二维码。';
+
+  @override
+  String get competitionScanImage => '从图片扫描二维码';
+
+  @override
+  String get competitionScanFailed => '二维码扫描失败。';
+
+  @override
+  String get competitionNoQrFound => '该图片中未找到二维码。';
+
+  @override
+  String get competitionToggleTorch => '开关闪光灯';
+
+  @override
+  String get competitionSwitchCamera => '切换摄像头';
+
+  @override
+  String get competitionDownloadUrl => '从网址下载';
+
+  @override
+  String get competitionDownload => '下载';
+
+  @override
+  String get competitionDownloading => '正在下载航线…';
+
+  @override
+  String get competitionDownloadUrlHint => 'https://… 或航线代码';
+
+  @override
+  String get competitionDownloadUrlHelp =>
+      '输入 .xctsk 文件链接、xctrack.org 规划链接或 XContest 航线代码。';
+
+  @override
+  String get competitionDownloadFailed => '下载失败。';
+
+  @override
+  String get competitionDownloadInvalidUrl => '链接无效。';
+
+  @override
+  String get competitionDownloadBlocked => '该地址不被允许。';
+
+  @override
+  String get competitionDownloadTooLarge => '该航线文件过大。';
+
+  @override
+  String get competitionShowQr => '显示二维码';
+
+  @override
+  String get competitionShowQrHint => '用 XCTrack 或其他 XCTSK 应用扫描即可加载该航线。';
+
+  @override
+  String get competitionQrTooBig => '航线过大，无法生成二维码，请改用文件分享。';
+
+  @override
   String get competitionImportCode => '导入航线代码';
 
   @override

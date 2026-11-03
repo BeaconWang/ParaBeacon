@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart' hide ServiceStatus;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import '../theme/locale_controller.dart';
@@ -66,9 +67,14 @@ class GpsFlightDataBridge {
   StreamSubscription<ServiceStatus>? _serviceStatusSub;
   Timer? _restartTimer;
 
+  static const _backgroundLocationPromptKey =
+      'android_background_location_prompt_attempted';
+  static const _batteryOptimizationPromptKey =
+      'android_battery_optimization_prompt_attempted';
+
   bool _attached = false;
   bool _hadFix = false;
-  bool _batteryOptimizationPromptAttempted = false;
+  bool _androidFlightPermissionPromptInProgress = false;
   int _streamGeneration = 0;
   int _restartAttempt = 0;
 
@@ -147,7 +153,7 @@ class GpsFlightDataBridge {
     _appIsBackgrounded = appIsBackgrounded;
 
     if (state == AppLifecycleState.resumed && flightState.isFlying) {
-      unawaited(_requestBatteryOptimizationExemption());
+      unawaited(_requestAndroidFlightPermissions());
     }
     if (state == AppLifecycleState.resumed && _requiresBackgroundMode) {
       // Recreate the location FGS on return; some OEMs stop the plugin service
@@ -260,7 +266,7 @@ class GpsFlightDataBridge {
   void _onFlightStateChanged() {
     if (flightState.isFlying) {
       if (Platform.isAndroid && !_appIsBackgrounded) {
-        unawaited(_requestBatteryOptimizationExemption());
+        unawaited(_requestAndroidFlightPermissions());
       } else if (Platform.isIOS) {
         unawaited(_ensureBackgroundPermission());
       }
@@ -274,17 +280,55 @@ class GpsFlightDataBridge {
     _startStream();
   }
 
-  /// Offers Android's system battery-optimization exemption when the user
-  /// starts a flight. OEM-specific controls (such as MIUI autostart and
-  /// battery restrictions) remain under the user's device settings.
+  /// Requests Android background location and battery exemptions at most once
+  /// per install, and never interrupts an active background session.
+  Future<void> _requestAndroidFlightPermissions() async {
+    if (!_attached ||
+        !Platform.isAndroid ||
+        _androidFlightPermissionPromptInProgress) {
+      return;
+    }
+    _androidFlightPermissionPromptInProgress = true;
+    try {
+      await _requestAndroidBackgroundLocationPermission();
+      await _requestBatteryOptimizationExemption();
+    } finally {
+      _androidFlightPermissionPromptInProgress = false;
+    }
+  }
+
+  Future<void> _requestAndroidBackgroundLocationPermission() async {
+    if (_appIsBackgrounded) return;
+    try {
+      final status = await Permission.locationAlways.status;
+      if (status.isGranted) return;
+
+      final preferences = await SharedPreferences.getInstance();
+      if (preferences.getBool(_backgroundLocationPromptKey) ?? false) return;
+
+      final foregroundStatus = await Permission.locationWhenInUse.status;
+      if (!foregroundStatus.isGranted) return;
+
+      await preferences.setBool(_backgroundLocationPromptKey, true);
+      await Permission.locationAlways.request();
+    } catch (_) {
+      // Background access is optional; foreground GPS keeps working.
+    }
+  }
+
+  /// Offers Android's system battery-optimization exemption. OEM-specific
+  /// controls (such as vendor autostart settings) remain under device settings.
   Future<void> _requestBatteryOptimizationExemption() async {
-    if (!_attached || _batteryOptimizationPromptAttempted) return;
-    _batteryOptimizationPromptAttempted = true;
+    if (!_attached || _appIsBackgrounded) return;
     try {
       final status = await Permission.ignoreBatteryOptimizations.status;
-      if (!status.isGranted && !_appIsBackgrounded) {
-        await Permission.ignoreBatteryOptimizations.request();
-      }
+      if (status.isGranted) return;
+
+      final preferences = await SharedPreferences.getInstance();
+      if (preferences.getBool(_batteryOptimizationPromptKey) ?? false) return;
+
+      await preferences.setBool(_batteryOptimizationPromptKey, true);
+      await Permission.ignoreBatteryOptimizations.request();
     } catch (_) {
       // A denied or unsupported exemption must not prevent the flight stream.
     }

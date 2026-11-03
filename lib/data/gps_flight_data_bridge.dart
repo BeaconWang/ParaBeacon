@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart' hide ServiceStatus;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
@@ -12,11 +12,18 @@ import '../theme/locale_controller.dart';
 import 'flight_state.dart';
 import 'raw_flight_data_source.dart';
 
-enum AndroidPermissionPromptChoice {
-  continueRequest,
-  continueAndDontAskAgain,
-  dismiss,
-  dismissAndDontAskAgain,
+enum AndroidPermissionPromptChoice { dismiss, dismissAndDontAskAgain }
+
+class AndroidFlightPermissionStatus {
+  final bool backgroundLocationGranted;
+  final bool batteryExemptionGranted;
+
+  const AndroidFlightPermissionStatus({
+    required this.backgroundLocationGranted,
+    required this.batteryExemptionGranted,
+  });
+
+  bool get allGranted => backgroundLocationGranted && batteryExemptionGranted;
 }
 
 /// Continuously streams the device GPS into the app-wide flight-data source.
@@ -69,20 +76,18 @@ class GpsFlightDataBridge {
   /// the app is backgrounded and automatic flight detection is enabled. This
   /// keeps background GPS flowing for recording and takeoff/landing detection.
   final FlightState flightState;
-  final Future<AndroidPermissionPromptChoice> Function({
-    required bool backgroundLocationMissing,
-    required bool batteryExemptionMissing,
-  })?
+  final Future<AndroidPermissionPromptChoice> Function(
+    AndroidFlightPermissionStatus status,
+  )?
   onAndroidPermissionRationale;
 
   StreamSubscription<Position>? _sub;
   StreamSubscription<ServiceStatus>? _serviceStatusSub;
   Timer? _restartTimer;
 
-  static const _backgroundLocationPromptKey =
-      'android_background_location_prompt_attempted';
-  static const _batteryOptimizationPromptKey =
-      'android_battery_optimization_prompt_attempted';
+  static const _permissionsChannel = MethodChannel(
+    'com.beacon.parabeacon/flight_permissions',
+  );
   static const _dontShowAndroidPermissionRationaleKey =
       'android_permission_rationale_dont_show_again';
 
@@ -273,10 +278,39 @@ class GpsFlightDataBridge {
     });
   }
 
-  /// Checks Android's missing flight permissions when auto-detection is enabled
-  /// or when a manually started flight begins with auto-detection disabled.
+  /// Checks both Android background permissions and shows the status dialog
+  /// when needed, unless the user has disabled this prompt.
   Future<void> checkAndroidFlightPermissions() =>
       _requestAndroidFlightPermissions();
+
+  Future<AndroidFlightPermissionStatus>
+  getAndroidFlightPermissionStatus() async {
+    if (!Platform.isAndroid) {
+      return const AndroidFlightPermissionStatus(
+        backgroundLocationGranted: true,
+        batteryExemptionGranted: true,
+      );
+    }
+    final status = await _permissionsChannel.invokeMapMethod<String, bool>(
+      'getFlightPermissionStatuses',
+    );
+    if (status == null) {
+      throw PlatformException(
+        code: 'PERMISSION_STATUS_UNAVAILABLE',
+        message: 'Android permission status is unavailable.',
+      );
+    }
+    return AndroidFlightPermissionStatus(
+      backgroundLocationGranted: status['backgroundLocationGranted'] ?? false,
+      batteryExemptionGranted: status['batteryExemptionGranted'] ?? false,
+    );
+  }
+
+  Future<void> openBackgroundLocationSettings() =>
+      _permissionsChannel.invokeMethod<void>('openBackgroundLocationSettings');
+
+  Future<void> openBatteryOptimizationSettings() =>
+      _permissionsChannel.invokeMethod<void>('openBatteryOptimizationSettings');
 
   /// Reacts to auto-detection and flight-state changes. The Android permission
   /// check is deliberately tied to the two supported user workflows rather than
@@ -305,8 +339,8 @@ class GpsFlightDataBridge {
     _startStream();
   }
 
-  /// Requests Android background location and battery exemptions at most once
-  /// per install, and never interrupts an active background session.
+  /// Checks Android background permissions and shows the guidance dialog when
+  /// needed. Permission changes are made explicitly through the dialog links.
   Future<void> _requestAndroidFlightPermissions() async {
     if (!_attached ||
         !Platform.isAndroid ||
@@ -316,76 +350,22 @@ class GpsFlightDataBridge {
     }
     _androidFlightPermissionPromptInProgress = true;
     try {
-      final backgroundLocationGranted =
-          (await Permission.locationAlways.status).isGranted;
-      final batteryExemptionGranted =
-          (await Permission.ignoreBatteryOptimizations.status).isGranted;
-      if (backgroundLocationGranted && batteryExemptionGranted) return;
-
       final preferences = await SharedPreferences.getInstance();
       if (preferences.getBool(_dontShowAndroidPermissionRationaleKey) ??
           false) {
         return;
       }
 
-      final choice =
-          await onAndroidPermissionRationale?.call(
-            backgroundLocationMissing: !backgroundLocationGranted,
-            batteryExemptionMissing: !batteryExemptionGranted,
-          ) ??
-          AndroidPermissionPromptChoice.continueRequest;
-      if (choice == AndroidPermissionPromptChoice.continueAndDontAskAgain ||
-          choice == AndroidPermissionPromptChoice.dismissAndDontAskAgain) {
+      final status = await getAndroidFlightPermissionStatus();
+      if (status.allGranted) return;
+      final choice = await onAndroidPermissionRationale?.call(status);
+      if (choice == AndroidPermissionPromptChoice.dismissAndDontAskAgain) {
         await preferences.setBool(_dontShowAndroidPermissionRationaleKey, true);
       }
-      if (choice == AndroidPermissionPromptChoice.dismiss ||
-          choice == AndroidPermissionPromptChoice.dismissAndDontAskAgain) {
-        return;
-      }
-
-      await _requestAndroidBackgroundLocationPermission();
-      await _requestBatteryOptimizationExemption();
     } catch (_) {
-      // A missing or declined permission must not interrupt the flight stream.
+      // Permission status and guidance are best-effort; flight tracking remains available.
     } finally {
       _androidFlightPermissionPromptInProgress = false;
-    }
-  }
-
-  Future<void> _requestAndroidBackgroundLocationPermission() async {
-    if (_appIsBackgrounded) return;
-    try {
-      final status = await Permission.locationAlways.status;
-      if (status.isGranted) return;
-
-      final preferences = await SharedPreferences.getInstance();
-      if (preferences.getBool(_backgroundLocationPromptKey) ?? false) return;
-
-      final foregroundStatus = await Permission.locationWhenInUse.status;
-      if (!foregroundStatus.isGranted) return;
-
-      await preferences.setBool(_backgroundLocationPromptKey, true);
-      await Permission.locationAlways.request();
-    } catch (_) {
-      // Background access is optional; foreground GPS keeps working.
-    }
-  }
-
-  /// Offers Android's system battery-optimization exemption. OEM-specific
-  /// controls (such as vendor autostart settings) remain under device settings.
-  Future<void> _requestBatteryOptimizationExemption() async {
-    if (!_attached || _appIsBackgrounded) return;
-    try {
-      final status = await Permission.ignoreBatteryOptimizations.status;
-      if (status.isGranted) return;
-
-      final preferences = await SharedPreferences.getInstance();
-      if (preferences.getBool(_batteryOptimizationPromptKey) ?? false) return;
-
-      await preferences.setBool(_batteryOptimizationPromptKey, true);
-      await Permission.ignoreBatteryOptimizations.request();
-    } catch (_) {
-      // A denied or unsupported exemption must not prevent the flight stream.
     }
   }
 

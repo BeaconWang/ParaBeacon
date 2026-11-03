@@ -2138,23 +2138,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debugSensorWindDirection => 'Wind direction';
 
   @override
-  String get androidFlightPermissionsTitle =>
-      'Allow background flight tracking?';
+  String get androidFlightPermissionsTitle => 'Background flight recording';
 
   @override
   String get androidFlightPermissionsBatteryWarning =>
-      'Battery usage: If ParaBeacon is restricted by battery management, Android may stop the app while it is in the background, interrupting flight recording. Set battery usage to Unrestricted to reduce this risk.';
+      'Battery management: If battery use is restricted, Android may stop ParaBeacon in the background and interrupt flight recording. Allow unrestricted battery use to reduce this risk.';
 
   @override
   String get androidFlightPermissionsLocationWarning =>
-      'Background location: Without Allow all the time access, Android may pause or stop GPS updates while ParaBeacon is in the background or the screen is off, preventing continuous flight-data recording.';
+      'Background location: Without “Allow all the time” access, Android may pause or stop GPS updates when ParaBeacon is in the background or the screen is off, preventing continuous flight-data recording.';
 
   @override
-  String get androidFlightPermissionsDontAskAgain =>
-      'Don\'t show this explanation again';
+  String get androidFlightPermissionBatteryTitle =>
+      'Battery optimization exemption';
 
   @override
-  String get androidFlightPermissionsContinue => 'Continue';
+  String get androidFlightPermissionLocationTitle =>
+      'Background location · Allow all the time';
+
+  @override
+  String get androidFlightPermissionGranted => 'Allowed';
+
+  @override
+  String get androidFlightPermissionMissing => 'Not allowed';
+
+  @override
+  String get androidFlightPermissionOpenBattery => 'Battery settings';
+
+  @override
+  String get androidFlightPermissionOpenLocation => 'Location settings';
+
+  @override
+  String get androidFlightPermissionsOemNote =>
+      'This status reflects Android’s battery-optimization exemption. Some manufacturers apply additional background restrictions in their own settings.';
+
+  @override
+  String get androidFlightPermissionsDisablePrompt =>
+      'Stop checking and hide this prompt';
 
   @override
   String get flightButtonStart => 'START';

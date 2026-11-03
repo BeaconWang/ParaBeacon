@@ -2053,21 +2053,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugSensorWindDirection => '风向';
 
   @override
-  String get androidFlightPermissionsTitle => '允许后台飞行追踪？';
+  String get androidFlightPermissionsTitle => '后台飞行记录权限';
 
   @override
   String get androidFlightPermissionsBatteryWarning =>
-      '电池管理：如果 ParaBeacon 受到电池使用限制，Android 可能会在应用进入后台后停止应用运行，导致飞行记录中断。建议将电池使用方式设为“不受限制”以降低此风险。';
+      '电池管理：如果电池使用受到限制，Android 可能会在 ParaBeacon 进入后台后停止应用运行，导致飞行记录中断。建议将电池使用方式设为“不受限制”以降低此风险。';
 
   @override
   String get androidFlightPermissionsLocationWarning =>
-      '后台定位：如果未授予“始终允许”定位权限，Android 可能会在 ParaBeacon 进入后台或屏幕关闭时暂停或停止 GPS 更新，导致飞行数据无法连续记录。';
+      '后台定位：如果未授予“始终允许”访问权限，Android 可能会在 ParaBeacon 进入后台或屏幕关闭时暂停或停止 GPS 更新，导致飞行数据无法连续记录。';
 
   @override
-  String get androidFlightPermissionsDontAskAgain => '不再显示此说明';
+  String get androidFlightPermissionBatteryTitle => '电池优化豁免';
 
   @override
-  String get androidFlightPermissionsContinue => '继续';
+  String get androidFlightPermissionLocationTitle => '后台定位 · 始终允许';
+
+  @override
+  String get androidFlightPermissionGranted => '已允许';
+
+  @override
+  String get androidFlightPermissionMissing => '未允许';
+
+  @override
+  String get androidFlightPermissionOpenBattery => '电池设置';
+
+  @override
+  String get androidFlightPermissionOpenLocation => '定位设置';
+
+  @override
+  String get androidFlightPermissionsOemNote =>
+      '此状态反映 Android 的电池优化豁免。部分制造商还会在自有设置中施加额外的后台运行限制。';
+
+  @override
+  String get androidFlightPermissionsDisablePrompt => '停止检查并隐藏此提示';
 
   @override
   String get flightButtonStart => '开始';

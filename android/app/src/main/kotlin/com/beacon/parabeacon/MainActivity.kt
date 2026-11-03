@@ -6,8 +6,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.PowerManager
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -15,6 +17,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     companion object {
         private const val FLIGHT_LIBRARY_CHANNEL = "com.beacon.parabeacon/flight_library"
+        private const val FLIGHT_PERMISSIONS_CHANNEL = "com.beacon.parabeacon/flight_permissions"
         private const val CREATE_DOCUMENT_REQUEST = 4107
         private const val OPEN_IGC_TREE_REQUEST = 4108
         private const val FLIGHT_BUNDLE_MIME_TYPE = "application/zip"
@@ -36,6 +39,76 @@ class MainActivity : FlutterActivity() {
                 "saveFlightFile" -> handleSaveFlightFile(call, result)
                 "importIgcFolder" -> handleImportIgcFolder(result)
                 else -> result.notImplemented()
+            }
+        }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            FLIGHT_PERMISSIONS_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getFlightPermissionStatuses" -> result.success(
+                    getFlightPermissionStatuses(),
+                )
+                "openBackgroundLocationSettings" -> openBackgroundLocationSettings(result)
+                "openBatteryOptimizationSettings" -> openBatteryOptimizationSettings(result)
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun getFlightPermissionStatuses(): Map<String, Boolean> {
+        val backgroundLocationGranted =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+                checkSelfPermission(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        val batteryExemptionGranted =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                (getSystemService(POWER_SERVICE) as PowerManager)
+                    .isIgnoringBatteryOptimizations(packageName)
+        return mapOf(
+            "backgroundLocationGranted" to backgroundLocationGranted,
+            "batteryExemptionGranted" to batteryExemptionGranted,
+        )
+    }
+
+    private fun openBackgroundLocationSettings(result: MethodChannel.Result) {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", packageName, null)
+        }
+        launchPermissionSettings(intent, result)
+    }
+
+    private fun openBatteryOptimizationSettings(result: MethodChannel.Result) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            result.success(false)
+            return
+        }
+        val appIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+            data = Uri.parse("package:$packageName")
+        }
+        launchPermissionSettings(appIntent, result) {
+            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        }
+    }
+
+    private fun launchPermissionSettings(
+        intent: Intent,
+        result: MethodChannel.Result,
+        fallback: (() -> Intent)? = null,
+    ) {
+        try {
+            startActivity(intent)
+            result.success(true)
+        } catch (_: Exception) {
+            if (fallback == null) {
+                result.success(false)
+                return
+            }
+            try {
+                startActivity(fallback())
+                result.success(true)
+            } catch (_: Exception) {
+                result.success(false)
             }
         }
     }

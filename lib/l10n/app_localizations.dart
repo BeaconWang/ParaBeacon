@@ -4055,32 +4055,68 @@ abstract class AppLocalizations {
   /// No description provided for @androidFlightPermissionsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Allow background flight tracking?'**
+  /// **'Background flight recording'**
   String get androidFlightPermissionsTitle;
 
   /// No description provided for @androidFlightPermissionsBatteryWarning.
   ///
   /// In en, this message translates to:
-  /// **'Battery usage: If ParaBeacon is restricted by battery management, Android may stop the app while it is in the background, interrupting flight recording. Set battery usage to Unrestricted to reduce this risk.'**
+  /// **'Battery management: If battery use is restricted, Android may stop ParaBeacon in the background and interrupt flight recording. Allow unrestricted battery use to reduce this risk.'**
   String get androidFlightPermissionsBatteryWarning;
 
   /// No description provided for @androidFlightPermissionsLocationWarning.
   ///
   /// In en, this message translates to:
-  /// **'Background location: Without Allow all the time access, Android may pause or stop GPS updates while ParaBeacon is in the background or the screen is off, preventing continuous flight-data recording.'**
+  /// **'Background location: Without “Allow all the time” access, Android may pause or stop GPS updates when ParaBeacon is in the background or the screen is off, preventing continuous flight-data recording.'**
   String get androidFlightPermissionsLocationWarning;
 
-  /// No description provided for @androidFlightPermissionsDontAskAgain.
+  /// No description provided for @androidFlightPermissionBatteryTitle.
   ///
   /// In en, this message translates to:
-  /// **'Don\'t show this explanation again'**
-  String get androidFlightPermissionsDontAskAgain;
+  /// **'Battery optimization exemption'**
+  String get androidFlightPermissionBatteryTitle;
 
-  /// No description provided for @androidFlightPermissionsContinue.
+  /// No description provided for @androidFlightPermissionLocationTitle.
   ///
   /// In en, this message translates to:
-  /// **'Continue'**
-  String get androidFlightPermissionsContinue;
+  /// **'Background location · Allow all the time'**
+  String get androidFlightPermissionLocationTitle;
+
+  /// No description provided for @androidFlightPermissionGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get androidFlightPermissionGranted;
+
+  /// No description provided for @androidFlightPermissionMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Not allowed'**
+  String get androidFlightPermissionMissing;
+
+  /// No description provided for @androidFlightPermissionOpenBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery settings'**
+  String get androidFlightPermissionOpenBattery;
+
+  /// No description provided for @androidFlightPermissionOpenLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location settings'**
+  String get androidFlightPermissionOpenLocation;
+
+  /// No description provided for @androidFlightPermissionsOemNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This status reflects Android’s battery-optimization exemption. Some manufacturers apply additional background restrictions in their own settings.'**
+  String get androidFlightPermissionsOemNote;
+
+  /// No description provided for @androidFlightPermissionsDisablePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop checking and hide this prompt'**
+  String get androidFlightPermissionsDisablePrompt;
 
   /// No description provided for @flightButtonStart.
   ///

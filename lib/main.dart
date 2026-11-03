@@ -121,6 +121,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   final FlightRecorder _flightRecorder = FlightRecorder.instance;
   bool _landingPromptVisible = false;
   bool _androidPermissionRationaleVisible = false;
+  StateSetter? _androidPermissionDialogSetState;
+  AndroidFlightPermissionStatus? _androidPermissionDialogStatus;
   bool _startupPositionSharingPromptScheduled = false;
 
   @override
@@ -204,9 +206,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // block startup, and any failure silently falls back to whatever other
     // source (BLE sensor / simulator) is providing.
     final gpsAttach = _gpsBridge.attach();
-    unawaited(
-      _checkAndroidPermissionsForAutoDetection(flightSettingsLoad, gpsAttach),
-    );
+    unawaited(_checkAndroidPermissionsOnLaunch(flightSettingsLoad, gpsAttach));
 
     // Route the shared, transformed GPS feed through Cshare's native XContest
     // LiveTrack protocol only while the user has enabled sharing and a flight
@@ -328,21 +328,87 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     }
   }
 
-  Future<void> _checkAndroidPermissionsForAutoDetection(
+  Future<void> _checkAndroidPermissionsOnLaunch(
     Future<void> flightSettingsLoad,
     Future<void> gpsAttach,
   ) async {
     await flightSettingsLoad;
     await WidgetsBinding.instance.endOfFrame;
     await gpsAttach;
-    if (!mounted || !FlightState.instance.autoDetect) return;
+    if (!mounted) return;
     await _gpsBridge.checkAndroidFlightPermissions();
   }
 
-  Future<AndroidPermissionPromptChoice> _showAndroidPermissionRationale({
-    required bool backgroundLocationMissing,
-    required bool batteryExemptionMissing,
-  }) async {
+  Future<void> _openAndroidPermissionSettings({required bool location}) async {
+    try {
+      if (location) {
+        await _gpsBridge.openBackgroundLocationSettings();
+      } else {
+        await _gpsBridge.openBatteryOptimizationSettings();
+      }
+    } catch (_) {
+      // The status dialog remains available if the device cannot open Settings.
+    }
+  }
+
+  Future<void> _refreshAndroidPermissionDialogStatus() async {
+    if (!_androidPermissionRationaleVisible) return;
+    try {
+      _androidPermissionDialogStatus = await _gpsBridge
+          .getAndroidFlightPermissionStatus();
+      _androidPermissionDialogSetState?.call(() {});
+    } catch (_) {
+      // Keep the last known status if Settings cannot be queried.
+    }
+  }
+
+  Widget _androidPermissionStatusRow({
+    required String title,
+    required bool granted,
+    required String openLabel,
+    required VoidCallback onOpen,
+    required AppLocalizations l10n,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                granted ? Icons.check_circle : Icons.warning_amber_rounded,
+                color: granted
+                    ? Colors.green
+                    : Theme.of(context).colorScheme.error,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Text(title)),
+              Text(
+                granted
+                    ? l10n.androidFlightPermissionGranted
+                    : l10n.androidFlightPermissionMissing,
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+            ],
+          ),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: TextButton.icon(
+              onPressed: onOpen,
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: Text(openLabel),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<AndroidPermissionPromptChoice> _showAndroidPermissionRationale(
+    AndroidFlightPermissionStatus initialStatus,
+  ) async {
     if (!mounted || _androidPermissionRationaleVisible) {
       return AndroidPermissionPromptChoice.dismiss;
     }
@@ -350,60 +416,86 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     if (context == null) return AndroidPermissionPromptChoice.dismiss;
 
     _androidPermissionRationaleVisible = true;
+    _androidPermissionDialogStatus = initialStatus;
     var dontAskAgain = false;
     try {
       final l10n = AppLocalizations.of(context);
       return await showDialog<AndroidPermissionPromptChoice>(
             context: context,
             builder: (dialogContext) => StatefulBuilder(
-              builder: (context, setDialogState) => AlertDialog(
-                title: Text(l10n.androidFlightPermissionsTitle),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (batteryExemptionMissing)
-                      Text(l10n.androidFlightPermissionsBatteryWarning),
-                    if (batteryExemptionMissing && backgroundLocationMissing)
-                      const SizedBox(height: 10),
-                    if (backgroundLocationMissing)
-                      Text(l10n.androidFlightPermissionsLocationWarning),
-                    const SizedBox(height: 12),
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      value: dontAskAgain,
-                      title: Text(l10n.androidFlightPermissionsDontAskAgain),
-                      onChanged: (value) =>
-                          setDialogState(() => dontAskAgain = value ?? false),
+              builder: (context, setDialogState) {
+                _androidPermissionDialogSetState = setDialogState;
+                final status = _androidPermissionDialogStatus ?? initialStatus;
+                return AlertDialog(
+                  title: Text(l10n.androidFlightPermissionsTitle),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.androidFlightPermissionsBatteryWarning),
+                        const SizedBox(height: 8),
+                        _androidPermissionStatusRow(
+                          title: l10n.androidFlightPermissionBatteryTitle,
+                          granted: status.batteryExemptionGranted,
+                          openLabel: l10n.androidFlightPermissionOpenBattery,
+                          onOpen: () => unawaited(
+                            _openAndroidPermissionSettings(location: false),
+                          ),
+                          l10n: l10n,
+                        ),
+                        const Divider(),
+                        Text(l10n.androidFlightPermissionsLocationWarning),
+                        const SizedBox(height: 8),
+                        _androidPermissionStatusRow(
+                          title: l10n.androidFlightPermissionLocationTitle,
+                          granted: status.backgroundLocationGranted,
+                          openLabel: l10n.androidFlightPermissionOpenLocation,
+                          onOpen: () => unawaited(
+                            _openAndroidPermissionSettings(location: true),
+                          ),
+                          l10n: l10n,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.androidFlightPermissionsOemNote,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 8),
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          value: dontAskAgain,
+                          title: Text(
+                            l10n.androidFlightPermissionsDisablePrompt,
+                          ),
+                          onChanged: (value) => setDialogState(
+                            () => dontAskAgain = value ?? false,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    FilledButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(
+                        dontAskAgain
+                            ? AndroidPermissionPromptChoice
+                                  .dismissAndDontAskAgain
+                            : AndroidPermissionPromptChoice.dismiss,
+                      ),
+                      child: Text(l10n.done),
                     ),
                   ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(
-                      dontAskAgain
-                          ? AndroidPermissionPromptChoice.dismissAndDontAskAgain
-                          : AndroidPermissionPromptChoice.dismiss,
-                    ),
-                    child: Text(l10n.cancel),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(
-                      dontAskAgain
-                          ? AndroidPermissionPromptChoice
-                                .continueAndDontAskAgain
-                          : AndroidPermissionPromptChoice.continueRequest,
-                    ),
-                    child: Text(l10n.androidFlightPermissionsContinue),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ) ??
           AndroidPermissionPromptChoice.dismiss;
     } finally {
       _androidPermissionRationaleVisible = false;
+      _androidPermissionDialogSetState = null;
+      _androidPermissionDialogStatus = null;
     }
   }
 
@@ -453,6 +545,9 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _gpsBridge.onAppLifecycleStateChanged(state);
     if (state == AppLifecycleState.resumed) {
+      if (_androidPermissionRationaleVisible) {
+        unawaited(_refreshAndroidPermissionDialogStatus());
+      }
       // Re-assert fullscreen: some system events (permission prompts, task
       // switcher, etc.) can bring the status/nav bars back.
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);

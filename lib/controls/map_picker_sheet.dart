@@ -85,23 +85,19 @@ Future<void> showMapLocationSheet(
   );
 }
 
-/// Defaults for the map picker, persisted so the last-used basemap and the
-/// last picked location survive an app restart.
+/// Defaults for the map picker, persisted so the last-used basemap survives an
+/// app restart.
 class MapPickerDefaults {
   MapPickerDefaults._();
 
   static const String _spSourceId = 'pb.map_picker.last_source_id';
-  static const String _spLat = 'pb.map_picker.last_lat';
-  static const String _spLon = 'pb.map_picker.last_lon';
 
   static String? _sourceId;
-  static double? _lat;
-  static double? _lon;
   static bool _loaded = false;
 
-  /// Restores the last-used basemap and picked location. Safe to call more
-  /// than once; later calls are no-ops. Best-effort: on failure the
-  /// locale-aware defaults remain in effect.
+  /// Restores the last-used basemap. Safe to call more than once; later calls
+  /// are no-ops. Best-effort: on failure the locale-aware default stays in
+  /// effect.
   static Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
@@ -109,12 +105,6 @@ class MapPickerDefaults {
       final sp = await SharedPreferences.getInstance();
       final id = sp.getString(_spSourceId);
       if (id != null && _isKnownSource(id)) _sourceId = id;
-      final lat = sp.getDouble(_spLat);
-      final lon = sp.getDouble(_spLon);
-      if (lat != null && lon != null && _validLat(lat) && _validLon(lon)) {
-        _lat = lat;
-        _lon = lon;
-      }
     } catch (_) {}
   }
 
@@ -122,10 +112,6 @@ class MapPickerDefaults {
   /// satellite for Chinese users, Google satellite otherwise — see
   /// [defaultMapSourceIdForLocale]) until a source has been chosen.
   static String get tileSourceId => _sourceId ?? defaultMapSourceIdForLocale();
-
-  /// Last picked location in WGS-84, or null when nothing has been picked yet.
-  static double? get lastLat => _lat;
-  static double? get lastLon => _lon;
 
   /// Remembers [id] as the last-used basemap (in memory and persisted).
   static void rememberSource(String id) {
@@ -136,25 +122,8 @@ class MapPickerDefaults {
         .catchError((_) => false);
   }
 
-  /// Remembers [lat]/[lon] as the last picked location (in memory and
-  /// persisted). Invalid coordinates are ignored.
-  static void rememberLocation(double lat, double lon) {
-    if (!_validLat(lat) || !_validLon(lon)) return;
-    _lat = lat;
-    _lon = lon;
-    SharedPreferences.getInstance()
-        .then((sp) async {
-          await sp.setDouble(_spLat, lat);
-          await sp.setDouble(_spLon, lon);
-        })
-        .catchError((_) {});
-  }
-
   static bool _isKnownSource(String id) =>
       MapTileSources.all.any((s) => s.id == id);
-
-  static bool _validLat(double v) => v >= -90 && v <= 90 && !v.isNaN;
-  static bool _validLon(double v) => v >= -180 && v <= 180 && !v.isNaN;
 }
 
 class _MapPickerSheet extends StatefulWidget {
@@ -928,17 +897,8 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
               FilledButton.icon(
                 icon: const Icon(Icons.check, size: 18),
                 label: Text(l10n.mapPickerConfirm),
-                onPressed: () {
-                  // Remember the picked location so the next picker opens here
-                  // when the caller has no explicit position of its own.
-                  MapPickerDefaults.rememberLocation(
-                    _wgs.latitude,
-                    _wgs.longitude,
-                  );
-                  Navigator.of(
-                    context,
-                  ).pop((_wgs.latitude, _wgs.longitude));
-                },
+                onPressed: () =>
+                    Navigator.of(context).pop((_wgs.latitude, _wgs.longitude)),
               ),
             ],
           ),

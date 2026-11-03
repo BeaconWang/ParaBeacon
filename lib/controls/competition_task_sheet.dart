@@ -5,6 +5,7 @@ import 'dart:io' show File;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../data/competition/competition_task.dart';
 import '../data/competition/competition_task_downloader.dart';
@@ -659,17 +660,21 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
 
     switch (method) {
       case 'map':
-        // Centre priority: the waypoint being edited, else the last picked
-        // location, else the current device fix (and finally the picker's own
-        // fallback). The basemap defaults to the last-used source.
+        // Centre priority: the waypoint being edited, else the task's last
+        // turnpoint, else the current device GPS fix (and finally the picker's
+        // own fallback). The basemap defaults to the last-used source.
         double? centerLat = initial?.latitude;
         double? centerLon = initial?.longitude;
         if (centerLat == null || centerLon == null) {
-          centerLat = MapPickerDefaults.lastLat;
-          centerLon = MapPickerDefaults.lastLon;
+          final last = _store.task?.turnpoints;
+          if (last != null && last.isNotEmpty) {
+            centerLat = last.last.waypoint.latitude;
+            centerLon = last.last.waypoint.longitude;
+          }
         }
         if (centerLat == null || centerLon == null) {
-          final fix = _currentFix();
+          final fix = await _resolveCurrentFix();
+          if (!mounted) return null;
           centerLat = fix?.$1;
           centerLon = fix?.$2;
         }
@@ -700,16 +705,20 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     return null;
   }
 
-  /// Backs the map picker's "return to current location" button: resolves the
-  /// live flight fix, or null when there is no valid position.
+  /// The device's current position: the live flight-data fix when it has one,
+  /// otherwise a one-shot device GPS fix. Null when neither is available.
+  /// Backs the map picker's "return to current location" button and the
+  /// default centre for a brand-new turnpoint.
   Future<(double, double)?> _resolveCurrentFix() async {
     if (!mounted) return null;
-    return _currentFix();
+    final live = _liveFix();
+    if (live != null) return live;
+    return _oneShotFix();
   }
 
-  /// A one-shot snapshot of the live flight position, or null when the fix is
-  /// missing or implausible (origin/out-of-range guards included).
-  (double, double)? _currentFix() {
+  /// A snapshot of the live flight position, or null when the fix is missing
+  /// or implausible (origin/out-of-range guards included).
+  (double, double)? _liveFix() {
     final data = FlightDataProvider.transformerOf(context).data;
     final valid =
         data.hasFix &&
@@ -721,6 +730,31 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
         data.longitude >= -180 &&
         data.longitude <= 180;
     return valid ? (data.latitude, data.longitude) : null;
+  }
+
+  /// One-shot device position fix; null when permissions/services are off or
+  /// the platform cannot provide a fix (e.g. desktop without location).
+  Future<(double, double)?> _oneShotFix() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+      if (!await Geolocator.isLocationServiceEnabled()) return null;
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 12),
+        ),
+      );
+      return (pos.latitude, pos.longitude);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<TaskWaypoint?> _pickFromLandingPoints(AppLocalizations l10n) async {

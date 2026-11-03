@@ -4073,8 +4073,20 @@ abstract class AppLocalizations {
   /// No description provided for @androidFlightPermissionBatteryTitle.
   ///
   /// In en, this message translates to:
-  /// **'Battery optimization exemption'**
+  /// **'Battery use'**
   String get androidFlightPermissionBatteryTitle;
+
+  /// No description provided for @androidFlightPermissionBatteryUnrestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Unrestricted'**
+  String get androidFlightPermissionBatteryUnrestricted;
+
+  /// No description provided for @androidFlightPermissionBatteryNotUnrestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not unrestricted'**
+  String get androidFlightPermissionBatteryNotUnrestricted;
 
   /// No description provided for @androidFlightPermissionLocationTitle.
   ///
@@ -4109,7 +4121,7 @@ abstract class AppLocalizations {
   /// No description provided for @androidFlightPermissionsOemNote.
   ///
   /// In en, this message translates to:
-  /// **'This status reflects Android’s battery-optimization exemption. Some manufacturers apply additional background restrictions in their own settings.'**
+  /// **'“Unrestricted” is confirmed by Android’s battery-optimization exemption status. Some manufacturers apply additional background restrictions in their own settings.'**
   String get androidFlightPermissionsOemNote;
 
   /// No description provided for @androidFlightPermissionsDisablePrompt.

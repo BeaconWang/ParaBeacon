@@ -17,14 +17,14 @@ enum AndroidPermissionPromptChoice { dismiss, dismissAndDontAskAgain }
 
 class AndroidFlightPermissionStatus {
   final bool backgroundLocationGranted;
-  final bool batteryExemptionGranted;
+  final bool batteryUnrestricted;
 
   const AndroidFlightPermissionStatus({
     required this.backgroundLocationGranted,
-    required this.batteryExemptionGranted,
+    required this.batteryUnrestricted,
   });
 
-  bool get allGranted => backgroundLocationGranted && batteryExemptionGranted;
+  bool get allGranted => backgroundLocationGranted && batteryUnrestricted;
 }
 
 /// Continuously streams the device GPS into the app-wide flight-data source.
@@ -289,7 +289,7 @@ class GpsFlightDataBridge {
     if (!Platform.isAndroid) {
       return const AndroidFlightPermissionStatus(
         backgroundLocationGranted: true,
-        batteryExemptionGranted: true,
+        batteryUnrestricted: true,
       );
     }
     final status = await _permissionsChannel.invokeMapMethod<String, bool>(
@@ -303,7 +303,7 @@ class GpsFlightDataBridge {
     }
     return AndroidFlightPermissionStatus(
       backgroundLocationGranted: status['backgroundLocationGranted'] ?? false,
-      batteryExemptionGranted: status['batteryExemptionGranted'] ?? false,
+      batteryUnrestricted: status['batteryUnrestricted'] ?? false,
     );
   }
 
@@ -335,8 +335,11 @@ class GpsFlightDataBridge {
   Future<void> openBackgroundLocationSettings() =>
       _permissionsChannel.invokeMethod<void>('openBackgroundLocationSettings');
 
-  Future<void> openBatteryOptimizationSettings() =>
-      _permissionsChannel.invokeMethod<void>('openBatteryOptimizationSettings');
+  Future<bool> openBatteryOptimizationSettings() async =>
+      await _permissionsChannel.invokeMethod<bool>(
+        'openBatteryOptimizationSettings',
+      ) ??
+      false;
 
   /// Reacts to auto-detection and flight-state changes. The Android permission
   /// check is deliberately tied to the two supported user workflows rather than

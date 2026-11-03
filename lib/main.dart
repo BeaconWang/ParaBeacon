@@ -345,7 +345,11 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
         await _gpsBridge.requestBackgroundLocationPermission();
         await _refreshAndroidPermissionDialogStatus();
       } else {
-        await _gpsBridge.openBatteryOptimizationSettings();
+        final settingsReturned = await _gpsBridge
+            .openBatteryOptimizationSettings();
+        if (settingsReturned) {
+          await _refreshAndroidPermissionDialogStatus();
+        }
       }
     } catch (_) {
       // The status dialog remains available if the device cannot open Settings.
@@ -366,6 +370,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   Widget _androidPermissionStatusRow({
     required String title,
     required bool granted,
+    required String grantedLabel,
+    required String missingLabel,
     required String openLabel,
     required VoidCallback onOpen,
     required AppLocalizations l10n,
@@ -387,9 +393,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
               const SizedBox(width: 8),
               Expanded(child: Text(title)),
               Text(
-                granted
-                    ? l10n.androidFlightPermissionGranted
-                    : l10n.androidFlightPermissionMissing,
+                granted ? grantedLabel : missingLabel,
                 style: Theme.of(context).textTheme.labelMedium,
               ),
             ],
@@ -438,7 +442,11 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
                         const SizedBox(height: 8),
                         _androidPermissionStatusRow(
                           title: l10n.androidFlightPermissionBatteryTitle,
-                          granted: status.batteryExemptionGranted,
+                          granted: status.batteryUnrestricted,
+                          grantedLabel:
+                              l10n.androidFlightPermissionBatteryUnrestricted,
+                          missingLabel: l10n
+                              .androidFlightPermissionBatteryNotUnrestricted,
                           openLabel: l10n.androidFlightPermissionOpenBattery,
                           onOpen: () => unawaited(
                             _openAndroidPermissionSettings(location: false),
@@ -451,6 +459,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
                         _androidPermissionStatusRow(
                           title: l10n.androidFlightPermissionLocationTitle,
                           granted: status.backgroundLocationGranted,
+                          grantedLabel: l10n.androidFlightPermissionGranted,
+                          missingLabel: l10n.androidFlightPermissionMissing,
                           openLabel: l10n.androidFlightPermissionOpenLocation,
                           onOpen: () => unawaited(
                             _openAndroidPermissionSettings(location: true),

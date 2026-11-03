@@ -2064,7 +2064,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '后台定位：如果未授予“始终允许”访问权限，Android 可能会在 ParaBeacon 进入后台或屏幕关闭时暂停或停止 GPS 更新，导致飞行数据无法连续记录。';
 
   @override
-  String get androidFlightPermissionBatteryTitle => '电池优化豁免';
+  String get androidFlightPermissionBatteryTitle => '电池使用方式';
+
+  @override
+  String get androidFlightPermissionBatteryUnrestricted => '不受限制';
+
+  @override
+  String get androidFlightPermissionBatteryNotUnrestricted => '未设为不受限制';
 
   @override
   String get androidFlightPermissionLocationTitle => '后台定位 · 始终允许';
@@ -2083,7 +2089,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get androidFlightPermissionsOemNote =>
-      '此状态反映 Android 的电池优化豁免。部分制造商还会在自有设置中施加额外的后台运行限制。';
+      '通过 Android 电池优化豁免状态确认是否已设为“不受限制”。部分制造商还会在自有设置中施加额外的后台运行限制。';
 
   @override
   String get androidFlightPermissionsDisablePrompt => '停止检查并隐藏此提示';

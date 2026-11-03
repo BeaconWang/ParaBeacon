@@ -20,6 +20,7 @@ class MainActivity : FlutterActivity() {
         private const val FLIGHT_PERMISSIONS_CHANNEL = "com.beacon.parabeacon/flight_permissions"
         private const val CREATE_DOCUMENT_REQUEST = 4107
         private const val OPEN_IGC_TREE_REQUEST = 4108
+        private const val BATTERY_PERMISSION_SETTINGS_REQUEST = 4109
         private const val FLIGHT_BUNDLE_MIME_TYPE = "application/zip"
     }
 
@@ -27,6 +28,7 @@ class MainActivity : FlutterActivity() {
     private var pendingSaveBytes: ByteArray? = null
     private var pendingSaveMimeType: String? = null
     private var pendingImportResult: MethodChannel.Result? = null
+    private var pendingBatteryPermissionSettingsResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -61,13 +63,15 @@ class MainActivity : FlutterActivity() {
             Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
                 checkSelfPermission(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) ==
                 android.content.pm.PackageManager.PERMISSION_GRANTED
-        val batteryExemptionGranted =
+        // Android's power whitelist is the system signal for unrestricted
+        // battery use; default/optimized status does not count as unrestricted.
+        val batteryUnrestricted =
             Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
                 (getSystemService(POWER_SERVICE) as PowerManager)
                     .isIgnoringBatteryOptimizations(packageName)
         return mapOf(
             "backgroundLocationGranted" to backgroundLocationGranted,
-            "batteryExemptionGranted" to batteryExemptionGranted,
+            "batteryUnrestricted" to batteryUnrestricted,
         )
     }
 
@@ -83,11 +87,31 @@ class MainActivity : FlutterActivity() {
             result.success(false)
             return
         }
+        if (pendingBatteryPermissionSettingsResult != null) {
+            result.error(
+                "BATTERY_SETTINGS_IN_PROGRESS",
+                "Battery settings are already open.",
+                null,
+            )
+            return
+        }
+
         val appIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
             data = Uri.parse("package:$packageName")
         }
-        launchPermissionSettings(appIntent, result) {
-            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        pendingBatteryPermissionSettingsResult = result
+        try {
+            startActivityForResult(appIntent, BATTERY_PERMISSION_SETTINGS_REQUEST)
+        } catch (_: Exception) {
+            try {
+                startActivityForResult(
+                    Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
+                    BATTERY_PERMISSION_SETTINGS_REQUEST,
+                )
+            } catch (_: Exception) {
+                pendingBatteryPermissionSettingsResult = null
+                result.success(false)
+            }
         }
     }
 
@@ -308,6 +332,12 @@ class MainActivity : FlutterActivity() {
     @Deprecated("Deprecated in Android, but required for FlutterActivity result handling")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == BATTERY_PERMISSION_SETTINGS_REQUEST) {
+            val result = pendingBatteryPermissionSettingsResult
+            pendingBatteryPermissionSettingsResult = null
+            result?.success(true)
+            return
+        }
         if (requestCode == OPEN_IGC_TREE_REQUEST) {
             val result = pendingImportResult ?: return
             pendingImportResult = null

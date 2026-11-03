@@ -2149,8 +2149,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Background location: Without “Allow all the time” access, Android may pause or stop GPS updates when ParaBeacon is in the background or the screen is off, preventing continuous flight-data recording.';
 
   @override
-  String get androidFlightPermissionBatteryTitle =>
-      'Battery optimization exemption';
+  String get androidFlightPermissionBatteryTitle => 'Battery use';
+
+  @override
+  String get androidFlightPermissionBatteryUnrestricted => 'Unrestricted';
+
+  @override
+  String get androidFlightPermissionBatteryNotUnrestricted =>
+      'Not unrestricted';
 
   @override
   String get androidFlightPermissionLocationTitle =>
@@ -2170,7 +2176,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get androidFlightPermissionsOemNote =>
-      'This status reflects Android’s battery-optimization exemption. Some manufacturers apply additional background restrictions in their own settings.';
+      '“Unrestricted” is confirmed by Android’s battery-optimization exemption status. Some manufacturers apply additional background restrictions in their own settings.';
 
   @override
   String get androidFlightPermissionsDisablePrompt =>

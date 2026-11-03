@@ -1956,6 +1956,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlCompetitionTask => 'Competition Task';
 
   @override
+  String get controlTaskOptimalNav => 'Task Optimal Route';
+
+  @override
+  String get taskNextPointLabel => 'Next point';
+
+  @override
   String get competitionTaskTitle => 'Competition task';
 
   @override

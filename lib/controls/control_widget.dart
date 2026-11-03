@@ -10,6 +10,7 @@ import 'control_settings.dart';
 import 'data_value_control.dart';
 import 'compass_wind_control.dart';
 import 'competition_task_control.dart';
+import 'task_optimal_nav_control.dart';
 import 'status_line_control.dart';
 import 'data_monitor_control.dart';
 import 'debug_sensor_control.dart';
@@ -463,6 +464,19 @@ class ControlWidget extends StatelessWidget {
           relative: control.setting('bearingReference') == 'relative',
           arrowColor: Color(
             control.intSetting('directionArrowColor', fallback: 0xFF1E88E5),
+          ),
+        );
+      case 'task_optimal_nav':
+        return TaskOptimalNavControl(
+          showFinishDistance: control.boolSetting(
+            'showFinishDistance',
+            fallback: true,
+          ),
+          showGlide: control.boolSetting('showGlide', fallback: true),
+          showEta: control.boolSetting('showEta', fallback: true),
+          relative: control.setting('bearingReference') == 'relative',
+          arrowColor: Color(
+            control.intSetting('directionArrowColor', fallback: 0xFFFFC400),
           ),
         );
       case 'map':

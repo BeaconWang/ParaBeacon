@@ -731,6 +731,8 @@
   "controlStatusLine": "Status Line",
   "controlCompassWind": "Compass and Wind",
   "controlCompetitionTask": "Competition Task",
+  "controlTaskOptimalNav": "Task Optimal Route",
+  "taskNextPointLabel": "Next point",
   "competitionTaskTitle": "Competition task",
   "competitionTaskSubtitle": "Build or import a turnpoint task",
   "competitionTaskSummarySubtitle": "{count} turnpoints",

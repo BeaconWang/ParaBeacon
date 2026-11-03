@@ -3716,6 +3716,18 @@ abstract class AppLocalizations {
   /// **'Competition Task'**
   String get controlCompetitionTask;
 
+  /// No description provided for @controlTaskOptimalNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Task Optimal Route'**
+  String get controlTaskOptimalNav;
+
+  /// No description provided for @taskNextPointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next point'**
+  String get taskNextPointLabel;
+
   /// No description provided for @competitionTaskTitle.
   ///
   /// In en, this message translates to:

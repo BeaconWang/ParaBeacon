@@ -976,6 +976,33 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       defaultValue: 0xFF1E88E5,
     ),
   ],
+  'task_optimal_nav': [
+    ControlSetting.toggle(
+      key: 'showFinishDistance',
+      label: 'Show distance to finish',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showGlide',
+      label: 'Show glide ratio',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(key: 'showEta', label: 'Show ETA', defaultValue: true),
+    ControlSetting.choice(
+      key: 'bearingReference',
+      label: 'Direction',
+      defaultValue: 'relative',
+      options: {
+        'absolute': 'Absolute (compass)',
+        'relative': 'Relative (to heading)',
+      },
+    ),
+    ControlSetting.color(
+      key: 'directionArrowColor',
+      label: 'Direction arrow color',
+      defaultValue: 0xFFFFC400,
+    ),
+  ],
   'map': [
     ControlSetting.toggle(
       key: 'follow',
@@ -1438,6 +1465,7 @@ const Set<String> _controlsWithoutTitle = {
   'status_line',
   'compass_wind',
   'competition_task',
+  'task_optimal_nav',
 };
 
 const Map<String, UnitDimension> _unitDimensions = {

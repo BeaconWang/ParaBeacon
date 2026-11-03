@@ -145,6 +145,8 @@ String? controlLabelForId(AppLocalizations l10n, String id) {
       return l10n.controlNearestLandingWaypoint;
     case 'compass_wind':
       return l10n.controlCompassWind;
+    case 'competition_task':
+      return l10n.controlCompetitionTask;
     default:
       return null;
   }
@@ -478,6 +480,14 @@ class ControlCatalog {
           icon: Icons.explore,
           kind: ControlKind.widget,
           defaultCols: 3,
+          defaultRows: 3,
+        ),
+        ControlType(
+          id: 'competition_task',
+          label: 'Competition Task',
+          icon: Icons.flag,
+          kind: ControlKind.widget,
+          defaultCols: 6,
           defaultRows: 3,
         ),
       ],

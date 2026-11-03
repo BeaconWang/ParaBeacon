@@ -9,6 +9,7 @@ import 'placed_control.dart';
 import 'control_settings.dart';
 import 'data_value_control.dart';
 import 'compass_wind_control.dart';
+import 'competition_task_control.dart';
 import 'status_line_control.dart';
 import 'data_monitor_control.dart';
 import 'debug_sensor_control.dart';
@@ -451,6 +452,19 @@ class ControlWidget extends StatelessWidget {
           borderRadius: innerRadius,
           child: const CompassWindControl(),
         );
+      case 'competition_task':
+        return CompetitionTaskControl(
+          showGoalDistance: control.boolSetting(
+            'showGoalDistance',
+            fallback: true,
+          ),
+          showGlide: control.boolSetting('showGlide', fallback: true),
+          showEta: control.boolSetting('showEta', fallback: true),
+          relative: control.setting('bearingReference') == 'relative',
+          arrowColor: Color(
+            control.intSetting('directionArrowColor', fallback: 0xFF1E88E5),
+          ),
+        );
       case 'map':
         final source = control.setting('tileSource');
         final rot = control.setting('rotation');
@@ -496,6 +510,7 @@ class ControlWidget extends StatelessWidget {
             showWind: control.boolSetting('showWind', fallback: true),
             showSun: control.boolSetting('showSun', fallback: false),
             showBearing: control.boolSetting('showBearing', fallback: false),
+            showTask: control.boolSetting('showTask', fallback: true),
             showTakeoffLine: control.boolSetting(
               'showTakeoffLine',
               fallback: false,

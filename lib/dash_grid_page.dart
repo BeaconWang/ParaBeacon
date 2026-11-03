@@ -22,6 +22,7 @@ import 'controls/control_catalog.dart';
 import 'controls/control_context_menu.dart';
 import 'controls/control_settings_sheet.dart';
 import 'controls/control_widget.dart';
+import 'controls/competition_task_sheet.dart';
 import 'controls/display_settings_sheet.dart';
 import 'controls/desktop_scrolling.dart';
 import 'controls/unit_settings_sheet.dart';
@@ -39,6 +40,7 @@ import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/sensors/internal_sensor_service.dart';
 import 'data/landing_point_store.dart';
+import 'data/competition/competition_task_store.dart';
 import 'data/layout_config_io.dart';
 import 'data/layout_store.dart';
 import 'data/recording_settings.dart';
@@ -871,6 +873,37 @@ class _DashGridPageState extends State<DashGridPage> {
                               await showLandingPointsSheet(context);
                               setSheetState(() {});
                             },
+                          ),
+                          const Divider(height: 1),
+                          AnimatedBuilder(
+                            animation: CompetitionTaskStore.instance,
+                            builder: (context, _) => ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Icon(
+                                Icons.flag,
+                                color: theme.colorScheme.primary,
+                              ),
+                              title: Text(l10n.competitionTaskTitle),
+                              subtitle: Text(
+                                CompetitionTaskStore.instance.hasTask
+                                    ? l10n.competitionTaskSummarySubtitle(
+                                        CompetitionTaskStore
+                                            .instance
+                                            .task!
+                                            .turnpoints
+                                            .length,
+                                      )
+                                    : l10n.competitionTaskSubtitle,
+                              ),
+                              trailing: const Icon(
+                                Icons.chevron_right,
+                                size: 20,
+                              ),
+                              onTap: () async {
+                                await showCompetitionTaskSheet(context);
+                                setSheetState(() {});
+                              },
+                            ),
                           ),
                           const Divider(height: 1),
                           ListTile(

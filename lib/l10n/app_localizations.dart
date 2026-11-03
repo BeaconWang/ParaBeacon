@@ -3692,6 +3692,378 @@ abstract class AppLocalizations {
   /// **'Compass and Wind'**
   String get controlCompassWind;
 
+  /// No description provided for @controlCompetitionTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Competition Task'**
+  String get controlCompetitionTask;
+
+  /// No description provided for @competitionTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Competition task'**
+  String get competitionTaskTitle;
+
+  /// No description provided for @competitionTaskSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Build or import a turnpoint task'**
+  String get competitionTaskSubtitle;
+
+  /// No description provided for @competitionTaskSummarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} turnpoints'**
+  String competitionTaskSummarySubtitle(int count);
+
+  /// No description provided for @competitionTurnpointShort.
+  ///
+  /// In en, this message translates to:
+  /// **'TP {number}'**
+  String competitionTurnpointShort(int number);
+
+  /// No description provided for @competitionNoTask.
+  ///
+  /// In en, this message translates to:
+  /// **'No competition task yet. Add turnpoints or import an .xctsk file.'**
+  String get competitionNoTask;
+
+  /// No description provided for @competitionTaskComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Task complete'**
+  String get competitionTaskComplete;
+
+  /// No description provided for @competitionNextTurnpointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next TP'**
+  String get competitionNextTurnpointLabel;
+
+  /// No description provided for @competitionGoalDistanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get competitionGoalDistanceLabel;
+
+  /// No description provided for @competitionAddTurnpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add turnpoint'**
+  String get competitionAddTurnpoint;
+
+  /// No description provided for @competitionUnnamedTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed task'**
+  String get competitionUnnamedTask;
+
+  /// No description provided for @competitionRenameTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename task'**
+  String get competitionRenameTask;
+
+  /// No description provided for @competitionTotalDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get competitionTotalDistance;
+
+  /// No description provided for @competitionSpeedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed section'**
+  String get competitionSpeedSection;
+
+  /// No description provided for @competitionTurnpointsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Turnpoints'**
+  String get competitionTurnpointsCount;
+
+  /// No description provided for @competitionTurnpoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Turnpoints'**
+  String get competitionTurnpoints;
+
+  /// No description provided for @competitionStartSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Start of speed section'**
+  String get competitionStartSection;
+
+  /// No description provided for @competitionStartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark a turnpoint as SSS to configure the start.'**
+  String get competitionStartHint;
+
+  /// No description provided for @competitionStartType.
+  ///
+  /// In en, this message translates to:
+  /// **'Start type'**
+  String get competitionStartType;
+
+  /// No description provided for @competitionStartTypeRace.
+  ///
+  /// In en, this message translates to:
+  /// **'Race to goal'**
+  String get competitionStartTypeRace;
+
+  /// No description provided for @competitionStartTypeElapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Elapsed time'**
+  String get competitionStartTypeElapsed;
+
+  /// No description provided for @competitionStartDirection.
+  ///
+  /// In en, this message translates to:
+  /// **'Direction'**
+  String get competitionStartDirection;
+
+  /// No description provided for @competitionStartExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get competitionStartExit;
+
+  /// No description provided for @competitionStartEnter.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter'**
+  String get competitionStartEnter;
+
+  /// No description provided for @competitionTimeGates.
+  ///
+  /// In en, this message translates to:
+  /// **'Time gates'**
+  String get competitionTimeGates;
+
+  /// No description provided for @competitionAddGate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add gate'**
+  String get competitionAddGate;
+
+  /// No description provided for @competitionNoGates.
+  ///
+  /// In en, this message translates to:
+  /// **'No time gates set.'**
+  String get competitionNoGates;
+
+  /// No description provided for @competitionGoalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get competitionGoalSection;
+
+  /// No description provided for @competitionGoalType.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal type'**
+  String get competitionGoalType;
+
+  /// No description provided for @competitionGoalCylinder.
+  ///
+  /// In en, this message translates to:
+  /// **'Cylinder'**
+  String get competitionGoalCylinder;
+
+  /// No description provided for @competitionGoalLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Line'**
+  String get competitionGoalLine;
+
+  /// No description provided for @competitionDeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline'**
+  String get competitionDeadline;
+
+  /// No description provided for @competitionNoDeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get competitionNoDeadline;
+
+  /// No description provided for @competitionEditLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit location'**
+  String get competitionEditLocation;
+
+  /// No description provided for @competitionEditRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit radius'**
+  String get competitionEditRadius;
+
+  /// No description provided for @competitionEditName.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit name'**
+  String get competitionEditName;
+
+  /// No description provided for @competitionPickOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on map'**
+  String get competitionPickOnMap;
+
+  /// No description provided for @competitionPickLanding.
+  ///
+  /// In en, this message translates to:
+  /// **'From landing points'**
+  String get competitionPickLanding;
+
+  /// No description provided for @competitionPickManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter coordinates'**
+  String get competitionPickManual;
+
+  /// No description provided for @competitionWaypointName.
+  ///
+  /// In en, this message translates to:
+  /// **'Waypoint name'**
+  String get competitionWaypointName;
+
+  /// No description provided for @competitionWaypointAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground altitude'**
+  String get competitionWaypointAltitude;
+
+  /// No description provided for @competitionNoLandingPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved landing points.'**
+  String get competitionNoLandingPoints;
+
+  /// No description provided for @competitionInvalidCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid latitude and longitude.'**
+  String get competitionInvalidCoordinates;
+
+  /// No description provided for @competitionRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Radius'**
+  String get competitionRadius;
+
+  /// No description provided for @competitionInvalidRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a radius between 1 and 200000 m.'**
+  String get competitionInvalidRadius;
+
+  /// No description provided for @competitionSetRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Set role'**
+  String get competitionSetRole;
+
+  /// No description provided for @competitionRoleTakeoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Takeoff'**
+  String get competitionRoleTakeoff;
+
+  /// No description provided for @competitionRoleSss.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get competitionRoleSss;
+
+  /// No description provided for @competitionRoleEss.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get competitionRoleEss;
+
+  /// No description provided for @competitionRoleTurnpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'TP'**
+  String get competitionRoleTurnpoint;
+
+  /// No description provided for @competitionImportFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Import .xctsk file'**
+  String get competitionImportFile;
+
+  /// No description provided for @competitionImportCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Import task code'**
+  String get competitionImportCode;
+
+  /// No description provided for @competitionImportCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste an XCTSK: task code or task JSON'**
+  String get competitionImportCodeHint;
+
+  /// No description provided for @competitionImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get competitionImport;
+
+  /// No description provided for @competitionImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read that task.'**
+  String get competitionImportFailed;
+
+  /// No description provided for @competitionImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Task imported.'**
+  String get competitionImported;
+
+  /// No description provided for @competitionExportFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Export .xctsk file'**
+  String get competitionExportFile;
+
+  /// No description provided for @competitionExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed.'**
+  String get competitionExportFailed;
+
+  /// No description provided for @competitionCopyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy task code'**
+  String get competitionCopyCode;
+
+  /// No description provided for @competitionCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Task code copied.'**
+  String get competitionCodeCopied;
+
+  /// No description provided for @competitionClearTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear task'**
+  String get competitionClearTask;
+
+  /// No description provided for @competitionClearConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the current competition task?'**
+  String get competitionClearConfirm;
+
   /// No description provided for @controlSensorBattery.
   ///
   /// In en, this message translates to:

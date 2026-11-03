@@ -1863,6 +1863,196 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlCompassWind => '罗盘与风向';
 
   @override
+  String get controlCompetitionTask => '竞赛航线';
+
+  @override
+  String get competitionTaskTitle => '竞赛航线';
+
+  @override
+  String get competitionTaskSubtitle => '创建或导入绕点航线';
+
+  @override
+  String competitionTaskSummarySubtitle(int count) {
+    return '$count 个绕点';
+  }
+
+  @override
+  String competitionTurnpointShort(int number) {
+    return '绕点 $number';
+  }
+
+  @override
+  String get competitionNoTask => '尚无竞赛航线。请添加绕点或导入 .xctsk 文件。';
+
+  @override
+  String get competitionTaskComplete => '航线完成';
+
+  @override
+  String get competitionNextTurnpointLabel => '下一绕点';
+
+  @override
+  String get competitionGoalDistanceLabel => '终点';
+
+  @override
+  String get competitionAddTurnpoint => '添加绕点';
+
+  @override
+  String get competitionUnnamedTask => '未命名航线';
+
+  @override
+  String get competitionRenameTask => '重命名航线';
+
+  @override
+  String get competitionTotalDistance => '总距离';
+
+  @override
+  String get competitionSpeedSection => '计时段';
+
+  @override
+  String get competitionTurnpointsCount => '绕点数';
+
+  @override
+  String get competitionTurnpoints => '绕点';
+
+  @override
+  String get competitionStartSection => '计时起点 (SSS)';
+
+  @override
+  String get competitionStartHint => '将某个绕点标记为起点 (SSS) 后可配置出发设置。';
+
+  @override
+  String get competitionStartType => '起飞类型';
+
+  @override
+  String get competitionStartTypeRace => '竞速到终点';
+
+  @override
+  String get competitionStartTypeElapsed => '计时赛';
+
+  @override
+  String get competitionStartDirection => '方向';
+
+  @override
+  String get competitionStartExit => '出圈';
+
+  @override
+  String get competitionStartEnter => '进圈';
+
+  @override
+  String get competitionTimeGates => '出发时间';
+
+  @override
+  String get competitionAddGate => '添加时间';
+
+  @override
+  String get competitionNoGates => '尚未设置出发时间。';
+
+  @override
+  String get competitionGoalSection => '终点';
+
+  @override
+  String get competitionGoalType => '终点类型';
+
+  @override
+  String get competitionGoalCylinder => '圆柱';
+
+  @override
+  String get competitionGoalLine => '终点线';
+
+  @override
+  String get competitionDeadline => '关门时间';
+
+  @override
+  String get competitionNoDeadline => '未设置';
+
+  @override
+  String get competitionEditLocation => '编辑位置';
+
+  @override
+  String get competitionEditRadius => '编辑半径';
+
+  @override
+  String get competitionEditName => '编辑名称';
+
+  @override
+  String get competitionPickOnMap => '在地图上选点';
+
+  @override
+  String get competitionPickLanding => '从降落点选择';
+
+  @override
+  String get competitionPickManual => '输入坐标';
+
+  @override
+  String get competitionWaypointName => '航点名称';
+
+  @override
+  String get competitionWaypointAltitude => '地面海拔';
+
+  @override
+  String get competitionNoLandingPoints => '没有已保存的降落点。';
+
+  @override
+  String get competitionInvalidCoordinates => '请输入有效的经纬度。';
+
+  @override
+  String get competitionRadius => '半径';
+
+  @override
+  String get competitionInvalidRadius => '请输入 1 到 200000 米之间的半径。';
+
+  @override
+  String get competitionSetRole => '设置角色';
+
+  @override
+  String get competitionRoleTakeoff => '起飞';
+
+  @override
+  String get competitionRoleSss => '起点';
+
+  @override
+  String get competitionRoleEss => '终计时';
+
+  @override
+  String get competitionRoleTurnpoint => '绕点';
+
+  @override
+  String get competitionImportFile => '导入 .xctsk 文件';
+
+  @override
+  String get competitionImportCode => '导入航线代码';
+
+  @override
+  String get competitionImportCodeHint => '粘贴 XCTSK: 航线代码或航线 JSON';
+
+  @override
+  String get competitionImport => '导入';
+
+  @override
+  String get competitionImportFailed => '无法读取该航线。';
+
+  @override
+  String get competitionImported => '航线已导入。';
+
+  @override
+  String get competitionExportFile => '导出 .xctsk 文件';
+
+  @override
+  String get competitionExportFailed => '导出失败。';
+
+  @override
+  String get competitionCopyCode => '复制航线代码';
+
+  @override
+  String get competitionCodeCopied => '航线代码已复制。';
+
+  @override
+  String get competitionClearTask => '清除航线';
+
+  @override
+  String get competitionClearConfirm => '是否移除当前竞赛航线？';
+
+  @override
   String get controlSensorBattery => '传感器电量';
 
   @override

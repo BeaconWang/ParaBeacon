@@ -44,4 +44,34 @@ abstract final class GeoMath {
             math.cos(deltaLongitude);
     return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
   }
+
+  /// Returns `[latitude, longitude]` of the point reached by travelling
+  /// [distanceMeters] from the origin along the initial [bearingDegrees].
+  static List<double> destination(
+    double latitude,
+    double longitude,
+    double bearingDeg,
+    double distanceMeters,
+  ) {
+    double radians(double degrees) => degrees * math.pi / 180;
+    double degrees(double rad) => rad * 180 / math.pi;
+
+    final angular = distanceMeters / _earthRadiusMeters;
+    final bearing = radians(bearingDeg);
+    final lat1 = radians(latitude);
+    final lon1 = radians(longitude);
+
+    final sinLat2 =
+        math.sin(lat1) * math.cos(angular) +
+        math.cos(lat1) * math.sin(angular) * math.cos(bearing);
+    final lat2 = math.asin(sinLat2.clamp(-1.0, 1.0));
+    final lon2 =
+        lon1 +
+        math.atan2(
+          math.sin(bearing) * math.sin(angular) * math.cos(lat1),
+          math.cos(angular) - math.sin(lat1) * sinLat2,
+        );
+    final normalizedLon = ((degrees(lon2) + 540) % 360) - 180;
+    return [degrees(lat2), normalizedLon];
+  }
 }

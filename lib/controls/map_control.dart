@@ -8,11 +8,14 @@ import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../audio/vario_sound_settings.dart';
 import '../data/airspace_store.dart';
+import '../data/competition/competition_task.dart';
+import '../data/competition/competition_task_store.dart';
 import '../data/debug_settings.dart';
 import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
 import '../data/gcj02.dart';
+import '../data/geo_math.dart';
 import '../data/landing_point_store.dart';
 import '../data/takeoff_reference.dart';
 import '../data/offline_tiles_service.dart';
@@ -242,6 +245,9 @@ class MapControl extends StatefulWidget {
   /// Draw a bearing (course) line from the aircraft along its ground track.
   final bool showBearing;
 
+  /// Draw the active competition task (cylinders, optimized route, goal).
+  final bool showTask;
+
   /// Draw a straight line from the current position back to the take-off
   /// point (the first fixed sample of the in-progress flight).
   final bool showTakeoffLine;
@@ -311,6 +317,7 @@ class MapControl extends StatefulWidget {
     this.showWind = true,
     this.showSun = false,
     this.showBearing = false,
+    this.showTask = true,
     this.showTakeoffLine = false,
     this.showTakeoffPoint = true,
     this.showDefaultLandingPoint = true,
@@ -439,6 +446,8 @@ class _MapControlState extends State<MapControl> {
     FlightRecorder.instance.addListener(_onExternalChange);
     LandingPointStore.instance.addListener(_onExternalChange);
     TakeoffReference.instance.addListener(_onExternalChange);
+    CompetitionTaskStore.instance.addListener(_onExternalChange);
+    unawaited(CompetitionTaskStore.instance.load());
     // Refresh the legend when the vario thresholds change.
     VarioSoundSettings.instance.addListener(_onThresholdsChanged);
     VarioColorSettings.instance.addListener(_onExternalChange);
@@ -513,6 +522,7 @@ class _MapControlState extends State<MapControl> {
     FlightRecorder.instance.removeListener(_onExternalChange);
     LandingPointStore.instance.removeListener(_onExternalChange);
     TakeoffReference.instance.removeListener(_onExternalChange);
+    CompetitionTaskStore.instance.removeListener(_onExternalChange);
     VarioSoundSettings.instance.removeListener(_onThresholdsChanged);
     VarioColorSettings.instance.removeListener(_onExternalChange);
     DebugSettings.instance.removeListener(_onExternalChange);
@@ -873,6 +883,13 @@ class _MapControlState extends State<MapControl> {
                 // Airspace polygons (below track/markers so labels stay legible).
                 if (widget.showAirspace)
                   PolygonLayer(polygons: _buildAirspacePolygons()),
+
+                // Competition task: cylinders, optimized route, goal line.
+                if (widget.showTask) ...[
+                  CircleLayer(circles: _buildTaskCircles()),
+                  PolylineLayer(polylines: _buildTaskPolylines()),
+                  MarkerLayer(markers: _buildTaskMarkers()),
+                ],
 
                 // Bearing (course) line projected ahead along the ground track.
                 if (widget.showBearing && hasFix)
@@ -1344,6 +1361,146 @@ class _MapControlState extends State<MapControl> {
       ),
       CircleMarker(point: pos, radius: 4, color: _xcThermalColor(climbMps, f)),
     ];
+  }
+
+  // ── Competition task overlay ───────────────────────────────────────────
+  static const Color _taskCircleColor = Color(0xFF1E88E5);
+  static const Color _taskRouteColor = Color(0xFFFF6D00);
+  static const Color _taskGoalColor = Color(0xFFD50000);
+
+  /// Translucent cylinders for every turnpoint, tinted by role.
+  List<CircleMarker> _buildTaskCircles() {
+    final store = CompetitionTaskStore.instance;
+    final task = store.task;
+    if (task == null) return const [];
+    final out = <CircleMarker>[];
+    for (final tp in task.turnpoints) {
+      final color = _taskRoleColor(tp.role);
+      out.add(
+        CircleMarker(
+          point: _shift(LatLng(tp.latitude, tp.longitude), widget.tileSource),
+          radius: tp.radiusMeters,
+          useRadiusInMeter: true,
+          color: color.withAlpha(28),
+          borderColor: color.withAlpha(220),
+          borderStrokeWidth: 2 * widget.lineThickness,
+        ),
+      );
+    }
+    return out;
+  }
+
+  /// The optimized route (through the cylinder touch points) plus a dashed
+  /// centre-to-centre reference line and the goal line (for LINE goals).
+  List<Polyline> _buildTaskPolylines() {
+    final store = CompetitionTaskStore.instance;
+    final task = store.task;
+    final optimized = store.optimized;
+    if (task == null || task.turnpoints.length < 2) return const [];
+
+    final out = <Polyline>[];
+
+    // Dashed centre-to-centre reference line.
+    final centers = [
+      for (final tp in task.turnpoints)
+        _shift(LatLng(tp.latitude, tp.longitude), widget.tileSource),
+    ];
+    out.add(
+      Polyline(
+        points: centers,
+        strokeWidth: 1.5 * widget.lineThickness,
+        color: _taskCircleColor.withAlpha(120),
+        pattern: StrokePattern.dashed(segments: const [6, 6]),
+      ),
+    );
+
+    // Solid optimized route.
+    if (optimized != null && !optimized.isEmpty) {
+      final optimizedPoints = <LatLng>[
+        for (var i = 0; i < optimized.optimizedLat.length; i++)
+          _shift(
+            LatLng(optimized.optimizedLat[i], optimized.optimizedLon[i]),
+            widget.tileSource,
+          ),
+      ];
+      out.add(
+        Polyline(
+          points: optimizedPoints,
+          strokeWidth: 3.0 * widget.lineThickness,
+          color: _taskRouteColor.withAlpha(235),
+        ),
+      );
+    }
+
+    // Goal line: a short segment perpendicular to the final leg.
+    if (task.goal.type == TaskGoalType.line && task.turnpoints.length >= 2) {
+      final goal = task.turnpoints.last;
+      final prev = task.turnpoints[task.turnpoints.length - 2];
+      final bearing = GeoMath.bearingDegrees(
+        goal.latitude,
+        goal.longitude,
+        prev.latitude,
+        prev.longitude,
+      );
+      final perp = (bearing + 90) % 360;
+      final half = goal.radiusMeters;
+      final a = GeoMath.destination(goal.latitude, goal.longitude, perp, half);
+      final b = GeoMath.destination(
+        goal.latitude,
+        goal.longitude,
+        (perp + 180) % 360,
+        half,
+      );
+      out.add(
+        Polyline(
+          points: [
+            _shift(LatLng(a[0], a[1]), widget.tileSource),
+            _shift(LatLng(b[0], b[1]), widget.tileSource),
+          ],
+          strokeWidth: 4.0 * widget.lineThickness,
+          color: _taskGoalColor.withAlpha(235),
+        ),
+      );
+    }
+    return out;
+  }
+
+  /// Numbered labels at every turnpoint centre.
+  List<Marker> _buildTaskMarkers() {
+    final store = CompetitionTaskStore.instance;
+    final task = store.task;
+    if (task == null) return const [];
+    final nextIndex = store.nextTurnpointIndex;
+    final markers = <Marker>[];
+    for (var i = 0; i < task.turnpoints.length; i++) {
+      final tp = task.turnpoints[i];
+      markers.add(
+        Marker(
+          point: _shift(LatLng(tp.latitude, tp.longitude), widget.tileSource),
+          width: 30,
+          height: 30,
+          child: _TaskPointMarker(
+            label: '${i + 1}',
+            color: _taskRoleColor(tp.role),
+            highlighted: i == nextIndex,
+          ),
+        ),
+      );
+    }
+    return markers;
+  }
+
+  Color _taskRoleColor(TurnpointRole role) {
+    switch (role) {
+      case TurnpointRole.takeoff:
+        return const Color(0xFF43A047);
+      case TurnpointRole.sss:
+        return const Color(0xFF1E88E5);
+      case TurnpointRole.ess:
+        return const Color(0xFFF4511E);
+      case TurnpointRole.turnpoint:
+        return const Color(0xFF6A1B9A);
+    }
   }
 
   /// Builds the whole XCTrack-style Thermal Assistant overlay as one ordered
@@ -1924,6 +2081,43 @@ class _SavedPointMarker extends StatelessWidget {
 }
 
 /// A north-up map marker: a filled arrow rotated to the current [heading].
+class _TaskPointMarker extends StatelessWidget {
+  const _TaskPointMarker({
+    required this.label,
+    required this.color,
+    required this.highlighted,
+  });
+
+  final String label;
+  final Color color;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: highlighted
+            ? Border.all(color: Colors.white, width: 2.5)
+            : null,
+        boxShadow: const [
+          BoxShadow(color: Color(0x66000000), blurRadius: 3, spreadRadius: 0.5),
+        ],
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 class _HeadingMarker extends StatelessWidget {
   final double heading;
   final Color color;

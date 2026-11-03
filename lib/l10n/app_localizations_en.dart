@@ -1943,6 +1943,201 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlCompassWind => 'Compass and Wind';
 
   @override
+  String get controlCompetitionTask => 'Competition Task';
+
+  @override
+  String get competitionTaskTitle => 'Competition task';
+
+  @override
+  String get competitionTaskSubtitle => 'Build or import a turnpoint task';
+
+  @override
+  String competitionTaskSummarySubtitle(int count) {
+    return '$count turnpoints';
+  }
+
+  @override
+  String competitionTurnpointShort(int number) {
+    return 'TP $number';
+  }
+
+  @override
+  String get competitionNoTask =>
+      'No competition task yet. Add turnpoints or import an .xctsk file.';
+
+  @override
+  String get competitionTaskComplete => 'Task complete';
+
+  @override
+  String get competitionNextTurnpointLabel => 'Next TP';
+
+  @override
+  String get competitionGoalDistanceLabel => 'Goal';
+
+  @override
+  String get competitionAddTurnpoint => 'Add turnpoint';
+
+  @override
+  String get competitionUnnamedTask => 'Unnamed task';
+
+  @override
+  String get competitionRenameTask => 'Rename task';
+
+  @override
+  String get competitionTotalDistance => 'Total';
+
+  @override
+  String get competitionSpeedSection => 'Speed section';
+
+  @override
+  String get competitionTurnpointsCount => 'Turnpoints';
+
+  @override
+  String get competitionTurnpoints => 'Turnpoints';
+
+  @override
+  String get competitionStartSection => 'Start of speed section';
+
+  @override
+  String get competitionStartHint =>
+      'Mark a turnpoint as SSS to configure the start.';
+
+  @override
+  String get competitionStartType => 'Start type';
+
+  @override
+  String get competitionStartTypeRace => 'Race to goal';
+
+  @override
+  String get competitionStartTypeElapsed => 'Elapsed time';
+
+  @override
+  String get competitionStartDirection => 'Direction';
+
+  @override
+  String get competitionStartExit => 'Exit';
+
+  @override
+  String get competitionStartEnter => 'Enter';
+
+  @override
+  String get competitionTimeGates => 'Time gates';
+
+  @override
+  String get competitionAddGate => 'Add gate';
+
+  @override
+  String get competitionNoGates => 'No time gates set.';
+
+  @override
+  String get competitionGoalSection => 'Goal';
+
+  @override
+  String get competitionGoalType => 'Goal type';
+
+  @override
+  String get competitionGoalCylinder => 'Cylinder';
+
+  @override
+  String get competitionGoalLine => 'Line';
+
+  @override
+  String get competitionDeadline => 'Deadline';
+
+  @override
+  String get competitionNoDeadline => 'Not set';
+
+  @override
+  String get competitionEditLocation => 'Edit location';
+
+  @override
+  String get competitionEditRadius => 'Edit radius';
+
+  @override
+  String get competitionEditName => 'Edit name';
+
+  @override
+  String get competitionPickOnMap => 'Pick on map';
+
+  @override
+  String get competitionPickLanding => 'From landing points';
+
+  @override
+  String get competitionPickManual => 'Enter coordinates';
+
+  @override
+  String get competitionWaypointName => 'Waypoint name';
+
+  @override
+  String get competitionWaypointAltitude => 'Ground altitude';
+
+  @override
+  String get competitionNoLandingPoints => 'No saved landing points.';
+
+  @override
+  String get competitionInvalidCoordinates =>
+      'Enter a valid latitude and longitude.';
+
+  @override
+  String get competitionRadius => 'Radius';
+
+  @override
+  String get competitionInvalidRadius =>
+      'Enter a radius between 1 and 200000 m.';
+
+  @override
+  String get competitionSetRole => 'Set role';
+
+  @override
+  String get competitionRoleTakeoff => 'Takeoff';
+
+  @override
+  String get competitionRoleSss => 'Start';
+
+  @override
+  String get competitionRoleEss => 'End';
+
+  @override
+  String get competitionRoleTurnpoint => 'TP';
+
+  @override
+  String get competitionImportFile => 'Import .xctsk file';
+
+  @override
+  String get competitionImportCode => 'Import task code';
+
+  @override
+  String get competitionImportCodeHint =>
+      'Paste an XCTSK: task code or task JSON';
+
+  @override
+  String get competitionImport => 'Import';
+
+  @override
+  String get competitionImportFailed => 'Could not read that task.';
+
+  @override
+  String get competitionImported => 'Task imported.';
+
+  @override
+  String get competitionExportFile => 'Export .xctsk file';
+
+  @override
+  String get competitionExportFailed => 'Export failed.';
+
+  @override
+  String get competitionCopyCode => 'Copy task code';
+
+  @override
+  String get competitionCodeCopied => 'Task code copied.';
+
+  @override
+  String get competitionClearTask => 'Clear task';
+
+  @override
+  String get competitionClearConfirm => 'Remove the current competition task?';
+
+  @override
   String get controlSensorBattery => 'Sensor Battery';
 
   @override

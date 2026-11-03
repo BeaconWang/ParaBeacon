@@ -28,6 +28,7 @@ import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/gps_flight_data_bridge.dart';
 import 'data/landing_point_store.dart';
+import 'data/competition/competition_task_store.dart';
 import 'data/xcontest_live_tracking_service.dart';
 import 'data/live_tracking_settings.dart';
 import 'data/offline_tiles_service.dart';
@@ -148,6 +149,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     RecordingSettings.instance.load();
     final flightSettingsLoad = FlightState.instance.loadSettings();
     LandingPointStore.instance.load();
+    CompetitionTaskStore.instance.load();
     ColorPaletteSettings.instance.load();
     VarioColorSettings.instance.load();
     // Load persisted units and display precision before dashboard controls render.

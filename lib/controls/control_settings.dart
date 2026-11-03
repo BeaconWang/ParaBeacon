@@ -949,6 +949,33 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       options: {'24h': '24-hour', '12h': '12-hour (AM/PM)'},
     ),
   ],
+  'competition_task': [
+    ControlSetting.toggle(
+      key: 'showGoalDistance',
+      label: 'Show distance to goal',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showGlide',
+      label: 'Show glide ratio',
+      defaultValue: true,
+    ),
+    ControlSetting.toggle(key: 'showEta', label: 'Show ETA', defaultValue: true),
+    ControlSetting.choice(
+      key: 'bearingReference',
+      label: 'Direction',
+      defaultValue: 'relative',
+      options: {
+        'absolute': 'Absolute (compass)',
+        'relative': 'Relative (to heading)',
+      },
+    ),
+    ControlSetting.color(
+      key: 'directionArrowColor',
+      label: 'Direction arrow color',
+      defaultValue: 0xFF1E88E5,
+    ),
+  ],
   'map': [
     ControlSetting.toggle(
       key: 'follow',
@@ -1059,6 +1086,11 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'showBearing',
       label: 'Show bearing (course) line',
       defaultValue: false,
+    ),
+    ControlSetting.toggle(
+      key: 'showTask',
+      label: 'Show competition task',
+      defaultValue: true,
     ),
     ControlSetting.toggle(
       key: 'showTakeoffPoint',
@@ -1405,6 +1437,7 @@ const Set<String> _controlsWithoutTitle = {
   'map',
   'status_line',
   'compass_wind',
+  'competition_task',
 };
 
 const Map<String, UnitDimension> _unitDimensions = {

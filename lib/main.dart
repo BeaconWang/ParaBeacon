@@ -488,6 +488,13 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
                     ),
                   ),
                   actions: [
+                    TextButton.icon(
+                      onPressed: () => unawaited(
+                        _refreshAndroidPermissionDialogStatus(),
+                      ),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: Text(l10n.androidFlightPermissionRecheck),
+                    ),
                     FilledButton(
                       onPressed: () => Navigator.of(dialogContext).pop(
                         dontAskAgain

@@ -4130,6 +4130,12 @@ abstract class AppLocalizations {
   /// **'Stop checking and hide this prompt'**
   String get androidFlightPermissionsDisablePrompt;
 
+  /// No description provided for @androidFlightPermissionRecheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-check'**
+  String get androidFlightPermissionRecheck;
+
   /// No description provided for @flightButtonStart.
   ///
   /// In en, this message translates to:

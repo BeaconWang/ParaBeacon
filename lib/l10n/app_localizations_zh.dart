@@ -2095,6 +2095,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get androidFlightPermissionsDisablePrompt => '停止检查并隐藏此提示';
 
   @override
+  String get androidFlightPermissionRecheck => '重新检测';
+
+  @override
   String get flightButtonStart => '开始';
 
   @override

@@ -834,6 +834,7 @@
   "androidFlightPermissionOpenLocation": "Location settings",
   "androidFlightPermissionsOemNote": "“Unrestricted” is confirmed by Android’s battery-optimization exemption status. Some manufacturers apply additional background restrictions in their own settings.",
   "androidFlightPermissionsDisablePrompt": "Stop checking and hide this prompt",
+  "androidFlightPermissionRecheck": "Re-check",
   "flightButtonStart": "START",
   "flightButtonStop": "STOP",
   "flightButtonAuto": "AUTO",

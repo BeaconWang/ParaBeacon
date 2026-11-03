@@ -2183,6 +2183,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Stop checking and hide this prompt';
 
   @override
+  String get androidFlightPermissionRecheck => 'Re-check';
+
+  @override
   String get flightButtonStart => 'START';
 
   @override

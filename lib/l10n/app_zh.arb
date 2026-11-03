@@ -762,6 +762,7 @@
   "androidFlightPermissionOpenLocation": "定位设置",
   "androidFlightPermissionsOemNote": "通过 Android 电池优化豁免状态确认是否已设为“不受限制”。部分制造商还会在自有设置中施加额外的后台运行限制。",
   "androidFlightPermissionsDisablePrompt": "停止检查并隐藏此提示",
+  "androidFlightPermissionRecheck": "重新检测",
   "flightButtonStart": "开始",
   "flightButtonStop": "停止",
   "flightButtonAuto": "自动",

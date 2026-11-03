@@ -343,24 +343,38 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     try {
       if (location) {
         await _gpsBridge.requestBackgroundLocationPermission();
-        await _refreshAndroidPermissionDialogStatus();
+        await _refreshAndroidPermissionDialogStatus(battery: false);
       } else {
-        final settingsReturned = await _gpsBridge
-            .openBatteryOptimizationSettings();
-        if (settingsReturned) {
-          await _refreshAndroidPermissionDialogStatus();
-        }
+        // Battery use is only auto-detected when the app is opened; the user
+        // re-checks it manually with the battery row's "re-check" action.
+        await _gpsBridge.openBatteryOptimizationSettings();
       }
     } catch (_) {
       // The status dialog remains available if the device cannot open Settings.
     }
   }
 
-  Future<void> _refreshAndroidPermissionDialogStatus() async {
+  /// Refreshes the Android permission dialog. [location] and [battery] gate
+  /// which signals are updated: the battery state is never auto-detected on a
+  /// settings return or app resume, so callers pass `battery: false` there and
+  /// only the explicit re-check button passes `location: false`.
+  Future<void> _refreshAndroidPermissionDialogStatus({
+    bool location = true,
+    bool battery = true,
+  }) async {
     if (!_androidPermissionRationaleVisible) return;
     try {
-      _androidPermissionDialogStatus = await _gpsBridge
-          .getAndroidFlightPermissionStatus();
+      final latest = await _gpsBridge.getAndroidFlightPermissionStatus();
+      final previous = _androidPermissionDialogStatus;
+      _androidPermissionDialogStatus = AndroidFlightPermissionStatus(
+        backgroundLocationGranted: location
+            ? latest.backgroundLocationGranted
+            : (previous?.backgroundLocationGranted ??
+                  latest.backgroundLocationGranted),
+        batteryUnrestricted: battery
+            ? latest.batteryUnrestricted
+            : (previous?.batteryUnrestricted ?? latest.batteryUnrestricted),
+      );
       _androidPermissionDialogSetState?.call(() {});
     } catch (_) {
       // Keep the last known status if Settings cannot be queried.
@@ -375,6 +389,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     required String openLabel,
     required VoidCallback onOpen,
     required AppLocalizations l10n,
+    String? recheckLabel,
+    VoidCallback? onRecheck,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -400,10 +416,23 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
           ),
           Align(
             alignment: AlignmentDirectional.centerEnd,
-            child: TextButton.icon(
-              onPressed: onOpen,
-              icon: const Icon(Icons.open_in_new, size: 16),
-              label: Text(openLabel),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onRecheck != null && recheckLabel != null) ...[
+                  TextButton.icon(
+                    onPressed: onRecheck,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: Text(recheckLabel),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                TextButton.icon(
+                  onPressed: onOpen,
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: Text(openLabel),
+                ),
+              ],
             ),
           ),
         ],
@@ -451,6 +480,12 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
                           onOpen: () => unawaited(
                             _openAndroidPermissionSettings(location: false),
                           ),
+                          recheckLabel: l10n.androidFlightPermissionRecheck,
+                          onRecheck: () => unawaited(
+                            _refreshAndroidPermissionDialogStatus(
+                              location: false,
+                            ),
+                          ),
                           l10n: l10n,
                         ),
                         const Divider(),
@@ -488,13 +523,6 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
                     ),
                   ),
                   actions: [
-                    TextButton.icon(
-                      onPressed: () => unawaited(
-                        _refreshAndroidPermissionDialogStatus(),
-                      ),
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: Text(l10n.androidFlightPermissionRecheck),
-                    ),
                     FilledButton(
                       onPressed: () => Navigator.of(dialogContext).pop(
                         dontAskAgain
@@ -564,7 +592,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _gpsBridge.onAppLifecycleStateChanged(state);
     if (state == AppLifecycleState.resumed) {
       if (_androidPermissionRationaleVisible) {
-        unawaited(_refreshAndroidPermissionDialogStatus());
+        // Battery use is not auto-detected on resume; only location refreshes.
+        unawaited(_refreshAndroidPermissionDialogStatus(battery: false));
       }
       // Re-assert fullscreen: some system events (permission prompts, task
       // switcher, etc.) can bring the status/nav bars back.

@@ -484,6 +484,18 @@ class _MapControlState extends State<MapControl> {
         wgs.longitude,
         data.altitude,
       );
+      // Advance competition-task progress so the next turnpoint stays
+      // highlighted on the map even when the Competition Task control is not
+      // on the dashboard. Deferred to a post-frame callback because
+      // updatePosition may notify listeners (an unsafe mutation mid-build).
+      if (CompetitionTaskStore.instance.hasTask) {
+        final lat = wgs.latitude;
+        final lon = wgs.longitude;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          CompetitionTaskStore.instance.updatePosition(lat, lon);
+        });
+      }
     }
     _wind = data.windSpeed > 0.1
         ? WindEstimate(
@@ -1373,17 +1385,24 @@ class _MapControlState extends State<MapControl> {
     final store = CompetitionTaskStore.instance;
     final task = store.task;
     if (task == null) return const [];
+    final nextIndex = store.nextTurnpointIndex;
     final out = <CircleMarker>[];
-    for (final tp in task.turnpoints) {
-      final color = _taskRoleColor(tp.role);
+    for (var i = 0; i < task.turnpoints.length; i++) {
+      final tp = task.turnpoints[i];
+      final isNext = i == nextIndex;
+      // The next turnpoint's cylinder is drawn brighter and thicker so the
+      // active leg target reads at a glance.
+      final color = isNext
+          ? _TaskPointMarker._nextAccent
+          : _taskRoleColor(tp.role);
       out.add(
         CircleMarker(
           point: _shift(LatLng(tp.latitude, tp.longitude), widget.tileSource),
           radius: tp.radiusMeters,
           useRadiusInMeter: true,
-          color: color.withAlpha(28),
-          borderColor: color.withAlpha(220),
-          borderStrokeWidth: 2 * widget.lineThickness,
+          color: color.withAlpha(isNext ? 52 : 28),
+          borderColor: color.withAlpha(isNext ? 255 : 220),
+          borderStrokeWidth: (isNext ? 3.0 : 2.0) * widget.lineThickness,
         ),
       );
     }
@@ -1474,15 +1493,18 @@ class _MapControlState extends State<MapControl> {
     final markers = <Marker>[];
     for (var i = 0; i < task.turnpoints.length; i++) {
       final tp = task.turnpoints[i];
+      final highlighted = i == nextIndex;
+      // The next turnpoint gets a larger footprint so its glow ring has room.
+      final size = highlighted ? 46.0 : 30.0;
       markers.add(
         Marker(
           point: _shift(LatLng(tp.latitude, tp.longitude), widget.tileSource),
-          width: 30,
-          height: 30,
+          width: size,
+          height: size,
           child: _TaskPointMarker(
             label: '${i + 1}',
             color: _taskRoleColor(tp.role),
-            highlighted: i == nextIndex,
+            highlighted: highlighted,
           ),
         ),
       );
@@ -2092,9 +2114,14 @@ class _TaskPointMarker extends StatelessWidget {
   final Color color;
   final bool highlighted;
 
+  /// Accent used to make the next turnpoint pop regardless of its role colour.
+  static const Color _nextAccent = Color(0xFFFFC400);
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final dot = Container(
+      width: 30,
+      height: 30,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color,
@@ -2114,6 +2141,25 @@ class _TaskPointMarker extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
+    );
+    if (!highlighted) return dot;
+    // Draw an amber glow ring behind the dot so the "next" turnpoint stands
+    // out against any basemap and role colour.
+    return Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _nextAccent.withAlpha(60),
+        border: Border.all(color: _nextAccent, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: _nextAccent.withAlpha(160),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: dot,
     );
   }
 }

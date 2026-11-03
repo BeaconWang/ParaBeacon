@@ -13,7 +13,6 @@ import '../data/weather_favorites.dart';
 import '../data/weather_providers.dart' show WeatherModel;
 import '../data/weather_units.dart';
 import '../l10n/app_localizations.dart';
-import 'keyboard_avoidance.dart';
 import 'desktop_scrolling.dart';
 import 'favorite_rename_dialog.dart';
 import 'map_picker_sheet.dart';
@@ -547,9 +546,8 @@ class _WeatherSheetState extends State<_WeatherSheet> {
             ),
           ),
           child: SafeArea(
-            child: KeyboardInsetPadding(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildTopBar(l10n),
                 if (_searchResults.isNotEmpty || _searchFailed)
@@ -561,10 +559,8 @@ class _WeatherSheetState extends State<_WeatherSheet> {
                     _Phase.ready => _buildReady(l10n),
                   },
                 ),
-                if (MediaQuery.viewInsetsOf(context).bottom == 0)
-                  _buildBottomPanel(l10n),
+                _buildBottomPanel(l10n),
               ],
-            ),
             ),
           ),
         );

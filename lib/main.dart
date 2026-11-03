@@ -10,7 +10,6 @@ import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
 import 'controls/announcement_caption_overlay.dart';
-import 'controls/keyboard_avoidance.dart';
 import 'controls/position_sharing_dialog.dart';
 import 'dash_grid_page.dart';
 import 'data/aircraft_settings.dart';
@@ -399,13 +398,11 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             // Caption with the text of the current voice announcement, shown
             // above every route (dashboard, sheets, dialogs).
-            builder: (context, child) => KeyboardFocusScroller(
-              child: Stack(
-                children: [
-                  ?child,
-                  const Positioned.fill(child: AnnouncementCaptionOverlay()),
-                ],
-              ),
+            builder: (context, child) => Stack(
+              children: [
+                ?child,
+                const Positioned.fill(child: AnnouncementCaptionOverlay()),
+              ],
             ),
             home: const DashGridPage(),
           );

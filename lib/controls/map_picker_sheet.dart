@@ -13,7 +13,6 @@ import '../data/offline_tiles_service.dart';
 import '../data/weather_favorites.dart';
 import '../data/weather_service.dart' show WeatherException;
 import '../l10n/app_localizations.dart';
-import 'keyboard_avoidance.dart';
 import 'favorite_rename_dialog.dart';
 import 'map_control.dart' show MapTileSource, MapTileSources;
 import 'search_query_policy.dart';
@@ -445,10 +444,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
         ),
       ),
       child: SafeArea(
-        child: KeyboardInsetPadding(
-          child: Column(
-            children: [
-              _buildTopBar(l10n),
+        child: Column(
+          children: [
+            _buildTopBar(l10n),
             Expanded(
               child: Stack(
                 children: [
@@ -593,7 +591,6 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
                 ? _buildLocationViewerBottomBar()
                 : _buildBottomBar(l10n),
           ],
-          ),
         ),
       ),
     );
@@ -650,14 +647,9 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
   }
 
   Widget _buildSearchResults(AppLocalizations l10n) {
-    final availableHeight =
-        MediaQuery.sizeOf(context).height -
-        MediaQuery.viewInsetsOf(context).bottom;
-    final maxResultsHeight =
-        (availableHeight * 0.32).clamp(96.0, 240.0).toDouble();
     return Container(
       margin: const EdgeInsets.only(top: 6),
-      constraints: BoxConstraints(maxHeight: maxResultsHeight),
+      constraints: const BoxConstraints(maxHeight: 240),
       decoration: BoxDecoration(
         color: const Color(0xF2101B33),
         borderRadius: BorderRadius.circular(14),

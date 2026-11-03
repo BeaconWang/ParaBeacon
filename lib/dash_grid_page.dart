@@ -1772,7 +1772,6 @@ class _DashGridPageState extends State<DashGridPage> {
         _handleBackDismiss();
       },
       child: Scaffold(
-        resizeToAvoidBottomInset: true,
         backgroundColor: _unlockPageVisible ? Colors.black : null,
         body: Stack(
           children: [

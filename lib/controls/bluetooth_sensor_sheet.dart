@@ -296,7 +296,6 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
         return StatefulBuilder(
           builder: (context, setLocalState) {
             return AlertDialog(
-              scrollable: true,
               title: Text(l10n.sensorCalibrateTitle),
               content: Column(
                 mainAxisSize: MainAxisSize.min,

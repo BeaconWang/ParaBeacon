@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
-import 'keyboard_avoidance.dart';
 import 'control_catalog.dart';
 
 /// Control ids that are only offered in the "Add Control" picker while running
@@ -25,9 +24,7 @@ Future<ControlType?> showAddControlSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => KeyboardInsetPadding(
-      child: _AddControlSheet(controlCounts: controlCounts),
-    ),
+    builder: (context) => _AddControlSheet(controlCounts: controlCounts),
   );
 }
 

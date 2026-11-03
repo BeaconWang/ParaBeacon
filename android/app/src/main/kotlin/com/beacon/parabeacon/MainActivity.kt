@@ -18,6 +18,7 @@ class MainActivity : FlutterActivity() {
     companion object {
         private const val FLIGHT_LIBRARY_CHANNEL = "com.beacon.parabeacon/flight_library"
         private const val FLIGHT_PERMISSIONS_CHANNEL = "com.beacon.parabeacon/flight_permissions"
+        private const val DEVICE_INFO_CHANNEL = "com.beacon.parabeacon/device_info"
         private const val CREATE_DOCUMENT_REQUEST = 4107
         private const val OPEN_IGC_TREE_REQUEST = 4108
         private const val BATTERY_PERMISSION_SETTINGS_REQUEST = 4109
@@ -55,6 +56,41 @@ class MainActivity : FlutterActivity() {
                 "openBatteryOptimizationSettings" -> openBatteryOptimizationSettings(result)
                 else -> result.notImplemented()
             }
+        }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            DEVICE_INFO_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getDeviceInfo" -> result.success(getDeviceInfo())
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    /// Minimal device descriptor used by the voice-announcement speaker to work
+    /// around vendor-specific audio routing. Huawei / HarmonyOS devices mute
+    /// text-to-speech tagged with the navigation-guidance audio usage unless a
+    /// real navigation session is active, so the speaker needs to recognise
+    /// them and fall back to the engine-default (media) usage.
+    private fun getDeviceInfo(): Map<String, Any> {
+        return mapOf(
+            "manufacturer" to (Build.MANUFACTURER ?: ""),
+            "brand" to (Build.BRAND ?: ""),
+            "isHarmonyOS" to isHarmonyOS(),
+        )
+    }
+
+    /// Detects Android-based HarmonyOS via Huawei's documented BuildEx API,
+    /// which reports the OS brand as "harmony". Any failure (non-Huawei ROMs
+    /// lack the class) is treated as "not HarmonyOS".
+    private fun isHarmonyOS(): Boolean {
+        return try {
+            val clazz = Class.forName("com.huawei.system.BuildEx")
+            val brand = clazz.getMethod("getOsBrand").invoke(clazz) as? String
+            "harmony".equals(brand, ignoreCase = true)
+        } catch (_: Throwable) {
+            false
         }
     }
 

@@ -4,6 +4,8 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import '../platform/android_device.dart';
+
 /// Language actually used for a spoken announcement.
 enum AnnouncementLanguage { chinese, english }
 
@@ -74,6 +76,11 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
   // matching voice. `null` when only the engine default language is in use.
   String? _selectedTag;
   int _failures = 0;
+
+  // Huawei / HarmonyOS devices mute text-to-speech tagged with the
+  // navigation-guidance audio usage, so the speaker falls back to the
+  // engine-default (media) usage there. Resolved once during base config.
+  bool _skipNavigationAudioAttributes = false;
 
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
   bool get _isIOS => !kIsWeb && Platform.isIOS;
@@ -243,6 +250,9 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
       await _call<dynamic>(() => _tts.awaitSpeakCompletion(true), _initTimeout);
       if (_isIOS) {
         await _call<dynamic>(() => _tts.autoStopSharedSession(false));
+      }
+      if (_isAndroid) {
+        _skipNavigationAudioAttributes = await AndroidDevice.isHuaweiOrHarmony;
       }
       _baseConfigured = true;
     }
@@ -417,8 +427,12 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
   }
 
   Future<void> _applyAndroidAudioAttributes() async {
-    // Navigation-guidance usage plays over media/AAudio output (the vario
-    // tone) instead of being treated as competing media playback.
+    // Huawei / HarmonyOS devices silently drop speech tagged with the
+    // navigation-guidance usage unless a real navigation session is active, so
+    // there the engine-default (media) usage is kept and the vario is ducked
+    // app-side instead. Other Android devices use navigation-guidance usage so
+    // speech plays over the vario tone rather than competing with it as media.
+    if (_skipNavigationAudioAttributes) return;
     await _call<void>(() => _tts.setAudioAttributesForNavigation());
   }
 

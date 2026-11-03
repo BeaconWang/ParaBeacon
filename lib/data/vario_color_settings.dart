@@ -18,13 +18,13 @@ class VarioColorSettings extends ChangeNotifier {
   ];
 
   static const List<int> defaultColors = [
-    0xFF000B1E,
-    0xFF0D47A1,
-    0xFF00BCD4,
-    0xFF9E9E9E,
-    0xFF4CAF50,
-    0xFFF44336,
-    0xFF4A0033,
+    0xFF02060D, // -10 m/s  Abyssal Blue-Black
+    0xFF2979FF, //  -7 m/s  Cobalt Blue
+    0xFF00B0FF, //  -3 m/s  Ice Blue
+    0xFFFFFFFF, //   0 m/s  Pure White
+    0xFF00E676, //  +3 m/s  Vivid Lime Green
+    0xFFFF3D00, //  +7 m/s  Flame Orange-Red
+    0xFF2B0000, // +10 m/s  Pitch Black-Red
   ];
 
   static const String _preferencePrefix = 'pb.varioColors.keyPoint.v1.';

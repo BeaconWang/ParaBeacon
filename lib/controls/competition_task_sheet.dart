@@ -11,6 +11,7 @@ import '../data/competition/competition_task_downloader.dart';
 import '../data/competition/competition_task_io.dart';
 import '../data/competition/competition_task_store.dart';
 import '../data/competition/qr_image_decoder.dart';
+import '../data/flight_data_provider.dart';
 import '../data/landing_point_store.dart';
 import '../l10n/app_localizations.dart';
 import 'competition_task_qr_sheet.dart';
@@ -658,10 +659,25 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
 
     switch (method) {
       case 'map':
+        // Centre priority: the waypoint being edited, else the last picked
+        // location, else the current device fix (and finally the picker's own
+        // fallback). The basemap defaults to the last-used source.
+        double? centerLat = initial?.latitude;
+        double? centerLon = initial?.longitude;
+        if (centerLat == null || centerLon == null) {
+          centerLat = MapPickerDefaults.lastLat;
+          centerLon = MapPickerDefaults.lastLon;
+        }
+        if (centerLat == null || centerLon == null) {
+          final fix = _currentFix();
+          centerLat = fix?.$1;
+          centerLon = fix?.$2;
+        }
         final picked = await showMapPickerSheet(
           context,
-          initialLat: initial?.latitude,
-          initialLon: initial?.longitude,
+          initialLat: centerLat,
+          initialLon: centerLon,
+          resolveCurrentLocation: _resolveCurrentFix,
         );
         if (picked == null || !mounted) return null;
         final name = await _pickText(
@@ -682,6 +698,29 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
         return _pickManual(l10n, initial: initial);
     }
     return null;
+  }
+
+  /// Backs the map picker's "return to current location" button: resolves the
+  /// live flight fix, or null when there is no valid position.
+  Future<(double, double)?> _resolveCurrentFix() async {
+    if (!mounted) return null;
+    return _currentFix();
+  }
+
+  /// A one-shot snapshot of the live flight position, or null when the fix is
+  /// missing or implausible (origin/out-of-range guards included).
+  (double, double)? _currentFix() {
+    final data = FlightDataProvider.transformerOf(context).data;
+    final valid =
+        data.hasFix &&
+        data.latitude.isFinite &&
+        data.longitude.isFinite &&
+        (data.latitude != 0.0 || data.longitude != 0.0) &&
+        data.latitude >= -90 &&
+        data.latitude <= 90 &&
+        data.longitude >= -180 &&
+        data.longitude <= 180;
+    return valid ? (data.latitude, data.longitude) : null;
   }
 
   Future<TaskWaypoint?> _pickFromLandingPoints(AppLocalizations l10n) async {

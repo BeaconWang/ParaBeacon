@@ -10,6 +10,7 @@ import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
 import 'controls/announcement_caption_overlay.dart';
+import 'controls/map_picker_sheet.dart' show MapPickerDefaults;
 import 'controls/position_sharing_dialog.dart';
 import 'dash_grid_page.dart';
 import 'data/aircraft_settings.dart';
@@ -150,6 +151,9 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     final flightSettingsLoad = FlightState.instance.loadSettings();
     LandingPointStore.instance.load();
     CompetitionTaskStore.instance.load();
+    // Restore the last-used map picker basemap and location so the turnpoint
+    // picker opens where the user left off.
+    MapPickerDefaults.load();
     ColorPaletteSettings.instance.load();
     VarioColorSettings.instance.load();
     // Load persisted units and display precision before dashboard controls render.

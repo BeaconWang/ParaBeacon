@@ -7108,6 +7108,90 @@ abstract class AppLocalizations {
   /// **'VARIO'**
   String get replay3dStatVario;
 
+  /// No description provided for @altimeterQnhSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Altimeter/QNH settings'**
+  String get altimeterQnhSettings;
+
+  /// No description provided for @altimeterQnhSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'QNH {qnh} hPa'**
+  String altimeterQnhSettingsSubtitle(Object qnh);
+
+  /// No description provided for @altimeterQnhCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current readings'**
+  String get altimeterQnhCurrent;
+
+  /// No description provided for @altimeterQnhCalibration.
+  ///
+  /// In en, this message translates to:
+  /// **'QNH calibration'**
+  String get altimeterQnhCalibration;
+
+  /// No description provided for @altimeterQnhManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual QNH'**
+  String get altimeterQnhManual;
+
+  /// No description provided for @altimeterQnhManualDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the sea-level reference pressure directly'**
+  String get altimeterQnhManualDescription;
+
+  /// No description provided for @altimeterQnhManualTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust QNH manually'**
+  String get altimeterQnhManualTitle;
+
+  /// No description provided for @altimeterQnhManualLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'QNH pressure'**
+  String get altimeterQnhManualLabel;
+
+  /// No description provided for @altimeterQnhManualInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a QNH between 870 and 1085 hPa'**
+  String get altimeterQnhManualInvalid;
+
+  /// No description provided for @altimeterQnhRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Supported manual range: 870–1085 hPa'**
+  String get altimeterQnhRange;
+
+  /// No description provided for @altimeterQnhReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to standard QNH'**
+  String get altimeterQnhReset;
+
+  /// No description provided for @altimeterQnhSensorUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No internal barometer reading'**
+  String get altimeterQnhSensorUnavailable;
+
+  /// No description provided for @altimeterQnhSensorDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal barometer is disabled'**
+  String get altimeterQnhSensorDisabled;
+
+  /// No description provided for @altimeterQnhNoReading.
+  ///
+  /// In en, this message translates to:
+  /// **'No reading'**
+  String get altimeterQnhNoReading;
+
   /// No description provided for @sensorTitle.
   ///
   /// In en, this message translates to:

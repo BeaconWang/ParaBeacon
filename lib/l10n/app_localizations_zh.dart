@@ -3686,6 +3686,50 @@ class AppLocalizationsZh extends AppLocalizations {
   String get replay3dStatVario => '升降';
 
   @override
+  String get altimeterQnhSettings => '高度计/QNH 设置';
+
+  @override
+  String altimeterQnhSettingsSubtitle(Object qnh) {
+    return 'QNH $qnh hPa';
+  }
+
+  @override
+  String get altimeterQnhCurrent => '当前读数';
+
+  @override
+  String get altimeterQnhCalibration => 'QNH 校准';
+
+  @override
+  String get altimeterQnhManual => '手动设置 QNH';
+
+  @override
+  String get altimeterQnhManualDescription => '直接设置海平面基准气压';
+
+  @override
+  String get altimeterQnhManualTitle => '手动调整 QNH';
+
+  @override
+  String get altimeterQnhManualLabel => 'QNH 气压';
+
+  @override
+  String get altimeterQnhManualInvalid => '请输入 870 至 1085 hPa 之间的 QNH';
+
+  @override
+  String get altimeterQnhRange => '手动设置范围：870–1085 hPa';
+
+  @override
+  String get altimeterQnhReset => '重置为标准 QNH';
+
+  @override
+  String get altimeterQnhSensorUnavailable => '没有内置气压计读数';
+
+  @override
+  String get altimeterQnhSensorDisabled => '内置气压计已禁用';
+
+  @override
+  String get altimeterQnhNoReading => '暂无读数';
+
+  @override
   String get sensorTitle => '传感器';
 
   @override

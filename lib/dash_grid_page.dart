@@ -16,6 +16,7 @@ import 'controls/auto_flight_settings_sheet.dart';
 import 'controls/live_tracking_settings_sheet.dart';
 import 'controls/add_control_sheet.dart';
 import 'controls/bluetooth_sensor_sheet.dart';
+import 'controls/altimeter_qnh_settings_sheet.dart';
 import 'controls/keyboard_inset.dart';
 import 'controls/control_catalog.dart';
 import 'controls/control_context_menu.dart';
@@ -36,6 +37,7 @@ import 'data/live_tracking_settings.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
+import 'data/sensors/internal_sensor_service.dart';
 import 'data/landing_point_store.dart';
 import 'data/layout_config_io.dart';
 import 'data/layout_store.dart';
@@ -980,6 +982,33 @@ class _DashGridPageState extends State<DashGridPage> {
                             subtitle: Text(l10n.bluetoothSensorSubtitle),
                             trailing: const Icon(Icons.chevron_right, size: 20),
                             onTap: () => showBluetoothSensorSheet(context),
+                          ),
+                          const Divider(height: 1),
+                          AnimatedBuilder(
+                            animation: InternalSensorService.instance,
+                            builder: (context, _) => ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Icon(
+                                Icons.speed,
+                                color: theme.colorScheme.primary,
+                              ),
+                              title: Text(l10n.altimeterQnhSettings),
+                              subtitle: Text(
+                                l10n.altimeterQnhSettingsSubtitle(
+                                  InternalSensorService.instance
+                                      .referencePressureHpa
+                                      .toStringAsFixed(2),
+                                ),
+                              ),
+                              trailing: const Icon(
+                                Icons.chevron_right,
+                                size: 20,
+                              ),
+                              onTap: () async {
+                                await showAltimeterQnhSettingsSheet(context);
+                                setSheetState(() {});
+                              },
+                            ),
                           ),
                           const Divider(height: 1),
                           ListTile(

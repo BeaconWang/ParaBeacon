@@ -3825,6 +3825,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get replay3dStatVario => 'VARIO';
 
   @override
+  String get altimeterQnhSettings => 'Altimeter/QNH settings';
+
+  @override
+  String altimeterQnhSettingsSubtitle(Object qnh) {
+    return 'QNH $qnh hPa';
+  }
+
+  @override
+  String get altimeterQnhCurrent => 'Current readings';
+
+  @override
+  String get altimeterQnhCalibration => 'QNH calibration';
+
+  @override
+  String get altimeterQnhManual => 'Manual QNH';
+
+  @override
+  String get altimeterQnhManualDescription =>
+      'Set the sea-level reference pressure directly';
+
+  @override
+  String get altimeterQnhManualTitle => 'Adjust QNH manually';
+
+  @override
+  String get altimeterQnhManualLabel => 'QNH pressure';
+
+  @override
+  String get altimeterQnhManualInvalid =>
+      'Enter a QNH between 870 and 1085 hPa';
+
+  @override
+  String get altimeterQnhRange => 'Supported manual range: 870–1085 hPa';
+
+  @override
+  String get altimeterQnhReset => 'Reset to standard QNH';
+
+  @override
+  String get altimeterQnhSensorUnavailable => 'No internal barometer reading';
+
+  @override
+  String get altimeterQnhSensorDisabled => 'Internal barometer is disabled';
+
+  @override
+  String get altimeterQnhNoReading => 'No reading';
+
+  @override
   String get sensorTitle => 'Sensor';
 
   @override

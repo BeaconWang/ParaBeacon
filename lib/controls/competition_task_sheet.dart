@@ -966,26 +966,14 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     required String title,
     required String initial,
   }) async {
-    final controller = TextEditingController(text: initial);
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(controller: controller, autofocus: true),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.of(context).pop(controller.text.trim()),
-            child: Text(l10n.save),
-          ),
-        ],
+      builder: (context) => _CompetitionTextEntryDialog(
+        title: title,
+        initial: initial,
+        l10n: l10n,
       ),
     );
-    controller.dispose();
     if (result == null) return null;
     return result.isEmpty ? _suggestName() : result;
   }
@@ -1281,6 +1269,59 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
 
   void _snack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+/// Owns the controller for the waypoint-name dialog so it stays alive for the
+/// full route transition and is disposed with its TextField subtree.
+class _CompetitionTextEntryDialog extends StatefulWidget {
+  const _CompetitionTextEntryDialog({
+    required this.title,
+    required this.initial,
+    required this.l10n,
+  });
+
+  final String title;
+  final String initial;
+  final AppLocalizations l10n;
+
+  @override
+  State<_CompetitionTextEntryDialog> createState() =>
+      _CompetitionTextEntryDialogState();
+}
+
+class _CompetitionTextEntryDialogState
+    extends State<_CompetitionTextEntryDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initial);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(controller: _controller, autofocus: true),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(widget.l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+          child: Text(widget.l10n.save),
+        ),
+      ],
+    );
   }
 }
 

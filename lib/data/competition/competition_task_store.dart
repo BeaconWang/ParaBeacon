@@ -242,6 +242,30 @@ class CompetitionTaskStore extends ChangeNotifier {
     _persist();
   }
 
+  /// Manually steps the target back to the previous turnpoint.
+  void retreat() {
+    final task = _task;
+    if (task == null) return;
+    if (_reachedCount <= 0) return;
+    _reachedCount--;
+    notifyListeners();
+    _persist();
+  }
+
+  /// Manually sets the current target to the turnpoint at [index], marking
+  /// every earlier turnpoint as reached. Passing a value equal to the number of
+  /// turnpoints marks the whole task complete. Out-of-range values are clamped;
+  /// a no-op when the target is unchanged or there is no task.
+  void setNextTurnpointIndex(int index) {
+    final task = _task;
+    if (task == null || task.isEmpty) return;
+    final clamped = index.clamp(0, task.turnpoints.length);
+    if (_reachedCount == clamped) return;
+    _reachedCount = clamped;
+    notifyListeners();
+    _persist();
+  }
+
   /// Sets the next target to the turnpoint closest to [latitude]/[longitude],
   /// marking every earlier turnpoint as already reached.
   ///

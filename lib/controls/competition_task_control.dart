@@ -213,6 +213,12 @@ class _CompetitionTaskControlState extends State<CompetitionTaskControl> {
                     '${(nextIndex ?? totalTurnpoints).clamp(0, totalTurnpoints)}/$totalTurnpoints',
                 nextName: nextTitle,
                 roleLabel: roleLabel,
+                canPrev: store.reachedCount > 0,
+                canNext: store.reachedCount < totalTurnpoints,
+                onPrev: () => store.retreat(),
+                onNext: () => store.advance(),
+                prevTooltip: l10n.competitionPrevTargetTooltip,
+                nextTooltip: l10n.competitionNextTargetTooltip,
               ),
               SizedBox(height: 6 * scale),
               Expanded(
@@ -354,6 +360,12 @@ class _Header extends StatelessWidget {
     required this.progress,
     required this.nextName,
     required this.roleLabel,
+    required this.canPrev,
+    required this.canNext,
+    required this.onPrev,
+    required this.onNext,
+    required this.prevTooltip,
+    required this.nextTooltip,
   });
 
   final double scale;
@@ -361,6 +373,12 @@ class _Header extends StatelessWidget {
   final String progress;
   final String nextName;
   final String? roleLabel;
+  final bool canPrev;
+  final bool canNext;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+  final String prevTooltip;
+  final String nextTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -438,7 +456,63 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
+        // Manual target switcher: step the current goal back/forward.
+        _TargetStepButton(
+          icon: Icons.chevron_left,
+          scale: scale,
+          tooltip: prevTooltip,
+          onPressed: canPrev ? onPrev : null,
+        ),
+        _TargetStepButton(
+          icon: Icons.chevron_right,
+          scale: scale,
+          tooltip: nextTooltip,
+          onPressed: canNext ? onNext : null,
+        ),
       ],
+    );
+  }
+}
+
+/// Small round button used to manually step the competition target.
+class _TargetStepButton extends StatelessWidget {
+  const _TargetStepButton({
+    required this.icon,
+    required this.scale,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final double scale;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final enabled = onPressed != null;
+    final size = (28 * scale).clamp(24.0, 40.0).toDouble();
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Icon(
+              icon,
+              size: 20 * scale,
+              color: enabled
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurface.withAlpha(60),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

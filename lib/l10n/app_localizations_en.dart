@@ -1985,6 +1985,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionTaskComplete => 'Task complete';
 
   @override
+  String get competitionPrevTargetTooltip => 'Previous target';
+
+  @override
+  String get competitionNextTargetTooltip => 'Next target';
+
+  @override
   String get competitionNextTurnpointLabel => 'Next TP';
 
   @override

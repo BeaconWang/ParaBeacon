@@ -3764,6 +3764,18 @@ abstract class AppLocalizations {
   /// **'Task complete'**
   String get competitionTaskComplete;
 
+  /// No description provided for @competitionPrevTargetTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous target'**
+  String get competitionPrevTargetTooltip;
+
+  /// No description provided for @competitionNextTargetTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Next target'**
+  String get competitionNextTargetTooltip;
+
   /// No description provided for @competitionNextTurnpointLabel.
   ///
   /// In en, this message translates to:

@@ -687,6 +687,8 @@
   },
   "competitionNoTask": "尚无竞赛航线。请添加绕点或导入 .xctsk 文件。",
   "competitionTaskComplete": "航线完成",
+  "competitionPrevTargetTooltip": "上一个目标",
+  "competitionNextTargetTooltip": "下一个目标",
   "competitionNextTurnpointLabel": "下一绕点",
   "competitionGoalDistanceLabel": "终点",
   "competitionAddTurnpoint": "添加绕点",

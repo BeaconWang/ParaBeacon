@@ -749,6 +749,8 @@
   },
   "competitionNoTask": "No competition task yet. Add turnpoints or import an .xctsk file.",
   "competitionTaskComplete": "Task complete",
+  "competitionPrevTargetTooltip": "Previous target",
+  "competitionNextTargetTooltip": "Next target",
   "competitionNextTurnpointLabel": "Next TP",
   "competitionGoalDistanceLabel": "Goal",
   "competitionAddTurnpoint": "Add turnpoint",

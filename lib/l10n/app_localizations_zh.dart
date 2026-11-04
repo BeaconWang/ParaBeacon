@@ -1903,6 +1903,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionTaskComplete => '航线完成';
 
   @override
+  String get competitionPrevTargetTooltip => '上一个目标';
+
+  @override
+  String get competitionNextTargetTooltip => '下一个目标';
+
+  @override
   String get competitionNextTurnpointLabel => '下一绕点';
 
   @override

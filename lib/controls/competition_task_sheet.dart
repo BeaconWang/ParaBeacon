@@ -342,7 +342,11 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
           itemBuilder: (context, index) {
             final tp = task.turnpoints[index];
             return _TurnpointTile(
-              key: ValueKey('tp_$index'),
+              // Identity-based key: stable across reorders and unique even for
+              // value-equal turnpoints. Index keys break ReorderableListView's
+              // element/overlay reparenting (triggering a `_dependents.isEmpty`
+              // assertion when a tile's PopupMenuButton/Tooltip is torn down).
+              key: ObjectKey(tp),
               index: index,
               turnpoint: tp,
               l10n: l10n,

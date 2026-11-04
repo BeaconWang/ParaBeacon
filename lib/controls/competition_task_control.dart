@@ -11,9 +11,8 @@ import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
 
-/// Dashboard widget that navigates the active competition task: it points to
-/// the next turnpoint cylinder and shows the optimized distance to goal, the
-/// required glide and an ETA.
+/// Dashboard widget that navigates the active competition task by pointing to
+/// the next turnpoint cylinder.
 ///
 /// Reads the shared [CompetitionTaskStore] (so it tracks task edits and auto
 /// advances as cylinders are entered) and the current position from the
@@ -21,12 +20,10 @@ import 'decimal_places.dart';
 class CompetitionTaskControl extends StatefulWidget {
   const CompetitionTaskControl({
     super.key,
-    this.showGoalDistance = true,
     this.relative = true,
     this.arrowColor,
   });
 
-  final bool showGoalDistance;
   final bool relative;
   final Color? arrowColor;
 
@@ -111,11 +108,6 @@ class _CompetitionTaskControlState extends State<CompetitionTaskControl> {
           ? ((absoluteBearing - data.heading) % 360 + 360) % 360
           : null;
     }
-
-    // ── Optimized distance to goal ──
-    final goalDistance = hasFix
-        ? store.remainingDistanceToGoal(data.latitude, data.longitude)
-        : null;
 
     // ── Format ──
     final distanceUnit = selectedUnit(context, UnitDimension.distance);
@@ -211,16 +203,6 @@ class _CompetitionTaskControlState extends State<CompetitionTaskControl> {
                             scale: scale,
                             color: theme.colorScheme.primary,
                           ),
-                          if (widget.showGoalDistance) ...[
-                            SizedBox(height: 4 * scale),
-                            _Chip(
-                              label: l10n.competitionGoalDistanceLabel,
-                              value:
-                                  '${fmtDistance(goalDistance)} ${distanceUnitLabel(goalDistance)}',
-                              scale: scale,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ],
                         ],
                       ),
                     ),
@@ -504,64 +486,6 @@ class _Hero extends StatelessWidget {
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.value,
-    required this.scale,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final double scale;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6 * scale, vertical: 3 * scale),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withAlpha(90),
-        borderRadius: BorderRadius.circular(7 * scale),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              label.toUpperCase(),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontSize: 7.5 * scale,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          SizedBox(height: 2 * scale),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 13 * scale,
-                fontWeight: FontWeight.w700,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
         ],
       ),
     );

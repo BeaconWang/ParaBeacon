@@ -455,10 +455,6 @@ class ControlWidget extends StatelessWidget {
         );
       case 'competition_task':
         return CompetitionTaskControl(
-          showGoalDistance: control.boolSetting(
-            'showGoalDistance',
-            fallback: true,
-          ),
           relative: control.setting('bearingReference') == 'relative',
           arrowColor: Color(
             control.intSetting('directionArrowColor', fallback: 0xFF1E88E5),

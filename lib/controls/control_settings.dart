@@ -950,11 +950,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ),
   ],
   'competition_task': [
-    ControlSetting.toggle(
-      key: 'showGoalDistance',
-      label: 'Show distance to goal',
-      defaultValue: true,
-    ),
     ControlSetting.choice(
       key: 'bearingReference',
       label: 'Direction',

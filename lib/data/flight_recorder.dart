@@ -1150,11 +1150,20 @@ class FlightRecorder extends ChangeNotifier {
           track: completed,
         ),
       );
-      if (automaticLanding && completed != null) {
-        // A discarded short record stays resumable (off the log) during the
-        // quick-relaunch window so a brief touch-and-go is not split.
+      // Keep the just-ended flight resumable during the quick-relaunch window
+      // so a follow-up takeoff continues it rather than starting a new flight.
+      // This covers an automatic landing (a brief touch-and-go) and also a
+      // *manual* stop while automatic detection is enabled: if the pilot stops
+      // but motion continues and auto-takeoff fires again shortly after, that
+      // is treated as continuing the same flight. A manual stop records no
+      // transition time, so the completed track's end time anchors the window.
+      final keepResumable =
+          completed != null &&
+          (automaticLanding || (_flightState?.autoDetect ?? false));
+      if (keepResumable) {
         _quickRelaunchTrack = completed;
-        _quickRelaunchAt = transitionPointTime;
+        _quickRelaunchAt =
+            transitionPointTime ?? completed.endTime ?? DateTime.now().toUtc();
         _quickRelaunchTrackDiscarded = !logged;
       } else {
         _quickRelaunchTrack = null;

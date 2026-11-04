@@ -241,6 +241,38 @@ class CompetitionTaskStore extends ChangeNotifier {
     _persist();
   }
 
+  /// Sets the next target to the turnpoint closest to [latitude]/[longitude],
+  /// marking every earlier turnpoint as already reached.
+  ///
+  /// Used at takeoff: when a task is loaded, the nearest turnpoint to the
+  /// launch position becomes the current target so navigation starts from the
+  /// relevant part of the course instead of always the first turnpoint.
+  /// No-op when there is no task or the chosen target is already current.
+  void setProgressToNearest(double latitude, double longitude) {
+    final task = _task;
+    if (task == null || task.isEmpty) return;
+    if (!latitude.isFinite || !longitude.isFinite) return;
+    var bestIndex = 0;
+    var bestDist = double.infinity;
+    for (var i = 0; i < task.turnpoints.length; i++) {
+      final tp = task.turnpoints[i];
+      final d = GeoMath.distanceMeters(
+        latitude,
+        longitude,
+        tp.latitude,
+        tp.longitude,
+      );
+      if (d < bestDist) {
+        bestDist = d;
+        bestIndex = i;
+      }
+    }
+    if (_reachedCount == bestIndex) return;
+    _reachedCount = bestIndex;
+    notifyListeners();
+    _persist();
+  }
+
   /// Feeds a live position; auto-advances when the pilot enters the next
   /// turnpoint's cylinder. Returns true when progress changed.
   bool updatePosition(double latitude, double longitude) {
@@ -269,22 +301,67 @@ class CompetitionTaskStore extends ChangeNotifier {
   /// remaining turnpoints to goal, as an ordered list of `(lat, lon)` points
   /// beginning at the given position and ending at the goal touch point.
   ///
-  /// Returns null when there is no task or the task is already complete. The
-  /// route is re-optimized against the current position, so the first leg
-  /// (current → next turnpoint) reflects where the pilot actually is.
+  /// Returns null when there is no task or the task is already complete.
+  ///
+  /// The first leg connects the current position to the **target cylinder's
+  /// entry point** — the nearest point on the next turnpoint's boundary — so
+  /// the connection goes *to the target circle* (the checkpoint to reach next)
+  /// rather than grazing through it toward the one after. The rest of the
+  /// route is then optimized from that entry point through the remaining
+  /// cylinders to goal.
   List<(double, double)>? liveRouteToGoal(double latitude, double longitude) {
     final task = _task;
     final index = nextTurnpointIndex;
     if (task == null || index == null) return null;
     final remaining = task.turnpoints.sublist(index);
     if (remaining.isEmpty) return null;
-    final pts = TaskOptimizer.optimizeFromStart(latitude, longitude, remaining);
-    final lats = pts[0];
-    final lons = pts[1];
-    if (lats.isEmpty) return null;
-    final out = <(double, double)>[(latitude, longitude)];
-    for (var i = 0; i < lats.length; i++) {
-      out.add((lats[i], lons[i]));
+
+    // Entry point on the target (next) cylinder: the boundary point closest to
+    // the current position. When already inside, the entry is the current
+    // position itself.
+    final target = remaining.first;
+    final centreDist = GeoMath.distanceMeters(
+      latitude,
+      longitude,
+      target.latitude,
+      target.longitude,
+    );
+    double entryLat;
+    double entryLon;
+    if (centreDist <= target.radiusMeters || centreDist < 1.0) {
+      entryLat = latitude;
+      entryLon = longitude;
+    } else {
+      final bearing = GeoMath.bearingDegrees(
+        latitude,
+        longitude,
+        target.latitude,
+        target.longitude,
+      );
+      final p = GeoMath.destination(
+        latitude,
+        longitude,
+        bearing,
+        centreDist - target.radiusMeters,
+      );
+      entryLat = p[0];
+      entryLon = p[1];
+    }
+
+    final out = <(double, double)>[
+      (latitude, longitude),
+      (entryLat, entryLon),
+    ];
+
+    // Optimize the remainder (after the target) from the entry point onward.
+    final rest = remaining.sublist(1);
+    if (rest.isNotEmpty) {
+      final pts = TaskOptimizer.optimizeFromStart(entryLat, entryLon, rest);
+      final lats = pts[0];
+      final lons = pts[1];
+      for (var i = 0; i < lats.length; i++) {
+        out.add((lats[i], lons[i]));
+      }
     }
     return out;
   }

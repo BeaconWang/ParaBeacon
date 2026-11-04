@@ -14,6 +14,7 @@ import '../data/debug_settings.dart';
 import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
+import '../data/flight_state.dart';
 import '../data/gcj02.dart';
 import '../data/geo_math.dart';
 import '../data/landing_point_store.dart';
@@ -448,6 +449,9 @@ class _MapControlState extends State<MapControl> {
     TakeoffReference.instance.addListener(_onExternalChange);
     CompetitionTaskStore.instance.addListener(_onExternalChange);
     unawaited(CompetitionTaskStore.instance.load());
+    // The task overlay is only drawn once a flight has started, so repaint on
+    // flight start/stop.
+    FlightState.instance.addListener(_onExternalChange);
     // Refresh the legend when the vario thresholds change.
     VarioSoundSettings.instance.addListener(_onThresholdsChanged);
     VarioColorSettings.instance.addListener(_onExternalChange);
@@ -535,6 +539,7 @@ class _MapControlState extends State<MapControl> {
     LandingPointStore.instance.removeListener(_onExternalChange);
     TakeoffReference.instance.removeListener(_onExternalChange);
     CompetitionTaskStore.instance.removeListener(_onExternalChange);
+    FlightState.instance.removeListener(_onExternalChange);
     VarioSoundSettings.instance.removeListener(_onThresholdsChanged);
     VarioColorSettings.instance.removeListener(_onExternalChange);
     DebugSettings.instance.removeListener(_onExternalChange);
@@ -896,13 +901,17 @@ class _MapControlState extends State<MapControl> {
                 if (widget.showAirspace)
                   PolygonLayer(polygons: _buildAirspacePolygons()),
 
-                // Competition task: cylinders, optimized route, goal line.
+                // Competition task: cylinders, optimized route, goal line and
+                // turnpoint markers. Always shown (when enabled) so the course
+                // is visible on the ground. The "next turnpoint" highlight and
+                // the live current → task line only appear in flight.
                 if (widget.showTask) ...[
                   CircleLayer(circles: _buildTaskCircles()),
                   PolylineLayer(polylines: _buildTaskPolylines()),
                   // Real-time shortest route from the live position to goal,
                   // with the current → next-turnpoint leg highlighted (dashed).
-                  if (wgs != null)
+                  // Only while flying — no live connection on the ground.
+                  if (wgs != null && FlightState.instance.isFlying)
                     PolylineLayer(
                       polylines: _buildLiveRoutePolylines(wgs),
                     ),
@@ -1391,7 +1400,11 @@ class _MapControlState extends State<MapControl> {
     final store = CompetitionTaskStore.instance;
     final task = store.task;
     if (task == null) return const [];
-    final nextIndex = store.nextTurnpointIndex;
+    // The "next turnpoint" highlight only applies in flight; on the ground the
+    // course is shown without a current target.
+    final nextIndex = FlightState.instance.isFlying
+        ? store.nextTurnpointIndex
+        : null;
     final out = <CircleMarker>[];
     for (var i = 0; i < task.turnpoints.length; i++) {
       final tp = task.turnpoints[i];
@@ -1535,7 +1548,10 @@ class _MapControlState extends State<MapControl> {
     final store = CompetitionTaskStore.instance;
     final task = store.task;
     if (task == null) return const [];
-    final nextIndex = store.nextTurnpointIndex;
+    // No "next turnpoint" highlight until the flight starts.
+    final nextIndex = FlightState.instance.isFlying
+        ? store.nextTurnpointIndex
+        : null;
     final markers = <Marker>[];
     for (var i = 0; i < task.turnpoints.length; i++) {
       final tp = task.turnpoints[i];

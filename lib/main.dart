@@ -121,6 +121,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
 
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final FlightRecorder _flightRecorder = FlightRecorder.instance;
+
+  /// On takeoff, if a competition task is loaded, makes the turnpoint nearest
+  /// the launch position the current target.
+  StreamSubscription<FlightTransition>? _takeoffTaskSub;
   bool _landingPromptVisible = false;
   bool _androidPermissionRationaleVisible = false;
   StateSetter? _androidPermissionDialogSetState;
@@ -240,6 +244,9 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // landing detection when enabled). Records the transformed feed.
     _flightRecorder.bind(_transformer);
     _flightRecorder.addListener(_onFlightRecorderChanged);
+    // On takeoff, snap the competition task to the nearest turnpoint so
+    // navigation starts from the relevant part of the course.
+    _takeoffTaskSub = _flightRecorder.transitions.listen(_onFlightTransition);
     // Restore previously-saved flight summaries so the Flights sheet
     // shows past flights across app restarts (best-effort; failures are
     // silent so a corrupt on-disk log doesn't block startup).
@@ -280,6 +287,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _flightRecorder.removeListener(_onFlightRecorderChanged);
+    _takeoffTaskSub?.cancel();
     _liveTracking.unbind();
     _gpsBridge.dispose();
     _internalBridge.dispose();
@@ -555,6 +563,25 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _transformer.setVerticalSpeedWindow(
       VerticalSpeedSettings.instance.verticalSpeedWindow,
     );
+  }
+
+  /// On a fresh takeoff, if a competition task is loaded, make the turnpoint
+  /// nearest the launch position the current target. The launch position comes
+  /// from [TakeoffReference] (populated before this fires), falling back to the
+  /// started track's takeoff coordinates.
+  ///
+  /// A [FlightTransitionKind.resumedTakeoff] (automatic quick-relaunch that
+  /// continues the previous flight) is intentionally skipped so task progress
+  /// resumes from where it stopped last time rather than snapping back.
+  void _onFlightTransition(FlightTransition transition) {
+    if (transition.kind != FlightTransitionKind.takeoff) return;
+    final store = CompetitionTaskStore.instance;
+    if (!store.hasTask) return;
+    final point = TakeoffReference.instance.point;
+    final lat = point?.latitude ?? transition.track?.takeoffLatitude;
+    final lon = point?.longitude ?? transition.track?.takeoffLongitude;
+    if (lat == null || lon == null) return;
+    store.setProgressToNearest(lat, lon);
   }
 
   void _onFlightRecorderChanged() {

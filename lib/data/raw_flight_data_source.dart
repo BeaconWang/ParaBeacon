@@ -8,6 +8,7 @@ import 'competition/competition_task_store.dart';
 import 'competition/task_optimizer.dart';
 import 'debug_settings.dart';
 import 'flight_data.dart';
+import 'flight_state.dart';
 import 'geo_math.dart';
 
 /// A set of manual overrides for individual flight-data fields.
@@ -236,6 +237,8 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     DebugSettings? debugSettings,
   }) : _debug = debugSettings ?? DebugSettings.instance {
     _applyStartLocation();
+    // Task-route mode anchors into the takeoff cylinder at flight start.
+    FlightState.instance.addListener(_onFlightStateChanged);
   }
 
   /// Positions the initial synthetic coordinates at the configured start point
@@ -250,30 +253,132 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     // Re-apply the start location each time the simulator (re)starts so
     // toggling the China switch takes effect on the next run.
     _applyStartLocation();
-    _buildRoute();
+    // Begin as a free-drift track. A real ground→flying transition anchors the
+    // track into the takeoff cylinder (see [_onFlightStateChanged]); if a
+    // flight is already in progress when we (re)start (e.g. the start
+    // coordinates were edited mid-flight), fly from the current position to
+    // the target instead of teleporting.
+    _route = null;
+    _routeIndex = 0;
+    if (FlightState.instance.isFlying) enterTaskRouteFromCurrent();
     _timer ??= Timer.periodic(tickInterval, (_) => _tick());
   }
 
-  /// Builds (or clears) the task-following route from the active competition
-  /// task. When enabled and a task with turnpoints exists, the synthetic track
-  /// flies the **shortest legal route**: it steers toward each turnpoint's
-  /// optimized touch point (the point on its cylinder that minimizes the total
-  /// path), grazing the cylinders in order from takeoff to goal. Falls back to
-  /// cylinder centres if an optimized route is unavailable; otherwise the
-  /// simulator keeps its random-drift behaviour.
-  void _buildRoute() {
-    _route = null;
-    _routeIndex = 0;
-    if (!_debug.simulateTaskRoute) return;
+  /// On a ground→flying transition, if task-route mode is enabled and a task
+  /// exists, moves the synthetic track to a **random point inside the takeoff
+  /// cylinder** and begins following the optimized course. Done once per
+  /// flight; the route is cleared on landing so the next takeoff re-anchors.
+  void _onFlightStateChanged() {
+    if (FlightState.instance.isFlying) {
+      if (_route == null) _enterTaskRouteAtTakeoff();
+    } else {
+      // Back on the ground: drop the route so a subsequent takeoff re-anchors.
+      _route = null;
+      _routeIndex = 0;
+    }
+  }
+
+  /// Reacts to the "Fly competition task route" toggle being flipped while the
+  /// simulator is already running (without recreating it, so the live position
+  /// is preserved).
+  ///
+  /// * Turned **on while flying** → fly from the current position to the
+  ///   target (no teleport).
+  /// * Turned **on while on the ground** → do nothing now; the track anchors
+  ///   into the takeoff cylinder at the next takeoff.
+  /// * Turned **off** → drop the route and resume free drift from here.
+  void onTaskRouteToggleChanged() {
+    if (!_debug.simulateTaskRoute) {
+      _route = null;
+      _routeIndex = 0;
+      return;
+    }
+    if (FlightState.instance.isFlying) {
+      enterTaskRouteFromCurrent();
+    } else {
+      _route = null;
+      _routeIndex = 0;
+    }
+  }
+
+  /// Builds the optimized task legs and places the aircraft at a random point
+  /// within the takeoff (first) cylinder. No-op (leaves free-drift) when the
+  /// toggle is off or there is no usable task.
+  void _enterTaskRouteAtTakeoff() {
+    final legs = _buildRouteLegs();
+    if (legs == null || legs.isEmpty) {
+      _route = null;
+      _routeIndex = 0;
+      return;
+    }
+    _route = legs;
+    // Random start somewhere inside the takeoff cylinder (uniform over area:
+    // sqrt keeps the distribution even rather than clustering at the centre).
+    final takeoff = legs.first;
+    final bearing = _rand.nextDouble() * 360.0;
+    final distance = math.sqrt(_rand.nextDouble()) * takeoff.r;
+    final p = GeoMath.destination(
+      takeoff.cLat,
+      takeoff.cLon,
+      bearing,
+      distance,
+    );
+    _lat = p[0];
+    _lon = p[1];
+    // Already inside the first cylinder, so aim at the next leg.
+    _routeIndex = legs.length > 1 ? 1 : 0;
+  }
+
+  /// Begins following the task route **from the current position** without
+  /// moving the aircraft — used when the task-route toggle is switched on
+  /// mid-flight, so the simulator flies from where it is to the target. Aims at
+  /// the task's current next turnpoint when known, otherwise the nearest
+  /// upcoming leg. No-op (free drift) when there is no usable task.
+  void enterTaskRouteFromCurrent() {
+    final legs = _buildRouteLegs();
+    if (legs == null || legs.isEmpty) {
+      _route = null;
+      _routeIndex = 0;
+      return;
+    }
+    _route = legs;
+    final nextIndex = CompetitionTaskStore.instance.nextTurnpointIndex;
+    if (nextIndex != null && nextIndex >= 0 && nextIndex < legs.length) {
+      _routeIndex = nextIndex;
+    } else {
+      // Fall back to the nearest leg's touch point from the current position.
+      var bestIndex = 0;
+      var bestDist = double.infinity;
+      for (var i = 0; i < legs.length; i++) {
+        final d = GeoMath.distanceMeters(
+          _lat,
+          _lon,
+          legs[i].tLat,
+          legs[i].tLon,
+        );
+        if (d < bestDist) {
+          bestDist = d;
+          bestIndex = i;
+        }
+      }
+      _routeIndex = bestIndex;
+    }
+  }
+
+  /// Builds the ordered task legs (optimized touch point + cylinder centre and
+  /// radius per turnpoint) from the active competition task, or null when the
+  /// toggle is off or no usable task/turnpoints exist.
+  List<({double tLat, double tLon, double cLat, double cLon, double r})>?
+  _buildRouteLegs() {
+    if (!_debug.simulateTaskRoute) return null;
     final CompetitionTask? task = CompetitionTaskStore.instance.task;
     final tps = task?.turnpoints;
-    if (task == null || tps == null || tps.isEmpty) return;
+    if (task == null || tps == null || tps.isEmpty) return null;
 
     // Prefer the store's cached optimized touch points (same geometry the map
     // draws); recompute if the cache is missing or stale.
     var optimized = CompetitionTaskStore.instance.optimized;
-    if (optimized == null ||
-        optimized.optimizedLat.length != tps.length) {
+    if (optimized == null || optimized.optimizedLat.length != tps.length) {
       optimized = TaskOptimizer.optimize(task);
     }
 
@@ -293,13 +398,7 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
         r: tp.radiusMeters,
       ));
     }
-    if (legs.isEmpty) return;
-
-    _route = legs;
-    // Start on the first turnpoint's touch point and aim at the next leg.
-    _lat = legs.first.tLat;
-    _lon = legs.first.tLon;
-    _routeIndex = legs.length > 1 ? 1 : 0;
+    return legs.isEmpty ? null : legs;
   }
 
   @override
@@ -431,6 +530,7 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
 
   @override
   void dispose() {
+    FlightState.instance.removeListener(_onFlightStateChanged);
     stop();
     super.dispose();
   }
@@ -502,12 +602,11 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
       _lastSimTaskRoute = _debug.simulateTaskRoute;
       return;
     }
-    // If the start coordinates or the task-follow toggle changed while the
-    // simulator is running, recreate it so it restarts from the new location
-    // and (re)builds or drops the task route.
+    // If the start coordinates changed while the simulator is running,
+    // recreate it so it restarts from the new location.
     final startChanged = _debug.simStartLat != _lastSimStartLat ||
-        _debug.simStartLon != _lastSimStartLon ||
-        _debug.simulateTaskRoute != _lastSimTaskRoute;
+        _debug.simStartLon != _lastSimStartLon;
+    final taskRouteChanged = _debug.simulateTaskRoute != _lastSimTaskRoute;
     _lastSimStartLat = _debug.simStartLat;
     _lastSimStartLon = _debug.simStartLon;
     _lastSimTaskRoute = _debug.simulateTaskRoute;
@@ -518,6 +617,13 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
       _sim = null;
       _connected = false;
       connectSimulated();
+      return;
+    }
+    // The task-route toggle flips in place (no recreate) so the simulator
+    // keeps its live position: when switched on mid-flight it flies from the
+    // current position to the target rather than teleporting.
+    if (taskRouteChanged && _debug.simulatorEnabled && _sim != null) {
+      _sim!.onTaskRouteToggleChanged();
       return;
     }
     if (_debug.simulatorEnabled) {

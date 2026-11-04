@@ -669,7 +669,7 @@
   "controlStatusLine": "状态栏",
   "controlCompassWind": "罗盘与风向",
   "controlCompetitionTask": "竞赛航线",
-  "controlTaskOptimalNav": "竞赛最优导航",
+  "controlTaskOptimalNav": "竞赛最优航线",
   "taskNextPointLabel": "下一点",
   "competitionTaskTitle": "竞赛航线",
   "competitionTaskSubtitle": "创建或导入绕点航线",

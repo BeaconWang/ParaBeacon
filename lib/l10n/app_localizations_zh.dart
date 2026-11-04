@@ -1875,7 +1875,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlCompetitionTask => '竞赛航线';
 
   @override
-  String get controlTaskOptimalNav => '竞赛最优导航';
+  String get controlTaskOptimalNav => '竞赛最优航线';
 
   @override
   String get taskNextPointLabel => '下一点';

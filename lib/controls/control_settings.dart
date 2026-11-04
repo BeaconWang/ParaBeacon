@@ -971,17 +971,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ),
   ],
   'task_optimal_nav': [
-    ControlSetting.toggle(
-      key: 'showFinishDistance',
-      label: 'Show distance to finish',
-      defaultValue: true,
-    ),
-    ControlSetting.toggle(
-      key: 'showGlide',
-      label: 'Show glide ratio',
-      defaultValue: true,
-    ),
-    ControlSetting.toggle(key: 'showEta', label: 'Show ETA', defaultValue: true),
     ControlSetting.choice(
       key: 'bearingReference',
       label: 'Direction',

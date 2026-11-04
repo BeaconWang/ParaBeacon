@@ -11,28 +11,20 @@ import '../data/unit_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
 
-/// Dashboard widget that gives the data needed to reach the **next checkpoint
-/// exactly along the shortest route that finishes the race**.
+/// Dashboard widget that points toward the next checkpoint along the
+/// optimized remaining route and shows the distance to that checkpoint.
 ///
 /// Unlike the plain competition-task control (which points at the cylinder
-/// centre), this control re-optimizes the whole remaining route from the live
-/// position on every frame via [CompetitionTaskStore.liveRouteToGoal]. It then
-/// steers toward the *optimized touch point* of the next cylinder — the exact
-/// point you should fly to for the shortest finish — and reports the total
-/// shortest distance to goal, the required glide and an ETA.
+/// centre), this control re-optimizes the remaining route from the live position
+/// via [CompetitionTaskStore.liveRouteToGoal] and steers toward the optimized
+/// touch point of the next cylinder.
 class TaskOptimalNavControl extends StatefulWidget {
   const TaskOptimalNavControl({
     super.key,
-    this.showFinishDistance = true,
-    this.showGlide = true,
-    this.showEta = true,
     this.relative = true,
     this.arrowColor,
   });
 
-  final bool showFinishDistance;
-  final bool showGlide;
-  final bool showEta;
   final bool relative;
   final Color? arrowColor;
 
@@ -98,7 +90,6 @@ class _TaskOptimalNavControlState extends State<TaskOptimalNavControl> {
 
     double? distToNext;
     double? absoluteBearing;
-    double? finishDistance;
     if (route != null && route.length >= 2) {
       final nextPoint = route[1];
       distToNext = GeoMath.distanceMeters(
@@ -115,16 +106,6 @@ class _TaskOptimalNavControlState extends State<TaskOptimalNavControl> {
           nextPoint.$2,
         );
       }
-      var sum = 0.0;
-      for (var i = 0; i < route.length - 1; i++) {
-        sum += GeoMath.distanceMeters(
-          route[i].$1,
-          route[i].$2,
-          route[i + 1].$1,
-          route[i + 1].$2,
-        );
-      }
-      finishDistance = sum;
     }
 
     double? bearingAngle = absoluteBearing;
@@ -132,33 +113,6 @@ class _TaskOptimalNavControlState extends State<TaskOptimalNavControl> {
       bearingAngle = data.hasHeading && data.heading.isFinite
           ? ((absoluteBearing - data.heading) % 360 + 360) % 360
           : null;
-    }
-
-    // ── Required glide + ETA to finish (along the shortest route) ──
-    double? requiredGlide;
-    final goalAlt = task.turnpoints.isNotEmpty
-        ? task.turnpoints.last.waypoint.altitudeM
-        : null;
-    if (finishDistance != null &&
-        goalAlt != null &&
-        goalAlt.isFinite &&
-        data.altitude.isFinite) {
-      final height = data.altitude - goalAlt;
-      if (height > 0.5) {
-        final ld = finishDistance / height;
-        if (ld.isFinite && ld >= 0) requiredGlide = ld;
-      }
-    }
-
-    int? etaSeconds;
-    if (finishDistance != null) {
-      final groundMps = data.groundSpeed / 3.6;
-      if (groundMps > 0.3) {
-        final seconds = finishDistance / groundMps;
-        if (seconds.isFinite && seconds >= 0 && seconds < 360000) {
-          etaSeconds = seconds.round();
-        }
-      }
     }
 
     // ── Format ──
@@ -182,20 +136,9 @@ class _TaskOptimalNavControlState extends State<TaskOptimalNavControl> {
     final nextTitle = next == null
         ? l10n.competitionTaskComplete
         : next.name.isEmpty
-            ? l10n.competitionTurnpointShort((nextIndex ?? 0) + 1)
-            : next.name;
+        ? l10n.competitionTurnpointShort((nextIndex ?? 0) + 1)
+        : next.name;
     final roleLabel = next == null ? null : _roleLabel(l10n, next.role);
-
-    final glideText = requiredGlide == null
-        ? '--'
-        : requiredGlide >= 100
-            ? '99+'
-            : formatDecimalValue(
-                requiredGlide,
-                autoDecimals: 1,
-                range: DecimalPlacesScope.rangeOf(context, 'ratioDecimals'),
-              );
-    final etaText = etaSeconds == null ? '--' : _formatDuration(etaSeconds);
 
     final arrowColor = widget.arrowColor ?? const Color(0xFFFFC400);
 
@@ -207,9 +150,10 @@ class _TaskOptimalNavControlState extends State<TaskOptimalNavControl> {
         final width = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : 240.0;
-        final scale = (math.min(height / 150.0, width / 240.0))
-            .clamp(0.5, 1.6)
-            .toDouble();
+        final scale = (math.min(
+          height / 150.0,
+          width / 240.0,
+        )).clamp(0.5, 1.6).toDouble();
         final pad = (height * 0.05).clamp(4.0, 10.0).toDouble();
 
         return Padding(
@@ -265,45 +209,6 @@ class _TaskOptimalNavControlState extends State<TaskOptimalNavControl> {
                             unit: distanceUnitLabel(distToNext),
                             scale: scale,
                             color: theme.colorScheme.primary,
-                          ),
-                          SizedBox(height: 4 * scale),
-                          Row(
-                            children: [
-                              if (widget.showFinishDistance)
-                                Expanded(
-                                  child: _Chip(
-                                    label: l10n.competitionGoalDistanceLabel,
-                                    value:
-                                        '${fmtDistance(finishDistance)} ${distanceUnitLabel(finishDistance)}',
-                                    scale: scale,
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              if (widget.showGlide) ...[
-                                if (widget.showFinishDistance)
-                                  SizedBox(width: 4 * scale),
-                                Expanded(
-                                  child: _Chip(
-                                    label: l10n
-                                        .waypointRequiredGlideRatioLabel,
-                                    value: glideText,
-                                    scale: scale,
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              ],
-                              if (widget.showEta) ...[
-                                SizedBox(width: 4 * scale),
-                                Expanded(
-                                  child: _Chip(
-                                    label: l10n.waypointEtaLabel,
-                                    value: etaText,
-                                    scale: scale,
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              ],
-                            ],
                           ),
                         ],
                       ),
@@ -594,64 +499,6 @@ class _Hero extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.value,
-    required this.scale,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final double scale;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6 * scale, vertical: 3 * scale),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withAlpha(90),
-        borderRadius: BorderRadius.circular(7 * scale),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              label.toUpperCase(),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontSize: 7.5 * scale,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          SizedBox(height: 2 * scale),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 13 * scale,
-                fontWeight: FontWeight.w700,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// A compact direction dial with a dart pointing to the next checkpoint along
 /// the optimized route.
 class _DirectionDial extends StatelessWidget {
@@ -782,16 +629,4 @@ class _DialPainter extends CustomPainter {
       old.arrow != arrow ||
       old.tick != tick ||
       old.hub != hub;
-}
-
-String _formatDuration(int totalSeconds) {
-  final hours = totalSeconds ~/ 3600;
-  final minutes = (totalSeconds % 3600) ~/ 60;
-  final seconds = totalSeconds % 60;
-  final ss = seconds.toString().padLeft(2, '0');
-  if (hours > 0) {
-    final mm = minutes.toString().padLeft(2, '0');
-    return '$hours:$mm:$ss';
-  }
-  return '$minutes:$ss';
 }

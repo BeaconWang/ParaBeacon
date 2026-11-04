@@ -466,12 +466,6 @@ class ControlWidget extends StatelessWidget {
         );
       case 'task_optimal_nav':
         return TaskOptimalNavControl(
-          showFinishDistance: control.boolSetting(
-            'showFinishDistance',
-            fallback: true,
-          ),
-          showGlide: control.boolSetting('showGlide', fallback: true),
-          showEta: control.boolSetting('showEta', fallback: true),
           relative: control.setting('bearingReference') == 'relative',
           arrowColor: Color(
             control.intSetting('directionArrowColor', fallback: 0xFFFFC400),

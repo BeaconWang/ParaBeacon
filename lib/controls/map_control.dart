@@ -1409,7 +1409,7 @@ class _MapControlState extends State<MapControl> {
       out.add(
         CircleMarker(
           point: _shift(LatLng(tp.latitude, tp.longitude), widget.tileSource),
-          radius: store.effectiveRadiusMeters(tp),
+          radius: tp.radiusMeters,
           useRadiusInMeter: true,
           color: color.withAlpha(isNext ? 52 : 28),
           borderColor: color.withAlpha(isNext ? 255 : 220),

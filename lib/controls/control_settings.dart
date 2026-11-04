@@ -955,12 +955,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       label: 'Show distance to goal',
       defaultValue: true,
     ),
-    ControlSetting.toggle(
-      key: 'showGlide',
-      label: 'Show glide ratio',
-      defaultValue: true,
-    ),
-    ControlSetting.toggle(key: 'showEta', label: 'Show ETA', defaultValue: true),
     ControlSetting.choice(
       key: 'bearingReference',
       label: 'Direction',

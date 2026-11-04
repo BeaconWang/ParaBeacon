@@ -459,8 +459,6 @@ class ControlWidget extends StatelessWidget {
             'showGoalDistance',
             fallback: true,
           ),
-          showGlide: control.boolSetting('showGlide', fallback: true),
-          showEta: control.boolSetting('showEta', fallback: true),
           relative: control.setting('bearingReference') == 'relative',
           arrowColor: Color(
             control.intSetting('directionArrowColor', fallback: 0xFF1E88E5),

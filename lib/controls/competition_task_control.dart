@@ -22,15 +22,11 @@ class CompetitionTaskControl extends StatefulWidget {
   const CompetitionTaskControl({
     super.key,
     this.showGoalDistance = true,
-    this.showGlide = true,
-    this.showEta = true,
     this.relative = true,
     this.arrowColor,
   });
 
   final bool showGoalDistance;
-  final bool showGlide;
-  final bool showEta;
   final bool relative;
   final Color? arrowColor;
 
@@ -121,33 +117,6 @@ class _CompetitionTaskControlState extends State<CompetitionTaskControl> {
         ? store.remainingDistanceToGoal(data.latitude, data.longitude)
         : null;
 
-    // ── Required glide + ETA to goal ──
-    double? requiredGlide;
-    final goalAlt = task.turnpoints.isNotEmpty
-        ? task.turnpoints.last.waypoint.altitudeM
-        : null;
-    if (goalDistance != null &&
-        goalAlt != null &&
-        goalAlt.isFinite &&
-        data.altitude.isFinite) {
-      final height = data.altitude - goalAlt;
-      if (height > 0.5) {
-        final ld = goalDistance / height;
-        if (ld.isFinite && ld >= 0) requiredGlide = ld;
-      }
-    }
-
-    int? etaSeconds;
-    if (goalDistance != null) {
-      final groundMps = data.groundSpeed / 3.6;
-      if (groundMps > 0.3) {
-        final seconds = goalDistance / groundMps;
-        if (seconds.isFinite && seconds >= 0 && seconds < 360000) {
-          etaSeconds = seconds.round();
-        }
-      }
-    }
-
     // ── Format ──
     final distanceUnit = selectedUnit(context, UnitDimension.distance);
     String fmtDistance(double? meters) {
@@ -172,17 +141,6 @@ class _CompetitionTaskControlState extends State<CompetitionTaskControl> {
             ? l10n.competitionTurnpointShort((nextIndex ?? 0) + 1)
             : next.name;
     final roleLabel = next == null ? null : _roleLabel(l10n, next.role);
-
-    final glideText = requiredGlide == null
-        ? '--'
-        : requiredGlide >= 100
-            ? '99+'
-            : formatDecimalValue(
-                requiredGlide,
-                autoDecimals: 1,
-                range: DecimalPlacesScope.rangeOf(context, 'ratioDecimals'),
-              );
-    final etaText = etaSeconds == null ? '--' : _formatDuration(etaSeconds);
 
     final arrowColor = widget.arrowColor ?? const Color(0xFF1E88E5);
 
@@ -253,45 +211,16 @@ class _CompetitionTaskControlState extends State<CompetitionTaskControl> {
                             scale: scale,
                             color: theme.colorScheme.primary,
                           ),
-                          SizedBox(height: 4 * scale),
-                          Row(
-                            children: [
-                              if (widget.showGoalDistance)
-                                Expanded(
-                                  child: _Chip(
-                                    label: l10n.competitionGoalDistanceLabel,
-                                    value:
-                                        '${fmtDistance(goalDistance)} ${distanceUnitLabel(goalDistance)}',
-                                    scale: scale,
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              if (widget.showGlide) ...[
-                                if (widget.showGoalDistance)
-                                  SizedBox(width: 4 * scale),
-                                Expanded(
-                                  child: _Chip(
-                                    label: l10n
-                                        .waypointRequiredGlideRatioLabel,
-                                    value: glideText,
-                                    scale: scale,
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              ],
-                              if (widget.showEta) ...[
-                                SizedBox(width: 4 * scale),
-                                Expanded(
-                                  child: _Chip(
-                                    label: l10n.waypointEtaLabel,
-                                    value: etaText,
-                                    scale: scale,
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
+                          if (widget.showGoalDistance) ...[
+                            SizedBox(height: 4 * scale),
+                            _Chip(
+                              label: l10n.competitionGoalDistanceLabel,
+                              value:
+                                  '${fmtDistance(goalDistance)} ${distanceUnitLabel(goalDistance)}',
+                              scale: scale,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -768,16 +697,4 @@ class _DialPainter extends CustomPainter {
       old.arrow != arrow ||
       old.tick != tick ||
       old.hub != hub;
-}
-
-String _formatDuration(int totalSeconds) {
-  final hours = totalSeconds ~/ 3600;
-  final minutes = (totalSeconds % 3600) ~/ 60;
-  final seconds = totalSeconds % 60;
-  final ss = seconds.toString().padLeft(2, '0');
-  if (hours > 0) {
-    final mm = minutes.toString().padLeft(2, '0');
-    return '$hours:$mm:$ss';
-  }
-  return '$minutes:$ss';
 }

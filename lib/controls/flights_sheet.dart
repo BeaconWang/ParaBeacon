@@ -53,7 +53,7 @@ Future<void> showFlightsSheet(BuildContext context) {
     // Background driven by the theme's bottomSheetTheme (see other sheets).
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (context) => const _FlightsSheet(),
+    builder: (context) => ScaffoldMessenger(child: const _FlightsSheet()),
   );
 }
 
@@ -204,33 +204,37 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     final theme = Theme.of(context);
     final tracks = _recorder.tracks;
 
-    return IconButtonTheme(
-      data: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          visualDensity: VisualDensity.compact,
-          padding: EdgeInsets.zero,
-          minimumSize: const Size.square(40),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: IconButtonTheme(
+        data: IconButtonThemeData(
+          style: IconButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            minimumSize: const Size.square(40),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
         ),
-      ),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header.
-            _buildHeader(theme, tracks),
-            const Divider(height: 1),
-            Expanded(
-              child: tracks.isEmpty
-                  ? _empty(theme)
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: tracks.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, i) => _trackTile(theme, tracks[i]),
-                    ),
-            ),
-          ],
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header.
+              _buildHeader(theme, tracks),
+              const Divider(height: 1),
+              Expanded(
+                child: tracks.isEmpty
+                    ? _empty(theme)
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: tracks.length,
+                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        itemBuilder: (context, i) =>
+                            _trackTile(theme, tracks[i]),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

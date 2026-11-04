@@ -15,6 +15,7 @@ import '../data/offline_tiles_service.dart';
 import '../l10n/app_localizations.dart';
 import 'map_control.dart' show MapTileSources, MapTileSource;
 import 'replay_gaps.dart';
+import 'sheet_notice_host.dart';
 
 /// Opens the flight replay screen for a completed [track] as a full-screen
 /// sheet (feature 6: replay — animated playback on the map with optional
@@ -32,7 +33,8 @@ Future<void> showFlightReplaySheet(BuildContext context, FlightTrack track) {
     // Background driven by the theme's bottomSheetTheme (see other sheets).
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (context) => _FlightReplaySheet(track: track),
+    builder: (context) =>
+        SheetNoticeHost(child: _FlightReplaySheet(track: track)),
   );
 }
 

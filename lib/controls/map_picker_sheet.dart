@@ -17,6 +17,7 @@ import '../l10n/app_localizations.dart';
 import 'favorite_rename_dialog.dart';
 import 'map_control.dart' show MapTileSource, MapTileSources;
 import 'search_query_policy.dart';
+import 'sheet_notice_host.dart';
 
 /// Resolves the device's current position, or null when unavailable.
 typedef CurrentLocationResolver = Future<(double, double)?> Function();
@@ -44,13 +45,15 @@ Future<(double, double)?> showMapPickerSheet(
     useSafeArea: true,
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (context) => _MapPickerSheet(
-      initialLat: initialLat,
-      initialLon: initialLon,
-      initialTileSourceId:
-          initialTileSourceId ?? MapPickerDefaults.tileSourceId,
-      initialZoom: initialZoom,
-      resolveCurrentLocation: resolveCurrentLocation,
+    builder: (context) => SheetNoticeHost(
+      child: _MapPickerSheet(
+        initialLat: initialLat,
+        initialLon: initialLon,
+        initialTileSourceId:
+            initialTileSourceId ?? MapPickerDefaults.tileSourceId,
+        initialZoom: initialZoom,
+        resolveCurrentLocation: resolveCurrentLocation,
+      ),
     ),
   );
 }
@@ -77,12 +80,14 @@ Future<void> showMapLocationSheet(
     useSafeArea: true,
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (context) => _MapPickerSheet(
-      initialLat: latitude,
-      initialLon: longitude,
-      initialTileSourceId: MapPickerDefaults.tileSourceId,
-      resolveCurrentLocation: null,
-      fixedTitle: title,
+    builder: (context) => SheetNoticeHost(
+      child: _MapPickerSheet(
+        initialLat: latitude,
+        initialLon: longitude,
+        initialTileSourceId: MapPickerDefaults.tileSourceId,
+        resolveCurrentLocation: null,
+        fixedTitle: title,
+      ),
     ),
   );
 }

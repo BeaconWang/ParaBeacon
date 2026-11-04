@@ -28,8 +28,9 @@ Future<void> showFlightStatisticsSheet(
     useSafeArea: true,
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (context) =>
-        _FlightStatisticsSheet(tracks: snapshot, selected: selected),
+    builder: (context) => ScaffoldMessenger(
+      child: _FlightStatisticsSheet(tracks: snapshot, selected: selected),
+    ),
   );
 }
 

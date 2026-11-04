@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
 import 'keyboard_inset.dart';
+import 'sheet_notice_host.dart';
 
 Future<void> showAsfcFlightRecordsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -11,7 +12,7 @@ Future<void> showAsfcFlightRecordsSheet(BuildContext context) {
     useSafeArea: true,
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (_) => const _AsfcFlightRecordsSheet(),
+    builder: (_) => const SheetNoticeHost(child: _AsfcFlightRecordsSheet()),
   );
 }
 
@@ -246,7 +247,8 @@ Future<bool?> showAsfcFlightRecordForm(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => _AsfcFlightRecordForm(record: record),
+    builder: (_) =>
+        SheetNoticeHost(child: _AsfcFlightRecordForm(record: record)),
   );
 }
 

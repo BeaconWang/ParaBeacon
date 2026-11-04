@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
+import 'sheet_notice_host.dart';
 
 Future<bool?> showAddPilotTrainingRecordSheet(BuildContext context) {
   return showModalBottomSheet<bool>(
@@ -10,7 +11,7 @@ Future<bool?> showAddPilotTrainingRecordSheet(BuildContext context) {
     useSafeArea: true,
     builder: (_) => const FractionallySizedBox(
       heightFactor: 0.96,
-      child: _PilotTrainingRecordForm(),
+      child: SheetNoticeHost(child: _PilotTrainingRecordForm()),
     ),
   );
 }

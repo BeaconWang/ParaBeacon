@@ -5,6 +5,7 @@ import '../data/ble/ble_sensor_service.dart';
 import '../data/ble/sensor_readings.dart';
 import '../data/sensors/internal_sensor_service.dart';
 import '../l10n/app_localizations.dart';
+import 'sheet_notice_host.dart';
 
 /// Opens the Bluetooth sensor screen as a modal bottom sheet.
 ///
@@ -19,7 +20,7 @@ Future<void> showBluetoothSensorSheet(BuildContext context) {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => const _BluetoothSensorSheet(),
+    builder: (context) => const SheetNoticeHost(child: _BluetoothSensorSheet()),
   );
 }
 
@@ -66,8 +67,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
                 children: [
                   Icon(Icons.sensors, color: theme.colorScheme.primary),
                   const SizedBox(width: 10),
-                  Text(l10n.sensorTitle,
-                      style: theme.textTheme.titleLarge),
+                  Text(l10n.sensorTitle, style: theme.textTheme.titleLarge),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -141,8 +141,11 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.bluetooth_disabled,
-                size: 48, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.bluetooth_disabled,
+              size: 48,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               l10n.sensorUnsupported,
@@ -160,32 +163,29 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
   // ── Options ─────────────────────────────────────────────────────────────
   Widget _optionsCard(ThemeData theme, AppLocalizations l10n) {
     final internalAvailable = _internal.supported && _internal.available;
-    return _card(
-      theme,
-      [
+    return _card(theme, [
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l10n.sensorEnableBluetooth),
+        subtitle: Text(l10n.sensorEnableBluetoothSubtitle),
+        value: _svc.enabled,
+        onChanged: (v) => _svc.setEnabled(v),
+      ),
+      if (_internal.supported) ...[
+        const Divider(height: 1),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text(l10n.sensorEnableBluetooth),
-          subtitle: Text(l10n.sensorEnableBluetoothSubtitle),
-          value: _svc.enabled,
-          onChanged: (v) => _svc.setEnabled(v),
-        ),
-        if (_internal.supported) ...[
-          const Divider(height: 1),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.sensorPreferInternal),
-            subtitle: Text(
-              internalAvailable || !_internal.enabled
-                  ? l10n.sensorPreferInternalSubtitle
-                  : l10n.sensorNoInternalBarometer,
-            ),
-            value: _internal.enabled,
-            onChanged: (v) => _internal.setEnabled(v),
+          title: Text(l10n.sensorPreferInternal),
+          subtitle: Text(
+            internalAvailable || !_internal.enabled
+                ? l10n.sensorPreferInternalSubtitle
+                : l10n.sensorNoInternalBarometer,
           ),
-        ],
+          value: _internal.enabled,
+          onChanged: (v) => _internal.setEnabled(v),
+        ),
       ],
-    );
+    ]);
   }
 
   // ── Internal sensor (device barometer) ────────────────────────────────────
@@ -212,24 +212,57 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     }
 
     final children = <Widget>[
-      _row(theme, statusIcon, l10n.sensorStatus, statusText,
-          valueColor: statusColor),
+      _row(
+        theme,
+        statusIcon,
+        l10n.sensorStatus,
+        statusText,
+        valueColor: statusColor,
+      ),
     ];
 
     if (available) {
       children
         ..add(const Divider(height: 1))
-        ..add(_fieldRow(theme, Icons.swap_vert, l10n.sensorFieldVerticalSpeed,
-            r.varioMs?.toStringAsFixed(1), 'm/s'))
+        ..add(
+          _fieldRow(
+            theme,
+            Icons.swap_vert,
+            l10n.sensorFieldVerticalSpeed,
+            r.varioMs?.toStringAsFixed(1),
+            'm/s',
+          ),
+        )
         ..add(const Divider(height: 1))
-        ..add(_fieldRow(theme, Icons.terrain, l10n.sensorFieldAltitude,
-            r.altitudeM?.toStringAsFixed(0), 'm'))
+        ..add(
+          _fieldRow(
+            theme,
+            Icons.terrain,
+            l10n.sensorFieldAltitude,
+            r.altitudeM?.toStringAsFixed(0),
+            'm',
+          ),
+        )
         ..add(const Divider(height: 1))
-        ..add(_fieldRow(theme, Icons.compress, l10n.sensorFieldPressure,
-            r.pressureHpa?.toStringAsFixed(2), 'hPa'))
+        ..add(
+          _fieldRow(
+            theme,
+            Icons.compress,
+            l10n.sensorFieldPressure,
+            r.pressureHpa?.toStringAsFixed(2),
+            'hPa',
+          ),
+        )
         ..add(const Divider(height: 1))
-        ..add(_fieldRow(theme, Icons.adjust, l10n.sensorFieldQnh,
-            _internal.referencePressureHpa.toStringAsFixed(2), 'hPa'))
+        ..add(
+          _fieldRow(
+            theme,
+            Icons.adjust,
+            l10n.sensorFieldQnh,
+            _internal.referencePressureHpa.toStringAsFixed(2),
+            'hPa',
+          ),
+        )
         ..add(const Divider(height: 1))
         ..add(_calibrationControls(theme, l10n));
     }
@@ -266,10 +299,10 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
             onPressed: _internal.lastPressureHpa == null
                 ? null
                 : () => _openCalibrateDialog(
-                      l10n,
-                      currentAltitude: _internal.readings.altitudeM,
-                      calibrate: _internal.calibrateToAltitude,
-                    ),
+                    l10n,
+                    currentAltitude: _internal.readings.altitudeM,
+                    calibrate: _internal.calibrateToAltitude,
+                  ),
             icon: const Icon(Icons.tune, size: 18),
             label: Text(l10n.sensorCalibrate),
           ),
@@ -335,7 +368,9 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
                   onPressed: () {
                     final value = double.tryParse(controller.text.trim());
                     if (value == null) {
-                      setLocalState(() => errorText = l10n.sensorCalibrateInvalid);
+                      setLocalState(
+                        () => errorText = l10n.sensorCalibrateInvalid,
+                      );
                       return;
                     }
                     Navigator.of(context).pop(value);
@@ -355,9 +390,9 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     final ok = await calibrate(result);
     if (!mounted) return;
     if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.sensorCalibrateFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.sensorCalibrateFailed)));
     }
   }
 
@@ -373,14 +408,21 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     final hasAltitude = _svc.rawAltitudeM != null;
 
     return _card(theme, [
-      _fieldRow(theme, Icons.terrain, l10n.sensorExtCalibrationCurrent,
-          _svc.calibratedAltitudeM?.toStringAsFixed(0), 'm'),
+      _fieldRow(
+        theme,
+        Icons.terrain,
+        l10n.sensorExtCalibrationCurrent,
+        _svc.calibratedAltitudeM?.toStringAsFixed(0),
+        'm',
+      ),
       const Divider(height: 1),
       _fieldRow(
         theme,
         Icons.height,
         l10n.sensorFieldAltitudeOffset,
-        calibrated ? '${offset >= 0 ? '+' : ''}${offset.toStringAsFixed(0)}' : '0',
+        calibrated
+            ? '${offset >= 0 ? '+' : ''}${offset.toStringAsFixed(0)}'
+            : '0',
         'm',
       ),
       const Divider(height: 1),
@@ -407,10 +449,10 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
               onPressed: !hasAltitude
                   ? null
                   : () => _openCalibrateDialog(
-                        l10n,
-                        currentAltitude: _svc.calibratedAltitudeM,
-                        calibrate: _svc.calibrateToAltitude,
-                      ),
+                      l10n,
+                      currentAltitude: _svc.calibratedAltitudeM,
+                      calibrate: _svc.calibrateToAltitude,
+                    ),
               icon: const Icon(Icons.tune, size: 18),
               label: Text(l10n.sensorCalibrate),
             ),
@@ -432,11 +474,16 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
       ),
       child: Row(
         children: [
-          Icon(on ? Icons.bluetooth : Icons.bluetooth_disabled,
-              color: color, size: 20),
+          Icon(
+            on ? Icons.bluetooth : Icons.bluetooth_disabled,
+            color: color,
+            size: 20,
+          ),
           const SizedBox(width: 8),
-          Text(l10n.sensorBluetoothState(_svc.adapterState.name),
-              style: theme.textTheme.bodyMedium),
+          Text(
+            l10n.sensorBluetoothState(_svc.adapterState.name),
+            style: theme.textTheme.bodyMedium,
+          ),
         ],
       ),
     );
@@ -452,8 +499,9 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
       ),
       child: Text(
         msg,
-        style: theme.textTheme.bodyMedium
-            ?.copyWith(color: theme.colorScheme.onErrorContainer),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onErrorContainer,
+        ),
       ),
     );
   }
@@ -464,14 +512,19 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
 
     if (!_svc.hasSavedDevice) {
       return _card(theme, [
-        _row(theme, Icons.link_off, l10n.sensorStatus,
-            l10n.sensorNoDeviceSelected,
-            valueColor: theme.colorScheme.onSurfaceVariant),
+        _row(
+          theme,
+          Icons.link_off,
+          l10n.sensorStatus,
+          l10n.sensorNoDeviceSelected,
+          valueColor: theme.colorScheme.onSurfaceVariant,
+        ),
       ]);
     }
 
-    final statusColor =
-        connected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant;
+    final statusColor = connected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
 
     return _card(theme, [
       _row(
@@ -505,10 +558,15 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
             const Spacer(),
             TextButton.icon(
               onPressed: () => _svc.forgetDevice(),
-              icon: Icon(Icons.delete_outline,
-                  size: 18, color: theme.colorScheme.error),
-              label: Text(l10n.sensorForget,
-                  style: TextStyle(color: theme.colorScheme.error)),
+              icon: Icon(
+                Icons.delete_outline,
+                size: 18,
+                color: theme.colorScheme.error,
+              ),
+              label: Text(
+                l10n.sensorForget,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
             ),
           ],
         ),
@@ -517,21 +575,55 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
   }
 
   // ── All data fields ─────────────────────────────────────────────────────
-  Widget _readingsCard(ThemeData theme, AppLocalizations l10n, SensorReadings r) {
+  Widget _readingsCard(
+    ThemeData theme,
+    AppLocalizations l10n,
+    SensorReadings r,
+  ) {
     // Show every known field; unavailable ones render as "—".
     final rows = <Widget>[
-      _fieldRow(theme, Icons.terrain, l10n.sensorFieldAltitude,
-          r.altitudeM?.toStringAsFixed(0), 'm'),
-      _fieldRow(theme, Icons.swap_vert, l10n.sensorFieldVerticalSpeed,
-          r.varioMs?.toStringAsFixed(1), 'm/s'),
-      _fieldRow(theme, Icons.compress, l10n.sensorFieldPressure,
-          r.pressureHpa?.toStringAsFixed(2), 'hPa'),
-      _fieldRow(theme, Icons.thermostat, l10n.sensorFieldTemperature,
-          r.temperatureC?.toStringAsFixed(1), '°C'),
-      _fieldRow(theme, Icons.favorite, l10n.sensorFieldHeartRate,
-          r.heartRate?.toString(), 'bpm'),
-      _fieldRow(theme, Icons.battery_full, l10n.sensorFieldBattery,
-          r.batteryPct?.toString(), '%'),
+      _fieldRow(
+        theme,
+        Icons.terrain,
+        l10n.sensorFieldAltitude,
+        r.altitudeM?.toStringAsFixed(0),
+        'm',
+      ),
+      _fieldRow(
+        theme,
+        Icons.swap_vert,
+        l10n.sensorFieldVerticalSpeed,
+        r.varioMs?.toStringAsFixed(1),
+        'm/s',
+      ),
+      _fieldRow(
+        theme,
+        Icons.compress,
+        l10n.sensorFieldPressure,
+        r.pressureHpa?.toStringAsFixed(2),
+        'hPa',
+      ),
+      _fieldRow(
+        theme,
+        Icons.thermostat,
+        l10n.sensorFieldTemperature,
+        r.temperatureC?.toStringAsFixed(1),
+        '°C',
+      ),
+      _fieldRow(
+        theme,
+        Icons.favorite,
+        l10n.sensorFieldHeartRate,
+        r.heartRate?.toString(),
+        'bpm',
+      ),
+      _fieldRow(
+        theme,
+        Icons.battery_full,
+        l10n.sensorFieldBattery,
+        r.batteryPct?.toString(),
+        '%',
+      ),
     ];
 
     final children = <Widget>[];
@@ -542,18 +634,25 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     return _card(theme, children);
   }
 
-  Widget _fieldRow(ThemeData theme, IconData icon, String label,
-      String? value, String unit) {
+  Widget _fieldRow(
+    ThemeData theme,
+    IconData icon,
+    String label,
+    String? value,
+    String unit,
+  ) {
     final available = value != null;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          Icon(icon,
-              size: 20,
-              color: available
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant.withAlpha(120)),
+          Icon(
+            icon,
+            size: 20,
+            color: available
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant.withAlpha(120),
+          ),
           const SizedBox(width: 12),
           Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
           Text(
@@ -597,9 +696,13 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     final results = _svc.scanResults;
     if (results.isEmpty) {
       return _card(theme, [
-        _row(theme, Icons.search_off, l10n.sensorDevices,
-            _svc.enabled ? l10n.sensorTapScan : l10n.sensorEnableFirst,
-            valueColor: theme.colorScheme.onSurfaceVariant),
+        _row(
+          theme,
+          Icons.search_off,
+          l10n.sensorDevices,
+          _svc.enabled ? l10n.sensorTapScan : l10n.sensorEnableFirst,
+          valueColor: theme.colorScheme.onSurfaceVariant,
+        ),
       ]);
     }
     final children = <Widget>[];
@@ -614,33 +717,36 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     final name = r.advertisementData.advName.trim().isNotEmpty
         ? r.advertisementData.advName
         : (r.device.platformName.isNotEmpty
-            ? r.device.platformName
-            : l10n.sensorUnknownDevice);
+              ? r.device.platformName
+              : l10n.sensorUnknownDevice);
     return InkWell(
       onTap: () => _svc.connect(r.device, name: name),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            Icon(_rssiIcon(r.rssi),
-                color: theme.colorScheme.primary, size: 20),
+            Icon(_rssiIcon(r.rssi), color: theme.colorScheme.primary, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name, style: theme.textTheme.bodyMedium),
-                  Text(r.device.remoteId.str,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      )),
+                  Text(
+                    r.device.remoteId.str,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
-            Text(l10n.sensorRssiDbm(r.rssi),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                )),
+            Text(
+              l10n.sensorRssiDbm(r.rssi),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),
@@ -655,25 +761,30 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
 
   // ── Shared bits ───────────────────────────────────────────────────────────
   Widget _sectionLabel(ThemeData theme, String label) => Text(
-        label.toUpperCase(),
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.primary,
-          letterSpacing: 1.0,
-          fontWeight: FontWeight.w700,
-        ),
-      );
+    label.toUpperCase(),
+    style: theme.textTheme.labelMedium?.copyWith(
+      color: theme.colorScheme.primary,
+      letterSpacing: 1.0,
+      fontWeight: FontWeight.w700,
+    ),
+  );
 
   Widget _card(ThemeData theme, List<Widget> children) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(children: children),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    decoration: BoxDecoration(
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(children: children),
+  );
 
-  Widget _row(ThemeData theme, IconData icon, String label, String value,
-      {Color? valueColor}) {
+  Widget _row(
+    ThemeData theme,
+    IconData icon,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(

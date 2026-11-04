@@ -16,6 +16,7 @@ import '../l10n/app_localizations.dart';
 import 'desktop_scrolling.dart';
 import 'favorite_rename_dialog.dart';
 import 'map_picker_sheet.dart';
+import 'sheet_notice_host.dart';
 
 /// Opens the Weather screen as a full-screen sheet: a nowcast panel, a
 /// synchronized hourly detail table, a 16-day glance strip and a location
@@ -34,7 +35,7 @@ Future<void> showWeatherSheet(BuildContext context) {
     // Background driven by the theme's bottomSheetTheme (see other sheets).
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (context) => const _WeatherSheet(),
+    builder: (context) => const SheetNoticeHost(child: _WeatherSheet()),
   );
 }
 

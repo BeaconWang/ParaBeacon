@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
 import 'keyboard_inset.dart';
+import 'sheet_notice_host.dart';
 
 Future<void> showCertificateApplicationSheet(
   BuildContext context, {
@@ -15,7 +16,8 @@ Future<void> showCertificateApplicationSheet(
     useSafeArea: true,
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (_) => _CertificateApplicationSheet(upgrade: upgrade),
+    builder: (_) =>
+        SheetNoticeHost(child: _CertificateApplicationSheet(upgrade: upgrade)),
   );
 }
 

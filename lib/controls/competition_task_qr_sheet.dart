@@ -4,13 +4,11 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../data/competition/competition_task.dart';
 import '../l10n/app_localizations.dart';
+import 'sheet_notice_host.dart';
 
 /// Shows the active task as an XCTrack-compatible QR code (`XCTSK:` + compact
 /// JSON), which other XCTrack / XCTSK apps can scan to load the task.
-Future<void> showCompetitionTaskQr(
-  BuildContext context,
-  CompetitionTask task,
-) {
+Future<void> showCompetitionTaskQr(BuildContext context, CompetitionTask task) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -18,7 +16,7 @@ Future<void> showCompetitionTaskQr(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => _TaskQrSheet(task: task),
+    builder: (context) => SheetNoticeHost(child: _TaskQrSheet(task: task)),
   );
 }
 
@@ -47,9 +45,7 @@ class _TaskQrSheet extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    task.name.isEmpty
-                        ? l10n.competitionShowQr
-                        : task.name,
+                    task.name.isEmpty ? l10n.competitionShowQr : task.name,
                     style: theme.textTheme.titleLarge,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

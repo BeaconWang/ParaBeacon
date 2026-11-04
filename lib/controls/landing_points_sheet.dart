@@ -13,6 +13,7 @@ import '../l10n/app_localizations.dart';
 import 'flights_sheet.dart' show showFlightRecordPicker;
 import 'landing_point_editor.dart';
 import 'map_picker_sheet.dart' show showMapPickerSheet;
+import 'sheet_notice_host.dart';
 
 Future<void> showLandingPointsSheet(BuildContext context) async {
   await LandingPointStore.instance.load();
@@ -22,7 +23,7 @@ Future<void> showLandingPointsSheet(BuildContext context) async {
     isScrollControlled: true,
     showDragHandle: true,
     useSafeArea: true,
-    builder: (context) => const _LandingPointsSheet(),
+    builder: (context) => const SheetNoticeHost(child: _LandingPointsSheet()),
   );
 }
 
@@ -264,9 +265,8 @@ class _LandingPointsSheet extends StatelessWidget {
               child: Text(l10n.cancel),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(
-                dialogContext,
-              ).pop(const <String, String>{}),
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(const <String, String>{}),
               child: Text(l10n.landingPointsImport),
             ),
           ],

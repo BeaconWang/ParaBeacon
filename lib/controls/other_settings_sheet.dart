@@ -12,13 +12,14 @@ import '../data/vertical_speed_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'color_palette_settings_sheet.dart';
 import 'map_control.dart' show MapTileSources;
+import 'sheet_notice_host.dart';
 
 Future<void> showOtherSettingsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => const _OtherSettingsSheet(),
+    builder: (_) => const SheetNoticeHost(child: _OtherSettingsSheet()),
   );
 }
 

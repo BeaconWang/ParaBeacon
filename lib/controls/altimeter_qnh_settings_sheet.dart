@@ -4,6 +4,7 @@ import '../data/ble/ble_sensor_service.dart';
 import '../data/sensors/barometer_source.dart';
 import '../data/sensors/internal_sensor_service.dart';
 import '../l10n/app_localizations.dart';
+import 'sheet_notice_host.dart';
 
 /// Opens the altimeter/QNH settings screen.
 Future<void> showAltimeterQnhSettingsSheet(BuildContext context) {
@@ -14,7 +15,8 @@ Future<void> showAltimeterQnhSettingsSheet(BuildContext context) {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => const _AltimeterQnhSettingsSheet(),
+    builder: (context) =>
+        const SheetNoticeHost(child: _AltimeterQnhSettingsSheet()),
   );
 }
 
@@ -260,12 +262,7 @@ class _AltimeterQnhSettingsSheetState
     );
   }
 
-  Widget _valueRow(
-    ThemeData theme,
-    IconData icon,
-    String label,
-    String value,
-  ) {
+  Widget _valueRow(ThemeData theme, IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -333,9 +330,9 @@ class _AltimeterQnhSettingsSheetState
 
     final accepted = await _internal.setReferencePressureHpa(value);
     if (!accepted && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.altimeterQnhManualInvalid)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.altimeterQnhManualInvalid)));
     }
   }
 
@@ -402,9 +399,9 @@ class _AltimeterQnhSettingsSheetState
       value,
     );
     if (!accepted && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.sensorCalibrateFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.sensorCalibrateFailed)));
     }
   }
 }

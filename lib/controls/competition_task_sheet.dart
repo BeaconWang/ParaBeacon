@@ -18,6 +18,7 @@ import '../l10n/app_localizations.dart';
 import 'competition_task_qr_sheet.dart';
 import 'map_picker_sheet.dart';
 import 'qr_scanner_screen.dart';
+import 'sheet_notice_host.dart';
 
 /// Opens the full-screen competition task editor / manager.
 Future<void> showCompetitionTaskSheet(BuildContext context) {
@@ -27,7 +28,7 @@ Future<void> showCompetitionTaskSheet(BuildContext context) {
     useSafeArea: true,
     shape: const RoundedRectangleBorder(),
     constraints: const BoxConstraints.expand(),
-    builder: (context) => const _CompetitionTaskSheet(),
+    builder: (context) => const SheetNoticeHost(child: _CompetitionTaskSheet()),
   );
 }
 
@@ -144,11 +145,17 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
           ),
           PopupMenuItem(
             value: 'download_url',
-            child: _menuRow(Icons.cloud_download_outlined, l10n.competitionDownloadUrl),
+            child: _menuRow(
+              Icons.cloud_download_outlined,
+              l10n.competitionDownloadUrl,
+            ),
           ),
           PopupMenuItem(
             value: 'import_file',
-            child: _menuRow(Icons.file_open_outlined, l10n.competitionImportFile),
+            child: _menuRow(
+              Icons.file_open_outlined,
+              l10n.competitionImportFile,
+            ),
           ),
           PopupMenuItem(
             value: 'import_code',
@@ -166,7 +173,10 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
             ),
             PopupMenuItem(
               value: 'copy_code',
-              child: _menuRow(Icons.copy_all_outlined, l10n.competitionCopyCode),
+              child: _menuRow(
+                Icons.copy_all_outlined,
+                l10n.competitionCopyCode,
+              ),
             ),
             const PopupMenuDivider(),
             PopupMenuItem(
@@ -276,7 +286,9 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                   children: [
                     Expanded(
                       child: Text(
-                        task.name.isEmpty ? l10n.competitionUnnamedTask : task.name,
+                        task.name.isEmpty
+                            ? l10n.competitionUnnamedTask
+                            : task.name,
                         style: theme.textTheme.titleMedium,
                       ),
                     ),
@@ -398,7 +410,10 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.competitionStartSection, style: theme.textTheme.titleSmall),
+            Text(
+              l10n.competitionStartSection,
+              style: theme.textTheme.titleSmall,
+            ),
             if (!hasSss)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -416,8 +431,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                 value: start?.type ?? TaskStartType.race,
                 options: {
                   TaskStartType.race: l10n.competitionStartTypeRace,
-                  TaskStartType.elapsedTime:
-                      l10n.competitionStartTypeElapsed,
+                  TaskStartType.elapsedTime: l10n.competitionStartTypeElapsed,
                 },
                 onChanged: (v) => _store.setStart(
                   (start ?? const TaskStart()).copyWith(type: v),
@@ -493,7 +507,10 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.competitionGoalSection, style: theme.textTheme.titleSmall),
+            Text(
+              l10n.competitionGoalSection,
+              style: theme.textTheme.titleSmall,
+            ),
             const SizedBox(height: 4),
             _choiceRow<TaskGoalType>(
               label: l10n.competitionGoalType,
@@ -611,7 +628,10 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       case 'radius':
         final radius = await _pickRadius(l10n, tp.radiusMeters);
         if (radius != null && mounted) {
-          await _store.updateTurnpoint(index, tp.copyWith(radiusMeters: radius));
+          await _store.updateTurnpoint(
+            index,
+            tp.copyWith(radiusMeters: radius),
+          );
         }
         break;
       case 'name':
@@ -768,9 +788,9 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     if (!mounted) return null;
     final points = LandingPointStore.instance.points;
     if (points.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.competitionNoLandingPoints)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.competitionNoLandingPoints)));
       return null;
     }
     return showModalBottomSheet<TaskWaypoint>(
@@ -922,10 +942,8 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
   Future<double?> _pickRadius(AppLocalizations l10n, double initial) {
     return showDialog<double>(
       context: context,
-      builder: (context) => _CompetitionRadiusDialog(
-        initial: initial,
-        l10n: l10n,
-      ),
+      builder: (context) =>
+          _CompetitionRadiusDialog(initial: initial, l10n: l10n),
     );
   }
 
@@ -1137,8 +1155,8 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       final task = bytes != null
           ? CompetitionTaskIO.instance.parseBytes(bytes)
           : path != null
-              ? await CompetitionTaskIO.instance.importFile(path)
-              : null;
+          ? await CompetitionTaskIO.instance.importFile(path)
+          : null;
       if (!mounted) return;
       if (task == null) {
         _snack(l10n.competitionImportFailed);
@@ -1236,7 +1254,9 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
   }
 
   void _snack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -1295,10 +1315,7 @@ class _CompetitionTextEntryDialogState
 
 /// Owns the radius field controller for the full lifetime of its dialog route.
 class _CompetitionRadiusDialog extends StatefulWidget {
-  const _CompetitionRadiusDialog({
-    required this.initial,
-    required this.l10n,
-  });
+  const _CompetitionRadiusDialog({required this.initial, required this.l10n});
 
   final double initial;
   final AppLocalizations l10n;
@@ -1315,7 +1332,9 @@ class _CompetitionRadiusDialogState extends State<_CompetitionRadiusDialog> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initial.round().toString());
+    _controller = TextEditingController(
+      text: widget.initial.round().toString(),
+    );
   }
 
   @override
@@ -1437,7 +1456,10 @@ class _TurnpointTile extends StatelessWidget {
               onSelected: onRole,
               itemBuilder: (context) => [
                 for (final role in TurnpointRole.values)
-                  PopupMenuItem(value: role, child: Text(_roleName(l10n, role))),
+                  PopupMenuItem(
+                    value: role,
+                    child: Text(_roleName(l10n, role)),
+                  ),
               ],
             ),
             IconButton(

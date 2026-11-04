@@ -1130,6 +1130,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get simStartLongitude => '经度';
 
   @override
+  String get simStartUseCurrentLocation => '使用当前位置';
+
+  @override
+  String get simStartPickOnMap => '地图选点';
+
+  @override
+  String get simStartGpsFailed => '无法获取当前位置';
+
+  @override
   String get simFollowTaskRoute => '按竞赛航线模拟飞行';
 
   @override

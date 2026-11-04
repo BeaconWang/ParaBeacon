@@ -2300,6 +2300,24 @@ abstract class AppLocalizations {
   /// **'Longitude'**
   String get simStartLongitude;
 
+  /// No description provided for @simStartUseCurrentLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use current location'**
+  String get simStartUseCurrentLocation;
+
+  /// No description provided for @simStartPickOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on map'**
+  String get simStartPickOnMap;
+
+  /// No description provided for @simStartGpsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to get the current location'**
+  String get simStartGpsFailed;
+
   /// No description provided for @simFollowTaskRoute.
   ///
   /// In en, this message translates to:

@@ -1176,6 +1176,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get simStartLongitude => 'Longitude';
 
   @override
+  String get simStartUseCurrentLocation => 'Use current location';
+
+  @override
+  String get simStartPickOnMap => 'Pick on map';
+
+  @override
+  String get simStartGpsFailed => 'Unable to get the current location';
+
+  @override
   String get simFollowTaskRoute => 'Fly competition task route';
 
   @override

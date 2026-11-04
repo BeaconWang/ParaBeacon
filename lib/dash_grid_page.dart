@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kDebugMode, kIsWeb, TargetPlatform;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'l10n/app_localizations.dart';
 import 'dashboard_menu_content.dart';
@@ -33,6 +34,7 @@ import 'controls/vario_sound_settings_sheet.dart';
 import 'controls/altitude_announcement_settings_sheet.dart';
 import 'controls/other_settings_sheet.dart';
 import 'controls/landing_points_sheet.dart';
+import 'controls/map_picker_sheet.dart' show showMapPickerSheet;
 import 'data/aircraft_settings.dart';
 import 'data/dashboard_page_templates.dart';
 import 'data/live_tracking_settings.dart';
@@ -2845,10 +2847,65 @@ class _SimStartLocationFieldsState extends State<_SimStartLocationFields> {
     if (lat != null && lon != null) {
       current.setSimStartLocation(lat, lon);
     }
-    // Reflect the stored (possibly-unchanged / clamped) values back into the
-    // fields so invalid input doesn't linger.
+    _syncFields();
+  }
+
+  void _setStartLocation(double latitude, double longitude) {
+    DebugSettings.instance.setSimStartLocation(latitude, longitude);
+    _syncFields();
+  }
+
+  void _syncFields() {
+    final current = DebugSettings.instance;
     _latCtrl.text = current.simStartLat.toStringAsFixed(6);
     _lonCtrl.text = current.simStartLon.toStringAsFixed(6);
+  }
+
+  Future<(double, double)?> _getCurrentLocation() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever ||
+          !await Geolocator.isLocationServiceEnabled()) {
+        return null;
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 12),
+        ),
+      );
+      return (position.latitude, position.longitude);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _useCurrentLocation() async {
+    final location = await _getCurrentLocation();
+    if (!mounted) return;
+    if (location == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).simStartGpsFailed)),
+      );
+      return;
+    }
+    _setStartLocation(location.$1, location.$2);
+  }
+
+  Future<void> _pickStartLocationOnMap() async {
+    _commit();
+    final settings = DebugSettings.instance;
+    final location = await showMapPickerSheet(
+      context,
+      initialLat: settings.simStartLat,
+      initialLon: settings.simStartLon,
+    );
+    if (!mounted || location == null) return;
+    _setStartLocation(location.$1, location.$2);
   }
 
   @override
@@ -2899,6 +2956,23 @@ class _SimStartLocationFieldsState extends State<_SimStartLocationFields> {
                   onEditingComplete: _commit,
                   onTapOutside: (_) => _commit(),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              TextButton.icon(
+                onPressed: _useCurrentLocation,
+                icon: const Icon(Icons.my_location, size: 18),
+                label: Text(l10n.simStartUseCurrentLocation),
+              ),
+              TextButton.icon(
+                onPressed: _pickStartLocationOnMap,
+                icon: const Icon(Icons.map_outlined, size: 18),
+                label: Text(l10n.simStartPickOnMap),
               ),
             ],
           ),

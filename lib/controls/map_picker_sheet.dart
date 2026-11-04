@@ -35,6 +35,7 @@ Future<(double, double)?> showMapPickerSheet(
   double? initialLat,
   double? initialLon,
   String? initialTileSourceId,
+  double? initialZoom,
   CurrentLocationResolver? resolveCurrentLocation,
 }) {
   return showModalBottomSheet<(double, double)>(
@@ -48,6 +49,7 @@ Future<(double, double)?> showMapPickerSheet(
       initialLon: initialLon,
       initialTileSourceId:
           initialTileSourceId ?? MapPickerDefaults.tileSourceId,
+      initialZoom: initialZoom,
       resolveCurrentLocation: resolveCurrentLocation,
     ),
   );
@@ -132,12 +134,14 @@ class _MapPickerSheet extends StatefulWidget {
     required this.initialLon,
     required this.initialTileSourceId,
     required this.resolveCurrentLocation,
+    this.initialZoom,
     this.fixedTitle,
   });
 
   final double? initialLat;
   final double? initialLon;
   final String initialTileSourceId;
+  final double? initialZoom;
   final CurrentLocationResolver? resolveCurrentLocation;
   final String? fixedTitle;
 
@@ -206,6 +210,12 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
         : _fallback;
     _fixedMarker = _isLocationViewer ? _wgs : null;
     if (_isLocationViewer) _zoom = 13;
+    // Caller-provided initial zoom (e.g. the competition task picker opens
+    // close-in); clamped to the map's supported range.
+    final requestedZoom = widget.initialZoom;
+    if (requestedZoom != null && requestedZoom.isFinite) {
+      _zoom = requestedZoom.clamp(2.0, _src.maxZoom).toDouble();
+    }
     _favorites.addListener(_onFavoritesChanged);
     OfflineTilesService.instance.revision.addListener(_onOfflineTilesChanged);
     _favorites.load();

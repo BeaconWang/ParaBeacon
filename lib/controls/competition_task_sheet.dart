@@ -686,6 +686,8 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
           context,
           initialLat: centerLat,
           initialLon: centerLon,
+          // Open close-in so turnpoint cylinders are easy to place precisely.
+          initialZoom: 17,
           resolveCurrentLocation: _resolveCurrentFix,
         );
         if (picked == null || !mounted) return null;

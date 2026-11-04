@@ -836,6 +836,12 @@ class _MapControlState extends State<MapControl> {
             ),
           ),
     ];
+    final taskRoute = widget.showTask && wgs != null
+        ? CompetitionTaskStore.instance.liveRouteToGoal(
+            wgs.latitude,
+            wgs.longitude,
+          )
+        : null;
 
     return _SuppressPageSwipe(
       child: Stack(
@@ -902,13 +908,16 @@ class _MapControlState extends State<MapControl> {
 
                 // Competition task: show its cylinders and turnpoint markers,
                 // plus a single live-optimized route from the current position
-                // through the remaining course to the finish. The route is
-                // available whenever there is a valid position, including on
-                // the ground before takeoff.
+                // through the remaining course. Small route dots mark its
+                // optimized checkpoint touch points.
                 if (widget.showTask) ...[
                   CircleLayer(circles: _buildTaskCircles()),
-                  if (wgs != null)
-                    PolylineLayer(polylines: _buildLiveRoutePolylines(wgs)),
+                  if (taskRoute != null) ...[
+                    PolylineLayer(
+                      polylines: _buildLiveRoutePolylines(taskRoute),
+                    ),
+                    MarkerLayer(markers: _buildRouteTouchMarkers(taskRoute)),
+                  ],
                   MarkerLayer(markers: _buildTaskMarkers()),
                 ],
 
@@ -1420,14 +1429,10 @@ class _MapControlState extends State<MapControl> {
     return out;
   }
 
-  /// The single real-time shortest route from the current position [wgs]
-  /// through the remaining turnpoints to the finish. Returns an empty list
-  /// when there is no task or it is complete.
-  List<Polyline> _buildLiveRoutePolylines(LatLng wgs) {
-    final route = CompetitionTaskStore.instance.liveRouteToGoal(
-      wgs.latitude,
-      wgs.longitude,
-    );
+  /// The single real-time shortest route from the current position through
+  /// the remaining turnpoints to the finish. Returns an empty list when there
+  /// is no task or it is complete.
+  List<Polyline> _buildLiveRoutePolylines(List<(double, double)>? route) {
     if (route == null || route.length < 2) return const [];
 
     return [
@@ -1440,6 +1445,33 @@ class _MapControlState extends State<MapControl> {
         color: _taskRouteColor.withAlpha(235),
         pattern: StrokePattern.dashed(segments: const [12, 8]),
       ),
+    ];
+  }
+
+  /// Small dots at the optimized route's touch point on each remaining
+  /// turnpoint cylinder. The first route coordinate is the aircraft position.
+  List<Marker> _buildRouteTouchMarkers(List<(double, double)>? route) {
+    if (route == null || route.length < 2) return const [];
+    return [
+      for (final point in route.skip(1))
+        Marker(
+          point: _shift(LatLng(point.$1, point.$2), widget.tileSource),
+          width: 12,
+          height: 12,
+          alignment: Alignment.center,
+          child: Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: _taskRouteColor,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 2),
+              ],
+            ),
+          ),
+        ),
     ];
   }
 

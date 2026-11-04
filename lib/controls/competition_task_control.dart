@@ -91,7 +91,10 @@ class _CompetitionTaskControlState extends State<CompetitionTaskControl> {
         next.latitude,
         next.longitude,
       );
-      edgeDistance = math.max(0.0, centreDistance - next.radiusMeters);
+      edgeDistance = math.max(
+        0.0,
+        centreDistance - store.effectiveRadiusMeters(next),
+      );
       if (centreDistance > 1.0) {
         absoluteBearing = GeoMath.bearingDegrees(
           data.latitude,
@@ -130,8 +133,8 @@ class _CompetitionTaskControlState extends State<CompetitionTaskControl> {
     final nextTitle = next == null
         ? l10n.competitionTaskComplete
         : next.name.isEmpty
-            ? l10n.competitionTurnpointShort((nextIndex ?? 0) + 1)
-            : next.name;
+        ? l10n.competitionTurnpointShort((nextIndex ?? 0) + 1)
+        : next.name;
     final roleLabel = next == null ? null : _roleLabel(l10n, next.role);
 
     final arrowColor = widget.arrowColor ?? const Color(0xFF1E88E5);
@@ -144,9 +147,10 @@ class _CompetitionTaskControlState extends State<CompetitionTaskControl> {
         final width = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : 240.0;
-        final scale = (math.min(height / 150.0, width / 240.0))
-            .clamp(0.5, 1.6)
-            .toDouble();
+        final scale = (math.min(
+          height / 150.0,
+          width / 240.0,
+        )).clamp(0.5, 1.6).toDouble();
         final pad = (height * 0.05).clamp(4.0, 10.0).toDouble();
 
         return Padding(

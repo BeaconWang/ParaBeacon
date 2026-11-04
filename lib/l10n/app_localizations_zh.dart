@@ -217,6 +217,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get verticalSpeedAverageWindow => '垂直速度平均时长';
 
   @override
+  String get competitionTaskRadiusReduction => '竞赛绕点半径缩减';
+
+  @override
+  String get competitionTaskRadiusReductionSubtitle =>
+      '用于导航和航线几何计算；显示和导出的任务半径保持不变。';
+
+  @override
   String verticalSpeedAverageWindowBadge(String seconds) {
     return '平均 · $seconds 秒';
   }

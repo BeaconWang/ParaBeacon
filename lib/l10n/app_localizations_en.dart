@@ -227,6 +227,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verticalSpeedAverageWindow => 'Vertical speed averaging window';
 
   @override
+  String get competitionTaskRadiusReduction =>
+      'Competition cylinder radius reduction';
+
+  @override
+  String get competitionTaskRadiusReductionSubtitle =>
+      'Applied to navigation and task geometry; displayed and exported task radii stay unchanged.';
+
+  @override
   String verticalSpeedAverageWindowBadge(String seconds) {
     return 'AVG · $seconds s';
   }

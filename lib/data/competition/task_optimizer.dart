@@ -67,7 +67,10 @@ class OptimizedTask {
 /// Endpoints (first/last turnpoint) are relaxed toward their single neighbour.
 /// Final distances are recomputed geodesically for accuracy.
 abstract final class TaskOptimizer {
-  static OptimizedTask optimize(CompetitionTask task) {
+  static OptimizedTask optimize(
+    CompetitionTask task, {
+    int radiusReductionMeters = 0,
+  }) {
     final tps = task.turnpoints;
     final n = tps.length;
     if (n == 0) {
@@ -107,7 +110,13 @@ abstract final class TaskOptimizer {
     ];
 
     final centers = [for (final t in tps) project(t.latitude, t.longitude)];
-    final radii = [for (final t in tps) t.radiusMeters];
+    final radii = [
+      for (final t in tps)
+        effectiveRadiusMeters(
+          t.radiusMeters,
+          radiusReductionMeters: radiusReductionMeters,
+        ),
+    ];
 
     // Seed the touch points at the centres.
     final touch = [for (final c in centers) _PlanarPoint(c.x, c.y)];
@@ -240,8 +249,9 @@ abstract final class TaskOptimizer {
   static List<List<double>> optimizeFromStart(
     double startLat,
     double startLon,
-    List<Turnpoint> remaining,
-  ) {
+    List<Turnpoint> remaining, {
+    int radiusReductionMeters = 0,
+  }) {
     final n = remaining.length;
     if (n == 0) return const [<double>[], <double>[]];
 
@@ -273,7 +283,13 @@ abstract final class TaskOptimizer {
     final centers = [
       for (final t in remaining) project(t.latitude, t.longitude),
     ];
-    final radii = [for (final t in remaining) t.radiusMeters];
+    final radii = [
+      for (final t in remaining)
+        effectiveRadiusMeters(
+          t.radiusMeters,
+          radiusReductionMeters: radiusReductionMeters,
+        ),
+    ];
     final touch = [for (final c in centers) _PlanarPoint(c.x, c.y)];
 
     for (var iteration = 0; iteration < 150; iteration++) {
@@ -322,6 +338,12 @@ abstract final class TaskOptimizer {
     }
     return [lats, lons];
   }
+
+  static double effectiveRadiusMeters(
+    double displayedRadiusMeters, {
+    int radiusReductionMeters = 0,
+  }) =>
+      math.max(0.0, displayedRadiusMeters - math.max(0, radiusReductionMeters));
 
   static (double, double) _normalize(double x, double y) {
     final len = math.sqrt(x * x + y * y);

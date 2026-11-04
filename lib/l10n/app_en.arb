@@ -72,6 +72,8 @@
   "shareCardMapSource": "Share card map source",
   "shareCardMapSourceSubtitle": "Choose the basemap behind the flight track. None disables map tiles; selected tiles may be downloaded when sharing.",
   "verticalSpeedAverageWindow": "Vertical speed averaging window",
+  "competitionTaskRadiusReduction": "Competition cylinder radius reduction",
+  "competitionTaskRadiusReductionSubtitle": "Applied to navigation and task geometry; displayed and exported task radii stay unchanged.",
   "verticalSpeedAverageWindowBadge": "AVG · {seconds} s",
   "@verticalSpeedAverageWindowBadge": {
     "placeholders": { "seconds": { "type": "String" } }

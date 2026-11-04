@@ -20,8 +20,14 @@ class CompetitionTaskStore extends ChangeNotifier {
   static final CompetitionTaskStore instance = CompetitionTaskStore._();
 
   static const String _key = 'pb.competition.task.v1';
+  static const String _radiusReductionKey =
+      'pb.competition.radiusReductionMeters';
+  static const int defaultRadiusReductionMeters = 10;
+  static const int minimumRadiusReductionMeters = 0;
+  static const int maximumRadiusReductionMeters = 100;
 
   CompetitionTask? _task;
+  int _radiusReductionMeters = defaultRadiusReductionMeters;
   OptimizedTask? _optimized;
 
   /// Number of turnpoints already achieved in the current flight. The "next"
@@ -36,6 +42,13 @@ class CompetitionTaskStore extends ChangeNotifier {
   bool get hasTask => _task != null && !_task!.isEmpty;
   bool get isLoaded => _loaded;
   int get reachedCount => _reachedCount;
+  int get radiusReductionMeters => _radiusReductionMeters;
+
+  double effectiveRadiusMeters(Turnpoint turnpoint) =>
+      TaskOptimizer.effectiveRadiusMeters(
+        turnpoint.radiusMeters,
+        radiusReductionMeters: _radiusReductionMeters,
+      );
 
   /// Index of the next turnpoint to reach, or null when the task is complete
   /// or empty.
@@ -60,6 +73,12 @@ class CompetitionTaskStore extends ChangeNotifier {
   Future<void> _load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      _radiusReductionMeters =
+          (prefs.getInt(_radiusReductionKey) ?? defaultRadiusReductionMeters)
+              .clamp(
+                minimumRadiusReductionMeters,
+                maximumRadiusReductionMeters,
+              );
       final raw = prefs.getString(_key);
       if (raw != null && raw.isNotEmpty) {
         final decoded = jsonDecode(raw);
@@ -67,7 +86,10 @@ class CompetitionTaskStore extends ChangeNotifier {
           final task = CompetitionTask.tryParse(decoded['task']);
           if (task != null) {
             _task = task;
-            _optimized = TaskOptimizer.optimize(task);
+            _optimized = TaskOptimizer.optimize(
+              task,
+              radiusReductionMeters: _radiusReductionMeters,
+            );
           }
           final reached = decoded['reachedCount'];
           if (reached is num) {
@@ -78,7 +100,7 @@ class CompetitionTaskStore extends ChangeNotifier {
           }
         }
       }
-      if (_task != null) notifyListeners();
+      notifyListeners();
     } catch (_) {
       _task = null;
       _optimized = null;
@@ -86,6 +108,30 @@ class CompetitionTaskStore extends ChangeNotifier {
     } finally {
       _loaded = true;
       _loading = null;
+    }
+  }
+
+  Future<void> setRadiusReductionMeters(int value) async {
+    await load();
+    final normalized = value.clamp(
+      minimumRadiusReductionMeters,
+      maximumRadiusReductionMeters,
+    );
+    if (_radiusReductionMeters == normalized) return;
+    _radiusReductionMeters = normalized;
+    final task = _task;
+    if (task != null) {
+      _optimized = TaskOptimizer.optimize(
+        task,
+        radiusReductionMeters: normalized,
+      );
+    }
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_radiusReductionKey, normalized);
+    } catch (_) {
+      // Keep the updated value for this session if persistence is unavailable.
     }
   }
 
@@ -97,7 +143,10 @@ class CompetitionTaskStore extends ChangeNotifier {
       _optimized = null;
     } else {
       _task = task;
-      _optimized = TaskOptimizer.optimize(task);
+      _optimized = TaskOptimizer.optimize(
+        task,
+        radiusReductionMeters: _radiusReductionMeters,
+      );
     }
     _reachedCount = 0;
     notifyListeners();
@@ -213,7 +262,10 @@ class CompetitionTaskStore extends ChangeNotifier {
       _reachedCount = 0;
     } else {
       _task = task;
-      _optimized = TaskOptimizer.optimize(task);
+      _optimized = TaskOptimizer.optimize(
+        task,
+        radiusReductionMeters: _radiusReductionMeters,
+      );
       if (_reachedCount > task.turnpoints.length) {
         _reachedCount = task.turnpoints.length;
       }
@@ -313,7 +365,7 @@ class CompetitionTaskStore extends ChangeNotifier {
     );
     // Entry-based crossing: inside the cylinder counts as reached. A small
     // tolerance absorbs GPS noise near the edge.
-    if (distance <= tp.radiusMeters + 5) {
+    if (distance <= effectiveRadiusMeters(tp) + 5) {
       _reachedCount++;
       notifyListeners();
       _persist();
@@ -345,7 +397,12 @@ class CompetitionTaskStore extends ChangeNotifier {
 
     // Global shortest route from the live position through every remaining
     // cylinder's optimal touch point to goal.
-    final pts = TaskOptimizer.optimizeFromStart(latitude, longitude, remaining);
+    final pts = TaskOptimizer.optimizeFromStart(
+      latitude,
+      longitude,
+      remaining,
+      radiusReductionMeters: _radiusReductionMeters,
+    );
     final lats = pts[0];
     final lons = pts[1];
     if (lats.isEmpty) return null;
@@ -358,7 +415,7 @@ class CompetitionTaskStore extends ChangeNotifier {
       fromLon: longitude,
       centreLat: target.latitude,
       centreLon: target.longitude,
-      radius: target.radiusMeters,
+      radius: effectiveRadiusMeters(target),
       nextLat: lats.length > 1 ? lats[1] : null,
       nextLon: lons.length > 1 ? lons[1] : null,
       optimizedLat: lats[0],
@@ -401,8 +458,7 @@ class CompetitionTaskStore extends ChangeNotifier {
 
     // Local planar frame centred on the cylinder (metres).
     const mPerDegLat = 111320.0;
-    final mPerDegLon =
-        mPerDegLat * math.cos(centreLat * math.pi / 180.0).abs();
+    final mPerDegLon = mPerDegLat * math.cos(centreLat * math.pi / 180.0).abs();
     final lonScale = mPerDegLon < 1e-6 ? 1e-6 : mPerDegLon;
     double px(double lon) => (lon - centreLon) * lonScale;
     double py(double lat) => (lat - centreLat) * mPerDegLat;

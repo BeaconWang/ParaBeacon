@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/color_palette_settings.dart';
+import '../data/competition/competition_task_store.dart';
 import '../data/flight_recorder.dart';
 import '../data/flight_store.dart';
 import '../data/flight_details_settings.dart';
@@ -32,6 +33,13 @@ class _OtherSettingsSheet extends StatefulWidget {
 
 class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
   Future<int>? _flightLibrarySizeFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    CompetitionTaskStore.instance.load();
+  }
+
   Future<MapTileCacheSummary>? _mapCacheSummaryFuture;
 
   String _formatMapCacheSize(int bytes) {
@@ -279,6 +287,7 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
     required double max,
     required int divisions,
     required String valueLabel,
+    String? subtitle,
     required ValueChanged<double> onChanged,
   }) {
     return Padding(
@@ -292,6 +301,16 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
               Text(valueLabel, style: theme.textTheme.bodyMedium),
             ],
           ),
+          if (subtitle != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           Slider(
             value: value,
             min: min,
@@ -312,6 +331,7 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
         UserAgentSettings.instance,
         FlightDetailsSettings.instance,
         VerticalSpeedSettings.instance,
+        CompetitionTaskStore.instance,
       ]),
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
@@ -445,6 +465,27 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                         '${VerticalSpeedSettings.instance.averageWindowSeconds.toStringAsFixed(1)} s',
                     onChanged:
                         VerticalSpeedSettings.instance.setAverageWindowSeconds,
+                  ),
+                  _buildOutlierSlider(
+                    theme: theme,
+                    title: l10n.competitionTaskRadiusReduction,
+                    subtitle: l10n.competitionTaskRadiusReductionSubtitle,
+                    value: CompetitionTaskStore.instance.radiusReductionMeters
+                        .toDouble(),
+                    min: CompetitionTaskStore.minimumRadiusReductionMeters
+                        .toDouble(),
+                    max: CompetitionTaskStore.maximumRadiusReductionMeters
+                        .toDouble(),
+                    divisions:
+                        CompetitionTaskStore.maximumRadiusReductionMeters -
+                        CompetitionTaskStore.minimumRadiusReductionMeters,
+                    valueLabel:
+                        '${CompetitionTaskStore.instance.radiusReductionMeters} m',
+                    onChanged: (value) {
+                      CompetitionTaskStore.instance.setRadiusReductionMeters(
+                        value.round(),
+                      );
+                    },
                   ),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,

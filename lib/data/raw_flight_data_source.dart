@@ -306,15 +306,19 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   List<({double tLat, double tLon, double cLat, double cLon, double r})>?
   _buildRouteLegs() {
     if (!_debug.simulateTaskRoute) return null;
-    final CompetitionTask? task = CompetitionTaskStore.instance.task;
+    final store = CompetitionTaskStore.instance;
+    final CompetitionTask? task = store.task;
     final tps = task?.turnpoints;
     if (task == null || tps == null || tps.isEmpty) return null;
 
     // Prefer the store's cached optimized touch points (same geometry the map
     // draws); recompute if the cache is missing or stale.
-    var optimized = CompetitionTaskStore.instance.optimized;
+    var optimized = store.optimized;
     if (optimized == null || optimized.optimizedLat.length != tps.length) {
-      optimized = TaskOptimizer.optimize(task);
+      optimized = TaskOptimizer.optimize(
+        task,
+        radiusReductionMeters: store.radiusReductionMeters,
+      );
     }
 
     final legs =
@@ -330,7 +334,7 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
         tLon: tLon.isFinite ? tLon : tp.longitude,
         cLat: tp.latitude,
         cLon: tp.longitude,
-        r: tp.radiusMeters,
+        r: store.effectiveRadiusMeters(tp),
       ));
     }
     return legs.isEmpty ? null : legs;

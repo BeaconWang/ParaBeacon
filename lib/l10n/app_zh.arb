@@ -71,6 +71,8 @@
   "shareCardMapSource": "分享卡片地图源",
   "shareCardMapSourceSubtitle": "选择飞行轨迹下方的底图。选择“无”将关闭地图瓦片；分享时可能会下载所选地图瓦片。",
   "verticalSpeedAverageWindow": "垂直速度平均时长",
+  "competitionTaskRadiusReduction": "竞赛绕点半径缩减",
+  "competitionTaskRadiusReductionSubtitle": "用于导航和航线几何计算；显示和导出的任务半径保持不变。",
   "verticalSpeedAverageWindowBadge": "平均 · {seconds} 秒",
   "flightDetailOutlierFilter": "过滤爬升/下降异常值",
   "flightDetailOutlierFilterSubtitle": "仅在飞行详情中使用局部中位数/MAD 检测；不会更改已保存的样本。",

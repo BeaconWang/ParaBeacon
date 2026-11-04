@@ -506,6 +506,18 @@ abstract class AppLocalizations {
   /// **'Vertical speed averaging window'**
   String get verticalSpeedAverageWindow;
 
+  /// No description provided for @competitionTaskRadiusReduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Competition cylinder radius reduction'**
+  String get competitionTaskRadiusReduction;
+
+  /// No description provided for @competitionTaskRadiusReductionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied to navigation and task geometry; displayed and exported task radii stay unchanged.'**
+  String get competitionTaskRadiusReductionSubtitle;
+
   /// No description provided for @verticalSpeedAverageWindowBadge.
   ///
   /// In en, this message translates to:

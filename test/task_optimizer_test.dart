@@ -9,23 +9,32 @@ void main() {
       expect(TaskOptimizer.optimizeFromStart(46.0, 7.0, const []), [[], []]);
     });
 
-    test('places a single touch point on the boundary toward the start', () {
+    test('places a single touch point on the effective cylinder boundary', () {
       const turnpoint = Turnpoint(
         waypoint: TaskWaypoint(name: 'Goal', latitude: 0, longitude: 0),
         radiusMeters: 100,
       );
 
-      final points = TaskOptimizer.optimizeFromStart(-0.1, 0, const [turnpoint]);
+      final points = TaskOptimizer.optimizeFromStart(-0.1, 0, const [
+        turnpoint,
+      ], radiusReductionMeters: 10);
 
       expect(points[0], hasLength(1));
       expect(points[1], hasLength(1));
-      expect(points[0][0], closeTo(-100 / 111320, 1e-9));
+      expect(points[0][0], closeTo(-90 / 111320, 1e-9));
       expect(points[1][0], closeTo(0, 1e-9));
+      expect(turnpoint.radiusMeters, 100);
+      expect(turnpoint.toJson()['radius'], 100);
     });
 
-    test('keeps multi-turnpoint touch points on their cylinders', () {
+    test('keeps multi-turnpoint touch points on reduced-radius cylinders', () {
       final turnpoints = _turnpoints();
-      final points = TaskOptimizer.optimizeFromStart(-0.01, -0.01, turnpoints);
+      final points = TaskOptimizer.optimizeFromStart(
+        -0.01,
+        -0.01,
+        turnpoints,
+        radiusReductionMeters: 10,
+      );
 
       for (var i = 0; i < turnpoints.length; i++) {
         expect(
@@ -35,15 +44,18 @@ void main() {
             points[0][i],
             points[1][i],
           ),
-          closeTo(turnpoints[i].radiusMeters, 0.5),
+          closeTo(90, 0.5),
         );
       }
     });
   });
 
-  test('optimize keeps multi-turnpoint touch points on their cylinders', () {
+  test('optimize applies the radius reduction to every turnpoint', () {
     final turnpoints = _turnpoints();
-    final result = TaskOptimizer.optimize(CompetitionTask(turnpoints: turnpoints));
+    final result = TaskOptimizer.optimize(
+      CompetitionTask(turnpoints: turnpoints),
+      radiusReductionMeters: 10,
+    );
 
     for (var i = 0; i < turnpoints.length; i++) {
       expect(
@@ -53,9 +65,16 @@ void main() {
           result.optimizedLat[i],
           result.optimizedLon[i],
         ),
-        closeTo(turnpoints[i].radiusMeters, 0.5),
+        closeTo(90, 0.5),
       );
     }
+  });
+
+  test('effective radius never drops below zero', () {
+    expect(
+      TaskOptimizer.effectiveRadiusMeters(5, radiusReductionMeters: 10),
+      0,
+    );
   });
 }
 

@@ -89,6 +89,7 @@ class _TaskOptimalNavControlState extends State<TaskOptimalNavControl> {
         : null;
 
     double? distToNext;
+    double? goalDistance;
     double? absoluteBearing;
     if (route != null && route.length >= 2) {
       final nextPoint = route[1];
@@ -106,6 +107,16 @@ class _TaskOptimalNavControlState extends State<TaskOptimalNavControl> {
           nextPoint.$2,
         );
       }
+      var totalDistance = 0.0;
+      for (var i = 0; i < route.length - 1; i++) {
+        totalDistance += GeoMath.distanceMeters(
+          route[i].$1,
+          route[i].$2,
+          route[i + 1].$1,
+          route[i + 1].$2,
+        );
+      }
+      goalDistance = totalDistance;
     }
 
     double? bearingAngle = absoluteBearing;
@@ -164,7 +175,7 @@ class _TaskOptimalNavControlState extends State<TaskOptimalNavControl> {
               _Header(
                 scale: scale,
                 taskName: task.name.isEmpty
-                    ? l10n.competitionTaskTitle
+                    ? l10n.controlTaskOptimalNav
                     : task.name,
                 progress:
                     '${(nextIndex ?? totalTurnpoints).clamp(0, totalTurnpoints)}/$totalTurnpoints',
@@ -209,6 +220,14 @@ class _TaskOptimalNavControlState extends State<TaskOptimalNavControl> {
                             unit: distanceUnitLabel(distToNext),
                             scale: scale,
                             color: theme.colorScheme.primary,
+                          ),
+                          SizedBox(height: 4 * scale),
+                          _Chip(
+                            label: l10n.competitionGoalDistanceLabel,
+                            value:
+                                '${fmtDistance(goalDistance)} ${distanceUnitLabel(goalDistance)}',
+                            scale: scale,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ],
                       ),
@@ -493,6 +512,64 @@ class _Hero extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({
+    required this.label,
+    required this.value,
+    required this.scale,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final double scale;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6 * scale, vertical: 3 * scale),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withAlpha(90),
+        borderRadius: BorderRadius.circular(7 * scale),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label.toUpperCase(),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 7.5 * scale,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          SizedBox(height: 2 * scale),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 13 * scale,
+                fontWeight: FontWeight.w700,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
         ],
       ),
     );

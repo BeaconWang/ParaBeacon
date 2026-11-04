@@ -250,25 +250,22 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     // Re-apply the start location each time the simulator (re)starts so
     // toggling the China switch takes effect on the next run.
     _applyStartLocation();
-    // Begin as a free-drift track. A real ground→flying transition anchors the
-    // track into the takeoff cylinder (see [_onFlightStateChanged]); if a
-    // flight is already in progress when we (re)start (e.g. the start
-    // coordinates were edited mid-flight), fly from the current position to
-    // the target instead of teleporting.
+    // Begin as a free-drift track. On takeoff, task-route mode starts steering
+    // from this exact position toward the current task target (see
+    // [_onFlightStateChanged]); it never teleports/repositions the aircraft.
     _route = null;
     if (FlightState.instance.isFlying) enterTaskRouteFromCurrent();
     _timer ??= Timer.periodic(tickInterval, (_) => _tick());
   }
 
   /// On a ground→flying transition, if task-route mode is enabled and a task
-  /// exists, moves the synthetic track to a **random point inside the takeoff
-  /// cylinder** and begins following the optimized course. Done once per
-  /// flight; the route is cleared on landing so the next takeoff re-anchors.
+  /// exists, starts steering from the simulator's current position toward the
+  /// task's current target. No location reset/repositioning occurs. The route
+  /// is cleared on landing so it can be initialized again on a later takeoff.
   void _onFlightStateChanged() {
     if (FlightState.instance.isFlying) {
-      if (_route == null) _enterTaskRouteAtTakeoff();
+      if (_route == null) enterTaskRouteFromCurrent();
     } else {
-      // Back on the ground: drop the route so a subsequent takeoff re-anchors.
       _route = null;
     }
   }
@@ -279,8 +276,8 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   ///
   /// * Turned **on while flying** → fly from the current position to the
   ///   target (no teleport).
-  /// * Turned **on while on the ground** → do nothing now; the track anchors
-  ///   into the takeoff cylinder at the next takeoff.
+  /// * Turned **on while on the ground** → do nothing now; start flying from
+  ///   the then-current position toward the task at takeoff.
   /// * Turned **off** → drop the route and resume free drift from here.
   void onTaskRouteToggleChanged() {
     if (!_debug.simulateTaskRoute) {
@@ -292,31 +289,6 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     } else {
       _route = null;
     }
-  }
-
-  /// Builds the optimized task legs and places the aircraft at a random point
-  /// within the takeoff (first) cylinder. No-op (leaves free-drift) when the
-  /// toggle is off or there is no usable task.
-  void _enterTaskRouteAtTakeoff() {
-    final legs = _buildRouteLegs();
-    if (legs == null || legs.isEmpty) {
-      _route = null;
-      return;
-    }
-    _route = legs;
-    // Random start somewhere inside the takeoff cylinder (uniform over area:
-    // sqrt keeps the distribution even rather than clustering at the centre).
-    final takeoff = legs.first;
-    final bearing = _rand.nextDouble() * 360.0;
-    final distance = math.sqrt(_rand.nextDouble()) * takeoff.r;
-    final p = GeoMath.destination(
-      takeoff.cLat,
-      takeoff.cLon,
-      bearing,
-      distance,
-    );
-    _lat = p[0];
-    _lon = p[1];
   }
 
   /// Begins following the task route **from the current position** without

@@ -5540,6 +5540,12 @@ abstract class AppLocalizations {
   /// **'Show bearing (course) line'**
   String get settingShowBearing;
 
+  /// No description provided for @settingShowCompetitionTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Show competition task'**
+  String get settingShowCompetitionTask;
+
   /// No description provided for @settingShowTakeoffLine.
   ///
   /// In en, this message translates to:

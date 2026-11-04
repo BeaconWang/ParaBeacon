@@ -8,6 +8,17 @@ import 'package:parabeacon/controls/placed_control.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 
 void main() {
+  test('competition task setting follows the selected app language', () async {
+    final setting = settingsSchemaFor('map').singleWhere(
+      (setting) => setting.key == 'showTask',
+    );
+    final english = await AppLocalizations.delegate.load(const Locale('en'));
+    final chinese = await AppLocalizations.delegate.load(const Locale('zh'));
+
+    expect(setting.labelOf(english), 'Show competition task');
+    expect(setting.labelOf(chinese), '显示竞赛航线');
+  });
+
   test('landing widgets have separately configurable arrow colors', () {
     final defaultLanding = PlacedControl.fromType(
       ControlCatalog.byId('default_landing_waypoint')!,

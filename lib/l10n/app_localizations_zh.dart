@@ -2809,6 +2809,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowBearing => '显示方位（航线）线';
 
   @override
+  String get settingShowCompetitionTask => '显示竞赛航线';
+
+  @override
   String get settingShowTakeoffLine => '显示到起飞点的连线';
 
   @override

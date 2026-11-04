@@ -1089,6 +1089,7 @@
   "settingShowWind": "Show wind",
   "settingShowSun": "Show sun position",
   "settingShowBearing": "Show bearing (course) line",
+  "settingShowCompetitionTask": "Show competition task",
   "settingShowTakeoffLine": "Show line to take-off",
   "settingShowScale": "Display map scale",
   "settingShowAirspace": "Show airspace",

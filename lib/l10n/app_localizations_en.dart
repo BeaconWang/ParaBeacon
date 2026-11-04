@@ -2919,6 +2919,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowBearing => 'Show bearing (course) line';
 
   @override
+  String get settingShowCompetitionTask => 'Show competition task';
+
+  @override
   String get settingShowTakeoffLine => 'Show line to take-off';
 
   @override

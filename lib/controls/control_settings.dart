@@ -275,6 +275,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowSun;
     case 'showBearing':
       return l10n.settingShowBearing;
+    case 'showTask':
+      return l10n.settingShowCompetitionTask;
     case 'showTakeoffLine':
       return l10n.settingShowTakeoffLine;
     case 'showTakeoffPoint':

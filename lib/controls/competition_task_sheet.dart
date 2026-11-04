@@ -919,46 +919,14 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     return result;
   }
 
-  Future<double?> _pickRadius(AppLocalizations l10n, double initial) async {
-    final controller = TextEditingController(text: initial.round().toString());
-    String? error;
-    final result = await showDialog<double>(
+  Future<double?> _pickRadius(AppLocalizations l10n, double initial) {
+    return showDialog<double>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(l10n.competitionEditRadius),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: l10n.competitionRadius,
-              suffixText: 'm',
-              errorText: error,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                final v = double.tryParse(controller.text.trim());
-                if (v == null || v < 1 || v > 200000) {
-                  setState(() => error = l10n.competitionInvalidRadius);
-                  return;
-                }
-                Navigator.of(context).pop(v);
-              },
-              child: Text(l10n.save),
-            ),
-          ],
-        ),
+      builder: (context) => _CompetitionRadiusDialog(
+        initial: initial,
+        l10n: l10n,
       ),
     );
-    controller.dispose();
-    return result;
   }
 
   Future<String?> _pickText(
@@ -1319,6 +1287,73 @@ class _CompetitionTextEntryDialogState
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
           child: Text(widget.l10n.save),
+        ),
+      ],
+    );
+  }
+}
+
+/// Owns the radius field controller for the full lifetime of its dialog route.
+class _CompetitionRadiusDialog extends StatefulWidget {
+  const _CompetitionRadiusDialog({
+    required this.initial,
+    required this.l10n,
+  });
+
+  final double initial;
+  final AppLocalizations l10n;
+
+  @override
+  State<_CompetitionRadiusDialog> createState() =>
+      _CompetitionRadiusDialogState();
+}
+
+class _CompetitionRadiusDialogState extends State<_CompetitionRadiusDialog> {
+  late final TextEditingController _controller;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initial.round().toString());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    return AlertDialog(
+      title: Text(l10n.competitionEditRadius),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(
+          labelText: l10n.competitionRadius,
+          suffixText: 'm',
+          errorText: _error,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            final value = double.tryParse(_controller.text.trim());
+            if (value == null || value < 1 || value > 200000) {
+              setState(() => _error = l10n.competitionInvalidRadius);
+              return;
+            }
+            Navigator.of(context).pop(value);
+          },
+          child: Text(l10n.save),
         ),
       ],
     );

@@ -126,7 +126,7 @@ abstract final class TaskOptimizer {
 
     // Relaxation sweeps.
     for (var iteration = 0; iteration < 150; iteration++) {
-      var maxShift = 0.0;
+      var maxShiftSquared = 0.0;
       for (var i = 0; i < n; i++) {
         final radius = radii[i];
         if (radius <= 0) continue;
@@ -148,8 +148,8 @@ abstract final class TaskOptimizer {
           final next = touch[i + 1];
           final toPrev = _normalize(prev.x - center.x, prev.y - center.y);
           final toNext = _normalize(next.x - center.x, next.y - center.y);
-          aimX = toPrev[0] + toNext[0];
-          aimY = toPrev[1] + toNext[1];
+          aimX = toPrev.$1 + toNext.$1;
+          aimY = toPrev.$2 + toNext.$2;
           // Degenerate (opposite directions): keep the previous touch point so
           // the route passes straight through the centre neighbourhood.
           if (aimX.abs() < 1e-9 && aimY.abs() < 1e-9) {
@@ -158,17 +158,16 @@ abstract final class TaskOptimizer {
           }
         }
         final norm = _normalize(aimX, aimY);
-        final newX = center.x + norm[0] * radius;
-        final newY = center.y + norm[1] * radius;
-        final shift = math.sqrt(
-          (newX - touch[i].x) * (newX - touch[i].x) +
-              (newY - touch[i].y) * (newY - touch[i].y),
-        );
-        if (shift > maxShift) maxShift = shift;
+        final newX = center.x + norm.$1 * radius;
+        final newY = center.y + norm.$2 * radius;
+        final shiftX = newX - touch[i].x;
+        final shiftY = newY - touch[i].y;
+        final shiftSquared = shiftX * shiftX + shiftY * shiftY;
+        if (shiftSquared > maxShiftSquared) maxShiftSquared = shiftSquared;
         touch[i].x = newX;
         touch[i].y = newY;
       }
-      if (maxShift < 0.5) break; // converged to within half a metre
+      if (maxShiftSquared < 0.25) break; // converged to within half a metre
     }
 
     final optimizedLat = <double>[];
@@ -278,7 +277,7 @@ abstract final class TaskOptimizer {
     final touch = [for (final c in centers) _PlanarPoint(c.x, c.y)];
 
     for (var iteration = 0; iteration < 150; iteration++) {
-      var maxShift = 0.0;
+      var maxShiftSquared = 0.0;
       for (var i = 0; i < n; i++) {
         final radius = radii[i];
         if (radius <= 0) continue;
@@ -294,25 +293,24 @@ abstract final class TaskOptimizer {
           final next = touch[i + 1];
           final toPrev = _normalize(prev.x - center.x, prev.y - center.y);
           final toNext = _normalize(next.x - center.x, next.y - center.y);
-          aimX = toPrev[0] + toNext[0];
-          aimY = toPrev[1] + toNext[1];
+          aimX = toPrev.$1 + toNext.$1;
+          aimY = toPrev.$2 + toNext.$2;
           if (aimX.abs() < 1e-9 && aimY.abs() < 1e-9) {
             aimX = touch[i].x - center.x;
             aimY = touch[i].y - center.y;
           }
         }
         final norm = _normalize(aimX, aimY);
-        final newX = center.x + norm[0] * radius;
-        final newY = center.y + norm[1] * radius;
-        final shift = math.sqrt(
-          (newX - touch[i].x) * (newX - touch[i].x) +
-              (newY - touch[i].y) * (newY - touch[i].y),
-        );
-        if (shift > maxShift) maxShift = shift;
+        final newX = center.x + norm.$1 * radius;
+        final newY = center.y + norm.$2 * radius;
+        final shiftX = newX - touch[i].x;
+        final shiftY = newY - touch[i].y;
+        final shiftSquared = shiftX * shiftX + shiftY * shiftY;
+        if (shiftSquared > maxShiftSquared) maxShiftSquared = shiftSquared;
         touch[i].x = newX;
         touch[i].y = newY;
       }
-      if (maxShift < 0.5) break;
+      if (maxShiftSquared < 0.25) break;
     }
 
     final lats = <double>[];
@@ -325,9 +323,9 @@ abstract final class TaskOptimizer {
     return [lats, lons];
   }
 
-  static List<double> _normalize(double x, double y) {
+  static (double, double) _normalize(double x, double y) {
     final len = math.sqrt(x * x + y * y);
-    if (len < 1e-9) return const [0.0, 0.0];
-    return [x / len, y / len];
+    if (len < 1e-9) return (0.0, 0.0);
+    return (x / len, y / len);
   }
 }

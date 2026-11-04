@@ -221,11 +221,10 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   double _lat = DebugSettings.defaultSimStartLat;
   double _lon = DebugSettings.defaultSimStartLon;
 
-  /// Ordered task legs to fly, or null when not following a competition task
-  /// (random-drift mode). Each leg steers toward the turnpoint's optimized
-  /// touch point `(tLat, tLon)` — the shortest-path point on its cylinder — and
-  /// is "reached" once the aircraft is inside the cylinder centred at
-  /// `(cLat, cLon)` with radius `r`.
+  /// Ordered task legs configured for task-route mode, or null when the mode
+  /// is disabled. Each leg stores the optimized touch point `(tLat, tLon)` and
+  /// cylinder centre `(cLat, cLon)` with radius `r`. When the task is complete,
+  /// the simulator ignores these legs and resumes random drift.
   List<({double tLat, double tLon, double cLat, double cLon, double r})>?
   _route;
 
@@ -345,8 +344,11 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
 
   void _tick() {
     final prev = rawData;
-
-    final followingRoute = _route != null && _route!.isNotEmpty;
+    final taskStore = CompetitionTaskStore.instance;
+    var followingRoute =
+        _route != null &&
+        _route!.isNotEmpty &&
+        taskStore.nextTurnpointIndex != null;
 
     // Occasionally pick new targets to create gentle, believable motion.
     if (_rand.nextDouble() < 0.03) {
@@ -354,12 +356,14 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     }
     if (followingRoute) {
       // Drive task progress from the physical position so cylinders are
-      // achieved (idempotent with the map/control consumers), then steer along
-      // the live shortest route — the same dashed line the map draws — so the
-      // flight path matches it and reacts instantly to a manual target switch.
-      CompetitionTaskStore.instance.updatePosition(_lat, _lon);
-      _steerAlongRoute();
-    } else if (_rand.nextDouble() < 0.02) {
+      // achieved (idempotent with the map/control consumers). Once the final
+      // turnpoint is reached, stop steering the task route and resume random
+      // heading changes; otherwise steer along the live shortest route.
+      taskStore.updatePosition(_lat, _lon);
+      followingRoute = taskStore.nextTurnpointIndex != null;
+      if (followingRoute) _steerAlongRoute();
+    }
+    if (!followingRoute && _rand.nextDouble() < 0.02) {
       _headingTarget = _rand.nextDouble() * 360.0;
     }
     if (_rand.nextDouble() < 0.01) {
@@ -437,9 +441,8 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   /// re-optimized from the current position every tick). It aims at that
   /// route's second point (the target-cylinder crossing that ends the
   /// highlighted leg), so the simulated path matches the dashed line and
-  /// re-aims immediately when the target is switched manually. When the task is
-  /// complete the route is null and the track continues straight on its last
-  /// heading.
+  /// re-aims immediately when the target is switched manually. Completion is
+  /// detected by [_tick], which lets random drift take over.
   void _steerAlongRoute() {
     final route = CompetitionTaskStore.instance.liveRouteToGoal(_lat, _lon);
     if (route == null || route.length < 2) return; // complete: keep heading
@@ -534,7 +537,8 @@ class BluetoothSensorFlightDataSource extends RawFlightDataSource {
     }
     // If the start coordinates changed while the simulator is running,
     // recreate it so it restarts from the new location.
-    final startChanged = _debug.simStartLat != _lastSimStartLat ||
+    final startChanged =
+        _debug.simStartLat != _lastSimStartLat ||
         _debug.simStartLon != _lastSimStartLon;
     final taskRouteChanged = _debug.simulateTaskRoute != _lastSimTaskRoute;
     _lastSimStartLat = _debug.simStartLat;

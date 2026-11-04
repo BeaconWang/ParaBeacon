@@ -8,7 +8,7 @@ import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../audio/vario_sound_settings.dart';
 import '../data/airspace_store.dart';
-import '../data/competition/competition_task.dart';
+import '../data/competition/competition_task.dart' show TurnpointRole;
 import '../data/competition/competition_task_store.dart';
 import '../data/debug_settings.dart';
 import '../data/flight_data.dart';
@@ -16,7 +16,6 @@ import '../data/flight_data_provider.dart';
 import '../data/flight_recorder.dart';
 import '../data/flight_state.dart';
 import '../data/gcj02.dart';
-import '../data/geo_math.dart';
 import '../data/landing_point_store.dart';
 import '../data/takeoff_reference.dart';
 import '../data/offline_tiles_service.dart';
@@ -901,20 +900,15 @@ class _MapControlState extends State<MapControl> {
                 if (widget.showAirspace)
                   PolygonLayer(polygons: _buildAirspacePolygons()),
 
-                // Competition task: cylinders, optimized route, goal line and
-                // turnpoint markers. Always shown (when enabled) so the course
-                // is visible on the ground. The "next turnpoint" highlight and
-                // the live current → task line only appear in flight.
+                // Competition task: show its cylinders and turnpoint markers,
+                // plus a single live-optimized route from the current position
+                // through the remaining course to the finish. The route is
+                // available whenever there is a valid position, including on
+                // the ground before takeoff.
                 if (widget.showTask) ...[
                   CircleLayer(circles: _buildTaskCircles()),
-                  PolylineLayer(polylines: _buildTaskPolylines()),
-                  // Real-time shortest route from the live position to goal,
-                  // with the current → next-turnpoint leg highlighted (dashed).
-                  // Only while flying — no live connection on the ground.
-                  if (wgs != null && FlightState.instance.isFlying)
-                    PolylineLayer(
-                      polylines: _buildLiveRoutePolylines(wgs),
-                    ),
+                  if (wgs != null)
+                    PolylineLayer(polylines: _buildLiveRoutePolylines(wgs)),
                   MarkerLayer(markers: _buildTaskMarkers()),
                 ],
 
@@ -1391,9 +1385,7 @@ class _MapControlState extends State<MapControl> {
   }
 
   // ── Competition task overlay ───────────────────────────────────────────
-  static const Color _taskCircleColor = Color(0xFF1E88E5);
   static const Color _taskRouteColor = Color(0xFFFF6D00);
-  static const Color _taskGoalColor = Color(0xFFD50000);
 
   /// Translucent cylinders for every turnpoint, tinted by role.
   List<CircleMarker> _buildTaskCircles() {
@@ -1428,86 +1420,9 @@ class _MapControlState extends State<MapControl> {
     return out;
   }
 
-  /// The optimized route (through the cylinder touch points) plus a dashed
-  /// centre-to-centre reference line and the goal line (for LINE goals).
-  List<Polyline> _buildTaskPolylines() {
-    final store = CompetitionTaskStore.instance;
-    final task = store.task;
-    final optimized = store.optimized;
-    if (task == null || task.turnpoints.length < 2) return const [];
-
-    final out = <Polyline>[];
-
-    // Dashed centre-to-centre reference line.
-    final centers = [
-      for (final tp in task.turnpoints)
-        _shift(LatLng(tp.latitude, tp.longitude), widget.tileSource),
-    ];
-    out.add(
-      Polyline(
-        points: centers,
-        strokeWidth: 1.5 * widget.lineThickness,
-        color: _taskCircleColor.withAlpha(120),
-        pattern: StrokePattern.dashed(segments: const [6, 6]),
-      ),
-    );
-
-    // Solid optimized route.
-    if (optimized != null && !optimized.isEmpty) {
-      final optimizedPoints = <LatLng>[
-        for (var i = 0; i < optimized.optimizedLat.length; i++)
-          _shift(
-            LatLng(optimized.optimizedLat[i], optimized.optimizedLon[i]),
-            widget.tileSource,
-          ),
-      ];
-      out.add(
-        Polyline(
-          points: optimizedPoints,
-          strokeWidth: 3.0 * widget.lineThickness,
-          color: _taskRouteColor.withAlpha(235),
-        ),
-      );
-    }
-
-    // Goal line: a short segment perpendicular to the final leg.
-    if (task.goal.type == TaskGoalType.line && task.turnpoints.length >= 2) {
-      final goal = task.turnpoints.last;
-      final prev = task.turnpoints[task.turnpoints.length - 2];
-      final bearing = GeoMath.bearingDegrees(
-        goal.latitude,
-        goal.longitude,
-        prev.latitude,
-        prev.longitude,
-      );
-      final perp = (bearing + 90) % 360;
-      final half = goal.radiusMeters;
-      final a = GeoMath.destination(goal.latitude, goal.longitude, perp, half);
-      final b = GeoMath.destination(
-        goal.latitude,
-        goal.longitude,
-        (perp + 180) % 360,
-        half,
-      );
-      out.add(
-        Polyline(
-          points: [
-            _shift(LatLng(a[0], a[1]), widget.tileSource),
-            _shift(LatLng(b[0], b[1]), widget.tileSource),
-          ],
-          strokeWidth: 4.0 * widget.lineThickness,
-          color: _taskGoalColor.withAlpha(235),
-        ),
-      );
-    }
-    return out;
-  }
-
-  /// Real-time shortest route from the current position [wgs] through the
-  /// remaining turnpoints to goal, drawn entirely with dashed lines. The first
-  /// leg (current position → next turnpoint) is highlighted in the amber accent
-  /// used for the next turnpoint; the rest of the route uses the task-route
-  /// colour. Returns an empty list when there is no task or it is complete.
+  /// The single real-time shortest route from the current position [wgs]
+  /// through the remaining turnpoints to the finish. Returns an empty list
+  /// when there is no task or it is complete.
   List<Polyline> _buildLiveRoutePolylines(LatLng wgs) {
     final route = CompetitionTaskStore.instance.liveRouteToGoal(
       wgs.latitude,
@@ -1515,32 +1430,17 @@ class _MapControlState extends State<MapControl> {
     );
     if (route == null || route.length < 2) return const [];
 
-    final points = [
-      for (final p in route) _shift(LatLng(p.$1, p.$2), widget.tileSource),
-    ];
-
-    final out = <Polyline>[];
-    // Remainder of the route: next turnpoint → … → goal (dashed).
-    if (points.length > 2) {
-      out.add(
-        Polyline(
-          points: points.sublist(1),
-          strokeWidth: 3.0 * widget.lineThickness,
-          color: _taskRouteColor.withAlpha(235),
-          pattern: StrokePattern.dashed(segments: const [12, 8]),
-        ),
-      );
-    }
-    // Highlighted first leg: current position → next turnpoint (dashed).
-    out.add(
+    return [
       Polyline(
-        points: points.sublist(0, 2),
-        strokeWidth: 4.0 * widget.lineThickness,
-        color: _TaskPointMarker._nextAccent,
-        pattern: StrokePattern.dashed(segments: const [10, 7]),
+        points: [
+          for (final point in route)
+            _shift(LatLng(point.$1, point.$2), widget.tileSource),
+        ],
+        strokeWidth: 3.0 * widget.lineThickness,
+        color: _taskRouteColor.withAlpha(235),
+        pattern: StrokePattern.dashed(segments: const [12, 8]),
       ),
-    );
-    return out;
+    ];
   }
 
   /// Numbered labels at every turnpoint centre.

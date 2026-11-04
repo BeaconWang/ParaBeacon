@@ -229,9 +229,6 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   List<({double tLat, double tLon, double cLat, double cLon, double r})>?
   _route;
 
-  /// Index of the leg target the simulator is currently flying toward.
-  int _routeIndex = 0;
-
   SimulatedFlightDataSource({
     this.tickInterval = const Duration(milliseconds: 100),
     DebugSettings? debugSettings,
@@ -259,7 +256,6 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     // coordinates were edited mid-flight), fly from the current position to
     // the target instead of teleporting.
     _route = null;
-    _routeIndex = 0;
     if (FlightState.instance.isFlying) enterTaskRouteFromCurrent();
     _timer ??= Timer.periodic(tickInterval, (_) => _tick());
   }
@@ -274,7 +270,6 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     } else {
       // Back on the ground: drop the route so a subsequent takeoff re-anchors.
       _route = null;
-      _routeIndex = 0;
     }
   }
 
@@ -290,14 +285,12 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
   void onTaskRouteToggleChanged() {
     if (!_debug.simulateTaskRoute) {
       _route = null;
-      _routeIndex = 0;
       return;
     }
     if (FlightState.instance.isFlying) {
       enterTaskRouteFromCurrent();
     } else {
       _route = null;
-      _routeIndex = 0;
     }
   }
 
@@ -308,7 +301,6 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     final legs = _buildRouteLegs();
     if (legs == null || legs.isEmpty) {
       _route = null;
-      _routeIndex = 0;
       return;
     }
     _route = legs;
@@ -325,44 +317,16 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     );
     _lat = p[0];
     _lon = p[1];
-    // Already inside the first cylinder, so aim at the next leg.
-    _routeIndex = legs.length > 1 ? 1 : 0;
   }
 
   /// Begins following the task route **from the current position** without
   /// moving the aircraft — used when the task-route toggle is switched on
-  /// mid-flight, so the simulator flies from where it is to the target. Aims at
-  /// the task's current next turnpoint when known, otherwise the nearest
-  /// upcoming leg. No-op (free drift) when there is no usable task.
+  /// mid-flight, so the simulator flies from where it is to the current target.
+  /// Steering follows the live shortest route (driven by the store's current
+  /// target), so no repositioning is needed. No-op (free drift) when there is
+  /// no usable task.
   void enterTaskRouteFromCurrent() {
-    final legs = _buildRouteLegs();
-    if (legs == null || legs.isEmpty) {
-      _route = null;
-      _routeIndex = 0;
-      return;
-    }
-    _route = legs;
-    final nextIndex = CompetitionTaskStore.instance.nextTurnpointIndex;
-    if (nextIndex != null && nextIndex >= 0 && nextIndex < legs.length) {
-      _routeIndex = nextIndex;
-    } else {
-      // Fall back to the nearest leg's touch point from the current position.
-      var bestIndex = 0;
-      var bestDist = double.infinity;
-      for (var i = 0; i < legs.length; i++) {
-        final d = GeoMath.distanceMeters(
-          _lat,
-          _lon,
-          legs[i].tLat,
-          legs[i].tLon,
-        );
-        if (d < bestDist) {
-          bestDist = d;
-          bestIndex = i;
-        }
-      }
-      _routeIndex = bestIndex;
-    }
+    _route = _buildRouteLegs();
   }
 
   /// Builds the ordered task legs (optimized touch point + cylinder centre and
@@ -417,8 +381,11 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
       _vsTarget = (_rand.nextDouble() * 2 - 1) * 6.0; // -6..+6 m/s
     }
     if (followingRoute) {
-      // Steer toward the current leg target, advancing when its cylinder is
-      // entered; keeps the random vertical/wind motion for realism.
+      // Drive task progress from the physical position so cylinders are
+      // achieved (idempotent with the map/control consumers), then steer along
+      // the live shortest route — the same dashed line the map draws — so the
+      // flight path matches it and reacts instantly to a manual target switch.
+      CompetitionTaskStore.instance.updatePosition(_lat, _lon);
       _steerAlongRoute();
     } else if (_rand.nextDouble() < 0.02) {
       _headingTarget = _rand.nextDouble() * 360.0;
@@ -493,30 +460,21 @@ class SimulatedFlightDataSource extends RawFlightDataSource {
     );
   }
 
-  /// Steers [_headingTarget] toward the current leg's optimized touch point and
-  /// advances to the next leg once the cylinder is achieved. A leg counts as
-  /// achieved when the aircraft is inside the cylinder (centre distance within
-  /// `radius`, which matches the competition tracker) or has effectively
-  /// reached the touch point (handles zero-radius / line goals). After the
-  /// final leg is achieved it stops steering, so the track continues straight
-  /// past goal on its last heading.
+  /// Steers [_headingTarget] along the live shortest route to goal — exactly
+  /// the dashed line the map draws ([CompetitionTaskStore.liveRouteToGoal],
+  /// re-optimized from the current position every tick). It aims at that
+  /// route's second point (the target-cylinder crossing that ends the
+  /// highlighted leg), so the simulated path matches the dashed line and
+  /// re-aims immediately when the target is switched manually. When the task is
+  /// complete the route is null and the track continues straight on its last
+  /// heading.
   void _steerAlongRoute() {
-    final route = _route;
-    if (route == null || route.isEmpty) return;
-    if (_routeIndex >= route.length) return; // completed: keep last heading
-
-    final leg = route[_routeIndex];
-    final toCentre = GeoMath.distanceMeters(_lat, _lon, leg.cLat, leg.cLon);
-    final toTouch = GeoMath.distanceMeters(_lat, _lon, leg.tLat, leg.tLon);
-    // Grazing the optimized touch point puts the aircraft on the cylinder edge
-    // (centre distance ≈ radius); a 1 m slack absorbs the discrete step size.
-    final achieved = toCentre <= leg.r + 1.0 || toTouch <= 8.0;
-    if (achieved) {
-      _routeIndex++;
-      if (_routeIndex >= route.length) return;
-    }
-    final next = route[_routeIndex];
-    _headingTarget = GeoMath.bearingDegrees(_lat, _lon, next.tLat, next.tLon);
+    final route = CompetitionTaskStore.instance.liveRouteToGoal(_lat, _lon);
+    if (route == null || route.length < 2) return; // complete: keep heading
+    final target = route[1];
+    final dist = GeoMath.distanceMeters(_lat, _lon, target.$1, target.$2);
+    if (dist < 1.0) return; // already at the crossing; hold heading this tick
+    _headingTarget = GeoMath.bearingDegrees(_lat, _lon, target.$1, target.$2);
   }
 
   /// Linearly interpolates between two angles taking the shortest path.

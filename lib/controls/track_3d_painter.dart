@@ -30,6 +30,7 @@ class Track3DGeometryCache {
     required double pitch,
     required double zScale,
     required double zoom,
+    required Offset panOffset,
     required Size size,
   }) {
     final cached = _cached;
@@ -38,6 +39,7 @@ class Track3DGeometryCache {
         cached.pitch == pitch &&
         cached.zScale == zScale &&
         cached.zoom == zoom &&
+        cached.panOffset == panOffset &&
         cached.size == size) {
       return cached;
     }
@@ -147,6 +149,7 @@ class Track3DGeometryCache {
       pitch: pitch,
       zScale: zScale,
       zoom: zoom,
+      panOffset: panOffset,
       cameraDistance: cameraDistance,
       size: size,
       projected: [for (final point in projected) cameraZoom(point)],
@@ -166,6 +169,7 @@ class _Track3DGeometry implements Track3DGroundProjector {
     required this.pitch,
     required this.zScale,
     required this.zoom,
+    required this.panOffset,
     required this.cameraDistance,
     required this.size,
     required this.projected,
@@ -180,6 +184,7 @@ class _Track3DGeometry implements Track3DGroundProjector {
   final double pitch;
   final double zScale;
   final double zoom;
+  final Offset panOffset;
   final double cameraDistance;
   final Size size;
   final List<Offset> projected;
@@ -190,8 +195,8 @@ class _Track3DGeometry implements Track3DGroundProjector {
   final double centerY;
 
   Offset toScreen(Offset point) => Offset(
-    size.width / 2 + (point.dx - centerX) * scale,
-    size.height / 2 + (point.dy - centerY) * scale,
+    size.width / 2 + (point.dx - centerX) * scale + panOffset.dx,
+    size.height / 2 + (point.dy - centerY) * scale + panOffset.dy,
   );
 
   @override
@@ -203,8 +208,12 @@ class _Track3DGeometry implements Track3DGroundProjector {
     final perspective =
         cameraDistance / math.max(1.0, cameraDistance + y1 * cosP);
     return Offset(
-      size.width / 2 + (x1 * perspective - centerX) * scale * zoom,
-      size.height / 2 + (-y1 * sinP * perspective - centerY) * scale * zoom,
+      size.width / 2 +
+          (x1 * perspective - centerX) * scale * zoom +
+          panOffset.dx,
+      size.height / 2 +
+          (-y1 * sinP * perspective - centerY) * scale * zoom +
+          panOffset.dy,
     );
   }
 }
@@ -216,6 +225,7 @@ class Track3DPainter extends CustomPainter {
     required this.pitch,
     required this.zScale,
     required this.zoom,
+    required this.panOffset,
     required this.cursorIndex,
     required this.geometryCache,
     required this.gridColor,
@@ -231,6 +241,7 @@ class Track3DPainter extends CustomPainter {
   final double pitch;
   final double zScale;
   final double zoom;
+  final Offset panOffset;
   final int cursorIndex;
   final Track3DGeometryCache geometryCache;
   final Color gridColor;
@@ -255,6 +266,7 @@ class Track3DPainter extends CustomPainter {
       pitch: pitch,
       zScale: zScale,
       zoom: zoom,
+      panOffset: panOffset,
       size: size,
     );
     final projected = geometry.projected;
@@ -429,6 +441,7 @@ class Track3DPainter extends CustomPainter {
         old.pitch != pitch ||
         old.zScale != zScale ||
         old.zoom != zoom ||
+        old.panOffset != panOffset ||
         old.groundMap != groundMap ||
         old.cursorIndex != cursorIndex ||
         old.cursorInGap != cursorInGap ||

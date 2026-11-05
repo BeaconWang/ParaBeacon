@@ -18,8 +18,9 @@ import 'track_3d_painter.dart';
 /// Opens a 3D replay of a completed [track] as a full-screen sheet.
 ///
 /// The track is rendered as a projected 3D polyline (X/Y ground plane, Z =
-/// altitude) that the user can orbit (single-finger drag) and zoom (pinch or
-/// mouse wheel). A playback cursor animates along the track with optional
+/// altitude) that the user can orbit (single-finger drag), pan (two-finger or
+/// secondary/middle mouse drag), and zoom (pinch or mouse wheel). A playback
+/// cursor animates along the track with optional
 /// vario-audio sync, mirroring [showFlightReplaySheet].
 ///
 /// Only flights that still carry per-sample data can be replayed; the caller
@@ -63,7 +64,8 @@ class _Track3DSheetState extends State<_Track3DSheet>
   double _yaw = -0.6; // radians, around the vertical (Z) axis
   double _pitch = 0.9; // radians, tilt toward the horizon
   double _zScale = 1.0; // vertical exaggeration
-  double _zoom = 1.0; // uniform scene zoom (0.5 .. 4.0)
+  double _zoom = 1.0; // uniform scene zoom
+  Offset _panOffset = Offset.zero;
 
   // Playback.
   double _cursorMs = 0.0;
@@ -178,10 +180,14 @@ class _Track3DSheetState extends State<_Track3DSheet>
   }
 
   void _setSceneZoom(double zoom) {
-    final nextZoom = zoom.clamp(0.5, 4.0).toDouble();
-    if (_zoom == nextZoom) return;
-    setState(() => _zoom = nextZoom);
+    if (!zoom.isFinite || zoom <= 0 || _zoom == zoom) return;
+    setState(() => _zoom = zoom);
     _ensureGroundMapResolution();
+  }
+
+  void _panScene(double dx, double dy) {
+    if (dx == 0 && dy == 0) return;
+    setState(() => _panOffset += Offset(dx, dy));
   }
 
   void _ensureGroundMapResolution() {
@@ -203,6 +209,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
       _pitch = 0.9;
       _zScale = 1.0;
       _zoom = 1.0;
+      _panOffset = Offset.zero;
     });
     _ensureGroundMapResolution();
   }
@@ -376,6 +383,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
                     pitch: _pitch,
                     zScale: _zScale,
                     zoom: _zoom,
+                    panOffset: _panOffset,
                     groundMap: _groundMap,
                     samples: _samples,
                     cursorIndex: _currentIndex(),
@@ -387,6 +395,7 @@ class _Track3DSheetState extends State<_Track3DSheet>
                       _pitch = (_pitch + dy * 0.01).clamp(0.15, 1.45);
                     }),
                     onZoom: (factor) => _setSceneZoom(_zoom * factor),
+                    onPan: _panScene,
                   ),
                 ),
                 if (activeGap != null)
@@ -550,6 +559,7 @@ class _GestureCanvas extends StatefulWidget {
     required this.pitch,
     required this.zScale,
     required this.zoom,
+    required this.panOffset,
     required this.groundMap,
     required this.samples,
     required this.cursorIndex,
@@ -558,12 +568,14 @@ class _GestureCanvas extends StatefulWidget {
     required this.cursorInGap,
     required this.onOrbit,
     required this.onZoom,
+    required this.onPan,
   });
 
   final double yaw;
   final double pitch;
   final double zScale;
   final double zoom;
+  final Offset panOffset;
   final Track3DGroundMap? groundMap;
   final List<FlightSample> samples;
   final int cursorIndex;
@@ -572,6 +584,7 @@ class _GestureCanvas extends StatefulWidget {
   final bool cursorInGap;
   final void Function(double dx, double dy) onOrbit;
   final void Function(double factor) onZoom;
+  final void Function(double dx, double dy) onPan;
 
   @override
   State<_GestureCanvas> createState() => _GestureCanvasState();
@@ -579,11 +592,47 @@ class _GestureCanvas extends StatefulWidget {
 
 class _GestureCanvasState extends State<_GestureCanvas> {
   double _lastScale = 1.0;
+  int? _panPointer;
+  Offset? _lastPanPosition;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Listener(
+      onPointerDown: (event) {
+        final panButtons = kSecondaryMouseButton | kMiddleMouseButton;
+        if ((event.buttons & panButtons) != 0) {
+          _panPointer = event.pointer;
+          _lastPanPosition = event.position;
+        }
+      },
+      onPointerMove: (event) {
+        if (_panPointer != event.pointer) return;
+        final panButtons = kSecondaryMouseButton | kMiddleMouseButton;
+        if ((event.buttons & panButtons) == 0) {
+          _panPointer = null;
+          _lastPanPosition = null;
+          return;
+        }
+        final previous = _lastPanPosition;
+        _lastPanPosition = event.position;
+        if (previous != null) {
+          final delta = event.position - previous;
+          widget.onPan(delta.dx, delta.dy);
+        }
+      },
+      onPointerUp: (event) {
+        if (_panPointer == event.pointer) {
+          _panPointer = null;
+          _lastPanPosition = null;
+        }
+      },
+      onPointerCancel: (event) {
+        if (_panPointer == event.pointer) {
+          _panPointer = null;
+          _lastPanPosition = null;
+        }
+      },
       onPointerSignal: (event) {
         if (event is PointerScrollEvent) {
           widget.onZoom(math.exp(-event.scrollDelta.dy * 0.0015));
@@ -596,6 +645,7 @@ class _GestureCanvasState extends State<_GestureCanvas> {
             final factor = d.scale / (_lastScale == 0 ? 1 : _lastScale);
             _lastScale = d.scale;
             widget.onZoom(factor);
+            widget.onPan(d.focalPointDelta.dx, d.focalPointDelta.dy);
           } else {
             widget.onOrbit(d.focalPointDelta.dx, d.focalPointDelta.dy);
           }
@@ -607,6 +657,7 @@ class _GestureCanvasState extends State<_GestureCanvas> {
             pitch: widget.pitch,
             zScale: widget.zScale,
             zoom: widget.zoom,
+            panOffset: widget.panOffset,
             groundMap: widget.groundMap,
             cursorIndex: widget.cursorIndex,
             geometryCache: widget.geometryCache,

@@ -18,7 +18,6 @@ import 'controls/live_tracking_settings_sheet.dart';
 import 'controls/add_control_sheet.dart';
 import 'controls/bluetooth_sensor_sheet.dart';
 import 'controls/altimeter_qnh_settings_sheet.dart';
-import 'controls/keyboard_inset.dart';
 import 'controls/sheet_notice_host.dart';
 import 'controls/control_catalog.dart';
 import 'controls/control_context_menu.dart';
@@ -734,8 +733,7 @@ class _DashGridPageState extends State<DashGridPage> {
                 padding: const EdgeInsets.only(top: 12, bottom: 4),
                 child: Text(title, style: theme.textTheme.titleMedium),
               );
-              return KeyboardInset(
-                child: SafeArea(
+              return SafeArea(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1251,7 +1249,6 @@ class _DashGridPageState extends State<DashGridPage> {
                       ),
                     ],
                   ),
-                ),
               );
             },
           ),

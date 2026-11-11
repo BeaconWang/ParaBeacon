@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
-import 'keyboard_inset.dart';
 import 'sheet_notice_host.dart';
 
 Future<void> showAsfcFlightRecordsSheet(BuildContext context) {
@@ -413,8 +412,7 @@ class _AsfcFlightRecordFormState extends State<_AsfcFlightRecordForm> {
         .toList();
     if (_coach != null && !coaches.any((coach) => coach.id == _coach!.id))
       coaches.insert(0, _coach!);
-    return KeyboardInset(
-      child: Material(
+    return Material(
         color: theme.colorScheme.surface,
         child: SafeArea(
           child: Form(
@@ -578,7 +576,6 @@ class _AsfcFlightRecordFormState extends State<_AsfcFlightRecordForm> {
             ),
           ),
         ),
-      ),
     );
   }
 }

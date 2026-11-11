@@ -119,6 +119,9 @@ class _AircraftSettingsSheetState extends State<_AircraftSettingsSheet> {
       builder: (context, _) => Material(
         color: theme.colorScheme.surface,
         child: SafeArea(
+          minimum: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Column(
             children: [
               SizedBox(

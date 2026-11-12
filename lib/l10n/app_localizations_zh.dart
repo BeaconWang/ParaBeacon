@@ -314,7 +314,91 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accounts => '账户';
 
   @override
-  String get accountsSubtitle => '管理 ASFC 和 XContest 账户';
+  String get accountsSubtitle => '管理 ParaBeacon、ASFC 和 XContest 账户';
+
+  @override
+  String get paraBeaconAccount => 'ParaBeacon 账户';
+
+  @override
+  String get paraBeaconAccountSubtitle => '登录或创建 ParaBeacon 账户';
+
+  @override
+  String get accountSignedIn => '已登录';
+
+  @override
+  String get accountNotSignedIn => '未登录';
+
+  @override
+  String get accountSignIn => '登录';
+
+  @override
+  String get accountCreate => '创建账户';
+
+  @override
+  String get accountUsername => '用户名';
+
+  @override
+  String get accountIdentifier => '用户名或电子邮箱';
+
+  @override
+  String get accountEmailOptional => '电子邮箱（可选）';
+
+  @override
+  String get accountUsernameRequired => '请输入用户名或电子邮箱。';
+
+  @override
+  String get accountUsernameLength => '用户名需为 3–32 个字符。';
+
+  @override
+  String get accountEmailInvalid => '请输入有效的电子邮箱地址。';
+
+  @override
+  String get accountPassword => '密码';
+
+  @override
+  String get accountPasswordRequired => '请输入密码。';
+
+  @override
+  String get accountPasswordMinimum => '密码至少需要 6 个字符。';
+
+  @override
+  String get accountPasswordMaximum => '密码不能超过 72 个 UTF-8 字节。';
+
+  @override
+  String get accountConfirmPassword => '确认密码';
+
+  @override
+  String get accountPasswordMismatch => '两次输入的密码不一致。';
+
+  @override
+  String get accountMemberSince => '注册时间';
+
+  @override
+  String get accountSignOut => '退出登录';
+
+  @override
+  String get accountPleaseWait => '请稍候……';
+
+  @override
+  String get accountSecureSession => '登录令牌仅安全保存在本设备上。';
+
+  @override
+  String get accountErrorInvalidCredentials => '用户名/电子邮箱或密码错误。';
+
+  @override
+  String get accountErrorAlreadyExists => '该用户名或电子邮箱已被使用。';
+
+  @override
+  String get accountErrorInvalidInput => '请检查填写的信息并重试。';
+
+  @override
+  String get accountErrorConnection => '无法连接 ParaBeacon，请重试。';
+
+  @override
+  String get accountErrorStorage => '无法在此设备上安全保存登录状态。';
+
+  @override
+  String get accountErrorService => '账户服务暂时不可用。';
 
   @override
   String get aircraft => '飞行器';

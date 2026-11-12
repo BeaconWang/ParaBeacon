@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
+import '../data/parabeacon_account_service.dart';
 import '../data/user_agent_settings.dart';
 import '../data/xcontest_auth_service.dart';
 import '../l10n/app_localizations.dart';
+import 'parabeacon_account_sheet.dart';
 import 'xcontest_login_sheet.dart';
 import 'certificate_application_sheet.dart';
 import 'asfc_flight_records_sheet.dart';
@@ -81,15 +83,23 @@ class _AccountsSheet extends StatefulWidget {
 
 class _AccountsSheetState extends State<_AccountsSheet> {
   @override
+  void initState() {
+    super.initState();
+    ParaBeaconAccountService.instance.load();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return AnimatedBuilder(
       animation: Listenable.merge([
+        ParaBeaconAccountService.instance,
         AsfcAuthService.instance,
         XContestAuthService.instance,
       ]),
       builder: (context, _) {
+        final paraBeacon = ParaBeaconAccountService.instance;
         final asfc = AsfcAuthService.instance;
         final xcontest = XContestAuthService.instance;
         return Material(
@@ -140,6 +150,15 @@ class _AccountsSheetState extends State<_AccountsSheet> {
                         ),
                       ),
                       const SizedBox(height: 28),
+                      _AccountCard(
+                        icon: Icons.verified_user_outlined,
+                        title: l10n.paraBeaconAccount,
+                        subtitle: paraBeacon.isSignedIn
+                            ? '${l10n.accountSignedIn} · ${paraBeacon.user?.username ?? ''}'
+                            : l10n.accountNotSignedIn,
+                        onTap: () => showParaBeaconAccountSheet(context),
+                      ),
+                      const SizedBox(height: 12),
                       _AccountCard(
                         icon: Icons.account_circle_outlined,
                         title: l10n.asfcAccount,

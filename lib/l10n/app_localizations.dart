@@ -695,8 +695,176 @@ abstract class AppLocalizations {
   /// No description provided for @accountsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Manage your ASFC and XContest accounts'**
+  /// **'Manage your ParaBeacon, ASFC and XContest accounts'**
   String get accountsSubtitle;
+
+  /// No description provided for @paraBeaconAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'ParaBeacon account'**
+  String get paraBeaconAccount;
+
+  /// No description provided for @paraBeaconAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create a ParaBeacon account'**
+  String get paraBeaconAccountSubtitle;
+
+  /// No description provided for @accountSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get accountSignedIn;
+
+  /// No description provided for @accountNotSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get accountNotSignedIn;
+
+  /// No description provided for @accountSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get accountSignIn;
+
+  /// No description provided for @accountCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get accountCreate;
+
+  /// No description provided for @accountUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get accountUsername;
+
+  /// No description provided for @accountIdentifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Username or email'**
+  String get accountIdentifier;
+
+  /// No description provided for @accountEmailOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Email (optional)'**
+  String get accountEmailOptional;
+
+  /// No description provided for @accountUsernameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your username or email.'**
+  String get accountUsernameRequired;
+
+  /// No description provided for @accountUsernameLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be 3–32 characters.'**
+  String get accountUsernameLength;
+
+  /// No description provided for @accountEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get accountEmailInvalid;
+
+  /// No description provided for @accountPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get accountPassword;
+
+  /// No description provided for @accountPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password.'**
+  String get accountPasswordRequired;
+
+  /// No description provided for @accountPasswordMinimum.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters.'**
+  String get accountPasswordMinimum;
+
+  /// No description provided for @accountPasswordMaximum.
+  ///
+  /// In en, this message translates to:
+  /// **'Password cannot exceed 72 UTF-8 bytes.'**
+  String get accountPasswordMaximum;
+
+  /// No description provided for @accountConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get accountConfirmPassword;
+
+  /// No description provided for @accountPasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get accountPasswordMismatch;
+
+  /// No description provided for @accountMemberSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Member since'**
+  String get accountMemberSince;
+
+  /// No description provided for @accountSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get accountSignOut;
+
+  /// No description provided for @accountPleaseWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait…'**
+  String get accountPleaseWait;
+
+  /// No description provided for @accountSecureSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Your sign-in token is stored securely on this device.'**
+  String get accountSecureSession;
+
+  /// No description provided for @accountErrorInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'The username/email or password is incorrect.'**
+  String get accountErrorInvalidCredentials;
+
+  /// No description provided for @accountErrorAlreadyExists.
+  ///
+  /// In en, this message translates to:
+  /// **'That username or email is already in use.'**
+  String get accountErrorAlreadyExists;
+
+  /// No description provided for @accountErrorInvalidInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your details and try again.'**
+  String get accountErrorInvalidInput;
+
+  /// No description provided for @accountErrorConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to ParaBeacon. Try again.'**
+  String get accountErrorConnection;
+
+  /// No description provided for @accountErrorStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not securely store your sign-in on this device.'**
+  String get accountErrorStorage;
+
+  /// No description provided for @accountErrorService.
+  ///
+  /// In en, this message translates to:
+  /// **'The account service is temporarily unavailable.'**
+  String get accountErrorService;
 
   /// No description provided for @aircraft.
   ///

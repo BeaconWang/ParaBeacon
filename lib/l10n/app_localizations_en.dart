@@ -325,7 +325,100 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accounts => 'Accounts';
 
   @override
-  String get accountsSubtitle => 'Manage your ASFC and XContest accounts';
+  String get accountsSubtitle =>
+      'Manage your ParaBeacon, ASFC and XContest accounts';
+
+  @override
+  String get paraBeaconAccount => 'ParaBeacon account';
+
+  @override
+  String get paraBeaconAccountSubtitle =>
+      'Sign in or create a ParaBeacon account';
+
+  @override
+  String get accountSignedIn => 'Signed in';
+
+  @override
+  String get accountNotSignedIn => 'Not signed in';
+
+  @override
+  String get accountSignIn => 'Sign in';
+
+  @override
+  String get accountCreate => 'Create account';
+
+  @override
+  String get accountUsername => 'Username';
+
+  @override
+  String get accountIdentifier => 'Username or email';
+
+  @override
+  String get accountEmailOptional => 'Email (optional)';
+
+  @override
+  String get accountUsernameRequired => 'Enter your username or email.';
+
+  @override
+  String get accountUsernameLength => 'Username must be 3–32 characters.';
+
+  @override
+  String get accountEmailInvalid => 'Enter a valid email address.';
+
+  @override
+  String get accountPassword => 'Password';
+
+  @override
+  String get accountPasswordRequired => 'Enter your password.';
+
+  @override
+  String get accountPasswordMinimum =>
+      'Password must be at least 6 characters.';
+
+  @override
+  String get accountPasswordMaximum => 'Password cannot exceed 72 UTF-8 bytes.';
+
+  @override
+  String get accountConfirmPassword => 'Confirm password';
+
+  @override
+  String get accountPasswordMismatch => 'Passwords do not match.';
+
+  @override
+  String get accountMemberSince => 'Member since';
+
+  @override
+  String get accountSignOut => 'Sign out';
+
+  @override
+  String get accountPleaseWait => 'Please wait…';
+
+  @override
+  String get accountSecureSession =>
+      'Your sign-in token is stored securely on this device.';
+
+  @override
+  String get accountErrorInvalidCredentials =>
+      'The username/email or password is incorrect.';
+
+  @override
+  String get accountErrorAlreadyExists =>
+      'That username or email is already in use.';
+
+  @override
+  String get accountErrorInvalidInput => 'Check your details and try again.';
+
+  @override
+  String get accountErrorConnection =>
+      'Could not connect to ParaBeacon. Try again.';
+
+  @override
+  String get accountErrorStorage =>
+      'Could not securely store your sign-in on this device.';
+
+  @override
+  String get accountErrorService =>
+      'The account service is temporarily unavailable.';
 
   @override
   String get aircraft => 'Aircraft';

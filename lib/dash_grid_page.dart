@@ -37,6 +37,7 @@ import 'controls/map_picker_sheet.dart' show showMapPickerSheet;
 import 'data/aircraft_settings.dart';
 import 'data/dashboard_page_templates.dart';
 import 'data/live_tracking_settings.dart';
+import 'data/parabeacon_account_service.dart';
 import 'data/debug_settings.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
@@ -833,10 +834,15 @@ class _DashGridPageState extends State<DashGridPage> {
                               },
                             ),
                             AnimatedBuilder(
-                              animation: XContestAuthService.instance,
+                              animation: Listenable.merge([
+                                XContestAuthService.instance,
+                                ParaBeaconAccountService.instance,
+                              ]),
                               builder: (context, _) {
                                 final auth = XContestAuthService.instance;
-                                if (!auth.isLoaded || !auth.isSignedIn) {
+                                final paraBeacon =
+                                    ParaBeaconAccountService.instance;
+                                if (!auth.isSignedIn && !paraBeacon.isSignedIn) {
                                   return const SizedBox.shrink();
                                 }
                                 return Column(

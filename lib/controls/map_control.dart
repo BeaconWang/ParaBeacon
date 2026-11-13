@@ -666,7 +666,7 @@ class _MapControlState extends State<MapControl> {
 
   void _startPublicPilotRefreshTimer() {
     _serverPilotRefreshTimer ??= Timer.periodic(
-      const Duration(seconds: 15),
+      const Duration(seconds: 5),
       (_) => _schedulePublicPilotRefresh(Duration.zero),
     );
   }

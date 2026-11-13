@@ -56,6 +56,11 @@ void main() {
       expect(platform.requestedSha256, checksum);
       expect(platform.requestedFileName, 'parabeacon-18.apk');
 
+      platform.airplaneMode = true;
+      expect(await service.isAirplaneModeEnabled(), isTrue);
+      platform.airplaneMode = false;
+      expect(await service.isAirplaneModeEnabled(), isFalse);
+
       await service.installPendingApk();
       expect(platform.installCalls, 1);
       expect(service.hasPendingInstall, isTrue);
@@ -135,6 +140,7 @@ void main() {
 
 class _FakeAppUpdatePlatform implements AppUpdatePlatform {
   bool wifi = false;
+  bool airplaneMode = false;
   int downloadCalls = 0;
   int installCalls = 0;
   int? requestedSize;
@@ -161,6 +167,9 @@ class _FakeAppUpdatePlatform implements AppUpdatePlatform {
 
   @override
   Future<bool> isWifiConnected() async => wifi;
+
+  @override
+  Future<bool> isAirplaneModeEnabled() async => airplaneMode;
 
   @override
   Future<InstallApkResult> installApk({

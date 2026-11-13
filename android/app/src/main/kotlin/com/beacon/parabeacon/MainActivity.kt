@@ -81,6 +81,7 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "isWifiConnected" -> result.success(isWifiConnected())
+                "isAirplaneModeEnabled" -> result.success(isAirplaneModeEnabled())
                 "downloadApk" -> handleApkDownload(call, result)
                 "installApk" -> handleInstallApk(call, result)
                 else -> result.notImplemented()
@@ -95,6 +96,13 @@ class MainActivity : FlutterActivity() {
         val capabilities = manager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
+
+    private fun isAirplaneModeEnabled(): Boolean =
+        Settings.Global.getInt(
+            contentResolver,
+            Settings.Global.AIRPLANE_MODE_ON,
+            0,
+        ) != 0
 
     private fun handleApkDownload(
         call: io.flutter.plugin.common.MethodCall,

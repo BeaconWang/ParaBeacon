@@ -144,6 +144,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   AndroidFlightPermissionStatus? _androidPermissionDialogStatus;
   bool _startupPositionSharingPromptScheduled = false;
   bool _appUpdatePromptVisible = false;
+  bool _appUpdateMonitorBusy = false;
+  Timer? _appUpdateMonitor;
   String? _lastAppUpdatePromptKey;
 
   @override
@@ -319,6 +321,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
 
   @override
   void dispose() {
+    _appUpdateMonitor?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _flightRecorder.removeListener(_onFlightRecorderChanged);
     _takeoffTaskSub?.cancel();
@@ -665,7 +668,46 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   Future<void> _checkForAppUpdate() async {
     final updater = AppUpdateService.instance;
     await updater.checkForUpdate();
+    _updateAppUpdateMonitor();
     await _showAppUpdatePrompt();
+    _updateAppUpdateMonitor();
+  }
+
+  void _updateAppUpdateMonitor() {
+    final updater = AppUpdateService.instance;
+    final needsMonitoring =
+        updater.status == AppUpdateStatus.waitingForWifi ||
+        updater.hasPendingInstall;
+    if (!mounted ||
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed ||
+        !needsMonitoring) {
+      _appUpdateMonitor?.cancel();
+      _appUpdateMonitor = null;
+      return;
+    }
+    _appUpdateMonitor ??= Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => unawaited(_pollAppUpdate()),
+    );
+  }
+
+  Future<void> _pollAppUpdate() async {
+    if (_appUpdateMonitorBusy || !mounted) return;
+    _appUpdateMonitorBusy = true;
+    try {
+      final updater = AppUpdateService.instance;
+      if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+        return;
+      }
+      if (updater.status == AppUpdateStatus.waitingForWifi &&
+          await updater.isWifiConnected()) {
+        await updater.checkForUpdate();
+      }
+      if (updater.hasPendingInstall) await _showAppUpdatePrompt();
+    } finally {
+      _appUpdateMonitorBusy = false;
+      _updateAppUpdateMonitor();
+    }
   }
 
   Future<void> _showAppUpdatePrompt() async {
@@ -684,10 +726,16 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
             status != AppUpdateStatus.installPermissionRequired)) {
       return;
     }
+    if ((status == AppUpdateStatus.downloaded ||
+            status == AppUpdateStatus.installPermissionRequired) &&
+        await updater.isAirplaneModeEnabled()) {
+      return;
+    }
+    if (!mounted) return;
     final promptKey = '${release.versionCode}:${status.name}';
     if (_lastAppUpdatePromptKey == promptKey) return;
     final context = _navigatorKey.currentContext;
-    if (!mounted || context == null) return;
+    if (!mounted || context == null || !context.mounted) return;
     final l10n = AppLocalizations.of(context);
     _appUpdatePromptVisible = true;
     _lastAppUpdatePromptKey = promptKey;
@@ -758,9 +806,13 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       if (updater.hasPendingInstall) {
         _lastAppUpdatePromptKey = null;
         unawaited(_showAppUpdatePrompt());
+        _updateAppUpdateMonitor();
       } else {
         unawaited(_checkForAppUpdate());
       }
+    } else {
+      _appUpdateMonitor?.cancel();
+      _appUpdateMonitor = null;
     }
   }
 

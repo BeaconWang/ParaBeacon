@@ -11,6 +11,7 @@ const int maxAndroidApkSizeBytes = 512 * 1024 * 1024;
 abstract interface class AppUpdatePlatform {
   bool get isAndroid;
   Future<bool> isWifiConnected();
+  Future<bool> isAirplaneModeEnabled();
   Future<String> downloadApk({
     required Uri url,
     required String fileName,
@@ -106,6 +107,24 @@ class AppUpdateService extends ChangeNotifier {
 
   void configure(Uri? apiBaseUri) {
     _apiBaseUri = _validApiBase(apiBaseUri) ? apiBaseUri : null;
+  }
+
+  Future<bool> isWifiConnected() async {
+    if (!_platform.isAndroid) return false;
+    try {
+      return await _platform.isWifiConnected();
+    } on Object {
+      return false;
+    }
+  }
+
+  Future<bool> isAirplaneModeEnabled() async {
+    if (!_platform.isAndroid) return false;
+    try {
+      return await _platform.isAirplaneModeEnabled();
+    } on Object {
+      return true;
+    }
   }
 
   Future<void> checkForUpdate() async {
@@ -294,6 +313,12 @@ class _MethodChannelAppUpdatePlatform implements AppUpdatePlatform {
   @override
   Future<bool> isWifiConnected() async =>
       await AppUpdateService._channel.invokeMethod<bool>('isWifiConnected') ??
+      false;
+
+  @override
+  Future<bool> isAirplaneModeEnabled() async =>
+      await AppUpdateService._channel
+          .invokeMethod<bool>('isAirplaneModeEnabled') ??
       false;
 
   @override

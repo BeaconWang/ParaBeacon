@@ -363,6 +363,7 @@ class LiveTrackingService extends ChangeNotifier {
   String? _sessionId;
   String? get sessionId => _sessionId;
   bool get isConfigured => _configured;
+  Uri? get apiBaseUri => _configured ? _config.apiBaseUri : null;
 
   Future<List<PublicPilotLocation>> loadPublicPilotLocations({
     required double west,

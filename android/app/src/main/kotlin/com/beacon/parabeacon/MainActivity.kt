@@ -1,8 +1,12 @@
 package com.beacon.parabeacon
 
 import android.app.Activity
+import android.app.DownloadManager
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -10,6 +14,8 @@ import android.os.PowerManager
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.Settings
+import androidx.core.content.FileProvider
+import java.io.File
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -19,6 +25,8 @@ class MainActivity : FlutterActivity() {
         private const val FLIGHT_LIBRARY_CHANNEL = "com.beacon.parabeacon/flight_library"
         private const val FLIGHT_PERMISSIONS_CHANNEL = "com.beacon.parabeacon/flight_permissions"
         private const val DEVICE_INFO_CHANNEL = "com.beacon.parabeacon/device_info"
+        private const val APP_UPDATE_CHANNEL = "com.beacon.parabeacon/app_update"
+        private const val MAX_APK_SIZE_BYTES = 512L * 1024L * 1024L
         private const val CREATE_DOCUMENT_REQUEST = 4107
         private const val OPEN_IGC_TREE_REQUEST = 4108
         private const val BATTERY_PERMISSION_SETTINGS_REQUEST = 4109
@@ -30,6 +38,7 @@ class MainActivity : FlutterActivity() {
     private var pendingSaveMimeType: String? = null
     private var pendingImportResult: MethodChannel.Result? = null
     private var pendingBatteryPermissionSettingsResult: MethodChannel.Result? = null
+    private var pendingApkDownloadResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -66,6 +75,221 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            APP_UPDATE_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isWifiConnected" -> result.success(isWifiConnected())
+                "downloadApk" -> handleApkDownload(call, result)
+                "installApk" -> handleInstallApk(call, result)
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun isWifiConnected(): Boolean {
+        val manager = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return false
+        val network = manager.activeNetwork ?: return false
+        val capabilities = manager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+    }
+
+    private fun handleApkDownload(
+        call: io.flutter.plugin.common.MethodCall,
+        result: MethodChannel.Result,
+    ) {
+        if (pendingApkDownloadResult != null) {
+            result.error("UPDATE_IN_PROGRESS", "An APK download is already running.", null)
+            return
+        }
+        val rawUrl = call.argument<String>("url")
+        val fileName = call.argument<String>("fileName")
+        val expectedSize = call.argument<Number>("sizeBytes")?.toLong()
+        val expectedSha256 = call.argument<String>("sha256")?.lowercase()
+        val uri = runCatching { Uri.parse(rawUrl) }.getOrNull()
+        if (uri == null ||
+            uri.scheme != "https" ||
+            uri.host != "www.parabeacon.icu" ||
+            !uri.userInfo.isNullOrEmpty() ||
+            uri.port != -1 ||
+            uri.query != null ||
+            uri.fragment != null ||
+            uri.path?.matches(Regex("/api/v1/app/releases/[1-9][0-9]*/download")) != true ||
+            !fileName.orEmpty().matches(Regex("parabeacon-[1-9][0-9]*\\.apk")) ||
+            expectedSize == null || expectedSize !in 1..MAX_APK_SIZE_BYTES ||
+            !expectedSha256.orEmpty().matches(Regex("[a-f0-9]{64}"))) {
+            result.error("INVALID_UPDATE", "The update metadata is invalid.", null)
+            return
+        }
+        if (!isWifiConnected()) {
+            result.error("WIFI_REQUIRED", "APK updates are downloaded over Wi-Fi only.", null)
+            return
+        }
+        val downloadDirectory = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+        if (downloadDirectory == null) {
+            result.error("UPDATE_STORAGE_UNAVAILABLE", "App download storage is unavailable.", null)
+            return
+        }
+        pendingApkDownloadResult = result
+        Thread {
+            var downloadId = -1L
+            val manager = getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
+            try {
+                if (manager == null) throw IllegalStateException("Android DownloadManager is unavailable.")
+                val destination = File(downloadDirectory, fileName!!)
+                if (destination.exists() && !destination.delete()) {
+                    throw IllegalStateException("Unable to replace the previous APK download.")
+                }
+                val request = DownloadManager.Request(uri).apply {
+                    setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
+                    setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    setTitle("ParaBeacon update $fileName")
+                    setDescription("Downloading over Wi-Fi")
+                    setMimeType("application/vnd.android.package-archive")
+                    setDestinationInExternalFilesDir(
+                        this@MainActivity,
+                        Environment.DIRECTORY_DOWNLOADS,
+                        fileName,
+                    )
+                }
+                downloadId = manager.enqueue(request)
+                val apk = waitForApkDownload(
+                    manager,
+                    downloadId,
+                    downloadDirectory,
+                    fileName,
+                    expectedSize,
+                    expectedSha256!!,
+                )
+                runOnUiThread {
+                    if (pendingApkDownloadResult === result) pendingApkDownloadResult = null
+                    result.success(apk.canonicalPath)
+                }
+            } catch (error: Exception) {
+                if (downloadId > 0 && manager != null) manager.remove(downloadId)
+                runOnUiThread {
+                    if (pendingApkDownloadResult === result) pendingApkDownloadResult = null
+                    result.error("UPDATE_DOWNLOAD_FAILED", error.message, null)
+                }
+            }
+        }.start()
+    }
+
+    private fun waitForApkDownload(
+        manager: DownloadManager,
+        downloadId: Long,
+        downloadDirectory: File,
+        fileName: String,
+        expectedSize: Long,
+        expectedSha256: String,
+    ): File {
+        val deadline = System.currentTimeMillis() + 30L * 60L * 1000L
+        while (System.currentTimeMillis() < deadline) {
+            val query = manager.query(DownloadManager.Query().setFilterById(downloadId))
+                ?: throw IllegalStateException("Unable to query the APK download.")
+            query.use { cursor ->
+                if (!cursor.moveToFirst()) throw IllegalStateException("APK download disappeared.")
+                when (cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))) {
+                    DownloadManager.STATUS_SUCCESSFUL -> {
+                        val localUri = cursor.getString(
+                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI),
+                        )
+                        val downloaded = File(Uri.parse(localUri).path ?: "").canonicalFile
+                        val expectedDirectory = downloadDirectory.canonicalFile
+                        if (downloaded.parentFile != expectedDirectory ||
+                            downloaded.name != fileName ||
+                            !downloaded.isFile ||
+                            downloaded.length() != expectedSize ||
+                            sha256File(downloaded) != expectedSha256) {
+                            throw IllegalStateException("Downloaded APK failed size or SHA-256 verification.")
+                        }
+                        return downloaded
+                    }
+                    DownloadManager.STATUS_FAILED -> {
+                        val reason = cursor.getInt(
+                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON),
+                        )
+                        throw IllegalStateException("APK download failed (reason $reason).")
+                    }
+                }
+            }
+            Thread.sleep(1000)
+        }
+        throw IllegalStateException("APK download timed out.")
+    }
+
+    private fun handleInstallApk(
+        call: io.flutter.plugin.common.MethodCall,
+        result: MethodChannel.Result,
+    ) {
+        try {
+            val rawPath = call.argument<String>("filePath")
+            val expectedSize = call.argument<Number>("sizeBytes")?.toLong()
+            val expectedSha256 = call.argument<String>("sha256")?.lowercase()
+            val expectedPackageName = call.argument<String>("packageName")
+            val expectedVersionCode = call.argument<Number>("versionCode")?.toLong()
+            val downloadDirectory = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                ?: throw IllegalStateException("App download storage is unavailable.")
+            val apk = File(rawPath.orEmpty()).canonicalFile
+            if (apk.parentFile != downloadDirectory.canonicalFile ||
+                !apk.name.matches(Regex("parabeacon-[1-9][0-9]*\\.apk")) ||
+                !apk.isFile ||
+                expectedSize == null ||
+                apk.length() != expectedSize ||
+                !expectedSha256.orEmpty().matches(Regex("[a-f0-9]{64}")) ||
+                sha256File(apk) != expectedSha256 ||
+                expectedPackageName != packageName ||
+                expectedVersionCode == null) {
+                result.error("INVALID_UPDATE_FILE", "The downloaded APK failed verification.", null)
+                return
+            }
+            @Suppress("DEPRECATION")
+            val archivedPackage = packageManager.getPackageArchiveInfo(apk.path, 0)
+            @Suppress("DEPRECATION")
+            val archivedVersionCode = archivedPackage?.versionCode?.toLong()
+            if (archivedPackage?.packageName != expectedPackageName ||
+                archivedVersionCode != expectedVersionCode) {
+                result.error("INVALID_UPDATE_PACKAGE", "The APK package or version does not match release metadata.", null)
+                return
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
+                startActivity(
+                    Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = Uri.parse("package:$packageName")
+                    },
+                )
+                result.success("permission_required")
+                return
+            }
+            val contentUri = FileProvider.getUriForFile(
+                this,
+                "$packageName.appupdates",
+                apk,
+            )
+            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(contentUri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(installIntent)
+            result.success("launched")
+        } catch (error: Exception) {
+            result.error("UPDATE_INSTALL_FAILED", error.message, null)
+        }
+    }
+
+    private fun sha256File(file: File): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
     }
 
     /// Minimal device descriptor used by the voice-announcement speaker to work

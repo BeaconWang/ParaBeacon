@@ -5720,6 +5720,48 @@ abstract class AppLocalizations {
   /// **'Requires a ParaBeacon account; only pilots who opted in to public sharing appear.'**
   String get settingShowPublicPilotsSubtitle;
 
+  /// No description provided for @appUpdateAvailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get appUpdateAvailableTitle;
+
+  /// No description provided for @appUpdateWifiRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is available. Connect to Wi-Fi to download the APK.'**
+  String appUpdateWifiRequired(String version);
+
+  /// No description provided for @appUpdateDownloadedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} has been downloaded. Android will ask you to confirm installation.'**
+  String appUpdateDownloadedBody(String version);
+
+  /// No description provided for @appUpdateInstallPermissionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow ParaBeacon to install APK updates in Android settings, then return and tap Install.'**
+  String get appUpdateInstallPermissionBody;
+
+  /// No description provided for @appUpdateDownloadOverWifi.
+  ///
+  /// In en, this message translates to:
+  /// **'Download over Wi-Fi'**
+  String get appUpdateDownloadOverWifi;
+
+  /// No description provided for @appUpdateInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get appUpdateInstall;
+
+  /// No description provided for @appUpdateLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get appUpdateLater;
+
   /// No description provided for @settingPilotArrowSize.
   ///
   /// In en, this message translates to:

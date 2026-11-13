@@ -2905,6 +2905,32 @@ class AppLocalizationsZh extends AppLocalizations {
       '需要登录 ParaBeacon 账户；仅显示已明确同意公开位置的飞行员。';
 
   @override
+  String get appUpdateAvailableTitle => '发现新版本';
+
+  @override
+  String appUpdateWifiRequired(String version) {
+    return '发现版本 $version。请连接 Wi-Fi 后下载 APK。';
+  }
+
+  @override
+  String appUpdateDownloadedBody(String version) {
+    return '版本 $version 已下载。Android 将提示你确认安装。';
+  }
+
+  @override
+  String get appUpdateInstallPermissionBody =>
+      '请在 Android 设置中允许 ParaBeacon 安装 APK 更新，然后返回并点击“安装”。';
+
+  @override
+  String get appUpdateDownloadOverWifi => '通过 Wi-Fi 下载';
+
+  @override
+  String get appUpdateInstall => '安装';
+
+  @override
+  String get appUpdateLater => '稍后';
+
+  @override
   String get settingPilotArrowSize => '飞行员箭头大小';
 
   @override

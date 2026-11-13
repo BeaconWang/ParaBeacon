@@ -4,6 +4,17 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val releaseKeystorePath = providers.environmentVariable("PARABEACON_KEYSTORE_PATH").orNull
+val releaseStorePassword = providers.environmentVariable("PARABEACON_KEYSTORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("PARABEACON_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("PARABEACON_KEY_PASSWORD").orNull
+val hasReleaseSigning = listOf(
+    releaseKeystorePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.beacon.parabeacon"
     // Pinned to 36 (rather than flutter.compileSdkVersion): the file_picker /
@@ -32,11 +43,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }

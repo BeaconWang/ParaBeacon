@@ -1119,6 +1119,27 @@
   "settingShowNorth": "Display North direction",
   "settingShowPublicPilots": "Show public pilot locations",
   "settingShowPublicPilotsSubtitle": "Requires a ParaBeacon account; only pilots who opted in to public sharing appear.",
+  "appUpdateAvailableTitle": "Update available",
+  "appUpdateWifiRequired": "Version {version} is available. Connect to Wi-Fi to download the APK.",
+  "@appUpdateWifiRequired": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "appUpdateDownloadedBody": "Version {version} has been downloaded. Android will ask you to confirm installation.",
+  "@appUpdateDownloadedBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "appUpdateInstallPermissionBody": "Allow ParaBeacon to install APK updates in Android settings, then return and tap Install.",
+  "appUpdateDownloadOverWifi": "Download over Wi-Fi",
+  "appUpdateInstall": "Install",
+  "appUpdateLater": "Later",
   "settingPilotArrowSize": "Pilot arrow size",
   "settingLineThickness": "Thickness of lines",
   "settingTracklogLength": "Tracklog length (0 = all)",

@@ -3031,6 +3031,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'Requires a ParaBeacon account; only pilots who opted in to public sharing appear.';
 
   @override
+  String get appUpdateAvailableTitle => 'Update available';
+
+  @override
+  String appUpdateWifiRequired(String version) {
+    return 'Version $version is available. Connect to Wi-Fi to download the APK.';
+  }
+
+  @override
+  String appUpdateDownloadedBody(String version) {
+    return 'Version $version has been downloaded. Android will ask you to confirm installation.';
+  }
+
+  @override
+  String get appUpdateInstallPermissionBody =>
+      'Allow ParaBeacon to install APK updates in Android settings, then return and tap Install.';
+
+  @override
+  String get appUpdateDownloadOverWifi => 'Download over Wi-Fi';
+
+  @override
+  String get appUpdateInstall => 'Install';
+
+  @override
+  String get appUpdateLater => 'Later';
+
+  @override
   String get settingPilotArrowSize => 'Pilot arrow size';
 
   @override

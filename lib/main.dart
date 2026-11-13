@@ -15,6 +15,7 @@ import 'controls/position_sharing_dialog.dart';
 import 'dash_grid_page.dart';
 import 'data/aircraft_settings.dart';
 import 'data/airspace_store.dart';
+import 'data/app_update_service.dart';
 import 'data/asfc_auth_service.dart';
 import 'data/ble/ble_flight_data_bridge.dart';
 import 'data/ble/ble_sensor_service.dart';
@@ -67,6 +68,7 @@ Future<void> main() async {
   } on Object {
     LiveTrackingService.instance.configure(null);
   }
+  AppUpdateService.instance.configure(LiveTrackingService.instance.apiBaseUri);
   // Restore offline maps after the first frame so opening the app is not held
   // up by preferences I/O or opening the MBTiles database.
   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -141,6 +143,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   StateSetter? _androidPermissionDialogSetState;
   AndroidFlightPermissionStatus? _androidPermissionDialogStatus;
   bool _startupPositionSharingPromptScheduled = false;
+  bool _appUpdatePromptVisible = false;
+  String? _lastAppUpdatePromptKey;
 
   @override
   void initState() {
@@ -153,7 +157,9 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // position-sharing choice only for a session already signed in at launch.
     AsfcAuthService.instance.load();
     unawaited(ParaBeaconAccountService.instance.load());
-    unawaited(_loadAndPromptPositionSharing());
+    final positionSharingStartup = _loadAndPromptPositionSharing();
+    unawaited(positionSharingStartup);
+    unawaited(_checkForAppUpdateAfter(positionSharingStartup));
     // Restore the aircraft preferences before the Preferences sheet opens.
     AircraftSettings.instance.load();
     // Load persisted debug preferences (e.g. the simulated-source toggle,
@@ -585,6 +591,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       _androidPermissionRationaleVisible = false;
       _androidPermissionDialogSetState = null;
       _androidPermissionDialogStatus = null;
+      if (mounted) unawaited(_showAppUpdatePrompt());
     }
   }
 
@@ -646,7 +653,94 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       );
       _landingPromptVisible = false;
       _flightRecorder.resolveLandingConfirmation(landed == true);
+      if (mounted) unawaited(_showAppUpdatePrompt());
     });
+  }
+
+  Future<void> _checkForAppUpdateAfter(Future<void> startupPrompt) async {
+    await startupPrompt;
+    await _checkForAppUpdate();
+  }
+
+  Future<void> _checkForAppUpdate() async {
+    final updater = AppUpdateService.instance;
+    await updater.checkForUpdate();
+    await _showAppUpdatePrompt();
+  }
+
+  Future<void> _showAppUpdatePrompt() async {
+    if (!mounted ||
+        _appUpdatePromptVisible ||
+        _landingPromptVisible ||
+        _androidPermissionRationaleVisible) {
+      return;
+    }
+    final updater = AppUpdateService.instance;
+    final release = updater.availableRelease;
+    final status = updater.status;
+    if (release == null ||
+        (status != AppUpdateStatus.waitingForWifi &&
+            status != AppUpdateStatus.downloaded &&
+            status != AppUpdateStatus.installPermissionRequired)) {
+      return;
+    }
+    final promptKey = '${release.versionCode}:${status.name}';
+    if (_lastAppUpdatePromptKey == promptKey) return;
+    final context = _navigatorKey.currentContext;
+    if (!mounted || context == null) return;
+    final l10n = AppLocalizations.of(context);
+    _appUpdatePromptVisible = true;
+    _lastAppUpdatePromptKey = promptKey;
+    String? action;
+    try {
+      action = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) {
+          final body = switch (status) {
+            AppUpdateStatus.waitingForWifi => l10n.appUpdateWifiRequired(
+              release.versionName,
+            ),
+            AppUpdateStatus.installPermissionRequired =>
+              l10n.appUpdateInstallPermissionBody,
+            _ => l10n.appUpdateDownloadedBody(release.versionName),
+          };
+          return AlertDialog(
+            title: Text(l10n.appUpdateAvailableTitle),
+            content: Text(body),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop('later'),
+                child: Text(l10n.appUpdateLater),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(
+                  status == AppUpdateStatus.waitingForWifi
+                      ? 'download'
+                      : 'install',
+                ),
+                child: Text(
+                  status == AppUpdateStatus.waitingForWifi
+                      ? l10n.appUpdateDownloadOverWifi
+                      : l10n.appUpdateInstall,
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      _appUpdatePromptVisible = false;
+    }
+    if (!mounted) return;
+    if (action == 'download') {
+      await updater.checkForUpdate();
+      if (updater.status == AppUpdateStatus.downloaded) {
+        _lastAppUpdatePromptKey = null;
+        await _showAppUpdatePrompt();
+      }
+    } else if (action == 'install') {
+      await updater.installPendingApk();
+    }
   }
 
   @override
@@ -660,6 +754,13 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       // Re-assert fullscreen: some system events (permission prompts, task
       // switcher, etc.) can bring the status/nav bars back.
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      final updater = AppUpdateService.instance;
+      if (updater.hasPendingInstall) {
+        _lastAppUpdatePromptKey = null;
+        unawaited(_showAppUpdatePrompt());
+      } else {
+        unawaited(_checkForAppUpdate());
+      }
     }
   }
 

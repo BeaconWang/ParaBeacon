@@ -1041,6 +1041,27 @@
   "settingShowNorth": "显示北方向",
   "settingShowPublicPilots": "显示公开飞行员实时位置",
   "settingShowPublicPilotsSubtitle": "需要登录 ParaBeacon 账户；仅显示已明确同意公开位置的飞行员。",
+  "appUpdateAvailableTitle": "发现新版本",
+  "appUpdateWifiRequired": "发现版本 {version}。请连接 Wi-Fi 后下载 APK。",
+  "@appUpdateWifiRequired": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "appUpdateDownloadedBody": "版本 {version} 已下载。Android 将提示你确认安装。",
+  "@appUpdateDownloadedBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "appUpdateInstallPermissionBody": "请在 Android 设置中允许 ParaBeacon 安装 APK 更新，然后返回并点击“安装”。",
+  "appUpdateDownloadOverWifi": "通过 Wi-Fi 下载",
+  "appUpdateInstall": "安装",
+  "appUpdateLater": "稍后",
   "settingPilotArrowSize": "飞行员箭头大小",
   "settingLineThickness": "线条粗细",
   "settingTracklogLength": "航迹长度（0 = 全部）",

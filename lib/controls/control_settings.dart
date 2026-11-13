@@ -1029,7 +1029,7 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ControlSetting.toggle(
       key: 'showPublicPilots',
       label: 'Show public pilots',
-      defaultValue: false,
+      defaultValue: true,
     ),
     ControlSetting.slider(
       key: 'pilotArrowCoef',

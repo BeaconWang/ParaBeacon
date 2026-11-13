@@ -887,7 +887,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Share live flight data with XContest and ParaBeacon Server when signed in.'**
+  /// **'Share live flight data through the ParaBeacon or XContest account you sign in to.'**
   String get liveTrackingSubtitle;
 
   /// No description provided for @positionSharingTitle.
@@ -911,7 +911,7 @@ abstract class AppLocalizations {
   /// No description provided for @positionSharingPromptBody.
   ///
   /// In en, this message translates to:
-  /// **'Choosing to share sends live positions to XContest and, when signed in, ParaBeacon Server. Uploads stay paused until you choose to share and are sent only during active flights.'**
+  /// **'Choosing to share sends live positions through the ParaBeacon or XContest account you are signed in to. Uploads stay paused until you choose to share and are sent only during active flights.'**
   String get positionSharingPromptBody;
 
   /// No description provided for @positionSharingDisableAction.
@@ -935,13 +935,13 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingEnabledSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Share active-flight telemetry with XContest LiveTrack and ParaBeacon Server when signed in.'**
+  /// **'Share active-flight telemetry through the account(s) you are signed in to.'**
   String get liveTrackingEnabledSubtitle;
 
   /// No description provided for @liveTrackingRequiresXContest.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to XContest to enable LiveTracking.'**
+  /// **'Sign in to either a ParaBeacon or XContest account to enable LiveTracking.'**
   String get liveTrackingRequiresXContest;
 
   /// No description provided for @liveTrackingProxyToken.
@@ -5717,7 +5717,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingShowPublicPilotsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Requires a ParaBeacon account; only pilots who opted in to public sharing appear.'**
+  /// **'Shows available public pilot locations from ParaBeacon and XContest LiveTrack.'**
   String get settingShowPublicPilotsSubtitle;
 
   /// No description provided for @appUpdateAvailableTitle.

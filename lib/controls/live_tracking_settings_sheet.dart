@@ -47,6 +47,7 @@ class _LiveTrackingSettingsSheetState
       await Future.wait([
         LiveTrackingSettings.instance.load(),
         XContestAuthService.instance.load(),
+        ParaBeaconAccountService.instance.load(),
       ]);
       if (!mounted) return;
       final settings = LiveTrackingSettings.instance;
@@ -101,7 +102,8 @@ class _LiveTrackingSettingsSheetState
       ]),
       builder: (context, _) {
         final signedIn = auth.isSignedIn;
-        final canEnable = signedIn && !_temporaryDontShare;
+        final hasTrackingAccount = signedIn || serverAccount.isSignedIn;
+        final canEnable = hasTrackingAccount && !_temporaryDontShare;
         final flightPublicLocked = tracking.isFlightSessionStarted;
         final String serverMessage;
         if (!settings.enabled) {
@@ -180,12 +182,12 @@ class _LiveTrackingSettingsSheetState
                             SwitchListTile(
                               title: Text(l10n.liveTrackingEnabled),
                               subtitle: Text(
-                                signedIn
+                                hasTrackingAccount
                                     ? l10n.liveTrackingEnabledSubtitle
                                     : l10n.liveTrackingRequiresXContest,
                               ),
                               value: _enabled,
-                              onChanged: _loading || !signedIn
+                              onChanged: _loading || !hasTrackingAccount
                                   ? null
                                   : (value) {
                                       setState(() => _enabled = value);
@@ -240,7 +242,8 @@ class _LiveTrackingSettingsSheetState
                                     : l10n.liveTrackingFlightPublicSubtitle,
                               ),
                               value: _flightPublic,
-                              onChanged: _loading || flightPublicLocked
+                              onChanged:
+                                  _loading || !signedIn || flightPublicLocked
                                   ? null
                                   : (value) =>
                                         setState(() => _flightPublic = value),
@@ -311,7 +314,7 @@ class _LiveTrackingSettingsSheetState
                         ),
                       ],
                       const SizedBox(height: 16),
-                      if (!signedIn)
+                      if (!hasTrackingAccount)
                         _StatusMessage(
                           icon: Icons.account_circle_outlined,
                           message: l10n.liveTrackingRequiresXContest,
@@ -321,30 +324,33 @@ class _LiveTrackingSettingsSheetState
                           icon: Icons.pause_circle_outline,
                           message: l10n.liveTrackingTemporarilyDisabled,
                         )
-                      else if (!tracking.isConfigured)
+                      else if (signedIn && !tracking.isConfigured)
                         _StatusMessage(
                           icon: Icons.settings_outlined,
                           message: l10n.liveTrackingConfigInvalid,
                         )
-                      else if (tracking.state ==
-                          LiveTrackingConnectionState.connecting)
+                      else if (signedIn &&
+                          tracking.state ==
+                              LiveTrackingConnectionState.connecting)
                         _StatusMessage(
                           icon: Icons.cloud_sync_outlined,
                           message: l10n.liveTrackingConnecting,
                         )
-                      else if (tracking.state ==
-                          LiveTrackingConnectionState.active)
+                      else if (signedIn &&
+                          tracking.state == LiveTrackingConnectionState.active)
                         _StatusMessage(
                           icon: Icons.cloud_done_outlined,
                           message: l10n.liveTrackingConnected,
                         )
-                      else if (tracking.state ==
-                          LiveTrackingConnectionState.reconnecting)
+                      else if (signedIn &&
+                          tracking.state ==
+                              LiveTrackingConnectionState.reconnecting)
                         _StatusMessage(
                           icon: Icons.cloud_sync_outlined,
                           message: l10n.liveTrackingRetrying,
                         )
-                      else if (tracking.state ==
+                      else if (signedIn &&
+                          tracking.state ==
                               LiveTrackingConnectionState.disconnected &&
                           tracking.lastErrorCode != null)
                         _StatusMessage(

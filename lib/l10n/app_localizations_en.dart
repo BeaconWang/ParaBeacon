@@ -432,7 +432,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingSubtitle =>
-      'Share live flight data with XContest and ParaBeacon Server when signed in.';
+      'Share live flight data through the ParaBeacon or XContest account you sign in to.';
 
   @override
   String get positionSharingTitle => 'Position sharing';
@@ -447,7 +447,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get positionSharingPromptBody =>
-      'Choosing to share sends live positions to XContest and, when signed in, ParaBeacon Server. Uploads stay paused until you choose to share and are sent only during active flights.';
+      'Choosing to share sends live positions through the ParaBeacon or XContest account you are signed in to. Uploads stay paused until you choose to share and are sent only during active flights.';
 
   @override
   String get positionSharingDisableAction => 'Disable sharing';
@@ -461,11 +461,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingEnabledSubtitle =>
-      'Share active-flight telemetry with XContest LiveTrack and ParaBeacon Server when signed in.';
+      'Share active-flight telemetry through the account(s) you are signed in to.';
 
   @override
   String get liveTrackingRequiresXContest =>
-      'Sign in to XContest to enable LiveTracking.';
+      'Sign in to either a ParaBeacon or XContest account to enable LiveTracking.';
 
   @override
   String get liveTrackingProxyToken => 'Proxy access token';
@@ -3028,7 +3028,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingShowPublicPilotsSubtitle =>
-      'Requires a ParaBeacon account; only pilots who opted in to public sharing appear.';
+      'Shows available public pilot locations from ParaBeacon and XContest LiveTrack.';
 
   @override
   String get appUpdateAvailableTitle => 'Update available';

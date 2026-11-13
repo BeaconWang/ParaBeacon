@@ -156,9 +156,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // when the user returns from another app).
     WidgetsBinding.instance.addObserver(this);
     // Restore accounts and tracking preferences, then offer an explicit
-    // position-sharing choice only for a session already signed in at launch.
+    // position-sharing choice when either live-tracking account is signed in.
     AsfcAuthService.instance.load();
-    unawaited(ParaBeaconAccountService.instance.load());
     final positionSharingStartup = _loadAndPromptPositionSharing();
     unawaited(positionSharingStartup);
     unawaited(_checkForAppUpdateAfter(positionSharingStartup));
@@ -344,13 +343,18 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
 
   Future<void> _loadAndPromptPositionSharing() async {
     final auth = XContestAuthService.instance;
+    final serverAccount = ParaBeaconAccountService.instance;
     try {
-      await Future.wait([auth.load(), LiveTrackingSettings.instance.load()]);
+      await Future.wait([
+        auth.load(),
+        serverAccount.load(),
+        LiveTrackingSettings.instance.load(),
+      ]);
     } catch (_) {
       return;
     }
     if (!mounted ||
-        !auth.isSignedIn ||
+        (!auth.isSignedIn && !serverAccount.isSignedIn) ||
         _startupPositionSharingPromptScheduled) {
       return;
     }

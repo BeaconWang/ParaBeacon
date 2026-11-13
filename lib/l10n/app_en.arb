@@ -138,7 +138,7 @@
   "aircraft": "Aircraft",
   "aircraftSubtitle": "Configure aircraft type, model and flight performance",
   "liveTracking": "LiveTracking",
-  "liveTrackingSubtitle": "Share live flight data with XContest and ParaBeacon Server when signed in.",
+  "liveTrackingSubtitle": "Share live flight data through the ParaBeacon or XContest account you sign in to.",
   "positionSharingTitle": "Position sharing",
   "positionSharingShareAction": "Share my position",
   "positionSharingCountdown": "This prompt closes in {seconds} sec",
@@ -149,12 +149,12 @@
       }
     }
   },
-  "positionSharingPromptBody": "Choosing to share sends live positions to XContest and, when signed in, ParaBeacon Server. Uploads stay paused until you choose to share and are sent only during active flights.",
+  "positionSharingPromptBody": "Choosing to share sends live positions through the ParaBeacon or XContest account you are signed in to. Uploads stay paused until you choose to share and are sent only during active flights.",
   "positionSharingDisableAction": "Disable sharing",
   "positionSharingDisableSubtitle": "Pause sharing for now. This prompt will appear again the next time you open the app.",
   "liveTrackingEnabled": "Enable LiveTracking",
-  "liveTrackingEnabledSubtitle": "Share active-flight telemetry with XContest LiveTrack and ParaBeacon Server when signed in.",
-  "liveTrackingRequiresXContest": "Sign in to XContest to enable LiveTracking.",
+  "liveTrackingEnabledSubtitle": "Share active-flight telemetry through the account(s) you are signed in to.",
+  "liveTrackingRequiresXContest": "Sign in to either a ParaBeacon or XContest account to enable LiveTracking.",
   "liveTrackingProxyToken": "Proxy access token",
   "liveTrackingProxyTokenSubtitle": "Stored securely on this device and sent only to your configured ParaBeacon proxy.",
   "liveTrackingConfigInvalid": "Live tracking configuration could not be loaded. Check the bundled JSON configuration.",
@@ -1118,7 +1118,7 @@
   "settingRotationTrack": "Track up (heading)",
   "settingShowNorth": "Display North direction",
   "settingShowPublicPilots": "Show public pilot locations",
-  "settingShowPublicPilotsSubtitle": "Requires a ParaBeacon account; only pilots who opted in to public sharing appear.",
+  "settingShowPublicPilotsSubtitle": "Shows available public pilot locations from ParaBeacon and XContest LiveTrack.",
   "appUpdateAvailableTitle": "Update available",
   "appUpdateWifiRequired": "Version {version} is available. Connect to Wi-Fi to download the APK.",
   "@appUpdateWifiRequired": {

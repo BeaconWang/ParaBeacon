@@ -339,7 +339,7 @@ class MapControl extends StatefulWidget {
     this.showStatus = true,
     this.active = false,
     this.onMapTap,
-    this.showOtherPilots = false,
+    this.showOtherPilots = true,
     this.selectionMarker,
   }) : _tileSource = tileSource;
 

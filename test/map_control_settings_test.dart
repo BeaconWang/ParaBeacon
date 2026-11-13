@@ -19,14 +19,24 @@ void main() {
     expect(setting.labelOf(chinese), '显示竞赛航线');
   });
 
-  test('public pilot locations are opt-in and localized', () async {
+  test('public pilot locations are on by default and localized', () async {
     final setting = settingsSchemaFor(
       'map',
     ).singleWhere((setting) => setting.key == 'showPublicPilots');
     final english = await AppLocalizations.delegate.load(const Locale('en'));
     final chinese = await AppLocalizations.delegate.load(const Locale('zh'));
+    final map = PlacedControl.fromType(
+      ControlCatalog.byId('map')!,
+      instanceId: 'map-public-pilots-default',
+    );
+    final restoredMap = PlacedControl.fromJson({
+      'typeId': 'map',
+      'settings': <String, dynamic>{},
+    })!;
 
-    expect(setting.defaultValue, isFalse);
+    expect(setting.defaultValue, isTrue);
+    expect(map.boolSetting('showPublicPilots'), isTrue);
+    expect(restoredMap.boolSetting('showPublicPilots'), isTrue);
     expect(setting.labelOf(english), 'Show public pilot locations');
     expect(setting.labelOf(chinese), '显示公开飞行员实时位置');
   });
@@ -200,7 +210,7 @@ void main() {
     await reveal('Show public pilot locations');
     expect(
       find.text(
-        'Requires a ParaBeacon account; only pilots who opted in to public sharing appear.',
+        'Shows available public pilot locations from ParaBeacon and XContest LiveTrack.',
       ),
       findsOneWidget,
     );

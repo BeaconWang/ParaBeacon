@@ -411,7 +411,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveTrackingSubtitle =>
-      '登录后，可将实时飞行数据分享至 XContest 和 ParaBeacon Server。';
+      '登录 ParaBeacon 或 XContest 账户后，即可通过对应服务分享实时飞行数据。';
 
   @override
   String get positionSharingTitle => '位置共享';
@@ -438,11 +438,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingEnabled => '启用实时追踪';
 
   @override
-  String get liveTrackingEnabledSubtitle =>
-      '登录后，将当前飞行遥测同时分享至 XContest LiveTrack 和 ParaBeacon Server。';
+  String get liveTrackingEnabledSubtitle => '当前飞行遥测将通过已登录的账户分享。';
 
   @override
-  String get liveTrackingRequiresXContest => '请先登录 XContest 才能启用实时追踪。';
+  String get liveTrackingRequiresXContest =>
+      '请先登录 ParaBeacon 或 XContest 账户以启用实时追踪。';
 
   @override
   String get liveTrackingProxyToken => '代理访问令牌';
@@ -2902,7 +2902,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingShowPublicPilotsSubtitle =>
-      '需要登录 ParaBeacon 账户；仅显示已明确同意公开位置的飞行员。';
+      '显示 ParaBeacon 和 XContest LiveTrack 提供的可用公开飞行员位置。';
 
   @override
   String get appUpdateAvailableTitle => '发现新版本';

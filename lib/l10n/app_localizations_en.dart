@@ -431,7 +431,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveTracking => 'LiveTracking';
 
   @override
-  String get liveTrackingSubtitle => 'Share your live flight with XContest';
+  String get liveTrackingSubtitle =>
+      'Share live flight data with XContest and ParaBeacon Server when signed in.';
 
   @override
   String get positionSharingTitle => 'Position sharing';
@@ -446,7 +447,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get positionSharingPromptBody =>
-      'Position uploads are paused until you choose to share. LiveTracking only sends during an active flight.';
+      'Choosing to share sends live positions to XContest and, when signed in, ParaBeacon Server. Uploads stay paused until you choose to share and are sent only during active flights.';
 
   @override
   String get positionSharingDisableAction => 'Disable sharing';
@@ -460,7 +461,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingEnabledSubtitle =>
-      'Send active-flight telemetry through your ParaBeacon proxy';
+      'Share active-flight telemetry with XContest LiveTrack and ParaBeacon Server when signed in.';
 
   @override
   String get liveTrackingRequiresXContest =>
@@ -482,19 +483,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter the bearer token issued by your ParaBeacon proxy before tracking can start.';
 
   @override
-  String get liveTrackingConnecting => 'Connecting to the live-tracking proxy…';
+  String get liveTrackingConnecting => 'Connecting to XContest LiveTrack…';
 
   @override
   String get liveTrackingConnected =>
-      'Proxy session active; live points are uploading.';
+      'XContest LiveTrack session active; flight points are uploading.';
 
   @override
   String get liveTrackingRetrying =>
-      'Proxy connection failed; queued points will retry automatically.';
+      'XContest LiveTrack connection failed; queued points will retry automatically.';
 
   @override
   String get liveTrackingFailed =>
-      'Live tracking could not start. Check the proxy configuration and account.';
+      'XContest LiveTrack could not start. Check the connection and account.';
 
   @override
   String get liveTrackingClaimContest => 'Claim contest flight';
@@ -539,6 +540,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get liveTrackingReady =>
       'Tracking will start automatically when a flight becomes active.';
+
+  @override
+  String get liveTrackingServerTitle => 'ParaBeacon Server';
+
+  @override
+  String get liveTrackingServerAccountRequired =>
+      'Sign in to a ParaBeacon account to share live telemetry.';
+
+  @override
+  String get liveTrackingServerDisabled =>
+      'Enable LiveTracking to share flight data with ParaBeacon Server.';
+
+  @override
+  String get liveTrackingServerPaused =>
+      'Server sharing is paused by the LiveTracking setting.';
+
+  @override
+  String get liveTrackingServerWaiting => 'Waiting for an active flight.';
+
+  @override
+  String get liveTrackingServerConnecting =>
+      'Opening a ParaBeacon Server flight session…';
+
+  @override
+  String get liveTrackingServerActive =>
+      'Realtime flight data is being shared with ParaBeacon Server.';
+
+  @override
+  String get liveTrackingServerRetrying =>
+      'Server connection failed; buffered flight data will retry automatically.';
+
+  @override
+  String get liveTrackingServerFailed =>
+      'Flight data could not be shared. Check the server connection and account.';
 
   @override
   String get aircraftFaiClass => 'FAI class';

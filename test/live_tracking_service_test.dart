@@ -24,18 +24,24 @@ void main() {
   test('loads endpoints and settings from the bundled JSON asset', () async {
     final config = await LiveTrackingConfigLoader().load();
 
-    expect(config.apiBaseUri, Uri.https('api.myparabeacon-proxy.com', ''));
+    expect(config.apiBaseUri, Uri.https('www.parabeacon.icu', ''));
     expect(
       config.sessionStartUri,
-      Uri.https('api.myparabeacon-proxy.com', '/v1/flight/start'),
+      Uri.https('www.parabeacon.icu', '/api/v1/tracking/sessions'),
     );
     expect(
       config.sessionStopUri('flight-123'),
-      Uri.https('api.myparabeacon-proxy.com', '/v1/flight/flight-123/stop'),
+      Uri.https(
+        'www.parabeacon.icu',
+        '/api/v1/tracking/sessions/flight-123/stop',
+      ),
     );
     expect(
       config.pointsUri('flight-123'),
-      Uri.https('api.myparabeacon-proxy.com', '/v1/flight/flight-123/points'),
+      Uri.https(
+        'www.parabeacon.icu',
+        '/api/v1/tracking/sessions/flight-123/points',
+      ),
     );
     expect(config.authEndpointUri, isNull);
     expect(config.webSocketUri, isNull);
@@ -46,19 +52,16 @@ void main() {
     final config = LiveTrackingConfig.fromJson(
       _configJson(
         authEndpoint: '/v1/auth/token',
-        webSocketUrl: 'wss://api.myparabeacon-proxy.com/v1/live',
+        webSocketUrl: 'wss://www.parabeacon.icu/v1/live',
         channelIds: ['thermal', 7],
       ),
     );
 
     expect(
       config.authEndpointUri,
-      Uri.https('api.myparabeacon-proxy.com', '/v1/auth/token'),
+      Uri.https('www.parabeacon.icu', '/v1/auth/token'),
     );
-    expect(
-      config.webSocketUri,
-      Uri.parse('wss://api.myparabeacon-proxy.com/v1/live'),
-    );
+    expect(config.webSocketUri, Uri.parse('wss://www.parabeacon.icu/v1/live'));
     expect(config.channelIds, ['thermal', '7']);
   });
 
@@ -83,13 +86,13 @@ void main() {
     );
     expect(
       () => LiveTrackingConfig.fromJson(
-        _configJson(webSocketUrl: 'ws://api.myparabeacon-proxy.com/live'),
+        _configJson(webSocketUrl: 'ws://www.parabeacon.icu/live'),
       ),
       throwsFormatException,
     );
   });
 
-  test('maps a real GPS fix to proxy units and wire fields', () {
+  test('maps a real GPS fix to ParaBeacon Server telemetry fields', () {
     final point = LiveTrackpoint.fromFlightData(
       FlightData(
         hasFix: true,
@@ -113,10 +116,17 @@ void main() {
       'altitude': 1234.5,
       'speed': 10.0,
       'timestamp': '2026-01-02T03:04:05.000Z',
+      'vertical_speed': 0.0,
+      'gps_altitude': 1234.5,
+      'heading': 193.5,
       'bearing': 193.5,
+      'wind_speed': 0.0,
+      'wind_direction': 0.0,
     });
     final restoredPoint = LiveTrackpoint.fromJson(point.toJson());
     expect(restoredPoint?.groundSpeedMetersPerSecond, 10);
+    expect(restoredPoint?.verticalSpeedMetersPerSecond, 0);
+    expect(restoredPoint?.gpsAltitudeMeters, 1234.5);
     expect(restoredPoint?.bearingDegrees, 193.5);
     expect(
       LiveTrackpoint.fromFlightData(
@@ -134,31 +144,29 @@ void main() {
       final client = MockClient((request) async {
         requests.add(request);
         expect(request.headers['authorization'], 'Bearer proxy-test-token');
-        if (request.url.path == '/v1/flight/start') {
+        if (request.url.path == '/api/v1/tracking/sessions') {
           expect(request.method, 'POST');
           expect(jsonDecode(request.body), {
-            'pilot_id': 'pilot-42',
+            'pilot_name': 'pilot-42',
             'start_time': startTime.toIso8601String(),
-            'channel_ids': ['live-main'],
           });
           return http.Response(
-            jsonEncode({
-              'session_id': 'session-123',
-              'socket_url':
-                  'wss://api.myparabeacon-proxy.com/v1/live/session-123',
-            }),
+            jsonEncode({'session_id': 'session-123'}),
             201,
             headers: {'content-type': 'application/json'},
           );
         }
-        if (request.url.path == '/v1/flight/session-123/stop') {
+        if (request.url.path == '/api/v1/tracking/sessions/session-123/stop') {
           expect(request.method, 'POST');
           final body = jsonDecode(request.body) as Map<String, dynamic>;
           expect(body['session_id'], 'session-123');
           expect(DateTime.tryParse(body['end_time'] as String), isNotNull);
           return http.Response('', 204);
         }
-        expect(request.url.path, '/v1/flight/session-123/points');
+        expect(
+          request.url.path,
+          '/api/v1/tracking/sessions/session-123/points',
+        );
         expect(request.method, 'POST');
         final body = jsonDecode(request.body) as Map<String, dynamic>;
         expect(body['session_id'], 'session-123');
@@ -170,7 +178,12 @@ void main() {
           'altitude': 1200,
           'speed': 5.0,
           'timestamp': '2026-03-04T05:06:09.000Z',
+          'vertical_speed': 0.0,
+          'gps_altitude': 1200.0,
+          'heading': 123.4,
           'bearing': 123.4,
+          'wind_speed': 0.0,
+          'wind_direction': 0.0,
         });
         return http.Response('', 204);
       });
@@ -203,18 +216,22 @@ void main() {
       FlightState.instance.start(at: startTime);
       await pumpEventQueue(times: 20);
 
+      expect(service.lastErrorCode, isNull);
       expect(service.state, LiveTrackingConnectionState.active);
       expect(service.sessionId, 'session-123');
       expect(service.pendingPointCount, 0);
       expect(requests.map((request) => request.url.path), [
-        '/v1/flight/start',
-        '/v1/flight/session-123/points',
+        '/api/v1/tracking/sessions',
+        '/api/v1/tracking/sessions/session-123/points',
       ]);
 
       FlightState.instance.stop();
       await pumpEventQueue(times: 10);
       expect(service.state, LiveTrackingConnectionState.disconnected);
-      expect(requests.last.url.path, '/v1/flight/session-123/stop');
+      expect(
+        requests.last.url.path,
+        '/api/v1/tracking/sessions/session-123/stop',
+      );
       await service.shutdown();
       client.close();
       data.dispose();
@@ -258,15 +275,15 @@ void main() {
 }
 
 Map<String, Object?> _configJson({
-  String apiBaseUrl = 'https://api.myparabeacon-proxy.com',
+  String apiBaseUrl = 'https://www.parabeacon.icu',
   String? authEndpoint,
   String? webSocketUrl,
   List<Object> channelIds = const [],
 }) => {
   'api_base_url': apiBaseUrl,
-  'session_start_endpoint': '/v1/flight/start',
-  'session_stop_endpoint': '/v1/flight/{session_id}/stop',
-  'points_endpoint': '/v1/flight/{session_id}/points',
+  'session_start_endpoint': '/api/v1/tracking/sessions',
+  'session_stop_endpoint': '/api/v1/tracking/sessions/{session_id}/stop',
+  'points_endpoint': '/api/v1/tracking/sessions/{session_id}/points',
   'auth_endpoint': authEndpoint,
   'websocket_url': webSocketUrl,
   'channel_ids': channelIds,

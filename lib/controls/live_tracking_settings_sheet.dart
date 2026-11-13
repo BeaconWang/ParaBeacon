@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../data/xcontest_live_tracking_service.dart';
 import '../data/live_tracking_settings.dart';
+import '../data/parabeacon_account_service.dart';
+import '../data/live_tracking_service.dart' as server_tracking;
 import '../data/xcontest_auth_service.dart';
 import '../l10n/app_localizations.dart';
 
@@ -82,13 +84,44 @@ class _LiveTrackingSettingsSheetState
     final settings = LiveTrackingSettings.instance;
     final auth = XContestAuthService.instance;
     final tracking = XContestLiveTrackingService.instance;
+    final serverAccount = ParaBeaconAccountService.instance;
+    final serverTracking = server_tracking.LiveTrackingService.instance;
 
     return AnimatedBuilder(
-      animation: Listenable.merge([settings, auth, tracking]),
+      animation: Listenable.merge([
+        settings,
+        auth,
+        tracking,
+        serverAccount,
+        serverTracking,
+      ]),
       builder: (context, _) {
         final signedIn = auth.isSignedIn;
         final canEnable = signedIn && !_temporaryDontShare;
         final flightPublicLocked = tracking.isFlightSessionStarted;
+        final String serverMessage;
+        if (!settings.enabled) {
+          serverMessage = l10n.liveTrackingServerDisabled;
+        } else if (settings.temporaryDontShare) {
+          serverMessage = l10n.liveTrackingServerPaused;
+        } else if (!serverAccount.isSignedIn) {
+          serverMessage = l10n.liveTrackingServerAccountRequired;
+        } else {
+          serverMessage = switch (serverTracking.state) {
+            server_tracking.LiveTrackingConnectionState.connecting =>
+              l10n.liveTrackingServerConnecting,
+            server_tracking.LiveTrackingConnectionState.active =>
+              l10n.liveTrackingServerActive,
+            server_tracking.LiveTrackingConnectionState.reconnecting =>
+              l10n.liveTrackingServerRetrying,
+            server_tracking.LiveTrackingConnectionState.disconnected =>
+              serverTracking.lastErrorCode == null
+                  ? l10n.liveTrackingServerWaiting
+                  : l10n.liveTrackingServerFailed,
+            server_tracking.LiveTrackingConnectionState.idle =>
+              l10n.liveTrackingServerWaiting,
+          };
+        }
         return Material(
           color: theme.colorScheme.surface,
           child: SafeArea(
@@ -156,8 +189,9 @@ class _LiveTrackingSettingsSheetState
                                       // master switch takes effect at once -
                                       // turning it off mid-flight stops
                                       // sharing without waiting for Save.
-                                      LiveTrackingSettings.instance
-                                          .setEnabled(value);
+                                      LiveTrackingSettings.instance.setEnabled(
+                                        value,
+                                      );
                                     },
                             ),
                             const Divider(height: 1),
@@ -298,6 +332,17 @@ class _LiveTrackingSettingsSheetState
                           icon: Icons.check_circle_outline,
                           message: l10n.liveTrackingReady,
                         ),
+                      const SizedBox(height: 16),
+                      Card(
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.cloud_upload_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text(l10n.liveTrackingServerTitle),
+                          subtitle: Text(serverMessage),
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       FilledButton.icon(
                         onPressed: _loading || settings.isSaving ? null : _save,

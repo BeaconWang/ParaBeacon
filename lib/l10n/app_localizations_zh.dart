@@ -410,7 +410,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTracking => '实时追踪';
 
   @override
-  String get liveTrackingSubtitle => '通过 XContest 分享实时飞行位置';
+  String get liveTrackingSubtitle =>
+      '登录后，可将实时飞行数据分享至 XContest 和 ParaBeacon Server。';
 
   @override
   String get positionSharingTitle => '位置共享';
@@ -425,7 +426,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get positionSharingPromptBody =>
-      '位置上传目前已暂停；只有选择共享后才会恢复。实时追踪仅在飞行期间发送位置。';
+      '选择共享后，实时位置会发送至 XContest；登录 ParaBeacon 账户时，也会分享至 ParaBeacon Server。选择前上传保持暂停，且仅在飞行期间发送。';
 
   @override
   String get positionSharingDisableAction => '停用位置共享';
@@ -437,7 +438,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingEnabled => '启用实时追踪';
 
   @override
-  String get liveTrackingEnabledSubtitle => '通过 ParaBeacon 代理发送正在进行的飞行数据';
+  String get liveTrackingEnabledSubtitle =>
+      '登录后，将当前飞行遥测同时分享至 XContest LiveTrack 和 ParaBeacon Server。';
 
   @override
   String get liveTrackingRequiresXContest => '请先登录 XContest 才能启用实时追踪。';
@@ -457,16 +459,16 @@ class AppLocalizationsZh extends AppLocalizations {
       '开始追踪前，请输入 ParaBeacon 代理签发的 Bearer 令牌。';
 
   @override
-  String get liveTrackingConnecting => '正在连接实时追踪代理……';
+  String get liveTrackingConnecting => '正在连接 XContest LiveTrack……';
 
   @override
-  String get liveTrackingConnected => '代理会话已建立，正在上传实时航迹点。';
+  String get liveTrackingConnected => 'XContest LiveTrack 会话已建立，正在上传飞行点位。';
 
   @override
-  String get liveTrackingRetrying => '代理连接失败；已缓存的航迹点将自动重试。';
+  String get liveTrackingRetrying => 'XContest LiveTrack 连接失败，已缓存的点位将自动重试。';
 
   @override
-  String get liveTrackingFailed => '无法启动实时追踪，请检查代理配置和账户。';
+  String get liveTrackingFailed => '无法启动 XContest LiveTrack，请检查网络连接和账户。';
 
   @override
   String get liveTrackingClaimContest => '认领竞赛飞行';
@@ -505,6 +507,34 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveTrackingReady => '飞行状态激活后将自动开始实时追踪。';
+
+  @override
+  String get liveTrackingServerTitle => 'ParaBeacon Server';
+
+  @override
+  String get liveTrackingServerAccountRequired => '请登录 ParaBeacon 账户以分享实时飞行数据。';
+
+  @override
+  String get liveTrackingServerDisabled =>
+      '启用实时追踪后，才会向 ParaBeacon Server 分享飞行数据。';
+
+  @override
+  String get liveTrackingServerPaused => '实时追踪设置已暂停服务端数据分享。';
+
+  @override
+  String get liveTrackingServerWaiting => '等待飞行状态激活。';
+
+  @override
+  String get liveTrackingServerConnecting => '正在创建 ParaBeacon Server 飞行会话……';
+
+  @override
+  String get liveTrackingServerActive => '正在向 ParaBeacon Server 分享实时飞行数据。';
+
+  @override
+  String get liveTrackingServerRetrying => '服务器连接失败，缓存的飞行数据将自动重试上传。';
+
+  @override
+  String get liveTrackingServerFailed => '无法分享飞行数据，请检查服务器连接和账户。';
 
   @override
   String get aircraftFaiClass => 'FAI级别';

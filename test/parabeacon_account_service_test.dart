@@ -66,6 +66,13 @@ void main() {
       expect(service.user?.username, 'pilot_one');
       expect(store.values['parabeacon_access_token'], 'test-access-token');
       expect(store.values.toString(), isNot(contains('abc123')));
+      final logs = service.debugLog.join('\n');
+      expect(logs, contains('Registration response received (HTTP 201).'));
+      expect(logs, contains('Sign-in succeeded; session stored securely.'));
+      expect(logs, isNot(contains('pilot_one')));
+      expect(logs, isNot(contains('pilot@example.com')));
+      expect(logs, isNot(contains('abc123')));
+      expect(logs, isNot(contains('test-access-token')));
     },
   );
 
@@ -126,6 +133,69 @@ void main() {
       expect(service.user?.username, 'updated_pilot');
     },
   );
+
+  test('rotates refresh tokens before access-token expiry', () async {
+    final store = _MemorySessionStore()
+      ..values['parabeacon_access_token'] = 'old-access-token'
+      ..values['parabeacon_access_token_expires_at'] = DateTime.now()
+          .add(const Duration(seconds: 30))
+          .toUtc()
+          .toIso8601String()
+      ..values['parabeacon_refresh_token'] =
+          'old-refresh-token-value-long-enough'
+      ..values['parabeacon_refresh_token_expires_at'] = DateTime.now()
+          .add(const Duration(days: 20))
+          .toUtc()
+          .toIso8601String()
+      ..values['parabeacon_account_user'] = jsonEncode(_userJson);
+    final requests = <http.Request>[];
+    final client = MockClient((request) async {
+      requests.add(request);
+      if (request.url.path == '/api/v1/auth/refresh') {
+        expect(request.method, 'POST');
+        expect(jsonDecode(request.body), {
+          'refresh_token': 'old-refresh-token-value-long-enough',
+        });
+        return http.Response(
+          jsonEncode({
+            'access_token': 'new-access-token',
+            'expires_at': DateTime.now()
+                .add(const Duration(minutes: 15))
+                .toUtc()
+                .toIso8601String(),
+            'refresh_token': 'new-refresh-token-value-long-enough',
+            'refresh_expires_at': DateTime.now()
+                .add(const Duration(days: 30))
+                .toUtc()
+                .toIso8601String(),
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      expect(request.url.path, '/api/v1/user/profile');
+      expect(request.headers['Authorization'], 'Bearer new-access-token');
+      return http.Response(jsonEncode({'user': _userJson}), 200);
+    });
+    final service = ParaBeaconAccountService(
+      client: client,
+      sessionStore: store,
+    );
+    addTearDown(service.dispose);
+
+    final headers = await service.authorizationHeaders();
+
+    expect(headers['Authorization'], 'Bearer new-access-token');
+    expect(store.values['parabeacon_access_token'], 'new-access-token');
+    expect(
+      store.values['parabeacon_refresh_token'],
+      'new-refresh-token-value-long-enough',
+    );
+    expect(requests.map((request) => request.url.path), [
+      '/api/v1/auth/refresh',
+      '/api/v1/user/profile',
+    ]);
+  });
 
   test('maps invalid credentials without storing a session', () async {
     final store = _MemorySessionStore();

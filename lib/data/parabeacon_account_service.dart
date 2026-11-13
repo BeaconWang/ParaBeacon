@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+import 'live_tracking_proxy_auth_service.dart';
 import 'user_agent_settings.dart';
 
 abstract interface class AccountSessionStore {
@@ -56,7 +57,8 @@ class ParaBeaconUser {
   };
 }
 
-class ParaBeaconAccountService extends ChangeNotifier {
+class ParaBeaconAccountService extends ChangeNotifier
+    implements LiveTrackingProxyAuthProvider {
   ParaBeaconAccountService({
     http.Client? client,
     AccountSessionStore? sessionStore,
@@ -68,9 +70,13 @@ class ParaBeaconAccountService extends ChangeNotifier {
   static final Uri _apiBaseUri = Uri.https('www.parabeacon.icu', '/api/v1/');
   static const _tokenKey = 'parabeacon_access_token';
   static const _expiresAtKey = 'parabeacon_access_token_expires_at';
+  static const _refreshTokenKey = 'parabeacon_refresh_token';
+  static const _refreshExpiresAtKey = 'parabeacon_refresh_token_expires_at';
   static const _userKey = 'parabeacon_account_user';
   static const _requestTimeout = Duration(seconds: 15);
+  static const _maxDebugLogLines = 200;
 
+  final List<String> _debugLog = <String>[];
   final http.Client _client;
   final AccountSessionStore _store;
 
@@ -78,20 +84,32 @@ class ParaBeaconAccountService extends ChangeNotifier {
   bool _loading = false;
   String? _token;
   DateTime? _expiresAt;
+  String? _refreshToken;
+  DateTime? _refreshExpiresAt;
+  Future<void>? _refreshFuture;
+  bool _loggingOut = false;
   ParaBeaconUser? _user;
   String? _errorCode;
 
   bool get isLoaded => _loaded;
   bool get isLoading => _loading;
+  List<String> get debugLog => List<String>.unmodifiable(_debugLog);
   bool get isSignedIn =>
       _token != null &&
       _token!.isNotEmpty &&
       (_expiresAt == null || _expiresAt!.isAfter(DateTime.now()));
   ParaBeaconUser? get user => _user;
   String? get errorCode => _errorCode;
+  bool get _canRefresh =>
+      _refreshToken?.isNotEmpty == true &&
+      (_refreshExpiresAt == null || _refreshExpiresAt!.isAfter(DateTime.now()));
+  bool get _needsAccessRefresh =>
+      _expiresAt == null ||
+      !_expiresAt!.isAfter(DateTime.now().add(const Duration(minutes: 2)));
 
   Future<void> load() async {
     if (_loaded || _loading) return;
+    _log('Session restore started.');
     _loading = true;
     _errorCode = null;
     notifyListeners();
@@ -101,21 +119,41 @@ class ParaBeaconAccountService extends ChangeNotifier {
       _expiresAt = expiresAtValue == null
           ? null
           : DateTime.tryParse(expiresAtValue);
+      _refreshToken = await _store.read(_refreshTokenKey);
+      final refreshExpiresAtValue = await _store.read(_refreshExpiresAtKey);
+      _refreshExpiresAt = refreshExpiresAtValue == null
+          ? null
+          : DateTime.tryParse(refreshExpiresAtValue);
       _user = _decodeStoredUser(await _store.read(_userKey));
 
-      if (!isSignedIn) {
+      if (_canRefresh && _needsAccessRefresh) {
+        try {
+          await _refreshAccessToken();
+        } on TimeoutException {
+          _errorCode = 'accountConnectionFailure';
+        } on Exception {
+          _errorCode ??= 'accountServiceUnavailable';
+        }
+      }
+      if (isSignedIn) {
+        _log('Saved session found; refreshing profile.');
+        await _refreshProfile();
+      } else if (!_canRefresh) {
+        _log('No valid saved session; clearing local session data.');
         await _clearStoredSession();
         _token = null;
         _expiresAt = null;
+        _refreshToken = null;
+        _refreshExpiresAt = null;
         _user = null;
-      } else {
-        await _refreshProfile();
       }
     } on Exception {
       _errorCode = 'accountStorageFailure';
+      _log('Session restore failed (secure storage).');
     } finally {
       _loaded = true;
       _loading = false;
+      _log(isSignedIn ? 'Session restore complete.' : 'No active session.');
       notifyListeners();
     }
   }
@@ -134,14 +172,17 @@ class ParaBeaconAccountService extends ChangeNotifier {
     }
     if (_loading) return false;
 
+    _log('Sign-in requested.');
     _beginRequest();
     try {
       return await _performLogin(normalizedIdentifier, password);
     } on TimeoutException {
       _errorCode = 'accountConnectionFailure';
+      _log('Sign-in request timed out.');
       return false;
     } on Exception {
       _errorCode = 'accountServiceUnavailable';
+      _log('Sign-in request failed due to a network or service error.');
       return false;
     } finally {
       _endRequest();
@@ -167,6 +208,7 @@ class ParaBeaconAccountService extends ChangeNotifier {
     }
     if (_loading) return false;
 
+    _log('Registration requested.');
     _beginRequest();
     try {
       final payload = <String, String>{
@@ -181,6 +223,7 @@ class ParaBeaconAccountService extends ChangeNotifier {
             body: jsonEncode(payload),
           )
           .timeout(_requestTimeout);
+      _log('Registration response received (HTTP ${response.statusCode}).');
 
       if (response.statusCode == 409) {
         _errorCode = 'accountAlreadyExists';
@@ -200,9 +243,11 @@ class ParaBeaconAccountService extends ChangeNotifier {
       return await _performLogin(normalizedUsername, password);
     } on TimeoutException {
       _errorCode = 'accountConnectionFailure';
+      _log('Registration request timed out.');
       return false;
     } on Exception {
       _errorCode = 'accountServiceUnavailable';
+      _log('Registration request failed due to a network or service error.');
       return false;
     } finally {
       _endRequest();
@@ -210,16 +255,68 @@ class ParaBeaconAccountService extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    if (_loading || _loggingOut) return;
+    _loggingOut = true;
+    _loading = true;
+    _log('Sign-out requested.');
+    notifyListeners();
+    final activeRefresh = _refreshFuture;
+    if (activeRefresh != null) {
+      try {
+        await activeRefresh;
+      } on Exception {
+        // Continue with local sign-out if refresh failed.
+      }
+    }
+    final refreshToken = _refreshToken;
     _token = null;
     _expiresAt = null;
+    _refreshToken = null;
+    _refreshExpiresAt = null;
     _user = null;
     _errorCode = null;
+    try {
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await _client
+            .post(
+              _apiUri('auth/logout'),
+              headers: _jsonHeaders,
+              body: jsonEncode({'refresh_token': refreshToken}),
+            )
+            .timeout(const Duration(seconds: 3));
+      }
+    } on Exception {
+      _log('Remote refresh-token revocation failed; local session cleared.');
+    }
     try {
       await _clearStoredSession();
     } on Exception {
       _errorCode = 'accountStorageFailure';
+      _log('Sign-out failed to clear the saved session.');
     }
+    _loaded = true;
+    _loading = false;
+    _log('Sign-out complete.');
     notifyListeners();
+  }
+
+  @override
+  Future<Map<String, String>> authorizationHeaders() async {
+    if (_loggingOut) {
+      throw const LiveTrackingProxyAuthException('account_signing_out');
+    }
+    await load();
+    if (_loggingOut) {
+      throw const LiveTrackingProxyAuthException('account_signing_out');
+    }
+    if (_canRefresh && _needsAccessRefresh) {
+      await _refreshAccessToken();
+    }
+    final token = _token;
+    if (!isSignedIn || token == null || token.isEmpty) {
+      throw const LiveTrackingProxyAuthException('parabeacon_account_required');
+    }
+    return {'Authorization': 'Bearer $token'};
   }
 
   void clearError() {
@@ -236,6 +333,7 @@ class ParaBeaconAccountService extends ChangeNotifier {
           body: jsonEncode({'identifier': identifier, 'password': password}),
         )
         .timeout(_requestTimeout);
+    _log('Sign-in response received (HTTP ${response.statusCode}).');
 
     if (response.statusCode == 401) {
       _errorCode = 'accountInvalidCredentials';
@@ -261,12 +359,34 @@ class ParaBeaconAccountService extends ChangeNotifier {
     }
 
     final expiresAt = _parseExpiry(decoded!);
+    final refreshTokenValue = decoded['refresh_token'];
+    final refreshExpiresAtValue = decoded['refresh_expires_at'];
+    final refreshExpiresAt = refreshExpiresAtValue is String
+        ? DateTime.tryParse(refreshExpiresAtValue)
+        : null;
+    if ((refreshTokenValue != null && refreshTokenValue is! String) ||
+        (refreshTokenValue is String &&
+            (refreshTokenValue.isEmpty || refreshExpiresAt == null))) {
+      _errorCode = 'accountRequestFailed';
+      return false;
+    }
+    final refreshToken = refreshTokenValue as String?;
     try {
       await _store.write(_tokenKey, token);
       if (expiresAt == null) {
         await _store.delete(_expiresAtKey);
       } else {
         await _store.write(_expiresAtKey, expiresAt.toIso8601String());
+      }
+      if (refreshToken == null) {
+        await _store.delete(_refreshTokenKey);
+        await _store.delete(_refreshExpiresAtKey);
+      } else {
+        await _store.write(_refreshTokenKey, refreshToken);
+        await _store.write(
+          _refreshExpiresAtKey,
+          refreshExpiresAt!.toIso8601String(),
+        );
       }
       await _store.write(_userKey, jsonEncode(user.toJson()));
     } on Exception {
@@ -276,14 +396,105 @@ class ParaBeaconAccountService extends ChangeNotifier {
         // Keep the session signed out even if secure-store cleanup also fails.
       }
       _errorCode = 'accountStorageFailure';
+      _log('Sign-in succeeded remotely but secure session storage failed.');
       return false;
     }
 
     _token = token;
     _expiresAt = expiresAt;
+    _refreshToken = refreshToken;
+    _refreshExpiresAt = refreshExpiresAt;
     _user = user;
     _errorCode = null;
+    _log('Sign-in succeeded; session stored securely.');
     return true;
+  }
+
+  Future<void> _refreshAccessToken() {
+    final current = _refreshFuture;
+    if (current != null) return current;
+    final task = _refreshAccessTokenOnce();
+    _refreshFuture = task;
+    return task.whenComplete(() {
+      if (identical(_refreshFuture, task)) _refreshFuture = null;
+    });
+  }
+
+  Future<void> _refreshAccessTokenOnce() async {
+    final refreshToken = _refreshToken;
+    if (refreshToken == null ||
+        refreshToken.isEmpty ||
+        (_refreshExpiresAt != null &&
+            !_refreshExpiresAt!.isAfter(DateTime.now()))) {
+      throw const LiveTrackingProxyAuthException('account_refresh_required');
+    }
+    final response = await _client
+        .post(
+          _apiUri('auth/refresh'),
+          headers: _jsonHeaders,
+          body: jsonEncode({'refresh_token': refreshToken}),
+        )
+        .timeout(_requestTimeout);
+    _log(
+      'Access-token refresh response received (HTTP ${response.statusCode}).',
+    );
+    if (response.statusCode == 400 || response.statusCode == 401) {
+      _token = null;
+      _expiresAt = null;
+      _refreshToken = null;
+      _refreshExpiresAt = null;
+      _user = null;
+      _errorCode = 'accountRequestFailed';
+      try {
+        await _clearStoredSession();
+      } on Exception {
+        // Keep the in-memory session signed out if secure-store cleanup fails.
+      }
+      notifyListeners();
+      throw const LiveTrackingProxyAuthException('account_session_expired');
+    }
+    if (response.statusCode != 200) {
+      throw LiveTrackingProxyAuthException(
+        'account_refresh_http_${response.statusCode}',
+      );
+    }
+    final decoded = _decodeMap(response.body);
+    final accessToken = decoded?['access_token'];
+    final nextRefreshToken = decoded?['refresh_token'];
+    final expiresAt = decoded == null ? null : _parseExpiry(decoded);
+    final refreshExpiresAtValue = decoded?['refresh_expires_at'];
+    final refreshExpiresAt = refreshExpiresAtValue is String
+        ? DateTime.tryParse(refreshExpiresAtValue)
+        : null;
+    if (accessToken is! String ||
+        accessToken.isEmpty ||
+        nextRefreshToken is! String ||
+        nextRefreshToken.isEmpty ||
+        expiresAt == null ||
+        refreshExpiresAt == null) {
+      throw const LiveTrackingProxyAuthException(
+        'account_refresh_invalid_response',
+      );
+    }
+
+    _token = accessToken;
+    _expiresAt = expiresAt;
+    _refreshToken = nextRefreshToken;
+    _refreshExpiresAt = refreshExpiresAt;
+    _errorCode = null;
+    try {
+      await _store.write(_tokenKey, accessToken);
+      await _store.write(_expiresAtKey, expiresAt.toIso8601String());
+      await _store.write(_refreshTokenKey, nextRefreshToken);
+      await _store.write(
+        _refreshExpiresAtKey,
+        refreshExpiresAt.toIso8601String(),
+      );
+    } on Exception {
+      _errorCode = 'accountStorageFailure';
+    }
+    _log('Access token refreshed and refresh token rotated.');
+    notifyListeners();
   }
 
   Future<void> _refreshProfile() async {
@@ -295,21 +506,28 @@ class ParaBeaconAccountService extends ChangeNotifier {
             headers: {..._jsonHeaders, 'Authorization': 'Bearer $_token'},
           )
           .timeout(_requestTimeout);
+      _log('Profile response received (HTTP ${response.statusCode}).');
     } on TimeoutException {
       _errorCode = 'accountConnectionFailure';
+      _log('Profile refresh timed out.');
       return;
     } on http.ClientException {
       _errorCode = 'accountConnectionFailure';
+      _log('Profile refresh failed due to a connection error.');
       return;
     } on Exception {
       _errorCode = 'accountServiceUnavailable';
+      _log('Profile refresh failed due to a service error.');
       return;
     }
 
     if (response.statusCode == 401 || response.statusCode == 403) {
+      _log('Saved session was rejected; clearing it locally.');
       await _clearStoredSession();
       _token = null;
       _expiresAt = null;
+      _refreshToken = null;
+      _refreshExpiresAt = null;
       _user = null;
       return;
     }
@@ -317,29 +535,55 @@ class ParaBeaconAccountService extends ChangeNotifier {
       _errorCode = response.statusCode >= 500
           ? 'accountServiceUnavailable'
           : 'accountRequestFailed';
+      _log('Profile refresh failed (HTTP ${response.statusCode}).');
       return;
     }
 
     final user = ParaBeaconUser.fromJson(_decodeMap(response.body)?['user']);
     if (user == null) {
       _errorCode = 'accountRequestFailed';
+      _log('Profile response was invalid.');
       return;
     }
     _user = user;
     try {
       await _store.write(_userKey, jsonEncode(user.toJson()));
+      _log('Profile refreshed and saved locally.');
     } on Exception {
       _errorCode = 'accountStorageFailure';
+      _log('Profile refreshed but secure profile storage failed.');
     }
   }
 
   Future<void> _clearStoredSession() async {
-    for (final key in [_tokenKey, _expiresAtKey, _userKey]) {
+    for (final key in [
+      _tokenKey,
+      _expiresAtKey,
+      _refreshTokenKey,
+      _refreshExpiresAtKey,
+      _userKey,
+    ]) {
       await _store.delete(key);
     }
   }
 
+  void _log(String message) {
+    if (!kDebugMode) return;
+    final now = DateTime.now();
+    String two(int value) => value.toString().padLeft(2, '0');
+    final stamp =
+        '${two(now.hour)}:${two(now.minute)}:${two(now.second)}.${now.millisecond.toString().padLeft(3, '0')}';
+    final line = '$stamp  $message';
+    _debugLog.add(line);
+    if (_debugLog.length > _maxDebugLogLines) {
+      _debugLog.removeRange(0, _debugLog.length - _maxDebugLogLines);
+    }
+    debugPrint('ParaBeaconAccount: $line');
+    notifyListeners();
+  }
+
   void _beginRequest() {
+    _loggingOut = false;
     _loading = true;
     _errorCode = null;
     notifyListeners();

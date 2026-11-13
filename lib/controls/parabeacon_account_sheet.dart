@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
 import '../data/parabeacon_account_service.dart';
+import '../data/live_tracking_service.dart' as server_tracking;
 import '../l10n/app_localizations.dart';
 
 Future<void> showParaBeaconAccountSheet(BuildContext context) {
@@ -33,6 +35,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
   bool _registering = false;
   bool _obscurePassword = true;
   bool _obscureConfirmation = true;
+  bool _signingOut = false;
 
   @override
   void initState() {
@@ -145,6 +148,10 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                                 _buildProfile(context, service, l10n)
                               else
                                 _buildForm(context, service, l10n),
+                              if (kDebugMode) ...[
+                                const SizedBox(height: 24),
+                                _AccountDebugLogPanel(lines: service.debugLog),
+                              ],
                             ],
                           ),
                         ),
@@ -219,8 +226,25 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
         ],
         const SizedBox(height: 16),
         OutlinedButton.icon(
-          onPressed: service.isLoading ? null : service.logout,
-          icon: const Icon(Icons.logout),
+          onPressed: service.isLoading || _signingOut
+              ? null
+              : () async {
+                  setState(() => _signingOut = true);
+                  try {
+                    await server_tracking.LiveTrackingService.instance
+                        .closeForSignOut();
+                  } finally {
+                    await service.logout();
+                    if (mounted) setState(() => _signingOut = false);
+                  }
+                },
+          icon: _signingOut
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.logout),
           label: Text(l10n.accountSignOut),
         ),
       ],
@@ -441,6 +465,70 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AccountDebugLogPanel extends StatelessWidget {
+  const _AccountDebugLogPanel({required this.lines});
+
+  final List<String> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.bug_report_outlined,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Debug log (${lines.length})',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          height: 180,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: lines.isEmpty
+              ? Center(
+                  child: Text(
+                    'No account activity yet.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  reverse: true,
+                  itemCount: lines.length,
+                  itemBuilder: (context, index) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: SelectableText(
+                      lines[lines.length - index - 1],
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+      ],
     );
   }
 }

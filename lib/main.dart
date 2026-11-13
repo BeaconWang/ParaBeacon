@@ -27,6 +27,9 @@ import 'data/flight_data_transformer.dart';
 import 'data/flight_details_settings.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
+import 'data/parabeacon_account_service.dart';
+import 'data/live_tracking_config.dart';
+import 'data/live_tracking_service.dart' show LiveTrackingService;
 import 'data/gps_flight_data_bridge.dart';
 import 'data/landing_point_store.dart';
 import 'data/competition/competition_task_store.dart';
@@ -57,6 +60,13 @@ Future<void> main() async {
   await LocaleController.instance.load();
   await UserAgentSettings.instance.load();
   XContestLiveTrackingService.instance.configure();
+  try {
+    LiveTrackingService.instance.configure(
+      await const LiveTrackingConfigLoader().load(),
+    );
+  } on Object {
+    LiveTrackingService.instance.configure(null);
+  }
   // Restore offline maps after the first frame so opening the app is not held
   // up by preferences I/O or opening the MBTiles database.
   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -93,6 +103,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   //   [control] <- [_transformer] <- [_dataSource] <- [raw data]
   late final FlightDataTransformer _transformer;
   late final XContestLiveTrackingService _liveTracking;
+  late final LiveTrackingService _serverLiveTracking;
 
   // Drives the Vario audio directly from the vertical speed of [_dataSource].
   // Every FlightData update forwards `verticalSpeed` into the audio engine, so
@@ -141,6 +152,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // Restore accounts and tracking preferences, then offer an explicit
     // position-sharing choice only for a session already signed in at launch.
     AsfcAuthService.instance.load();
+    unawaited(ParaBeaconAccountService.instance.load());
     unawaited(_loadAndPromptPositionSharing());
     // Restore the aircraft preferences before the Preferences sheet opens.
     AircraftSettings.instance.load();
@@ -239,6 +251,20 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       ]),
     );
 
+    _serverLiveTracking = LiveTrackingService.instance;
+    _serverLiveTracking.bind(
+      data: _transformer,
+      flightState: FlightState.instance,
+      isEnabled: () =>
+          LiveTrackingSettings.instance.isEffectivelyEnabled &&
+          ParaBeaconAccountService.instance.isSignedIn,
+      pilotId: () => ParaBeaconAccountService.instance.user?.username,
+      eligibilitySource: Listenable.merge([
+        LiveTrackingSettings.instance,
+        ParaBeaconAccountService.instance,
+      ]),
+    );
+
     // Continuously record the full flight-data feed while a flight is in
     // progress (driven by the shared FlightState; supports auto take-off /
     // landing detection when enabled). Records the transformed feed.
@@ -289,6 +315,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     _flightRecorder.removeListener(_onFlightRecorderChanged);
     _takeoffTaskSub?.cancel();
     _liveTracking.unbind();
+    _serverLiveTracking.unbind();
     _gpsBridge.dispose();
     _internalBridge.dispose();
     _bleBridge.dispose();

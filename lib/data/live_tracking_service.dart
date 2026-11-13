@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'flight_data.dart';
 import 'flight_state.dart';
+import 'parabeacon_account_service.dart';
 import 'live_tracking_config.dart';
 import 'live_tracking_proxy_auth_service.dart';
 import 'user_agent_settings.dart';
@@ -19,7 +20,17 @@ class LiveTrackpoint {
     required this.altitudeMeters,
     required this.groundSpeedMetersPerSecond,
     required this.timestamp,
+    this.verticalSpeedMetersPerSecond,
+    this.gpsAltitudeMeters,
+    this.barometricAltitudeMeters,
+    this.headingDegrees,
     this.bearingDegrees,
+    this.windSpeedMetersPerSecond,
+    this.windDirectionDegrees,
+    this.gpsAccuracyMeters,
+    this.satellites,
+    this.pressureHpa,
+    this.temperatureCelsius,
   });
 
   final double latitude;
@@ -27,7 +38,17 @@ class LiveTrackpoint {
   final double altitudeMeters;
   final double groundSpeedMetersPerSecond;
   final DateTime timestamp;
+  final double? verticalSpeedMetersPerSecond;
+  final double? gpsAltitudeMeters;
+  final double? barometricAltitudeMeters;
+  final double? headingDegrees;
   final double? bearingDegrees;
+  final double? windSpeedMetersPerSecond;
+  final double? windDirectionDegrees;
+  final double? gpsAccuracyMeters;
+  final int? satellites;
+  final double? pressureHpa;
+  final double? temperatureCelsius;
 
   double get speedMetersPerSecond => groundSpeedMetersPerSecond;
 
@@ -37,7 +58,20 @@ class LiveTrackpoint {
     'altitude': altitudeMeters,
     'speed': groundSpeedMetersPerSecond,
     'timestamp': timestamp.toUtc().toIso8601String(),
+    if (verticalSpeedMetersPerSecond != null)
+      'vertical_speed': verticalSpeedMetersPerSecond,
+    if (gpsAltitudeMeters != null) 'gps_altitude': gpsAltitudeMeters,
+    if (barometricAltitudeMeters != null)
+      'barometric_altitude': barometricAltitudeMeters,
+    if (headingDegrees != null) 'heading': headingDegrees,
     if (bearingDegrees != null) 'bearing': bearingDegrees,
+    if (windSpeedMetersPerSecond != null)
+      'wind_speed': windSpeedMetersPerSecond,
+    if (windDirectionDegrees != null) 'wind_direction': windDirectionDegrees,
+    if (gpsAccuracyMeters != null) 'gps_accuracy': gpsAccuracyMeters,
+    if (satellites != null) 'satellites': satellites,
+    if (pressureHpa != null) 'pressure': pressureHpa,
+    if (temperatureCelsius != null) 'temperature': temperatureCelsius,
   };
 
   static LiveTrackpoint? fromFlightData(FlightData data) {
@@ -54,12 +88,24 @@ class LiveTrackpoint {
     if (timestamp == null) return null;
     final altitude = data.gpsAltitude ?? data.altitude;
     if (!altitude.isFinite || !data.groundSpeed.isFinite) return null;
-    final heading = data.heading;
-    final bearing = !data.hasHeading || !heading.isFinite
-        ? null
-        : heading >= 0 && heading < 360
-        ? heading
-        : ((heading % 360) + 360) % 360;
+    double? finite(double? value) =>
+        value != null && value.isFinite ? value : null;
+    double? degrees(double value) {
+      if (!value.isFinite) return null;
+      if (value >= 0 && value < 360) return value;
+      return ((value % 360) + 360) % 360;
+    }
+
+    final heading = data.hasHeading ? degrees(data.heading) : null;
+    final gpsAltitude = finite(data.gpsAltitude);
+    final barometricAltitude = finite(data.baroAltitude);
+    final windSpeed = finite(data.windSpeed);
+    final windDirection = data.windDirection.isFinite
+        ? degrees(data.windDirection)
+        : null;
+    final accuracy = finite(data.gpsAccuracy);
+    final pressure = finite(data.pressure);
+    final temperature = finite(data.temperature);
     return LiveTrackpoint(
       latitude: data.latitude,
       longitude: data.longitude,
@@ -68,13 +114,32 @@ class LiveTrackpoint {
           .clamp(0, 200)
           .toDouble(),
       timestamp: timestamp.toUtc(),
-      bearingDegrees: bearing,
+      verticalSpeedMetersPerSecond: finite(data.verticalSpeed),
+      gpsAltitudeMeters: gpsAltitude,
+      barometricAltitudeMeters: barometricAltitude,
+      headingDegrees: heading,
+      bearingDegrees: heading,
+      windSpeedMetersPerSecond: windSpeed == null
+          ? null
+          : (windSpeed / 3.6).clamp(0, 200).toDouble(),
+      windDirectionDegrees: windDirection,
+      gpsAccuracyMeters: accuracy != null && accuracy >= 0 ? accuracy : null,
+      satellites: data.satellites,
+      pressureHpa: pressure,
+      temperatureCelsius: temperature,
     );
   }
 
   static LiveTrackpoint? fromJson(Object? value) {
     if (value is! Map<String, dynamic>) return null;
     double? number(Object? item) => item is num ? item.toDouble() : null;
+    double? optionalNumber(String key) {
+      final raw = value[key];
+      if (raw == null) return null;
+      final parsed = number(raw);
+      return parsed != null && parsed.isFinite ? parsed : null;
+    }
+
     final lat = number(value['lat']);
     final lon = number(value['lon']);
     final altitude = number(value['altitude']);
@@ -105,13 +170,25 @@ class LiveTrackpoint {
         lon > 180) {
       return null;
     }
+    final satellitesValue = value['satellites'];
+    if (satellitesValue != null && satellitesValue is! int) return null;
     return LiveTrackpoint(
       latitude: lat,
       longitude: lon,
       altitudeMeters: altitude,
       groundSpeedMetersPerSecond: speed,
       timestamp: timestamp.toUtc(),
+      verticalSpeedMetersPerSecond: optionalNumber('vertical_speed'),
+      gpsAltitudeMeters: optionalNumber('gps_altitude'),
+      barometricAltitudeMeters: optionalNumber('barometric_altitude'),
+      headingDegrees: optionalNumber('heading'),
       bearingDegrees: bearing,
+      windSpeedMetersPerSecond: optionalNumber('wind_speed'),
+      windDirectionDegrees: optionalNumber('wind_direction'),
+      gpsAccuracyMeters: optionalNumber('gps_accuracy'),
+      satellites: satellitesValue as int?,
+      pressureHpa: optionalNumber('pressure'),
+      temperatureCelsius: optionalNumber('temperature'),
     );
   }
 }
@@ -186,9 +263,8 @@ enum LiveTrackingConnectionState {
   disconnected,
 }
 
-/// Client for ParaBeacon's own proxy API. It uses authenticated REST for both
-/// session creation and point batches; the returned socket_url is reserved for
-/// a future WebSocket transport and is not needed by this HTTP-batch mode.
+/// Sends authenticated flight sessions and batched telemetry points directly
+/// to the ParaBeacon Server REST API.
 class LiveTrackingService extends ChangeNotifier {
   LiveTrackingService({
     required LiveTrackingConfig config,
@@ -206,7 +282,7 @@ class LiveTrackingService extends ChangeNotifier {
        _ownsHttpClient = httpClient == null;
 
   LiveTrackingService._singleton()
-    : _authProvider = LiveTrackingProxyAuthService.instance,
+    : _authProvider = ParaBeaconAccountService.instance,
       _pointStore = SharedPreferencesLiveTrackingProxyPointStore(),
       _httpClient = UserAgentHttpClient(),
       _ownsHttpClient = true;
@@ -294,6 +370,24 @@ class LiveTrackingService extends ChangeNotifier {
     eligibilitySource?.addListener(_queueLifecycleSync);
     unawaited(_loadQueue());
     _queueLifecycleSync();
+  }
+
+  Future<void> closeForSignOut() async {
+    if (_starting) await _syncTail.catchError((Object _) {});
+    final sessionId = _sessionId;
+    if (sessionId == null) {
+      await _sessionEndTail.catchError((Object _) {});
+      return;
+    }
+    _sessionId = null;
+    _flushWhileIdle = true;
+    _uploadTimer?.cancel();
+    _uploadTimer = null;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _setState(LiveTrackingConnectionState.disconnected);
+    _queueSessionEnd(sessionId);
+    await _sessionEndTail.catchError((Object _) {});
   }
 
   void unbind() {
@@ -404,9 +498,8 @@ class LiveTrackingService extends ChangeNotifier {
         method: 'POST',
         uri: config.sessionStartUri,
         body: {
-          'pilot_id': pilotId,
+          'pilot_name': pilotId,
           'start_time': startTime.toUtc().toIso8601String(),
-          if (config.channelIds.isNotEmpty) 'channel_ids': config.channelIds,
         },
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -414,11 +507,7 @@ class LiveTrackingService extends ChangeNotifier {
       }
       final decoded = _decodeResponse(response.body);
       final sessionId = decoded?['session_id'];
-      final socketUrl = decoded?['socket_url'];
-      if (sessionId is! String ||
-          sessionId.trim().isEmpty ||
-          socketUrl is! String ||
-          socketUrl.trim().isEmpty) {
+      if (sessionId is! String || sessionId.trim().isEmpty) {
         throw const LiveTrackingProxyException('invalid_session_response');
       }
       if (bindingEpoch != _bindingEpoch || !_shouldTrack) {
@@ -426,7 +515,11 @@ class LiveTrackingService extends ChangeNotifier {
         _setState(LiveTrackingConnectionState.disconnected);
         return;
       }
-      _sessionId = sessionId.trim();
+      final activeSessionId = sessionId.trim();
+      final queuedPointCount = _pending.length;
+      _pending.removeWhere((queued) => queued.sessionId != activeSessionId);
+      if (_pending.length != queuedPointCount) await _persistQueue();
+      _sessionId = activeSessionId;
       _flushWhileIdle = false;
       _lastPointTimestamp = null;
       _lastErrorCode = null;

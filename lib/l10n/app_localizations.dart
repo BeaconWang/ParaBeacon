@@ -887,7 +887,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Share your live flight with XContest'**
+  /// **'Share live flight data with XContest and ParaBeacon Server when signed in.'**
   String get liveTrackingSubtitle;
 
   /// No description provided for @positionSharingTitle.
@@ -911,7 +911,7 @@ abstract class AppLocalizations {
   /// No description provided for @positionSharingPromptBody.
   ///
   /// In en, this message translates to:
-  /// **'Position uploads are paused until you choose to share. LiveTracking only sends during an active flight.'**
+  /// **'Choosing to share sends live positions to XContest and, when signed in, ParaBeacon Server. Uploads stay paused until you choose to share and are sent only during active flights.'**
   String get positionSharingPromptBody;
 
   /// No description provided for @positionSharingDisableAction.
@@ -935,7 +935,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingEnabledSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Send active-flight telemetry through your ParaBeacon proxy'**
+  /// **'Share active-flight telemetry with XContest LiveTrack and ParaBeacon Server when signed in.'**
   String get liveTrackingEnabledSubtitle;
 
   /// No description provided for @liveTrackingRequiresXContest.
@@ -971,25 +971,25 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingConnecting.
   ///
   /// In en, this message translates to:
-  /// **'Connecting to the live-tracking proxy…'**
+  /// **'Connecting to XContest LiveTrack…'**
   String get liveTrackingConnecting;
 
   /// No description provided for @liveTrackingConnected.
   ///
   /// In en, this message translates to:
-  /// **'Proxy session active; live points are uploading.'**
+  /// **'XContest LiveTrack session active; flight points are uploading.'**
   String get liveTrackingConnected;
 
   /// No description provided for @liveTrackingRetrying.
   ///
   /// In en, this message translates to:
-  /// **'Proxy connection failed; queued points will retry automatically.'**
+  /// **'XContest LiveTrack connection failed; queued points will retry automatically.'**
   String get liveTrackingRetrying;
 
   /// No description provided for @liveTrackingFailed.
   ///
   /// In en, this message translates to:
-  /// **'Live tracking could not start. Check the proxy configuration and account.'**
+  /// **'XContest LiveTrack could not start. Check the connection and account.'**
   String get liveTrackingFailed;
 
   /// No description provided for @liveTrackingClaimContest.
@@ -1063,6 +1063,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tracking will start automatically when a flight becomes active.'**
   String get liveTrackingReady;
+
+  /// No description provided for @liveTrackingServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ParaBeacon Server'**
+  String get liveTrackingServerTitle;
+
+  /// No description provided for @liveTrackingServerAccountRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to a ParaBeacon account to share live telemetry.'**
+  String get liveTrackingServerAccountRequired;
+
+  /// No description provided for @liveTrackingServerDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable LiveTracking to share flight data with ParaBeacon Server.'**
+  String get liveTrackingServerDisabled;
+
+  /// No description provided for @liveTrackingServerPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Server sharing is paused by the LiveTracking setting.'**
+  String get liveTrackingServerPaused;
+
+  /// No description provided for @liveTrackingServerWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for an active flight.'**
+  String get liveTrackingServerWaiting;
+
+  /// No description provided for @liveTrackingServerConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening a ParaBeacon Server flight session…'**
+  String get liveTrackingServerConnecting;
+
+  /// No description provided for @liveTrackingServerActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Realtime flight data is being shared with ParaBeacon Server.'**
+  String get liveTrackingServerActive;
+
+  /// No description provided for @liveTrackingServerRetrying.
+  ///
+  /// In en, this message translates to:
+  /// **'Server connection failed; buffered flight data will retry automatically.'**
+  String get liveTrackingServerRetrying;
+
+  /// No description provided for @liveTrackingServerFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight data could not be shared. Check the server connection and account.'**
+  String get liveTrackingServerFailed;
 
   /// No description provided for @aircraftFaiClass.
   ///

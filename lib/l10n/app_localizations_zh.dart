@@ -497,6 +497,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '实时追踪开始后，当前飞行的公开状态将锁定；可为下一次飞行更改。';
 
   @override
+  String get liveTrackingShareLocationPublicly => '向其他 ParaBeacon 飞行员公开我的实时位置';
+
+  @override
+  String get liveTrackingShareLocationPubliclySubtitle =>
+      '开启后，已登录的 ParaBeacon 地图用户可以看到你活动飞行中的名称和最新位置。默认关闭，可随时关闭。';
+
+  @override
   String get liveTrackingTemporaryDisable => '暂时停止分享';
 
   @override
@@ -2889,6 +2896,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingShowNorth => '显示北方向';
+
+  @override
+  String get settingShowPublicPilots => '显示公开飞行员实时位置';
+
+  @override
+  String get settingShowPublicPilotsSubtitle =>
+      '需要登录 ParaBeacon 账户；仅显示已明确同意公开位置的飞行员。';
 
   @override
   String get settingPilotArrowSize => '飞行员箭头大小';

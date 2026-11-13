@@ -259,6 +259,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
           LiveTrackingSettings.instance.isEffectivelyEnabled &&
           ParaBeaconAccountService.instance.isSignedIn,
       pilotId: () => ParaBeaconAccountService.instance.user?.username,
+      isPubliclyShared: () =>
+          LiveTrackingSettings.instance.shareLocationPublicly,
       eligibilitySource: Listenable.merge([
         LiveTrackingSettings.instance,
         ParaBeaconAccountService.instance,

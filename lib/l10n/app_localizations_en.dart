@@ -527,6 +527,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Visibility is locked after live tracking starts. You can change it for the next flight.';
 
   @override
+  String get liveTrackingShareLocationPublicly =>
+      'Share my live location with other ParaBeacon pilots';
+
+  @override
+  String get liveTrackingShareLocationPubliclySubtitle =>
+      'When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.';
+
+  @override
   String get liveTrackingTemporaryDisable => 'Temporarily stop sharing';
 
   @override
@@ -3014,6 +3022,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingShowNorth => 'Display North direction';
+
+  @override
+  String get settingShowPublicPilots => 'Show public pilot locations';
+
+  @override
+  String get settingShowPublicPilotsSubtitle =>
+      'Requires a ParaBeacon account; only pilots who opted in to public sharing appear.';
 
   @override
   String get settingPilotArrowSize => 'Pilot arrow size';

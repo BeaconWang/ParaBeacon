@@ -33,6 +33,8 @@ class _LiveTrackingSettingsSheetState
   bool _claimContest = LiveTrackingSettings.instance.claimContest;
   bool _showPublic = LiveTrackingSettings.instance.showPublic;
   bool _flightPublic = LiveTrackingSettings.instance.flightPublic;
+  bool _shareLocationPublicly =
+      LiveTrackingSettings.instance.shareLocationPublicly;
   bool _temporaryDontShare = LiveTrackingSettings.instance.temporaryDontShare;
   bool _reportSimulatedAsReal =
       LiveTrackingSettings.instance.reportSimulatedAsReal;
@@ -53,6 +55,7 @@ class _LiveTrackingSettingsSheetState
         _claimContest = settings.claimContest;
         _showPublic = settings.showPublic;
         _flightPublic = settings.flightPublic;
+        _shareLocationPublicly = settings.shareLocationPublicly;
         _temporaryDontShare = settings.temporaryDontShare;
         _reportSimulatedAsReal = settings.reportSimulatedAsReal;
         _loading = false;
@@ -71,6 +74,7 @@ class _LiveTrackingSettingsSheetState
       claimContest: _claimContest,
       showPublic: _showPublic,
       flightPublic: _flightPublic,
+      shareLocationPublicly: _shareLocationPublicly,
       temporaryDontShare: _temporaryDontShare,
       reportSimulatedAsReal: kDebugMode ? _reportSimulatedAsReal : null,
     );
@@ -240,6 +244,26 @@ class _LiveTrackingSettingsSheetState
                                   ? null
                                   : (value) =>
                                         setState(() => _flightPublic = value),
+                            ),
+                            const Divider(height: 1),
+                            SwitchListTile(
+                              secondary: const Icon(Icons.public),
+                              title: Text(
+                                l10n.liveTrackingShareLocationPublicly,
+                              ),
+                              subtitle: Text(
+                                l10n.liveTrackingShareLocationPubliclySubtitle,
+                              ),
+                              value: _shareLocationPublicly,
+                              onChanged: _loading || !serverAccount.isSignedIn
+                                  ? null
+                                  : (value) {
+                                      setState(
+                                        () => _shareLocationPublicly = value,
+                                      );
+                                      LiveTrackingSettings.instance
+                                          .setShareLocationPublicly(value);
+                                    },
                             ),
                           ],
                         ),

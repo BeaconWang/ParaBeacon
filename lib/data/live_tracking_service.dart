@@ -193,6 +193,64 @@ class LiveTrackpoint {
   }
 }
 
+@immutable
+class PublicPilotLocation {
+  const PublicPilotLocation({
+    required this.pilotName,
+    required this.latitude,
+    required this.longitude,
+    required this.observedAt,
+    this.headingDegrees,
+  });
+
+  final String pilotName;
+  final double latitude;
+  final double longitude;
+  final DateTime observedAt;
+  final double? headingDegrees;
+
+  static PublicPilotLocation? fromJson(Object? value) {
+    if (value is! Map<String, dynamic>) return null;
+    final name = value['pilot_name'];
+    final latitude = value['lat'];
+    final longitude = value['lon'];
+    final timestamp = value['observed_at'];
+    final heading = value['heading'];
+    if (name is! String ||
+        name.trim().isEmpty ||
+        latitude is! num ||
+        longitude is! num ||
+        timestamp is! String ||
+        (heading != null && heading is! num)) {
+      return null;
+    }
+    final lat = latitude.toDouble();
+    final lon = longitude.toDouble();
+    final observedAt = DateTime.tryParse(timestamp);
+    final headingValue = heading?.toDouble();
+    if (!lat.isFinite ||
+        !lon.isFinite ||
+        lat < -90 ||
+        lat > 90 ||
+        lon < -180 ||
+        lon > 180 ||
+        observedAt == null ||
+        (headingValue != null &&
+            (!headingValue.isFinite ||
+                headingValue < 0 ||
+                headingValue >= 360))) {
+      return null;
+    }
+    return PublicPilotLocation(
+      pilotName: name.trim(),
+      latitude: lat,
+      longitude: lon,
+      observedAt: observedAt.toUtc(),
+      headingDegrees: headingValue,
+    );
+  }
+}
+
 abstract interface class LiveTrackingProxyPointStore {
   Future<List<QueuedProxyPoint>> load();
 
@@ -306,6 +364,71 @@ class LiveTrackingService extends ChangeNotifier {
   String? get sessionId => _sessionId;
   bool get isConfigured => _configured;
 
+  Future<List<PublicPilotLocation>> loadPublicPilotLocations({
+    required double west,
+    required double south,
+    required double east,
+    required double north,
+  }) async {
+    if (!_configured) {
+      throw const LiveTrackingProxyException('tracking_config_unavailable');
+    }
+    if (!west.isFinite ||
+        !east.isFinite ||
+        !south.isFinite ||
+        !north.isFinite ||
+        west < -180 ||
+        west > 180 ||
+        east < -180 ||
+        east > 180 ||
+        south < -90 ||
+        south > 90 ||
+        north < -90 ||
+        north > 90 ||
+        south >= north) {
+      throw ArgumentError('Invalid public pilot map bounds.');
+    }
+    final endpoint = _config.apiBaseUri.resolve('/api/v1/map/active-locations');
+    final locations = <PublicPilotLocation>[];
+    final cursors = <String>{};
+    String? cursor;
+    do {
+      final query = <String, String>{
+        'west': west.toStringAsPrecision(12),
+        'south': south.toStringAsPrecision(12),
+        'east': east.toStringAsPrecision(12),
+        'north': north.toStringAsPrecision(12),
+        ...?(cursor == null ? null : {'cursor': cursor}),
+      };
+      final response = await _sendAuthorizedGet(
+        endpoint.replace(queryParameters: query),
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw LiveTrackingProxyException(
+          'public_locations_http_${response.statusCode}',
+        );
+      }
+      final decoded = _decodeResponse(response.body);
+      final rawLocations = decoded?['locations'];
+      if (rawLocations is! List) {
+        throw const LiveTrackingProxyException('invalid_public_locations');
+      }
+      for (final raw in rawLocations) {
+        final location = PublicPilotLocation.fromJson(raw);
+        if (location != null) locations.add(location);
+      }
+      final nextCursor = decoded?['next_cursor'];
+      if (nextCursor is! String || nextCursor.isEmpty) break;
+      if (!cursors.add(nextCursor)) {
+        throw const LiveTrackingProxyException(
+          'invalid_public_locations_cursor',
+        );
+      }
+      cursor = nextCursor;
+    } while (true);
+    return locations;
+  }
+
   void configure(LiveTrackingConfig? config) {
     if (_sessionId != null || _starting || _endingSessions.isNotEmpty) {
       throw StateError(
@@ -335,6 +458,8 @@ class LiveTrackingService extends ChangeNotifier {
   Listenable? _eligibilitySource;
   bool Function()? _isEnabled;
   String? Function()? _pilotId;
+  bool Function()? _isPubliclyShared;
+  bool? _sessionPubliclyShared;
   bool _loadedQueue = false;
   Future<void>? _queueLoadFuture;
   bool _starting = false;
@@ -357,6 +482,7 @@ class LiveTrackingService extends ChangeNotifier {
     required FlightState flightState,
     required bool Function() isEnabled,
     required String? Function() pilotId,
+    bool Function()? isPubliclyShared,
     Listenable? eligibilitySource,
   }) {
     unbind();
@@ -364,6 +490,7 @@ class LiveTrackingService extends ChangeNotifier {
     _flightState = flightState;
     _isEnabled = isEnabled;
     _pilotId = pilotId;
+    _isPubliclyShared = isPubliclyShared;
     _eligibilitySource = eligibilitySource;
     data.addListener(_onDataChanged);
     flightState.addListener(_queueLifecycleSync);
@@ -408,6 +535,8 @@ class LiveTrackingService extends ChangeNotifier {
     _eligibilitySource = null;
     _isEnabled = null;
     _pilotId = null;
+    _isPubliclyShared = null;
+    _sessionPubliclyShared = null;
     if (!_disposed) _setState(LiveTrackingConnectionState.idle);
   }
 
@@ -459,7 +588,11 @@ class LiveTrackingService extends ChangeNotifier {
       return;
     }
     if (_shouldTrack) {
-      if (_sessionId == null && !_starting) await _startSession();
+      if (_sessionId == null && !_starting) {
+        await _startSession();
+      } else if (_sessionId != null) {
+        await _syncPublicSharing();
+      }
       return;
     }
     if (_sessionId != null || _starting) {
@@ -482,11 +615,35 @@ class LiveTrackingService extends ChangeNotifier {
     }
   }
 
+  Future<void> _syncPublicSharing() async {
+    final sessionId = _sessionId;
+    if (sessionId == null) return;
+    final desired = _isPubliclyShared?.call() ?? false;
+    if (_sessionPubliclyShared == desired) return;
+    final uri = _config.apiBaseUri.resolve(
+      '/api/v1/tracking/sessions/${Uri.encodeComponent(sessionId)}/public-sharing',
+    );
+    final response = await _sendJson(
+      method: 'PATCH',
+      uri: uri,
+      body: {'publicly_share': desired},
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw LiveTrackingProxyException(
+        'public_sharing_http_${response.statusCode}',
+      );
+    }
+    _sessionPubliclyShared = desired;
+    _lastErrorCode = null;
+    _notify();
+  }
+
   Future<void> _startSession() async {
     if (_starting || !_shouldTrack) return;
     final bindingEpoch = _bindingEpoch;
     final pilotId = _pilotId?.call()?.trim();
     final startTime = _flightState?.startedAt;
+    final publiclyShare = _isPubliclyShared?.call() ?? false;
     if (pilotId == null || pilotId.isEmpty || startTime == null) {
       throw const LiveTrackingProxyException('pilot_or_start_time_missing');
     }
@@ -500,6 +657,7 @@ class LiveTrackingService extends ChangeNotifier {
         body: {
           'pilot_name': pilotId,
           'start_time': startTime.toUtc().toIso8601String(),
+          'publicly_share': publiclyShare,
         },
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -520,6 +678,7 @@ class LiveTrackingService extends ChangeNotifier {
       _pending.removeWhere((queued) => queued.sessionId != activeSessionId);
       if (_pending.length != queuedPointCount) await _persistQueue();
       _sessionId = activeSessionId;
+      _sessionPubliclyShared = publiclyShare;
       _flushWhileIdle = false;
       _lastPointTimestamp = null;
       _lastErrorCode = null;
@@ -669,12 +828,34 @@ class LiveTrackingService extends ChangeNotifier {
     });
   }
 
+  Future<http.Response> _sendAuthorizedGet(Uri uri) async {
+    if (!_isTrustedApiUri(uri)) {
+      throw const LiveTrackingProxyException('untrusted_proxy_uri');
+    }
+    final request = http.Request('GET', uri)
+      ..followRedirects = false
+      ..headers.addAll({
+        'Accept': 'application/json',
+        ...await _authProvider.authorizationHeaders(),
+      });
+    final streamed = await _httpClient
+        .send(request)
+        .timeout(_config.requestTimeout);
+    return http.Response.fromStream(streamed).timeout(_config.requestTimeout);
+  }
+
+  bool _isTrustedApiUri(Uri uri) =>
+      uri.scheme == 'https' &&
+      uri.host.toLowerCase() == _config.apiBaseUri.host.toLowerCase() &&
+      uri.port == _config.apiBaseUri.port &&
+      uri.userInfo.isEmpty;
+
   Future<http.Response> _sendJson({
     required String method,
     required Uri uri,
     required Map<String, Object?> body,
   }) async {
-    if (uri.scheme != 'https' || uri.host != _config.apiBaseUri.host) {
+    if (!_isTrustedApiUri(uri)) {
       throw const LiveTrackingProxyException('untrusted_proxy_uri');
     }
     final headers = <String, String>{
@@ -720,11 +901,8 @@ class LiveTrackingService extends ChangeNotifier {
     _retryAttempt++;
     _retryTimer = Timer(Duration(seconds: seconds), () {
       _retryTimer = null;
-      if (_shouldTrack && _sessionId == null) {
-        _queueLifecycleSync();
-      } else {
-        unawaited(_flushPending());
-      }
+      if (_shouldTrack) _queueLifecycleSync();
+      unawaited(_flushPending());
     });
   }
 

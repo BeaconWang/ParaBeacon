@@ -188,6 +188,9 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
         return SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(label),
+          subtitle: setting.key == 'showPublicPilots'
+              ? Text(l10n.settingShowPublicPilotsSubtitle)
+              : null,
           value: value,
           onChanged: (v) => _set(setting.key, v),
         );

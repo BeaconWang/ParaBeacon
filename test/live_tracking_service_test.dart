@@ -9,6 +9,8 @@ import 'package:parabeacon/data/flight_state.dart';
 import 'package:parabeacon/data/live_tracking_config.dart';
 import 'package:parabeacon/data/live_tracking_proxy_auth_service.dart';
 import 'package:parabeacon/data/live_tracking_service.dart';
+import 'package:parabeacon/data/live_tracking_settings.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +22,22 @@ void main() {
   tearDown(() {
     FlightState.instance.stop();
   });
+
+  test(
+    'public location sharing is off by default and persists opt-in',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = LiveTrackingSettings.instance;
+
+      await settings.load();
+      expect(settings.shareLocationPublicly, isFalse);
+
+      await settings.setShareLocationPublicly(true);
+      final preferences = await SharedPreferences.getInstance();
+      expect(preferences.getBool('ParaBeacon.ShareLocationPublicly'), isTrue);
+      await settings.setShareLocationPublicly(false);
+    },
+  );
 
   test('loads endpoints and settings from the bundled JSON asset', () async {
     final config = await LiveTrackingConfigLoader().load();
@@ -137,24 +155,89 @@ void main() {
   });
 
   test(
-    'starts a session on active flight and uploads authenticated batches',
+    'loads all public pilot location pages for a validated viewport',
     () async {
-      final startTime = DateTime.utc(2026, 3, 4, 5, 6, 7);
       final requests = <http.Request>[];
       final client = MockClient((request) async {
         requests.add(request);
         expect(request.headers['authorization'], 'Bearer proxy-test-token');
+        expect(request.method, 'GET');
+        expect(request.url.path, '/api/v1/map/active-locations');
+        expect(request.url.queryParameters['west'], '8.00000000000');
+        expect(request.url.queryParameters['south'], '47.0000000000');
+        expect(request.url.queryParameters['east'], '9.00000000000');
+        expect(request.url.queryParameters['north'], '48.0000000000');
+        if (requests.length == 1) {
+          expect(request.url.queryParameters.containsKey('cursor'), isFalse);
+          return http.Response(
+            jsonEncode({
+              'locations': [
+                {
+                  'pilot_name': 'pilot_one',
+                  'lat': 47.1,
+                  'lon': 8.5,
+                  'heading': 120.0,
+                  'observed_at': '2026-03-04T05:06:09.000Z',
+                },
+              ],
+              'next_cursor': 'cursor-page-two',
+            }),
+            200,
+          );
+        }
+        expect(request.url.queryParameters['cursor'], 'cursor-page-two');
+        return http.Response(
+          jsonEncode({'locations': [], 'next_cursor': ''}),
+          200,
+        );
+      });
+      final service = LiveTrackingService(
+        config: _config(),
+        authProvider: _TestProxyAuthProvider(),
+        pointStore: _MemoryProxyPointStore(),
+        httpClient: client,
+      );
+      addTearDown(service.shutdown);
+      addTearDown(client.close);
+
+      final locations = await service.loadPublicPilotLocations(
+        west: 8,
+        south: 47,
+        east: 9,
+        north: 48,
+      );
+
+      expect(requests, hasLength(2));
+      expect(locations, hasLength(1));
+      expect(locations.single.pilotName, 'pilot_one');
+      expect(locations.single.latitude, 47.1);
+      expect(locations.single.headingDegrees, 120);
+      expect(locations.single.observedAt, DateTime.utc(2026, 3, 4, 5, 6, 9));
+    },
+  );
+
+  test(
+    'starts a session on active flight and uploads authenticated batches',
+    () async {
+      final startTime = DateTime.utc(2026, 3, 4, 5, 6, 7);
+      final requests = <http.Request>[];
+      var sharePublicly = true;
+      final eligibilitySource = ChangeNotifier();
+      final client = MockClient((request) async {
+        requests.add(request);
+        expect(request.headers['authorization'], 'Bearer proxy-test-token');
         if (request.url.path == '/api/v1/tracking/sessions') {
-          expect(request.method, 'POST');
-          expect(jsonDecode(request.body), {
-            'pilot_name': 'pilot-42',
-            'start_time': startTime.toIso8601String(),
-          });
           return http.Response(
             jsonEncode({'session_id': 'session-123'}),
             201,
             headers: {'content-type': 'application/json'},
           );
+        }
+        if (request.url.path ==
+            '/api/v1/tracking/sessions/session-123/public-sharing') {
+          expect(request.method, 'PATCH');
+          expect(jsonDecode(request.body), {'publicly_share': false});
+          return http.Response('', 204);
         }
         if (request.url.path == '/api/v1/tracking/sessions/session-123/stop') {
           expect(request.method, 'POST');
@@ -211,6 +294,8 @@ void main() {
         flightState: FlightState.instance,
         isEnabled: () => true,
         pilotId: () => 'pilot-42',
+        isPubliclyShared: () => sharePublicly,
+        eligibilitySource: eligibilitySource,
       );
 
       FlightState.instance.start(at: startTime);
@@ -224,6 +309,19 @@ void main() {
         '/api/v1/tracking/sessions',
         '/api/v1/tracking/sessions/session-123/points',
       ]);
+      expect(jsonDecode(requests.first.body), {
+        'pilot_name': 'pilot-42',
+        'start_time': startTime.toIso8601String(),
+        'publicly_share': true,
+      });
+
+      sharePublicly = false;
+      eligibilitySource.notifyListeners();
+      await pumpEventQueue(times: 20);
+      expect(
+        requests.map((request) => request.url.path),
+        contains('/api/v1/tracking/sessions/session-123/public-sharing'),
+      );
 
       FlightState.instance.stop();
       await pumpEventQueue(times: 10);
@@ -235,6 +333,7 @@ void main() {
       await service.shutdown();
       client.close();
       data.dispose();
+      eligibilitySource.dispose();
     },
   );
 

@@ -19,6 +19,8 @@ import '../data/gcj02.dart';
 import '../data/landing_point_store.dart';
 import '../data/takeoff_reference.dart';
 import '../data/offline_tiles_service.dart';
+import '../data/live_tracking_service.dart' as server_tracking;
+import '../data/parabeacon_account_service.dart';
 import '../data/map_tile_cache.dart';
 import '../data/map_source.dart' show defaultMapSourceIdForLocale;
 import '../data/solar_position.dart';
@@ -289,9 +291,9 @@ class MapControl extends StatefulWidget {
   /// MapControl never creates or persists landing points.
   final ValueChanged<LatLng>? onMapTap;
 
-  /// Draw other public/followed pilots streamed from XContest live tracking
-  /// (only visible while "Show public tracking" is on and a live session is
-  /// active). Fed from [XContestLiveTrackingService.otherPilots].
+  /// Draw public XContest pilots and opted-in ParaBeacon pilots. ParaBeacon
+  /// locations are fetched only for the current map viewport and signed-in
+  /// users; the setting controls the overlay and its refresh requests.
   final bool showOtherPilots;
 
   /// Optional WGS-84 location marker, for map-based selection flows.
@@ -337,7 +339,7 @@ class MapControl extends StatefulWidget {
     this.showStatus = true,
     this.active = false,
     this.onMapTap,
-    this.showOtherPilots = true,
+    this.showOtherPilots = false,
     this.selectionMarker,
   }) : _tileSource = tileSource;
 
@@ -405,6 +407,10 @@ class _MapControlState extends State<MapControl> {
   /// Last heading (deg) seen from the feed, used for track-up rotation and the
   /// bearing line.
   double _lastHeading = 0.0;
+  List<server_tracking.PublicPilotLocation> _serverPilotLocations = const [];
+  Timer? _serverPilotRefreshTimer;
+  Timer? _serverPilotDebounceTimer;
+  int _serverPilotRequestId = 0;
 
   /// Self-contained thermal detector fed from the flight-data / GPS feed.
   final ThermalDetector _thermalDetector = ThermalDetector();
@@ -459,8 +465,10 @@ class _MapControlState extends State<MapControl> {
     // map should immediately switch to the simulated position (highest
     // priority), and when it turns off fall back to real device GPS / BLE.
     DebugSettings.instance.addListener(_onExternalChange);
-    // Redraw when other public pilots' positions change.
+    // Redraw when public XContest pilots change.
     XContestLiveTrackingService.instance.addListener(_onExternalChange);
+    ParaBeaconAccountService.instance.addListener(_onPublicPilotAccountChanged);
+    if (widget.showOtherPilots) _startPublicPilotRefreshTimer();
   }
 
   @override
@@ -515,6 +523,18 @@ class _MapControlState extends State<MapControl> {
     if (oldWidget.follow != widget.follow) {
       _follow = widget.follow;
     }
+    if (oldWidget.showOtherPilots != widget.showOtherPilots) {
+      _serverPilotRequestId++;
+      _serverPilotDebounceTimer?.cancel();
+      if (widget.showOtherPilots) {
+        _startPublicPilotRefreshTimer();
+        _schedulePublicPilotRefresh(Duration.zero);
+      } else {
+        _serverPilotRefreshTimer?.cancel();
+        _serverPilotRefreshTimer = null;
+        _serverPilotLocations = const [];
+      }
+    }
     // Switching rotation mode: snap back to north-up when leaving track-up, and
     // re-apply the heading rotation when entering it.
     if (oldWidget.trackUp != widget.trackUp) {
@@ -531,6 +551,9 @@ class _MapControlState extends State<MapControl> {
   @override
   void dispose() {
     _tileRetryTimer?.cancel();
+    _serverPilotRefreshTimer?.cancel();
+    _serverPilotDebounceTimer?.cancel();
+    _serverPilotRequestId++;
     _tileResetCtrl.close();
     _airspaceSub?.cancel();
     OfflineTilesService.instance.revision.removeListener(_onExternalChange);
@@ -543,6 +566,9 @@ class _MapControlState extends State<MapControl> {
     VarioColorSettings.instance.removeListener(_onExternalChange);
     DebugSettings.instance.removeListener(_onExternalChange);
     XContestLiveTrackingService.instance.removeListener(_onExternalChange);
+    ParaBeaconAccountService.instance.removeListener(
+      _onPublicPilotAccountChanged,
+    );
     super.dispose();
   }
 
@@ -636,6 +662,101 @@ class _MapControlState extends State<MapControl> {
     if (!source.requiresGcjShift) return mapPosition;
     final wgs = Gcj02.gcjToWgs(mapPosition.latitude, mapPosition.longitude);
     return LatLng(wgs[0], wgs[1]);
+  }
+
+  void _startPublicPilotRefreshTimer() {
+    _serverPilotRefreshTimer ??= Timer.periodic(
+      const Duration(seconds: 15),
+      (_) => _schedulePublicPilotRefresh(Duration.zero),
+    );
+  }
+
+  void _schedulePublicPilotRefresh([
+    Duration delay = const Duration(milliseconds: 500),
+  ]) {
+    if (!widget.showOtherPilots ||
+        !ParaBeaconAccountService.instance.isSignedIn) {
+      return;
+    }
+    _serverPilotDebounceTimer?.cancel();
+    _serverPilotDebounceTimer = Timer(delay, () {
+      _serverPilotDebounceTimer = null;
+      unawaited(_refreshPublicPilotLocations());
+    });
+  }
+
+  void _onPublicPilotAccountChanged() {
+    if (!ParaBeaconAccountService.instance.isSignedIn) {
+      _serverPilotRequestId++;
+      _serverPilotRefreshTimer?.cancel();
+      _serverPilotRefreshTimer = null;
+      _serverPilotDebounceTimer?.cancel();
+      _serverPilotDebounceTimer = null;
+      if (_serverPilotLocations.isNotEmpty && mounted) {
+        setState(() => _serverPilotLocations = const []);
+      }
+      return;
+    }
+    if (widget.showOtherPilots) _startPublicPilotRefreshTimer();
+    _schedulePublicPilotRefresh(Duration.zero);
+  }
+
+  Future<void> _refreshPublicPilotLocations() async {
+    if (!mounted ||
+        !_ready ||
+        !widget.showOtherPilots ||
+        !ParaBeaconAccountService.instance.isSignedIn) {
+      return;
+    }
+    final requestId = ++_serverPilotRequestId;
+    try {
+      final bounds = _map.camera.visibleBounds;
+      final middleLatitude = (bounds.north + bounds.south) / 2;
+      final westWgs = _unshift(
+        LatLng(middleLatitude, bounds.west),
+        widget.tileSource,
+      ).longitude;
+      final eastWgs = _unshift(
+        LatLng(middleLatitude, bounds.east),
+        widget.tileSource,
+      ).longitude;
+      final corners = [
+        LatLng(bounds.south, bounds.west),
+        LatLng(bounds.south, bounds.east),
+        LatLng(bounds.north, bounds.west),
+        LatLng(bounds.north, bounds.east),
+      ].map((point) => _unshift(point, widget.tileSource));
+      final latitudes = corners.map((point) => point.latitude).toList();
+      final southLatitude = latitudes.reduce((a, b) => a < b ? a : b);
+      final northLatitude = latitudes.reduce((a, b) => a > b ? a : b);
+      double wrapLongitude(double value) =>
+          ((value + 180) % 360 + 360) % 360 - 180;
+      final longitudePadding = (bounds.east - bounds.west).abs() >= 359.9
+          ? 0.0
+          : 0.05;
+      final west = longitudePadding == 0
+          ? -180.0
+          : wrapLongitude(westWgs - longitudePadding);
+      final east = longitudePadding == 0
+          ? 180.0
+          : wrapLongitude(eastWgs + longitudePadding);
+      final locations = await server_tracking.LiveTrackingService.instance
+          .loadPublicPilotLocations(
+            west: west,
+            south: (southLatitude - 0.05).clamp(-90, 90).toDouble(),
+            east: east,
+            north: (northLatitude + 0.05).clamp(-90, 90).toDouble(),
+          );
+      if (!mounted ||
+          requestId != _serverPilotRequestId ||
+          !widget.showOtherPilots) {
+        return;
+      }
+      setState(() => _serverPilotLocations = locations);
+    } on Object {
+      if (!mounted || requestId != _serverPilotRequestId) return;
+      setState(() => _serverPilotLocations = const []);
+    }
   }
 
   bool get _offlineActive => OfflineTilesService.instance.isActive;
@@ -820,7 +941,9 @@ class _MapControlState extends State<MapControl> {
         ),
     ];
 
-    // Other public/followed pilots from XContest live tracking.
+    // Other public/followed pilots from XContest and consented ParaBeacon
+    // sessions. Server locations are shown only while their fix is fresh.
+    final publicPilotNow = DateTime.now().toUtc();
     final otherPilotMarkers = <Marker>[
       if (widget.showOtherPilots)
         for (final pilot in XContestLiveTrackingService.instance.otherPilots)
@@ -835,6 +958,27 @@ class _MapControlState extends State<MapControl> {
               landed: pilot.landed,
             ),
           ),
+      if (widget.showOtherPilots)
+        for (final pilot in _serverPilotLocations)
+          if (publicPilotNow.difference(pilot.observedAt) <=
+                  const Duration(seconds: 90) &&
+              !pilot.observedAt.isAfter(
+                publicPilotNow.add(const Duration(seconds: 5)),
+              ))
+            Marker(
+              point: _shift(
+                LatLng(pilot.latitude, pilot.longitude),
+                widget.tileSource,
+              ),
+              width: 120,
+              height: 56,
+              alignment: Alignment.topCenter,
+              child: _OtherPilotMarker(
+                name: pilot.pilotName,
+                color: theme.colorScheme.tertiary,
+                landed: false,
+              ),
+            ),
     ];
     final taskRoute = widget.showTask && wgs != null
         ? CompetitionTaskStore.instance.liveRouteToGoal(
@@ -842,6 +986,9 @@ class _MapControlState extends State<MapControl> {
             wgs.longitude,
           )
         : null;
+    final taskMarkers = widget.showTask
+        ? _buildTaskMarkers()
+        : const <Marker>[];
 
     return _SuppressPageSwipe(
       child: Stack(
@@ -880,11 +1027,13 @@ class _MapControlState extends State<MapControl> {
                       _zoom = camera.zoom;
                     });
                   }
+                  _schedulePublicPilotRefresh();
                 },
                 onMapReady: () {
                   _ready = true;
                   final p = _lastWgs;
                   if (p != null) _maybeFollow(p);
+                  _schedulePublicPilotRefresh(Duration.zero);
                 },
               ),
               children: [
@@ -918,7 +1067,7 @@ class _MapControlState extends State<MapControl> {
                     ),
                     MarkerLayer(markers: _buildRouteTouchMarkers(taskRoute)),
                   ],
-                  MarkerLayer(markers: _buildTaskMarkers()),
+                  if (taskMarkers.isNotEmpty) MarkerLayer(markers: taskMarkers),
                 ],
 
                 // Bearing (course) line projected ahead along the ground track.

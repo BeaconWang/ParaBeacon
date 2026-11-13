@@ -10,14 +10,15 @@ class LiveTrackingSettings extends ChangeNotifier {
   static const _kClaimContest = 'Livetrack.ClaimContest';
   static const _kShowPublic = 'Livetrack.ShowPublic';
   static const _kFlightPublic = 'Livetrack.FlightPublic';
+  static const _kShareLocationPublicly = 'ParaBeacon.ShareLocationPublicly';
   static const _kTemporaryDontShare = 'Internal.LiveTempDontShare';
-  static const _kReportSimulatedAsReal =
-      'Internal.LiveReportSimulatedAsReal';
+  static const _kReportSimulatedAsReal = 'Internal.LiveReportSimulatedAsReal';
 
   bool _enabled = false;
   bool _claimContest = true;
   bool _showPublic = true;
   bool _flightPublic = true;
+  bool _shareLocationPublicly = false;
   bool _temporaryDontShare = false;
   bool _reportSimulatedAsReal = false;
   bool _loaded = false;
@@ -27,6 +28,7 @@ class LiveTrackingSettings extends ChangeNotifier {
   bool get claimContest => _claimContest;
   bool get showPublic => _showPublic;
   bool get flightPublic => _flightPublic;
+  bool get shareLocationPublicly => _shareLocationPublicly;
   bool get temporaryDontShare => _temporaryDontShare;
 
   /// Debug-only: when on, a simulated/mock feed is uploaded WITHOUT the
@@ -53,6 +55,9 @@ class LiveTrackingSettings extends ChangeNotifier {
       _claimContest = preferences.getBool(_kClaimContest) ?? _claimContest;
       _showPublic = preferences.getBool(_kShowPublic) ?? _showPublic;
       _flightPublic = preferences.getBool(_kFlightPublic) ?? _flightPublic;
+      _shareLocationPublicly =
+          preferences.getBool(_kShareLocationPublicly) ??
+          _shareLocationPublicly;
       _temporaryDontShare =
           preferences.getBool(_kTemporaryDontShare) ?? _temporaryDontShare;
       _reportSimulatedAsReal =
@@ -69,6 +74,7 @@ class LiveTrackingSettings extends ChangeNotifier {
     required bool claimContest,
     required bool showPublic,
     required bool flightPublic,
+    required bool shareLocationPublicly,
     required bool temporaryDontShare,
     bool? reportSimulatedAsReal,
   }) async {
@@ -76,6 +82,7 @@ class LiveTrackingSettings extends ChangeNotifier {
     _claimContest = claimContest;
     _showPublic = showPublic;
     _flightPublic = flightPublic;
+    _shareLocationPublicly = shareLocationPublicly;
     _temporaryDontShare = temporaryDontShare;
     if (reportSimulatedAsReal != null) {
       _reportSimulatedAsReal = reportSimulatedAsReal;
@@ -88,6 +95,10 @@ class LiveTrackingSettings extends ChangeNotifier {
       await preferences.setBool(_kClaimContest, _claimContest);
       await preferences.setBool(_kShowPublic, _showPublic);
       await preferences.setBool(_kFlightPublic, _flightPublic);
+      await preferences.setBool(
+        _kShareLocationPublicly,
+        _shareLocationPublicly,
+      );
       await preferences.setBool(_kTemporaryDontShare, _temporaryDontShare);
       await preferences.setBool(
         _kReportSimulatedAsReal,
@@ -128,6 +139,19 @@ class LiveTrackingSettings extends ChangeNotifier {
     try {
       final preferences = await SharedPreferences.getInstance();
       await preferences.setBool(_kShowPublic, value);
+    } catch (_) {
+      // In-memory value still applies; persistence can retry later.
+    }
+  }
+
+  /// Immediately applies and persists the ParaBeacon public-location consent.
+  Future<void> setShareLocationPublicly(bool value) async {
+    if (_shareLocationPublicly == value) return;
+    _shareLocationPublicly = value;
+    notifyListeners();
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(_kShareLocationPublicly, value);
     } catch (_) {
       // In-memory value still applies; persistence can retry later.
     }

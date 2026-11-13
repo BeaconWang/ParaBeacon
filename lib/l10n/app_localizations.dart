@@ -1040,6 +1040,18 @@ abstract class AppLocalizations {
   /// **'Visibility is locked after live tracking starts. You can change it for the next flight.'**
   String get liveTrackingFlightPublicLockedSubtitle;
 
+  /// No description provided for @liveTrackingShareLocationPublicly.
+  ///
+  /// In en, this message translates to:
+  /// **'Share my live location with other ParaBeacon pilots'**
+  String get liveTrackingShareLocationPublicly;
+
+  /// No description provided for @liveTrackingShareLocationPubliclySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.'**
+  String get liveTrackingShareLocationPubliclySubtitle;
+
   /// No description provided for @liveTrackingTemporaryDisable.
   ///
   /// In en, this message translates to:
@@ -5695,6 +5707,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Display North direction'**
   String get settingShowNorth;
+
+  /// No description provided for @settingShowPublicPilots.
+  ///
+  /// In en, this message translates to:
+  /// **'Show public pilot locations'**
+  String get settingShowPublicPilots;
+
+  /// No description provided for @settingShowPublicPilotsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires a ParaBeacon account; only pilots who opted in to public sharing appear.'**
+  String get settingShowPublicPilotsSubtitle;
 
   /// No description provided for @settingPilotArrowSize.
   ///

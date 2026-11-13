@@ -255,6 +255,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingRotation;
     case 'showNorth':
       return l10n.settingShowNorth;
+    case 'showPublicPilots':
+      return l10n.settingShowPublicPilots;
     case 'pilotArrowCoef':
       return l10n.settingPilotArrowSize;
     case 'lineThickness':
@@ -1022,6 +1024,11 @@ const Map<String, List<ControlSetting>> _typeSettings = {
     ControlSetting.toggle(
       key: 'showNorth',
       label: 'Display North direction',
+      defaultValue: false,
+    ),
+    ControlSetting.toggle(
+      key: 'showPublicPilots',
+      label: 'Show public pilots',
       defaultValue: false,
     ),
     ControlSetting.slider(

@@ -9,14 +9,26 @@ import 'package:parabeacon/l10n/app_localizations.dart';
 
 void main() {
   test('competition task setting follows the selected app language', () async {
-    final setting = settingsSchemaFor('map').singleWhere(
-      (setting) => setting.key == 'showTask',
-    );
+    final setting = settingsSchemaFor(
+      'map',
+    ).singleWhere((setting) => setting.key == 'showTask');
     final english = await AppLocalizations.delegate.load(const Locale('en'));
     final chinese = await AppLocalizations.delegate.load(const Locale('zh'));
 
     expect(setting.labelOf(english), 'Show competition task');
     expect(setting.labelOf(chinese), '显示竞赛航线');
+  });
+
+  test('public pilot locations are opt-in and localized', () async {
+    final setting = settingsSchemaFor(
+      'map',
+    ).singleWhere((setting) => setting.key == 'showPublicPilots');
+    final english = await AppLocalizations.delegate.load(const Locale('en'));
+    final chinese = await AppLocalizations.delegate.load(const Locale('zh'));
+
+    expect(setting.defaultValue, isFalse);
+    expect(setting.labelOf(english), 'Show public pilot locations');
+    expect(setting.labelOf(chinese), '显示公开飞行员实时位置');
   });
 
   test('landing widgets have separately configurable arrow colors', () {
@@ -185,6 +197,14 @@ void main() {
 
     expect(find.text('Show landing points'), findsNothing);
 
+    await reveal('Show public pilot locations');
+    expect(
+      find.text(
+        'Requires a ParaBeacon account; only pilots who opted in to public sharing appear.',
+      ),
+      findsOneWidget,
+    );
+
     await reveal('Show take-off point');
     expect(find.text('Take-off marker color'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
@@ -236,22 +256,25 @@ void main() {
     expect(mapType.id, control.type.id);
   });
 
-  test('legacy LastLanding map setting keys migrate to NearestLanding keys', () {
-    final control = PlacedControl.fromJson({
-      'typeId': 'map',
-      'settings': {
-        'showLastLandingLine': true,
-        'showNearestLandingLine': false,
-        'lastLandingPointColor': 0xFF123456,
-        'lastLandingLineColor': 0xFF654321,
-      },
-    })!;
+  test(
+    'legacy LastLanding map setting keys migrate to NearestLanding keys',
+    () {
+      final control = PlacedControl.fromJson({
+        'typeId': 'map',
+        'settings': {
+          'showLastLandingLine': true,
+          'showNearestLandingLine': false,
+          'lastLandingPointColor': 0xFF123456,
+          'lastLandingLineColor': 0xFF654321,
+        },
+      })!;
 
-    expect(control.boolSetting('showNearestLandingLine'), isFalse);
-    expect(control.settings['nearestLandingPointColor'], 0xFF123456);
-    expect(control.settings['nearestLandingLineColor'], 0xFF654321);
-    expect(control.settings.containsKey('showLastLandingLine'), isFalse);
-    expect(control.settings.containsKey('lastLandingPointColor'), isFalse);
-    expect(control.settings.containsKey('lastLandingLineColor'), isFalse);
-  });
+      expect(control.boolSetting('showNearestLandingLine'), isFalse);
+      expect(control.settings['nearestLandingPointColor'], 0xFF123456);
+      expect(control.settings['nearestLandingLineColor'], 0xFF654321);
+      expect(control.settings.containsKey('showLastLandingLine'), isFalse);
+      expect(control.settings.containsKey('lastLandingPointColor'), isFalse);
+      expect(control.settings.containsKey('lastLandingLineColor'), isFalse);
+    },
+  );
 }

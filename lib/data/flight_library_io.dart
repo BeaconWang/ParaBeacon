@@ -83,6 +83,21 @@ class FlightLibraryIO {
 
   // ── Export ─────────────────────────────────────────────────────────────
 
+  /// Builds a maximally compressed one-flight `.flight.zip` package.
+  List<int> buildFlightPackage(FlightTrack track) {
+    final archive = Archive();
+    _addJson(archive, 'flight.json', track.toJson());
+    return ZipEncoder().encode(
+          archive,
+          level: Deflate.BEST_COMPRESSION,
+          modified: DateTime.utc(1980),
+        ) ??
+        const <int>[];
+  }
+
+  Future<Uint8List> buildFlightPackageInWorker(FlightTrack track) async =>
+      Uint8List.fromList(await compute(_buildFlightPackageInWorker, track));
+
   /// Builds the `.pbflights.zip` archive bytes for [tracks].
   List<int> buildBundle(List<FlightTrack> tracks) {
     final archive = Archive();
@@ -250,3 +265,7 @@ class FlightLibraryIO {
 @pragma('vm:entry-point')
 List<int> _buildFlightBundleInWorker(List<FlightTrack> tracks) =>
     FlightLibraryIO.instance.buildBundle(tracks);
+
+@pragma('vm:entry-point')
+List<int> _buildFlightPackageInWorker(FlightTrack track) =>
+    FlightLibraryIO.instance.buildFlightPackage(track);

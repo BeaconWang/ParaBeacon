@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'flight_library_io.dart';
 import 'flight_recorder.dart';
 import 'parabeacon_account_service.dart';
 import 'user_agent_settings.dart';
@@ -37,11 +38,8 @@ class FlightLogSyncService {
 
   static final FlightLogSyncService instance = FlightLogSyncService();
   static const _maxSnapshotTracks = 500;
-  static const _maxSyncBatchRecords = 50;
-  static const _maxFlightBytes = 18 * 1024 * 1024;
-  static const _maxSnapshotBytes = 512 * 1024 * 1024;
-  static const _targetSyncBatchBytes = 8 * 1024 * 1024;
-  static const _maxSyncBatchBodyBytes = 19 * 1024 * 1024;
+  static const _maxFlightArchiveBytes = 24 * 1024 * 1024;
+  static const _maxSnapshotArchiveBytes = 512 * 1024 * 1024;
   static const _pageSize = 10;
   static const _requestTimeout = Duration(seconds: 120);
 
@@ -82,66 +80,42 @@ class FlightLogSyncService {
       throw const FormatException('Invalid ParaBeacon Server sync session.');
     }
 
-    final batchPrefix = '{"flights":[';
-    const batchSuffix = ']}';
-    final envelopeBytes = utf8.encode('$batchPrefix$batchSuffix').length;
-    var batch = <String>[];
-    var batchBytes = envelopeBytes;
-    var batchIndex = 0;
     var snapshotBytes = 0;
+    for (var index = 0; index < snapshot.length; index++) {
+      final package = await FlightLibraryIO.instance.buildFlightPackageInWorker(
+        snapshot[index],
+      );
+      if (package.isEmpty || package.length > _maxFlightArchiveBytes) {
+        throw const FormatException('A flight package is too large to sync.');
+      }
+      snapshotBytes += package.length;
+      if (snapshotBytes > _maxSnapshotArchiveBytes) {
+        throw const FormatException('The flight library is too large to sync.');
+      }
 
-    Future<void> uploadBatch() async {
-      if (batch.isEmpty) return;
       final endpoint = _syncSessionsEndpoint.replace(
         path:
-            '${_syncSessionsEndpoint.path}/${Uri.encodeComponent(syncId)}/batches/$batchIndex',
+            '${_syncSessionsEndpoint.path}/${Uri.encodeComponent(syncId)}/flights/$index',
       );
       final response = await _client
           .put(
             endpoint,
-            headers: await _headers(),
-            body: '$batchPrefix${batch.join(',')}$batchSuffix',
+            headers: {...await _headers(), 'Content-Type': 'application/zip'},
+            body: package,
           )
           .timeout(_requestTimeout);
       final payload = _decodeResponse(response, endpoint: endpoint);
-      if (_readCount(payload['accepted']) != batch.length ||
-          _readCount(payload['batch_index']) != batchIndex) {
+      final archiveId = payload['archive_id'];
+      if (payload['accepted'] != true ||
+          archiveId is! String ||
+          !RegExp(
+            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+          ).hasMatch(archiveId)) {
         throw const FormatException(
-          'Invalid ParaBeacon Server batch response.',
+          'Invalid ParaBeacon Server flight archive response.',
         );
       }
-      batchIndex++;
-      batch = <String>[];
-      batchBytes = envelopeBytes;
     }
-
-    for (final track in snapshot) {
-      final record = jsonEncode(track.toJson());
-      final recordBytes = utf8.encode(record).length;
-      if (recordBytes > _maxFlightBytes) {
-        throw const FormatException('A flight record is too large to sync.');
-      }
-      snapshotBytes += recordBytes;
-      if (snapshotBytes > _maxSnapshotBytes) {
-        throw const FormatException('The flight library is too large to sync.');
-      }
-      final candidateBytes = batchBytes + (batch.isEmpty ? 0 : 1) + recordBytes;
-      if (batch.isNotEmpty &&
-          (batch.length >= _maxSyncBatchRecords ||
-              candidateBytes > _targetSyncBatchBytes ||
-              candidateBytes > _maxSyncBatchBodyBytes)) {
-        await uploadBatch();
-      }
-      final nextBatchBytes = batchBytes + (batch.isEmpty ? 0 : 1) + recordBytes;
-      if (nextBatchBytes > _maxSyncBatchBodyBytes) {
-        throw const FormatException(
-          'A flight record exceeds the sync batch limit.',
-        );
-      }
-      batch.add(record);
-      batchBytes = nextBatchBytes;
-    }
-    await uploadBatch();
 
     final commitEndpoint = _syncSessionsEndpoint.replace(
       path:

@@ -12,6 +12,25 @@ void main() {
     expect(FlightLibraryIO.extension, 'pbflights.zip');
   });
 
+  test(
+    'per-flight packages contain one maximally compressed flight JSON file',
+    () {
+      final track = FlightTrack(
+        startTime: DateTime.utc(2026, 10, 21, 9, 30, 12, 345),
+      )..endTime = DateTime.utc(2026, 10, 21, 10, 30, 12, 345);
+      final package = FlightLibraryIO.instance.buildFlightPackage(track);
+      final archive = ZipDecoder().decodeBytes(package);
+
+      expect(archive.files, hasLength(1));
+      expect(archive.files.single.name, 'flight.json');
+      expect(archive.files.single.isCompressed, isTrue);
+      expect(
+        jsonDecode(utf8.decode(archive.files.single.content as List<int>)),
+        track.toJson(),
+      );
+    },
+  );
+
   test('flight bundle records preserve millisecond timestamps', () {
     final start = DateTime.utc(2026, 10, 21, 9, 30, 12, 345);
     final sampleTime = start.add(const Duration(milliseconds: 123));

@@ -85,7 +85,6 @@ class ParaBeaconAccountService extends ChangeNotifier
   String? _token;
   DateTime? _expiresAt;
   String? _refreshToken;
-  DateTime? _refreshExpiresAt;
   Future<void>? _refreshFuture;
   bool _loggingOut = false;
   ParaBeaconUser? _user;
@@ -100,9 +99,7 @@ class ParaBeaconAccountService extends ChangeNotifier
       (_expiresAt == null || _expiresAt!.isAfter(DateTime.now()));
   ParaBeaconUser? get user => _user;
   String? get errorCode => _errorCode;
-  bool get _canRefresh =>
-      _refreshToken?.isNotEmpty == true &&
-      (_refreshExpiresAt == null || _refreshExpiresAt!.isAfter(DateTime.now()));
+  bool get _canRefresh => _refreshToken?.isNotEmpty == true;
   bool get _needsAccessRefresh =>
       _expiresAt == null ||
       !_expiresAt!.isAfter(DateTime.now().add(const Duration(minutes: 2)));
@@ -120,10 +117,6 @@ class ParaBeaconAccountService extends ChangeNotifier
           ? null
           : DateTime.tryParse(expiresAtValue);
       _refreshToken = await _store.read(_refreshTokenKey);
-      final refreshExpiresAtValue = await _store.read(_refreshExpiresAtKey);
-      _refreshExpiresAt = refreshExpiresAtValue == null
-          ? null
-          : DateTime.tryParse(refreshExpiresAtValue);
       _user = _decodeStoredUser(await _store.read(_userKey));
 
       if (_canRefresh && _needsAccessRefresh) {
@@ -144,7 +137,6 @@ class ParaBeaconAccountService extends ChangeNotifier
         _token = null;
         _expiresAt = null;
         _refreshToken = null;
-        _refreshExpiresAt = null;
         _user = null;
       }
     } on Exception {
@@ -272,7 +264,6 @@ class ParaBeaconAccountService extends ChangeNotifier
     _token = null;
     _expiresAt = null;
     _refreshToken = null;
-    _refreshExpiresAt = null;
     _user = null;
     _errorCode = null;
     try {
@@ -366,7 +357,8 @@ class ParaBeaconAccountService extends ChangeNotifier
         : null;
     if ((refreshTokenValue != null && refreshTokenValue is! String) ||
         (refreshTokenValue is String &&
-            (refreshTokenValue.isEmpty || refreshExpiresAt == null))) {
+            (refreshTokenValue.isEmpty ||
+                (refreshExpiresAtValue != null && refreshExpiresAt == null)))) {
       _errorCode = 'accountRequestFailed';
       return false;
     }
@@ -383,10 +375,14 @@ class ParaBeaconAccountService extends ChangeNotifier
         await _store.delete(_refreshExpiresAtKey);
       } else {
         await _store.write(_refreshTokenKey, refreshToken);
-        await _store.write(
-          _refreshExpiresAtKey,
-          refreshExpiresAt!.toIso8601String(),
-        );
+        if (refreshExpiresAt == null) {
+          await _store.delete(_refreshExpiresAtKey);
+        } else {
+          await _store.write(
+            _refreshExpiresAtKey,
+            refreshExpiresAt.toIso8601String(),
+          );
+        }
       }
       await _store.write(_userKey, jsonEncode(user.toJson()));
     } on Exception {
@@ -403,7 +399,6 @@ class ParaBeaconAccountService extends ChangeNotifier
     _token = token;
     _expiresAt = expiresAt;
     _refreshToken = refreshToken;
-    _refreshExpiresAt = refreshExpiresAt;
     _user = user;
     _errorCode = null;
     _log('Sign-in succeeded; session stored securely.');
@@ -422,10 +417,7 @@ class ParaBeaconAccountService extends ChangeNotifier
 
   Future<void> _refreshAccessTokenOnce() async {
     final refreshToken = _refreshToken;
-    if (refreshToken == null ||
-        refreshToken.isEmpty ||
-        (_refreshExpiresAt != null &&
-            !_refreshExpiresAt!.isAfter(DateTime.now()))) {
+    if (refreshToken == null || refreshToken.isEmpty) {
       throw const LiveTrackingProxyAuthException('account_refresh_required');
     }
     final response = await _client
@@ -442,7 +434,6 @@ class ParaBeaconAccountService extends ChangeNotifier
       _token = null;
       _expiresAt = null;
       _refreshToken = null;
-      _refreshExpiresAt = null;
       _user = null;
       _errorCode = 'accountRequestFailed';
       try {
@@ -471,7 +462,8 @@ class ParaBeaconAccountService extends ChangeNotifier
         nextRefreshToken is! String ||
         nextRefreshToken.isEmpty ||
         expiresAt == null ||
-        refreshExpiresAt == null) {
+        (refreshExpiresAtValue != null &&
+            (refreshExpiresAtValue is! String || refreshExpiresAt == null))) {
       throw const LiveTrackingProxyAuthException(
         'account_refresh_invalid_response',
       );
@@ -480,16 +472,19 @@ class ParaBeaconAccountService extends ChangeNotifier
     _token = accessToken;
     _expiresAt = expiresAt;
     _refreshToken = nextRefreshToken;
-    _refreshExpiresAt = refreshExpiresAt;
     _errorCode = null;
     try {
       await _store.write(_tokenKey, accessToken);
       await _store.write(_expiresAtKey, expiresAt.toIso8601String());
       await _store.write(_refreshTokenKey, nextRefreshToken);
-      await _store.write(
-        _refreshExpiresAtKey,
-        refreshExpiresAt.toIso8601String(),
-      );
+      if (refreshExpiresAt == null) {
+        await _store.delete(_refreshExpiresAtKey);
+      } else {
+        await _store.write(
+          _refreshExpiresAtKey,
+          refreshExpiresAt.toIso8601String(),
+        );
+      }
     } on Exception {
       _errorCode = 'accountStorageFailure';
     }
@@ -527,7 +522,6 @@ class ParaBeaconAccountService extends ChangeNotifier
       _token = null;
       _expiresAt = null;
       _refreshToken = null;
-      _refreshExpiresAt = null;
       _user = null;
       return;
     }

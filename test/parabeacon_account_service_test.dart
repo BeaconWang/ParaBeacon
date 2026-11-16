@@ -40,6 +40,8 @@ void main() {
                   .add(const Duration(minutes: 10))
                   .toUtc()
                   .toIso8601String(),
+              'refresh_token': 'test-refresh-token-long-enough-value',
+              'refresh_expires_at': null,
               'user': _userJson,
             }),
             200,
@@ -65,6 +67,11 @@ void main() {
       expect(service.isSignedIn, isTrue);
       expect(service.user?.username, 'pilot_one');
       expect(store.values['parabeacon_access_token'], 'test-access-token');
+      expect(
+        store.values['parabeacon_refresh_token'],
+        'test-refresh-token-long-enough-value',
+      );
+      expect(store.values['parabeacon_refresh_token_expires_at'], isNull);
       expect(store.values.toString(), isNot(contains('abc123')));
       final logs = service.debugLog.join('\n');
       expect(logs, contains('Registration response received (HTTP 201).'));
@@ -144,7 +151,7 @@ void main() {
       ..values['parabeacon_refresh_token'] =
           'old-refresh-token-value-long-enough'
       ..values['parabeacon_refresh_token_expires_at'] = DateTime.now()
-          .add(const Duration(days: 20))
+          .subtract(const Duration(days: 20))
           .toUtc()
           .toIso8601String()
       ..values['parabeacon_account_user'] = jsonEncode(_userJson);
@@ -164,10 +171,7 @@ void main() {
                 .toUtc()
                 .toIso8601String(),
             'refresh_token': 'new-refresh-token-value-long-enough',
-            'refresh_expires_at': DateTime.now()
-                .add(const Duration(days: 30))
-                .toUtc()
-                .toIso8601String(),
+            'refresh_expires_at': null,
           }),
           200,
           headers: {'content-type': 'application/json'},
@@ -191,6 +195,7 @@ void main() {
       store.values['parabeacon_refresh_token'],
       'new-refresh-token-value-long-enough',
     );
+    expect(store.values['parabeacon_refresh_token_expires_at'], isNull);
     expect(requests.map((request) => request.url.path), [
       '/api/v1/auth/refresh',
       '/api/v1/user/profile',

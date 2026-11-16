@@ -3201,6 +3201,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingPointsExport => '导出';
 
   @override
+  String get landingPointsImportFile => '从文件导入';
+
+  @override
+  String get landingPointsExportFile => '导出到文件';
+
+  @override
+  String get landingPointsImportServer => '从 ParaBeacon Server 导入';
+
+  @override
+  String get landingPointsExportServer => '导出到 ParaBeacon Server';
+
+  @override
+  String get landingPointsImportingServer => '正在从 ParaBeacon Server 导入降落点…';
+
+  @override
+  String get landingPointsExportingServer => '正在上传降落点到 ParaBeacon Server…';
+
+  @override
+  String landingPointsExportedServer(int count) {
+    return '已向 ParaBeacon Server 上传 $count 个降落点。';
+  }
+
+  @override
+  String get landingPointsServerNoPoints => 'ParaBeacon Server 上没有已保存的降落点。';
+
+  @override
+  String landingPointsServerTransferFailed(String error) {
+    return 'ParaBeacon Server 传输失败：$error';
+  }
+
+  @override
   String get landingPointsImportTitle => '导入降落点？';
 
   @override
@@ -3334,6 +3365,47 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsImportLibrary => '导入库（.pbflights.zip）';
 
   @override
+  String get flightsImportParaBeaconServer => '从 ParaBeacon Server 同步';
+
+  @override
+  String get flightsImportingParaBeaconServer => '正在从 ParaBeacon Server 导入飞行…';
+
+  @override
+  String flightsImportParaBeaconServerResult(
+    int added,
+    int skipped,
+    int failed,
+  ) {
+    return '已导入 $added · 已跳过 $skipped · 失败 $failed';
+  }
+
+  @override
+  String get flightsSyncParaBeaconServer => '同步到 ParaBeacon Server';
+
+  @override
+  String get flightsSyncingParaBeaconServer => '正在与 ParaBeacon Server 同步飞行记录…';
+
+  @override
+  String flightsSyncParaBeaconServerResult(int synced) {
+    return '已与 ParaBeacon Server 同步 $synced 条飞行记录。';
+  }
+
+  @override
+  String get flightsSyncConfirmTitle => '替换服务器上的飞行记录？';
+
+  @override
+  String get flightsSyncConfirmMessage =>
+      '服务器上的记录将与此设备上的记录保持一致。此设备上不存在的服务器记录将被删除。如果此设备没有记录，服务器上的全部飞行记录都会被清除。';
+
+  @override
+  String get flightsSyncConfirmAction => '同步并替换';
+
+  @override
+  String flightsParaBeaconServerFailed(String error) {
+    return 'ParaBeacon Server 传输失败：$error';
+  }
+
+  @override
   String get flightsImportXcTrack => '导入 XCTrack 飞行（.igc）';
 
   @override
@@ -3377,13 +3449,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsImportNoIgc => '该文件夹中未找到 .igc 文件。';
 
   @override
-  String get flightsExportLibrary => '导出库（.pbflights.zip）';
+  String get flightsExportLibrary => '导出飞行记录';
+
+  @override
+  String get flightsExportToFile => '导出为文件';
 
   @override
   String get flightsSelectRecords => '选择要导出的飞行';
 
   @override
-  String get flightsExportSelected => '导出所选飞行（.pbflights.zip）';
+  String get flightsExportSelected => '导出所选飞行记录';
 
   @override
   String get flightsClearAll => '全部清除';

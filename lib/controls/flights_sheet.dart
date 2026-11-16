@@ -7,6 +7,7 @@ import '../data/flight_derived_stats.dart';
 import '../data/flight_details_settings.dart';
 import '../data/flight_export_service.dart';
 import '../data/flight_library_io.dart';
+import '../data/flight_log_sync_service.dart';
 import '../data/flight_merge.dart';
 import '../data/flight_recorder.dart';
 import '../data/landing_point_flight_import.dart';
@@ -28,9 +29,14 @@ enum _ImportSource {
   /// A `.pbflights.zip` library bundle exported by this app.
   library,
 
+  /// Completed flight records stored in the signed-in ParaBeacon account.
+  paraBeaconServer,
+
   /// A folder of XCTrack `.igc` tracklogs.
   xcTrackFolder,
 }
+
+enum _LibraryExportChoice { file, paraBeaconServer }
 
 /// How the user selects XCTrack `.igc` tracklogs on Android (see
 /// [_FlightsSheetState._importXcTrackAndroid]).
@@ -362,12 +368,11 @@ class _FlightsSheetState extends State<_FlightsSheet> {
           tooltip: l10n.flightsStatisticsAll,
           onPressed: () => _showStatistics(tracks, selected: false),
         ),
-      if (tracks.isNotEmpty)
-        IconButton(
-          icon: const Icon(Icons.file_upload_outlined),
-          tooltip: l10n.flightsExportLibrary,
-          onPressed: () => _exportLibrary(tracks),
-        ),
+      IconButton(
+        icon: const Icon(Icons.file_upload_outlined),
+        tooltip: l10n.flightsExportLibrary,
+        onPressed: () => _exportLibrary(tracks),
+      ),
       if (tracks.isNotEmpty)
         IconButton(
           icon: const Icon(Icons.delete_sweep_outlined),
@@ -871,6 +876,12 @@ class _FlightsSheetState extends State<_FlightsSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              leading: const Icon(Icons.cloud_download_outlined),
+              title: Text(l10n.flightsImportParaBeaconServer),
+              onTap: () =>
+                  Navigator.of(context).pop(_ImportSource.paraBeaconServer),
+            ),
+            ListTile(
               leading: const Icon(Icons.folder_zip_outlined),
               title: Text(l10n.flightsImportLibrary),
               onTap: () => Navigator.of(context).pop(_ImportSource.library),
@@ -891,6 +902,8 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     switch (choice) {
       case _ImportSource.library:
         await _importLibrary();
+      case _ImportSource.paraBeaconServer:
+        await _importFromServer();
       case _ImportSource.xcTrackFolder:
         await _importXcTrackFolder();
     }
@@ -1031,8 +1044,87 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     return IgcImportService.instance.importDirectory(dirPath);
   }
 
+  Future<void> _syncWithServer() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.flightsSyncConfirmTitle),
+        content: Text(l10n.flightsSyncConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.cloud_sync_outlined),
+            label: Text(l10n.flightsSyncConfirmAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    _snack(l10n.flightsSyncingParaBeaconServer);
+    try {
+      final result = await FlightLogSyncService.instance.syncTracks(
+        _recorder.tracks,
+      );
+      if (!mounted) return;
+      _snack(l10n.flightsSyncParaBeaconServerResult(result.synced));
+    } catch (error) {
+      if (!mounted) return;
+      _snack(l10n.flightsParaBeaconServerFailed('$error'));
+    }
+  }
+
   Future<void> _exportLibrary(List<FlightTrack> tracks) async {
     final l10n = AppLocalizations.of(context);
+    final title = _selectionMode
+        ? l10n.flightsExportSelected
+        : l10n.flightsExportLibrary;
+    final choice = await showModalBottomSheet<_LibraryExportChoice>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ),
+            if (!_selectionMode)
+              ListTile(
+                leading: const Icon(Icons.cloud_sync_outlined),
+                title: Text(l10n.flightsSyncParaBeaconServer),
+                onTap: () => Navigator.of(
+                  context,
+                ).pop(_LibraryExportChoice.paraBeaconServer),
+              ),
+            if (tracks.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.folder_zip_outlined),
+                title: Text(l10n.flightsExportToFile),
+                onTap: () =>
+                    Navigator.of(context).pop(_LibraryExportChoice.file),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    if (choice == _LibraryExportChoice.paraBeaconServer) {
+      await _syncWithServer();
+      return;
+    }
+
     try {
       final destination = await _chooseExportDestination(l10n);
       if (destination == null || !mounted) return;
@@ -1154,6 +1246,24 @@ class _FlightsSheetState extends State<_FlightsSheet> {
       return decoded.substring(marker + 1);
     }
     return decoded;
+  }
+
+  Future<void> _importFromServer() async {
+    final l10n = AppLocalizations.of(context);
+    _snack(l10n.flightsImportingParaBeaconServer);
+    try {
+      final result = await FlightLogSyncService.instance.importTracks();
+      if (!mounted) return;
+      _snack(
+        l10n.flightsImportParaBeaconServerResult(
+          result.added,
+          result.skipped,
+          result.failed,
+        ),
+      );
+    } catch (e) {
+      _snack(l10n.flightsParaBeaconServerFailed('$e'));
+    }
   }
 
   Future<void> _importLibrary() async {

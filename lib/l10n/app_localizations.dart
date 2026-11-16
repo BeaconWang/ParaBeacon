@@ -6290,6 +6290,60 @@ abstract class AppLocalizations {
   /// **'Export'**
   String get landingPointsExport;
 
+  /// No description provided for @landingPointsImportFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from file'**
+  String get landingPointsImportFile;
+
+  /// No description provided for @landingPointsExportFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Export to file'**
+  String get landingPointsExportFile;
+
+  /// No description provided for @landingPointsImportServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from ParaBeacon Server'**
+  String get landingPointsImportServer;
+
+  /// No description provided for @landingPointsExportServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Export to ParaBeacon Server'**
+  String get landingPointsExportServer;
+
+  /// No description provided for @landingPointsImportingServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing landing points from ParaBeacon Server…'**
+  String get landingPointsImportingServer;
+
+  /// No description provided for @landingPointsExportingServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading landing points to ParaBeacon Server…'**
+  String get landingPointsExportingServer;
+
+  /// No description provided for @landingPointsExportedServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded {count} landing points to ParaBeacon Server.'**
+  String landingPointsExportedServer(int count);
+
+  /// No description provided for @landingPointsServerNoPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'No landing points are stored on ParaBeacon Server.'**
+  String get landingPointsServerNoPoints;
+
+  /// No description provided for @landingPointsServerTransferFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'ParaBeacon Server transfer failed: {error}'**
+  String landingPointsServerTransferFailed(String error);
+
   /// No description provided for @landingPointsImportTitle.
   ///
   /// In en, this message translates to:
@@ -6554,6 +6608,70 @@ abstract class AppLocalizations {
   /// **'Import library (.pbflights.zip)'**
   String get flightsImportLibrary;
 
+  /// No description provided for @flightsImportParaBeaconServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync From ParaBeacon Server'**
+  String get flightsImportParaBeaconServer;
+
+  /// No description provided for @flightsImportingParaBeaconServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing flights from ParaBeacon Server…'**
+  String get flightsImportingParaBeaconServer;
+
+  /// No description provided for @flightsImportParaBeaconServerResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {added} · skipped {skipped} · failed {failed}'**
+  String flightsImportParaBeaconServerResult(
+    int added,
+    int skipped,
+    int failed,
+  );
+
+  /// No description provided for @flightsSyncParaBeaconServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync to ParaBeacon Server'**
+  String get flightsSyncParaBeaconServer;
+
+  /// No description provided for @flightsSyncingParaBeaconServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Synchronizing flight records with ParaBeacon Server…'**
+  String get flightsSyncingParaBeaconServer;
+
+  /// No description provided for @flightsSyncParaBeaconServerResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Synchronized {synced} flight records with ParaBeacon Server.'**
+  String flightsSyncParaBeaconServerResult(int synced);
+
+  /// No description provided for @flightsSyncConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace server flight records?'**
+  String get flightsSyncConfirmTitle;
+
+  /// No description provided for @flightsSyncConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This makes the server match the flight records on this device. Server records not present here will be deleted. If this device has no records, all server flight records will be cleared.'**
+  String get flightsSyncConfirmMessage;
+
+  /// No description provided for @flightsSyncConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync and replace'**
+  String get flightsSyncConfirmAction;
+
+  /// No description provided for @flightsParaBeaconServerFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'ParaBeacon Server transfer failed: {error}'**
+  String flightsParaBeaconServerFailed(String error);
+
   /// No description provided for @flightsImportXcTrack.
   ///
   /// In en, this message translates to:
@@ -6641,8 +6759,14 @@ abstract class AppLocalizations {
   /// No description provided for @flightsExportLibrary.
   ///
   /// In en, this message translates to:
-  /// **'Export library (.pbflights.zip)'**
+  /// **'Export flight records'**
   String get flightsExportLibrary;
+
+  /// No description provided for @flightsExportToFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Export to file'**
+  String get flightsExportToFile;
 
   /// No description provided for @flightsSelectRecords.
   ///
@@ -6653,7 +6777,7 @@ abstract class AppLocalizations {
   /// No description provided for @flightsExportSelected.
   ///
   /// In en, this message translates to:
-  /// **'Export selected flights (.pbflights.zip)'**
+  /// **'Export selected flight records'**
   String get flightsExportSelected;
 
   /// No description provided for @flightsClearAll.

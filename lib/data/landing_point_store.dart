@@ -33,7 +33,7 @@ class LandingPoint {
     'latitude': latitude,
     'longitude': longitude,
     'altitudeM': altitudeM,
-    'createdAt': createdAt.toIso8601String(),
+    'createdAt': createdAt.toUtc().toIso8601String(),
     'notes': notes,
   };
 

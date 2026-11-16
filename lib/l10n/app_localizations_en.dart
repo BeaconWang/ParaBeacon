@@ -3338,6 +3338,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointsExport => 'Export';
 
   @override
+  String get landingPointsImportFile => 'Import from file';
+
+  @override
+  String get landingPointsExportFile => 'Export to file';
+
+  @override
+  String get landingPointsImportServer => 'Import from ParaBeacon Server';
+
+  @override
+  String get landingPointsExportServer => 'Export to ParaBeacon Server';
+
+  @override
+  String get landingPointsImportingServer =>
+      'Importing landing points from ParaBeacon Server…';
+
+  @override
+  String get landingPointsExportingServer =>
+      'Uploading landing points to ParaBeacon Server…';
+
+  @override
+  String landingPointsExportedServer(int count) {
+    return 'Uploaded $count landing points to ParaBeacon Server.';
+  }
+
+  @override
+  String get landingPointsServerNoPoints =>
+      'No landing points are stored on ParaBeacon Server.';
+
+  @override
+  String landingPointsServerTransferFailed(String error) {
+    return 'ParaBeacon Server transfer failed: $error';
+  }
+
+  @override
   String get landingPointsImportTitle => 'Import landing points?';
 
   @override
@@ -3474,6 +3508,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsImportLibrary => 'Import library (.pbflights.zip)';
 
   @override
+  String get flightsImportParaBeaconServer => 'Sync From ParaBeacon Server';
+
+  @override
+  String get flightsImportingParaBeaconServer =>
+      'Importing flights from ParaBeacon Server…';
+
+  @override
+  String flightsImportParaBeaconServerResult(
+    int added,
+    int skipped,
+    int failed,
+  ) {
+    return 'Imported $added · skipped $skipped · failed $failed';
+  }
+
+  @override
+  String get flightsSyncParaBeaconServer => 'Sync to ParaBeacon Server';
+
+  @override
+  String get flightsSyncingParaBeaconServer =>
+      'Synchronizing flight records with ParaBeacon Server…';
+
+  @override
+  String flightsSyncParaBeaconServerResult(int synced) {
+    return 'Synchronized $synced flight records with ParaBeacon Server.';
+  }
+
+  @override
+  String get flightsSyncConfirmTitle => 'Replace server flight records?';
+
+  @override
+  String get flightsSyncConfirmMessage =>
+      'This makes the server match the flight records on this device. Server records not present here will be deleted. If this device has no records, all server flight records will be cleared.';
+
+  @override
+  String get flightsSyncConfirmAction => 'Sync and replace';
+
+  @override
+  String flightsParaBeaconServerFailed(String error) {
+    return 'ParaBeacon Server transfer failed: $error';
+  }
+
+  @override
   String get flightsImportXcTrack => 'Import XCTrack flights (.igc)';
 
   @override
@@ -3521,14 +3598,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsImportNoIgc => 'No .igc files were found in that folder.';
 
   @override
-  String get flightsExportLibrary => 'Export library (.pbflights.zip)';
+  String get flightsExportLibrary => 'Export flight records';
+
+  @override
+  String get flightsExportToFile => 'Export to file';
 
   @override
   String get flightsSelectRecords => 'Select flights to export';
 
   @override
-  String get flightsExportSelected =>
-      'Export selected flights (.pbflights.zip)';
+  String get flightsExportSelected => 'Export selected flight records';
 
   @override
   String get flightsClearAll => 'Clear all';

@@ -9,11 +9,14 @@ import '../data/flight_data_provider.dart';
 import '../data/landing_point_store.dart';
 import '../data/landing_point_flight_import.dart';
 import '../data/landing_points_config_io.dart';
+import '../data/landing_point_server_sync_service.dart';
 import '../l10n/app_localizations.dart';
 import 'flights_sheet.dart' show showFlightRecordPicker;
 import 'landing_point_editor.dart';
 import 'map_picker_sheet.dart' show showMapPickerSheet;
 import 'sheet_notice_host.dart';
+
+enum _LandingPointTransferChoice { file, paraBeaconServer }
 
 Future<void> showLandingPointsSheet(BuildContext context) async {
   await LandingPointStore.instance.load();
@@ -217,6 +220,161 @@ class _LandingPointsSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _chooseLandingPointTransfer(
+    BuildContext context, {
+    required bool importing,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    final choice = await showModalBottomSheet<_LandingPointTransferChoice>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  importing
+                      ? l10n.landingPointsImport
+                      : l10n.landingPointsExport,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_outlined),
+              title: Text(
+                importing
+                    ? l10n.landingPointsImportServer
+                    : l10n.landingPointsExportServer,
+              ),
+              onTap: () => Navigator.of(
+                context,
+              ).pop(_LandingPointTransferChoice.paraBeaconServer),
+            ),
+            ListTile(
+              leading: Icon(
+                importing ? Icons.folder_open_outlined : Icons.share_outlined,
+              ),
+              title: Text(
+                importing
+                    ? l10n.landingPointsImportFile
+                    : l10n.landingPointsExportFile,
+              ),
+              onTap: () =>
+                  Navigator.of(context).pop(_LandingPointTransferChoice.file),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted || choice == null) return;
+    if (choice == _LandingPointTransferChoice.paraBeaconServer) {
+      if (importing) {
+        await _importLandingPointsFromServer(context);
+      } else {
+        await _exportLandingPointsToServer(context);
+      }
+    } else if (importing) {
+      await _importLandingPoints(context);
+    } else {
+      await _exportLandingPoints(context);
+    }
+  }
+
+  Future<void> _exportLandingPointsToServer(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.landingPointsExportingServer)));
+    try {
+      final store = LandingPointStore.instance;
+      final synced = await LandingPointServerSyncService.instance.exportPoints(
+        store.points,
+        defaultId: store.defaultPoint?.id,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.landingPointsExportedServer(synced))),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.landingPointsServerTransferFailed('$error')),
+        ),
+      );
+    }
+  }
+
+  Future<void> _importLandingPointsFromServer(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImportingServer)));
+    try {
+      final remote = await LandingPointServerSyncService.instance
+          .importPoints();
+      if (!context.mounted) return;
+      if (remote.points.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.landingPointsServerNoPoints)),
+        );
+        return;
+      }
+      final store = LandingPointStore.instance;
+      await store.load();
+      if (!context.mounted) return;
+      final remoteIds = remote.points.map((point) => point.id).toSet();
+      final savedPoints = store.points
+          .where((point) => !remoteIds.contains(point.id))
+          .toList(growable: false);
+      final savedDefaultId =
+          savedPoints.any((point) => point.id == store.defaultPoint?.id)
+          ? store.defaultPoint?.id
+          : null;
+      final imported = LandingPointsBundle(
+        points: remote.points,
+        defaultId: remote.defaultId,
+      );
+      final conflicts = LandingPointsConfigIO.instance.findNameConflicts(
+        savedPoints,
+        imported.points,
+      );
+      final choices = await _confirmLandingPointImport(
+        context,
+        l10n,
+        conflicts,
+      );
+      if (!context.mounted || choices == null) return;
+      final merged = LandingPointsConfigIO.instance.merge(
+        savedPoints: savedPoints,
+        savedDefaultId: savedDefaultId,
+        imported: imported,
+        conflictChoices: choices,
+      );
+      await store.applyImportMerge(merged.points, defaultId: merged.defaultId);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImported)));
+    } on LandingPointsLimitException {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImportLimit)));
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.landingPointsServerTransferFailed('$error')),
+        ),
+      );
+    }
   }
 
   Future<void> _exportLandingPoints(BuildContext context) async {
@@ -493,7 +651,8 @@ class _LandingPointsSheet extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _importLandingPoints(context),
+                      onPressed: () =>
+                          _chooseLandingPointTransfer(context, importing: true),
                       icon: const Icon(Icons.file_download_outlined),
                       label: Text(l10n.landingPointsImport),
                     ),
@@ -501,7 +660,10 @@ class _LandingPointsSheet extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _exportLandingPoints(context),
+                      onPressed: () => _chooseLandingPointTransfer(
+                        context,
+                        importing: false,
+                      ),
                       icon: const Icon(Icons.file_upload_outlined),
                       label: Text(l10n.landingPointsExport),
                     ),

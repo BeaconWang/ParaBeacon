@@ -846,7 +846,7 @@ class LiveTrackingService extends ChangeNotifier {
   }
 
   bool _isTrustedApiUri(Uri uri) =>
-      uri.scheme == 'https' &&
+      uri.scheme == _config.apiBaseUri.scheme &&
       uri.host.toLowerCase() == _config.apiBaseUri.host.toLowerCase() &&
       uri.port == _config.apiBaseUri.port &&
       uri.userInfo.isEmpty;

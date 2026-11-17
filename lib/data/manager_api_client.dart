@@ -69,7 +69,7 @@ class ManagerRelease {
     }
 
     final downloadUri = apiBaseUri.resolve(downloadUrl);
-    if (downloadUri.scheme != 'https' ||
+    if (downloadUri.scheme != apiBaseUri.scheme ||
         downloadUri.host.toLowerCase() != apiBaseUri.host.toLowerCase() ||
         downloadUri.port != apiBaseUri.port ||
         downloadUri.userInfo.isNotEmpty ||
@@ -114,7 +114,7 @@ class ManagerApiClient {
       throw ArgumentError.value(
         apiBaseUri,
         'apiBaseUri',
-        'The manager API must use a public HTTPS host.',
+        'The manager API must use a public HTTP or HTTPS origin.',
       );
     }
   }

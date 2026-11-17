@@ -16,7 +16,7 @@ class ParaBeaconServerConfig {
     final uri = Uri.tryParse(value);
     if (!isValidOrigin(uri)) {
       throw FormatException(
-        'PARABEACON_SERVER_BASE_URL must be a public HTTPS origin.',
+        'PARABEACON_SERVER_BASE_URL must be a public HTTP or HTTPS origin.',
       );
     }
     return uri!;
@@ -24,7 +24,7 @@ class ParaBeaconServerConfig {
 
   static bool isValidOrigin(Uri? uri) {
     if (uri == null ||
-        uri.scheme != 'https' ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
         uri.host.isEmpty ||
         uri.userInfo.isNotEmpty ||
         uri.hasQuery ||

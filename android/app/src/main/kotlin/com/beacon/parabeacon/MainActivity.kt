@@ -119,23 +119,30 @@ class MainActivity : FlutterActivity() {
         val rawServerOrigin = call.argument<String>("serverOrigin")
         val uri = rawUrl?.let { runCatching { Uri.parse(it) }.getOrNull() }
         val serverOrigin = rawServerOrigin?.let { runCatching { Uri.parse(it) }.getOrNull() }
-        fun httpsPort(value: Uri): Int? = when {
-            value.port == -1 -> 443
-            value.port in 1..65535 -> value.port
-            else -> null
+        fun originPort(value: Uri): Int? {
+            val defaultPort = when (value.scheme) {
+                "http" -> 80
+                "https" -> 443
+                else -> return null
+            }
+            return when {
+                value.port == -1 -> defaultPort
+                value.port in 1..65535 -> value.port
+                else -> null
+            }
         }
         if (uri == null ||
             serverOrigin == null ||
-            serverOrigin.scheme != "https" ||
+            (serverOrigin.scheme != "http" && serverOrigin.scheme != "https") ||
             serverOrigin.host.isNullOrEmpty() ||
             !serverOrigin.userInfo.isNullOrEmpty() ||
             (serverOrigin.path.orEmpty().isNotEmpty() && serverOrigin.path != "/") ||
             serverOrigin.query != null ||
             serverOrigin.fragment != null ||
-            httpsPort(serverOrigin) == null ||
-            uri.scheme != "https" ||
+            originPort(serverOrigin) == null ||
+            uri.scheme != serverOrigin.scheme ||
             uri.host?.equals(serverOrigin.host, ignoreCase = true) != true ||
-            httpsPort(uri) != httpsPort(serverOrigin) ||
+            originPort(uri) != originPort(serverOrigin) ||
             !uri.userInfo.isNullOrEmpty() ||
             uri.query != null ||
             uri.fragment != null ||

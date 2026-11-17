@@ -2,11 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/data/parabeacon_server_config.dart';
 
 void main() {
-  test('accepts HTTPS public IP origins including IPv4 and IPv6', () {
+  test('accepts HTTP and HTTPS public IP origins including IPv4 and IPv6', () {
     expect(
-      ParaBeaconServerConfig.isValidOrigin(
-        Uri.parse('https://198.51.100.24:8443'),
-      ),
+      ParaBeaconServerConfig.isValidOrigin(Uri.parse('https://8.8.8.8:8443')),
+      isTrue,
+    );
+    expect(
+      ParaBeaconServerConfig.isValidOrigin(Uri.parse('http://8.8.8.8:8080')),
       isTrue,
     );
     expect(
@@ -19,7 +21,7 @@ void main() {
 
   test('rejects insecure and internal origins', () {
     expect(
-      ParaBeaconServerConfig.isValidOrigin(Uri.parse('http://198.51.100.24')),
+      ParaBeaconServerConfig.isValidOrigin(Uri.parse('ftp://8.8.8.8')),
       isFalse,
     );
     expect(

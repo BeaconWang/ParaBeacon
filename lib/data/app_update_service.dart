@@ -256,7 +256,7 @@ class AppUpdateService extends ChangeNotifier {
       throw const _AppUpdateException('invalid_update_metadata');
     }
     final downloadUri = baseUri.resolve(downloadUrl);
-    if (downloadUri.scheme != 'https' ||
+    if (downloadUri.scheme != baseUri.scheme ||
         downloadUri.host.toLowerCase() != baseUri.host.toLowerCase() ||
         downloadUri.port != baseUri.port ||
         downloadUri.userInfo.isNotEmpty ||

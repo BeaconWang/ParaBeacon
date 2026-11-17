@@ -6,7 +6,7 @@ import 'package:http/testing.dart';
 import 'package:parabeacon/data/app_update_service.dart';
 
 void main() {
-  const baseUri = 'https://8.8.8.8:8443';
+  const baseUri = 'http://8.8.8.8:8080';
   final checksum = List.filled(64, 'a').join();
 
   test(
@@ -166,7 +166,7 @@ class _FakeAppUpdatePlatform implements AppUpdatePlatform {
     requestedFileName = fileName;
     requestedServerBaseUri = serverBaseUri;
     expect(url.host, '8.8.8.8');
-    expect(serverBaseUri, Uri.parse('https://8.8.8.8:8443'));
+    expect(serverBaseUri, Uri.parse('http://8.8.8.8:8080'));
     return r'C:\private\parabeacon-18.apk';
   }
 

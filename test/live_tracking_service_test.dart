@@ -97,34 +97,51 @@ void main() {
     );
   });
 
-  test('rejects insecure origins and cross-origin auth/socket endpoints', () {
-    expect(
-      () => LiveTrackingConfig.fromJson(
-        _configJson(),
-        apiBaseUri: Uri.parse('http://proxy.example'),
-      ),
-      throwsFormatException,
+  test('accepts HTTP server origins and resolves HTTP WebSockets', () {
+    final baseUri = Uri.parse('http://8.8.4.4:8080');
+    final config = LiveTrackingConfig.fromJson(
+      _configJson(webSocketUrl: '/live'),
+      apiBaseUri: baseUri,
     );
+
     expect(
-      () => LiveTrackingConfig.fromJson(
-        _configJson(),
-        apiBaseUri: Uri.parse('https://10.1.2.3'),
-      ),
-      throwsFormatException,
+      config.sessionStartUri,
+      Uri.parse('$baseUri/api/v1/tracking/sessions'),
     );
-    expect(
-      () => LiveTrackingConfig.fromJson(
-        _configJson(authEndpoint: 'https://other.example/auth'),
-      ),
-      throwsFormatException,
-    );
-    expect(
-      () => LiveTrackingConfig.fromJson(
-        _configJson(webSocketUrl: 'ws://www.parabeacon.icu/live'),
-      ),
-      throwsFormatException,
-    );
+    expect(config.webSocketUri, Uri.parse('ws://8.8.4.4:8080/live'));
   });
+
+  test(
+    'rejects unsupported origins and cross-origin auth/socket endpoints',
+    () {
+      expect(
+        () => LiveTrackingConfig.fromJson(
+          _configJson(),
+          apiBaseUri: Uri.parse('ftp://proxy.example'),
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => LiveTrackingConfig.fromJson(
+          _configJson(),
+          apiBaseUri: Uri.parse('https://10.1.2.3'),
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => LiveTrackingConfig.fromJson(
+          _configJson(authEndpoint: 'https://other.example/auth'),
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => LiveTrackingConfig.fromJson(
+          _configJson(webSocketUrl: 'ws://www.parabeacon.icu/live'),
+        ),
+        throwsFormatException,
+      );
+    },
+  );
 
   test('maps a real GPS fix to ParaBeacon Server telemetry fields', () {
     final point = LiveTrackpoint.fromFlightData(

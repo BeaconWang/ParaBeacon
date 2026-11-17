@@ -19,31 +19,30 @@ class LiveTrackingConfig {
     required this.maximumBatchPoints,
     required this.maximumBufferedPoints,
   }) : channelIds = List.unmodifiable(channelIds) {
-    _validatePublicHttpsOrigin(apiBaseUri, 'PARABEACON_SERVER_BASE_URL');
-    _validateSameOriginHttps(
-      sessionStartUri,
-      apiBaseUri,
-      'session_start_endpoint',
-    );
-    _validateSameOriginHttps(
+    _validateServerOrigin(apiBaseUri, 'PARABEACON_SERVER_BASE_URL');
+    _validateSameOrigin(sessionStartUri, apiBaseUri, 'session_start_endpoint');
+    _validateSameOrigin(
       sessionStopUri('__config_check__'),
       apiBaseUri,
       'session_stop_endpoint',
     );
-    _validateSameOriginHttps(
+    _validateSameOrigin(
       pointsUri('__config_check__'),
       apiBaseUri,
       'points_endpoint',
     );
     if (authEndpointUri != null) {
-      _validateSameOriginHttps(authEndpointUri!, apiBaseUri, 'auth_endpoint');
+      _validateSameOrigin(authEndpointUri!, apiBaseUri, 'auth_endpoint');
     }
+    final expectedWebSocketScheme = apiBaseUri.scheme == 'https' ? 'wss' : 'ws';
     if (webSocketUri != null &&
-        (webSocketUri!.scheme != 'wss' ||
+        (webSocketUri!.scheme != expectedWebSocketScheme ||
             webSocketUri!.host.toLowerCase() != apiBaseUri.host.toLowerCase() ||
-            webSocketUri!.userInfo.isNotEmpty)) {
+            _effectivePort(webSocketUri!) != apiBaseUri.port ||
+            webSocketUri!.userInfo.isNotEmpty ||
+            webSocketUri!.hasFragment)) {
       throw const FormatException(
-        'websocket_url must use WSS on the configured API host.',
+        'websocket_url must use the configured server origin.',
       );
     }
     if (this.channelIds.any(
@@ -124,7 +123,7 @@ class LiveTrackingConfig {
     }
 
     final serverBaseUri = apiBaseUri ?? ParaBeaconServerConfig.apiBaseUri;
-    _validatePublicHttpsOrigin(serverBaseUri, 'PARABEACON_SERVER_BASE_URL');
+    _validateServerOrigin(serverBaseUri, 'PARABEACON_SERVER_BASE_URL');
 
     final sessionStartUri = _resolveUri(
       serverBaseUri,
@@ -154,7 +153,9 @@ class LiveTrackingConfig {
       }
       webSocketUri = parsedSocket.hasScheme
           ? parsedSocket
-          : serverBaseUri.replace(scheme: 'wss').resolveUri(parsedSocket);
+          : serverBaseUri
+                .replace(scheme: serverBaseUri.scheme == 'https' ? 'wss' : 'ws')
+                .resolveUri(parsedSocket);
     }
 
     final rawChannelIds = value['channel_ids'];
@@ -211,22 +212,27 @@ Uri _resolveUri(Uri baseUri, String endpoint, String fieldName) {
   final parsed = Uri.tryParse(endpoint);
   if (parsed == null) throw FormatException('Invalid $fieldName.');
   final resolved = baseUri.resolveUri(parsed);
-  _validateSameOriginHttps(resolved, baseUri, fieldName);
+  _validateSameOrigin(resolved, baseUri, fieldName);
   return resolved;
 }
 
-void _validatePublicHttpsOrigin(Uri uri, String fieldName) {
+int _effectivePort(Uri uri) {
+  if (uri.hasPort) return uri.port;
+  return uri.scheme == 'https' || uri.scheme == 'wss' ? 443 : 80;
+}
+
+void _validateServerOrigin(Uri uri, String fieldName) {
   if (!ParaBeaconServerConfig.isValidOrigin(uri)) {
-    throw FormatException('$fieldName must be a public HTTPS origin.');
+    throw FormatException('$fieldName must be a public HTTP or HTTPS origin.');
   }
 }
 
-void _validateSameOriginHttps(Uri uri, Uri baseUri, String fieldName) {
-  if (uri.scheme != 'https' ||
+void _validateSameOrigin(Uri uri, Uri baseUri, String fieldName) {
+  if (uri.scheme != baseUri.scheme ||
       uri.host.toLowerCase() != baseUri.host.toLowerCase() ||
       uri.port != baseUri.port ||
       uri.userInfo.isNotEmpty ||
       uri.hasFragment) {
-    throw FormatException('$fieldName must use the configured HTTPS origin.');
+    throw FormatException('$fieldName must use the configured server origin.');
   }
 }

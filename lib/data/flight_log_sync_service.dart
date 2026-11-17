@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'flight_library_io.dart';
 import 'flight_recorder.dart';
 import 'parabeacon_account_service.dart';
+import 'parabeacon_server_config.dart';
 import 'user_agent_settings.dart';
 
 class FlightLogSyncResult {
@@ -34,7 +35,8 @@ class FlightLogSyncService {
   }) : _accountService = accountService ?? ParaBeaconAccountService.instance,
        _client = UserAgentHttpClient(innerClient: client),
        _endpoint =
-           endpoint ?? Uri.https('www.parabeacon.icu', '/api/v1/flight-logs');
+           endpoint ??
+           ParaBeaconServerConfig.apiBaseUri.resolve('/api/v1/flight-logs');
 
   static final FlightLogSyncService instance = FlightLogSyncService();
   static const _maxSnapshotTracks = 500;

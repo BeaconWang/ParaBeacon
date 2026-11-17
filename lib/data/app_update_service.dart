@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'parabeacon_server_config.dart';
+
 const int maxAndroidApkSizeBytes = 512 * 1024 * 1024;
 
 abstract interface class AppUpdatePlatform {
@@ -14,6 +16,7 @@ abstract interface class AppUpdatePlatform {
   Future<bool> isAirplaneModeEnabled();
   Future<String> downloadApk({
     required Uri url,
+    required Uri serverBaseUri,
     required String fileName,
     required int sizeBytes,
     required String sha256Hex,
@@ -183,6 +186,7 @@ class AppUpdateService extends ChangeNotifier {
       _setStatus(AppUpdateStatus.checking);
       _downloadedApkPath = await _platform.downloadApk(
         url: release.downloadUri,
+        serverBaseUri: baseUri,
         fileName: 'parabeacon-${release.versionCode}.apk',
         sizeBytes: release.sizeBytes,
         sha256Hex: release.sha256Hex,
@@ -272,12 +276,7 @@ class AppUpdateService extends ChangeNotifier {
   }
 
   static bool _validApiBase(Uri? uri) =>
-      uri != null &&
-      uri.scheme == 'https' &&
-      uri.host.isNotEmpty &&
-      uri.userInfo.isEmpty &&
-      !uri.hasQuery &&
-      !uri.hasFragment;
+      ParaBeaconServerConfig.isValidOrigin(uri);
 
   static Future<InstalledAppVersion> _readInstalledVersion() async {
     final info = await PackageInfo.fromPlatform();
@@ -317,13 +316,15 @@ class _MethodChannelAppUpdatePlatform implements AppUpdatePlatform {
 
   @override
   Future<bool> isAirplaneModeEnabled() async =>
-      await AppUpdateService._channel
-          .invokeMethod<bool>('isAirplaneModeEnabled') ??
+      await AppUpdateService._channel.invokeMethod<bool>(
+        'isAirplaneModeEnabled',
+      ) ??
       false;
 
   @override
   Future<String> downloadApk({
     required Uri url,
+    required Uri serverBaseUri,
     required String fileName,
     required int sizeBytes,
     required String sha256Hex,
@@ -331,6 +332,7 @@ class _MethodChannelAppUpdatePlatform implements AppUpdatePlatform {
     final path = await AppUpdateService._channel
         .invokeMethod<String>('downloadApk', {
           'url': url.toString(),
+          'serverOrigin': serverBaseUri.toString(),
           'fileName': fileName,
           'sizeBytes': sizeBytes,
           'sha256': sha256Hex,

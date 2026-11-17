@@ -116,12 +116,27 @@ class MainActivity : FlutterActivity() {
         val fileName = call.argument<String>("fileName")
         val expectedSize = call.argument<Number>("sizeBytes")?.toLong()
         val expectedSha256 = call.argument<String>("sha256")?.lowercase()
-        val uri = runCatching { Uri.parse(rawUrl) }.getOrNull()
+        val rawServerOrigin = call.argument<String>("serverOrigin")
+        val uri = rawUrl?.let { runCatching { Uri.parse(it) }.getOrNull() }
+        val serverOrigin = rawServerOrigin?.let { runCatching { Uri.parse(it) }.getOrNull() }
+        fun httpsPort(value: Uri): Int? = when {
+            value.port == -1 -> 443
+            value.port in 1..65535 -> value.port
+            else -> null
+        }
         if (uri == null ||
+            serverOrigin == null ||
+            serverOrigin.scheme != "https" ||
+            serverOrigin.host.isNullOrEmpty() ||
+            !serverOrigin.userInfo.isNullOrEmpty() ||
+            (serverOrigin.path.orEmpty().isNotEmpty() && serverOrigin.path != "/") ||
+            serverOrigin.query != null ||
+            serverOrigin.fragment != null ||
+            httpsPort(serverOrigin) == null ||
             uri.scheme != "https" ||
-            uri.host != "www.parabeacon.icu" ||
+            uri.host?.equals(serverOrigin.host, ignoreCase = true) != true ||
+            httpsPort(uri) != httpsPort(serverOrigin) ||
             !uri.userInfo.isNullOrEmpty() ||
-            uri.port != -1 ||
             uri.query != null ||
             uri.fragment != null ||
             uri.path?.matches(Regex("/api/v1/app/releases/[1-9][0-9]*/download")) != true ||

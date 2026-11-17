@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'landing_point_store.dart';
 import 'parabeacon_account_service.dart';
+import 'parabeacon_server_config.dart';
 import 'user_agent_settings.dart';
 
 class LandingPointServerBundle {
@@ -25,7 +26,7 @@ class LandingPointServerSyncService {
        _client = UserAgentHttpClient(innerClient: client),
        _endpoint =
            endpoint ??
-           Uri.https('www.parabeacon.icu', '/api/v1/landing-points');
+           ParaBeaconServerConfig.apiBaseUri.resolve('/api/v1/landing-points');
 
   static final LandingPointServerSyncService instance =
       LandingPointServerSyncService();

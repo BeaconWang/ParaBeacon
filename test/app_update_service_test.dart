@@ -6,7 +6,7 @@ import 'package:http/testing.dart';
 import 'package:parabeacon/data/app_update_service.dart';
 
 void main() {
-  const baseUri = 'https://updates.parabeacon.icu';
+  const baseUri = 'https://8.8.8.8:8443';
   final checksum = List.filled(64, 'a').join();
 
   test(
@@ -55,6 +55,7 @@ void main() {
       expect(platform.requestedSize, 900);
       expect(platform.requestedSha256, checksum);
       expect(platform.requestedFileName, 'parabeacon-18.apk');
+      expect(platform.requestedServerBaseUri, Uri.parse(baseUri));
 
       platform.airplaneMode = true;
       expect(await service.isAirplaneModeEnabled(), isTrue);
@@ -146,6 +147,7 @@ class _FakeAppUpdatePlatform implements AppUpdatePlatform {
   int? requestedSize;
   String? requestedSha256;
   String? requestedFileName;
+  Uri? requestedServerBaseUri;
 
   @override
   bool get isAndroid => true;
@@ -153,6 +155,7 @@ class _FakeAppUpdatePlatform implements AppUpdatePlatform {
   @override
   Future<String> downloadApk({
     required Uri url,
+    required Uri serverBaseUri,
     required String fileName,
     required int sizeBytes,
     required String sha256Hex,
@@ -161,7 +164,9 @@ class _FakeAppUpdatePlatform implements AppUpdatePlatform {
     requestedSize = sizeBytes;
     requestedSha256 = sha256Hex;
     requestedFileName = fileName;
-    expect(url.host, 'updates.parabeacon.icu');
+    requestedServerBaseUri = serverBaseUri;
+    expect(url.host, '8.8.8.8');
+    expect(serverBaseUri, Uri.parse('https://8.8.8.8:8443'));
     return r'C:\private\parabeacon-18.apk';
   }
 

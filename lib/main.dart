@@ -29,6 +29,7 @@ import 'data/flight_details_settings.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/parabeacon_account_service.dart';
+import 'data/parabeacon_server_config.dart';
 import 'data/live_tracking_config.dart';
 import 'data/live_tracking_service.dart' show LiveTrackingService;
 import 'data/gps_flight_data_bridge.dart';
@@ -68,7 +69,7 @@ Future<void> main() async {
   } on Object {
     LiveTrackingService.instance.configure(null);
   }
-  AppUpdateService.instance.configure(LiveTrackingService.instance.apiBaseUri);
+  AppUpdateService.instance.configure(ParaBeaconServerConfig.apiBaseUri);
   // Restore offline maps after the first frame so opening the app is not held
   // up by preferences I/O or opening the MBTiles database.
   WidgetsBinding.instance.addPostFrameCallback((_) {

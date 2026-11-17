@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import 'live_tracking_proxy_auth_service.dart';
+import 'parabeacon_server_config.dart';
 import 'user_agent_settings.dart';
 
 abstract interface class AccountSessionStore {
@@ -67,7 +68,7 @@ class ParaBeaconAccountService extends ChangeNotifier
 
   static final ParaBeaconAccountService instance = ParaBeaconAccountService();
 
-  static final Uri _apiBaseUri = Uri.https('www.parabeacon.icu', '/api/v1/');
+  static final Uri _apiBaseUri = ParaBeaconServerConfig.apiV1BaseUri;
   static const _tokenKey = 'parabeacon_access_token';
   static const _expiresAtKey = 'parabeacon_access_token_expires_at';
   static const _refreshTokenKey = 'parabeacon_refresh_token';

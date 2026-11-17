@@ -83,16 +83,32 @@ void main() {
     expect(config.channelIds, ['thermal', '7']);
   });
 
+  test('accepts an IP server address and builds endpoints on that origin', () {
+    final baseUri = Uri.parse('https://8.8.4.4:8443');
+    final config = LiveTrackingConfig.fromJson(
+      _configJson(),
+      apiBaseUri: baseUri,
+    );
+
+    expect(config.apiBaseUri, baseUri);
+    expect(
+      config.sessionStartUri,
+      Uri.parse('https://8.8.4.4:8443/api/v1/tracking/sessions'),
+    );
+  });
+
   test('rejects insecure origins and cross-origin auth/socket endpoints', () {
     expect(
       () => LiveTrackingConfig.fromJson(
-        _configJson(apiBaseUrl: 'http://proxy.example'),
+        _configJson(),
+        apiBaseUri: Uri.parse('http://proxy.example'),
       ),
       throwsFormatException,
     );
     expect(
       () => LiveTrackingConfig.fromJson(
-        _configJson(apiBaseUrl: 'https://10.1.2.3'),
+        _configJson(),
+        apiBaseUri: Uri.parse('https://10.1.2.3'),
       ),
       throwsFormatException,
     );
@@ -374,12 +390,10 @@ void main() {
 }
 
 Map<String, Object?> _configJson({
-  String apiBaseUrl = 'https://www.parabeacon.icu',
   String? authEndpoint,
   String? webSocketUrl,
   List<Object> channelIds = const [],
 }) => {
-  'api_base_url': apiBaseUrl,
   'session_start_endpoint': '/api/v1/tracking/sessions',
   'session_stop_endpoint': '/api/v1/tracking/sessions/{session_id}/stop',
   'points_endpoint': '/api/v1/tracking/sessions/{session_id}/points',

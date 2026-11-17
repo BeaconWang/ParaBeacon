@@ -1,5 +1,4 @@
 {
-  "api_base_url": "https://www.parabeacon.icu",
   "session_start_endpoint": "/api/v1/tracking/sessions",
   "session_stop_endpoint": "/api/v1/tracking/sessions/{session_id}/stop",
   "points_endpoint": "/api/v1/tracking/sessions/{session_id}/points",

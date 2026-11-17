@@ -426,7 +426,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get positionSharingPromptBody =>
-      '选择共享后，实时位置会发送至 XContest；登录 ParaBeacon 账户时，也会分享至 ParaBeacon Server。选择前上传保持暂停，且仅在飞行期间发送。';
+      '选择共享后将恢复已启用的服务；首次选择时，会启用当前已登录的服务。实时数据仅在飞行期间发送。';
 
   @override
   String get positionSharingDisableAction => '停用位置共享';
@@ -435,14 +435,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get positionSharingDisableSubtitle => '暂时暂停共享；下次打开应用时会再次显示此提示。';
 
   @override
-  String get liveTrackingEnabled => '启用实时追踪';
+  String get liveTrackingXContestSync => '同步至 XContest';
 
   @override
-  String get liveTrackingEnabledSubtitle => '当前飞行遥测将通过已登录的账户分享。';
+  String get liveTrackingXContestSyncSubtitle => '将实时飞行数据发送到您的 XContest 账户。';
+
+  @override
+  String get liveTrackingXContestSignInRequired => '请登录 XContest 后启用此开关。';
+
+  @override
+  String get liveTrackingParaBeaconSync => '同步至 ParaBeacon';
+
+  @override
+  String get liveTrackingParaBeaconSyncSubtitle =>
+      '将实时飞行数据发送到 ParaBeacon Server。';
+
+  @override
+  String get liveTrackingParaBeaconSignInRequired => '请登录 ParaBeacon 后启用此开关。';
 
   @override
   String get liveTrackingRequiresXContest =>
-      '请先登录 ParaBeacon 或 XContest 账户以启用实时追踪。';
+      '请先登录 XContest 或 ParaBeacon，再启用对应的实时追踪目标。';
+
+  @override
+  String get liveTrackingNoDestinationSelected => '请至少启用一个已登录的同步目标，以分享实时数据。';
 
   @override
   String get liveTrackingProxyToken => '代理访问令牌';
@@ -507,7 +523,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingTemporaryDisable => '暂时停止分享';
 
   @override
-  String get liveTrackingTemporaryDisableSubtitle => '暂停实时追踪，但不修改主开关';
+  String get liveTrackingTemporaryDisableSubtitle => '暂停所有已选服务的分享，但保留各服务开关状态。';
 
   @override
   String get liveTrackingTemporarilyDisabled => '实时追踪已暂时暂停。';
@@ -522,8 +538,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingServerAccountRequired => '请登录 ParaBeacon 账户以分享实时飞行数据。';
 
   @override
-  String get liveTrackingServerDisabled =>
-      '启用实时追踪后，才会向 ParaBeacon Server 分享飞行数据。';
+  String get liveTrackingServerSyncDisabled => 'ParaBeacon 同步已关闭。';
 
   @override
   String get liveTrackingServerPaused => '实时追踪设置已暂停服务端数据分享。';

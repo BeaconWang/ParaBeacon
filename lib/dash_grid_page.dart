@@ -837,11 +837,19 @@ class _DashGridPageState extends State<DashGridPage> {
                               animation: Listenable.merge([
                                 XContestAuthService.instance,
                                 ParaBeaconAccountService.instance,
+                                LiveTrackingSettings.instance,
                               ]),
                               builder: (context, _) {
                                 final auth = XContestAuthService.instance;
                                 final paraBeacon =
                                     ParaBeaconAccountService.instance;
+                                final trackingSettings =
+                                    LiveTrackingSettings.instance;
+                                final hasSelectedDestination =
+                                    (auth.isSignedIn &&
+                                        trackingSettings.xcontestEnabled) ||
+                                    (paraBeacon.isSignedIn &&
+                                        trackingSettings.parabeaconEnabled);
                                 if (!auth.isSignedIn && !paraBeacon.isSignedIn) {
                                   return const SizedBox.shrink();
                                 }
@@ -856,7 +864,9 @@ class _DashGridPageState extends State<DashGridPage> {
                                       ),
                                       title: Text(l10n.liveTracking),
                                       subtitle: Text(
-                                        LiveTrackingSettings.instance.enabled
+                                        trackingSettings.temporaryDontShare
+                                            ? l10n.liveTrackingTemporarilyDisabled
+                                            : hasSelectedDestination
                                             ? l10n.liveTrackingReady
                                             : l10n.liveTrackingSubtitle,
                                       ),

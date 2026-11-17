@@ -6,7 +6,13 @@ class LiveTrackingSettings extends ChangeNotifier {
 
   static final LiveTrackingSettings instance = LiveTrackingSettings._();
 
-  static const _kEnabled = 'Livetrack.Enabled';
+  static const _kLegacyEnabled = 'Livetrack.Enabled';
+  static const _kXContestEnabled = 'Livetrack.XContestEnabled';
+  static const _kParaBeaconEnabled = 'Livetrack.ParaBeaconEnabled';
+  static const _kDestinationSelectionMade =
+      'Livetrack.DestinationSelectionMade';
+  static const _kDestinationMigrationComplete =
+      'Livetrack.DestinationMigrationComplete';
   static const _kClaimContest = 'Livetrack.ClaimContest';
   static const _kShowPublic = 'Livetrack.ShowPublic';
   static const _kFlightPublic = 'Livetrack.FlightPublic';
@@ -14,7 +20,9 @@ class LiveTrackingSettings extends ChangeNotifier {
   static const _kTemporaryDontShare = 'Internal.LiveTempDontShare';
   static const _kReportSimulatedAsReal = 'Internal.LiveReportSimulatedAsReal';
 
-  bool _enabled = false;
+  bool _xcontestEnabled = false;
+  bool _parabeaconEnabled = false;
+  bool _destinationSelectionMade = false;
   bool _claimContest = true;
   bool _showPublic = true;
   bool _flightPublic = true;
@@ -24,7 +32,9 @@ class LiveTrackingSettings extends ChangeNotifier {
   bool _loaded = false;
   bool _saving = false;
 
-  bool get enabled => _enabled;
+  bool get xcontestEnabled => _xcontestEnabled;
+  bool get parabeaconEnabled => _parabeaconEnabled;
+  bool get hasExplicitDestinationSelection => _destinationSelectionMade;
   bool get claimContest => _claimContest;
   bool get showPublic => _showPublic;
   bool get flightPublic => _flightPublic;
@@ -38,20 +48,39 @@ class LiveTrackingSettings extends ChangeNotifier {
       kReleaseMode ? false : _reportSimulatedAsReal;
   bool get isLoaded => _loaded;
   bool get isSaving => _saving;
-  bool get isEffectivelyEnabled => _enabled && !_temporaryDontShare;
-
-  String get statusKey {
-    if (_temporaryDontShare) return 'temporarilyDisabled';
-    if (_enabled) return 'enabled';
-    return 'disabled';
-  }
 
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
     try {
       final preferences = await SharedPreferences.getInstance();
-      _enabled = preferences.getBool(_kEnabled) ?? _enabled;
+      final migrationComplete =
+          preferences.getBool(_kDestinationMigrationComplete) ?? false;
+      if (migrationComplete) {
+        _xcontestEnabled =
+            preferences.getBool(_kXContestEnabled) ?? _xcontestEnabled;
+        _parabeaconEnabled =
+            preferences.getBool(_kParaBeaconEnabled) ?? _parabeaconEnabled;
+        _destinationSelectionMade =
+            preferences.getBool(_kDestinationSelectionMade) ?? false;
+      } else {
+        final legacyEnabled = preferences.getBool(_kLegacyEnabled) ?? false;
+        _xcontestEnabled = legacyEnabled
+            ? preferences.getBool(_kXContestEnabled) ?? true
+            : false;
+        _parabeaconEnabled = legacyEnabled
+            ? preferences.getBool(_kParaBeaconEnabled) ?? true
+            : false;
+        _destinationSelectionMade = legacyEnabled;
+        await preferences.setBool(_kXContestEnabled, _xcontestEnabled);
+        await preferences.setBool(_kParaBeaconEnabled, _parabeaconEnabled);
+        await preferences.setBool(
+          _kDestinationSelectionMade,
+          _destinationSelectionMade,
+        );
+        await preferences.setBool(_kDestinationMigrationComplete, true);
+        await preferences.remove(_kLegacyEnabled);
+      }
       _claimContest = preferences.getBool(_kClaimContest) ?? _claimContest;
       _showPublic = preferences.getBool(_kShowPublic) ?? _showPublic;
       _flightPublic = preferences.getBool(_kFlightPublic) ?? _flightPublic;
@@ -70,7 +99,8 @@ class LiveTrackingSettings extends ChangeNotifier {
   }
 
   Future<void> save({
-    required bool enabled,
+    required bool xcontestEnabled,
+    required bool parabeaconEnabled,
     required bool claimContest,
     required bool showPublic,
     required bool flightPublic,
@@ -78,7 +108,9 @@ class LiveTrackingSettings extends ChangeNotifier {
     required bool temporaryDontShare,
     bool? reportSimulatedAsReal,
   }) async {
-    _enabled = enabled;
+    _xcontestEnabled = xcontestEnabled;
+    _parabeaconEnabled = parabeaconEnabled;
+    _destinationSelectionMade = true;
     _claimContest = claimContest;
     _showPublic = showPublic;
     _flightPublic = flightPublic;
@@ -91,7 +123,10 @@ class LiveTrackingSettings extends ChangeNotifier {
     notifyListeners();
     try {
       final preferences = await SharedPreferences.getInstance();
-      await preferences.setBool(_kEnabled, _enabled);
+      await preferences.setBool(_kXContestEnabled, _xcontestEnabled);
+      await preferences.setBool(_kParaBeaconEnabled, _parabeaconEnabled);
+      await preferences.setBool(_kDestinationSelectionMade, true);
+      await preferences.setBool(_kDestinationMigrationComplete, true);
       await preferences.setBool(_kClaimContest, _claimContest);
       await preferences.setBool(_kShowPublic, _showPublic);
       await preferences.setBool(_kFlightPublic, _flightPublic);
@@ -112,18 +147,35 @@ class LiveTrackingSettings extends ChangeNotifier {
     }
   }
 
-  /// Immediately applies and persists the master "Enable LiveTracking" switch,
-  /// independent of the Save button. XCTrack observes its `Livetrack.Enabled`
-  /// config live (`TrackService.j()` starts/stops the sender the instant it
-  /// changes), so toggling here must take effect at once: turning it off
-  /// mid-flight stops sharing immediately. Does not touch other settings.
-  Future<void> setEnabled(bool value) async {
-    if (_enabled == value) return;
-    _enabled = value;
+  /// Immediately applies and persists the XContest destination selection.
+  Future<void> setXContestEnabled(bool value) async {
+    if (_xcontestEnabled == value && _destinationSelectionMade) return;
+    _xcontestEnabled = value;
+    _destinationSelectionMade = true;
     notifyListeners();
     try {
       final preferences = await SharedPreferences.getInstance();
-      await preferences.setBool(_kEnabled, value);
+      await preferences.setBool(_kXContestEnabled, _xcontestEnabled);
+      await preferences.setBool(_kParaBeaconEnabled, _parabeaconEnabled);
+      await preferences.setBool(_kDestinationSelectionMade, true);
+      await preferences.setBool(_kDestinationMigrationComplete, true);
+    } catch (_) {
+      // In-memory value still applies; persistence can retry later.
+    }
+  }
+
+  /// Immediately applies and persists the ParaBeacon destination selection.
+  Future<void> setParaBeaconEnabled(bool value) async {
+    if (_parabeaconEnabled == value && _destinationSelectionMade) return;
+    _parabeaconEnabled = value;
+    _destinationSelectionMade = true;
+    notifyListeners();
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(_kXContestEnabled, _xcontestEnabled);
+      await preferences.setBool(_kParaBeaconEnabled, _parabeaconEnabled);
+      await preferences.setBool(_kDestinationSelectionMade, true);
+      await preferences.setBool(_kDestinationMigrationComplete, true);
     } catch (_) {
       // In-memory value still applies; persistence can retry later.
     }

@@ -432,7 +432,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingSubtitle =>
-      'Share live flight data through the ParaBeacon or XContest account you sign in to.';
+      'Sign in, then choose whether to share live flight data with XContest, ParaBeacon, or both.';
 
   @override
   String get positionSharingTitle => 'Position sharing';
@@ -447,7 +447,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get positionSharingPromptBody =>
-      'Choosing to share sends live positions through the ParaBeacon or XContest account you are signed in to. Uploads stay paused until you choose to share and are sent only during active flights.';
+      'Choosing to share resumes your enabled destinations. The first time, it enables services you are currently signed in to. Live data is sent only during active flights.';
 
   @override
   String get positionSharingDisableAction => 'Disable sharing';
@@ -457,15 +457,34 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pause sharing for now. This prompt will appear again the next time you open the app.';
 
   @override
-  String get liveTrackingEnabled => 'Enable LiveTracking';
+  String get liveTrackingXContestSync => 'Sync to XContest';
 
   @override
-  String get liveTrackingEnabledSubtitle =>
-      'Share active-flight telemetry through the account(s) you are signed in to.';
+  String get liveTrackingXContestSyncSubtitle =>
+      'Send live flight data to your XContest account.';
+
+  @override
+  String get liveTrackingXContestSignInRequired =>
+      'Sign in to XContest to enable this switch.';
+
+  @override
+  String get liveTrackingParaBeaconSync => 'Sync to ParaBeacon';
+
+  @override
+  String get liveTrackingParaBeaconSyncSubtitle =>
+      'Send live flight data to ParaBeacon Server.';
+
+  @override
+  String get liveTrackingParaBeaconSignInRequired =>
+      'Sign in to ParaBeacon to enable this switch.';
 
   @override
   String get liveTrackingRequiresXContest =>
-      'Sign in to either a ParaBeacon or XContest account to enable LiveTracking.';
+      'Sign in to XContest or ParaBeacon to enable a live-tracking destination.';
+
+  @override
+  String get liveTrackingNoDestinationSelected =>
+      'Turn on at least one signed-in destination to share live data.';
 
   @override
   String get liveTrackingProxyToken => 'Proxy access token';
@@ -539,7 +558,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingTemporaryDisableSubtitle =>
-      'Pause LiveTracking without changing the main setting';
+      'Pause all selected destinations without changing their switches.';
 
   @override
   String get liveTrackingTemporarilyDisabled =>
@@ -557,8 +576,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign in to a ParaBeacon account to share live telemetry.';
 
   @override
-  String get liveTrackingServerDisabled =>
-      'Enable LiveTracking to share flight data with ParaBeacon Server.';
+  String get liveTrackingServerSyncDisabled =>
+      'ParaBeacon syncing is turned off.';
 
   @override
   String get liveTrackingServerPaused =>

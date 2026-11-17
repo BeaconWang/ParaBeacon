@@ -23,21 +23,34 @@ void main() {
     FlightState.instance.stop();
   });
 
-  test(
-    'public location sharing is off by default and persists opt-in',
-    () async {
-      SharedPreferences.setMockInitialValues({});
-      final settings = LiveTrackingSettings.instance;
+  test('tracking destinations default off and persist independently', () async {
+    SharedPreferences.setMockInitialValues({});
+    final settings = LiveTrackingSettings.instance;
 
-      await settings.load();
-      expect(settings.shareLocationPublicly, isFalse);
+    await settings.load();
+    expect(settings.shareLocationPublicly, isFalse);
+    expect(settings.xcontestEnabled, isFalse);
+    expect(settings.parabeaconEnabled, isFalse);
+    expect(settings.hasExplicitDestinationSelection, isFalse);
 
-      await settings.setShareLocationPublicly(true);
-      final preferences = await SharedPreferences.getInstance();
-      expect(preferences.getBool('ParaBeacon.ShareLocationPublicly'), isTrue);
-      await settings.setShareLocationPublicly(false);
-    },
-  );
+    await settings.setXContestEnabled(true);
+    expect(settings.xcontestEnabled, isTrue);
+    expect(settings.parabeaconEnabled, isFalse);
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getBool('Livetrack.XContestEnabled'), isTrue);
+    expect(preferences.getBool('Livetrack.ParaBeaconEnabled'), isFalse);
+    expect(preferences.getBool('Livetrack.DestinationSelectionMade'), isTrue);
+    await settings.setParaBeaconEnabled(true);
+    await settings.setXContestEnabled(false);
+    expect(settings.xcontestEnabled, isFalse);
+    expect(settings.parabeaconEnabled, isTrue);
+    expect(preferences.getBool('Livetrack.XContestEnabled'), isFalse);
+    expect(preferences.getBool('Livetrack.ParaBeaconEnabled'), isTrue);
+
+    await settings.setShareLocationPublicly(true);
+    expect(preferences.getBool('ParaBeacon.ShareLocationPublicly'), isTrue);
+    await settings.setShareLocationPublicly(false);
+  });
 
   test('loads endpoints and settings from the bundled JSON asset', () async {
     final config = await LiveTrackingConfigLoader().load();

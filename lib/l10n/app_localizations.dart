@@ -887,7 +887,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Share live flight data through the ParaBeacon or XContest account you sign in to.'**
+  /// **'Sign in, then choose whether to share live flight data with XContest, ParaBeacon, or both.'**
   String get liveTrackingSubtitle;
 
   /// No description provided for @positionSharingTitle.
@@ -911,7 +911,7 @@ abstract class AppLocalizations {
   /// No description provided for @positionSharingPromptBody.
   ///
   /// In en, this message translates to:
-  /// **'Choosing to share sends live positions through the ParaBeacon or XContest account you are signed in to. Uploads stay paused until you choose to share and are sent only during active flights.'**
+  /// **'Choosing to share resumes your enabled destinations. The first time, it enables services you are currently signed in to. Live data is sent only during active flights.'**
   String get positionSharingPromptBody;
 
   /// No description provided for @positionSharingDisableAction.
@@ -926,23 +926,53 @@ abstract class AppLocalizations {
   /// **'Pause sharing for now. This prompt will appear again the next time you open the app.'**
   String get positionSharingDisableSubtitle;
 
-  /// No description provided for @liveTrackingEnabled.
+  /// No description provided for @liveTrackingXContestSync.
   ///
   /// In en, this message translates to:
-  /// **'Enable LiveTracking'**
-  String get liveTrackingEnabled;
+  /// **'Sync to XContest'**
+  String get liveTrackingXContestSync;
 
-  /// No description provided for @liveTrackingEnabledSubtitle.
+  /// No description provided for @liveTrackingXContestSyncSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Share active-flight telemetry through the account(s) you are signed in to.'**
-  String get liveTrackingEnabledSubtitle;
+  /// **'Send live flight data to your XContest account.'**
+  String get liveTrackingXContestSyncSubtitle;
+
+  /// No description provided for @liveTrackingXContestSignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to XContest to enable this switch.'**
+  String get liveTrackingXContestSignInRequired;
+
+  /// No description provided for @liveTrackingParaBeaconSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync to ParaBeacon'**
+  String get liveTrackingParaBeaconSync;
+
+  /// No description provided for @liveTrackingParaBeaconSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send live flight data to ParaBeacon Server.'**
+  String get liveTrackingParaBeaconSyncSubtitle;
+
+  /// No description provided for @liveTrackingParaBeaconSignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to ParaBeacon to enable this switch.'**
+  String get liveTrackingParaBeaconSignInRequired;
 
   /// No description provided for @liveTrackingRequiresXContest.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to either a ParaBeacon or XContest account to enable LiveTracking.'**
+  /// **'Sign in to XContest or ParaBeacon to enable a live-tracking destination.'**
   String get liveTrackingRequiresXContest;
+
+  /// No description provided for @liveTrackingNoDestinationSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on at least one signed-in destination to share live data.'**
+  String get liveTrackingNoDestinationSelected;
 
   /// No description provided for @liveTrackingProxyToken.
   ///
@@ -1061,7 +1091,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingTemporaryDisableSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Pause LiveTracking without changing the main setting'**
+  /// **'Pause all selected destinations without changing their switches.'**
   String get liveTrackingTemporaryDisableSubtitle;
 
   /// No description provided for @liveTrackingTemporarilyDisabled.
@@ -1088,11 +1118,11 @@ abstract class AppLocalizations {
   /// **'Sign in to a ParaBeacon account to share live telemetry.'**
   String get liveTrackingServerAccountRequired;
 
-  /// No description provided for @liveTrackingServerDisabled.
+  /// No description provided for @liveTrackingServerSyncDisabled.
   ///
   /// In en, this message translates to:
-  /// **'Enable LiveTracking to share flight data with ParaBeacon Server.'**
-  String get liveTrackingServerDisabled;
+  /// **'ParaBeacon syncing is turned off.'**
+  String get liveTrackingServerSyncDisabled;
 
   /// No description provided for @liveTrackingServerPaused.
   ///

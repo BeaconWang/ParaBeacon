@@ -250,7 +250,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       // point uploads via LiveClient.tempDontShare (see the service), so the
       // socket/flight stays alive and the pilot can resume seamlessly.
       isEnabled: () =>
-          LiveTrackingSettings.instance.enabled &&
+          LiveTrackingSettings.instance.xcontestEnabled &&
           XContestAuthService.instance.isSignedIn,
       pilotId: () => XContestAuthService.instance.uid,
       eligibilitySource: Listenable.merge([
@@ -264,7 +264,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       data: _transformer,
       flightState: FlightState.instance,
       isEnabled: () =>
-          LiveTrackingSettings.instance.isEffectivelyEnabled &&
+          !LiveTrackingSettings.instance.temporaryDontShare &&
+          LiveTrackingSettings.instance.parabeaconEnabled &&
           ParaBeaconAccountService.instance.isSignedIn,
       pilotId: () => ParaBeaconAccountService.instance.user?.username,
       isPubliclyShared: () =>
@@ -374,10 +375,17 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     if (!mounted) return;
     switch (choice) {
       case PositionSharingChoice.share:
-        await LiveTrackingSettings.instance.setTemporaryDontShare(false);
-        await LiveTrackingSettings.instance.setEnabled(true);
+        final settings = LiveTrackingSettings.instance;
+        await settings.setTemporaryDontShare(false);
+        if (!settings.hasExplicitDestinationSelection) {
+          await settings.setXContestEnabled(
+            XContestAuthService.instance.isSignedIn,
+          );
+          await settings.setParaBeaconEnabled(
+            ParaBeaconAccountService.instance.isSignedIn,
+          );
+        }
       case PositionSharingChoice.disable:
-        await LiveTrackingSettings.instance.setEnabled(false);
         await LiveTrackingSettings.instance.setTemporaryDontShare(true);
       case PositionSharingChoice.timedOut:
       case null:

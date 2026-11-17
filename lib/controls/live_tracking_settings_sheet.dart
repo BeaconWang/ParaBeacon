@@ -29,7 +29,8 @@ class _LiveTrackingSettingsSheet extends StatefulWidget {
 
 class _LiveTrackingSettingsSheetState
     extends State<_LiveTrackingSettingsSheet> {
-  bool _enabled = LiveTrackingSettings.instance.enabled;
+  bool _xcontestEnabled = LiveTrackingSettings.instance.xcontestEnabled;
+  bool _parabeaconEnabled = LiveTrackingSettings.instance.parabeaconEnabled;
   bool _claimContest = LiveTrackingSettings.instance.claimContest;
   bool _showPublic = LiveTrackingSettings.instance.showPublic;
   bool _flightPublic = LiveTrackingSettings.instance.flightPublic;
@@ -52,7 +53,8 @@ class _LiveTrackingSettingsSheetState
       if (!mounted) return;
       final settings = LiveTrackingSettings.instance;
       setState(() {
-        _enabled = settings.enabled;
+        _xcontestEnabled = settings.xcontestEnabled;
+        _parabeaconEnabled = settings.parabeaconEnabled;
         _claimContest = settings.claimContest;
         _showPublic = settings.showPublic;
         _flightPublic = settings.flightPublic;
@@ -71,7 +73,8 @@ class _LiveTrackingSettingsSheetState
 
   Future<void> _save() async {
     await LiveTrackingSettings.instance.save(
-      enabled: _enabled,
+      xcontestEnabled: _xcontestEnabled,
+      parabeaconEnabled: _parabeaconEnabled,
       claimContest: _claimContest,
       showPublic: _showPublic,
       flightPublic: _flightPublic,
@@ -102,14 +105,20 @@ class _LiveTrackingSettingsSheetState
       ]),
       builder: (context, _) {
         final signedIn = auth.isSignedIn;
-        final hasTrackingAccount = signedIn || serverAccount.isSignedIn;
-        final canEnable = hasTrackingAccount && !_temporaryDontShare;
+        final serverSignedIn = serverAccount.isSignedIn;
+        final hasTrackingAccount = signedIn || serverSignedIn;
+        final hasSelectedTrackingAccount =
+            (settings.xcontestEnabled && signedIn) ||
+            (settings.parabeaconEnabled && serverSignedIn);
+        final canEnable = hasSelectedTrackingAccount && !_temporaryDontShare;
+        final xcontestActiveForUi =
+            settings.xcontestEnabled && signedIn && !_temporaryDontShare;
         final flightPublicLocked = tracking.isFlightSessionStarted;
         final String serverMessage;
-        if (!settings.enabled) {
-          serverMessage = l10n.liveTrackingServerDisabled;
-        } else if (settings.temporaryDontShare) {
+        if (settings.temporaryDontShare) {
           serverMessage = l10n.liveTrackingServerPaused;
+        } else if (!settings.parabeaconEnabled) {
+          serverMessage = l10n.liveTrackingServerSyncDisabled;
         } else if (!serverAccount.isSignedIn) {
           serverMessage = l10n.liveTrackingServerAccountRequired;
         } else {
@@ -180,24 +189,36 @@ class _LiveTrackingSettingsSheetState
                         child: Column(
                           children: [
                             SwitchListTile(
-                              title: Text(l10n.liveTrackingEnabled),
+                              title: Text(l10n.liveTrackingXContestSync),
                               subtitle: Text(
-                                hasTrackingAccount
-                                    ? l10n.liveTrackingEnabledSubtitle
-                                    : l10n.liveTrackingRequiresXContest,
+                                signedIn
+                                    ? l10n.liveTrackingXContestSyncSubtitle
+                                    : l10n.liveTrackingXContestSignInRequired,
                               ),
-                              value: _enabled,
-                              onChanged: _loading || !hasTrackingAccount
+                              value: _xcontestEnabled,
+                              onChanged: _loading || !signedIn
                                   ? null
                                   : (value) {
-                                      setState(() => _enabled = value);
-                                      // Apply + persist immediately so the
-                                      // master switch takes effect at once -
-                                      // turning it off mid-flight stops
-                                      // sharing without waiting for Save.
-                                      LiveTrackingSettings.instance.setEnabled(
-                                        value,
+                                      setState(() => _xcontestEnabled = value);
+                                      settings.setXContestEnabled(value);
+                                    },
+                            ),
+                            const Divider(height: 1),
+                            SwitchListTile(
+                              title: Text(l10n.liveTrackingParaBeaconSync),
+                              subtitle: Text(
+                                serverSignedIn
+                                    ? l10n.liveTrackingParaBeaconSyncSubtitle
+                                    : l10n.liveTrackingParaBeaconSignInRequired,
+                              ),
+                              value: _parabeaconEnabled,
+                              onChanged: _loading || !serverSignedIn
+                                  ? null
+                                  : (value) {
+                                      setState(
+                                        () => _parabeaconEnabled = value,
                                       );
+                                      settings.setParaBeaconEnabled(value);
                                     },
                             ),
                             const Divider(height: 1),
@@ -324,32 +345,37 @@ class _LiveTrackingSettingsSheetState
                           icon: Icons.pause_circle_outline,
                           message: l10n.liveTrackingTemporarilyDisabled,
                         )
-                      else if (signedIn && !tracking.isConfigured)
+                      else if (!hasSelectedTrackingAccount)
+                        _StatusMessage(
+                          icon: Icons.cloud_off_outlined,
+                          message: l10n.liveTrackingNoDestinationSelected,
+                        )
+                      else if (xcontestActiveForUi && !tracking.isConfigured)
                         _StatusMessage(
                           icon: Icons.settings_outlined,
                           message: l10n.liveTrackingConfigInvalid,
                         )
-                      else if (signedIn &&
+                      else if (xcontestActiveForUi &&
                           tracking.state ==
                               LiveTrackingConnectionState.connecting)
                         _StatusMessage(
                           icon: Icons.cloud_sync_outlined,
                           message: l10n.liveTrackingConnecting,
                         )
-                      else if (signedIn &&
+                      else if (xcontestActiveForUi &&
                           tracking.state == LiveTrackingConnectionState.active)
                         _StatusMessage(
                           icon: Icons.cloud_done_outlined,
                           message: l10n.liveTrackingConnected,
                         )
-                      else if (signedIn &&
+                      else if (xcontestActiveForUi &&
                           tracking.state ==
                               LiveTrackingConnectionState.reconnecting)
                         _StatusMessage(
                           icon: Icons.cloud_sync_outlined,
                           message: l10n.liveTrackingRetrying,
                         )
-                      else if (signedIn &&
+                      else if (xcontestActiveForUi &&
                           tracking.state ==
                               LiveTrackingConnectionState.disconnected &&
                           tracking.lastErrorCode != null)
@@ -357,7 +383,7 @@ class _LiveTrackingSettingsSheetState
                           icon: Icons.error_outline,
                           message: l10n.liveTrackingFailed,
                         )
-                      else if (canEnable && _enabled)
+                      else if (canEnable)
                         _StatusMessage(
                           icon: Icons.check_circle_outline,
                           message: l10n.liveTrackingReady,

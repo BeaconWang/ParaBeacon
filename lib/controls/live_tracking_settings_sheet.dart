@@ -188,20 +188,12 @@ class _LiveTrackingSettingsSheetState
                       Card(
                         child: Column(
                           children: [
-                            SwitchListTile(
-                              title: Text(l10n.liveTrackingXContestSync),
-                              subtitle: Text(
-                                signedIn
-                                    ? l10n.liveTrackingXContestSyncSubtitle
-                                    : l10n.liveTrackingXContestSignInRequired,
+                            ListTile(
+                              leading: Icon(
+                                Icons.cloud_outlined,
+                                color: theme.colorScheme.primary,
                               ),
-                              value: _xcontestEnabled,
-                              onChanged: _loading || !signedIn
-                                  ? null
-                                  : (value) {
-                                      setState(() => _xcontestEnabled = value);
-                                      settings.setXContestEnabled(value);
-                                    },
+                              title: const Text('ParaBeacon'),
                             ),
                             const Divider(height: 1),
                             SwitchListTile(
@@ -219,6 +211,64 @@ class _LiveTrackingSettingsSheetState
                                         () => _parabeaconEnabled = value,
                                       );
                                       settings.setParaBeaconEnabled(value);
+                                    },
+                            ),
+                            const Divider(height: 1),
+                            SwitchListTile(
+                              secondary: const Icon(Icons.public),
+                              title: Text(
+                                l10n.liveTrackingShareLocationPublicly,
+                              ),
+                              subtitle: Text(
+                                l10n.liveTrackingShareLocationPubliclySubtitle,
+                              ),
+                              value: _shareLocationPublicly,
+                              onChanged: _loading || !serverSignedIn
+                                  ? null
+                                  : (value) {
+                                      setState(
+                                        () => _shareLocationPublicly = value,
+                                      );
+                                      settings.setShareLocationPublicly(value);
+                                    },
+                            ),
+                            const Divider(height: 1),
+                            ListTile(
+                              leading: Icon(
+                                Icons.cloud_upload_outlined,
+                                color: theme.colorScheme.primary,
+                              ),
+                              title: Text(l10n.liveTrackingServerTitle),
+                              subtitle: Text(serverMessage),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Card(
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: Icon(
+                                Icons.flight_takeoff_outlined,
+                                color: theme.colorScheme.primary,
+                              ),
+                              title: const Text('XContest'),
+                            ),
+                            const Divider(height: 1),
+                            SwitchListTile(
+                              title: Text(l10n.liveTrackingXContestSync),
+                              subtitle: Text(
+                                signedIn
+                                    ? l10n.liveTrackingXContestSyncSubtitle
+                                    : l10n.liveTrackingXContestSignInRequired,
+                              ),
+                              value: _xcontestEnabled,
+                              onChanged: _loading || !signedIn
+                                  ? null
+                                  : (value) {
+                                      setState(() => _xcontestEnabled = value);
+                                      settings.setXContestEnabled(value);
                                     },
                             ),
                             const Divider(height: 1),
@@ -247,9 +297,6 @@ class _LiveTrackingSettingsSheetState
                                   ? null
                                   : (value) {
                                       setState(() => _showPublic = value);
-                                      // Instant apply: hot-updates xcSetOptions
-                                      // mid-flight so other pilots start/stop
-                                      // showing on the map without Save.
                                       LiveTrackingSettings.instance
                                           .setShowPublic(value);
                                     },
@@ -269,26 +316,24 @@ class _LiveTrackingSettingsSheetState
                                   : (value) =>
                                         setState(() => _flightPublic = value),
                             ),
-                            const Divider(height: 1),
-                            SwitchListTile(
-                              secondary: const Icon(Icons.public),
-                              title: Text(
-                                l10n.liveTrackingShareLocationPublicly,
+                            if (kDebugMode) ...[
+                              const Divider(height: 1),
+                              SwitchListTile(
+                                secondary: const Icon(Icons.science_outlined),
+                                title: const Text('Report simulated as real'),
+                                subtitle: const Text(
+                                  'Debug only: upload simulated locations without '
+                                  'the "simulation" flag, so XContest treats the '
+                                  'flight as real.',
+                                ),
+                                value: _reportSimulatedAsReal,
+                                onChanged: _loading
+                                    ? null
+                                    : (value) => setState(
+                                        () => _reportSimulatedAsReal = value,
+                                      ),
                               ),
-                              subtitle: Text(
-                                l10n.liveTrackingShareLocationPubliclySubtitle,
-                              ),
-                              value: _shareLocationPublicly,
-                              onChanged: _loading || !serverAccount.isSignedIn
-                                  ? null
-                                  : (value) {
-                                      setState(
-                                        () => _shareLocationPublicly = value,
-                                      );
-                                      LiveTrackingSettings.instance
-                                          .setShareLocationPublicly(value);
-                                    },
-                            ),
+                            ],
                           ],
                         ),
                       ),
@@ -314,26 +359,6 @@ class _LiveTrackingSettingsSheetState
                                 },
                         ),
                       ),
-                      if (kDebugMode) ...[
-                        const SizedBox(height: 16),
-                        Card(
-                          child: SwitchListTile(
-                            secondary: const Icon(Icons.science_outlined),
-                            title: const Text('Report simulated as real'),
-                            subtitle: const Text(
-                              'Debug only: upload simulated locations without '
-                              'the "simulation" flag, so XContest treats the '
-                              'flight as real.',
-                            ),
-                            value: _reportSimulatedAsReal,
-                            onChanged: _loading
-                                ? null
-                                : (value) => setState(
-                                    () => _reportSimulatedAsReal = value,
-                                  ),
-                          ),
-                        ),
-                      ],
                       const SizedBox(height: 16),
                       if (!hasTrackingAccount)
                         _StatusMessage(
@@ -388,17 +413,6 @@ class _LiveTrackingSettingsSheetState
                           icon: Icons.check_circle_outline,
                           message: l10n.liveTrackingReady,
                         ),
-                      const SizedBox(height: 16),
-                      Card(
-                        child: ListTile(
-                          leading: Icon(
-                            Icons.cloud_upload_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          title: Text(l10n.liveTrackingServerTitle),
-                          subtitle: Text(serverMessage),
-                        ),
-                      ),
                       const SizedBox(height: 24),
                       FilledButton.icon(
                         onPressed: _loading || settings.isSaving ? null : _save,

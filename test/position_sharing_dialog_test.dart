@@ -7,12 +7,16 @@ void main() {
   testWidgets('position sharing prompt times out without opting in', (
     tester,
   ) async {
-    PositionSharingChoice? result;
+    PositionSharingResult? result;
     await tester.pumpWidget(
       _TestApp(
         onOpen: (context) async {
           result = await showPositionSharingDialog(
             context,
+            xcontestSignedIn: true,
+            paraBeaconSignedIn: false,
+            initialXContestSync: true,
+            initialParaBeaconSync: false,
             timeout: const Duration(seconds: 5),
           );
         },
@@ -27,19 +31,23 @@ void main() {
 
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
-    expect(result, PositionSharingChoice.timedOut);
+    expect(result?.choice, PositionSharingChoice.timedOut);
     expect(find.text('Position sharing'), findsNothing);
   });
 
   testWidgets('sharing starts only after explicit confirmation', (
     tester,
   ) async {
-    PositionSharingChoice? result;
+    PositionSharingResult? result;
     await tester.pumpWidget(
       _TestApp(
         onOpen: (context) async {
           result = await showPositionSharingDialog(
             context,
+            xcontestSignedIn: true,
+            paraBeaconSignedIn: false,
+            initialXContestSync: true,
+            initialParaBeaconSync: false,
             timeout: const Duration(seconds: 5),
           );
         },
@@ -51,16 +59,59 @@ void main() {
     await tester.tap(find.text('Share my position'));
     await tester.pumpAndSettle();
 
-    expect(result, PositionSharingChoice.share);
+    expect(result?.choice, PositionSharingChoice.share);
+    expect(result?.syncToXContest, isTrue);
+    expect(result?.syncToParaBeacon, isFalse);
+  });
+
+  testWidgets('destination switches reflect account login status', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _TestApp(
+        onOpen: (context) async {
+          await showPositionSharingDialog(
+            context,
+            xcontestSignedIn: true,
+            paraBeaconSignedIn: false,
+            initialXContestSync: true,
+            initialParaBeaconSync: false,
+            timeout: const Duration(seconds: 30),
+          );
+        },
+      ),
+    );
+
+    await tester.tap(find.text('Open prompt'));
+    await tester.pumpAndSettle();
+
+    final xcontestTile = tester.widget<SwitchListTile>(
+      find.byKey(const ValueKey('positionSharingXContest')),
+    );
+    expect(xcontestTile.value, isTrue);
+    expect(xcontestTile.onChanged, isNotNull);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+
+    final paraBeaconTile = tester.widget<SwitchListTile>(
+      find.byKey(const ValueKey('positionSharingParaBeacon')),
+    );
+    expect(paraBeaconTile.value, isFalse);
+    expect(paraBeaconTile.onChanged, isNull);
   });
 
   testWidgets('disable action returns a pause choice', (tester) async {
-    PositionSharingChoice? result;
+    PositionSharingResult? result;
     await tester.pumpWidget(
       _TestApp(
         onOpen: (context) async {
           result = await showPositionSharingDialog(
             context,
+            xcontestSignedIn: true,
+            paraBeaconSignedIn: false,
+            initialXContestSync: true,
+            initialParaBeaconSync: false,
             timeout: const Duration(seconds: 5),
           );
         },
@@ -72,7 +123,7 @@ void main() {
     await tester.tap(find.text('Disable sharing'));
     await tester.pumpAndSettle();
 
-    expect(result, PositionSharingChoice.disable);
+    expect(result?.choice, PositionSharingChoice.disable);
   });
 }
 

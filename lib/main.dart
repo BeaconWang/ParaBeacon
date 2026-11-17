@@ -371,24 +371,35 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   }
 
   Future<void> _showPositionSharingPrompt(BuildContext context) async {
-    final choice = await showPositionSharingDialog(context);
-    if (!mounted) return;
-    switch (choice) {
+    final settings = LiveTrackingSettings.instance;
+    final auth = XContestAuthService.instance;
+    final serverAccount = ParaBeaconAccountService.instance;
+    final hasExplicitSelection = settings.hasExplicitDestinationSelection;
+    final result = await showPositionSharingDialog(
+      context,
+      xcontestSignedIn: auth.isSignedIn,
+      paraBeaconSignedIn: serverAccount.isSignedIn,
+      initialXContestSync: hasExplicitSelection
+          ? settings.xcontestEnabled
+          : auth.isSignedIn,
+      initialParaBeaconSync: hasExplicitSelection
+          ? settings.parabeaconEnabled
+          : serverAccount.isSignedIn,
+    );
+    if (!mounted || result == null) return;
+
+    switch (result.choice) {
       case PositionSharingChoice.share:
-        final settings = LiveTrackingSettings.instance;
-        await settings.setTemporaryDontShare(false);
-        if (!settings.hasExplicitDestinationSelection) {
-          await settings.setXContestEnabled(
-            XContestAuthService.instance.isSignedIn,
-          );
-          await settings.setParaBeaconEnabled(
-            ParaBeaconAccountService.instance.isSignedIn,
-          );
+        if (auth.isSignedIn) {
+          await settings.setXContestEnabled(result.syncToXContest);
         }
+        if (serverAccount.isSignedIn) {
+          await settings.setParaBeaconEnabled(result.syncToParaBeacon);
+        }
+        await settings.setTemporaryDontShare(false);
       case PositionSharingChoice.disable:
-        await LiveTrackingSettings.instance.setTemporaryDontShare(true);
+        await settings.setTemporaryDontShare(true);
       case PositionSharingChoice.timedOut:
-      case null:
         break;
     }
   }

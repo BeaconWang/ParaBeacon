@@ -914,6 +914,126 @@ abstract class AppLocalizations {
   /// **'Configure aircraft type, model and flight performance'**
   String get aircraftSubtitle;
 
+  /// No description provided for @chatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pilot Chat'**
+  String get chatTitle;
+
+  /// No description provided for @chatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Worldwide public chat, pilot-number channels, and direct messages.'**
+  String get chatSubtitle;
+
+  /// No description provided for @chatWorldwide.
+  ///
+  /// In en, this message translates to:
+  /// **'Worldwide'**
+  String get chatWorldwide;
+
+  /// No description provided for @chatChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel'**
+  String get chatChannel;
+
+  /// No description provided for @chatDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get chatDirect;
+
+  /// No description provided for @chatConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get chatConnected;
+
+  /// No description provided for @chatConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to chat…'**
+  String get chatConnecting;
+
+  /// No description provided for @chatNoMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet. Start the conversation.'**
+  String get chatNoMessages;
+
+  /// No description provided for @chatSignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to send and receive pilot chat messages.'**
+  String get chatSignInRequired;
+
+  /// No description provided for @chatMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message'**
+  String get chatMessageHint;
+
+  /// No description provided for @chatSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send message'**
+  String get chatSend;
+
+  /// No description provided for @chatPilotNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Pilot number'**
+  String get chatPilotNumber;
+
+  /// No description provided for @chatChannelNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel {number}'**
+  String chatChannelNumber(String number);
+
+  /// No description provided for @chatUsesLiveTrackingFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the six-digit channel selected in LiveTracking.'**
+  String get chatUsesLiveTrackingFilter;
+
+  /// No description provided for @chatOpenConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get chatOpenConversation;
+
+  /// No description provided for @chatInvalidPilotNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid six-digit pilot number.'**
+  String get chatInvalidPilotNumber;
+
+  /// No description provided for @chatPilotNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No pilot has that number.'**
+  String get chatPilotNotFound;
+
+  /// No description provided for @chatRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait a moment before sending another message.'**
+  String get chatRateLimited;
+
+  /// No description provided for @chatInvalidMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'That message is invalid or too long.'**
+  String get chatInvalidMessage;
+
+  /// No description provided for @chatServiceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat is temporarily unavailable.'**
+  String get chatServiceUnavailable;
+
   /// No description provided for @liveTracking.
   ///
   /// In en, this message translates to:

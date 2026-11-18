@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import 'controls/chat_page.dart';
 import 'controls/flights_sheet.dart';
 import 'controls/weather_sheet.dart';
 import 'data/dashboard_page_templates.dart';
@@ -283,6 +284,17 @@ class DashboardMenuContent extends StatelessWidget {
             subtitle: Text(l10n.weatherSubtitle),
             trailing: const Icon(Icons.chevron_right, size: 20),
             onTap: () => showWeatherSheet(context),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(
+              Icons.forum_outlined,
+              color: theme.colorScheme.primary,
+            ),
+            title: Text(l10n.chatTitle),
+            subtitle: Text(l10n.chatSubtitle),
+            trailing: const Icon(Icons.chevron_right, size: 20),
+            onTap: () => showChatSheet(context),
           ),
           const Divider(height: 1),
         ],

@@ -450,6 +450,72 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure aircraft type, model and flight performance';
 
   @override
+  String get chatTitle => 'Pilot Chat';
+
+  @override
+  String get chatSubtitle =>
+      'Worldwide public chat, pilot-number channels, and direct messages.';
+
+  @override
+  String get chatWorldwide => 'Worldwide';
+
+  @override
+  String get chatChannel => 'Channel';
+
+  @override
+  String get chatDirect => 'Direct';
+
+  @override
+  String get chatConnected => 'Connected';
+
+  @override
+  String get chatConnecting => 'Connecting to chat…';
+
+  @override
+  String get chatNoMessages => 'No messages yet. Start the conversation.';
+
+  @override
+  String get chatSignInRequired =>
+      'Sign in to send and receive pilot chat messages.';
+
+  @override
+  String get chatMessageHint => 'Write a message';
+
+  @override
+  String get chatSend => 'Send message';
+
+  @override
+  String get chatPilotNumber => 'Pilot number';
+
+  @override
+  String chatChannelNumber(String number) {
+    return 'Channel $number';
+  }
+
+  @override
+  String get chatUsesLiveTrackingFilter =>
+      'Uses the six-digit channel selected in LiveTracking.';
+
+  @override
+  String get chatOpenConversation => 'Open';
+
+  @override
+  String get chatInvalidPilotNumber => 'Enter a valid six-digit pilot number.';
+
+  @override
+  String get chatPilotNotFound => 'No pilot has that number.';
+
+  @override
+  String get chatRateLimited =>
+      'Please wait a moment before sending another message.';
+
+  @override
+  String get chatInvalidMessage => 'That message is invalid or too long.';
+
+  @override
+  String get chatServiceUnavailable => 'Chat is temporarily unavailable.';
+
+  @override
   String get liveTracking => 'LiveTracking';
 
   @override

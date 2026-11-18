@@ -427,6 +427,68 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aircraftSubtitle => '配置飞行器类型、机型和飞行性能';
 
   @override
+  String get chatTitle => '飞行员聊天';
+
+  @override
+  String get chatSubtitle => '全球公开聊天、编号频道和飞行员私聊。';
+
+  @override
+  String get chatWorldwide => '全球';
+
+  @override
+  String get chatChannel => '频道';
+
+  @override
+  String get chatDirect => '私聊';
+
+  @override
+  String get chatConnected => '已连接';
+
+  @override
+  String get chatConnecting => '正在连接聊天…';
+
+  @override
+  String get chatNoMessages => '还没有消息，来开启对话吧。';
+
+  @override
+  String get chatSignInRequired => '登录后即可发送和接收飞行员聊天消息。';
+
+  @override
+  String get chatMessageHint => '输入消息';
+
+  @override
+  String get chatSend => '发送消息';
+
+  @override
+  String get chatPilotNumber => '飞行员编号';
+
+  @override
+  String chatChannelNumber(String number) {
+    return '频道 $number';
+  }
+
+  @override
+  String get chatUsesLiveTrackingFilter => '使用 LiveTracking 中选定的六位频道编号。';
+
+  @override
+  String get chatOpenConversation => '打开';
+
+  @override
+  String get chatInvalidPilotNumber => '请输入有效的六位飞行员编号。';
+
+  @override
+  String get chatPilotNotFound => '没有找到该编号的飞行员。';
+
+  @override
+  String get chatRateLimited => '请稍等片刻再发送下一条消息。';
+
+  @override
+  String get chatInvalidMessage => '消息无效或内容过长。';
+
+  @override
+  String get chatServiceUnavailable => '聊天服务暂时不可用。';
+
+  @override
   String get liveTracking => '实时追踪';
 
   @override

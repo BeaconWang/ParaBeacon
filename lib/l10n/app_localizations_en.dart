@@ -555,6 +555,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatServiceUnavailable => 'Chat is temporarily unavailable.';
 
   @override
+  String get chatPartnerSharingLocation =>
+      'This pilot is sharing their live location';
+
+  @override
+  String get chatPartnerNotSharingLocation =>
+      'This pilot is not currently sharing their location';
+
+  @override
+  String get chatCheckingLocationStatus => 'Checking location-sharing status…';
+
+  @override
   String get liveTracking => 'LiveTracking';
 
   @override

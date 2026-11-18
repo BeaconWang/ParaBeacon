@@ -2,6 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/data/chat_service.dart';
 
 void main() {
+  test('parses the partner live-location sharing status as a boolean only', () {
+    expect(
+      ChatService.parsePartnerLocationStatus({
+        'actively_sharing_location': true,
+      }),
+      isTrue,
+    );
+    expect(
+      ChatService.parsePartnerLocationStatus({
+        'actively_sharing_location': false,
+      }),
+      isFalse,
+    );
+    expect(ChatService.parsePartnerLocationStatus({'latitude': 47.2}), isNull);
+    expect(ChatService.parsePartnerLocationStatus(null), isNull);
+  });
+
   test('parses world, channel and direct messages with pilot identities', () {
     Map<String, Object?> payload({
       String scope = 'public',

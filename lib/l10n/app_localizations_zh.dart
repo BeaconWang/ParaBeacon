@@ -522,6 +522,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatServiceUnavailable => '聊天服务暂时不可用。';
 
   @override
+  String get chatPartnerSharingLocation => '该飞行员正在分享实时位置';
+
+  @override
+  String get chatPartnerNotSharingLocation => '该飞行员当前未分享位置';
+
+  @override
+  String get chatCheckingLocationStatus => '正在查询位置共享状态…';
+
+  @override
   String get liveTracking => '实时追踪';
 
   @override

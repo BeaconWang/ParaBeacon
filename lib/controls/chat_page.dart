@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -33,6 +35,8 @@ class _ChatPageState extends State<_ChatPage>
   String _channelFilter = LiveTrackingSettings.instance.pilotNumberFilter;
   bool _sending = false;
   String? _localError;
+  Timer? _partnerStatusTimer;
+  String? _lastObservedMessageId;
 
   @override
   void initState() {
@@ -42,6 +46,15 @@ class _ChatPageState extends State<_ChatPage>
     LiveTrackingSettings.instance.addListener(_filterListener);
     _directController.text = '';
     _chat.addListener(_onChatChanged);
+    _partnerStatusTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      final target = int.tryParse(_directController.text);
+      if (_tabs.index == 2 &&
+          _chat.scope == 'direct' &&
+          target != null &&
+          target == _chat.pilotNumber) {
+        unawaited(_chat.refreshPartnerLocationStatus(pilotNumber: target));
+      }
+    });
     _openTab(0);
   }
 
@@ -54,12 +67,18 @@ class _ChatPageState extends State<_ChatPage>
     _messageController.dispose();
     _directController.dispose();
     _scrollController.dispose();
+    _partnerStatusTimer?.cancel();
     _chat.disconnect();
     super.dispose();
   }
 
   void _onChatChanged() {
+    final messages = _chat.messages;
+    final latestMessageId = messages.isEmpty ? null : messages.last.id;
+    final shouldScroll = latestMessageId != _lastObservedMessageId;
+    _lastObservedMessageId = latestMessageId;
     if (mounted) setState(() {});
+    if (!shouldScroll) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -206,6 +225,7 @@ class _ChatPageState extends State<_ChatPage>
                         hintText: '123456',
                         border: const OutlineInputBorder(),
                       ),
+                      onChanged: (_) => setState(() {}),
                       onSubmitted: (_) => _openDirect(),
                     ),
                   ),
@@ -215,6 +235,52 @@ class _ChatPageState extends State<_ChatPage>
                     child: Text(l10n.chatOpenConversation),
                   ),
                 ],
+              ),
+            ),
+          if (_tabs.index == 2 &&
+              _chat.scope == 'direct' &&
+              int.tryParse(_directController.text) == _chat.pilotNumber)
+            ListTile(
+              dense: true,
+              leading: Icon(
+                _chat.partnerSharingLocation == true
+                    ? Icons.location_on_outlined
+                    : _chat.partnerSharingLocation == false
+                    ? Icons.location_off_outlined
+                    : Icons.location_searching,
+                color: _chat.partnerSharingLocation == true
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              title: Text(
+                _chat.partnerSharingLocation == true
+                    ? l10n.chatPartnerSharingLocation
+                    : _chat.partnerSharingLocation == false
+                    ? l10n.chatPartnerNotSharingLocation
+                    : l10n.chatCheckingLocationStatus,
+              ),
+            ),
+          if (_tabs.index == 2 &&
+              _chat.scope == 'direct' &&
+              int.tryParse(_directController.text) == _chat.pilotNumber)
+            ListTile(
+              dense: true,
+              leading: Icon(
+                _chat.partnerSharingLocation == true
+                    ? Icons.location_on_outlined
+                    : _chat.partnerSharingLocation == false
+                    ? Icons.location_off_outlined
+                    : Icons.location_searching,
+                color: _chat.partnerSharingLocation == true
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              title: Text(
+                _chat.partnerSharingLocation == true
+                    ? l10n.chatPartnerSharingLocation
+                    : _chat.partnerSharingLocation == false
+                    ? l10n.chatPartnerNotSharingLocation
+                    : l10n.chatCheckingLocationStatus,
               ),
             ),
           if (_localError != null)

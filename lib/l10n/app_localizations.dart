@@ -1100,6 +1100,24 @@ abstract class AppLocalizations {
   /// **'Chat is temporarily unavailable.'**
   String get chatServiceUnavailable;
 
+  /// No description provided for @chatPartnerSharingLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'This pilot is sharing their live location'**
+  String get chatPartnerSharingLocation;
+
+  /// No description provided for @chatPartnerNotSharingLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'This pilot is not currently sharing their location'**
+  String get chatPartnerNotSharingLocation;
+
+  /// No description provided for @chatCheckingLocationStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking location-sharing status…'**
+  String get chatCheckingLocationStatus;
+
   /// No description provided for @liveTracking.
   ///
   /// In en, this message translates to:

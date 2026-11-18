@@ -107,6 +107,9 @@ class ChatService extends ChangeNotifier {
   int get channelNumber => _channelNumber;
   int _pilotNumber = 0;
   int get pilotNumber => _pilotNumber;
+  bool? _partnerSharingLocation;
+  bool? get partnerSharingLocation => _partnerSharingLocation;
+  int _conversationEpoch = 0;
   bool _disposed = false;
   bool _connecting = false;
   bool _desiredConnection = false;
@@ -163,11 +166,16 @@ class ChatService extends ChangeNotifier {
                 pilotNumber > 999999)) {
       throw ArgumentError('Invalid chat conversation address.');
     }
+    _conversationEpoch++;
     _scope = scope;
     _channelNumber = channelNumber;
     _pilotNumber = pilotNumber;
+    _partnerSharingLocation = null;
     _messages.clear();
     _notify();
+    if (scope == 'direct') {
+      unawaited(refreshPartnerLocationStatus(pilotNumber: pilotNumber));
+    }
     _desiredConnection = true;
     if (_state != ChatConnectionState.connected) {
       await _connect();
@@ -175,6 +183,44 @@ class ChatService extends ChangeNotifier {
       _subscribeCurrent();
       await loadHistory();
     }
+  }
+
+  Future<void> refreshPartnerLocationStatus({int? pilotNumber}) async {
+    final target = pilotNumber ?? _pilotNumber;
+    if (_scope != 'direct' || target < 100000 || target > 999999) {
+      _partnerSharingLocation = null;
+      _notify();
+      return;
+    }
+    final epoch = _conversationEpoch;
+    final uri = _apiBase.resolve('/api/v1/chat/pilots/$target/location-status');
+    try {
+      final response = await _sendRequest(
+        'GET',
+        uri,
+      ).timeout(const Duration(seconds: 8));
+      final decoded = response.statusCode == 200
+          ? jsonDecode(response.body)
+          : null;
+      final status = parsePartnerLocationStatus(decoded);
+      if (epoch != _conversationEpoch ||
+          _scope != 'direct' ||
+          target != _pilotNumber) {
+        return;
+      }
+      _partnerSharingLocation = status;
+      _notify();
+    } on Object {
+      if (epoch != _conversationEpoch || target != _pilotNumber) return;
+      _partnerSharingLocation = null;
+      _notify();
+    }
+  }
+
+  static bool? parsePartnerLocationStatus(Object? value) {
+    if (value is! Map<String, dynamic>) return null;
+    final status = value['actively_sharing_location'];
+    return status is bool ? status : null;
   }
 
   Future<void> loadHistory() {
@@ -455,6 +501,8 @@ class ChatService extends ChangeNotifier {
   }
 
   Future<void> disconnect() async {
+    _conversationEpoch++;
+    _partnerSharingLocation = null;
     _desiredConnection = false;
     _connectionGeneration++;
     _reconnectTimer?.cancel();

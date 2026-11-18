@@ -848,6 +848,30 @@ abstract class AppLocalizations {
   /// **'Member since'**
   String get accountMemberSince;
 
+  /// No description provided for @accountDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name for live tracking'**
+  String get accountDisplayName;
+
+  /// No description provided for @accountDisplayNameSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, 1–48 characters. Leave blank to show your username instead.'**
+  String get accountDisplayNameSubtitle;
+
+  /// No description provided for @accountDisplayNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Use up to 48 characters without line breaks or control characters.'**
+  String get accountDisplayNameInvalid;
+
+  /// No description provided for @accountDisplayNameSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name saved.'**
+  String get accountDisplayNameSaved;
+
   /// No description provided for @accountSignOut.
   ///
   /// In en, this message translates to:

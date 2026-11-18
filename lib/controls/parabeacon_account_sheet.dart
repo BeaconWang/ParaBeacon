@@ -32,6 +32,9 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmationController = TextEditingController();
+  final _displayNameController = TextEditingController();
+  final _displayNameFocus = FocusNode();
+  bool _savingDisplayName = false;
   bool _registering = false;
   bool _obscurePassword = true;
   bool _obscureConfirmation = true;
@@ -49,6 +52,8 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmationController.dispose();
+    _displayNameController.dispose();
+    _displayNameFocus.dispose();
     super.dispose();
   }
 
@@ -69,10 +74,28 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     }
   }
 
+  Future<void> _saveDisplayName(
+    ParaBeaconAccountService service,
+    AppLocalizations l10n,
+  ) async {
+    if (_savingDisplayName) return;
+    setState(() => _savingDisplayName = true);
+    final saved = await service.updateDisplayName(_displayNameController.text);
+    if (!mounted) return;
+    setState(() => _savingDisplayName = false);
+    if (saved) {
+      _displayNameFocus.unfocus();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.accountDisplayNameSaved)));
+    }
+  }
+
   String _errorText(AppLocalizations l10n, String code) => switch (code) {
     'accountInvalidCredentials' => l10n.accountErrorInvalidCredentials,
     'accountAlreadyExists' => l10n.accountErrorAlreadyExists,
     'accountInvalidInput' => l10n.accountErrorInvalidInput,
+    'accountInvalidDisplayName' => l10n.accountDisplayNameInvalid,
     'accountConnectionFailure' => l10n.accountErrorConnection,
     'accountStorageFailure' => l10n.accountErrorStorage,
     'accountServiceUnavailable' ||
@@ -174,6 +197,10 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
   ) {
     final theme = Theme.of(context);
     final user = service.user;
+    if (!_displayNameFocus.hasFocus &&
+        _displayNameController.text != (user?.displayName ?? '')) {
+      _displayNameController.text = user?.displayName ?? '';
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -201,6 +228,38 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                   style: TextStyle(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _displayNameController,
+                  focusNode: _displayNameFocus,
+                  maxLength: 48,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.done,
+                  decoration: InputDecoration(
+                    labelText: l10n.accountDisplayName,
+                    helperText: l10n.accountDisplayNameSubtitle,
+                    prefixIcon: const Icon(Icons.badge_outlined),
+                    border: const OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _saveDisplayName(service, l10n),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: service.isBusy || _savingDisplayName
+                        ? null
+                        : () => _saveDisplayName(service, l10n),
+                    icon: _savingDisplayName
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save_outlined),
+                    label: Text(l10n.save),
                   ),
                 ),
                 if (user?.email != null) ...[

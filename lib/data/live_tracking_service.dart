@@ -643,6 +643,7 @@ class LiveTrackingService extends ChangeNotifier {
   Listenable? _eligibilitySource;
   bool Function()? _isEnabled;
   String? Function()? _pilotId;
+  String? Function()? _pilotDisplayName;
   bool Function()? _isPubliclyShared;
   bool? _sessionPubliclyShared;
   bool _loadedQueue = false;
@@ -667,6 +668,7 @@ class LiveTrackingService extends ChangeNotifier {
     required FlightState flightState,
     required bool Function() isEnabled,
     required String? Function() pilotId,
+    String? Function()? pilotDisplayName,
     bool Function()? isPubliclyShared,
     Listenable? eligibilitySource,
   }) {
@@ -675,6 +677,7 @@ class LiveTrackingService extends ChangeNotifier {
     _flightState = flightState;
     _isEnabled = isEnabled;
     _pilotId = pilotId;
+    _pilotDisplayName = pilotDisplayName;
     _isPubliclyShared = isPubliclyShared;
     _eligibilitySource = eligibilitySource;
     data.addListener(_onDataChanged);
@@ -723,6 +726,7 @@ class LiveTrackingService extends ChangeNotifier {
     _eligibilitySource = null;
     _isEnabled = null;
     _pilotId = null;
+    _pilotDisplayName = null;
     _isPubliclyShared = null;
     _sessionPubliclyShared = null;
     if (!_disposed) _setState(LiveTrackingConnectionState.idle);
@@ -850,6 +854,16 @@ class LiveTrackingService extends ChangeNotifier {
     _notify();
   }
 
+  String _resolvePublicPilotName(String accountName) {
+    if (!(_isPubliclyShared?.call() ?? false)) return accountName;
+    final displayName =
+        _pilotDisplayName?.call()?.trim() ??
+        ParaBeaconAccountService.instance.user?.displayName.trim();
+    return displayName == null || displayName.isEmpty
+        ? accountName
+        : displayName;
+  }
+
   void _connectRoomSocket(String sessionId) {
     final endpoint = _config.webSocketUri;
     if (kIsWeb || endpoint == null) return;
@@ -896,9 +910,11 @@ class LiveTrackingService extends ChangeNotifier {
     final publiclyShare = groundPresence
         ? true
         : (_isPubliclyShared?.call() ?? false);
+
     if (pilotId == null || pilotId.isEmpty || startTime == null) {
       throw const LiveTrackingProxyException('pilot_or_start_time_missing');
     }
+    final publicPilotName = _resolvePublicPilotName(pilotId);
     _starting = true;
     _setState(LiveTrackingConnectionState.connecting);
     try {
@@ -907,7 +923,7 @@ class LiveTrackingService extends ChangeNotifier {
         method: 'POST',
         uri: config.sessionStartUri,
         body: {
-          'pilot_name': pilotId,
+          'pilot_name': publicPilotName,
           'start_time': startTime.toUtc().toIso8601String(),
           'publicly_share': publiclyShare,
         },

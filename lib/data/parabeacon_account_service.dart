@@ -19,6 +19,7 @@ class ParaBeaconUser {
   const ParaBeaconUser({
     required this.id,
     required this.username,
+    this.displayName = '',
     this.pilotNumber,
     this.email,
     this.createdAt,
@@ -26,6 +27,7 @@ class ParaBeaconUser {
 
   final String id;
   final String username;
+  final String displayName;
   final int? pilotNumber;
   final String? email;
   final DateTime? createdAt;
@@ -40,6 +42,16 @@ class ParaBeaconUser {
         username.isEmpty) {
       return null;
     }
+    final displayName = value['display_name'];
+    if (displayName != null && displayName is! String) return null;
+    final normalizedDisplayName = displayName is String
+        ? displayName.trim()
+        : '';
+    if (normalizedDisplayName.runes.length > 48 ||
+        normalizedDisplayName.contains(RegExp(r'[\x00-\x1f\x7f]'))) {
+      return null;
+    }
+
     final rawPilotNumber = value['pilot_number'];
     if (rawPilotNumber != null &&
         (rawPilotNumber is! int ||
@@ -52,6 +64,7 @@ class ParaBeaconUser {
     return ParaBeaconUser(
       id: id,
       username: username,
+      displayName: normalizedDisplayName,
       pilotNumber: rawPilotNumber as int?,
       email: email is String && email.isNotEmpty ? email : null,
       createdAt: createdAtValue is String
@@ -63,6 +76,7 @@ class ParaBeaconUser {
   Map<String, Object?> toJson() => {
     'id': id,
     'username': username,
+    if (displayName.isNotEmpty) 'display_name': displayName,
     if (pilotNumber != null) 'pilot_number': pilotNumber,
     if (email != null) 'email': email,
     if (createdAt != null) 'created_at': createdAt!.toUtc().toIso8601String(),
@@ -521,6 +535,69 @@ class ParaBeaconAccountService extends ChangeNotifier
     }
     _log('Access token refreshed and refresh token rotated.');
     notifyListeners();
+  }
+
+  Future<bool> updateDisplayName(String value) async {
+    final token = _token;
+    final normalized = value.trim();
+    if (!isSignedIn || token == null || isBusy) {
+      _errorCode = 'accountServiceUnavailable';
+      notifyListeners();
+      return false;
+    }
+    if (!isValidDisplayName(normalized)) {
+      _errorCode = 'accountInvalidDisplayName';
+      notifyListeners();
+      return false;
+    }
+    _beginRequest();
+    try {
+      final response = await _client
+          .patch(
+            _apiUri('user/profile'),
+            headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+            body: jsonEncode({'display_name': normalized}),
+          )
+          .timeout(_requestTimeout);
+      if (response.statusCode != 200) {
+        _errorCode = response.statusCode >= 500
+            ? 'accountServiceUnavailable'
+            : response.statusCode == 400
+            ? 'accountInvalidDisplayName'
+            : 'accountRequestFailed';
+        return false;
+      }
+      final updatedUser = ParaBeaconUser.fromJson(
+        _decodeMap(response.body)?['user'],
+      );
+      if (updatedUser == null || updatedUser.id != _user?.id) {
+        _errorCode = 'accountRequestFailed';
+        return false;
+      }
+      _user = updatedUser;
+      _errorCode = null;
+      await _store.write(_userKey, jsonEncode(updatedUser.toJson()));
+      notifyListeners();
+      return true;
+    } on TimeoutException {
+      _errorCode = 'accountConnectionFailure';
+      return false;
+    } on http.ClientException {
+      _errorCode = 'accountConnectionFailure';
+      return false;
+    } on Exception {
+      _errorCode = 'accountServiceUnavailable';
+      return false;
+    } finally {
+      _endRequest();
+    }
+  }
+
+  static bool isValidDisplayName(String value) {
+    final normalized = value.trim();
+    return normalized.isEmpty ||
+        (normalized.runes.length <= 48 &&
+            !normalized.contains(RegExp(r'[\x00-\x1f\x7f]')));
   }
 
   Future<void> _refreshProfile() async {

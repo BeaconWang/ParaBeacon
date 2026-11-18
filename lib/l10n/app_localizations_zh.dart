@@ -394,6 +394,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountMemberSince => '注册时间';
 
   @override
+  String get accountDisplayName => '实时追踪显示名称';
+
+  @override
+  String get accountDisplayNameSubtitle => '可选，最多 48 个字符。留空则使用账号名称。';
+
+  @override
+  String get accountDisplayNameInvalid => '请输入不超过 48 个字符且不含换行或控制字符的名称。';
+
+  @override
+  String get accountDisplayNameSaved => '显示名称已保存。';
+
+  @override
   String get accountSignOut => '退出登录';
 
   @override

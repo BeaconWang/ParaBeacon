@@ -67,7 +67,7 @@ void main() {
       expect(requests, hasLength(2));
       expect(service.isSignedIn, isTrue);
       expect(service.user?.username, 'pilot_one');
-      expect(service.user?.pilotNumber, 123456);
+      expect(service.user?.displayName, 'Sky Rider');
       expect(service.user?.pilotNumber, 123456);
       expect(store.values['parabeacon_access_token'], 'test-access-token');
       expect(
@@ -85,6 +85,58 @@ void main() {
       expect(logs, isNot(contains('test-access-token')));
     },
   );
+
+  test('updates and persists the account live-tracking display name', () async {
+    final store = _MemorySessionStore();
+    final client = MockClient((request) async {
+      if (request.url.path == '/api/v1/auth/login') {
+        return http.Response(
+          jsonEncode({
+            'access_token': 'profile-token',
+            'expires_at': DateTime.now()
+                .add(const Duration(minutes: 10))
+                .toUtc()
+                .toIso8601String(),
+            'refresh_token': 'profile-refresh-token-long-value',
+            'refresh_expires_at': null,
+            'user': _userJson,
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      expect(request.headers['authorization'], 'Bearer profile-token');
+      expect(request.method, 'PATCH');
+      expect(request.url.path, '/api/v1/user/profile');
+      expect(jsonDecode(request.body), {'display_name': 'Sky Pilot'});
+      return http.Response(
+        jsonEncode({
+          'user': {..._userJson, 'display_name': 'Sky Pilot'},
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    final service = ParaBeaconAccountService(
+      client: client,
+      sessionStore: store,
+    );
+    addTearDown(service.dispose);
+    expect(
+      await service.login(identifier: 'pilot_one', password: 'abc123'),
+      isTrue,
+    );
+    expect(await service.updateDisplayName('  Sky Pilot  '), isTrue);
+    expect(service.user?.displayName, 'Sky Pilot');
+    final stored =
+        jsonDecode(store.values['parabeacon_account_user']!)
+            as Map<String, dynamic>;
+    expect(stored['display_name'], 'Sky Pilot');
+    expect(ParaBeaconAccountService.isValidDisplayName(''), isTrue);
+    expect(ParaBeaconAccountService.isValidDisplayName('A'), isTrue);
+    expect(ParaBeaconAccountService.isValidDisplayName('A' * 49), isFalse);
+    expect(ParaBeaconAccountService.isValidDisplayName('Bad\nName'), isFalse);
+  });
 
   test('keeps account sessions isolated between server origins', () async {
     final previousServer = ParaBeaconServerConfig.apiBaseUri;
@@ -294,6 +346,7 @@ void main() {
 const _userJson = {
   'id': 'user-123',
   'username': 'pilot_one',
+  'display_name': 'Sky Rider',
   'pilot_number': 123456,
   'email': 'pilot@example.com',
   'created_at': '2026-01-01T12:00:00Z',

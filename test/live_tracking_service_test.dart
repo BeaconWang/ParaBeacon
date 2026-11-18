@@ -276,7 +276,7 @@ void main() {
             jsonEncode({
               'locations': [
                 {
-                  'pilot_name': 'pilot_one',
+                  'pilot_name': 'Sky Rider',
                   'live_room_id': 'd2719b5c-6a1f-4a4e-8b67-85139941a201',
                   'pilot_number': 123456,
                   'lat': 47.1,
@@ -334,7 +334,7 @@ void main() {
 
       expect(requests, hasLength(2));
       expect(locations, hasLength(1));
-      expect(locations.single.pilotName, 'pilot_one');
+      expect(locations.single.pilotName, 'Sky Rider');
       expect(locations.single.pilotNumber, 123456);
       expect(
         PublicPilotLocation.fromJson({
@@ -531,6 +531,7 @@ void main() {
         flightState: FlightState.instance,
         isEnabled: () => true,
         pilotId: () => 'pilot-42',
+        pilotDisplayName: () => 'Sky Rider',
         isPubliclyShared: () => sharePublicly,
         eligibilitySource: eligibilitySource,
       );
@@ -547,7 +548,7 @@ void main() {
         '/api/v1/tracking/sessions/session-123/points',
       ]);
       expect(jsonDecode(requests.first.body), {
-        'pilot_name': 'pilot-42',
+        'pilot_name': 'Sky Rider',
         'start_time': startTime.toIso8601String(),
         'publicly_share': true,
       });

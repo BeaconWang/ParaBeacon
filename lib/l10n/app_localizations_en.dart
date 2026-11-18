@@ -410,6 +410,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountMemberSince => 'Member since';
 
   @override
+  String get accountDisplayName => 'Display name for live tracking';
+
+  @override
+  String get accountDisplayNameSubtitle =>
+      'Optional, 1–48 characters. Leave blank to show your username instead.';
+
+  @override
+  String get accountDisplayNameInvalid =>
+      'Use up to 48 characters without line breaks or control characters.';
+
+  @override
+  String get accountDisplayNameSaved => 'Display name saved.';
+
+  @override
   String get accountSignOut => 'Sign out';
 
   @override

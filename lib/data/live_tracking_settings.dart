@@ -31,7 +31,7 @@ class LiveTrackingSettings extends ChangeNotifier {
   bool _showPublic = true;
   bool _flightPublic = true;
   bool _shareLocationPublicly = false;
-  bool _shareLocationWhileNotFlying = false;
+  bool _shareLocationWhileNotFlying = true;
   String _pilotNumberFilter = allPilotNumbersFilter;
   bool _temporaryDontShare = false;
   bool _reportSimulatedAsReal = false;
@@ -106,7 +106,8 @@ class LiveTrackingSettings extends ChangeNotifier {
           preferences.getBool(_kShareLocationPublicly) ??
           _shareLocationPublicly;
       _shareLocationWhileNotFlying =
-          preferences.getBool(_kShareLocationWhileNotFlying) ?? false;
+          preferences.getBool(_kShareLocationWhileNotFlying) ??
+          _shareLocationWhileNotFlying;
       final pilotNumberFilter = preferences.getString(_kPilotNumberFilter);
       if (isValidPilotNumberFilter(pilotNumberFilter)) {
         _pilotNumberFilter = pilotNumberFilter!;

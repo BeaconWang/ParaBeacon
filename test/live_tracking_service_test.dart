@@ -29,6 +29,7 @@ void main() {
 
     await settings.load();
     expect(settings.shareLocationPublicly, isFalse);
+    expect(settings.shareLocationWhileNotFlying, isTrue);
     expect(settings.pilotNumberFilter, '000000');
     expect(settings.includesPilotNumber(123456), isTrue);
     expect(settings.includesPilotNumber(null), isTrue);
@@ -67,12 +68,15 @@ void main() {
     expect(settings.includesPilotNumber(654321), isFalse);
     expect(preferences.getString('ParaBeacon.PilotNumberFilter'), '123456');
     expect(await settings.setPilotNumberFilter('000000'), isTrue);
-    await settings.setShareLocationWhileNotFlying(true);
     expect(
       preferences.getBool('ParaBeacon.ShareLocationWhileNotFlying'),
-      isTrue,
+      isNull,
     );
     await settings.setShareLocationWhileNotFlying(false);
+    expect(
+      preferences.getBool('ParaBeacon.ShareLocationWhileNotFlying'),
+      isFalse,
+    );
     await settings.setShareLocationPublicly(false);
   });
 

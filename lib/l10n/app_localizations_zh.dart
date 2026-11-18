@@ -195,6 +195,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get networkUserAgentReset => '使用 Chrome 默认值';
 
   @override
+  String get paraBeaconServerAddressTitle => 'ParaBeacon 服务器地址';
+
+  @override
+  String get paraBeaconServerAddressSubtitle =>
+      '请输入公网 HTTPS 服务器源地址；本地和私有网络地址会被阻止。更换服务器前需结束当前飞行并同步待上传轨迹；不同服务器的登录状态彼此独立。保存后需重启应用才能生效。';
+
+  @override
+  String get paraBeaconServerAddressSaved => '服务器地址已保存。请重启 ParaBeacon 以应用设置。';
+
+  @override
+  String get paraBeaconServerAddressInvalid =>
+      '请输入可访问的公网 HTTPS 地址，例如 https://www.parabeacon.icu；不要包含路径、用户名或查询参数。';
+
+  @override
+  String get paraBeaconServerAddressBusy => '请先结束当前飞行并同步待上传的轨迹，再更换服务器。';
+
+  @override
+  String get paraBeaconServerAddressReset => '使用默认服务器';
+
+  @override
   String get shareCardFlatDesign => '扁平风格分享卡片';
 
   @override

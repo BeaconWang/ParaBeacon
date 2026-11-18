@@ -193,17 +193,19 @@ class LiveTrackingConfigLoader {
   const LiveTrackingConfigLoader({
     AssetBundle? bundle,
     this.assetPath = 'assets/config/live_tracking_config.json',
+    this.apiBaseUri,
   }) : _bundle = bundle;
 
   final AssetBundle? _bundle;
   final String assetPath;
+  final Uri? apiBaseUri;
 
   Future<LiveTrackingConfig> load() async {
     final source = await (_bundle ?? rootBundle).loadString(assetPath);
     final decoded = jsonDecode(source);
     return LiveTrackingConfig.fromJson(
       decoded,
-      apiBaseUri: ParaBeaconServerConfig.apiBaseUri,
+      apiBaseUri: apiBaseUri ?? ParaBeaconServerConfig.apiBaseUri,
     );
   }
 }

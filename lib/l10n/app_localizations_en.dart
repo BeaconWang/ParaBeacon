@@ -203,6 +203,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get networkUserAgentReset => 'Use Chrome default';
 
   @override
+  String get paraBeaconServerAddressTitle => 'ParaBeacon server address';
+
+  @override
+  String get paraBeaconServerAddressSubtitle =>
+      'Use an HTTPS origin for a public server. Local and private-network addresses are blocked. Changing servers requires no active flight or unsynced tracking points; each server keeps a separate sign-in. Restart the app to apply the new address.';
+
+  @override
+  String get paraBeaconServerAddressSaved =>
+      'Server address saved. Restart ParaBeacon to apply it.';
+
+  @override
+  String get paraBeaconServerAddressInvalid =>
+      'Enter a reachable public HTTPS address, such as https://www.parabeacon.icu, with no path, username, or query.';
+
+  @override
+  String get paraBeaconServerAddressBusy =>
+      'Stop the current flight and sync pending tracking points before changing servers.';
+
+  @override
+  String get paraBeaconServerAddressReset => 'Use default server';
+
+  @override
   String get shareCardFlatDesign => 'Flat share cards';
 
   @override

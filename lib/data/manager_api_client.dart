@@ -9,7 +9,7 @@ import 'parabeacon_server_config.dart';
 
 const int maxManagerApkSizeBytes = 512 * 1024 * 1024;
 const String managedPackageName = 'com.beacon.parabeacon';
-const String managerApiBaseUrl = ParaBeaconServerConfig.baseUrl;
+String get managerApiBaseUrl => ParaBeaconServerConfig.baseUrl;
 
 class ManagerRelease {
   const ManagerRelease({

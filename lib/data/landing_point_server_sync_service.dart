@@ -24,9 +24,7 @@ class LandingPointServerSyncService {
   }) : _accountService = accountService ?? ParaBeaconAccountService.instance,
        _authorizationHeaders = authorizationHeaders,
        _client = UserAgentHttpClient(innerClient: client),
-       _endpoint =
-           endpoint ??
-           ParaBeaconServerConfig.apiBaseUri.resolve('/api/v1/landing-points');
+       _endpointOverride = endpoint;
 
   static final LandingPointServerSyncService instance =
       LandingPointServerSyncService();
@@ -35,7 +33,10 @@ class LandingPointServerSyncService {
   final ParaBeaconAccountService _accountService;
   final Future<Map<String, String>> Function()? _authorizationHeaders;
   final http.Client _client;
-  final Uri _endpoint;
+  final Uri? _endpointOverride;
+  Uri get _endpoint =>
+      _endpointOverride ??
+      ParaBeaconServerConfig.apiBaseUri.resolve('/api/v1/landing-points');
 
   Future<int> exportPoints(
     List<LandingPoint> points, {

@@ -464,6 +464,42 @@ abstract class AppLocalizations {
   /// **'Use Chrome default'**
   String get networkUserAgentReset;
 
+  /// No description provided for @paraBeaconServerAddressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ParaBeacon server address'**
+  String get paraBeaconServerAddressTitle;
+
+  /// No description provided for @paraBeaconServerAddressSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use an HTTPS origin for a public server. Local and private-network addresses are blocked. Changing servers requires no active flight or unsynced tracking points; each server keeps a separate sign-in. Restart the app to apply the new address.'**
+  String get paraBeaconServerAddressSubtitle;
+
+  /// No description provided for @paraBeaconServerAddressSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Server address saved. Restart ParaBeacon to apply it.'**
+  String get paraBeaconServerAddressSaved;
+
+  /// No description provided for @paraBeaconServerAddressInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a reachable public HTTPS address, such as https://www.parabeacon.icu, with no path, username, or query.'**
+  String get paraBeaconServerAddressInvalid;
+
+  /// No description provided for @paraBeaconServerAddressBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the current flight and sync pending tracking points before changing servers.'**
+  String get paraBeaconServerAddressBusy;
+
+  /// No description provided for @paraBeaconServerAddressReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Use default server'**
+  String get paraBeaconServerAddressReset;
+
   /// No description provided for @shareCardFlatDesign.
   ///
   /// In en, this message translates to:

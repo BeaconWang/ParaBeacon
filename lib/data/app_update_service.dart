@@ -109,7 +109,13 @@ class AppUpdateService extends ChangeNotifier {
           _status == AppUpdateStatus.installPermissionRequired);
 
   void configure(Uri? apiBaseUri) {
-    _apiBaseUri = _validApiBase(apiBaseUri) ? apiBaseUri : null;
+    final nextBaseUri = _validApiBase(apiBaseUri) ? apiBaseUri : null;
+    if (_apiBaseUri == nextBaseUri) return;
+    _apiBaseUri = nextBaseUri;
+    _release = null;
+    _downloadedApkPath = null;
+    _errorCode = null;
+    _setStatus(AppUpdateStatus.idle);
   }
 
   Future<bool> isWifiConnected() async {

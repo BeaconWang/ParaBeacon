@@ -523,6 +523,17 @@ class LiveTrackingService extends ChangeNotifier {
   bool get isConfigured => _configured;
   Uri? get apiBaseUri => _configured ? _config.apiBaseUri : null;
 
+  Future<bool> canChangeServer() async {
+    if (!_configured) return false;
+    await _loadQueue();
+    return _sessionId == null &&
+        !_starting &&
+        _endingSessions.isEmpty &&
+        _pending.isEmpty &&
+        _uploadFuture == null &&
+        _flightState?.isFlying != true;
+  }
+
   Future<List<PublicPilotLocation>> loadPublicPilotLocations({
     required double west,
     required double south,
@@ -589,9 +600,13 @@ class LiveTrackingService extends ChangeNotifier {
   }
 
   void configure(LiveTrackingConfig? config) {
-    if (_sessionId != null || _starting || _endingSessions.isNotEmpty) {
+    if (_sessionId != null ||
+        _starting ||
+        _endingSessions.isNotEmpty ||
+        _pending.isNotEmpty ||
+        _flightState?.isFlying == true) {
       throw StateError(
-        'Cannot replace live-tracking config while a session runs.',
+        'Cannot replace live-tracking config while flight data is active or queued.',
       );
     }
     if (config == null) {

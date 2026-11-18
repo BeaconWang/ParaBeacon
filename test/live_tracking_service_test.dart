@@ -86,6 +86,20 @@ void main() {
     expect(config.channelIds, isEmpty);
   });
 
+  test('builds all live endpoints from a custom HTTPS origin', () async {
+    final config = await LiveTrackingConfigLoader(
+      apiBaseUri: Uri.parse('https://tracking.example.org:9443'),
+    ).load();
+
+    expect(config.sessionStartUri.host, 'tracking.example.org');
+    expect(config.sessionStartUri.port, 9443);
+    expect(config.sessionStopUri('flight-123').host, 'tracking.example.org');
+    expect(config.pointsUri('flight-123').port, 9443);
+    expect(config.webSocketUri?.scheme, 'wss');
+    expect(config.webSocketUri?.host, 'tracking.example.org');
+    expect(config.webSocketUri?.port, 9443);
+  });
+
   test('parses optional auth, WebSocket, and channel configuration', () {
     final config = LiveTrackingConfig.fromJson(
       _configJson(

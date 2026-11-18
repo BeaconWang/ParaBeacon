@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../data/parabeacon_account_service.dart';
+import '../data/parabeacon_server_config.dart';
+import '../data/parabeacon_server_settings.dart';
 import '../data/color_palette_settings.dart';
 import '../data/competition/competition_task_store.dart';
 import '../data/flight_recorder.dart';
 import '../data/flight_store.dart';
 import '../data/flight_details_settings.dart';
 import '../data/map_tile_cache.dart';
+import '../data/live_tracking_config.dart';
+import '../data/live_tracking_service.dart';
 import '../data/map_source.dart';
 import '../data/share_card_settings.dart';
 import '../data/user_agent_settings.dart';
@@ -72,6 +77,148 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
 
   String _details(AppLocalizations l10n, MapTileCacheStats stats) => l10n
       .mapCacheSizeDetails(_formatMapCacheSize(stats.bytes), stats.tileCount);
+
+  Future<void> _editParaBeaconServerAddress() async {
+    final settings = ParaBeaconServerSettings.instance;
+    await settings.load();
+    if (!mounted) return;
+    final controller = TextEditingController(text: settings.serverAddress);
+    String? errorCode;
+    var saving = false;
+
+    Future<void> saveAddress(String value, StateSetter setDialogState) async {
+      if (saving) return;
+      setDialogState(() {
+        saving = true;
+        errorCode = null;
+      });
+      final nextBaseUri = ParaBeaconServerSettings.parseAddress(value);
+      if (nextBaseUri == null) {
+        setDialogState(() {
+          saving = false;
+          errorCode = 'invalid';
+        });
+        return;
+      }
+      final account = ParaBeaconAccountService.instance;
+      final liveTracking = LiveTrackingService.instance;
+      if (account.isBusy || !await liveTracking.canChangeServer()) {
+        setDialogState(() {
+          saving = false;
+          errorCode = 'busy';
+        });
+        return;
+      }
+
+      try {
+        await LiveTrackingConfigLoader(apiBaseUri: nextBaseUri).load();
+      } on Object {
+        setDialogState(() {
+          saving = false;
+          errorCode = 'invalid';
+        });
+        return;
+      }
+      if (account.isBusy || !await liveTracking.canChangeServer()) {
+        setDialogState(() {
+          saving = false;
+          errorCode = 'busy';
+        });
+        return;
+      }
+
+      final saved = await settings.setServerAddress(value);
+      if (!saved) {
+        setDialogState(() {
+          saving = false;
+          errorCode = 'invalid';
+        });
+        return;
+      }
+      if (mounted && context.mounted) {
+        Navigator.of(context).pop();
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).paraBeaconServerAddressSaved,
+            ),
+          ),
+        );
+      }
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(
+            AppLocalizations.of(context).paraBeaconServerAddressTitle,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppLocalizations.of(context).paraBeaconServerAddressSubtitle,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.url,
+                autocorrect: false,
+                enableSuggestions: false,
+                maxLength: 2048,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  hintText: 'https://www.parabeacon.icu',
+                  errorText: errorCode == null
+                      ? null
+                      : errorCode == 'busy'
+                      ? AppLocalizations.of(context).paraBeaconServerAddressBusy
+                      : AppLocalizations.of(
+                          context,
+                        ).paraBeaconServerAddressInvalid,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving
+                  ? null
+                  : () => saveAddress(
+                      ParaBeaconServerConfig.defaultBaseUrl,
+                      setDialogState,
+                    ),
+              child: Text(
+                AppLocalizations.of(context).paraBeaconServerAddressReset,
+              ),
+            ),
+            TextButton(
+              onPressed: saving
+                  ? null
+                  : () => Navigator.of(dialogContext).pop(),
+              child: Text(AppLocalizations.of(context).cancel),
+            ),
+            FilledButton(
+              onPressed: saving
+                  ? null
+                  : () => saveAddress(controller.text, setDialogState),
+              child: saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(AppLocalizations.of(context).save),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+  }
 
   Future<void> _editUserAgent() async {
     final settings = UserAgentSettings.instance;
@@ -438,6 +585,21 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                         ),
                       ],
                     ),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      Icons.dns_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    title: Text(l10n.paraBeaconServerAddressTitle),
+                    subtitle: Text(
+                      ParaBeaconServerSettings.instance.serverAddress,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.edit_outlined),
+                    onTap: _editParaBeaconServerAddress,
                   ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,

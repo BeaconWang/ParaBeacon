@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:parabeacon/data/parabeacon_account_service.dart';
+import 'package:parabeacon/data/parabeacon_server_config.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -82,6 +83,64 @@ void main() {
       expect(logs, isNot(contains('test-access-token')));
     },
   );
+
+  test('keeps account sessions isolated between server origins', () async {
+    final previousServer = ParaBeaconServerConfig.apiBaseUri;
+    ParaBeaconServerConfig.configureBaseUri(Uri.parse('https://8.8.8.8'));
+    addTearDown(() {
+      if (ParaBeaconServerConfig.isValidUserOrigin(previousServer)) {
+        ParaBeaconServerConfig.configureBaseUri(previousServer);
+      }
+    });
+    final store = _MemorySessionStore()
+      ..values['parabeacon_access_token'] = 'default-server-token'
+      ..values['parabeacon_refresh_token'] = 'default-server-refresh-token';
+    final client = MockClient((request) async {
+      expect(request.url.host, '8.8.8.8');
+      expect(request.url.path, '/api/v1/auth/login');
+      expect(request.headers['authorization'], isNull);
+      return http.Response(
+        jsonEncode({
+          'access_token': 'custom-server-token',
+          'expires_at': DateTime.now()
+              .add(const Duration(minutes: 10))
+              .toUtc()
+              .toIso8601String(),
+          'refresh_token': 'custom-server-refresh-token-long-value',
+          'refresh_expires_at': null,
+          'user': _userJson,
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    final service = ParaBeaconAccountService(
+      client: client,
+      sessionStore: store,
+    );
+    addTearDown(service.dispose);
+
+    await service.load();
+    expect(service.isSignedIn, isFalse);
+    expect(
+      await service.login(identifier: 'pilot_one', password: 'abc123'),
+      isTrue,
+    );
+
+    expect(store.values['parabeacon_access_token'], 'default-server-token');
+    expect(
+      store.values['parabeacon_refresh_token'],
+      'default-server-refresh-token',
+    );
+    expect(
+      store.values.entries.any(
+        (entry) =>
+            entry.key.startsWith('parabeacon_access_token_') &&
+            entry.value == 'custom-server-token',
+      ),
+      isTrue,
+    );
+  });
 
   test(
     'rejects passwords shorter than six characters before sending',

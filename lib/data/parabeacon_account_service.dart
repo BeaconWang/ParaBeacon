@@ -68,18 +68,35 @@ class ParaBeaconAccountService extends ChangeNotifier
 
   static final ParaBeaconAccountService instance = ParaBeaconAccountService();
 
-  static final Uri _apiBaseUri = ParaBeaconServerConfig.apiV1BaseUri;
-  static const _tokenKey = 'parabeacon_access_token';
-  static const _expiresAtKey = 'parabeacon_access_token_expires_at';
-  static const _refreshTokenKey = 'parabeacon_refresh_token';
-  static const _refreshExpiresAtKey = 'parabeacon_refresh_token_expires_at';
-  static const _userKey = 'parabeacon_account_user';
+  static const _tokenStorageKey = 'parabeacon_access_token';
+  static const _expiresAtStorageKey = 'parabeacon_access_token_expires_at';
+  static const _refreshTokenStorageKey = 'parabeacon_refresh_token';
+  static const _refreshExpiresAtStorageKey =
+      'parabeacon_refresh_token_expires_at';
+  static const _userStorageKey = 'parabeacon_account_user';
   static const _requestTimeout = Duration(seconds: 15);
   static const _maxDebugLogLines = 200;
 
   final List<String> _debugLog = <String>[];
   final http.Client _client;
   final AccountSessionStore _store;
+  Uri _serverApiBaseUri = ParaBeaconServerConfig.apiV1BaseUri;
+
+  String get _tokenKey => _sessionStorageKey(_tokenStorageKey);
+  String get _expiresAtKey => _sessionStorageKey(_expiresAtStorageKey);
+  String get _refreshTokenKey => _sessionStorageKey(_refreshTokenStorageKey);
+  String get _refreshExpiresAtKey =>
+      _sessionStorageKey(_refreshExpiresAtStorageKey);
+  String get _userKey => _sessionStorageKey(_userStorageKey);
+
+  String _sessionStorageKey(String key) {
+    if (_serverApiBaseUri == ParaBeaconServerConfig.defaultApiV1BaseUri) {
+      return key;
+    }
+    final origin = _serverApiBaseUri.replace(path: '/').toString();
+    final suffix = base64Url.encode(utf8.encode(origin)).replaceAll('=', '');
+    return '${key}_$suffix';
+  }
 
   bool _loaded = false;
   bool _loading = false;
@@ -93,6 +110,8 @@ class ParaBeaconAccountService extends ChangeNotifier
 
   bool get isLoaded => _loaded;
   bool get isLoading => _loading;
+  bool get isBusy => _loading || _refreshFuture != null;
+
   List<String> get debugLog => List<String>.unmodifiable(_debugLog);
   bool get isSignedIn =>
       _token != null &&
@@ -595,7 +614,7 @@ class ParaBeaconAccountService extends ChangeNotifier
     notifyListeners();
   }
 
-  static Uri _apiUri(String path) => _apiBaseUri.resolve(path);
+  Uri _apiUri(String path) => _serverApiBaseUri.resolve(path);
 
   static const _jsonHeaders = {
     'Accept': 'application/json',

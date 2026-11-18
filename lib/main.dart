@@ -30,6 +30,7 @@ import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/parabeacon_account_service.dart';
 import 'data/parabeacon_server_config.dart';
+import 'data/parabeacon_server_settings.dart';
 import 'data/live_tracking_config.dart';
 import 'data/live_tracking_service.dart' show LiveTrackingService;
 import 'data/gps_flight_data_bridge.dart';
@@ -61,10 +62,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LocaleController.instance.load();
   await UserAgentSettings.instance.load();
+  await ParaBeaconServerSettings.instance.load();
   XContestLiveTrackingService.instance.configure();
   try {
     LiveTrackingService.instance.configure(
-      await const LiveTrackingConfigLoader().load(),
+      await LiveTrackingConfigLoader(
+        apiBaseUri: ParaBeaconServerSettings.instance.baseUri,
+      ).load(),
     );
   } on Object {
     LiveTrackingService.instance.configure(null);

@@ -229,6 +229,9 @@ class PublicPilotLocation {
   final double? verticalSpeedMetersPerSecond;
   final List<LiveTrackpoint> path;
 
+  bool belongsToLiveRoom(String? roomId) =>
+      roomId != null && liveRoomId == roomId;
+
   static PublicPilotLocation? fromJson(Object? value) {
     if (value is! Map<String, dynamic>) return null;
     final name = value['pilot_name'];

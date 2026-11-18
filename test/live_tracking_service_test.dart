@@ -235,6 +235,7 @@ void main() {
               'locations': [
                 {
                   'pilot_name': 'pilot_one',
+                  'live_room_id': 'd2719b5c-6a1f-4a4e-8b67-85139941a201',
                   'lat': 47.1,
                   'lon': 8.5,
                   'heading': 120.0,
@@ -291,6 +292,18 @@ void main() {
       expect(requests, hasLength(2));
       expect(locations, hasLength(1));
       expect(locations.single.pilotName, 'pilot_one');
+      expect(
+        locations.single.liveRoomId,
+        'd2719b5c-6a1f-4a4e-8b67-85139941a201',
+      );
+      expect(
+        locations.single.belongsToLiveRoom(
+          'd2719b5c-6a1f-4a4e-8b67-85139941a201',
+        ),
+        isTrue,
+      );
+      expect(locations.single.belongsToLiveRoom('another-room'), isFalse);
+      expect(locations.single.belongsToLiveRoom(null), isFalse);
       expect(locations.single.latitude, 47.1);
       expect(locations.single.headingDegrees, 120);
       expect(locations.single.altitudeMeters, 1234.5);

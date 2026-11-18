@@ -48,6 +48,8 @@ String _formatMapNumber(
   required int autoDecimals,
 }) => formatDecimalValue(value, autoDecimals: autoDecimals, range: precision);
 
+const _serverPilotMarkerAlignment = Alignment(0, (2 * 12 / 76) - 1);
+
 Color _publicPilotColor(String pilotName) => HSVColor.fromAHSV(
   1,
   (pilotName.hashCode & 0x7fffffff) % 360,
@@ -1027,10 +1029,13 @@ class _MapControlState extends State<MapControl> {
     // Other public/followed pilots from XContest and consented ParaBeacon
     // sessions. Server locations are shown only while their fix is fresh.
     final publicPilotNow = DateTime.now().toUtc();
+    final ownLiveRoomId =
+        server_tracking.LiveTrackingService.instance.sessionId;
     final freshServerPilots = widget.showOtherPilots
         ? _serverPilotLocations
               .where(
                 (pilot) =>
+                    !pilot.belongsToLiveRoom(ownLiveRoomId) &&
                     publicPilotNow.difference(pilot.observedAt) <=
                         const Duration(seconds: 90) &&
                     !pilot.observedAt.isAfter(
@@ -1073,7 +1078,7 @@ class _MapControlState extends State<MapControl> {
           point: _shift(_serverPilotPosition(pilot), widget.tileSource),
           width: 140,
           height: 76,
-          alignment: Alignment.topCenter,
+          alignment: _serverPilotMarkerAlignment,
           child: _OtherPilotMarker(
             name: pilot.pilotName,
             color: _publicPilotColor(pilot.pilotName),

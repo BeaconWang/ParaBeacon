@@ -75,7 +75,14 @@ void main() {
       ),
     );
     expect(config.authEndpointUri, isNull);
-    expect(config.webSocketUri, isNull);
+    expect(
+      config.webSocketUri,
+      Uri(
+        scheme: 'wss',
+        host: 'www.parabeacon.icu',
+        path: '/api/v1/tracking/live',
+      ),
+    );
     expect(config.channelIds, isEmpty);
   });
 

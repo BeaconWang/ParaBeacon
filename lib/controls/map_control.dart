@@ -30,6 +30,7 @@ import '../data/vario_color_scale.dart';
 import '../data/vario_color_settings.dart';
 import '../data/wind_estimator.dart';
 import '../data/xcontest_live_tracking_service.dart';
+import '../live/peer_location_interpolator.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
 
@@ -429,6 +430,8 @@ class _MapControlState extends State<MapControl> {
   /// bearing line.
   double _lastHeading = 0.0;
   List<server_tracking.PublicPilotLocation> _serverPilotLocations = const [];
+  final Map<String, PeerLocationInterpolator> _serverPilotMotion = {};
+  Timer? _serverPilotAnimationTimer;
   Timer? _serverPilotRefreshTimer;
   Timer? _serverPilotDebounceTimer;
   int _serverPilotRequestId = 0;
@@ -554,6 +557,7 @@ class _MapControlState extends State<MapControl> {
         _serverPilotRefreshTimer?.cancel();
         _serverPilotRefreshTimer = null;
         _serverPilotLocations = const [];
+        _clearServerPilotMotion();
       }
     }
     // Switching rotation mode: snap back to north-up when leaving track-up, and
@@ -574,6 +578,7 @@ class _MapControlState extends State<MapControl> {
     _tileRetryTimer?.cancel();
     _serverPilotRefreshTimer?.cancel();
     _serverPilotDebounceTimer?.cancel();
+    _clearServerPilotMotion();
     _serverPilotRequestId++;
     _tileResetCtrl.close();
     _airspaceSub?.cancel();
@@ -692,6 +697,60 @@ class _MapControlState extends State<MapControl> {
     );
   }
 
+  void _animateServerPilotLocations(
+    List<server_tracking.PublicPilotLocation> locations,
+  ) {
+    final activeNames = locations.map((pilot) => pilot.pilotName).toSet();
+    _serverPilotMotion.removeWhere((name, _) => !activeNames.contains(name));
+    for (final pilot in locations) {
+      final motion = _serverPilotMotion.putIfAbsent(
+        pilot.pilotName,
+        PeerLocationInterpolator.new,
+      );
+      motion.update(
+        latitude: pilot.latitude,
+        longitude: pilot.longitude,
+        timestamp: pilot.observedAt,
+        speedMetersPerSecond: pilot.groundSpeedMetersPerSecond,
+        headingDegrees: pilot.headingDegrees,
+      );
+    }
+    if (locations.isEmpty || _serverPilotAnimationTimer != null) return;
+    _serverPilotAnimationTimer = Timer.periodic(
+      const Duration(milliseconds: 50),
+      (timer) {
+        final now = DateTime.now();
+        final animating = _serverPilotMotion.values.any(
+          (motion) => motion.needsAnimationAt(now),
+        );
+        if (!mounted || !widget.showOtherPilots || !animating) {
+          timer.cancel();
+          if (identical(_serverPilotAnimationTimer, timer)) {
+            _serverPilotAnimationTimer = null;
+          }
+          return;
+        }
+        setState(() {});
+      },
+    );
+  }
+
+  void _clearServerPilotMotion() {
+    _serverPilotAnimationTimer?.cancel();
+    _serverPilotAnimationTimer = null;
+    _serverPilotMotion.clear();
+  }
+
+  LatLng _serverPilotPosition(server_tracking.PublicPilotLocation pilot) {
+    final interpolated = _serverPilotMotion[pilot.pilotName]?.positionAt(
+      DateTime.now(),
+    );
+    return LatLng(
+      interpolated?.latitude ?? pilot.latitude,
+      interpolated?.longitude ?? pilot.longitude,
+    );
+  }
+
   void _schedulePublicPilotRefresh([
     Duration delay = const Duration(milliseconds: 500),
   ]) {
@@ -713,6 +772,7 @@ class _MapControlState extends State<MapControl> {
       _serverPilotRefreshTimer = null;
       _serverPilotDebounceTimer?.cancel();
       _serverPilotDebounceTimer = null;
+      _clearServerPilotMotion();
       if (_serverPilotLocations.isNotEmpty && mounted) {
         setState(() => _serverPilotLocations = const []);
       }
@@ -773,9 +833,11 @@ class _MapControlState extends State<MapControl> {
           !widget.showOtherPilots) {
         return;
       }
+      _animateServerPilotLocations(locations);
       setState(() => _serverPilotLocations = locations);
     } on Object {
       if (!mounted || requestId != _serverPilotRequestId) return;
+      _clearServerPilotMotion();
       setState(() => _serverPilotLocations = const []);
     }
   }
@@ -1008,10 +1070,7 @@ class _MapControlState extends State<MapControl> {
           ),
       for (final pilot in freshServerPilots)
         Marker(
-          point: _shift(
-            LatLng(pilot.latitude, pilot.longitude),
-            widget.tileSource,
-          ),
+          point: _shift(_serverPilotPosition(pilot), widget.tileSource),
           width: 140,
           height: 76,
           alignment: Alignment.topCenter,

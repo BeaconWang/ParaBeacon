@@ -3,7 +3,7 @@
   "session_stop_endpoint": "/api/v1/tracking/sessions/{session_id}/stop",
   "points_endpoint": "/api/v1/tracking/sessions/{session_id}/points",
   "auth_endpoint": null,
-  "websocket_url": null,
+  "websocket_url": "/api/v1/tracking/live",
   "channel_ids": [],
   "request_timeout_seconds": 15,
   "upload_interval_seconds": 3,

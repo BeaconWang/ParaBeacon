@@ -3,14 +3,18 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 
 import 'flight_data.dart';
+import 'location_share_throttler.dart';
 import 'flight_state.dart';
 import 'parabeacon_account_service.dart';
 import 'live_tracking_config.dart';
 import 'live_tracking_proxy_auth_service.dart';
 import 'user_agent_settings.dart';
+import '../live/room_tracking_websocket_client.dart';
 
 @immutable
 class LiveTrackpoint {
@@ -200,6 +204,7 @@ class PublicPilotLocation {
     required this.latitude,
     required this.longitude,
     required this.observedAt,
+    this.liveRoomId,
     this.headingDegrees,
     this.altitudeMeters,
     this.groundSpeedMetersPerSecond,
@@ -211,6 +216,7 @@ class PublicPilotLocation {
   final double latitude;
   final double longitude;
   final DateTime observedAt;
+  final String? liveRoomId;
   final double? headingDegrees;
   final double? altitudeMeters;
   final double? groundSpeedMetersPerSecond;
@@ -223,12 +229,14 @@ class PublicPilotLocation {
     final latitude = value['lat'];
     final longitude = value['lon'];
     final timestamp = value['observed_at'];
+    final liveRoomId = value['live_room_id'];
     final heading = value['heading'];
     if (name is! String ||
         name.trim().isEmpty ||
         latitude is! num ||
         longitude is! num ||
         timestamp is! String ||
+        (liveRoomId != null && liveRoomId is! String) ||
         (heading != null && heading is! num)) {
       return null;
     }
@@ -265,6 +273,9 @@ class PublicPilotLocation {
       latitude: lat,
       longitude: lon,
       observedAt: observedAt.toUtc(),
+      liveRoomId: liveRoomId is String && liveRoomId.isNotEmpty
+          ? liveRoomId
+          : null,
       headingDegrees: headingValue,
       altitudeMeters: optionalNumber('altitude'),
       groundSpeedMetersPerSecond: optionalNumber('speed'),
@@ -315,6 +326,120 @@ class SharedPreferencesLiveTrackingProxyPointStore
   }
 }
 
+class SQLiteLiveTrackingProxyPointStore implements LiveTrackingProxyPointStore {
+  static const _legacyStorageKey = 'pb.liveTracking.proxyQueue.v1';
+  static Future<Database>? _databaseFuture;
+
+  Future<Database> get _database async {
+    final current = _databaseFuture;
+    if (current != null) return current;
+    final opening = _openDatabase();
+    _databaseFuture = opening;
+    try {
+      return await opening;
+    } on Object {
+      if (identical(_databaseFuture, opening)) _databaseFuture = null;
+      rethrow;
+    }
+  }
+
+  Future<Database> _openDatabase() async {
+    final root = await getDatabasesPath();
+    return openDatabase(
+      p.join(root, 'parabeacon_tracking_queue.db'),
+      version: 1,
+      onCreate: (database, version) async {
+        await database.execute(
+          'CREATE TABLE pending_points ('
+          'sequence INTEGER PRIMARY KEY AUTOINCREMENT, '
+          'payload TEXT NOT NULL)',
+        );
+      },
+    );
+  }
+
+  @override
+  Future<List<QueuedProxyPoint>> load() async {
+    try {
+      final database = await _database;
+      final rows = await database.query(
+        'pending_points',
+        columns: const ['payload'],
+        orderBy: 'sequence ASC',
+      );
+      final points = <QueuedProxyPoint>[];
+      for (final row in rows) {
+        try {
+          final parsed = QueuedProxyPoint.fromJson(
+            jsonDecode(row['payload'] as String),
+          );
+          if (parsed != null) points.add(parsed);
+        } on Object {
+          continue;
+        }
+      }
+      if (points.isNotEmpty) return points;
+
+      final legacyStore = SharedPreferencesLiveTrackingProxyPointStore(
+        storageKey: _legacyStorageKey,
+      );
+      final legacyPoints = await legacyStore.load();
+      if (legacyPoints.isNotEmpty) {
+        try {
+          await _saveToDatabase(database, legacyPoints);
+          final preferences = await SharedPreferences.getInstance();
+          await preferences.remove(_legacyStorageKey);
+        } on Object {
+          return legacyPoints;
+        }
+      }
+      return legacyPoints;
+    } on Object {
+      return SharedPreferencesLiveTrackingProxyPointStore(
+        storageKey: _legacyStorageKey,
+      ).load();
+    }
+  }
+
+  @override
+  Future<void> save(List<QueuedProxyPoint> points) async {
+    try {
+      final database = await _database;
+      await _saveToDatabase(database, points);
+    } on Object {
+      await SharedPreferencesLiveTrackingProxyPointStore(
+        storageKey: _legacyStorageKey,
+      ).save(points);
+    }
+  }
+
+  Future<void> _saveToDatabase(
+    Database database,
+    List<QueuedProxyPoint> points,
+  ) async {
+    await database.transaction((transaction) async {
+      await transaction.delete('pending_points');
+      final batch = transaction.batch();
+      for (final point in points) {
+        batch.insert('pending_points', {'payload': jsonEncode(point.toJson())});
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+}
+
+LiveTrackingProxyPointStore _defaultLiveTrackingProxyPointStore() {
+  const sqlitePlatforms = {
+    TargetPlatform.android,
+    TargetPlatform.iOS,
+    TargetPlatform.macOS,
+  };
+  if (!kIsWeb && sqlitePlatforms.contains(defaultTargetPlatform)) {
+    return SQLiteLiveTrackingProxyPointStore();
+  }
+  return SharedPreferencesLiveTrackingProxyPointStore();
+}
+
 @immutable
 class QueuedProxyPoint {
   const QueuedProxyPoint({required this.sessionId, required this.point});
@@ -355,8 +480,7 @@ class LiveTrackingService extends ChangeNotifier {
   }) : _config = config,
        _configured = true,
        _authProvider = authProvider,
-       _pointStore =
-           pointStore ?? SharedPreferencesLiveTrackingProxyPointStore(),
+       _pointStore = pointStore ?? _defaultLiveTrackingProxyPointStore(),
        _httpClient = httpClient == null
            ? UserAgentHttpClient()
            : UserAgentHttpClient(innerClient: httpClient),
@@ -364,7 +488,7 @@ class LiveTrackingService extends ChangeNotifier {
 
   LiveTrackingService._singleton()
     : _authProvider = ParaBeaconAccountService.instance,
-      _pointStore = SharedPreferencesLiveTrackingProxyPointStore(),
+      _pointStore = _defaultLiveTrackingProxyPointStore(),
       _httpClient = UserAgentHttpClient(),
       _ownsHttpClient = true;
 
@@ -377,6 +501,8 @@ class LiveTrackingService extends ChangeNotifier {
   final http.Client _httpClient;
   final bool _ownsHttpClient;
   final List<QueuedProxyPoint> _pending = [];
+  final LocationShareThrottler _locationThrottler = LocationShareThrottler();
+  RoomTrackingWebSocketClient? _roomSocket;
 
   LiveTrackingConnectionState _state = LiveTrackingConnectionState.idle;
   LiveTrackingConnectionState get state => _state;
@@ -662,6 +788,41 @@ class LiveTrackingService extends ChangeNotifier {
     _notify();
   }
 
+  void _connectRoomSocket(String sessionId) {
+    final endpoint = _config.webSocketUri;
+    if (kIsWeb || endpoint == null) return;
+    final socket = _roomSocket ??= RoomTrackingWebSocketClient(
+      authProvider: _authProvider,
+    );
+    unawaited(_joinRoomSocket(socket, endpoint, sessionId));
+  }
+
+  Future<void> _joinRoomSocket(
+    RoomTrackingWebSocketClient socket,
+    Uri endpoint,
+    String sessionId,
+  ) async {
+    try {
+      await socket.joinRoom(endpoint: endpoint, roomId: sessionId);
+    } on Object catch (error) {
+      if (identical(_roomSocket, socket) && !_disposed) {
+        _lastErrorCode = 'room_socket_${error.runtimeType}';
+        _notify();
+      }
+    }
+  }
+
+  void _leaveRoomSocket() {
+    final socket = _roomSocket;
+    if (socket != null) unawaited(socket.leaveRoom());
+  }
+
+  void _disposeRoomSocket() {
+    final socket = _roomSocket;
+    _roomSocket = null;
+    socket?.dispose();
+  }
+
   Future<void> _startSession() async {
     if (_starting || !_shouldTrack) return;
     final bindingEpoch = _bindingEpoch;
@@ -702,9 +863,11 @@ class LiveTrackingService extends ChangeNotifier {
       _pending.removeWhere((queued) => queued.sessionId != activeSessionId);
       if (_pending.length != queuedPointCount) await _persistQueue();
       _sessionId = activeSessionId;
+      _connectRoomSocket(activeSessionId);
       _sessionPubliclyShared = publiclyShare;
       _flushWhileIdle = false;
       _lastPointTimestamp = null;
+      _locationThrottler.reset();
       _lastErrorCode = null;
       _retryAttempt = 0;
       _setState(LiveTrackingConnectionState.active);
@@ -728,6 +891,14 @@ class LiveTrackingService extends ChangeNotifier {
     final previous = _lastPointTimestamp;
     if (previous != null && !point.timestamp.isAfter(previous)) return;
     _lastPointTimestamp = point.timestamp;
+    if (!_locationThrottler.shouldTransmit(
+      latitude: point.latitude,
+      longitude: point.longitude,
+      timestamp: point.timestamp,
+    )) {
+      return;
+    }
+    _roomSocket?.sendLocation(point);
     _pending.add(QueuedProxyPoint(sessionId: _sessionId!, point: point));
     if (_pending.length > _config.maximumBufferedPoints) {
       _pending.removeRange(0, _pending.length - _config.maximumBufferedPoints);
@@ -815,6 +986,7 @@ class LiveTrackingService extends ChangeNotifier {
 
   void _queueSessionEnd(String sessionId) {
     if (sessionId.isEmpty || !_endingSessions.add(sessionId)) return;
+    _leaveRoomSocket();
     final stopUri = _config.sessionStopUri(sessionId);
     _sessionEndTail = _sessionEndTail.then((_) async {
       try {
@@ -952,6 +1124,7 @@ class LiveTrackingService extends ChangeNotifier {
     _uploadTimer?.cancel();
     await _sessionEndTail.catchError((Object _) {});
     await _saveTail.catchError((Object _) {});
+    _disposeRoomSocket();
     if (_ownsHttpClient) _httpClient.close();
     _disposed = true;
     dispose();
@@ -964,6 +1137,7 @@ class LiveTrackingService extends ChangeNotifier {
       _disposed = true;
       _retryTimer?.cancel();
       _uploadTimer?.cancel();
+      _disposeRoomSocket();
       if (_ownsHttpClient) _httpClient.close();
     }
     super.dispose();

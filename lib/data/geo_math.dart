@@ -35,7 +35,10 @@ abstract final class GeoMath {
   ) {
     double radians(double degrees) => degrees * math.pi / 180;
 
-    final deltaLongitude = radians(longitude2 - longitude1);
+    var longitudeDeltaDegrees = longitude2 - longitude1;
+    if (longitudeDeltaDegrees > 180) longitudeDeltaDegrees -= 360;
+    if (longitudeDeltaDegrees < -180) longitudeDeltaDegrees += 360;
+    final deltaLongitude = radians(longitudeDeltaDegrees);
     final y = math.sin(deltaLongitude) * math.cos(radians(latitude2));
     final x =
         math.cos(radians(latitude1)) * math.sin(radians(latitude2)) -

@@ -33,6 +33,7 @@ import '../data/xcontest_live_tracking_service.dart';
 import '../live/peer_location_interpolator.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
+import 'pilot_direction_arrow.dart';
 
 // Keep the geographic point aligned to the ball center, with its label below.
 const double _savedPointBallDiameter = 15;
@@ -49,6 +50,7 @@ String _formatMapNumber(
 }) => formatDecimalValue(value, autoDecimals: autoDecimals, range: precision);
 
 const _serverPilotMarkerAlignment = Alignment(0, (2 * 12 / 76) - 1);
+const _xcontestPilotMarkerAlignment = Alignment(0, (2 * 24 / 56) - 1);
 
 Color _publicPilotColor(String pilotName) => HSVColor.fromAHSV(
   1,
@@ -1066,11 +1068,13 @@ class _MapControlState extends State<MapControl> {
             point: _shift(LatLng(pilot.lat, pilot.lon), widget.tileSource),
             width: 120,
             height: 56,
-            alignment: Alignment.topCenter,
+            alignment: _xcontestPilotMarkerAlignment,
             child: _OtherPilotMarker(
               name: pilot.name,
               color: Color(pilot.colorArgb),
               landed: pilot.landed,
+              headingDegrees: pilot.headingDegrees,
+              screenRotationDegrees: _rotationDeg,
             ),
           ),
       for (final pilot in freshServerPilots)
@@ -1084,6 +1088,8 @@ class _MapControlState extends State<MapControl> {
             color: _publicPilotColor(pilot.pilotName),
             landed: false,
             flightInfo: _publicPilotFlightInfo(pilot),
+            headingDegrees: pilot.headingDegrees,
+            screenRotationDegrees: _rotationDeg,
           ),
         ),
     ];
@@ -2238,12 +2244,16 @@ class _OtherPilotMarker extends StatelessWidget {
     required this.color,
     required this.landed,
     this.flightInfo,
+    this.headingDegrees,
+    this.screenRotationDegrees = 0,
   });
 
   final String name;
   final Color color;
   final bool landed;
   final String? flightInfo;
+  final double? headingDegrees;
+  final double screenRotationDegrees;
 
   @override
   Widget build(BuildContext context) {
@@ -2253,22 +2263,41 @@ class _OtherPilotMarker extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black38,
-                  blurRadius: 2,
-                  offset: Offset(0, 1),
+          Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black38,
+                      blurRadius: 2,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Icon(Icons.paragliding, size: 14, color: Colors.white),
+                child: const Icon(
+                  Icons.paragliding,
+                  size: 14,
+                  color: Colors.white,
+                ),
+              ),
+              if (headingDegrees != null && headingDegrees!.isFinite)
+                Positioned(
+                  top: -3,
+                  child: PilotDirectionArrow(
+                    headingDegrees: headingDegrees!,
+                    mapRotationDegrees: screenRotationDegrees,
+                    color: color,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 2),
           Container(

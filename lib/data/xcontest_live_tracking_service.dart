@@ -15,6 +15,7 @@ import '../live/sha256.dart';
 import 'aircraft_settings.dart';
 import 'debug_settings.dart';
 import 'flight_data.dart';
+import 'geo_math.dart';
 import 'flight_state.dart';
 import 'live_tracking_settings.dart';
 import 'user_agent_settings.dart';
@@ -42,6 +43,7 @@ class LiveOtherPilot {
   final String glider;
   final int altitude;
   final bool landed;
+  final double? headingDegrees;
 
   /// Stable per-flight marker colour (ARGB) assigned by [LiveManager.colour].
   final int colorArgb;
@@ -57,6 +59,7 @@ class LiveOtherPilot {
     required this.landed,
     required this.colorArgb,
     this.time,
+    this.headingDegrees,
   });
 }
 
@@ -110,8 +113,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
 
   bool _configured = false;
   bool _disposed = false;
-  LiveTrackingConnectionState _state =
-      LiveTrackingConnectionState.disconnected;
+  LiveTrackingConnectionState _state = LiveTrackingConnectionState.disconnected;
   String? _lastErrorCode;
   String? _sessionId;
 
@@ -309,27 +311,29 @@ class XContestLiveTrackingService extends ChangeNotifier {
     _starting = true;
     _notify();
     final bindingEpoch = _bindingEpoch;
-    _log('start: declaring flight (pilot $pilotId'
-        '${isMock ? (simulated ? ', simulated' : ', mock-as-real') : ''})');
+    _log(
+      'start: declaring flight (pilot $pilotId'
+      '${isMock ? (simulated ? ', simulated' : ', mock-as-real') : ''})',
+    );
     _setState(LiveTrackingConnectionState.connecting);
     try {
       final settings = LiveTrackingSettings.instance;
       final aircraft = AircraftSettings.instance;
-      final mgr = LiveManager()
-        ..addListener((_) => _rebuildOtherPilots());
-      final client = LiveClient(
-        mgr,
-        shareWhenNotFlying: false,
-        claimContest: settings.claimContest,
-        flightPublic: settings.flightPublic,
-        // "Show public tracking" -> xcSetOptions.receiveAllPositions.
-        receiveAllPositions: settings.showPublic,
-        token: token,
-        epoch0Ms: DateTime.now().millisecondsSinceEpoch,
-      )
-        ..onLog = _log
-        // Respect a pause that is already active when the flight starts.
-        ..tempDontShare = settings.temporaryDontShare;
+      final mgr = LiveManager()..addListener((_) => _rebuildOtherPilots());
+      final client =
+          LiveClient(
+              mgr,
+              shareWhenNotFlying: false,
+              claimContest: settings.claimContest,
+              flightPublic: settings.flightPublic,
+              // "Show public tracking" -> xcSetOptions.receiveAllPositions.
+              receiveAllPositions: settings.showPublic,
+              token: token,
+              epoch0Ms: DateTime.now().millisecondsSinceEpoch,
+            )
+            ..onLog = _log
+            // Respect a pause that is already active when the flight starts.
+            ..tempDontShare = settings.temporaryDontShare;
       final options = client.buildFlightOptions(
         fix,
         device: const IgcSystemInfo(),
@@ -364,8 +368,9 @@ class XContestLiveTrackingService extends ChangeNotifier {
       _mgr = mgr;
       _wire = wire;
       _socketUri = uri;
-      _sessionId =
-          declaration.flightId.isEmpty ? uri.toString() : declaration.flightId;
+      _sessionId = declaration.flightId.isEmpty
+          ? uri.toString()
+          : declaration.flightId;
 
       _log('socket open: ${uri.host}');
       final now = DateTime.now().millisecondsSinceEpoch;
@@ -479,7 +484,11 @@ class XContestLiveTrackingService extends ChangeNotifier {
     final dir = data.windDirection;
     final speedKph = data.windSpeed;
     final hasWind =
-        dir.isFinite && speedKph.isFinite && speedKph > 0 && dir >= 0 && dir < 360;
+        dir.isFinite &&
+        speedKph.isFinite &&
+        speedKph > 0 &&
+        dir >= 0 &&
+        dir < 360;
     if (!hasWind) return const AdditionalInfo();
     return AdditionalInfo(windFromMs: <double>[dir, speedKph / 3.6]);
   }
@@ -527,10 +536,14 @@ class XContestLiveTrackingService extends ChangeNotifier {
   /// the manager's change callback whenever `flightPositions`/`flightInfos`
   /// arrive. Our own flight is excluded by id.
   void _clearOtherPilots() {
+    _previousOtherPilotPositions.clear();
     if (_otherPilots.isEmpty) return;
     _otherPilots = const <LiveOtherPilot>[];
     _notify();
   }
+
+  final Map<String, ({double lat, double lon, DateTime? time})>
+  _previousOtherPilotPositions = {};
 
   void _rebuildOtherPilots() {
     if (!LiveTrackingSettings.instance.showPublic) {
@@ -553,22 +566,38 @@ class XContestLiveTrackingService extends ChangeNotifier {
       final name = info == null
           ? flightId
           : (info.user.fullname.isNotEmpty
-              ? info.user.fullname
-              : (info.user.username.isNotEmpty
-                  ? info.user.username
-                  : flightId));
-      pilots.add(LiveOtherPilot(
-        flightId: flightId,
+                ? info.user.fullname
+                : (info.user.username.isNotEmpty
+                      ? info.user.username
+                      : flightId));
+      final timestamp = pos.point.timestamp;
+      final previous = _previousOtherPilotPositions[flightId];
+      final headingDegrees = previous == null
+          ? null
+          : GeoMath.bearingDegrees(previous.lat, previous.lon, lat, lon);
+      _previousOtherPilotPositions[flightId] = (
         lat: lat,
         lon: lon,
-        name: name,
-        glider: info?.glider ?? '',
-        altitude: pos.point.gpsAlt,
-        landed: pos.landed,
-        colorArgb: mgr.colour(flightId),
-        time: pos.point.timestamp,
-      ));
+        time: timestamp,
+      );
+      pilots.add(
+        LiveOtherPilot(
+          flightId: flightId,
+          lat: lat,
+          lon: lon,
+          name: name,
+          glider: info?.glider ?? '',
+          altitude: pos.point.gpsAlt,
+          landed: pos.landed,
+          colorArgb: mgr.colour(flightId),
+          time: timestamp,
+          headingDegrees: headingDegrees,
+        ),
+      );
     });
+    _previousOtherPilotPositions.removeWhere(
+      (flightId, _) => !mgr.positions.containsKey(flightId),
+    );
     _otherPilots = List<LiveOtherPilot>.unmodifiable(pilots);
     _notify();
   }
@@ -610,7 +639,9 @@ class XContestLiveTrackingService extends ChangeNotifier {
       // whole buffer has drained after the `xcLanding` went out.
       if (_ending &&
           (client.status == LiveStatus.liveLandingAcknowledged ||
-              (client.landed && client.isDrained && client.landingAck != null))) {
+              (client.landed &&
+                  client.isDrained &&
+                  client.landingAck != null))) {
         unawaited(_finishFlight());
       }
       _notify();
@@ -633,8 +664,10 @@ class XContestLiveTrackingService extends ChangeNotifier {
     }
     if (_ending) return;
     _ending = true;
-    _log('landing: draining ${client.queue.length} '
-        'point(s) then sending xcLanding');
+    _log(
+      'landing: draining ${client.queue.length} '
+      'point(s) then sending xcLanding',
+    );
     // c1.q(): the next drained flush emits `xcLanding` instead of a chunk.
     client.setLanded();
     _startTicker(); // keep draining even if the flush timer was idle
@@ -656,9 +689,11 @@ class XContestLiveTrackingService extends ChangeNotifier {
     _gpsWaitTimer?.cancel();
     _gpsWaitTimer = null;
     final ack = _client?.landingAck;
-    _log(ack != null
-        ? 'landed: ack xcFlightId=${ack.xcFlightId}'
-        : 'flight finished (socket closed)');
+    _log(
+      ack != null
+          ? 'landed: ack xcFlightId=${ack.xcFlightId}'
+          : 'flight finished (socket closed)',
+    );
     final wire = _wire;
     _wire = null;
     await wire?.close();
@@ -709,16 +744,17 @@ class XContestLiveTrackingService extends ChangeNotifier {
   /// exists (HTTP 404) or is refused (401/403) - retrying cannot recover it.
   bool _isDefunctSocket(Object error) {
     final text = error.toString();
-    return text.contains('404') ||
-        text.contains('401') ||
-        text.contains('403');
+    return text.contains('404') || text.contains('401') || text.contains('403');
   }
 
   void _stopTerminated(String code) {
     _terminatedCooldownUntilMs =
-        DateTime.now().millisecondsSinceEpoch + _terminatedCooldown.inMilliseconds;
+        DateTime.now().millisecondsSinceEpoch +
+        _terminatedCooldown.inMilliseconds;
     _lastErrorCode = code;
-    _log('flight terminated by server - retry in ${_terminatedCooldown.inSeconds}s');
+    _log(
+      'flight terminated by server - retry in ${_terminatedCooldown.inSeconds}s',
+    );
     unawaited(_finishFlight(allowRestart: true));
   }
 
@@ -790,8 +826,10 @@ class XContestLiveTrackingService extends ChangeNotifier {
   void _setState(LiveTrackingConnectionState next) {
     if (_state == next) return;
     _state = next;
-    _log('state -> ${next.name}'
-        '${_lastErrorCode != null ? ' ($_lastErrorCode)' : ''}');
+    _log(
+      'state -> ${next.name}'
+      '${_lastErrorCode != null ? ' ($_lastErrorCode)' : ''}',
+    );
     _notify();
   }
 

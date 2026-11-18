@@ -199,11 +199,19 @@ void main() {
     expect(restoredPoint?.verticalSpeedMetersPerSecond, 0);
     expect(restoredPoint?.gpsAltitudeMeters, 1234.5);
     expect(restoredPoint?.bearingDegrees, 193.5);
+    final simulatedFix = FlightData(
+      hasFix: true,
+      isMockLocation: true,
+      latitude: 47.2,
+      longitude: 8.6,
+      altitude: 1100,
+      groundSpeed: 30,
+      timestamp: DateTime.utc(2026, 1, 2, 3, 4, 5),
+    );
+    expect(LiveTrackpoint.fromFlightData(simulatedFix), isNull);
     expect(
-      LiveTrackpoint.fromFlightData(
-        const FlightData(hasFix: true, isMockLocation: true),
-      ),
-      isNull,
+      LiveTrackpoint.fromFlightData(simulatedFix, allowMockLocation: true),
+      isNotNull,
     );
   });
 

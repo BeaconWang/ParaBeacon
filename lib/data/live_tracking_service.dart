@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
+import 'debug_settings.dart';
 import 'flight_data.dart';
 import 'location_share_throttler.dart';
 import 'flight_state.dart';
@@ -78,8 +79,13 @@ class LiveTrackpoint {
     if (temperatureCelsius != null) 'temperature': temperatureCelsius,
   };
 
-  static LiveTrackpoint? fromFlightData(FlightData data) {
-    if (!data.hasFix || data.isMockLocation) return null;
+  static LiveTrackpoint? fromFlightData(
+    FlightData data, {
+    bool allowMockLocation = false,
+  }) {
+    if (!data.hasFix || (data.isMockLocation && !allowMockLocation)) {
+      return null;
+    }
     if (!data.latitude.isFinite ||
         !data.longitude.isFinite ||
         data.latitude < -90 ||
@@ -886,7 +892,10 @@ class LiveTrackingService extends ChangeNotifier {
     if (!_shouldTrack || _sessionId == null) return;
     final snapshot = _data?.data;
     if (snapshot == null) return;
-    final point = LiveTrackpoint.fromFlightData(snapshot);
+    final point = LiveTrackpoint.fromFlightData(
+      snapshot,
+      allowMockLocation: DebugSettings.instance.simulatorEnabled,
+    );
     if (point == null) return;
     final previous = _lastPointTimestamp;
     if (previous != null && !point.timestamp.isAfter(previous)) return;

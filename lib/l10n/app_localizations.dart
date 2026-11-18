@@ -1118,6 +1118,18 @@ abstract class AppLocalizations {
   /// **'When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.'**
   String get liveTrackingShareLocationPubliclySubtitle;
 
+  /// No description provided for @liveTrackingShareLocationWhileNotFlying.
+  ///
+  /// In en, this message translates to:
+  /// **'Share location while not flying'**
+  String get liveTrackingShareLocationWhileNotFlying;
+
+  /// No description provided for @liveTrackingShareLocationWhileNotFlyingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.'**
+  String get liveTrackingShareLocationWhileNotFlyingSubtitle;
+
   /// No description provided for @liveTrackingTemporaryDisable.
   ///
   /// In en, this message translates to:

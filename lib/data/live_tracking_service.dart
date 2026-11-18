@@ -11,6 +11,7 @@ import 'debug_settings.dart';
 import 'flight_data.dart';
 import 'location_share_throttler.dart';
 import 'flight_state.dart';
+import 'live_tracking_settings.dart';
 import 'parabeacon_account_service.dart';
 import 'live_tracking_config.dart';
 import 'live_tracking_proxy_auth_service.dart';
@@ -520,6 +521,8 @@ class LiveTrackingService extends ChangeNotifier {
   String? get lastErrorCode => _lastErrorCode;
   String? _sessionId;
   String? get sessionId => _sessionId;
+  bool _sessionIsGroundPresence = false;
+  DateTime? _lastGroundPresenceSentAt;
   bool get isConfigured => _configured;
   Uri? get apiBaseUri => _configured ? _config.apiBaseUri : null;
 
@@ -681,6 +684,7 @@ class LiveTrackingService extends ChangeNotifier {
       return;
     }
     _sessionId = null;
+    _sessionIsGroundPresence = false;
     _flushWhileIdle = true;
     _uploadTimer?.cancel();
     _uploadTimer = null;
@@ -696,6 +700,8 @@ class LiveTrackingService extends ChangeNotifier {
     final sessionId = _sessionId;
     if (sessionId != null) _queueSessionEnd(sessionId);
     _sessionId = null;
+    _sessionIsGroundPresence = false;
+    _lastGroundPresenceSentAt = null;
     _flushWhileIdle = false;
     _uploadTimer?.cancel();
     _uploadTimer = null;
@@ -750,10 +756,23 @@ class LiveTrackingService extends ChangeNotifier {
         });
   }
 
-  bool get _shouldTrack =>
+  bool get _flightTrackingEnabled =>
       _configured &&
       _flightState?.isFlying == true &&
       (_isEnabled?.call() ?? false);
+
+  bool get _groundPresenceEnabled =>
+      _configured &&
+      _flightState?.isFlying != true &&
+      (_isEnabled?.call() ?? false) &&
+      LiveTrackingSettings.instance.shareLocationWhileNotFlying &&
+      LiveTrackingSettings.instance.shareLocationPublicly &&
+      !LiveTrackingSettings.instance.temporaryDontShare;
+
+  bool get _shouldTrack => _flightTrackingEnabled || _groundPresenceEnabled;
+
+  bool get _currentModeIsGroundPresence =>
+      _flightState?.isFlying != true && _groundPresenceEnabled;
 
   Future<void> _syncLifecycle() async {
     if (!_configured) return;
@@ -762,6 +781,15 @@ class LiveTrackingService extends ChangeNotifier {
       return;
     }
     if (_shouldTrack) {
+      if (_sessionId != null &&
+          !_starting &&
+          _sessionIsGroundPresence != _currentModeIsGroundPresence) {
+        final previousSessionId = _sessionId!;
+        _sessionId = null;
+        _sessionIsGroundPresence = false;
+        _queueSessionEnd(previousSessionId);
+        await _sessionEndTail.catchError((Object _) {});
+      }
       if (_sessionId == null && !_starting) {
         await _startSession();
       } else if (_sessionId != null) {
@@ -774,6 +802,8 @@ class LiveTrackingService extends ChangeNotifier {
       final sessionId = _sessionId;
       if (sessionId != null) _queueSessionEnd(sessionId);
       _sessionId = null;
+      _sessionIsGroundPresence = false;
+      _lastGroundPresenceSentAt = null;
       _retryTimer?.cancel();
       _retryTimer = null;
       _uploadTimer?.cancel();
@@ -851,8 +881,13 @@ class LiveTrackingService extends ChangeNotifier {
     if (_starting || !_shouldTrack) return;
     final bindingEpoch = _bindingEpoch;
     final pilotId = _pilotId?.call()?.trim();
-    final startTime = _flightState?.startedAt;
-    final publiclyShare = _isPubliclyShared?.call() ?? false;
+    final groundPresence = _currentModeIsGroundPresence;
+    final startTime = groundPresence
+        ? DateTime.now().toUtc()
+        : _flightState?.startedAt;
+    final publiclyShare = groundPresence
+        ? true
+        : (_isPubliclyShared?.call() ?? false);
     if (pilotId == null || pilotId.isEmpty || startTime == null) {
       throw const LiveTrackingProxyException('pilot_or_start_time_missing');
     }
@@ -877,7 +912,9 @@ class LiveTrackingService extends ChangeNotifier {
       if (sessionId is! String || sessionId.trim().isEmpty) {
         throw const LiveTrackingProxyException('invalid_session_response');
       }
-      if (bindingEpoch != _bindingEpoch || !_shouldTrack) {
+      if (bindingEpoch != _bindingEpoch ||
+          !_shouldTrack ||
+          groundPresence != _currentModeIsGroundPresence) {
         _queueSessionEnd(sessionId.trim());
         _setState(LiveTrackingConnectionState.disconnected);
         return;
@@ -887,6 +924,8 @@ class LiveTrackingService extends ChangeNotifier {
       _pending.removeWhere((queued) => queued.sessionId != activeSessionId);
       if (_pending.length != queuedPointCount) await _persistQueue();
       _sessionId = activeSessionId;
+      _sessionIsGroundPresence = groundPresence;
+      _lastGroundPresenceSentAt = null;
       _connectRoomSocket(activeSessionId);
       _sessionPubliclyShared = publiclyShare;
       _flushWhileIdle = false;
@@ -908,6 +947,7 @@ class LiveTrackingService extends ChangeNotifier {
 
   void _onDataChanged() {
     if (!_shouldTrack || _sessionId == null) return;
+    if (_sessionIsGroundPresence != _currentModeIsGroundPresence) return;
     final snapshot = _data?.data;
     if (snapshot == null) return;
     final point = LiveTrackpoint.fromFlightData(
@@ -915,8 +955,21 @@ class LiveTrackingService extends ChangeNotifier {
       allowMockLocation: DebugSettings.instance.simulatorEnabled,
     );
     if (point == null) return;
+    final now = DateTime.now().toUtc();
+    if (_sessionIsGroundPresence &&
+        (point.timestamp.isBefore(now.subtract(const Duration(seconds: 30))) ||
+            point.timestamp.isAfter(now.add(const Duration(seconds: 5))))) {
+      return;
+    }
     final previous = _lastPointTimestamp;
     if (previous != null && !point.timestamp.isAfter(previous)) return;
+    if (_sessionIsGroundPresence) {
+      final previousAt = _lastGroundPresenceSentAt;
+      if (previousAt != null &&
+          point.timestamp.difference(previousAt) < const Duration(seconds: 5)) {
+        return;
+      }
+    }
     _lastPointTimestamp = point.timestamp;
     if (!_locationThrottler.shouldTransmit(
       latitude: point.latitude,
@@ -925,6 +978,7 @@ class LiveTrackingService extends ChangeNotifier {
     )) {
       return;
     }
+    if (_sessionIsGroundPresence) _lastGroundPresenceSentAt = point.timestamp;
     _roomSocket?.sendLocation(point);
     _pending.add(QueuedProxyPoint(sessionId: _sessionId!, point: point));
     if (_pending.length > _config.maximumBufferedPoints) {

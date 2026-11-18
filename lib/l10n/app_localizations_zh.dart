@@ -540,6 +540,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '开启后，已登录的 ParaBeacon 地图用户可以看到你活动飞行中的名称和最新位置。默认关闭，可随时关闭。';
 
   @override
+  String get liveTrackingShareLocationWhileNotFlying => '非飞行时也分享位置';
+
+  @override
+  String get liveTrackingShareLocationWhileNotFlyingSubtitle =>
+      '在两次飞行之间继续公开最新位置。需要启用 ParaBeacon 同步和公开位置分享；暂停或关闭分享、或开始飞行时即停止。';
+
+  @override
   String get liveTrackingTemporaryDisable => '暂时停止分享';
 
   @override

@@ -17,6 +17,8 @@ class LiveTrackingSettings extends ChangeNotifier {
   static const _kShowPublic = 'Livetrack.ShowPublic';
   static const _kFlightPublic = 'Livetrack.FlightPublic';
   static const _kShareLocationPublicly = 'ParaBeacon.ShareLocationPublicly';
+  static const _kShareLocationWhileNotFlying =
+      'ParaBeacon.ShareLocationWhileNotFlying';
   static const _kTemporaryDontShare = 'Internal.LiveTempDontShare';
   static const _kReportSimulatedAsReal = 'Internal.LiveReportSimulatedAsReal';
 
@@ -27,6 +29,7 @@ class LiveTrackingSettings extends ChangeNotifier {
   bool _showPublic = true;
   bool _flightPublic = true;
   bool _shareLocationPublicly = false;
+  bool _shareLocationWhileNotFlying = false;
   bool _temporaryDontShare = false;
   bool _reportSimulatedAsReal = false;
   bool _loaded = false;
@@ -39,6 +42,7 @@ class LiveTrackingSettings extends ChangeNotifier {
   bool get showPublic => _showPublic;
   bool get flightPublic => _flightPublic;
   bool get shareLocationPublicly => _shareLocationPublicly;
+  bool get shareLocationWhileNotFlying => _shareLocationWhileNotFlying;
   bool get temporaryDontShare => _temporaryDontShare;
 
   /// Debug-only: when on, a simulated/mock feed is uploaded WITHOUT the
@@ -87,6 +91,8 @@ class LiveTrackingSettings extends ChangeNotifier {
       _shareLocationPublicly =
           preferences.getBool(_kShareLocationPublicly) ??
           _shareLocationPublicly;
+      _shareLocationWhileNotFlying =
+          preferences.getBool(_kShareLocationWhileNotFlying) ?? false;
       _temporaryDontShare =
           preferences.getBool(_kTemporaryDontShare) ?? _temporaryDontShare;
       _reportSimulatedAsReal =
@@ -99,6 +105,7 @@ class LiveTrackingSettings extends ChangeNotifier {
   }
 
   Future<void> save({
+    bool? shareLocationWhileNotFlying,
     required bool xcontestEnabled,
     required bool parabeaconEnabled,
     required bool claimContest,
@@ -115,6 +122,9 @@ class LiveTrackingSettings extends ChangeNotifier {
     _showPublic = showPublic;
     _flightPublic = flightPublic;
     _shareLocationPublicly = shareLocationPublicly;
+    if (shareLocationWhileNotFlying != null) {
+      _shareLocationWhileNotFlying = shareLocationWhileNotFlying;
+    }
     _temporaryDontShare = temporaryDontShare;
     if (reportSimulatedAsReal != null) {
       _reportSimulatedAsReal = reportSimulatedAsReal;
@@ -133,6 +143,10 @@ class LiveTrackingSettings extends ChangeNotifier {
       await preferences.setBool(
         _kShareLocationPublicly,
         _shareLocationPublicly,
+      );
+      await preferences.setBool(
+        _kShareLocationWhileNotFlying,
+        _shareLocationWhileNotFlying,
       );
       await preferences.setBool(_kTemporaryDontShare, _temporaryDontShare);
       await preferences.setBool(
@@ -204,6 +218,19 @@ class LiveTrackingSettings extends ChangeNotifier {
     try {
       final preferences = await SharedPreferences.getInstance();
       await preferences.setBool(_kShareLocationPublicly, value);
+    } catch (_) {
+      // In-memory value still applies; persistence can retry later.
+    }
+  }
+
+  /// Immediately applies and persists consent to share location while grounded.
+  Future<void> setShareLocationWhileNotFlying(bool value) async {
+    if (_shareLocationWhileNotFlying == value) return;
+    _shareLocationWhileNotFlying = value;
+    notifyListeners();
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(_kShareLocationWhileNotFlying, value);
     } catch (_) {
       // In-memory value still applies; persistence can retry later.
     }

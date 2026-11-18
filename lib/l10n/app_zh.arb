@@ -180,6 +180,8 @@
   "liveTrackingFlightPublicLockedSubtitle": "实时追踪开始后，当前飞行的公开状态将锁定；可为下一次飞行更改。",
   "liveTrackingShareLocationPublicly": "向其他 ParaBeacon 飞行员公开我的实时位置",
   "liveTrackingShareLocationPubliclySubtitle": "开启后，已登录的 ParaBeacon 地图用户可以看到你活动飞行中的名称和最新位置。默认关闭，可随时关闭。",
+  "liveTrackingShareLocationWhileNotFlying": "非飞行时也分享位置",
+  "liveTrackingShareLocationWhileNotFlyingSubtitle": "在两次飞行之间继续公开最新位置。需要启用 ParaBeacon 同步和公开位置分享；暂停或关闭分享、或开始飞行时即停止。",
   "liveTrackingTemporaryDisable": "暂时停止分享",
   "liveTrackingTemporaryDisableSubtitle": "暂停所有已选服务的分享，但保留各服务开关状态。",
   "liveTrackingTemporarilyDisabled": "实时追踪已暂时暂停。",

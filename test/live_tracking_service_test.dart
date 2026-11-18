@@ -49,6 +49,12 @@ void main() {
 
     await settings.setShareLocationPublicly(true);
     expect(preferences.getBool('ParaBeacon.ShareLocationPublicly'), isTrue);
+    await settings.setShareLocationWhileNotFlying(true);
+    expect(
+      preferences.getBool('ParaBeacon.ShareLocationWhileNotFlying'),
+      isTrue,
+    );
+    await settings.setShareLocationWhileNotFlying(false);
     await settings.setShareLocationPublicly(false);
   });
 
@@ -332,6 +338,86 @@ void main() {
       expect(locations.single.observedAt, DateTime.utc(2026, 3, 4, 5, 6, 9));
     },
   );
+
+  test('shares a fresh ground location only with explicit opt-ins', () async {
+    final settings = LiveTrackingSettings.instance;
+    await settings.load();
+    await settings.setParaBeaconEnabled(true);
+    await settings.setShareLocationPublicly(true);
+    await settings.setTemporaryDontShare(false);
+    await settings.setShareLocationWhileNotFlying(true);
+    final requests = <http.Request>[];
+    final client = MockClient((request) async {
+      requests.add(request);
+      if (request.url.path == '/api/v1/tracking/sessions') {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['pilot_name'], 'pilot-ground');
+        expect(body['publicly_share'], isTrue);
+        expect(DateTime.tryParse(body['start_time'] as String), isNotNull);
+        return http.Response(jsonEncode({'session_id': 'ground-session'}), 201);
+      }
+      if (request.url.path.endsWith('/points')) {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['session_id'], 'ground-session');
+        final points = body['trackpoints'] as List<dynamic>;
+        expect(points, hasLength(1));
+        expect((points.single as Map<String, dynamic>)['lat'], 47.2);
+        return http.Response(jsonEncode({'accepted': 1}), 200);
+      }
+      expect(request.url.path, '/api/v1/tracking/sessions/ground-session/stop');
+      return http.Response('', 204);
+    });
+    final now = DateTime.now().toUtc();
+    final data = _MutableFlightDataView(
+      FlightData(
+        hasFix: true,
+        latitude: 47.2,
+        longitude: 8.6,
+        gpsAltitude: 1100,
+        groundSpeed: 0,
+        gpsTimestamp: now,
+      ),
+    );
+    final service = LiveTrackingService(
+      config: _config(),
+      authProvider: _TestProxyAuthProvider(),
+      pointStore: _MemoryProxyPointStore(),
+      httpClient: client,
+    );
+    service.bind(
+      data: data,
+      flightState: FlightState.instance,
+      isEnabled: () =>
+          settings.parabeaconEnabled && !settings.temporaryDontShare,
+      pilotId: () => 'pilot-ground',
+      isPubliclyShared: () => settings.shareLocationPublicly,
+      eligibilitySource: settings,
+    );
+    await pumpEventQueue(times: 20);
+
+    expect(FlightState.instance.isFlying, isFalse);
+    expect(service.state, LiveTrackingConnectionState.active);
+    expect(service.sessionId, 'ground-session');
+    expect(requests.map((request) => request.url.path), [
+      '/api/v1/tracking/sessions',
+      '/api/v1/tracking/sessions/ground-session/points',
+    ]);
+
+    await settings.setShareLocationWhileNotFlying(false);
+    await pumpEventQueue(times: 30);
+    expect(service.sessionId, isNull);
+    expect(
+      requests.last.url.path,
+      '/api/v1/tracking/sessions/ground-session/stop',
+    );
+
+    await service.shutdown();
+    client.close();
+    data.dispose();
+    await settings.setShareLocationPublicly(false);
+    await settings.setShareLocationWhileNotFlying(false);
+    await settings.setParaBeaconEnabled(false);
+  });
 
   test(
     'starts a session on active flight and uploads authenticated batches',

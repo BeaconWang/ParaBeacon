@@ -36,6 +36,8 @@ class _LiveTrackingSettingsSheetState
   bool _flightPublic = LiveTrackingSettings.instance.flightPublic;
   bool _shareLocationPublicly =
       LiveTrackingSettings.instance.shareLocationPublicly;
+  bool _shareLocationWhileNotFlying =
+      LiveTrackingSettings.instance.shareLocationWhileNotFlying;
   bool _temporaryDontShare = LiveTrackingSettings.instance.temporaryDontShare;
   bool _reportSimulatedAsReal =
       LiveTrackingSettings.instance.reportSimulatedAsReal;
@@ -59,6 +61,7 @@ class _LiveTrackingSettingsSheetState
         _showPublic = settings.showPublic;
         _flightPublic = settings.flightPublic;
         _shareLocationPublicly = settings.shareLocationPublicly;
+        _shareLocationWhileNotFlying = settings.shareLocationWhileNotFlying;
         _temporaryDontShare = settings.temporaryDontShare;
         _reportSimulatedAsReal = settings.reportSimulatedAsReal;
         _loading = false;
@@ -79,6 +82,7 @@ class _LiveTrackingSettingsSheetState
       showPublic: _showPublic,
       flightPublic: _flightPublic,
       shareLocationPublicly: _shareLocationPublicly,
+      shareLocationWhileNotFlying: _shareLocationWhileNotFlying,
       temporaryDontShare: _temporaryDontShare,
       reportSimulatedAsReal: kDebugMode ? _reportSimulatedAsReal : null,
     );
@@ -230,6 +234,32 @@ class _LiveTrackingSettingsSheetState
                                         () => _shareLocationPublicly = value,
                                       );
                                       settings.setShareLocationPublicly(value);
+                                    },
+                            ),
+                            const Divider(height: 1),
+                            SwitchListTile(
+                              secondary: const Icon(Icons.near_me_outlined),
+                              title: Text(
+                                l10n.liveTrackingShareLocationWhileNotFlying,
+                              ),
+                              subtitle: Text(
+                                l10n.liveTrackingShareLocationWhileNotFlyingSubtitle,
+                              ),
+                              value: _shareLocationWhileNotFlying,
+                              onChanged:
+                                  _loading ||
+                                      !serverSignedIn ||
+                                      !_parabeaconEnabled ||
+                                      !_shareLocationPublicly
+                                  ? null
+                                  : (value) {
+                                      setState(
+                                        () => _shareLocationWhileNotFlying =
+                                            value,
+                                      );
+                                      settings.setShareLocationWhileNotFlying(
+                                        value,
+                                      );
                                     },
                             ),
                             const Divider(height: 1),

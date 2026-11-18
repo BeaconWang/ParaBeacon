@@ -576,6 +576,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.';
 
   @override
+  String get liveTrackingShareLocationWhileNotFlying =>
+      'Share location while not flying';
+
+  @override
+  String get liveTrackingShareLocationWhileNotFlyingSubtitle =>
+      'Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.';
+
+  @override
   String get liveTrackingTemporaryDisable => 'Temporarily stop sharing';
 
   @override

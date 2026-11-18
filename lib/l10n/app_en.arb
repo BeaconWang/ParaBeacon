@@ -184,6 +184,8 @@
   "liveTrackingFlightPublicLockedSubtitle": "Visibility is locked after live tracking starts. You can change it for the next flight.",
   "liveTrackingShareLocationPublicly": "Share my live location with other ParaBeacon pilots",
   "liveTrackingShareLocationPubliclySubtitle": "When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.",
+  "liveTrackingShareLocationWhileNotFlying": "Share location while not flying",
+  "liveTrackingShareLocationWhileNotFlyingSubtitle": "Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.",
   "liveTrackingTemporaryDisable": "Temporarily stop sharing",
   "liveTrackingTemporaryDisableSubtitle": "Pause all selected destinations without changing their switches.",
   "liveTrackingTemporarilyDisabled": "LiveTracking is temporarily paused.",

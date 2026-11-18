@@ -64,13 +64,8 @@ String _publicPilotFlightInfo(server_tracking.PublicPilotLocation pilot) {
   final fields = <String>[];
   final altitude = pilot.altitudeMeters;
   final speed = pilot.groundSpeedMetersPerSecond;
-  final verticalSpeed = pilot.verticalSpeedMetersPerSecond;
   if (altitude != null) fields.add('${altitude.round()} m');
   if (speed != null) fields.add('${(speed * 3.6).round()} km/h');
-  if (verticalSpeed != null) {
-    final sign = verticalSpeed > 0 ? '+' : '';
-    fields.add('$sign${verticalSpeed.toStringAsFixed(1)} m/s');
-  }
   return fields.join(' · ');
 }
 

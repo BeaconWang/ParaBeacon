@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../data/xcontest_live_tracking_service.dart';
 import '../data/live_tracking_settings.dart';
@@ -38,6 +39,8 @@ class _LiveTrackingSettingsSheetState
       LiveTrackingSettings.instance.shareLocationPublicly;
   bool _shareLocationWhileNotFlying =
       LiveTrackingSettings.instance.shareLocationWhileNotFlying;
+  String _pilotNumberFilter = LiveTrackingSettings.instance.pilotNumberFilter;
+  late final TextEditingController _pilotNumberController;
   bool _temporaryDontShare = LiveTrackingSettings.instance.temporaryDontShare;
   bool _reportSimulatedAsReal =
       LiveTrackingSettings.instance.reportSimulatedAsReal;
@@ -46,6 +49,7 @@ class _LiveTrackingSettingsSheetState
   @override
   void initState() {
     super.initState();
+    _pilotNumberController = TextEditingController(text: _pilotNumberFilter);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.wait([
         LiveTrackingSettings.instance.load(),
@@ -62,6 +66,8 @@ class _LiveTrackingSettingsSheetState
         _flightPublic = settings.flightPublic;
         _shareLocationPublicly = settings.shareLocationPublicly;
         _shareLocationWhileNotFlying = settings.shareLocationWhileNotFlying;
+        _pilotNumberFilter = settings.pilotNumberFilter;
+        _pilotNumberController.text = settings.pilotNumberFilter;
         _temporaryDontShare = settings.temporaryDontShare;
         _reportSimulatedAsReal = settings.reportSimulatedAsReal;
         _loading = false;
@@ -71,6 +77,7 @@ class _LiveTrackingSettingsSheetState
 
   @override
   void dispose() {
+    _pilotNumberController.dispose();
     super.dispose();
   }
 
@@ -110,6 +117,7 @@ class _LiveTrackingSettingsSheetState
       builder: (context, _) {
         final signedIn = auth.isSignedIn;
         final serverSignedIn = serverAccount.isSignedIn;
+        final pilotNumber = serverAccount.user?.pilotNumber;
         final hasTrackingAccount = signedIn || serverSignedIn;
         final hasSelectedTrackingAccount =
             (settings.xcontestEnabled && signedIn) ||
@@ -198,6 +206,13 @@ class _LiveTrackingSettingsSheetState
                                 color: theme.colorScheme.primary,
                               ),
                               title: const Text('ParaBeacon'),
+                              subtitle: pilotNumber == null
+                                  ? null
+                                  : Text(
+                                      l10n.liveTrackingYourPilotNumber(
+                                        pilotNumber.toString().padLeft(6, '0'),
+                                      ),
+                                    ),
                             ),
                             const Divider(height: 1),
                             SwitchListTile(
@@ -261,6 +276,41 @@ class _LiveTrackingSettingsSheetState
                                         value,
                                       );
                                     },
+                            ),
+                            const Divider(height: 1),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                              child: TextField(
+                                key: const ValueKey('pilot-number-filter'),
+                                controller: _pilotNumberController,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(6),
+                                ],
+                                maxLength: 6,
+                                decoration: InputDecoration(
+                                  labelText: l10n.liveTrackingPilotNumberFilter,
+                                  helperText: l10n
+                                      .liveTrackingPilotNumberFilterSubtitle,
+                                  errorText:
+                                      _pilotNumberFilter.isEmpty ||
+                                          LiveTrackingSettings.isValidPilotNumberFilter(
+                                            _pilotNumberFilter,
+                                          )
+                                      ? null
+                                      : l10n.liveTrackingPilotNumberFilterInvalid,
+                                  border: const OutlineInputBorder(),
+                                ),
+                                onChanged: (value) {
+                                  setState(() => _pilotNumberFilter = value);
+                                  if (LiveTrackingSettings.isValidPilotNumberFilter(
+                                    value,
+                                  )) {
+                                    settings.setPilotNumberFilter(value);
+                                  }
+                                },
+                              ),
                             ),
                             const Divider(height: 1),
                             ListTile(

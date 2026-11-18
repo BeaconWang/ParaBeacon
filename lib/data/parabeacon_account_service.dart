@@ -19,12 +19,14 @@ class ParaBeaconUser {
   const ParaBeaconUser({
     required this.id,
     required this.username,
+    this.pilotNumber,
     this.email,
     this.createdAt,
   });
 
   final String id;
   final String username;
+  final int? pilotNumber;
   final String? email;
   final DateTime? createdAt;
 
@@ -38,11 +40,19 @@ class ParaBeaconUser {
         username.isEmpty) {
       return null;
     }
+    final rawPilotNumber = value['pilot_number'];
+    if (rawPilotNumber != null &&
+        (rawPilotNumber is! int ||
+            rawPilotNumber < 100000 ||
+            rawPilotNumber > 999999)) {
+      return null;
+    }
     final email = value['email'];
     final createdAtValue = value['created_at'];
     return ParaBeaconUser(
       id: id,
       username: username,
+      pilotNumber: rawPilotNumber as int?,
       email: email is String && email.isNotEmpty ? email : null,
       createdAt: createdAtValue is String
           ? DateTime.tryParse(createdAtValue)
@@ -53,6 +63,7 @@ class ParaBeaconUser {
   Map<String, Object?> toJson() => {
     'id': id,
     'username': username,
+    if (pilotNumber != null) 'pilot_number': pilotNumber,
     if (email != null) 'email': email,
     if (createdAt != null) 'created_at': createdAt!.toUtc().toIso8601String(),
   };

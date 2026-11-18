@@ -19,6 +19,8 @@ class LiveTrackingSettings extends ChangeNotifier {
   static const _kShareLocationPublicly = 'ParaBeacon.ShareLocationPublicly';
   static const _kShareLocationWhileNotFlying =
       'ParaBeacon.ShareLocationWhileNotFlying';
+  static const _kPilotNumberFilter = 'ParaBeacon.PilotNumberFilter';
+  static const allPilotNumbersFilter = '000000';
   static const _kTemporaryDontShare = 'Internal.LiveTempDontShare';
   static const _kReportSimulatedAsReal = 'Internal.LiveReportSimulatedAsReal';
 
@@ -30,6 +32,7 @@ class LiveTrackingSettings extends ChangeNotifier {
   bool _flightPublic = true;
   bool _shareLocationPublicly = false;
   bool _shareLocationWhileNotFlying = false;
+  String _pilotNumberFilter = allPilotNumbersFilter;
   bool _temporaryDontShare = false;
   bool _reportSimulatedAsReal = false;
   bool _loaded = false;
@@ -43,7 +46,18 @@ class LiveTrackingSettings extends ChangeNotifier {
   bool get flightPublic => _flightPublic;
   bool get shareLocationPublicly => _shareLocationPublicly;
   bool get shareLocationWhileNotFlying => _shareLocationWhileNotFlying;
+  String get pilotNumberFilter => _pilotNumberFilter;
   bool get temporaryDontShare => _temporaryDontShare;
+
+  static bool isValidPilotNumberFilter(String? value) =>
+      value != null && RegExp(r'^[0-9]{6}$').hasMatch(value);
+
+  bool includesPilotNumber(int? pilotNumber) =>
+      _pilotNumberFilter == allPilotNumbersFilter ||
+      (pilotNumber != null &&
+          pilotNumber >= 100000 &&
+          pilotNumber <= 999999 &&
+          pilotNumber.toString() == _pilotNumberFilter);
 
   /// Debug-only: when on, a simulated/mock feed is uploaded WITHOUT the
   /// `simulation` flag, so XContest treats it as a real flight. Always `false`
@@ -93,6 +107,10 @@ class LiveTrackingSettings extends ChangeNotifier {
           _shareLocationPublicly;
       _shareLocationWhileNotFlying =
           preferences.getBool(_kShareLocationWhileNotFlying) ?? false;
+      final pilotNumberFilter = preferences.getString(_kPilotNumberFilter);
+      if (isValidPilotNumberFilter(pilotNumberFilter)) {
+        _pilotNumberFilter = pilotNumberFilter!;
+      }
       _temporaryDontShare =
           preferences.getBool(_kTemporaryDontShare) ?? _temporaryDontShare;
       _reportSimulatedAsReal =
@@ -148,6 +166,7 @@ class LiveTrackingSettings extends ChangeNotifier {
         _kShareLocationWhileNotFlying,
         _shareLocationWhileNotFlying,
       );
+      await preferences.setString(_kPilotNumberFilter, _pilotNumberFilter);
       await preferences.setBool(_kTemporaryDontShare, _temporaryDontShare);
       await preferences.setBool(
         _kReportSimulatedAsReal,
@@ -221,6 +240,22 @@ class LiveTrackingSettings extends ChangeNotifier {
     } catch (_) {
       // In-memory value still applies; persistence can retry later.
     }
+  }
+
+  /// Immediately persists the exact six-digit ParaBeacon pilot-number filter.
+  /// `000000` means all public ParaBeacon pilots; XContest is not affected.
+  Future<bool> setPilotNumberFilter(String value) async {
+    if (!isValidPilotNumberFilter(value)) return false;
+    if (_pilotNumberFilter == value) return true;
+    _pilotNumberFilter = value;
+    notifyListeners();
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString(_kPilotNumberFilter, value);
+    } catch (_) {
+      // Keep the in-memory filter and allow a later change to retry persistence.
+    }
+    return true;
   }
 
   /// Immediately applies and persists consent to share location while grounded.

@@ -212,6 +212,7 @@ class PublicPilotLocation {
     required this.longitude,
     required this.observedAt,
     this.liveRoomId,
+    this.pilotNumber,
     this.headingDegrees,
     this.altitudeMeters,
     this.groundSpeedMetersPerSecond,
@@ -224,6 +225,7 @@ class PublicPilotLocation {
   final double longitude;
   final DateTime observedAt;
   final String? liveRoomId;
+  final int? pilotNumber;
   final double? headingDegrees;
   final double? altitudeMeters;
   final double? groundSpeedMetersPerSecond;
@@ -240,6 +242,7 @@ class PublicPilotLocation {
     final longitude = value['lon'];
     final timestamp = value['observed_at'];
     final liveRoomId = value['live_room_id'];
+    final rawPilotNumber = value['pilot_number'];
     final heading = value['heading'];
     if (name is! String ||
         name.trim().isEmpty ||
@@ -247,6 +250,10 @@ class PublicPilotLocation {
         longitude is! num ||
         timestamp is! String ||
         (liveRoomId != null && liveRoomId is! String) ||
+        (rawPilotNumber != null &&
+            (rawPilotNumber is! int ||
+                rawPilotNumber < 100000 ||
+                rawPilotNumber > 999999)) ||
         (heading != null && heading is! num)) {
       return null;
     }
@@ -286,6 +293,7 @@ class PublicPilotLocation {
       liveRoomId: liveRoomId is String && liveRoomId.isNotEmpty
           ? liveRoomId
           : null,
+      pilotNumber: rawPilotNumber as int?,
       headingDegrees: headingValue,
       altitudeMeters: optionalNumber('altitude'),
       groundSpeedMetersPerSecond: optionalNumber('speed'),

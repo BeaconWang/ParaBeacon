@@ -20,6 +20,7 @@ import '../data/landing_point_store.dart';
 import '../data/takeoff_reference.dart';
 import '../data/offline_tiles_service.dart';
 import '../data/live_tracking_service.dart' as server_tracking;
+import '../data/live_tracking_settings.dart';
 import '../data/parabeacon_account_service.dart';
 import '../data/map_tile_cache.dart';
 import '../data/map_source.dart' show defaultMapSourceIdForLocale;
@@ -495,6 +496,7 @@ class _MapControlState extends State<MapControl> {
     DebugSettings.instance.addListener(_onExternalChange);
     // Redraw when public XContest pilots change.
     XContestLiveTrackingService.instance.addListener(_onExternalChange);
+    LiveTrackingSettings.instance.addListener(_onExternalChange);
     ParaBeaconAccountService.instance.addListener(_onPublicPilotAccountChanged);
     if (widget.showOtherPilots) _startPublicPilotRefreshTimer();
   }
@@ -596,6 +598,7 @@ class _MapControlState extends State<MapControl> {
     VarioColorSettings.instance.removeListener(_onExternalChange);
     DebugSettings.instance.removeListener(_onExternalChange);
     XContestLiveTrackingService.instance.removeListener(_onExternalChange);
+    LiveTrackingSettings.instance.removeListener(_onExternalChange);
     ParaBeaconAccountService.instance.removeListener(
       _onPublicPilotAccountChanged,
     );
@@ -1038,6 +1041,9 @@ class _MapControlState extends State<MapControl> {
               .where(
                 (pilot) =>
                     !pilot.belongsToLiveRoom(ownLiveRoomId) &&
+                    LiveTrackingSettings.instance.includesPilotNumber(
+                      pilot.pilotNumber,
+                    ) &&
                     publicPilotNow.difference(pilot.observedAt) <=
                         const Duration(seconds: 90) &&
                     !pilot.observedAt.isAfter(

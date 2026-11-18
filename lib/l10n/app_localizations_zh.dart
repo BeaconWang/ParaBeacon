@@ -547,6 +547,21 @@ class AppLocalizationsZh extends AppLocalizations {
       '在两次飞行之间继续公开最新位置。需要启用 ParaBeacon 同步和公开位置分享；暂停或关闭分享、或开始飞行时即停止。';
 
   @override
+  String liveTrackingYourPilotNumber(String number) {
+    return '你的飞行员编号：$number';
+  }
+
+  @override
+  String get liveTrackingPilotNumberFilter => 'ParaBeacon 飞行员编号筛选';
+
+  @override
+  String get liveTrackingPilotNumberFilterSubtitle =>
+      '输入六位飞行员编号。000000 表示显示所有 ParaBeacon 飞行员；不影响 XContest 飞行员。';
+
+  @override
+  String get liveTrackingPilotNumberFilterInvalid => '请输入恰好六位数字。';
+
+  @override
   String get liveTrackingTemporaryDisable => '暂时停止分享';
 
   @override

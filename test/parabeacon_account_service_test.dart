@@ -67,6 +67,8 @@ void main() {
       expect(requests, hasLength(2));
       expect(service.isSignedIn, isTrue);
       expect(service.user?.username, 'pilot_one');
+      expect(service.user?.pilotNumber, 123456);
+      expect(service.user?.pilotNumber, 123456);
       expect(store.values['parabeacon_access_token'], 'test-access-token');
       expect(
         store.values['parabeacon_refresh_token'],
@@ -292,6 +294,7 @@ void main() {
 const _userJson = {
   'id': 'user-123',
   'username': 'pilot_one',
+  'pilot_number': 123456,
   'email': 'pilot@example.com',
   'created_at': '2026-01-01T12:00:00Z',
 };

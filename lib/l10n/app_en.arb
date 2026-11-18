@@ -186,6 +186,15 @@
   "liveTrackingShareLocationPubliclySubtitle": "When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.",
   "liveTrackingShareLocationWhileNotFlying": "Share location while not flying",
   "liveTrackingShareLocationWhileNotFlyingSubtitle": "Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.",
+  "liveTrackingYourPilotNumber": "Your pilot number: {number}",
+  "@liveTrackingYourPilotNumber": {
+    "placeholders": {
+      "number": {"type": "String"}
+    }
+  },
+  "liveTrackingPilotNumberFilter": "ParaBeacon pilot number filter",
+  "liveTrackingPilotNumberFilterSubtitle": "Enter a six-digit pilot number. 000000 shows all ParaBeacon pilots; XContest pilots are unaffected.",
+  "liveTrackingPilotNumberFilterInvalid": "Enter exactly six digits.",
   "liveTrackingTemporaryDisable": "Temporarily stop sharing",
   "liveTrackingTemporaryDisableSubtitle": "Pause all selected destinations without changing their switches.",
   "liveTrackingTemporarilyDisabled": "LiveTracking is temporarily paused.",

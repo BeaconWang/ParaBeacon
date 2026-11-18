@@ -29,6 +29,17 @@ void main() {
 
     await settings.load();
     expect(settings.shareLocationPublicly, isFalse);
+    expect(settings.pilotNumberFilter, '000000');
+    expect(settings.includesPilotNumber(123456), isTrue);
+    expect(settings.includesPilotNumber(null), isTrue);
+    expect(await settings.setPilotNumberFilter('12345'), isFalse);
+    expect(await settings.setPilotNumberFilter('12x456'), isFalse);
+    expect(await settings.setPilotNumberFilter('123456'), isTrue);
+    expect(settings.pilotNumberFilter, '123456');
+    expect(settings.includesPilotNumber(123456), isTrue);
+    expect(settings.includesPilotNumber(654321), isFalse);
+    expect(settings.includesPilotNumber(null), isFalse);
+    expect(await settings.setPilotNumberFilter('000000'), isTrue);
     expect(settings.xcontestEnabled, isFalse);
     expect(settings.parabeaconEnabled, isFalse);
     expect(settings.hasExplicitDestinationSelection, isFalse);
@@ -49,6 +60,13 @@ void main() {
 
     await settings.setShareLocationPublicly(true);
     expect(preferences.getBool('ParaBeacon.ShareLocationPublicly'), isTrue);
+    expect(await settings.setPilotNumberFilter('12ab56'), isFalse);
+    expect(await settings.setPilotNumberFilter('12345'), isFalse);
+    expect(await settings.setPilotNumberFilter('123456'), isTrue);
+    expect(settings.includesPilotNumber(123456), isTrue);
+    expect(settings.includesPilotNumber(654321), isFalse);
+    expect(preferences.getString('ParaBeacon.PilotNumberFilter'), '123456');
+    expect(await settings.setPilotNumberFilter('000000'), isTrue);
     await settings.setShareLocationWhileNotFlying(true);
     expect(
       preferences.getBool('ParaBeacon.ShareLocationWhileNotFlying'),
@@ -256,6 +274,7 @@ void main() {
                 {
                   'pilot_name': 'pilot_one',
                   'live_room_id': 'd2719b5c-6a1f-4a4e-8b67-85139941a201',
+                  'pilot_number': 123456,
                   'lat': 47.1,
                   'lon': 8.5,
                   'heading': 120.0,
@@ -312,6 +331,17 @@ void main() {
       expect(requests, hasLength(2));
       expect(locations, hasLength(1));
       expect(locations.single.pilotName, 'pilot_one');
+      expect(locations.single.pilotNumber, 123456);
+      expect(
+        PublicPilotLocation.fromJson({
+          'pilot_name': 'bad number',
+          'pilot_number': 12345,
+          'lat': 47.1,
+          'lon': 8.5,
+          'observed_at': '2026-03-04T05:06:09.000Z',
+        }),
+        isNull,
+      );
       expect(
         locations.single.liveRoomId,
         'd2719b5c-6a1f-4a4e-8b67-85139941a201',

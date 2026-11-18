@@ -584,6 +584,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.';
 
   @override
+  String liveTrackingYourPilotNumber(String number) {
+    return 'Your pilot number: $number';
+  }
+
+  @override
+  String get liveTrackingPilotNumberFilter => 'ParaBeacon pilot number filter';
+
+  @override
+  String get liveTrackingPilotNumberFilterSubtitle =>
+      'Enter a six-digit pilot number. 000000 shows all ParaBeacon pilots; XContest pilots are unaffected.';
+
+  @override
+  String get liveTrackingPilotNumberFilterInvalid =>
+      'Enter exactly six digits.';
+
+  @override
   String get liveTrackingTemporaryDisable => 'Temporarily stop sharing';
 
   @override

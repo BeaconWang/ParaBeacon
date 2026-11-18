@@ -1130,6 +1130,30 @@ abstract class AppLocalizations {
   /// **'Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.'**
   String get liveTrackingShareLocationWhileNotFlyingSubtitle;
 
+  /// No description provided for @liveTrackingYourPilotNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Your pilot number: {number}'**
+  String liveTrackingYourPilotNumber(String number);
+
+  /// No description provided for @liveTrackingPilotNumberFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'ParaBeacon pilot number filter'**
+  String get liveTrackingPilotNumberFilter;
+
+  /// No description provided for @liveTrackingPilotNumberFilterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a six-digit pilot number. 000000 shows all ParaBeacon pilots; XContest pilots are unaffected.'**
+  String get liveTrackingPilotNumberFilterSubtitle;
+
+  /// No description provided for @liveTrackingPilotNumberFilterInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter exactly six digits.'**
+  String get liveTrackingPilotNumberFilterInvalid;
+
   /// No description provided for @liveTrackingTemporaryDisable.
   ///
   /// In en, this message translates to:

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/pilot_direction_arrow.dart';
 import 'package:parabeacon/data/geo_math.dart';
 import 'package:parabeacon/data/live_tracking_service.dart';
+import 'package:parabeacon/data/pilot_course.dart';
 import 'package:parabeacon/data/xcontest_live_tracking_service.dart';
 
 void main() {
@@ -32,6 +33,156 @@ void main() {
     expect(GeoMath.bearingDegrees(0, 0, 0, 0.001), closeTo(90, 0.1));
     expect(GeoMath.bearingDegrees(0, 179.999, 0, -179.999), closeTo(90, 0.1));
     expect(GeoMath.bearingDegrees(0, 0, 0.001, 0), closeTo(0, 0.1));
+  });
+
+  test('rejects stationary, noisy, stale, and out-of-order course samples', () {
+    final now = DateTime.utc(2026, 11, 18, 12);
+    final origin = DateTime.utc(2026, 11, 18, 11, 59, 59);
+    expect(
+      PilotCourse.fromPositions(
+        previousLatitude: 0,
+        previousLongitude: 0,
+        previousTimestamp: origin,
+        latitude: 0,
+        longitude: 0,
+        timestamp: now,
+        now: now,
+      ),
+      isNull,
+    );
+    expect(
+      PilotCourse.fromPositions(
+        previousLatitude: 0,
+        previousLongitude: 0,
+        previousTimestamp: origin,
+        latitude: 0,
+        longitude: 0.00001,
+        timestamp: now,
+        now: now,
+      ),
+      isNull,
+    );
+    expect(
+      PilotCourse.fromPositions(
+        previousLatitude: 0,
+        previousLongitude: 0,
+        previousTimestamp: now,
+        latitude: 0,
+        longitude: 0.001,
+        timestamp: origin,
+        now: now,
+      ),
+      isNull,
+    );
+    expect(
+      PilotCourse.fromPositions(
+        previousLatitude: 0,
+        previousLongitude: 0,
+        previousTimestamp: origin.subtract(const Duration(minutes: 2)),
+        latitude: 0,
+        longitude: 0.001,
+        timestamp: now,
+        now: now,
+      ),
+      isNull,
+    );
+  });
+
+  test('uses a fresh moving heading and compensates for map rotation', () {
+    expect(
+      PilotCourse.fromHeading(headingDegrees: 270, speedMetersPerSecond: 12),
+      270,
+    );
+    expect(
+      PilotCourse.fromHeading(headingDegrees: 270, speedMetersPerSecond: 0.5),
+      isNull,
+    );
+    expect(
+      PilotCourse.screenDegrees(courseDegrees: 90, mapRotationDegrees: 0),
+      90,
+    );
+    expect(
+      PilotCourse.screenDegrees(courseDegrees: 90, mapRotationDegrees: -90),
+      0,
+    );
+    expect(
+      PilotCourse.screenDegrees(courseDegrees: 0, mapRotationDegrees: -450),
+      270,
+    );
+  });
+
+  test('anchors the glyph center to the pilot map coordinate', () {
+    final xcontest = PilotDirectionArrow.markerAlignment(
+      glyphCenterFromTop: 12,
+      markerHeight: 56,
+    );
+    final server = PilotDirectionArrow.markerAlignment(
+      glyphCenterFromTop: 12,
+      markerHeight: 76,
+    );
+    expect((xcontest.y + 1) * 56 / 2, 12);
+    expect((server.y + 1) * 76 / 2, 12);
+  });
+
+  test('tracker derives course only from fresh increasing moving fixes', () {
+    final tracker = PilotCourseTracker();
+    final start = DateTime.utc(2026, 11, 18, 12);
+    expect(
+      tracker.update(
+        pilotId: 'flight-1',
+        latitude: 0,
+        longitude: 179.999,
+        timestamp: start,
+        now: start,
+      ),
+      isNull,
+    );
+    expect(
+      tracker.update(
+        pilotId: 'flight-1',
+        latitude: 0,
+        longitude: -179.999,
+        timestamp: start.add(const Duration(seconds: 1)),
+        now: start.add(const Duration(seconds: 1)),
+      ),
+      closeTo(90, 0.1),
+    );
+    expect(
+      tracker.update(
+        pilotId: 'flight-1',
+        latitude: 0.001,
+        longitude: -179.999,
+        timestamp: start.add(const Duration(seconds: 1)),
+        now: start.add(const Duration(seconds: 2)),
+      ),
+      closeTo(90, 0.1),
+      reason:
+          'duplicate/out-of-order frames do not replace the last accepted course',
+    );
+    expect(
+      tracker.update(
+        pilotId: 'flight-1',
+        latitude: 0,
+        longitude: -179.999,
+        timestamp: start.add(const Duration(seconds: 2)),
+        now: start.add(const Duration(seconds: 2)),
+        landed: true,
+      ),
+      isNull,
+    );
+    tracker.retainPilots(const {});
+    expect(
+      tracker.update(
+        pilotId: 'flight-1',
+        latitude: 0,
+        longitude: -179.998,
+        timestamp: start.add(const Duration(seconds: 3)),
+        now: start.add(const Duration(seconds: 3)),
+      ),
+      isNull,
+      reason:
+          'newly seen pilots wait for a second fresh fix before showing an arrow',
+    );
   });
 
   test(

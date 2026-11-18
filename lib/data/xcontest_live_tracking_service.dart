@@ -15,7 +15,7 @@ import '../live/sha256.dart';
 import 'aircraft_settings.dart';
 import 'debug_settings.dart';
 import 'flight_data.dart';
-import 'geo_math.dart';
+import 'pilot_course.dart';
 import 'flight_state.dart';
 import 'live_tracking_settings.dart';
 import 'user_agent_settings.dart';
@@ -43,6 +43,9 @@ class LiveOtherPilot {
   final String glider;
   final int altitude;
   final bool landed;
+
+  /// Course over ground, clockwise from north; null until recent movement gives
+  /// a reliable direction.
   final double? headingDegrees;
 
   /// Stable per-flight marker colour (ARGB) assigned by [LiveManager.colour].
@@ -536,14 +539,13 @@ class XContestLiveTrackingService extends ChangeNotifier {
   /// the manager's change callback whenever `flightPositions`/`flightInfos`
   /// arrive. Our own flight is excluded by id.
   void _clearOtherPilots() {
-    _previousOtherPilotPositions.clear();
+    _otherPilotCourses.clear();
     if (_otherPilots.isEmpty) return;
     _otherPilots = const <LiveOtherPilot>[];
     _notify();
   }
 
-  final Map<String, ({double lat, double lon, DateTime? time})>
-  _previousOtherPilotPositions = {};
+  final PilotCourseTracker _otherPilotCourses = PilotCourseTracker();
 
   void _rebuildOtherPilots() {
     if (!LiveTrackingSettings.instance.showPublic) {
@@ -556,6 +558,7 @@ class XContestLiveTrackingService extends ChangeNotifier {
       return;
     }
     final own = _sessionId;
+    final now = DateTime.now().toUtc();
     final pilots = <LiveOtherPilot>[];
     mgr.positions.forEach((flightId, pos) {
       if (flightId == own) return;
@@ -570,15 +573,15 @@ class XContestLiveTrackingService extends ChangeNotifier {
                 : (info.user.username.isNotEmpty
                       ? info.user.username
                       : flightId));
-      final timestamp = pos.point.timestamp;
-      final previous = _previousOtherPilotPositions[flightId];
-      final headingDegrees = previous == null
-          ? null
-          : GeoMath.bearingDegrees(previous.lat, previous.lon, lat, lon);
-      _previousOtherPilotPositions[flightId] = (
-        lat: lat,
-        lon: lon,
-        time: timestamp,
+      final timestamp = pos.point.timestamp.toUtc();
+      if (!PilotCourse.isFresh(timestamp, now)) return;
+      final headingDegrees = _otherPilotCourses.update(
+        pilotId: flightId,
+        latitude: lat,
+        longitude: lon,
+        timestamp: timestamp,
+        now: now,
+        landed: pos.landed,
       );
       pilots.add(
         LiveOtherPilot(
@@ -595,8 +598,8 @@ class XContestLiveTrackingService extends ChangeNotifier {
         ),
       );
     });
-    _previousOtherPilotPositions.removeWhere(
-      (flightId, _) => !mgr.positions.containsKey(flightId),
+    _otherPilotCourses.retainPilots(
+      pilots.map((pilot) => pilot.flightId).toSet(),
     );
     _otherPilots = List<LiveOtherPilot>.unmodifiable(pilots);
     _notify();

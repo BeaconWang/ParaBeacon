@@ -1,6 +1,6 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+
+import '../data/pilot_course.dart';
 
 class PilotDirectionArrow extends StatelessWidget {
   const PilotDirectionArrow({
@@ -14,9 +14,17 @@ class PilotDirectionArrow extends StatelessWidget {
   final double mapRotationDegrees;
   final Color color;
 
+  static Alignment markerAlignment({
+    required double glyphCenterFromTop,
+    required double markerHeight,
+  }) => Alignment(0, (2 * glyphCenterFromTop / markerHeight) - 1);
+
   @override
   Widget build(BuildContext context) => Transform.rotate(
-    angle: (headingDegrees + mapRotationDegrees) * math.pi / 180,
+    angle: PilotCourse.screenRadians(
+      courseDegrees: headingDegrees,
+      mapRotationDegrees: mapRotationDegrees,
+    ),
     child: CustomPaint(
       size: const Size(14, 11),
       painter: _PilotDirectionArrowPainter(color: color),

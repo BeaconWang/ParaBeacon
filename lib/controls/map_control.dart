@@ -22,6 +22,7 @@ import '../data/offline_tiles_service.dart';
 import '../data/live_tracking_service.dart' as server_tracking;
 import '../data/live_tracking_settings.dart';
 import '../data/parabeacon_account_service.dart';
+import '../data/pilot_course.dart';
 import '../data/map_tile_cache.dart';
 import '../data/map_source.dart' show defaultMapSourceIdForLocale;
 import '../data/solar_position.dart';
@@ -50,8 +51,14 @@ String _formatMapNumber(
   required int autoDecimals,
 }) => formatDecimalValue(value, autoDecimals: autoDecimals, range: precision);
 
-const _serverPilotMarkerAlignment = Alignment(0, (2 * 12 / 76) - 1);
-const _xcontestPilotMarkerAlignment = Alignment(0, (2 * 24 / 56) - 1);
+final _serverPilotMarkerAlignment = PilotDirectionArrow.markerAlignment(
+  glyphCenterFromTop: 12,
+  markerHeight: 76,
+);
+final _xcontestPilotMarkerAlignment = PilotDirectionArrow.markerAlignment(
+  glyphCenterFromTop: 12,
+  markerHeight: 56,
+);
 
 Color _publicPilotColor(String pilotName) => HSVColor.fromAHSV(
   1,
@@ -59,6 +66,40 @@ Color _publicPilotColor(String pilotName) => HSVColor.fromAHSV(
   0.78,
   0.95,
 ).toColor();
+
+double? _publicPilotCourse(
+  server_tracking.PublicPilotLocation pilot,
+  DateTime now,
+) {
+  final headingCourse = PilotCourse.fromHeading(
+    headingDegrees: pilot.headingDegrees,
+    speedMetersPerSecond: pilot.groundSpeedMetersPerSecond,
+  );
+  if (headingCourse != null) return headingCourse;
+
+  server_tracking.LiveTrackpoint? current;
+  for (var index = pilot.path.length - 1; index >= 0; index--) {
+    final point = pilot.path[index];
+    if (!PilotCourse.isFresh(point.timestamp, now)) continue;
+    final laterPoint = current;
+    if (laterPoint == null) {
+      current = point;
+      continue;
+    }
+    final course = PilotCourse.fromPositions(
+      previousLatitude: point.latitude,
+      previousLongitude: point.longitude,
+      previousTimestamp: point.timestamp,
+      latitude: laterPoint.latitude,
+      longitude: laterPoint.longitude,
+      timestamp: laterPoint.timestamp,
+      now: now,
+    );
+    if (course != null) return course;
+    current = point;
+  }
+  return null;
+}
 
 String _publicPilotFlightInfo(server_tracking.PublicPilotLocation pilot) {
   final fields = <String>[];
@@ -1031,6 +1072,15 @@ class _MapControlState extends State<MapControl> {
     final publicPilotNow = DateTime.now().toUtc();
     final ownLiveRoomId =
         server_tracking.LiveTrackingService.instance.sessionId;
+    final freshXContestPilots = widget.showOtherPilots
+        ? XContestLiveTrackingService.instance.otherPilots
+              .where(
+                (pilot) =>
+                    pilot.time != null &&
+                    PilotCourse.isFresh(pilot.time!, publicPilotNow),
+              )
+              .toList(growable: false)
+        : const <LiveOtherPilot>[];
     final freshServerPilots = widget.showOtherPilots
         ? _serverPilotLocations
               .where(
@@ -1063,21 +1113,20 @@ class _MapControlState extends State<MapControl> {
           ),
     ];
     final otherPilotMarkers = <Marker>[
-      if (widget.showOtherPilots)
-        for (final pilot in XContestLiveTrackingService.instance.otherPilots)
-          Marker(
-            point: _shift(LatLng(pilot.lat, pilot.lon), widget.tileSource),
-            width: 120,
-            height: 56,
-            alignment: _xcontestPilotMarkerAlignment,
-            child: _OtherPilotMarker(
-              name: pilot.name,
-              color: Color(pilot.colorArgb),
-              landed: pilot.landed,
-              headingDegrees: pilot.headingDegrees,
-              screenRotationDegrees: _rotationDeg,
-            ),
+      for (final pilot in freshXContestPilots)
+        Marker(
+          point: _shift(LatLng(pilot.lat, pilot.lon), widget.tileSource),
+          width: 120,
+          height: 56,
+          alignment: _xcontestPilotMarkerAlignment,
+          child: _OtherPilotMarker(
+            name: pilot.name,
+            color: Color(pilot.colorArgb),
+            landed: pilot.landed,
+            headingDegrees: pilot.headingDegrees,
+            screenRotationDegrees: _rotationDeg,
           ),
+        ),
       for (final pilot in freshServerPilots)
         Marker(
           point: _shift(_serverPilotPosition(pilot), widget.tileSource),
@@ -1089,7 +1138,7 @@ class _MapControlState extends State<MapControl> {
             color: _publicPilotColor(pilot.pilotName),
             landed: false,
             flightInfo: _publicPilotFlightInfo(pilot),
-            headingDegrees: pilot.headingDegrees,
+            headingDegrees: _publicPilotCourse(pilot, publicPilotNow),
             screenRotationDegrees: _rotationDeg,
           ),
         ),

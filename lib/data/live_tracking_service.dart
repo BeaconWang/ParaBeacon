@@ -226,6 +226,8 @@ class PublicPilotLocation {
   final DateTime observedAt;
   final String? liveRoomId;
   final int? pilotNumber;
+
+  /// GPS course over ground in degrees clockwise from north, when available.
   final double? headingDegrees;
   final double? altitudeMeters;
   final double? groundSpeedMetersPerSecond;

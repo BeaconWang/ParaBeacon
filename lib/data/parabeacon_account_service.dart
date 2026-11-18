@@ -600,6 +600,89 @@ class ParaBeaconAccountService extends ChangeNotifier
             !normalized.contains(RegExp(r'[\x00-\x1f\x7f]')));
   }
 
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    if (_loading || _loggingOut) {
+      _errorCode = 'accountServiceUnavailable';
+      notifyListeners();
+      return false;
+    }
+    if (newPassword.runes.length < 6 || utf8.encode(newPassword).length > 72) {
+      _errorCode = 'accountInvalidInput';
+      notifyListeners();
+      return false;
+    }
+
+    late final Map<String, String> authorization;
+    try {
+      authorization = await authorizationHeaders();
+    } on Exception {
+      _errorCode = 'accountSessionExpired';
+      notifyListeners();
+      return false;
+    }
+    _beginRequest();
+    try {
+      final response = await _client
+          .post(
+            _apiUri('user/change-password'),
+            headers: {..._jsonHeaders, ...authorization},
+            body: jsonEncode({
+              'current_password': currentPassword,
+              'new_password': newPassword,
+            }),
+          )
+          .timeout(_requestTimeout);
+      if (response.statusCode == 401) {
+        final responseError = _decodeMap(response.body)?['error'];
+        _errorCode = responseError == 'current password is incorrect'
+            ? 'accountCurrentPasswordIncorrect'
+            : 'accountSessionExpired';
+        return false;
+      }
+      if (response.statusCode == 400) {
+        _errorCode = 'accountInvalidInput';
+        return false;
+      }
+      if (response.statusCode == 409) {
+        _errorCode = 'accountPasswordUnchanged';
+        return false;
+      }
+      if (response.statusCode != 204) {
+        _errorCode = response.statusCode >= 500
+            ? 'accountServiceUnavailable'
+            : 'accountRequestFailed';
+        return false;
+      }
+
+      _token = null;
+      _expiresAt = null;
+      _refreshToken = null;
+      _user = null;
+      _errorCode = null;
+      try {
+        await _clearStoredSession();
+      } on Exception {
+        _errorCode = 'accountStorageFailure';
+      }
+      notifyListeners();
+      return true;
+    } on TimeoutException {
+      _errorCode = 'accountConnectionFailure';
+      return false;
+    } on http.ClientException {
+      _errorCode = 'accountConnectionFailure';
+      return false;
+    } on Exception {
+      _errorCode = 'accountServiceUnavailable';
+      return false;
+    } finally {
+      _endRequest();
+    }
+  }
+
   Future<void> _refreshProfile() async {
     late final http.Response response;
     try {

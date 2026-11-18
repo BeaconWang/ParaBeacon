@@ -830,6 +830,48 @@ abstract class AppLocalizations {
   /// **'Password cannot exceed 72 UTF-8 bytes.'**
   String get accountPasswordMaximum;
 
+  /// No description provided for @accountCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get accountCurrentPassword;
+
+  /// No description provided for @accountCurrentPasswordIncorrect.
+  ///
+  /// In en, this message translates to:
+  /// **'The current password is incorrect.'**
+  String get accountCurrentPasswordIncorrect;
+
+  /// No description provided for @accountSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired. Sign in again and retry.'**
+  String get accountSessionExpired;
+
+  /// No description provided for @accountNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get accountNewPassword;
+
+  /// No description provided for @accountPasswordUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a new password different from your current one.'**
+  String get accountPasswordUnchanged;
+
+  /// No description provided for @accountChangePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get accountChangePassword;
+
+  /// No description provided for @accountPasswordChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed. Sign in again with your new password.'**
+  String get accountPasswordChanged;
+
   /// No description provided for @accountConfirmPassword.
   ///
   /// In en, this message translates to:

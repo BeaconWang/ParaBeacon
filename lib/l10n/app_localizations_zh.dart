@@ -385,6 +385,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountPasswordMaximum => '密码不能超过 72 个 UTF-8 字节。';
 
   @override
+  String get accountCurrentPassword => '当前密码';
+
+  @override
+  String get accountCurrentPasswordIncorrect => '当前密码不正确。';
+
+  @override
+  String get accountSessionExpired => '登录状态已失效，请重新登录后重试。';
+
+  @override
+  String get accountNewPassword => '新密码';
+
+  @override
+  String get accountPasswordUnchanged => '新密码必须与当前密码不同。';
+
+  @override
+  String get accountChangePassword => '修改密码';
+
+  @override
+  String get accountPasswordChanged => '密码已修改，请使用新密码重新登录。';
+
+  @override
   String get accountConfirmPassword => '确认密码';
 
   @override

@@ -401,6 +401,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountPasswordMaximum => 'Password cannot exceed 72 UTF-8 bytes.';
 
   @override
+  String get accountCurrentPassword => 'Current password';
+
+  @override
+  String get accountCurrentPasswordIncorrect =>
+      'The current password is incorrect.';
+
+  @override
+  String get accountSessionExpired =>
+      'Your session has expired. Sign in again and retry.';
+
+  @override
+  String get accountNewPassword => 'New password';
+
+  @override
+  String get accountPasswordUnchanged =>
+      'Choose a new password different from your current one.';
+
+  @override
+  String get accountChangePassword => 'Change password';
+
+  @override
+  String get accountPasswordChanged =>
+      'Password changed. Sign in again with your new password.';
+
+  @override
   String get accountConfirmPassword => 'Confirm password';
 
   @override

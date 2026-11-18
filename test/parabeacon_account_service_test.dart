@@ -138,6 +138,85 @@ void main() {
     expect(ParaBeaconAccountService.isValidDisplayName('Bad\nName'), isFalse);
   });
 
+  test('changes password and locally clears the revoked session', () async {
+    final store = _MemorySessionStore();
+    final requests = <http.Request>[];
+    final client = MockClient((request) async {
+      requests.add(request);
+      if (request.url.path == '/api/v1/auth/login') {
+        return http.Response(
+          jsonEncode({
+            'access_token': 'password-change-token',
+            'expires_at': DateTime.now()
+                .add(const Duration(minutes: 10))
+                .toUtc()
+                .toIso8601String(),
+            'refresh_token': 'password-change-refresh-token-long-value',
+            'refresh_expires_at': null,
+            'user': _userJson,
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      expect(request.url.path, '/api/v1/user/change-password');
+      expect(request.method, 'POST');
+      expect(request.headers['authorization'], 'Bearer password-change-token');
+      final payload = jsonDecode(request.body) as Map<String, dynamic>;
+      expect(payload['new_password'], 'new-pass-456');
+      if (payload['current_password'] == 'wrong-pass') {
+        return http.Response('{"error":"current password is incorrect"}', 401);
+      }
+      expect(payload['current_password'], 'old-pass-123');
+      return http.Response('', 204);
+    });
+    final service = ParaBeaconAccountService(
+      client: client,
+      sessionStore: store,
+    );
+    addTearDown(service.dispose);
+
+    expect(
+      await service.login(identifier: 'pilot_one', password: 'old-pass-123'),
+      isTrue,
+    );
+    expect(
+      await service.changePassword(
+        currentPassword: 'old-pass-123',
+        newPassword: 'short',
+      ),
+      isFalse,
+    );
+    expect(
+      requests,
+      hasLength(1),
+      reason: 'invalid new passwords are rejected before sending',
+    );
+    expect(
+      await service.changePassword(
+        currentPassword: 'wrong-pass',
+        newPassword: 'new-pass-456',
+      ),
+      isFalse,
+    );
+    expect(service.errorCode, 'accountCurrentPasswordIncorrect');
+    expect(service.isSignedIn, isTrue);
+
+    expect(
+      await service.changePassword(
+        currentPassword: 'old-pass-123',
+        newPassword: 'new-pass-456',
+      ),
+      isTrue,
+    );
+    expect(service.isSignedIn, isFalse);
+    expect(service.user, isNull);
+    expect(store.values, isEmpty);
+    final logs = service.debugLog.join('\\n');
+    expect(logs, isNot(contains('old-pass-123')));
+    expect(logs, isNot(contains('new-pass-456')));
+  });
+
   test('keeps account sessions isolated between server origins', () async {
     final previousServer = ParaBeaconServerConfig.apiBaseUri;
     ParaBeaconServerConfig.configureBaseUri(Uri.parse('https://8.8.8.8'));

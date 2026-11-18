@@ -201,6 +201,10 @@ class PublicPilotLocation {
     required this.longitude,
     required this.observedAt,
     this.headingDegrees,
+    this.altitudeMeters,
+    this.groundSpeedMetersPerSecond,
+    this.verticalSpeedMetersPerSecond,
+    this.path = const [],
   });
 
   final String pilotName;
@@ -208,6 +212,10 @@ class PublicPilotLocation {
   final double longitude;
   final DateTime observedAt;
   final double? headingDegrees;
+  final double? altitudeMeters;
+  final double? groundSpeedMetersPerSecond;
+  final double? verticalSpeedMetersPerSecond;
+  final List<LiveTrackpoint> path;
 
   static PublicPilotLocation? fromJson(Object? value) {
     if (value is! Map<String, dynamic>) return null;
@@ -228,6 +236,17 @@ class PublicPilotLocation {
     final lon = longitude.toDouble();
     final observedAt = DateTime.tryParse(timestamp);
     final headingValue = heading?.toDouble();
+    double? optionalNumber(String key) {
+      final raw = value[key];
+      if (raw is! num) return null;
+      final parsed = raw.toDouble();
+      return parsed.isFinite ? parsed : null;
+    }
+
+    final rawPath = value['path'];
+    final path = rawPath is List
+        ? rawPath.map(LiveTrackpoint.fromJson).whereType<LiveTrackpoint>()
+        : const <LiveTrackpoint>[];
     if (!lat.isFinite ||
         !lon.isFinite ||
         lat < -90 ||
@@ -247,6 +266,10 @@ class PublicPilotLocation {
       longitude: lon,
       observedAt: observedAt.toUtc(),
       headingDegrees: headingValue,
+      altitudeMeters: optionalNumber('altitude'),
+      groundSpeedMetersPerSecond: optionalNumber('speed'),
+      verticalSpeedMetersPerSecond: optionalNumber('vertical_speed'),
+      path: List.unmodifiable(path),
     );
   }
 }

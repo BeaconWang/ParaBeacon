@@ -6,7 +6,7 @@
   "websocket_url": null,
   "channel_ids": [],
   "request_timeout_seconds": 15,
-  "upload_interval_seconds": 5,
+  "upload_interval_seconds": 3,
   "maximum_batch_points": 50,
   "maximum_buffered_points": 5000
 }

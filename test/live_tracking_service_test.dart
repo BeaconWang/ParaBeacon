@@ -223,6 +223,26 @@ void main() {
                   'lat': 47.1,
                   'lon': 8.5,
                   'heading': 120.0,
+                  'altitude': 1234.5,
+                  'speed': 12.0,
+                  'vertical_speed': -0.4,
+                  'path': [
+                    {
+                      'lat': 47.0,
+                      'lon': 8.4,
+                      'altitude': 1200.0,
+                      'speed': 10.0,
+                      'timestamp': '2026-03-04T05:06:06.000Z',
+                    },
+                    {
+                      'lat': 47.1,
+                      'lon': 8.5,
+                      'altitude': 1234.5,
+                      'speed': 12.0,
+                      'vertical_speed': -0.4,
+                      'timestamp': '2026-03-04T05:06:09.000Z',
+                    },
+                  ],
                   'observed_at': '2026-03-04T05:06:09.000Z',
                 },
               ],
@@ -258,6 +278,15 @@ void main() {
       expect(locations.single.pilotName, 'pilot_one');
       expect(locations.single.latitude, 47.1);
       expect(locations.single.headingDegrees, 120);
+      expect(locations.single.altitudeMeters, 1234.5);
+      expect(locations.single.groundSpeedMetersPerSecond, 12);
+      expect(locations.single.verticalSpeedMetersPerSecond, -0.4);
+      expect(locations.single.path, hasLength(2));
+      expect(locations.single.path.first.latitude, 47.0);
+      expect(
+        locations.single.path.last.timestamp,
+        DateTime.utc(2026, 3, 4, 5, 6, 9),
+      );
       expect(locations.single.observedAt, DateTime.utc(2026, 3, 4, 5, 6, 9));
     },
   );

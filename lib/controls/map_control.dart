@@ -47,6 +47,27 @@ String _formatMapNumber(
   required int autoDecimals,
 }) => formatDecimalValue(value, autoDecimals: autoDecimals, range: precision);
 
+Color _publicPilotColor(String pilotName) => HSVColor.fromAHSV(
+  1,
+  (pilotName.hashCode & 0x7fffffff) % 360,
+  0.78,
+  0.95,
+).toColor();
+
+String _publicPilotFlightInfo(server_tracking.PublicPilotLocation pilot) {
+  final fields = <String>[];
+  final altitude = pilot.altitudeMeters;
+  final speed = pilot.groundSpeedMetersPerSecond;
+  final verticalSpeed = pilot.verticalSpeedMetersPerSecond;
+  if (altitude != null) fields.add('${altitude.round()} m');
+  if (speed != null) fields.add('${(speed * 3.6).round()} km/h');
+  if (verticalSpeed != null) {
+    final sign = verticalSpeed > 0 ? '+' : '';
+    fields.add('$sign${verticalSpeed.toStringAsFixed(1)} m/s');
+  }
+  return fields.join(' · ');
+}
+
 /// A raster map tile source available to the [MapControl].
 @immutable
 class MapTileSource {
@@ -666,7 +687,7 @@ class _MapControlState extends State<MapControl> {
 
   void _startPublicPilotRefreshTimer() {
     _serverPilotRefreshTimer ??= Timer.periodic(
-      const Duration(seconds: 5),
+      const Duration(seconds: 3),
       (_) => _schedulePublicPilotRefresh(Duration.zero),
     );
   }
@@ -944,6 +965,33 @@ class _MapControlState extends State<MapControl> {
     // Other public/followed pilots from XContest and consented ParaBeacon
     // sessions. Server locations are shown only while their fix is fresh.
     final publicPilotNow = DateTime.now().toUtc();
+    final freshServerPilots = widget.showOtherPilots
+        ? _serverPilotLocations
+              .where(
+                (pilot) =>
+                    publicPilotNow.difference(pilot.observedAt) <=
+                        const Duration(seconds: 90) &&
+                    !pilot.observedAt.isAfter(
+                      publicPilotNow.add(const Duration(seconds: 5)),
+                    ),
+              )
+              .toList(growable: false)
+        : const <server_tracking.PublicPilotLocation>[];
+    final otherPilotTrails = <Polyline>[
+      for (final pilot in freshServerPilots)
+        if (pilot.path.length > 1)
+          Polyline(
+            points: [
+              for (final point in pilot.path)
+                _shift(
+                  LatLng(point.latitude, point.longitude),
+                  widget.tileSource,
+                ),
+            ],
+            strokeWidth: 3.0 * widget.lineThickness,
+            color: _publicPilotColor(pilot.pilotName).withAlpha(190),
+          ),
+    ];
     final otherPilotMarkers = <Marker>[
       if (widget.showOtherPilots)
         for (final pilot in XContestLiveTrackingService.instance.otherPilots)
@@ -958,27 +1006,22 @@ class _MapControlState extends State<MapControl> {
               landed: pilot.landed,
             ),
           ),
-      if (widget.showOtherPilots)
-        for (final pilot in _serverPilotLocations)
-          if (publicPilotNow.difference(pilot.observedAt) <=
-                  const Duration(seconds: 90) &&
-              !pilot.observedAt.isAfter(
-                publicPilotNow.add(const Duration(seconds: 5)),
-              ))
-            Marker(
-              point: _shift(
-                LatLng(pilot.latitude, pilot.longitude),
-                widget.tileSource,
-              ),
-              width: 120,
-              height: 56,
-              alignment: Alignment.topCenter,
-              child: _OtherPilotMarker(
-                name: pilot.pilotName,
-                color: theme.colorScheme.tertiary,
-                landed: false,
-              ),
-            ),
+      for (final pilot in freshServerPilots)
+        Marker(
+          point: _shift(
+            LatLng(pilot.latitude, pilot.longitude),
+            widget.tileSource,
+          ),
+          width: 140,
+          height: 76,
+          alignment: Alignment.topCenter,
+          child: _OtherPilotMarker(
+            name: pilot.pilotName,
+            color: _publicPilotColor(pilot.pilotName),
+            landed: false,
+            flightInfo: _publicPilotFlightInfo(pilot),
+          ),
+        ),
     ];
     final taskRoute = widget.showTask && wgs != null
         ? CompetitionTaskStore.instance.liveRouteToGoal(
@@ -1082,6 +1125,8 @@ class _MapControlState extends State<MapControl> {
                 // Recorded flight track coloured by vertical speed.
                 if (widget.showTrack)
                   PolylineLayer(polylines: _buildTrackPolylines()),
+                if (otherPilotTrails.isNotEmpty)
+                  PolylineLayer(polylines: otherPilotTrails),
 
                 // XCTrack-style Thermal Assistant: estimated position ring +
                 // climb-coloured core dots (current + N latest thermals).
@@ -2128,11 +2173,13 @@ class _OtherPilotMarker extends StatelessWidget {
     required this.name,
     required this.color,
     required this.landed,
+    this.flightInfo,
   });
 
   final String name;
   final Color color;
   final bool landed;
+  final String? flightInfo;
 
   @override
   Widget build(BuildContext context) {
@@ -2177,6 +2224,22 @@ class _OtherPilotMarker extends StatelessWidget {
               ),
             ),
           ),
+          if (flightInfo != null && flightInfo!.isNotEmpty) ...[
+            const SizedBox(height: 1),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                flightInfo!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 9),
+              ),
+            ),
+          ],
         ],
       ),
     );

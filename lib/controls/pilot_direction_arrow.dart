@@ -14,11 +14,6 @@ class PilotDirectionArrow extends StatelessWidget {
   final double mapRotationDegrees;
   final Color color;
 
-  static Alignment markerAlignment({
-    required double glyphCenterFromTop,
-    required double markerHeight,
-  }) => Alignment(0, (2 * glyphCenterFromTop / markerHeight) - 1);
-
   @override
   Widget build(BuildContext context) => Transform.rotate(
     angle: PilotCourse.screenRadians(

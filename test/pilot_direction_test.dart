@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parabeacon/controls/live_pilot_map_marker.dart';
 import 'package:parabeacon/controls/pilot_direction_arrow.dart';
 import 'package:parabeacon/data/geo_math.dart';
 import 'package:parabeacon/data/live_tracking_service.dart';
@@ -111,17 +112,12 @@ void main() {
     );
   });
 
-  test('anchors the glyph center to the pilot map coordinate', () {
-    final xcontest = PilotDirectionArrow.markerAlignment(
-      glyphCenterFromTop: 12,
-      markerHeight: 56,
+  test('anchors the shared pilot avatar center to its map coordinate', () {
+    final marker = LivePilotMapMarker.markerAlignment;
+    expect(
+      (marker.y + 1) * LivePilotMapMarker.markerHeight / 2,
+      closeTo(LivePilotMapMarker.glyphCenterFromTop, 1e-10),
     );
-    final server = PilotDirectionArrow.markerAlignment(
-      glyphCenterFromTop: 12,
-      markerHeight: 76,
-    );
-    expect((xcontest.y + 1) * 56 / 2, 12);
-    expect((server.y + 1) * 76 / 2, 12);
   });
 
   test('tracker derives course only from fresh increasing moving fixes', () {

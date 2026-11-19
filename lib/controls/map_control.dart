@@ -35,7 +35,7 @@ import '../data/xcontest_live_tracking_service.dart';
 import '../live/peer_location_interpolator.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
-import 'pilot_direction_arrow.dart';
+import 'live_pilot_map_marker.dart';
 
 // Keep the geographic point aligned to the ball center, with its label below.
 const double _savedPointBallDiameter = 15;
@@ -50,15 +50,6 @@ String _formatMapNumber(
   DecimalPlaceRange? precision, {
   required int autoDecimals,
 }) => formatDecimalValue(value, autoDecimals: autoDecimals, range: precision);
-
-final _serverPilotMarkerAlignment = PilotDirectionArrow.markerAlignment(
-  glyphCenterFromTop: 12,
-  markerHeight: 76,
-);
-final _xcontestPilotMarkerAlignment = PilotDirectionArrow.markerAlignment(
-  glyphCenterFromTop: 12,
-  markerHeight: 56,
-);
 
 Color _publicPilotColor(String pilotName) => HSVColor.fromAHSV(
   1,
@@ -1116,10 +1107,10 @@ class _MapControlState extends State<MapControl> {
       for (final pilot in freshXContestPilots)
         Marker(
           point: _shift(LatLng(pilot.lat, pilot.lon), widget.tileSource),
-          width: 120,
-          height: 56,
-          alignment: _xcontestPilotMarkerAlignment,
-          child: _OtherPilotMarker(
+          width: LivePilotMapMarker.markerWidth,
+          height: LivePilotMapMarker.markerHeight,
+          alignment: LivePilotMapMarker.markerAlignment,
+          child: LivePilotMapMarker(
             name: pilot.name,
             color: Color(pilot.colorArgb),
             landed: pilot.landed,
@@ -1130,10 +1121,10 @@ class _MapControlState extends State<MapControl> {
       for (final pilot in freshServerPilots)
         Marker(
           point: _shift(_serverPilotPosition(pilot), widget.tileSource),
-          width: 140,
-          height: 76,
-          alignment: _serverPilotMarkerAlignment,
-          child: _OtherPilotMarker(
+          width: LivePilotMapMarker.markerWidth,
+          height: LivePilotMapMarker.markerHeight,
+          alignment: LivePilotMapMarker.markerAlignment,
+          child: LivePilotMapMarker(
             name: pilot.pilotName,
             color: _publicPilotColor(pilot.pilotName),
             landed: false,
@@ -2283,110 +2274,6 @@ class _AlwaysWinHorizontalDragRecognizer
 
   @override
   String get debugDescription => 'suppressPageSwipe';
-}
-
-/// Marker for another public/followed pilot from XContest live tracking: a
-/// coloured paraglider glyph with the pilot's name below it. Dimmed once the
-/// pilot has landed.
-class _OtherPilotMarker extends StatelessWidget {
-  const _OtherPilotMarker({
-    required this.name,
-    required this.color,
-    required this.landed,
-    this.flightInfo,
-    this.headingDegrees,
-    this.screenRotationDegrees = 0,
-  });
-
-  final String name;
-  final Color color;
-  final bool landed;
-  final String? flightInfo;
-  final double? headingDegrees;
-  final double screenRotationDegrees;
-
-  @override
-  Widget build(BuildContext context) {
-    final opacity = landed ? 0.45 : 1.0;
-    return Opacity(
-      opacity: opacity,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black38,
-                      blurRadius: 2,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.paragliding,
-                  size: 14,
-                  color: Colors.white,
-                ),
-              ),
-              if (headingDegrees != null && headingDegrees!.isFinite)
-                Positioned(
-                  top: -3,
-                  child: PilotDirectionArrow(
-                    headingDegrees: headingDegrees!,
-                    mapRotationDegrees: screenRotationDegrees,
-                    color: color,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.55),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          if (flightInfo != null && flightInfo!.isNotEmpty) ...[
-            const SizedBox(height: 1),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                flightInfo!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white, fontSize: 9),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 }
 
 class _SavedPointMarker extends StatelessWidget {

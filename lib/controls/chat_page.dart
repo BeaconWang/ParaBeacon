@@ -113,7 +113,11 @@ class _ChatPageState extends State<_ChatPage>
     _accountSearchTimer?.cancel();
     _directoryRefreshTimer?.cancel();
     _partnerStatusTimer?.cancel();
-    _chat.disconnect();
+    if (ParaBeaconAccountService.instance.isSignedIn) {
+      unawaited(_chat.openPresence());
+    } else {
+      unawaited(_chat.disconnect());
+    }
     super.dispose();
   }
 

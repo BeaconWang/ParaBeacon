@@ -29,6 +29,7 @@ import 'data/flight_details_settings.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/parabeacon_account_service.dart';
+import 'data/chat_service.dart';
 import 'data/parabeacon_server_config.dart';
 import 'data/parabeacon_server_settings.dart';
 import 'data/live_tracking_config.dart';
@@ -160,6 +161,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // temporarily shows the system bars (e.g. after a permission dialog or
     // when the user returns from another app).
     WidgetsBinding.instance.addObserver(this);
+    ParaBeaconAccountService.instance.addListener(_maintainChatPresence);
+    unawaited(ChatService.instance.maintainPresence());
     // Restore accounts and tracking preferences, then offer an explicit
     // position-sharing choice when either live-tracking account is signed in.
     AsfcAuthService.instance.load();
@@ -329,6 +332,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   @override
   void dispose() {
     _appUpdateMonitor?.cancel();
+    ParaBeaconAccountService.instance.removeListener(_maintainChatPresence);
+    unawaited(ChatService.instance.disconnect());
     WidgetsBinding.instance.removeObserver(this);
     _flightRecorder.removeListener(_onFlightRecorderChanged);
     _takeoffTaskSub?.cancel();
@@ -821,10 +826,21 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     }
   }
 
+  void _maintainChatPresence() {
+    final lifecycleState = WidgetsBinding.instance.lifecycleState;
+    if (lifecycleState != null && lifecycleState != AppLifecycleState.resumed) {
+      return;
+    }
+    if (ParaBeaconAccountService.instance.isSignedIn) {
+      unawaited(ChatService.instance.maintainPresence());
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _gpsBridge.onAppLifecycleStateChanged(state);
     if (state == AppLifecycleState.resumed) {
+      _maintainChatPresence();
       if (_androidPermissionRationaleVisible) {
         // Battery use is not auto-detected on resume; only location refreshes.
         unawaited(_refreshAndroidPermissionDialogStatus(battery: false));

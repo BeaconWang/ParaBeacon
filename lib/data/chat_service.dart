@@ -250,6 +250,12 @@ class ChatService extends ChangeNotifier {
 
   Uri get _apiBase => ParaBeaconServerConfig.apiBaseUri;
 
+  Future<void> maintainPresence() async {
+    if (!_account.isSignedIn) await _account.load();
+    if (!_account.isSignedIn || _desiredConnection) return;
+    await openPresence();
+  }
+
   void _onAccountChanged() {
     final currentProfileImageUrl = _account.user?.profileImageUrl;
     final profileImageChanged =

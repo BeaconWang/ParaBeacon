@@ -1034,6 +1034,42 @@ abstract class AppLocalizations {
   /// **'Direct'**
   String get chatDirect;
 
+  /// No description provided for @chatConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get chatConversations;
+
+  /// No description provided for @chatPilotOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get chatPilotOnline;
+
+  /// No description provided for @chatPilotOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get chatPilotOffline;
+
+  /// No description provided for @chatLastChatTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Last chat {time}'**
+  String chatLastChatTime(String time);
+
+  /// No description provided for @chatPinConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin conversation'**
+  String get chatPinConversation;
+
+  /// No description provided for @chatUnpinConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin conversation'**
+  String get chatUnpinConversation;
+
   /// No description provided for @chatConnected.
   ///
   /// In en, this message translates to:

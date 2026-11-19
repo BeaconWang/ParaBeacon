@@ -63,6 +63,50 @@ class ChatAccountPage {
 }
 
 @immutable
+class ChatConversation {
+  const ChatConversation({
+    required this.account,
+    required this.online,
+    required this.pinned,
+    this.lastChatAt,
+  });
+
+  final ChatAccount account;
+  final bool online;
+  final bool pinned;
+  final DateTime? lastChatAt;
+
+  static ChatConversation? fromJson(Object? raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    final account = ChatAccount.fromJson(raw);
+    final online = raw['online'];
+    final pinned = raw['pinned'];
+    final rawLastChatAt = raw['last_chat_at'];
+    if (account == null || online is! bool || pinned is! bool) return null;
+    final lastChatAt = rawLastChatAt == null
+        ? null
+        : rawLastChatAt is String
+        ? DateTime.tryParse(rawLastChatAt)?.toUtc()
+        : null;
+    if (rawLastChatAt != null && lastChatAt == null) return null;
+    return ChatConversation(
+      account: account,
+      online: online,
+      pinned: pinned,
+      lastChatAt: lastChatAt,
+    );
+  }
+}
+
+@immutable
+class ChatConversationPage {
+  const ChatConversationPage({required this.conversations, this.nextCursor});
+
+  final List<ChatConversation> conversations;
+  final String? nextCursor;
+}
+
+@immutable
 class ChatMessage {
   const ChatMessage({
     required this.id,
@@ -157,6 +201,7 @@ class ChatService extends ChangeNotifier {
   ChatConnectionState get state => _state;
   String? _lastError;
   String? get lastError => _lastError;
+  bool get hasError => _lastError != null;
   String _scope = 'public';
   String get scope => _scope;
   int _channelNumber = 0;
@@ -176,6 +221,7 @@ class ChatService extends ChangeNotifier {
   Timer? _reconnectTimer;
   Timer? _stableTimer;
   Future<void>? _historyFuture;
+  int _historyEpoch = -1;
 
   Uri get _apiBase => ParaBeaconServerConfig.apiBaseUri;
 
@@ -186,6 +232,22 @@ class ChatService extends ChangeNotifier {
     }
     if (_desiredConnection && _state == ChatConnectionState.disconnected) {
       unawaited(_connect());
+    }
+  }
+
+  Future<void> openPresence() async {
+    _conversationEpoch++;
+    _scope = 'presence';
+    _channelNumber = 0;
+    _pilotNumber = 0;
+    _partnerSharingLocation = null;
+    _messages.clear();
+    _notify();
+    _desiredConnection = true;
+    if (_state != ChatConnectionState.connected) {
+      await _connect();
+    } else {
+      _subscribeCurrent();
     }
   }
 
@@ -280,21 +342,32 @@ class ChatService extends ChangeNotifier {
   }
 
   Future<void> loadHistory() {
+    if (_scope == 'presence') return Future<void>.value();
     final active = _historyFuture;
-    if (active != null) return active;
-    final future = _loadHistoryOnce();
+    if (active != null && _historyEpoch == _conversationEpoch) return active;
+    final epoch = _conversationEpoch;
+    final scope = _scope;
+    final channelNumber = _channelNumber;
+    final pilotNumber = _pilotNumber;
+    final future = _loadHistoryOnce(epoch, scope, channelNumber, pilotNumber);
+    _historyEpoch = epoch;
     _historyFuture = future;
     return future.whenComplete(() {
       if (identical(_historyFuture, future)) _historyFuture = null;
     });
   }
 
-  Future<void> _loadHistoryOnce() async {
-    final query = <String, String>{'scope': _scope};
-    if (_scope == 'channel') {
-      query['channel_number'] = _channelNumber.toString();
+  Future<void> _loadHistoryOnce(
+    int epoch,
+    String scope,
+    int channelNumber,
+    int pilotNumber,
+  ) async {
+    final query = <String, String>{'scope': scope};
+    if (scope == 'channel') {
+      query['channel_number'] = channelNumber.toString();
     }
-    if (_scope == 'direct') query['pilot_number'] = _pilotNumber.toString();
+    if (scope == 'direct') query['pilot_number'] = pilotNumber.toString();
     final uri = _apiBase
         .resolve('/api/v1/chat/messages')
         .replace(queryParameters: query);
@@ -310,6 +383,7 @@ class ChatService extends ChangeNotifier {
       if (decoded is! Map<String, dynamic> || decoded['messages'] is! List) {
         throw const ChatException('invalid_history');
       }
+      if (epoch != _conversationEpoch || scope != _scope) return;
       final loaded = (decoded['messages'] as List)
           .map(ChatMessage.fromJson)
           .whereType<ChatMessage>();
@@ -317,6 +391,7 @@ class ChatService extends ChangeNotifier {
       _lastError = null;
       _notify();
     } on Object catch (error) {
+      if (epoch != _conversationEpoch || scope != _scope) return;
       _lastError = _errorCode(error);
       _notify();
       rethrow;
@@ -347,6 +422,73 @@ class ChatService extends ChangeNotifier {
       _notify();
       rethrow;
     }
+  }
+
+  Future<ChatConversationPage> listConversations({
+    String query = '',
+    String? cursor,
+    int limit = 30,
+  }) async {
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.isNotEmpty && normalizedQuery.runes.length < 2) {
+      throw const ChatException('account_search_query_too_short');
+    }
+    final parameters = <String, String>{
+      'limit': limit.toString(),
+      if (normalizedQuery.isNotEmpty) 'q': normalizedQuery,
+      if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+    };
+    final uri = _apiBase
+        .resolve('/api/v1/chat/conversations')
+        .replace(queryParameters: parameters);
+    final response = await _sendRequest(
+      'GET',
+      uri,
+    ).timeout(const Duration(seconds: 12));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ChatException('conversations_http_${response.statusCode}');
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic> || decoded['conversations'] is! List) {
+      throw const ChatException('invalid_conversations_response');
+    }
+    final conversations = (decoded['conversations'] as List)
+        .map(ChatConversation.fromJson)
+        .whereType<ChatConversation>()
+        .toList(growable: false);
+    final nextCursor = decoded['next_cursor'];
+    if (nextCursor != null && nextCursor is! String) {
+      throw const ChatException('invalid_conversations_response');
+    }
+    return ChatConversationPage(
+      conversations: conversations,
+      nextCursor: nextCursor is String && nextCursor.isNotEmpty
+          ? nextCursor
+          : null,
+    );
+  }
+
+  Future<bool> setConversationPinned({
+    required int pilotNumber,
+    required bool pinned,
+  }) async {
+    if (pilotNumber < 100000 || pilotNumber > 999999) {
+      throw const ChatException('invalid_request');
+    }
+    final uri = _apiBase.resolve('/api/v1/chat/conversations/$pilotNumber/pin');
+    final response = await _sendRequest(
+      'PUT',
+      uri,
+      body: {'pinned': pinned},
+    ).timeout(const Duration(seconds: 12));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ChatException('pin_http_${response.statusCode}');
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic> || decoded['pinned'] is! bool) {
+      throw const ChatException('invalid_pin_response');
+    }
+    return decoded['pinned'] as bool;
   }
 
   Future<ChatAccountPage> searchAccounts({
@@ -394,7 +536,11 @@ class ChatService extends ChangeNotifier {
     );
   }
 
-  Future<http.Response> _sendRequest(String method, Uri uri) async {
+  Future<http.Response> _sendRequest(
+    String method,
+    Uri uri, {
+    Object? body,
+  }) async {
     if (uri.scheme != 'https' ||
         uri.host.toLowerCase() != _apiBase.host.toLowerCase() ||
         uri.port != _apiBase.port ||
@@ -407,6 +553,10 @@ class ChatService extends ChangeNotifier {
         'Accept': 'application/json',
         ...await _account.authorizationHeaders(),
       });
+    if (body != null) {
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode(body);
+    }
     final streamed = await _http
         .send(request)
         .timeout(const Duration(seconds: 15));
@@ -481,7 +631,9 @@ class ChatService extends ChangeNotifier {
       _subscribeCurrent();
       _stableTimer?.cancel();
       _stableTimer = Timer(const Duration(seconds: 30), () => _attempt = 0);
-      unawaited(loadHistory().catchError((Object _) {}));
+      if (_scope != 'presence') {
+        unawaited(loadHistory().catchError((Object _) {}));
+      }
     } on Object catch (error) {
       if (generation == _connectionGeneration) {
         if (socket != null) await socket.sink.close();

@@ -489,6 +489,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatDirect => '私聊';
 
   @override
+  String get chatConversations => '会话';
+
+  @override
+  String get chatPilotOnline => '在线';
+
+  @override
+  String get chatPilotOffline => '离线';
+
+  @override
+  String chatLastChatTime(String time) {
+    return '最近聊天 $time';
+  }
+
+  @override
+  String get chatPinConversation => '置顶会话';
+
+  @override
+  String get chatUnpinConversation => '取消置顶';
+
+  @override
   String get chatConnected => '已连接';
 
   @override

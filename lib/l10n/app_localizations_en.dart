@@ -519,6 +519,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatDirect => 'Direct';
 
   @override
+  String get chatConversations => 'Conversations';
+
+  @override
+  String get chatPilotOnline => 'Online';
+
+  @override
+  String get chatPilotOffline => 'Offline';
+
+  @override
+  String chatLastChatTime(String time) {
+    return 'Last chat $time';
+  }
+
+  @override
+  String get chatPinConversation => 'Pin conversation';
+
+  @override
+  String get chatUnpinConversation => 'Unpin conversation';
+
+  @override
   String get chatConnected => 'Connected';
 
   @override

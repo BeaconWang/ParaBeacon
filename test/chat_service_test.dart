@@ -86,6 +86,109 @@ void main() {
     },
   );
 
+  test('loads server conversation ordering and persists pin changes', () async {
+    final accountClient = MockClient((request) async {
+      return http.Response(
+        jsonEncode({
+          'access_token': 'conversation-token',
+          'expires_at': DateTime.now()
+              .add(const Duration(minutes: 10))
+              .toUtc()
+              .toIso8601String(),
+          'refresh_token': 'conversation-refresh-token-long-value',
+          'refresh_expires_at': null,
+          'user': {
+            'id': 'current-user',
+            'username': 'current_pilot',
+            'pilot_number': 123456,
+          },
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    final account = ParaBeaconAccountService(
+      client: accountClient,
+      sessionStore: _SearchSessionStore(),
+    );
+    addTearDown(account.dispose);
+    expect(
+      await account.login(identifier: 'current_pilot', password: 'abc123'),
+      isTrue,
+    );
+
+    final requests = <http.Request>[];
+    final chatClient = MockClient((request) async {
+      requests.add(request);
+      expect(request.headers['authorization'], 'Bearer conversation-token');
+      if (request.url.path == '/api/v1/chat/conversations') {
+        expect(request.method, 'GET');
+        expect(request.url.queryParameters['limit'], '20');
+        return http.Response(
+          jsonEncode({
+            'conversations': [
+              {
+                'pilot_number': 234567,
+                'username': 'ridge_runner',
+                'display_name': 'Alice Summit',
+                'avatar_id': 4,
+                'online': true,
+                'pinned': true,
+                'last_chat_at': '2026-11-19T09:30:00Z',
+              },
+            ],
+            'next_cursor': '20',
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      expect(request.url.path, '/api/v1/chat/conversations/234567/pin');
+      expect(request.method, 'PUT');
+      expect(request.headers['content-type'], 'application/json');
+      expect(jsonDecode(request.body), {'pinned': false});
+      return http.Response(jsonEncode({'pinned': false}), 200);
+    });
+    final chat = ChatService(accountService: account, httpClient: chatClient);
+    addTearDown(() {
+      chat.dispose();
+      chatClient.close();
+      accountClient.close();
+    });
+
+    final page = await chat.listConversations(limit: 20);
+    expect(page.conversations, hasLength(1));
+    final conversation = page.conversations.single;
+    expect(conversation.account.title, 'Alice Summit');
+    expect(conversation.account.avatarId, 4);
+    expect(conversation.online, isTrue);
+    expect(conversation.pinned, isTrue);
+    expect(conversation.lastChatAt, DateTime.utc(2026, 11, 19, 9, 30));
+    expect(page.nextCursor, '20');
+    expect(
+      await chat.setConversationPinned(pilotNumber: 234567, pinned: false),
+      isFalse,
+    );
+    expect(requests, hasLength(2));
+  });
+
+  test('parses conversation state and rejects malformed online metadata', () {
+    final conversation = ChatConversation.fromJson({
+      'pilot_number': 234567,
+      'username': 'sky_pilot',
+      'avatar_id': 2,
+      'online': false,
+      'pinned': true,
+    });
+    expect(conversation?.account.pilotNumber, 234567);
+    expect(conversation?.online, isFalse);
+    expect(conversation?.pinned, isTrue);
+    expect(
+      ChatConversation.fromJson({'online': 'yes', 'pinned': false}),
+      isNull,
+    );
+  });
+
   test(
     'parses private-message account results without using numbers as labels',
     () {

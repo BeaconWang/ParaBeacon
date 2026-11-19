@@ -189,6 +189,8 @@
   "chatPilotOffline": "离线",
   "chatLastChatTime": "最近聊天 {time}",
   "@chatLastChatTime": {"placeholders": {"time": {"type": "String"}}},
+  "chatUnreadMessages": "{count} 条未读消息",
+  "@chatUnreadMessages": {"placeholders": {"count": {"type": "int"}}},
   "chatPinConversation": "置顶会话",
   "chatUnpinConversation": "取消置顶",
   "chatConnected": "已连接",

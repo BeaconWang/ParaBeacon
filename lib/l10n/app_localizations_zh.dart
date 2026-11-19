@@ -577,6 +577,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String chatUnreadMessages(int count) {
+    return '$count 条未读消息';
+  }
+
+  @override
   String get chatPinConversation => '置顶会话';
 
   @override

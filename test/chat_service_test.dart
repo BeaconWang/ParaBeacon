@@ -139,6 +139,7 @@ void main() {
                     '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
                 'online': true,
                 'pinned': true,
+                'unread_count': 5,
                 'last_chat_at': '2026-11-19T09:30:00Z',
               },
             ],
@@ -147,6 +148,10 @@ void main() {
           200,
           headers: {'content-type': 'application/json'},
         );
+      }
+      if (request.url.path == '/api/v1/chat/conversations/234567/read') {
+        expect(request.method, 'PUT');
+        return http.Response(jsonEncode({'read': true}), 200);
       }
       expect(request.url.path, '/api/v1/chat/conversations/234567/pin');
       expect(request.method, 'PUT');
@@ -172,13 +177,15 @@ void main() {
     );
     expect(conversation.online, isTrue);
     expect(conversation.pinned, isTrue);
+    expect(conversation.unreadCount, 5);
     expect(conversation.lastChatAt, DateTime.utc(2026, 11, 19, 9, 30));
+    await chat.markConversationRead(pilotNumber: 234567);
     expect(page.nextCursor, '20');
     expect(
       await chat.setConversationPinned(pilotNumber: 234567, pinned: false),
       isFalse,
     );
-    expect(requests, hasLength(2));
+    expect(requests, hasLength(3));
   });
 
   test('parses conversation state and rejects malformed online metadata', () {
@@ -192,6 +199,17 @@ void main() {
     expect(conversation?.account.pilotNumber, 234567);
     expect(conversation?.online, isFalse);
     expect(conversation?.pinned, isTrue);
+    expect(conversation?.unreadCount, 0);
+    expect(
+      ChatConversation.fromJson({
+        'pilot_number': 234567,
+        'username': 'sky_pilot',
+        'online': false,
+        'pinned': false,
+        'unread_count': -1,
+      }),
+      isNull,
+    );
     expect(
       ChatConversation.fromJson({'online': 'yes', 'pinned': false}),
       isNull,

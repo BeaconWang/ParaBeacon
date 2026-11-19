@@ -64,6 +64,32 @@ class ChatConversationTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (conversation.unreadCount > 0) ...[
+            Tooltip(
+              message: l10n.chatUnreadMessages(conversation.unreadCount),
+              child: Container(
+                key: ValueKey('chat-unread-count-${account.pilotNumber}'),
+                constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.error,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Text(
+                  conversation.unreadCount > 99
+                      ? '99+'
+                      : conversation.unreadCount.toString(),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onError,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
           IconButton(
             tooltip: conversation.pinned
                 ? l10n.chatUnpinConversation

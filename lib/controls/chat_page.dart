@@ -339,6 +339,7 @@ class _ChatPageState extends State<_ChatPage>
                 account: current.account,
                 online: current.online,
                 pinned: pinned,
+                unreadCount: current.unreadCount,
                 lastChatAt: current.lastChatAt,
               )
             else
@@ -362,6 +363,19 @@ class _ChatPageState extends State<_ChatPage>
       _selectedRecipient = account;
       _localError = null;
       _accountSearchError = null;
+      _accountResults = [
+        for (final current in _accountResults)
+          if (current.account.pilotNumber == account.pilotNumber)
+            ChatConversation(
+              account: current.account,
+              online: current.online,
+              pinned: current.pinned,
+              unreadCount: 0,
+              lastChatAt: current.lastChatAt,
+            )
+          else
+            current,
+      ];
     });
     try {
       await _chat.openDirect(account.pilotNumber);

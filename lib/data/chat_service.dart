@@ -80,12 +80,14 @@ class ChatConversation {
     required this.account,
     required this.online,
     required this.pinned,
+    this.unreadCount = 0,
     this.lastChatAt,
   });
 
   final ChatAccount account;
   final bool online;
   final bool pinned;
+  final int unreadCount;
   final DateTime? lastChatAt;
 
   static ChatConversation? fromJson(Object? raw) {
@@ -93,8 +95,15 @@ class ChatConversation {
     final account = ChatAccount.fromJson(raw);
     final online = raw['online'];
     final pinned = raw['pinned'];
+    final rawUnreadCount = raw['unread_count'] ?? 0;
     final rawLastChatAt = raw['last_chat_at'];
-    if (account == null || online is! bool || pinned is! bool) return null;
+    if (account == null ||
+        online is! bool ||
+        pinned is! bool ||
+        rawUnreadCount is! int ||
+        rawUnreadCount < 0) {
+      return null;
+    }
     final lastChatAt = rawLastChatAt == null
         ? null
         : rawLastChatAt is String
@@ -105,6 +114,7 @@ class ChatConversation {
       account: account,
       online: online,
       pinned: pinned,
+      unreadCount: rawUnreadCount,
       lastChatAt: lastChatAt,
     );
   }
@@ -428,6 +438,11 @@ class ChatService extends ChangeNotifier {
       _mergeMessages(loaded);
       _lastError = null;
       _notify();
+      if (scope == 'direct') {
+        await markConversationRead(
+          pilotNumber: pilotNumber,
+        ).catchError((Object _) {});
+      }
     } on Object catch (error) {
       if (epoch != _conversationEpoch || scope != _scope) return;
       _lastError = _errorCode(error);
@@ -459,6 +474,22 @@ class ChatService extends ChangeNotifier {
       _scheduleReconnect(error);
       _notify();
       rethrow;
+    }
+  }
+
+  Future<void> markConversationRead({required int pilotNumber}) async {
+    if (pilotNumber < 100000 || pilotNumber > 999999) {
+      throw const ChatException('invalid_request');
+    }
+    final uri = _apiBase.resolve(
+      '/api/v1/chat/conversations/$pilotNumber/read',
+    );
+    final response = await _sendRequest(
+      'PUT',
+      uri,
+    ).timeout(const Duration(seconds: 12));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ChatException('read_http_${response.statusCode}');
     }
   }
 
@@ -719,6 +750,14 @@ class ChatService extends ChangeNotifier {
       _lastError = null;
       _mergeMessages([message]);
       _notify();
+      if (_scope == 'direct' &&
+          message.senderPilotNumber != _account.user?.pilotNumber) {
+        unawaited(
+          markConversationRead(
+            pilotNumber: _pilotNumber,
+          ).catchError((Object _) {}),
+        );
+      }
     } on Object catch (error) {
       _lastError = _errorCode(error);
       _notify();

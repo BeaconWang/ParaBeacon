@@ -1208,6 +1208,12 @@ abstract class AppLocalizations {
   /// **'Last chat {time}'**
   String chatLastChatTime(String time);
 
+  /// No description provided for @chatUnreadMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unread messages'**
+  String chatUnreadMessages(int count);
+
   /// No description provided for @chatPinConversation.
   ///
   /// In en, this message translates to:

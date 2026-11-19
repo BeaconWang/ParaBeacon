@@ -18,6 +18,7 @@ void main() {
       ),
       online: true,
       pinned: false,
+      unreadCount: 3,
       lastChatAt: DateTime.utc(2026, 11, 19, 9, 30),
     );
 
@@ -40,6 +41,12 @@ void main() {
     expect(find.text('Sky Pilot'), findsOneWidget);
     expect(find.textContaining('Online'), findsOneWidget);
     expect(find.textContaining('Last chat 9:30 AM'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('chat-unread-count-234567')),
+      findsOneWidget,
+    );
+    expect(find.text('3'), findsOneWidget);
+    expect(find.byTooltip('3 unread messages'), findsOneWidget);
     expect(find.byTooltip('Pin conversation'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Pin conversation'));

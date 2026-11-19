@@ -611,6 +611,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String chatUnreadMessages(int count) {
+    return '$count unread messages';
+  }
+
+  @override
   String get chatPinConversation => 'Pin conversation';
 
   @override

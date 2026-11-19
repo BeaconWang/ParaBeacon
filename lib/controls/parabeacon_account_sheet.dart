@@ -404,20 +404,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                   l10n.accountProfileImage,
                   style: theme.textTheme.titleSmall,
                 ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: service.isBusy || _savingProfileImage
-                      ? null
-                      : () => _pickProfileImage(service, l10n),
-                  icon: _savingProfileImage
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.photo_library_outlined),
-                  label: Text(l10n.accountChangeProfileImage),
-                ),
                 const SizedBox(height: 12),
                 Text(
                   user?.username ?? l10n.accountSignedIn,

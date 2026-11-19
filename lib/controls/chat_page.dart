@@ -584,7 +584,11 @@ class _ChatPageState extends State<_ChatPage>
       return Card(
         margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
         child: ListTile(
-          leading: PilotAvatarPicture(avatarId: selected.avatarId, size: 40),
+          leading: PilotAvatarPicture(
+            avatarId: selected.avatarId,
+            profileImageUrl: selected.profileImageUrl,
+            size: 40,
+          ),
           title: Text(
             selected.title,
             maxLines: 1,
@@ -762,6 +766,7 @@ class _ChatMessageTile extends StatelessWidget {
                   children: [
                     PilotAvatarPicture(
                       avatarId: message.senderAvatarId,
+                      profileImageUrl: message.senderProfileImageUrl,
                       size: 18,
                       backgroundColor:
                           theme.colorScheme.surfaceContainerHighest,

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:parabeacon/data/parabeacon_account_service.dart';
+import 'package:parabeacon/data/profile_image_url.dart';
 import 'package:parabeacon/data/parabeacon_server_config.dart';
 
 void main() {
@@ -191,6 +192,100 @@ void main() {
         jsonDecode(store.values['parabeacon_account_user']!)
             as Map<String, dynamic>;
     expect(stored['avatar_id'], 4);
+  });
+
+  test('uploads and removes the saved profile image', () async {
+    final store = _MemorySessionStore();
+    final requests = <http.Request>[];
+    final client = MockClient((request) async {
+      requests.add(request);
+      if (request.url.path == '/api/v1/auth/login') {
+        return http.Response(
+          jsonEncode({
+            'access_token': 'profile-image-token',
+            'expires_at': DateTime.now()
+                .add(const Duration(minutes: 10))
+                .toUtc()
+                .toIso8601String(),
+            'refresh_token': 'profile-image-refresh-token-long-value',
+            'refresh_expires_at': null,
+            'user': _userJson,
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      expect(request.headers['authorization'], 'Bearer profile-image-token');
+      if (request.method == 'POST') {
+        expect(request.url.path, '/api/v1/user/profile-image');
+        expect(
+          request.headers['content-type'],
+          startsWith('multipart/form-data; boundary='),
+        );
+        return http.Response(
+          jsonEncode({
+            'user': {
+              ..._userJson,
+              'profile_image_url':
+                  '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+            },
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      expect(request.method, 'DELETE');
+      expect(request.url.path, '/api/v1/user/profile-image');
+      return http.Response(jsonEncode({'user': _userJson}), 200);
+    });
+    final service = ParaBeaconAccountService(
+      client: client,
+      sessionStore: store,
+    );
+    addTearDown(service.dispose);
+
+    expect(
+      await service.login(identifier: 'pilot_one', password: 'abc123'),
+      isTrue,
+    );
+    expect(
+      await service.uploadProfileImage(bytes: List<int>.filled(256, 7)),
+      isTrue,
+    );
+    expect(
+      service.user?.profileImageUrl,
+      '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    );
+    expect(
+      ProfileImageUrl.resolve(service.user?.profileImageUrl)?.origin,
+      'https://www.parabeacon.icu',
+    );
+    final cached =
+        jsonDecode(store.values['parabeacon_account_user']!)
+            as Map<String, dynamic>;
+    expect(cached['profile_image_url'], service.user?.profileImageUrl);
+
+    expect(await service.removeProfileImage(), isTrue);
+    expect(service.user?.profileImageUrl, isNull);
+    expect(requests.map((request) => request.method), [
+      'POST',
+      'POST',
+      'DELETE',
+    ]);
+  });
+
+  test('rejects profile image URLs outside the ParaBeacon image route', () {
+    expect(
+      ParaBeaconUser.fromJson({
+        ..._userJson,
+        'profile_image_url': 'https://attacker.example/avatar.jpg',
+      }),
+      isNull,
+    );
+    expect(
+      ProfileImageUrl.resolve('/api/v1/profile-images/not-a-uuid'),
+      isNull,
+    );
   });
 
   test('updates and persists the account live-tracking display name', () async {

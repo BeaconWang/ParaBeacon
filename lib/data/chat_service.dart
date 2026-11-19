@@ -9,6 +9,7 @@ import '../live/ws_connect.dart';
 import 'parabeacon_account_service.dart';
 import 'parabeacon_server_config.dart';
 import 'pilot_avatar.dart';
+import 'profile_image_url.dart';
 import 'user_agent_settings.dart';
 
 enum ChatConnectionState { disconnected, connecting, connected, reconnecting }
@@ -20,12 +21,14 @@ class ChatAccount {
     required this.username,
     required this.displayName,
     this.avatarId = PilotAvatar.defaultId,
+    this.profileImageUrl,
   });
 
   final int pilotNumber;
   final String username;
   final String displayName;
   final int avatarId;
+  final String? profileImageUrl;
 
   String get title => displayName.isNotEmpty ? displayName : username;
 
@@ -35,7 +38,15 @@ class ChatAccount {
     final username = raw['username'];
     final displayName = raw['display_name'] ?? '';
     final avatarId = raw['avatar_id'] ?? PilotAvatar.defaultId;
-    if (pilotNumber is! int ||
+    final rawProfileImageUrl = raw['profile_image_url'];
+    final profileImageUrl = rawProfileImageUrl == null
+        ? null
+        : rawProfileImageUrl is String &&
+              ProfileImageUrl.resolve(rawProfileImageUrl) != null
+        ? rawProfileImageUrl
+        : null;
+    if ((rawProfileImageUrl != null && profileImageUrl == null) ||
+        pilotNumber is! int ||
         pilotNumber < 100000 ||
         pilotNumber > 999999 ||
         username is! String ||
@@ -50,6 +61,7 @@ class ChatAccount {
       username: username.trim(),
       displayName: displayName.trim(),
       avatarId: avatarId,
+      profileImageUrl: profileImageUrl,
     );
   }
 }
@@ -118,6 +130,7 @@ class ChatMessage {
     this.channelNumber,
     this.recipientPilotNumber,
     this.senderAvatarId = PilotAvatar.defaultId,
+    this.senderProfileImageUrl,
   });
 
   final String id;
@@ -127,6 +140,7 @@ class ChatMessage {
   final int? channelNumber;
   final int? recipientPilotNumber;
   final int senderAvatarId;
+  final String? senderProfileImageUrl;
   final String text;
   final DateTime createdAt;
 
@@ -141,7 +155,15 @@ class ChatMessage {
     final channel = raw['channel_number'];
     final recipient = raw['recipient_pilot_number'];
     final senderAvatarId = raw['sender_avatar_id'] ?? PilotAvatar.defaultId;
-    if (id is! String ||
+    final rawSenderProfileImageUrl = raw['sender_profile_image_url'];
+    final senderProfileImageUrl = rawSenderProfileImageUrl == null
+        ? null
+        : rawSenderProfileImageUrl is String &&
+              ProfileImageUrl.resolve(rawSenderProfileImageUrl) != null
+        ? rawSenderProfileImageUrl
+        : null;
+    if ((rawSenderProfileImageUrl != null && senderProfileImageUrl == null) ||
+        id is! String ||
         id.isEmpty ||
         (scope != 'public' && scope != 'channel' && scope != 'direct') ||
         senderNumber is! int ||
@@ -169,6 +191,7 @@ class ChatMessage {
       senderPilotNumber: senderNumber,
       senderName: senderName.trim(),
       senderAvatarId: senderAvatarId,
+      senderProfileImageUrl: senderProfileImageUrl,
       channelNumber: channel as int?,
       recipientPilotNumber: recipient as int?,
       text: text,

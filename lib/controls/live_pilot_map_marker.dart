@@ -12,6 +12,7 @@ class LivePilotMapMarker extends StatelessWidget {
     required this.color,
     required this.landed,
     this.avatarId = PilotAvatar.defaultId,
+    this.profileImageUrl,
     this.flightInfo,
     this.headingDegrees,
     this.screenRotationDegrees = 0,
@@ -32,6 +33,7 @@ class LivePilotMapMarker extends StatelessWidget {
   final Color color;
   final bool landed;
   final int avatarId;
+  final String? profileImageUrl;
   final String? flightInfo;
   final double? headingDegrees;
   final double screenRotationDegrees;
@@ -72,15 +74,13 @@ class LivePilotMapMarker extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: ClipOval(
-                    child: ColoredBox(
-                      color: color.withValues(alpha: 0.14),
-                      child: Icon(
-                        PilotAvatar.iconFor(avatarId),
-                        size: 21,
-                        color: color,
-                      ),
-                    ),
+                  child: PilotAvatarPicture(
+                    avatarId: avatarId,
+                    profileImageUrl: profileImageUrl,
+                    size: 28,
+                    circular: true,
+                    backgroundColor: color.withValues(alpha: 0.14),
+                    iconColor: color,
                   ),
                 ),
               ],

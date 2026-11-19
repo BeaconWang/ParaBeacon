@@ -9,82 +9,85 @@ import 'package:parabeacon/data/parabeacon_account_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test(
-    'searches accounts by name with an authenticated paged request',
-    () async {
-      final accountClient = MockClient((request) async {
-        expect(request.url.path, '/api/v1/auth/login');
-        return http.Response(
-          jsonEncode({
-            'access_token': 'chat-search-token',
-            'expires_at': DateTime.now()
-                .add(const Duration(minutes: 10))
-                .toUtc()
-                .toIso8601String(),
-            'refresh_token': 'chat-search-refresh-token-long-value',
-            'refresh_expires_at': null,
-            'user': {
-              'id': 'current-user',
-              'username': 'current_pilot',
-              'pilot_number': 123456,
+  test('searches accounts by name with an authenticated paged request', () async {
+    final accountClient = MockClient((request) async {
+      expect(request.url.path, '/api/v1/auth/login');
+      return http.Response(
+        jsonEncode({
+          'access_token': 'chat-search-token',
+          'expires_at': DateTime.now()
+              .add(const Duration(minutes: 10))
+              .toUtc()
+              .toIso8601String(),
+          'refresh_token': 'chat-search-refresh-token-long-value',
+          'refresh_expires_at': null,
+          'user': {
+            'id': 'current-user',
+            'username': 'current_pilot',
+            'pilot_number': 123456,
+          },
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    final account = ParaBeaconAccountService(
+      client: accountClient,
+      sessionStore: _SearchSessionStore(),
+    );
+    addTearDown(account.dispose);
+    expect(
+      await account.login(identifier: 'current_pilot', password: 'abc123'),
+      isTrue,
+    );
+
+    final requests = <http.Request>[];
+    final chatClient = MockClient((request) async {
+      requests.add(request);
+      expect(request.method, 'GET');
+      expect(request.url.path, '/api/v1/chat/accounts');
+      expect(request.url.queryParameters['q'], 'Summit');
+      expect(request.url.queryParameters['limit'], '20');
+      expect(request.headers['authorization'], 'Bearer chat-search-token');
+      return http.Response(
+        jsonEncode({
+          'accounts': [
+            {
+              'pilot_number': 234567,
+              'username': 'ridge_runner',
+              'display_name': 'Alice Summit',
+              'avatar_id': 4,
+              'profile_image_url':
+                  '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
             },
-          }),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      });
-      final account = ParaBeaconAccountService(
-        client: accountClient,
-        sessionStore: _SearchSessionStore(),
+          ],
+          'next_cursor': '234567',
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
       );
-      addTearDown(account.dispose);
-      expect(
-        await account.login(identifier: 'current_pilot', password: 'abc123'),
-        isTrue,
-      );
+    });
+    final chat = ChatService(accountService: account, httpClient: chatClient);
+    addTearDown(() {
+      chat.dispose();
+      chatClient.close();
+      accountClient.close();
+    });
 
-      final requests = <http.Request>[];
-      final chatClient = MockClient((request) async {
-        requests.add(request);
-        expect(request.method, 'GET');
-        expect(request.url.path, '/api/v1/chat/accounts');
-        expect(request.url.queryParameters['q'], 'Summit');
-        expect(request.url.queryParameters['limit'], '20');
-        expect(request.headers['authorization'], 'Bearer chat-search-token');
-        return http.Response(
-          jsonEncode({
-            'accounts': [
-              {
-                'pilot_number': 234567,
-                'username': 'ridge_runner',
-                'display_name': 'Alice Summit',
-                'avatar_id': 4,
-              },
-            ],
-            'next_cursor': '234567',
-          }),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      });
-      final chat = ChatService(accountService: account, httpClient: chatClient);
-      addTearDown(() {
-        chat.dispose();
-        chatClient.close();
-        accountClient.close();
-      });
-
-      final page = await chat.searchAccounts(query: 'Summit', limit: 20);
-      expect(requests, hasLength(1));
-      expect(page.accounts, hasLength(1));
-      expect(page.accounts.single.title, 'Alice Summit');
-      expect(page.accounts.single.username, 'ridge_runner');
-      expect(page.accounts.single.pilotNumber, 234567);
-      expect(page.accounts.single.avatarId, 4);
-      expect(page.nextCursor, '234567');
-      expect(page.toString(), isNot(contains('email')));
-    },
-  );
+    final page = await chat.searchAccounts(query: 'Summit', limit: 20);
+    expect(requests, hasLength(1));
+    expect(page.accounts, hasLength(1));
+    expect(page.accounts.single.title, 'Alice Summit');
+    expect(page.accounts.single.username, 'ridge_runner');
+    expect(page.accounts.single.pilotNumber, 234567);
+    expect(page.accounts.single.avatarId, 4);
+    expect(
+      page.accounts.single.profileImageUrl,
+      '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    );
+    expect(page.nextCursor, '234567');
+    expect(page.toString(), isNot(contains('email')));
+  });
 
   test('loads server conversation ordering and persists pin changes', () async {
     final accountClient = MockClient((request) async {
@@ -132,6 +135,8 @@ void main() {
                 'username': 'ridge_runner',
                 'display_name': 'Alice Summit',
                 'avatar_id': 4,
+                'profile_image_url':
+                    '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
                 'online': true,
                 'pinned': true,
                 'last_chat_at': '2026-11-19T09:30:00Z',
@@ -161,6 +166,10 @@ void main() {
     final conversation = page.conversations.single;
     expect(conversation.account.title, 'Alice Summit');
     expect(conversation.account.avatarId, 4);
+    expect(
+      conversation.account.profileImageUrl,
+      '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    );
     expect(conversation.online, isTrue);
     expect(conversation.pinned, isTrue);
     expect(conversation.lastChatAt, DateTime.utc(2026, 11, 19, 9, 30));
@@ -252,6 +261,8 @@ void main() {
       'sender_pilot_number': 123456,
       'sender_name': 'pilot_one',
       'sender_avatar_id': 3,
+      'sender_profile_image_url':
+          '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       ...?(recipient == null ? null : {'recipient_pilot_number': recipient}),
       'text': 'Hello, pilots',
       'created_at': '2026-11-18T10:00:00Z',
@@ -261,6 +272,10 @@ void main() {
     expect(public?.scope, 'public');
     expect(public?.senderPilotNumber, 123456);
     expect(public?.senderAvatarId, 3);
+    expect(
+      public?.senderProfileImageUrl,
+      '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    );
     expect(public?.channelNumber, isNull);
 
     final channel = ChatMessage.fromJson(
@@ -276,6 +291,13 @@ void main() {
     expect(direct?.recipientPilotNumber, 654321);
     expect(
       ChatMessage.fromJson({...payload(), 'sender_avatar_id': 99}),
+      isNull,
+    );
+    expect(
+      ChatMessage.fromJson({
+        ...payload(),
+        'sender_profile_image_url': 'https://attacker.example/image.jpg',
+      }),
       isNull,
     );
   });

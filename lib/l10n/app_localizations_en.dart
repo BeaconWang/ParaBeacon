@@ -463,6 +463,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountInvalidAvatar => 'Choose a valid account icon.';
 
   @override
+  String get accountProfileImage => 'Profile image';
+
+  @override
+  String get accountChangeProfileImage => 'Choose profile image';
+
+  @override
+  String get accountRemoveProfileImage => 'Remove profile image';
+
+  @override
+  String get accountProfileImageSaved => 'Profile image updated.';
+
+  @override
+  String get accountProfileImageRemoved => 'Profile image removed.';
+
+  @override
+  String get accountInvalidProfileImage =>
+      'Choose a valid JPEG or PNG image under 8 MB.';
+
+  @override
   String get accountSignOut => 'Sign out';
 
   @override

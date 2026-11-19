@@ -1122,6 +1122,7 @@ class _MapControlState extends State<MapControl> {
             color: _publicPilotColor(pilot.pilotName),
             landed: false,
             avatarId: pilot.avatarId,
+            profileImageUrl: pilot.profileImageUrl,
             flightInfo: _publicPilotFlightInfo(pilot),
             headingDegrees: _publicPilotCourse(pilot, publicPilotNow),
             screenRotationDegrees: _rotationDeg,

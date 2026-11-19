@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../data/parabeacon_account_service.dart';
@@ -41,6 +42,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
   final _confirmNewPasswordController = TextEditingController();
   bool _savingDisplayName = false;
   bool _savingAvatar = false;
+  bool _savingProfileImage = false;
   bool _changingPassword = false;
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
@@ -104,6 +106,63 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     }
   }
 
+  Future<void> _pickProfileImage(
+    ParaBeaconAccountService service,
+    AppLocalizations l10n,
+  ) async {
+    if (_savingProfileImage || service.isBusy) return;
+    FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: true,
+      );
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.accountErrorService)));
+      }
+      return;
+    }
+    if (!mounted || result == null || result.files.isEmpty) return;
+    final bytes = result.files.single.bytes;
+    if (bytes == null ||
+        bytes.isEmpty ||
+        bytes.length > ParaBeaconAccountService.maxProfileImageUploadBytes) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.accountInvalidProfileImage)));
+      return;
+    }
+    setState(() => _savingProfileImage = true);
+    final saved = await service.uploadProfileImage(bytes: bytes);
+    if (!mounted) return;
+    setState(() => _savingProfileImage = false);
+    if (saved) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.accountProfileImageSaved)));
+    }
+  }
+
+  Future<void> _removeProfileImage(
+    ParaBeaconAccountService service,
+    AppLocalizations l10n,
+  ) async {
+    if (_savingProfileImage || service.isBusy) return;
+    setState(() => _savingProfileImage = true);
+    final removed = await service.removeProfileImage();
+    if (!mounted) return;
+    setState(() => _savingProfileImage = false);
+    if (removed) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.accountProfileImageRemoved)));
+    }
+  }
+
   Future<void> _saveDisplayName(
     ParaBeaconAccountService service,
     AppLocalizations l10n,
@@ -152,6 +211,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     'accountInvalidInput' => l10n.accountErrorInvalidInput,
     'accountInvalidDisplayName' => l10n.accountDisplayNameInvalid,
     'accountInvalidAvatar' => l10n.accountInvalidAvatar,
+    'accountInvalidProfileImage' => l10n.accountInvalidProfileImage,
     'accountCurrentPasswordIncorrect' => l10n.accountCurrentPasswordIncorrect,
     'accountSessionExpired' => l10n.accountSessionExpired,
     'accountPasswordUnchanged' => l10n.accountPasswordUnchanged,
@@ -268,7 +328,45 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                PilotAvatarPicture(avatarId: user?.avatarId ?? 0, size: 60),
+                PilotAvatarPicture(
+                  avatarId: user?.avatarId ?? 0,
+                  profileImageUrl: user?.profileImageUrl,
+                  size: 96,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.accountProfileImage,
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: service.isBusy || _savingProfileImage
+                          ? null
+                          : () => _pickProfileImage(service, l10n),
+                      icon: _savingProfileImage
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.photo_library_outlined),
+                      label: Text(l10n.accountChangeProfileImage),
+                    ),
+                    if (user?.profileImageUrl != null)
+                      TextButton.icon(
+                        onPressed: service.isBusy || _savingProfileImage
+                            ? null
+                            : () => _removeProfileImage(service, l10n),
+                        icon: const Icon(Icons.delete_outline),
+                        label: Text(l10n.accountRemoveProfileImage),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 Text(
                   user?.username ?? l10n.accountSignedIn,

@@ -938,6 +938,42 @@ abstract class AppLocalizations {
   /// **'Choose a valid account icon.'**
   String get accountInvalidAvatar;
 
+  /// No description provided for @accountProfileImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile image'**
+  String get accountProfileImage;
+
+  /// No description provided for @accountChangeProfileImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose profile image'**
+  String get accountChangeProfileImage;
+
+  /// No description provided for @accountRemoveProfileImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove profile image'**
+  String get accountRemoveProfileImage;
+
+  /// No description provided for @accountProfileImageSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile image updated.'**
+  String get accountProfileImageSaved;
+
+  /// No description provided for @accountProfileImageRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile image removed.'**
+  String get accountProfileImageRemoved;
+
+  /// No description provided for @accountInvalidProfileImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a valid JPEG or PNG image under 8 MB.'**
+  String get accountInvalidProfileImage;
+
   /// No description provided for @accountSignOut.
   ///
   /// In en, this message translates to:

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'profile_image_url.dart';
+
 class PilotAvatar {
   PilotAvatar._();
 
@@ -28,6 +30,8 @@ class PilotAvatarPicture extends StatelessWidget {
     required this.size,
     this.backgroundColor,
     this.iconColor,
+    this.profileImageUrl,
+    this.circular = false,
     super.key,
   });
 
@@ -35,23 +39,38 @@ class PilotAvatarPicture extends StatelessWidget {
   final double size;
   final Color? backgroundColor;
   final Color? iconColor;
+  final String? profileImageUrl;
+  final bool circular;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(size * 0.24),
-      child: SizedBox.square(
-        dimension: size,
-        child: ColoredBox(
-          color: backgroundColor ?? colors.primaryContainer,
-          child: Icon(
-            PilotAvatar.iconFor(avatarId),
-            size: size * 0.58,
-            color: iconColor ?? colors.onPrimaryContainer,
-          ),
-        ),
+    final fallback = ColoredBox(
+      color: backgroundColor ?? colors.primaryContainer,
+      child: Icon(
+        PilotAvatar.iconFor(avatarId),
+        size: size * 0.58,
+        color: iconColor ?? colors.onPrimaryContainer,
       ),
     );
+    final imageUri = ProfileImageUrl.resolve(profileImageUrl);
+    final picture = SizedBox.square(
+      dimension: size,
+      child: imageUri == null
+          ? fallback
+          : Image.network(
+              imageUri.toString(),
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => fallback,
+            ),
+    );
+    return circular
+        ? ClipOval(child: picture)
+        : ClipRRect(
+            borderRadius: BorderRadius.circular(size * 0.24),
+            child: picture,
+          );
   }
 }

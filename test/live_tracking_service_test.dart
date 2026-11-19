@@ -263,6 +263,8 @@ void main() {
                   'pilot_number': 123456,
                   'channel_number': 483920,
                   'avatar_id': 4,
+                  'profile_image_url':
+                      '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
                   'lat': 47.1,
                   'lon': 8.5,
                   'heading': 120.0,
@@ -322,6 +324,10 @@ void main() {
       expect(locations.single.pilotNumber, 123456);
       expect(locations.single.channelNumber, 483920);
       expect(locations.single.avatarId, 4);
+      expect(
+        locations.single.profileImageUrl,
+        '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      );
       expect(
         locations.single.isVisibleOnMap(
           now: DateTime.utc(2026, 3, 4, 5, 6, 10),

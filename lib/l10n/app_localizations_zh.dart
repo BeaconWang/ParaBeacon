@@ -441,6 +441,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountInvalidAvatar => '请选择有效的账号图标。';
 
   @override
+  String get accountProfileImage => '个人资料图片';
+
+  @override
+  String get accountChangeProfileImage => '选择个人资料图片';
+
+  @override
+  String get accountRemoveProfileImage => '移除个人资料图片';
+
+  @override
+  String get accountProfileImageSaved => '个人资料图片已更新。';
+
+  @override
+  String get accountProfileImageRemoved => '个人资料图片已移除。';
+
+  @override
+  String get accountInvalidProfileImage => '请选择 8 MB 以内的有效 JPEG 或 PNG 图片。';
+
+  @override
   String get accountSignOut => '退出登录';
 
   @override

@@ -243,7 +243,7 @@
   "liveTrackingShareLocationWhileNotFlying": "Share location while not flying",
   "liveTrackingShareLocationWhileNotFlyingSubtitle": "Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.",
   "liveTrackingChannelNumber": "Channel number",
-  "liveTrackingChannelNumberSubtitle": "Choose your shared radio frequency. Only ParaBeacon pilots on the same channel appear on your map. Enter 000000 to turn channel sharing off and hide Channel chat.",
+  "liveTrackingChannelNumberSubtitle": "Choose your radio frequency to filter the map and use Channel chat. With 000000, the map shows all public pilots in range and Channel chat is hidden.",
   "liveTrackingChannelNumberSaveFailed": "Channel number could not be saved. Check your connection and try again.",
   "liveTrackingTemporaryDisable": "Temporarily stop sharing",
   "liveTrackingTemporaryDisableSubtitle": "Pause all selected destinations without changing their switches.",

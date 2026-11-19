@@ -701,7 +701,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveTrackingChannelNumberSubtitle =>
-      '选择你的共享无线电频率。地图只显示同一频道的 ParaBeacon 飞行员。输入 000000 可关闭频道分享并隐藏聊天中的“频道”标签。';
+      '选择无线电频率以筛选地图和使用频道聊天。设置为 000000 时，地图会显示范围内所有公开飞行员，并隐藏频道聊天。';
 
   @override
   String get liveTrackingChannelNumberSaveFailed => '无法保存频道编号，请检查网络后重试。';

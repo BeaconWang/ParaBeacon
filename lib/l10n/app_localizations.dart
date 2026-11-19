@@ -1427,7 +1427,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingChannelNumberSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose your shared radio frequency. Only ParaBeacon pilots on the same channel appear on your map. Enter 000000 to turn channel sharing off and hide Channel chat.'**
+  /// **'Choose your radio frequency to filter the map and use Channel chat. With 000000, the map shows all public pilots in range and Channel chat is hidden.'**
   String get liveTrackingChannelNumberSubtitle;
 
   /// No description provided for @liveTrackingChannelNumberSaveFailed.

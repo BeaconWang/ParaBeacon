@@ -751,7 +751,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingChannelNumberSubtitle =>
-      'Choose your shared radio frequency. Only ParaBeacon pilots on the same channel appear on your map. Enter 000000 to turn channel sharing off and hide Channel chat.';
+      'Choose your radio frequency to filter the map and use Channel chat. With 000000, the map shows all public pilots in range and Channel chat is hidden.';
 
   @override
   String get liveTrackingChannelNumberSaveFailed =>

@@ -58,6 +58,7 @@ void main() {
                 'pilot_number': 234567,
                 'username': 'ridge_runner',
                 'display_name': 'Alice Summit',
+                'avatar_id': 4,
               },
             ],
             'next_cursor': '234567',
@@ -79,6 +80,7 @@ void main() {
       expect(page.accounts.single.title, 'Alice Summit');
       expect(page.accounts.single.username, 'ridge_runner');
       expect(page.accounts.single.pilotNumber, 234567);
+      expect(page.accounts.single.avatarId, 4);
       expect(page.nextCursor, '234567');
       expect(page.toString(), isNot(contains('email')));
     },
@@ -91,8 +93,10 @@ void main() {
         'pilot_number': 234567,
         'username': 'sky_pilot',
         'display_name': 'Sky Pilot',
+        'avatar_id': 6,
       });
       expect(account?.title, 'Sky Pilot');
+      expect(account?.avatarId, 6);
       expect(account?.username, 'sky_pilot');
       expect(account?.pilotNumber, 234567);
 
@@ -103,6 +107,14 @@ void main() {
       expect(noDisplayName?.title, 'cloud_pilot');
       expect(
         ChatAccount.fromJson({'pilot_number': 12345, 'username': 'bad'}),
+        isNull,
+      );
+      expect(
+        ChatAccount.fromJson({
+          'pilot_number': 234569,
+          'username': 'bad_avatar',
+          'avatar_id': 999,
+        }),
         isNull,
       );
     },
@@ -136,6 +148,7 @@ void main() {
       ...?(channel == null ? null : {'channel_number': channel}),
       'sender_pilot_number': 123456,
       'sender_name': 'pilot_one',
+      'sender_avatar_id': 3,
       ...?(recipient == null ? null : {'recipient_pilot_number': recipient}),
       'text': 'Hello, pilots',
       'created_at': '2026-11-18T10:00:00Z',
@@ -144,6 +157,7 @@ void main() {
     final public = ChatMessage.fromJson(payload());
     expect(public?.scope, 'public');
     expect(public?.senderPilotNumber, 123456);
+    expect(public?.senderAvatarId, 3);
     expect(public?.channelNumber, isNull);
 
     final channel = ChatMessage.fromJson(
@@ -157,6 +171,10 @@ void main() {
     );
     expect(direct?.scope, 'direct');
     expect(direct?.recipientPilotNumber, 654321);
+    expect(
+      ChatMessage.fromJson({...payload(), 'sender_avatar_id': 99}),
+      isNull,
+    );
   });
 
   test('rejects malformed identities and oversized messages', () {
@@ -165,6 +183,7 @@ void main() {
       'scope': 'public',
       'sender_pilot_number': 12345,
       'sender_name': 'pilot',
+      'sender_avatar_id': 99,
       'text': 'Hello',
       'created_at': '2026-11-18T10:00:00Z',
     });

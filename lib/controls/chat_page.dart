@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/chat_service.dart';
 import '../data/parabeacon_account_service.dart';
+import '../data/pilot_avatar.dart';
 import '../l10n/app_localizations.dart';
 
 List<String> chatScopesForChannel(int channelNumber) => [
@@ -468,7 +469,7 @@ class _ChatPageState extends State<_ChatPage>
         margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
         child: ListTile(
           leading: CircleAvatar(
-            child: Text(selected.title.substring(0, 1).toUpperCase()),
+            child: Icon(PilotAvatar.iconFor(selected.avatarId)),
           ),
           title: Text(
             selected.title,
@@ -548,7 +549,7 @@ class _ChatPageState extends State<_ChatPage>
         final account = _accountResults[index];
         return ListTile(
           leading: CircleAvatar(
-            child: Text(account.title.substring(0, 1).toUpperCase()),
+            child: Icon(PilotAvatar.iconFor(account.avatarId)),
           ),
           title: Text(
             account.title,
@@ -620,12 +621,27 @@ class _ChatMessageTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  message.senderName,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 9,
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        PilotAvatar.iconFor(message.senderAvatarId),
+                        size: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      message.senderName,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 3),
                 Text(message.text),

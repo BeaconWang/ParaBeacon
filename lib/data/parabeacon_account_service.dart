@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 
 import 'live_tracking_proxy_auth_service.dart';
 import 'parabeacon_server_config.dart';
+import 'pilot_avatar.dart';
 import 'user_agent_settings.dart';
 
 abstract interface class AccountSessionStore {
@@ -22,6 +23,7 @@ class ParaBeaconUser {
     this.displayName = '',
     this.pilotNumber,
     this.channelNumber = 0,
+    this.avatarId = 0,
     this.email,
     this.createdAt,
   });
@@ -31,6 +33,7 @@ class ParaBeaconUser {
   final String displayName;
   final int? pilotNumber;
   final int channelNumber;
+  final int avatarId;
   final String? email;
   final DateTime? createdAt;
 
@@ -56,9 +59,12 @@ class ParaBeaconUser {
 
     final rawPilotNumber = value['pilot_number'];
     final rawChannelNumber = value['channel_number'] ?? 0;
+    final rawAvatarId = value['avatar_id'] ?? 0;
     if (rawChannelNumber is! int ||
         rawChannelNumber < 0 ||
-        rawChannelNumber > 999999) {
+        rawChannelNumber > 999999 ||
+        rawAvatarId is! int ||
+        !PilotAvatar.isValid(rawAvatarId)) {
       return null;
     }
     if (rawPilotNumber != null &&
@@ -75,6 +81,7 @@ class ParaBeaconUser {
       displayName: normalizedDisplayName,
       pilotNumber: rawPilotNumber as int?,
       channelNumber: rawChannelNumber,
+      avatarId: rawAvatarId,
       email: email is String && email.isNotEmpty ? email : null,
       createdAt: createdAtValue is String
           ? DateTime.tryParse(createdAtValue)
@@ -88,6 +95,7 @@ class ParaBeaconUser {
     if (displayName.isNotEmpty) 'display_name': displayName,
     if (pilotNumber != null) 'pilot_number': pilotNumber,
     'channel_number': channelNumber,
+    'avatar_id': avatarId,
     if (email != null) 'email': email,
     if (createdAt != null) 'created_at': createdAt!.toUtc().toIso8601String(),
   };
@@ -651,6 +659,62 @@ class ParaBeaconAccountService extends ChangeNotifier
             ? 'accountServiceUnavailable'
             : response.statusCode == 400
             ? 'accountInvalidChannelNumber'
+            : 'accountRequestFailed';
+        return false;
+      }
+      final updatedUser = ParaBeaconUser.fromJson(
+        _decodeMap(response.body)?['user'],
+      );
+      if (updatedUser == null || updatedUser.id != _user?.id) {
+        _errorCode = 'accountRequestFailed';
+        return false;
+      }
+      _user = updatedUser;
+      _errorCode = null;
+      await _store.write(_userKey, jsonEncode(updatedUser.toJson()));
+      notifyListeners();
+      return true;
+    } on TimeoutException {
+      _errorCode = 'accountConnectionFailure';
+      return false;
+    } on http.ClientException {
+      _errorCode = 'accountConnectionFailure';
+      return false;
+    } on Exception {
+      _errorCode = 'accountServiceUnavailable';
+      return false;
+    } finally {
+      _endRequest();
+    }
+  }
+
+  Future<bool> updateAvatarId(int avatarId) async {
+    final token = _token;
+    if (!isSignedIn || token == null || isBusy) {
+      _errorCode = 'accountServiceUnavailable';
+      notifyListeners();
+      return false;
+    }
+    if (!PilotAvatar.isValid(avatarId)) {
+      _errorCode = 'accountInvalidAvatar';
+      notifyListeners();
+      return false;
+    }
+    if (_user?.avatarId == avatarId) return true;
+    _beginRequest();
+    try {
+      final response = await _client
+          .patch(
+            _apiUri('user/profile'),
+            headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+            body: jsonEncode({'avatar_id': avatarId}),
+          )
+          .timeout(_requestTimeout);
+      if (response.statusCode != 200) {
+        _errorCode = response.statusCode >= 500
+            ? 'accountServiceUnavailable'
+            : response.statusCode == 400
+            ? 'accountInvalidAvatar'
             : 'accountRequestFailed';
         return false;
       }

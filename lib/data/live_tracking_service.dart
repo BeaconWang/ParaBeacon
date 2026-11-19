@@ -13,6 +13,7 @@ import 'location_share_throttler.dart';
 import 'flight_state.dart';
 import 'live_tracking_settings.dart';
 import 'parabeacon_account_service.dart';
+import 'pilot_avatar.dart';
 import 'live_tracking_config.dart';
 import 'live_tracking_proxy_auth_service.dart';
 import 'user_agent_settings.dart';
@@ -214,6 +215,7 @@ class PublicPilotLocation {
     this.liveRoomId,
     this.pilotNumber,
     this.channelNumber = 0,
+    this.avatarId = PilotAvatar.defaultId,
     this.headingDegrees,
     this.altitudeMeters,
     this.groundSpeedMetersPerSecond,
@@ -228,6 +230,7 @@ class PublicPilotLocation {
   final String? liveRoomId;
   final int? pilotNumber;
   final int channelNumber;
+  final int avatarId;
 
   /// GPS course over ground in degrees clockwise from north, when available.
   final double? headingDegrees;
@@ -251,6 +254,7 @@ class PublicPilotLocation {
     final liveRoomId = value['live_room_id'];
     final rawPilotNumber = value['pilot_number'];
     final rawChannelNumber = value['channel_number'] ?? 0;
+    final rawAvatarId = value['avatar_id'] ?? PilotAvatar.defaultId;
     final heading = value['heading'];
     if (name is! String ||
         name.trim().isEmpty ||
@@ -265,6 +269,8 @@ class PublicPilotLocation {
         rawChannelNumber is! int ||
         rawChannelNumber < 0 ||
         rawChannelNumber > 999999 ||
+        rawAvatarId is! int ||
+        !PilotAvatar.isValid(rawAvatarId) ||
         (heading != null && heading is! num)) {
       return null;
     }
@@ -306,6 +312,7 @@ class PublicPilotLocation {
           : null,
       pilotNumber: rawPilotNumber as int?,
       channelNumber: rawChannelNumber,
+      avatarId: rawAvatarId,
       headingDegrees: headingValue,
       altitudeMeters: optionalNumber('altitude'),
       groundSpeedMetersPerSecond: optionalNumber('speed'),

@@ -262,6 +262,7 @@ void main() {
                   'live_room_id': 'd2719b5c-6a1f-4a4e-8b67-85139941a201',
                   'pilot_number': 123456,
                   'channel_number': 483920,
+                  'avatar_id': 4,
                   'lat': 47.1,
                   'lon': 8.5,
                   'heading': 120.0,
@@ -320,6 +321,7 @@ void main() {
       expect(locations.single.pilotName, 'Sky Rider');
       expect(locations.single.pilotNumber, 123456);
       expect(locations.single.channelNumber, 483920);
+      expect(locations.single.avatarId, 4);
       expect(locations.single.belongsToChannel(483920), isTrue);
       expect(locations.single.belongsToChannel(483921), isFalse);
       expect(locations.single.belongsToChannel(0), isFalse);
@@ -327,6 +329,16 @@ void main() {
         PublicPilotLocation.fromJson({
           'pilot_name': 'bad number',
           'pilot_number': 12345,
+          'lat': 47.1,
+          'lon': 8.5,
+          'observed_at': '2026-03-04T05:06:09.000Z',
+        }),
+        isNull,
+      );
+      expect(
+        PublicPilotLocation.fromJson({
+          'pilot_name': 'bad avatar',
+          'avatar_id': 8,
           'lat': 47.1,
           'lon': 8.5,
           'observed_at': '2026-03-04T05:06:09.000Z',

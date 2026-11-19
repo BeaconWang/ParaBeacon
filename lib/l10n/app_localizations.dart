@@ -914,6 +914,30 @@ abstract class AppLocalizations {
   /// **'Display name saved.'**
   String get accountDisplayNameSaved;
 
+  /// No description provided for @accountIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Account icon'**
+  String get accountIcon;
+
+  /// No description provided for @accountIconChoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon {number}'**
+  String accountIconChoice(int number);
+
+  /// No description provided for @accountIconSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Account icon updated.'**
+  String get accountIconSaved;
+
+  /// No description provided for @accountInvalidAvatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a valid account icon.'**
+  String get accountInvalidAvatar;
+
   /// No description provided for @accountSignOut.
   ///
   /// In en, this message translates to:

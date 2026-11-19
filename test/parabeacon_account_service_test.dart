@@ -70,6 +70,7 @@ void main() {
       expect(service.user?.displayName, 'Sky Rider');
       expect(service.user?.pilotNumber, 123456);
       expect(service.user?.channelNumber, 0);
+      expect(service.user?.avatarId, 0);
       expect(store.values['parabeacon_access_token'], 'test-access-token');
       expect(
         store.values['parabeacon_refresh_token'],
@@ -138,6 +139,58 @@ void main() {
         jsonDecode(store.values['parabeacon_account_user']!)
             as Map<String, dynamic>;
     expect(stored['channel_number'], 483920);
+  });
+
+  test('updates and persists the account icon selection', () async {
+    final store = _MemorySessionStore();
+    final requests = <http.Request>[];
+    final client = MockClient((request) async {
+      requests.add(request);
+      if (request.url.path == '/api/v1/auth/login') {
+        return http.Response(
+          jsonEncode({
+            'access_token': 'avatar-token',
+            'expires_at': DateTime.now()
+                .add(const Duration(minutes: 10))
+                .toUtc()
+                .toIso8601String(),
+            'refresh_token': 'avatar-refresh-token-long-value',
+            'refresh_expires_at': null,
+            'user': _userJson,
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      expect(request.method, 'PATCH');
+      expect(request.url.path, '/api/v1/user/profile');
+      expect(request.headers['authorization'], 'Bearer avatar-token');
+      expect(jsonDecode(request.body), {'avatar_id': 4});
+      return http.Response(
+        jsonEncode({
+          'user': {..._userJson, 'avatar_id': 4},
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    final service = ParaBeaconAccountService(
+      client: client,
+      sessionStore: store,
+    );
+    addTearDown(service.dispose);
+    expect(
+      await service.login(identifier: 'pilot_one', password: 'abc123'),
+      isTrue,
+    );
+    expect(await service.updateAvatarId(99), isFalse);
+    expect(requests, hasLength(1));
+    expect(await service.updateAvatarId(4), isTrue);
+    expect(service.user?.avatarId, 4);
+    final stored =
+        jsonDecode(store.values['parabeacon_account_user']!)
+            as Map<String, dynamic>;
+    expect(stored['avatar_id'], 4);
   });
 
   test('updates and persists the account live-tracking display name', () async {
@@ -536,6 +589,7 @@ const _userJson = {
   'display_name': 'Sky Rider',
   'pilot_number': 123456,
   'channel_number': 0,
+  'avatar_id': 0,
   'email': 'pilot@example.com',
   'created_at': '2026-01-01T12:00:00Z',
 };

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/pilot_avatar.dart';
 import 'pilot_direction_arrow.dart';
 
 /// Compact participant marker for a pilot sharing a live flight location.
@@ -10,6 +11,7 @@ class LivePilotMapMarker extends StatelessWidget {
     required this.name,
     required this.color,
     required this.landed,
+    this.avatarId = PilotAvatar.defaultId,
     this.flightInfo,
     this.headingDegrees,
     this.screenRotationDegrees = 0,
@@ -29,6 +31,7 @@ class LivePilotMapMarker extends StatelessWidget {
   final String name;
   final Color color;
   final bool landed;
+  final int avatarId;
   final String? flightInfo;
   final double? headingDegrees;
   final double screenRotationDegrees;
@@ -68,7 +71,11 @@ class LivePilotMapMarker extends StatelessWidget {
                       color: color.withValues(alpha: 0.14),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.paragliding, size: 21, color: color),
+                    child: Icon(
+                      PilotAvatar.iconFor(avatarId),
+                      size: 21,
+                      color: color,
+                    ),
                   ),
                 ),
                 if (headingDegrees != null && headingDegrees!.isFinite)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/live_pilot_map_marker.dart';
 import 'package:parabeacon/controls/pilot_direction_arrow.dart';
+import 'package:parabeacon/data/pilot_avatar.dart';
 
 void main() {
   testWidgets('shows live pilot identity, course, and flight details', (
@@ -16,6 +17,7 @@ void main() {
               name: 'Sky Pilot',
               color: Colors.blue,
               landed: false,
+              avatarId: 2,
               flightInfo: '1,250 m · 42 km/h',
               headingDegrees: 125,
               screenRotationDegrees: -20,
@@ -25,7 +27,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.paragliding), findsOneWidget);
+    expect(find.byIcon(PilotAvatar.iconFor(2)), findsOneWidget);
     expect(find.text('Sky Pilot'), findsOneWidget);
     expect(find.text('1,250 m · 42 km/h'), findsOneWidget);
     expect(find.byType(PilotDirectionArrow), findsOneWidget);

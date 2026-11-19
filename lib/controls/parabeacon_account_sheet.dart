@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
 import '../data/parabeacon_account_service.dart';
+import '../data/pilot_avatar.dart';
 import '../data/live_tracking_service.dart' as server_tracking;
 import '../l10n/app_localizations.dart';
 
@@ -39,6 +40,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
   final _newPasswordController = TextEditingController();
   final _confirmNewPasswordController = TextEditingController();
   bool _savingDisplayName = false;
+  bool _savingAvatar = false;
   bool _changingPassword = false;
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
@@ -82,6 +84,23 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
         identifier: _usernameController.text,
         password: _passwordController.text,
       );
+    }
+  }
+
+  Future<void> _saveAvatar(
+    ParaBeaconAccountService service,
+    AppLocalizations l10n,
+    int avatarId,
+  ) async {
+    if (_savingAvatar || !PilotAvatar.isValid(avatarId)) return;
+    setState(() => _savingAvatar = true);
+    final saved = await service.updateAvatarId(avatarId);
+    if (!mounted) return;
+    setState(() => _savingAvatar = false);
+    if (saved) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.accountIconSaved)));
     }
   }
 
@@ -132,6 +151,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     'accountAlreadyExists' => l10n.accountErrorAlreadyExists,
     'accountInvalidInput' => l10n.accountErrorInvalidInput,
     'accountInvalidDisplayName' => l10n.accountDisplayNameInvalid,
+    'accountInvalidAvatar' => l10n.accountInvalidAvatar,
     'accountCurrentPasswordIncorrect' => l10n.accountCurrentPasswordIncorrect,
     'accountSessionExpired' => l10n.accountSessionExpired,
     'accountPasswordUnchanged' => l10n.accountPasswordUnchanged,
@@ -250,10 +270,9 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  child: Text(
-                    user?.username.isNotEmpty == true
-                        ? user!.username.substring(0, 1).toUpperCase()
-                        : 'P',
+                  child: Icon(
+                    PilotAvatar.iconFor(user?.avatarId ?? 0),
+                    size: 30,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -269,7 +288,42 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l10n.accountIcon,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (
+                      var avatarId = 0;
+                      avatarId < PilotAvatar.icons.length;
+                      avatarId++
+                    )
+                      ChoiceChip(
+                        key: ValueKey('account-avatar-$avatarId'),
+                        tooltip: l10n.accountIconChoice(avatarId + 1),
+                        avatar: Icon(PilotAvatar.iconFor(avatarId), size: 20),
+                        label: Text(l10n.accountIconChoice(avatarId + 1)),
+                        selected: user?.avatarId == avatarId,
+                        onSelected: service.isBusy || _savingAvatar
+                            ? null
+                            : (selected) {
+                                if (selected) {
+                                  _saveAvatar(service, l10n, avatarId);
+                                }
+                              },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _displayNameController,
                   focusNode: _displayNameFocus,

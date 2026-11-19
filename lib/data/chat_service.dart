@@ -8,6 +8,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../live/ws_connect.dart';
 import 'parabeacon_account_service.dart';
 import 'parabeacon_server_config.dart';
+import 'pilot_avatar.dart';
 import 'user_agent_settings.dart';
 
 enum ChatConnectionState { disconnected, connecting, connected, reconnecting }
@@ -18,11 +19,13 @@ class ChatAccount {
     required this.pilotNumber,
     required this.username,
     required this.displayName,
+    this.avatarId = PilotAvatar.defaultId,
   });
 
   final int pilotNumber;
   final String username;
   final String displayName;
+  final int avatarId;
 
   String get title => displayName.isNotEmpty ? displayName : username;
 
@@ -31,18 +34,22 @@ class ChatAccount {
     final pilotNumber = raw['pilot_number'];
     final username = raw['username'];
     final displayName = raw['display_name'] ?? '';
+    final avatarId = raw['avatar_id'] ?? PilotAvatar.defaultId;
     if (pilotNumber is! int ||
         pilotNumber < 100000 ||
         pilotNumber > 999999 ||
         username is! String ||
         username.trim().isEmpty ||
-        displayName is! String) {
+        displayName is! String ||
+        avatarId is! int ||
+        !PilotAvatar.isValid(avatarId)) {
       return null;
     }
     return ChatAccount(
       pilotNumber: pilotNumber,
       username: username.trim(),
       displayName: displayName.trim(),
+      avatarId: avatarId,
     );
   }
 }
@@ -66,6 +73,7 @@ class ChatMessage {
     required this.createdAt,
     this.channelNumber,
     this.recipientPilotNumber,
+    this.senderAvatarId = PilotAvatar.defaultId,
   });
 
   final String id;
@@ -74,6 +82,7 @@ class ChatMessage {
   final String senderName;
   final int? channelNumber;
   final int? recipientPilotNumber;
+  final int senderAvatarId;
   final String text;
   final DateTime createdAt;
 
@@ -87,6 +96,7 @@ class ChatMessage {
     final timestamp = raw['created_at'];
     final channel = raw['channel_number'];
     final recipient = raw['recipient_pilot_number'];
+    final senderAvatarId = raw['sender_avatar_id'] ?? PilotAvatar.defaultId;
     if (id is! String ||
         id.isEmpty ||
         (scope != 'public' && scope != 'channel' && scope != 'direct') ||
@@ -95,6 +105,8 @@ class ChatMessage {
         senderNumber > 999999 ||
         senderName is! String ||
         senderName.trim().isEmpty ||
+        senderAvatarId is! int ||
+        !PilotAvatar.isValid(senderAvatarId) ||
         text is! String ||
         text.trim().isEmpty ||
         text.runes.length > 1000 ||
@@ -112,6 +124,7 @@ class ChatMessage {
       scope: scope as String,
       senderPilotNumber: senderNumber,
       senderName: senderName.trim(),
+      senderAvatarId: senderAvatarId,
       channelNumber: channel as int?,
       recipientPilotNumber: recipient as int?,
       text: text,

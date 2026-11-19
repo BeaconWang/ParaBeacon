@@ -449,6 +449,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDisplayNameSaved => 'Display name saved.';
 
   @override
+  String get accountIcon => 'Account icon';
+
+  @override
+  String accountIconChoice(int number) {
+    return 'Icon $number';
+  }
+
+  @override
+  String get accountIconSaved => 'Account icon updated.';
+
+  @override
+  String get accountInvalidAvatar => 'Choose a valid account icon.';
+
+  @override
   String get accountSignOut => 'Sign out';
 
   @override

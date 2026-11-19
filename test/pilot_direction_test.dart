@@ -14,7 +14,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: PilotDirectionFrame(
+          body: PilotDirectionIndicator(
             headingDegrees: 90,
             mapRotationDegrees: -30,
             color: Colors.blue,
@@ -25,7 +25,7 @@ void main() {
 
     final transform = tester.widget<Transform>(
       find.descendant(
-        of: find.byType(PilotDirectionFrame),
+        of: find.byType(PilotDirectionIndicator),
         matching: find.byType(Transform),
       ),
     );
@@ -33,7 +33,7 @@ void main() {
     expect(transform.transform.entry(1, 0), closeTo(0.8660254, 1e-6));
     expect(
       find.descendant(
-        of: find.byType(PilotDirectionFrame),
+        of: find.byType(PilotDirectionIndicator),
         matching: find.byType(CustomPaint),
       ),
       findsOneWidget,

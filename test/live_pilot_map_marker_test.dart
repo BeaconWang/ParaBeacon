@@ -28,7 +28,7 @@ void main() {
 
     expect(find.byIcon(PilotAvatar.iconFor(2)), findsOneWidget);
     expect(find.byType(ClipOval), findsOneWidget);
-    expect(find.byType(PilotDirectionFrame), findsOneWidget);
+    expect(find.byType(PilotDirectionIndicator), findsOneWidget);
     expect(find.text('Sky Pilot'), findsOneWidget);
     expect(find.text('1,250 m · 42 km/h'), findsOneWidget);
     expect(
@@ -54,7 +54,7 @@ void main() {
 
     expect(find.text('Landed Pilot'), findsOneWidget);
     expect(find.byType(ClipOval), findsOneWidget);
-    expect(find.byType(PilotDirectionFrame), findsNothing);
+    expect(find.byType(PilotDirectionIndicator), findsNothing);
     expect(tester.widget<Opacity>(find.byType(Opacity).first).opacity, 0.45);
     expect(find.bySemanticsLabel('Landed Pilot, landed'), findsOneWidget);
     semantics.dispose();

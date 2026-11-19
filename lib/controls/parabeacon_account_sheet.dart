@@ -1,15 +1,22 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../data/parabeacon_account_service.dart';
 import '../data/pilot_avatar.dart';
+import '../data/profile_image_url.dart';
 import '../data/live_tracking_service.dart' as server_tracking;
 import '../l10n/app_localizations.dart';
 import 'profile_image_crop_page.dart';
+import 'profile_image_preview.dart';
 
 Future<void> showParaBeaconAccountSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -138,6 +145,31 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.accountProfileImageSaved)));
+    }
+  }
+
+  Future<bool> _downloadProfileImage(String imageUrl) async {
+    final imageUri = ProfileImageUrl.resolve(imageUrl);
+    if (imageUri == null) return false;
+    try {
+      final response = await http
+          .get(imageUri)
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200 ||
+          response.bodyBytes.isEmpty ||
+          response.bodyBytes.length >
+              ParaBeaconAccountService.maxProfileImageUploadBytes) {
+        return false;
+      }
+      final directory = await getTemporaryDirectory();
+      final fileName = 'parabeacon-profile-${imageUri.pathSegments.last}.jpg';
+      final file = File(p.join(directory.path, fileName));
+      await file.writeAsBytes(response.bodyBytes, flush: true);
+      if (!await Gal.hasAccess() && !await Gal.requestAccess()) return false;
+      await Gal.putImage(file.path, album: 'ParaBeacon');
+      return true;
+    } on Object {
+      return false;
     }
   }
 
@@ -321,10 +353,71 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                PilotAvatarPicture(
-                  avatarId: user?.avatarId ?? 0,
-                  profileImageUrl: user?.profileImageUrl,
-                  size: 96,
+                Tooltip(
+                  message: user?.profileImageUrl == null
+                      ? l10n.accountChangeProfileImage
+                      : l10n.accountProfileImage,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(23),
+                      onTap: service.isBusy || _savingProfileImage
+                          ? null
+                          : user?.profileImageUrl == null
+                          ? () => _pickProfileImage(service, l10n)
+                          : () => showProfileImagePreview(
+                              context,
+                              imageUrl: user!.profileImageUrl!,
+                              title: l10n.accountProfileImage,
+                              closeLabel: l10n.close,
+                              changeLabel: l10n.accountChangeProfileImage,
+                              resetLabel: l10n.accountResetProfileImage,
+                              downloadLabel: l10n.accountDownloadProfileImage,
+                              downloadingLabel:
+                                  l10n.accountDownloadingProfileImage,
+                              downloadSuccessLabel:
+                                  l10n.accountProfileImageDownloaded,
+                              downloadFailedLabel:
+                                  l10n.accountProfileImageDownloadFailed,
+                              onChange: () => _pickProfileImage(service, l10n),
+                              onReset: () => _removeProfileImage(service, l10n),
+                              onDownload: () =>
+                                  _downloadProfileImage(user.profileImageUrl!),
+                            ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          PilotAvatarPicture(
+                            avatarId: user?.avatarId ?? 0,
+                            profileImageUrl: user?.profileImageUrl,
+                            size: 96,
+                          ),
+                          PositionedDirectional(
+                            bottom: -4,
+                            end: -4,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: theme.colorScheme.surface,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(5),
+                                child: Icon(
+                                  Icons.photo_camera_outlined,
+                                  size: 16,
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -332,33 +425,18 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: service.isBusy || _savingProfileImage
-                          ? null
-                          : () => _pickProfileImage(service, l10n),
-                      icon: _savingProfileImage
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.photo_library_outlined),
-                      label: Text(l10n.accountChangeProfileImage),
-                    ),
-                    if (user?.profileImageUrl != null)
-                      TextButton.icon(
-                        onPressed: service.isBusy || _savingProfileImage
-                            ? null
-                            : () => _removeProfileImage(service, l10n),
-                        icon: const Icon(Icons.delete_outline),
-                        label: Text(l10n.accountRemoveProfileImage),
-                      ),
-                  ],
+                OutlinedButton.icon(
+                  onPressed: service.isBusy || _savingProfileImage
+                      ? null
+                      : () => _pickProfileImage(service, l10n),
+                  icon: _savingProfileImage
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.photo_library_outlined),
+                  label: Text(l10n.accountChangeProfileImage),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -374,36 +452,39 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: _displayNameController,
-                  focusNode: _displayNameFocus,
-                  maxLength: 48,
-                  textCapitalization: TextCapitalization.words,
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                    labelText: l10n.accountDisplayName,
-                    helperText: l10n.accountDisplayNameSubtitle,
-                    prefixIcon: const Icon(Icons.badge_outlined),
-                    border: const OutlineInputBorder(),
-                  ),
-                  onSubmitted: (_) => _saveDisplayName(service, l10n),
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton.icon(
-                    onPressed: service.isBusy || _savingDisplayName
-                        ? null
-                        : () => _saveDisplayName(service, l10n),
-                    icon: _savingDisplayName
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.save_outlined),
-                    label: Text(l10n.save),
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _displayNameController,
+                        focusNode: _displayNameFocus,
+                        maxLength: 48,
+                        textCapitalization: TextCapitalization.words,
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
+                          labelText: l10n.accountDisplayName,
+                          helperText: l10n.accountDisplayNameSubtitle,
+                          prefixIcon: const Icon(Icons.badge_outlined),
+                          border: const OutlineInputBorder(),
+                        ),
+                        onSubmitted: (_) => _saveDisplayName(service, l10n),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      tooltip: l10n.save,
+                      onPressed: service.isBusy || _savingDisplayName
+                          ? null
+                          : () => _saveDisplayName(service, l10n),
+                      icon: _savingDisplayName
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_outlined),
+                    ),
+                  ],
                 ),
                 if (user?.email != null) ...[
                   const SizedBox(height: 6),

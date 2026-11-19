@@ -923,7 +923,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountChangeProfileImage.
   ///
   /// In en, this message translates to:
-  /// **'Choose profile image'**
+  /// **'Change profile image'**
   String get accountChangeProfileImage;
 
   /// No description provided for @accountCropProfileImage.
@@ -949,6 +949,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove profile image'**
   String get accountRemoveProfileImage;
+
+  /// No description provided for @accountResetProfileImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get accountResetProfileImage;
+
+  /// No description provided for @accountDownloadProfileImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get accountDownloadProfileImage;
+
+  /// No description provided for @accountDownloadingProfileImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading…'**
+  String get accountDownloadingProfileImage;
+
+  /// No description provided for @accountProfileImageDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile image saved to your gallery.'**
+  String get accountProfileImageDownloaded;
+
+  /// No description provided for @accountProfileImageDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the profile image.'**
+  String get accountProfileImageDownloadFailed;
 
   /// No description provided for @accountProfileImageSaved.
   ///

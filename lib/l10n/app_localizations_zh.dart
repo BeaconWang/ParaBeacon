@@ -430,7 +430,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountProfileImage => '个人资料图片';
 
   @override
-  String get accountChangeProfileImage => '选择个人资料图片';
+  String get accountChangeProfileImage => '更改个人资料图片';
 
   @override
   String get accountCropProfileImage => '编辑个人资料图片';
@@ -443,6 +443,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountRemoveProfileImage => '移除个人资料图片';
+
+  @override
+  String get accountResetProfileImage => '重置';
+
+  @override
+  String get accountDownloadProfileImage => '下载';
+
+  @override
+  String get accountDownloadingProfileImage => '正在下载…';
+
+  @override
+  String get accountProfileImageDownloaded => '个人资料图片已保存到相册。';
+
+  @override
+  String get accountProfileImageDownloadFailed => '无法保存个人资料图片。';
 
   @override
   String get accountProfileImageSaved => '个人资料图片已更新。';

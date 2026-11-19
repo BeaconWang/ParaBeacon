@@ -452,7 +452,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountProfileImage => 'Profile image';
 
   @override
-  String get accountChangeProfileImage => 'Choose profile image';
+  String get accountChangeProfileImage => 'Change profile image';
 
   @override
   String get accountCropProfileImage => 'Edit profile image';
@@ -466,6 +466,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountRemoveProfileImage => 'Remove profile image';
+
+  @override
+  String get accountResetProfileImage => 'Reset';
+
+  @override
+  String get accountDownloadProfileImage => 'Download';
+
+  @override
+  String get accountDownloadingProfileImage => 'Downloading…';
+
+  @override
+  String get accountProfileImageDownloaded =>
+      'Profile image saved to your gallery.';
+
+  @override
+  String get accountProfileImageDownloadFailed =>
+      'Could not save the profile image.';
 
   @override
   String get accountProfileImageSaved => 'Profile image updated.';

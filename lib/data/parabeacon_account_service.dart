@@ -21,6 +21,7 @@ class ParaBeaconUser {
     required this.username,
     this.displayName = '',
     this.pilotNumber,
+    this.channelNumber = 0,
     this.email,
     this.createdAt,
   });
@@ -29,6 +30,7 @@ class ParaBeaconUser {
   final String username;
   final String displayName;
   final int? pilotNumber;
+  final int channelNumber;
   final String? email;
   final DateTime? createdAt;
 
@@ -53,6 +55,12 @@ class ParaBeaconUser {
     }
 
     final rawPilotNumber = value['pilot_number'];
+    final rawChannelNumber = value['channel_number'] ?? 0;
+    if (rawChannelNumber is! int ||
+        rawChannelNumber < 0 ||
+        rawChannelNumber > 999999) {
+      return null;
+    }
     if (rawPilotNumber != null &&
         (rawPilotNumber is! int ||
             rawPilotNumber < 100000 ||
@@ -66,6 +74,7 @@ class ParaBeaconUser {
       username: username,
       displayName: normalizedDisplayName,
       pilotNumber: rawPilotNumber as int?,
+      channelNumber: rawChannelNumber,
       email: email is String && email.isNotEmpty ? email : null,
       createdAt: createdAtValue is String
           ? DateTime.tryParse(createdAtValue)
@@ -78,6 +87,7 @@ class ParaBeaconUser {
     'username': username,
     if (displayName.isNotEmpty) 'display_name': displayName,
     if (pilotNumber != null) 'pilot_number': pilotNumber,
+    'channel_number': channelNumber,
     if (email != null) 'email': email,
     if (createdAt != null) 'created_at': createdAt!.toUtc().toIso8601String(),
   };
@@ -585,6 +595,62 @@ class ParaBeaconAccountService extends ChangeNotifier
             ? 'accountServiceUnavailable'
             : response.statusCode == 400
             ? 'accountInvalidDisplayName'
+            : 'accountRequestFailed';
+        return false;
+      }
+      final updatedUser = ParaBeaconUser.fromJson(
+        _decodeMap(response.body)?['user'],
+      );
+      if (updatedUser == null || updatedUser.id != _user?.id) {
+        _errorCode = 'accountRequestFailed';
+        return false;
+      }
+      _user = updatedUser;
+      _errorCode = null;
+      await _store.write(_userKey, jsonEncode(updatedUser.toJson()));
+      notifyListeners();
+      return true;
+    } on TimeoutException {
+      _errorCode = 'accountConnectionFailure';
+      return false;
+    } on http.ClientException {
+      _errorCode = 'accountConnectionFailure';
+      return false;
+    } on Exception {
+      _errorCode = 'accountServiceUnavailable';
+      return false;
+    } finally {
+      _endRequest();
+    }
+  }
+
+  Future<bool> updateChannelNumber(int channelNumber) async {
+    final token = _token;
+    if (!isSignedIn || token == null || isBusy) {
+      _errorCode = 'accountServiceUnavailable';
+      notifyListeners();
+      return false;
+    }
+    if (channelNumber < 0 || channelNumber > 999999) {
+      _errorCode = 'accountInvalidChannelNumber';
+      notifyListeners();
+      return false;
+    }
+    if (_user?.channelNumber == channelNumber) return true;
+    _beginRequest();
+    try {
+      final response = await _client
+          .patch(
+            _apiUri('user/profile'),
+            headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+            body: jsonEncode({'channel_number': channelNumber}),
+          )
+          .timeout(_requestTimeout);
+      if (response.statusCode != 200) {
+        _errorCode = response.statusCode >= 500
+            ? 'accountServiceUnavailable'
+            : response.statusCode == 400
+            ? 'accountInvalidChannelNumber'
             : 'accountRequestFailed';
         return false;
       }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -39,8 +41,10 @@ class _LiveTrackingSettingsSheetState
       LiveTrackingSettings.instance.shareLocationPublicly;
   bool _shareLocationWhileNotFlying =
       LiveTrackingSettings.instance.shareLocationWhileNotFlying;
-  String _pilotNumberFilter = LiveTrackingSettings.instance.pilotNumberFilter;
-  late final TextEditingController _pilotNumberController;
+  late final TextEditingController _channelNumberController;
+  Timer? _channelSaveTimer;
+  bool _savingChannelNumber = false;
+  bool _channelNumberSaveFailed = false;
   bool _temporaryDontShare = LiveTrackingSettings.instance.temporaryDontShare;
   bool _reportSimulatedAsReal =
       LiveTrackingSettings.instance.reportSimulatedAsReal;
@@ -49,7 +53,11 @@ class _LiveTrackingSettingsSheetState
   @override
   void initState() {
     super.initState();
-    _pilotNumberController = TextEditingController(text: _pilotNumberFilter);
+    final initialChannel =
+        ParaBeaconAccountService.instance.user?.channelNumber ?? 0;
+    _channelNumberController = TextEditingController(
+      text: initialChannel.toString().padLeft(6, '0'),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.wait([
         LiveTrackingSettings.instance.load(),
@@ -66,8 +74,12 @@ class _LiveTrackingSettingsSheetState
         _flightPublic = settings.flightPublic;
         _shareLocationPublicly = settings.shareLocationPublicly;
         _shareLocationWhileNotFlying = settings.shareLocationWhileNotFlying;
-        _pilotNumberFilter = settings.pilotNumberFilter;
-        _pilotNumberController.text = settings.pilotNumberFilter;
+        final channelNumber =
+            ParaBeaconAccountService.instance.user?.channelNumber ?? 0;
+        _channelNumberController.text = channelNumber.toString().padLeft(
+          6,
+          '0',
+        );
         _temporaryDontShare = settings.temporaryDontShare;
         _reportSimulatedAsReal = settings.reportSimulatedAsReal;
         _loading = false;
@@ -77,8 +89,36 @@ class _LiveTrackingSettingsSheetState
 
   @override
   void dispose() {
-    _pilotNumberController.dispose();
+    _channelSaveTimer?.cancel();
+    _channelNumberController.dispose();
     super.dispose();
+  }
+
+  void _scheduleChannelNumberSave(String value) {
+    _channelSaveTimer?.cancel();
+    if (value.length != 6) return;
+    _channelSaveTimer = Timer(const Duration(milliseconds: 350), () {
+      unawaited(_saveChannelNumber(value));
+    });
+  }
+
+  Future<void> _saveChannelNumber(String value) async {
+    final channelNumber = int.tryParse(value);
+    if (channelNumber == null || value.length != 6 || _savingChannelNumber) {
+      return;
+    }
+    final account = ParaBeaconAccountService.instance;
+    if (account.user?.channelNumber == channelNumber) return;
+    setState(() {
+      _savingChannelNumber = true;
+      _channelNumberSaveFailed = false;
+    });
+    final saved = await account.updateChannelNumber(channelNumber);
+    if (!mounted) return;
+    setState(() {
+      _savingChannelNumber = false;
+      _channelNumberSaveFailed = !saved;
+    });
   }
 
   Future<void> _save() async {
@@ -281,35 +321,46 @@ class _LiveTrackingSettingsSheetState
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                               child: TextField(
-                                key: const ValueKey('pilot-number-filter'),
-                                controller: _pilotNumberController,
+                                key: const ValueKey('channel-number'),
+                                controller: _channelNumberController,
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,
                                   LengthLimitingTextInputFormatter(6),
                                 ],
                                 maxLength: 6,
+                                enabled:
+                                    !_loading &&
+                                    serverSignedIn &&
+                                    !_savingChannelNumber,
                                 decoration: InputDecoration(
-                                  labelText: l10n.liveTrackingPilotNumberFilter,
-                                  helperText: l10n
-                                      .liveTrackingPilotNumberFilterSubtitle,
-                                  errorText:
-                                      _pilotNumberFilter.isEmpty ||
-                                          LiveTrackingSettings.isValidPilotNumberFilter(
-                                            _pilotNumberFilter,
-                                          )
-                                      ? null
-                                      : l10n.liveTrackingPilotNumberFilterInvalid,
+                                  labelText: l10n.liveTrackingChannelNumber,
+                                  helperText:
+                                      l10n.liveTrackingChannelNumberSubtitle,
+                                  errorText: _channelNumberSaveFailed
+                                      ? l10n.liveTrackingChannelNumberSaveFailed
+                                      : null,
+                                  suffixIcon: _savingChannelNumber
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(12),
+                                          child: SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
                                   border: const OutlineInputBorder(),
                                 ),
                                 onChanged: (value) {
-                                  setState(() => _pilotNumberFilter = value);
-                                  if (LiveTrackingSettings.isValidPilotNumberFilter(
-                                    value,
-                                  )) {
-                                    settings.setPilotNumberFilter(value);
-                                  }
+                                  setState(
+                                    () => _channelNumberSaveFailed = false,
+                                  );
+                                  _scheduleChannelNumberSave(value);
                                 },
+                                onSubmitted: _saveChannelNumber,
                               ),
                             ),
                             const Divider(height: 1),

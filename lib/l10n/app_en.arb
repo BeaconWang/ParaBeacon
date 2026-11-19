@@ -174,7 +174,7 @@
   "chatSelectRecipient": "Choose a pilot before sending a private message.",
   "chatChannelNumber": "Channel {number}",
   "@chatChannelNumber": {"placeholders": {"number": {"type": "String"}}},
-  "chatUsesLiveTrackingFilter": "Uses the six-digit channel selected in LiveTracking.",
+  "chatUsesLiveTrackingFilter": "Uses your account's selected radio-frequency channel.",
   "chatOpenConversation": "Open",
   "chatInvalidPilotNumber": "Enter a valid six-digit pilot number.",
   "chatPilotNotFound": "No pilot has that number.",
@@ -233,9 +233,9 @@
       "number": {"type": "String"}
     }
   },
-  "liveTrackingPilotNumberFilter": "ParaBeacon pilot number filter",
-  "liveTrackingPilotNumberFilterSubtitle": "Enter a six-digit pilot number. 000000 shows all ParaBeacon pilots; XContest pilots are unaffected.",
-  "liveTrackingPilotNumberFilterInvalid": "Enter exactly six digits.",
+  "liveTrackingChannelNumber": "Channel number",
+  "liveTrackingChannelNumberSubtitle": "Choose your shared radio frequency. Only ParaBeacon pilots on the same channel appear on your map. Enter 000000 to turn channel sharing off and hide Channel chat.",
+  "liveTrackingChannelNumberSaveFailed": "Channel number could not be saved. Check your connection and try again.",
   "liveTrackingTemporaryDisable": "Temporarily stop sharing",
   "liveTrackingTemporaryDisableSubtitle": "Pause all selected destinations without changing their switches.",
   "liveTrackingTemporarilyDisabled": "LiveTracking is temporarily paused.",

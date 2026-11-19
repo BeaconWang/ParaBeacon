@@ -3,9 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/chat_service.dart';
-import '../data/live_tracking_settings.dart';
 import '../data/parabeacon_account_service.dart';
 import '../l10n/app_localizations.dart';
+
+List<String> chatScopesForChannel(int channelNumber) => [
+  'public',
+  if (channelNumber > 0) 'channel',
+  'direct',
+];
 
 Future<void> showChatPage(BuildContext context) => Navigator.of(
   context,
@@ -25,9 +30,22 @@ class _ChatPageState extends State<_ChatPage>
   final _accountSearchController = TextEditingController();
   final _accountResultsController = ScrollController();
   final _scrollController = ScrollController();
-  late final TabController _tabs;
-  late final VoidCallback _filterListener;
-  String _channelFilter = LiveTrackingSettings.instance.pilotNumberFilter;
+  late TabController _tabs;
+  int _channelNumber =
+      ParaBeaconAccountService.instance.user?.channelNumber ?? 0;
+
+  String _scopeForTab(int index, {int? channelNumber}) {
+    final scopes = chatScopesForChannel(channelNumber ?? _channelNumber);
+    return scopes[index.clamp(0, scopes.length - 1)];
+  }
+
+  int _tabForScope(String scope, {int? channelNumber}) {
+    final index = chatScopesForChannel(
+      channelNumber ?? _channelNumber,
+    ).indexOf(scope);
+    return index < 0 ? 0 : index;
+  }
+
   bool _sending = false;
   String? _localError;
   ChatAccount? _selectedRecipient;
@@ -43,14 +61,16 @@ class _ChatPageState extends State<_ChatPage>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this)..addListener(_onTabChanged);
-    _filterListener = _onPilotFilterChanged;
-    LiveTrackingSettings.instance.addListener(_filterListener);
+    _tabs = TabController(
+      length: chatScopesForChannel(_channelNumber).length,
+      vsync: this,
+    )..addListener(_onTabChanged);
+    ParaBeaconAccountService.instance.addListener(_onAccountChannelChanged);
     _accountResultsController.addListener(_onAccountResultsScrolled);
     _chat.addListener(_onChatChanged);
     _partnerStatusTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       final recipient = _selectedRecipient;
-      if (_tabs.index == 2 &&
+      if (_scopeForTab(_tabs.index) == 'direct' &&
           _chat.scope == 'direct' &&
           recipient != null &&
           recipient.pilotNumber == _chat.pilotNumber) {
@@ -66,7 +86,7 @@ class _ChatPageState extends State<_ChatPage>
 
   @override
   void dispose() {
-    LiveTrackingSettings.instance.removeListener(_filterListener);
+    ParaBeaconAccountService.instance.removeListener(_onAccountChannelChanged);
     _chat.removeListener(_onChatChanged);
     _tabs.removeListener(_onTabChanged);
     _tabs.dispose();
@@ -104,29 +124,44 @@ class _ChatPageState extends State<_ChatPage>
     _openTab(_tabs.index);
   }
 
-  void _onPilotFilterChanged() {
-    final next = LiveTrackingSettings.instance.pilotNumberFilter;
-    if (_channelFilter == next) return;
-    _channelFilter = next;
-    if (_tabs.index == 1) _openTab(1);
+  void _onAccountChannelChanged() {
+    final next = ParaBeaconAccountService.instance.user?.channelNumber ?? 0;
+    if (_channelNumber == next) {
+      if (mounted) setState(() {});
+      return;
+    }
+    final previousScope = _scopeForTab(_tabs.index);
+    _channelNumber = next;
+    final nextScope = previousScope == 'channel' && next == 0
+        ? 'public'
+        : previousScope;
+    _tabs.removeListener(_onTabChanged);
+    _tabs.dispose();
+    _tabs = TabController(
+      length: chatScopesForChannel(next).length,
+      initialIndex: _tabForScope(nextScope, channelNumber: next),
+      vsync: this,
+    )..addListener(_onTabChanged);
     if (mounted) setState(() {});
+    unawaited(_openTab(_tabs.index));
   }
 
   Future<void> _openTab(int index) async {
-    if (index != 2) {
+    final scope = _scopeForTab(index);
+    if (scope != 'direct') {
       _selectedRecipient = null;
       _accountSearchTimer?.cancel();
       _accountSearchGeneration++;
       _loadingAccounts = false;
     }
-    setState(() => _localError = null);
+    if (mounted) setState(() => _localError = null);
     try {
-      switch (index) {
-        case 0:
+      switch (scope) {
+        case 'public':
           await _chat.openPublic();
-        case 1:
-          await _chat.openChannel(int.parse(_channelFilter));
-        case 2:
+        case 'channel':
+          await _chat.openChannel(_channelNumber);
+        case 'direct':
           if (_selectedRecipient != null) {
             await _chat.openDirect(_selectedRecipient!.pilotNumber);
           } else {
@@ -170,7 +205,9 @@ class _ChatPageState extends State<_ChatPage>
   }
 
   Future<void> _loadAccounts({bool reset = false}) async {
-    if ((_loadingAccounts && !reset) || _tabs.index != 2) return;
+    if ((_loadingAccounts && !reset) || _scopeForTab(_tabs.index) != 'direct') {
+      return;
+    }
     if (!reset && _accountCursor == null && _accountResults.isNotEmpty) return;
     final generation = reset
         ? ++_accountSearchGeneration
@@ -232,7 +269,9 @@ class _ChatPageState extends State<_ChatPage>
       _localError = null;
     });
     await _chat.disconnect();
-    if (mounted && _tabs.index == 2) await _loadAccounts(reset: true);
+    if (mounted && _scopeForTab(_tabs.index) == 'direct') {
+      await _loadAccounts(reset: true);
+    }
   }
 
   String _errorText(Object error) {
@@ -250,7 +289,7 @@ class _ChatPageState extends State<_ChatPage>
 
   Future<void> _send() async {
     if (_sending) return;
-    if (_tabs.index == 2 && _selectedRecipient == null) {
+    if (_scopeForTab(_tabs.index) == 'direct' && _selectedRecipient == null) {
       setState(
         () => _localError = AppLocalizations.of(context).chatSelectRecipient,
       );
@@ -280,36 +319,47 @@ class _ChatPageState extends State<_ChatPage>
     final myPilotNumber = user?.pilotNumber;
     final connected = _chat.state == ChatConnectionState.connected;
     final selectedRecipient = _selectedRecipient;
+    final activeScope = _scopeForTab(_tabs.index);
+    final availableScopes = chatScopesForChannel(_channelNumber);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _tabs.index == 2 && selectedRecipient != null
+          activeScope == 'direct' && selectedRecipient != null
               ? selectedRecipient.title
               : l10n.chatTitle,
         ),
         bottom: TabBar(
           controller: _tabs,
           tabs: [
-            Tab(text: l10n.chatWorldwide),
-            Tab(text: l10n.chatChannel),
-            Tab(text: l10n.chatDirect),
+            for (final scope in availableScopes)
+              Tab(
+                text: switch (scope) {
+                  'public' => l10n.chatWorldwide,
+                  'channel' => l10n.chatChannel,
+                  _ => l10n.chatDirect,
+                },
+              ),
           ],
         ),
       ),
       body: Column(
         children: [
           _connectionBanner(context, connected),
-          if (_tabs.index == 1)
+          if (activeScope == 'channel')
             ListTile(
               dense: true,
               leading: const Icon(Icons.tag),
-              title: Text(l10n.chatChannelNumber(_channelFilter)),
+              title: Text(
+                l10n.chatChannelNumber(
+                  _channelNumber.toString().padLeft(6, '0'),
+                ),
+              ),
               subtitle: Text(l10n.chatUsesLiveTrackingFilter),
             ),
-          if (_tabs.index == 2 && user != null)
+          if (activeScope == 'direct' && user != null)
             _buildDirectPicker(context, l10n),
-          if (_tabs.index == 2 && selectedRecipient != null)
+          if (activeScope == 'direct' && selectedRecipient != null)
             ListTile(
               dense: true,
               leading: Icon(
@@ -342,7 +392,7 @@ class _ChatPageState extends State<_ChatPage>
             ),
           if (user == null)
             Expanded(child: Center(child: Text(l10n.chatSignInRequired)))
-          else if (_tabs.index == 2 && selectedRecipient == null)
+          else if (activeScope == 'direct' && selectedRecipient == null)
             Expanded(child: _buildAccountList(context, l10n))
           else
             Expanded(
@@ -366,7 +416,8 @@ class _ChatPageState extends State<_ChatPage>
                       },
                     ),
             ),
-          if (user != null && (_tabs.index != 2 || selectedRecipient != null))
+          if (user != null &&
+              (activeScope != 'direct' || selectedRecipient != null))
             SafeArea(
               top: false,
               child: Padding(

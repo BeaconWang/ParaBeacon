@@ -519,7 +519,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get chatUsesLiveTrackingFilter => '使用 LiveTracking 中选定的六位频道编号。';
+  String get chatUsesLiveTrackingFilter => '使用账号中设置的无线电频率频道。';
 
   @override
   String get chatOpenConversation => '打开';
@@ -674,14 +674,14 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get liveTrackingPilotNumberFilter => 'ParaBeacon 飞行员编号筛选';
+  String get liveTrackingChannelNumber => '频道编号';
 
   @override
-  String get liveTrackingPilotNumberFilterSubtitle =>
-      '输入六位飞行员编号。000000 表示显示所有 ParaBeacon 飞行员；不影响 XContest 飞行员。';
+  String get liveTrackingChannelNumberSubtitle =>
+      '选择你的共享无线电频率。地图只显示同一频道的 ParaBeacon 飞行员。输入 000000 可关闭频道分享并隐藏聊天中的“频道”标签。';
 
   @override
-  String get liveTrackingPilotNumberFilterInvalid => '请输入恰好六位数字。';
+  String get liveTrackingChannelNumberSaveFailed => '无法保存频道编号，请检查网络后重试。';
 
   @override
   String get liveTrackingTemporaryDisable => '暂时停止分享';

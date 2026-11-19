@@ -213,6 +213,7 @@ class PublicPilotLocation {
     required this.observedAt,
     this.liveRoomId,
     this.pilotNumber,
+    this.channelNumber = 0,
     this.headingDegrees,
     this.altitudeMeters,
     this.groundSpeedMetersPerSecond,
@@ -226,6 +227,7 @@ class PublicPilotLocation {
   final DateTime observedAt;
   final String? liveRoomId;
   final int? pilotNumber;
+  final int channelNumber;
 
   /// GPS course over ground in degrees clockwise from north, when available.
   final double? headingDegrees;
@@ -237,6 +239,9 @@ class PublicPilotLocation {
   bool belongsToLiveRoom(String? roomId) =>
       roomId != null && liveRoomId == roomId;
 
+  bool belongsToChannel(int channelNumber) =>
+      channelNumber > 0 && this.channelNumber == channelNumber;
+
   static PublicPilotLocation? fromJson(Object? value) {
     if (value is! Map<String, dynamic>) return null;
     final name = value['pilot_name'];
@@ -245,6 +250,7 @@ class PublicPilotLocation {
     final timestamp = value['observed_at'];
     final liveRoomId = value['live_room_id'];
     final rawPilotNumber = value['pilot_number'];
+    final rawChannelNumber = value['channel_number'] ?? 0;
     final heading = value['heading'];
     if (name is! String ||
         name.trim().isEmpty ||
@@ -256,6 +262,9 @@ class PublicPilotLocation {
             (rawPilotNumber is! int ||
                 rawPilotNumber < 100000 ||
                 rawPilotNumber > 999999)) ||
+        rawChannelNumber is! int ||
+        rawChannelNumber < 0 ||
+        rawChannelNumber > 999999 ||
         (heading != null && heading is! num)) {
       return null;
     }
@@ -296,6 +305,7 @@ class PublicPilotLocation {
           ? liveRoomId
           : null,
       pilotNumber: rawPilotNumber as int?,
+      channelNumber: rawChannelNumber,
       headingDegrees: headingValue,
       altitudeMeters: optionalNumber('altitude'),
       groundSpeedMetersPerSecond: optionalNumber('speed'),

@@ -1097,7 +1097,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatUsesLiveTrackingFilter.
   ///
   /// In en, this message translates to:
-  /// **'Uses the six-digit channel selected in LiveTracking.'**
+  /// **'Uses your account\'s selected radio-frequency channel.'**
   String get chatUsesLiveTrackingFilter;
 
   /// No description provided for @chatOpenConversation.
@@ -1376,23 +1376,23 @@ abstract class AppLocalizations {
   /// **'Your pilot number: {number}'**
   String liveTrackingYourPilotNumber(String number);
 
-  /// No description provided for @liveTrackingPilotNumberFilter.
+  /// No description provided for @liveTrackingChannelNumber.
   ///
   /// In en, this message translates to:
-  /// **'ParaBeacon pilot number filter'**
-  String get liveTrackingPilotNumberFilter;
+  /// **'Channel number'**
+  String get liveTrackingChannelNumber;
 
-  /// No description provided for @liveTrackingPilotNumberFilterSubtitle.
+  /// No description provided for @liveTrackingChannelNumberSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter a six-digit pilot number. 000000 shows all ParaBeacon pilots; XContest pilots are unaffected.'**
-  String get liveTrackingPilotNumberFilterSubtitle;
+  /// **'Choose your shared radio frequency. Only ParaBeacon pilots on the same channel appear on your map. Enter 000000 to turn channel sharing off and hide Channel chat.'**
+  String get liveTrackingChannelNumberSubtitle;
 
-  /// No description provided for @liveTrackingPilotNumberFilterInvalid.
+  /// No description provided for @liveTrackingChannelNumberSaveFailed.
   ///
   /// In en, this message translates to:
-  /// **'Enter exactly six digits.'**
-  String get liveTrackingPilotNumberFilterInvalid;
+  /// **'Channel number could not be saved. Check your connection and try again.'**
+  String get liveTrackingChannelNumberSaveFailed;
 
   /// No description provided for @liveTrackingTemporaryDisable.
   ///

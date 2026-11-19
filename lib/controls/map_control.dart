@@ -1063,6 +1063,8 @@ class _MapControlState extends State<MapControl> {
     final publicPilotNow = DateTime.now().toUtc();
     final ownLiveRoomId =
         server_tracking.LiveTrackingService.instance.sessionId;
+    final ownChannelNumber =
+        ParaBeaconAccountService.instance.user?.channelNumber ?? 0;
     final freshXContestPilots = widget.showOtherPilots
         ? XContestLiveTrackingService.instance.otherPilots
               .where(
@@ -1076,10 +1078,8 @@ class _MapControlState extends State<MapControl> {
         ? _serverPilotLocations
               .where(
                 (pilot) =>
+                    pilot.belongsToChannel(ownChannelNumber) &&
                     !pilot.belongsToLiveRoom(ownLiveRoomId) &&
-                    LiveTrackingSettings.instance.includesPilotNumber(
-                      pilot.pilotNumber,
-                    ) &&
                     publicPilotNow.difference(pilot.observedAt) <=
                         const Duration(seconds: 90) &&
                     !pilot.observedAt.isAfter(

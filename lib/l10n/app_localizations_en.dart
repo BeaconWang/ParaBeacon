@@ -552,7 +552,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUsesLiveTrackingFilter =>
-      'Uses the six-digit channel selected in LiveTracking.';
+      'Uses your account\'s selected radio-frequency channel.';
 
   @override
   String get chatOpenConversation => 'Open';
@@ -724,15 +724,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get liveTrackingPilotNumberFilter => 'ParaBeacon pilot number filter';
+  String get liveTrackingChannelNumber => 'Channel number';
 
   @override
-  String get liveTrackingPilotNumberFilterSubtitle =>
-      'Enter a six-digit pilot number. 000000 shows all ParaBeacon pilots; XContest pilots are unaffected.';
+  String get liveTrackingChannelNumberSubtitle =>
+      'Choose your shared radio frequency. Only ParaBeacon pilots on the same channel appear on your map. Enter 000000 to turn channel sharing off and hide Channel chat.';
 
   @override
-  String get liveTrackingPilotNumberFilterInvalid =>
-      'Enter exactly six digits.';
+  String get liveTrackingChannelNumberSaveFailed =>
+      'Channel number could not be saved. Check your connection and try again.';
 
   @override
   String get liveTrackingTemporaryDisable => 'Temporarily stop sharing';

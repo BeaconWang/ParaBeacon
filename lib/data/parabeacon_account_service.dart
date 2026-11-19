@@ -819,62 +819,6 @@ class ParaBeaconAccountService extends ChangeNotifier
     }
   }
 
-  Future<bool> updateAvatarId(int avatarId) async {
-    final token = _token;
-    if (!isSignedIn || token == null || isBusy) {
-      _errorCode = 'accountServiceUnavailable';
-      notifyListeners();
-      return false;
-    }
-    if (!PilotAvatar.isValid(avatarId)) {
-      _errorCode = 'accountInvalidAvatar';
-      notifyListeners();
-      return false;
-    }
-    if (_user?.avatarId == avatarId) return true;
-    _beginRequest();
-    try {
-      final response = await _client
-          .patch(
-            _apiUri('user/profile'),
-            headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
-            body: jsonEncode({'avatar_id': avatarId}),
-          )
-          .timeout(_requestTimeout);
-      if (response.statusCode != 200) {
-        _errorCode = response.statusCode >= 500
-            ? 'accountServiceUnavailable'
-            : response.statusCode == 400
-            ? 'accountInvalidAvatar'
-            : 'accountRequestFailed';
-        return false;
-      }
-      final updatedUser = ParaBeaconUser.fromJson(
-        _decodeMap(response.body)?['user'],
-      );
-      if (updatedUser == null || updatedUser.id != _user?.id) {
-        _errorCode = 'accountRequestFailed';
-        return false;
-      }
-      _user = updatedUser;
-      _errorCode = null;
-      await _store.write(_userKey, jsonEncode(updatedUser.toJson()));
-      notifyListeners();
-      return true;
-    } on TimeoutException {
-      _errorCode = 'accountConnectionFailure';
-      return false;
-    } on http.ClientException {
-      _errorCode = 'accountConnectionFailure';
-      return false;
-    } on Exception {
-      _errorCode = 'accountServiceUnavailable';
-      return false;
-    } finally {
-      _endRequest();
-    }
-  }
-
   static bool isValidDisplayName(String value) {
     final normalized = value.trim();
     return normalized.isEmpty ||

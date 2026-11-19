@@ -41,7 +41,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
   final _newPasswordController = TextEditingController();
   final _confirmNewPasswordController = TextEditingController();
   bool _savingDisplayName = false;
-  bool _savingAvatar = false;
   bool _savingProfileImage = false;
   bool _changingPassword = false;
   bool _obscureCurrentPassword = true;
@@ -86,23 +85,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
         identifier: _usernameController.text,
         password: _passwordController.text,
       );
-    }
-  }
-
-  Future<void> _saveAvatar(
-    ParaBeaconAccountService service,
-    AppLocalizations l10n,
-    int avatarId,
-  ) async {
-    if (_savingAvatar || !PilotAvatar.isValid(avatarId)) return;
-    setState(() => _savingAvatar = true);
-    final saved = await service.updateAvatarId(avatarId);
-    if (!mounted) return;
-    setState(() => _savingAvatar = false);
-    if (saved) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.accountIconSaved)));
     }
   }
 
@@ -210,7 +192,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     'accountAlreadyExists' => l10n.accountErrorAlreadyExists,
     'accountInvalidInput' => l10n.accountErrorInvalidInput,
     'accountInvalidDisplayName' => l10n.accountDisplayNameInvalid,
-    'accountInvalidAvatar' => l10n.accountInvalidAvatar,
     'accountInvalidProfileImage' => l10n.accountInvalidProfileImage,
     'accountCurrentPasswordIncorrect' => l10n.accountCurrentPasswordIncorrect,
     'accountSessionExpired' => l10n.accountSessionExpired,
@@ -379,44 +360,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
-                ),
-                const SizedBox(height: 18),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    l10n.accountIcon,
-                    style: theme.textTheme.titleSmall,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (
-                      var avatarId = 0;
-                      avatarId < PilotAvatar.icons.length;
-                      avatarId++
-                    )
-                      ChoiceChip(
-                        key: ValueKey('account-avatar-$avatarId'),
-                        tooltip: l10n.accountIconChoice(avatarId + 1),
-                        avatar: PilotAvatarPicture(
-                          avatarId: avatarId,
-                          size: 24,
-                        ),
-                        label: Text(l10n.accountIconChoice(avatarId + 1)),
-                        selected: user?.avatarId == avatarId,
-                        onSelected: service.isBusy || _savingAvatar
-                            ? null
-                            : (selected) {
-                                if (selected) {
-                                  _saveAvatar(service, l10n, avatarId);
-                                }
-                              },
-                      ),
-                  ],
                 ),
                 const SizedBox(height: 16),
                 TextField(

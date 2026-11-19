@@ -17,7 +17,7 @@ void main() {
 
     final clip = tester.widget<ClipRRect>(find.byType(ClipRRect));
     expect(clip.borderRadius, BorderRadius.circular(48 * 0.24));
-    expect(find.byIcon(PilotAvatar.iconFor(2)), findsOneWidget);
+    expect(find.byIcon(Icons.paragliding), findsOneWidget);
     expect(find.byType(CircleAvatar), findsNothing);
   });
 
@@ -33,17 +33,13 @@ void main() {
     expect(ProfileImageUrl.resolve('/api/v1/profile-images/not-an-id'), isNull);
   });
 
-  test('provides a bounded set of account icons and a safe fallback', () {
-    expect(PilotAvatar.icons, hasLength(PilotAvatar.maxId + 1));
-    for (var id = 0; id <= PilotAvatar.maxId; id++) {
-      expect(PilotAvatar.isValid(id), isTrue);
-      expect(PilotAvatar.iconFor(id), isA<IconData>());
+  test('uses the paraglider as the only preset fallback icon', () {
+    for (var legacyId = 0; legacyId <= PilotAvatar.maxId; legacyId++) {
+      expect(PilotAvatar.isValid(legacyId), isTrue);
+      expect(PilotAvatar.iconFor(legacyId), Icons.paragliding);
     }
     expect(PilotAvatar.isValid(-1), isFalse);
     expect(PilotAvatar.isValid(PilotAvatar.maxId + 1), isFalse);
-    expect(
-      PilotAvatar.iconFor(999),
-      PilotAvatar.iconFor(PilotAvatar.defaultId),
-    );
+    expect(PilotAvatar.iconFor(999), Icons.paragliding);
   });
 }

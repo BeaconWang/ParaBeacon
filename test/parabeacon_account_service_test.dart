@@ -142,58 +142,6 @@ void main() {
     expect(stored['channel_number'], 483920);
   });
 
-  test('updates and persists the account icon selection', () async {
-    final store = _MemorySessionStore();
-    final requests = <http.Request>[];
-    final client = MockClient((request) async {
-      requests.add(request);
-      if (request.url.path == '/api/v1/auth/login') {
-        return http.Response(
-          jsonEncode({
-            'access_token': 'avatar-token',
-            'expires_at': DateTime.now()
-                .add(const Duration(minutes: 10))
-                .toUtc()
-                .toIso8601String(),
-            'refresh_token': 'avatar-refresh-token-long-value',
-            'refresh_expires_at': null,
-            'user': _userJson,
-          }),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
-      }
-      expect(request.method, 'PATCH');
-      expect(request.url.path, '/api/v1/user/profile');
-      expect(request.headers['authorization'], 'Bearer avatar-token');
-      expect(jsonDecode(request.body), {'avatar_id': 4});
-      return http.Response(
-        jsonEncode({
-          'user': {..._userJson, 'avatar_id': 4},
-        }),
-        200,
-        headers: {'content-type': 'application/json'},
-      );
-    });
-    final service = ParaBeaconAccountService(
-      client: client,
-      sessionStore: store,
-    );
-    addTearDown(service.dispose);
-    expect(
-      await service.login(identifier: 'pilot_one', password: 'abc123'),
-      isTrue,
-    );
-    expect(await service.updateAvatarId(99), isFalse);
-    expect(requests, hasLength(1));
-    expect(await service.updateAvatarId(4), isTrue);
-    expect(service.user?.avatarId, 4);
-    final stored =
-        jsonDecode(store.values['parabeacon_account_user']!)
-            as Map<String, dynamic>;
-    expect(stored['avatar_id'], 4);
-  });
-
   test('uploads and removes the saved profile image', () async {
     final store = _MemorySessionStore();
     final requests = <http.Request>[];

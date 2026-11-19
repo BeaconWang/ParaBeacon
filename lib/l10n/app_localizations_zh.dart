@@ -427,20 +427,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountDisplayNameSaved => '显示名称已保存。';
 
   @override
-  String get accountIcon => '账号图标';
-
-  @override
-  String accountIconChoice(int number) {
-    return '图标 $number';
-  }
-
-  @override
-  String get accountIconSaved => '账号图标已更新。';
-
-  @override
-  String get accountInvalidAvatar => '请选择有效的账号图标。';
-
-  @override
   String get accountProfileImage => '个人资料图片';
 
   @override

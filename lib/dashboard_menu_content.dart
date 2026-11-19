@@ -294,7 +294,7 @@ class DashboardMenuContent extends StatelessWidget {
             title: Text(l10n.chatTitle),
             subtitle: Text(l10n.chatSubtitle),
             trailing: const Icon(Icons.chevron_right, size: 20),
-            onTap: () => showChatSheet(context),
+            onTap: () => showChatPage(context),
           ),
           const Divider(height: 1),
         ],

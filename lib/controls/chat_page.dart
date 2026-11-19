@@ -1,21 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../data/chat_service.dart';
 import '../data/live_tracking_settings.dart';
 import '../data/parabeacon_account_service.dart';
 import '../l10n/app_localizations.dart';
 
-Future<void> showChatSheet(BuildContext context) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  showDragHandle: true,
-  constraints: const BoxConstraints.expand(),
-  builder: (_) => const _ChatPage(),
-);
+Future<void> showChatPage(BuildContext context) => Navigator.of(
+  context,
+).push(MaterialPageRoute<void>(builder: (_) => const _ChatPage()));
 
 class _ChatPage extends StatefulWidget {
   const _ChatPage();
@@ -28,13 +22,21 @@ class _ChatPageState extends State<_ChatPage>
     with SingleTickerProviderStateMixin {
   final _chat = ChatService.instance;
   final _messageController = TextEditingController();
-  final _directController = TextEditingController();
+  final _accountSearchController = TextEditingController();
+  final _accountResultsController = ScrollController();
   final _scrollController = ScrollController();
   late final TabController _tabs;
   late final VoidCallback _filterListener;
   String _channelFilter = LiveTrackingSettings.instance.pilotNumberFilter;
   bool _sending = false;
   String? _localError;
+  ChatAccount? _selectedRecipient;
+  List<ChatAccount> _accountResults = const [];
+  String? _accountCursor;
+  bool _loadingAccounts = false;
+  String? _accountSearchError;
+  Timer? _accountSearchTimer;
+  int _accountSearchGeneration = 0;
   Timer? _partnerStatusTimer;
   String? _lastObservedMessageId;
 
@@ -44,15 +46,19 @@ class _ChatPageState extends State<_ChatPage>
     _tabs = TabController(length: 3, vsync: this)..addListener(_onTabChanged);
     _filterListener = _onPilotFilterChanged;
     LiveTrackingSettings.instance.addListener(_filterListener);
-    _directController.text = '';
+    _accountResultsController.addListener(_onAccountResultsScrolled);
     _chat.addListener(_onChatChanged);
     _partnerStatusTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      final target = int.tryParse(_directController.text);
+      final recipient = _selectedRecipient;
       if (_tabs.index == 2 &&
           _chat.scope == 'direct' &&
-          target != null &&
-          target == _chat.pilotNumber) {
-        unawaited(_chat.refreshPartnerLocationStatus(pilotNumber: target));
+          recipient != null &&
+          recipient.pilotNumber == _chat.pilotNumber) {
+        unawaited(
+          _chat.refreshPartnerLocationStatus(
+            pilotNumber: recipient.pilotNumber,
+          ),
+        );
       }
     });
     _openTab(0);
@@ -65,8 +71,11 @@ class _ChatPageState extends State<_ChatPage>
     _tabs.removeListener(_onTabChanged);
     _tabs.dispose();
     _messageController.dispose();
-    _directController.dispose();
+    _accountSearchController.dispose();
+    _accountResultsController.removeListener(_onAccountResultsScrolled);
+    _accountResultsController.dispose();
     _scrollController.dispose();
+    _accountSearchTimer?.cancel();
     _partnerStatusTimer?.cancel();
     _chat.disconnect();
     super.dispose();
@@ -104,6 +113,12 @@ class _ChatPageState extends State<_ChatPage>
   }
 
   Future<void> _openTab(int index) async {
+    if (index != 2) {
+      _selectedRecipient = null;
+      _accountSearchTimer?.cancel();
+      _accountSearchGeneration++;
+      _loadingAccounts = false;
+    }
     setState(() => _localError = null);
     try {
       switch (index) {
@@ -112,11 +127,13 @@ class _ChatPageState extends State<_ChatPage>
         case 1:
           await _chat.openChannel(int.parse(_channelFilter));
         case 2:
-          final number = int.tryParse(_directController.text);
-          if (number != null && number >= 100000 && number <= 999999) {
-            await _chat.openDirect(number);
+          if (_selectedRecipient != null) {
+            await _chat.openDirect(_selectedRecipient!.pilotNumber);
           } else {
             await _chat.disconnect();
+            if (ParaBeaconAccountService.instance.isSignedIn) {
+              unawaited(_loadAccounts(reset: true));
+            }
           }
       }
     } on Object catch (error) {
@@ -124,20 +141,98 @@ class _ChatPageState extends State<_ChatPage>
     }
   }
 
-  Future<void> _openDirect() async {
-    final number = int.tryParse(_directController.text);
-    if (number == null || number < 100000 || number > 999999) {
-      setState(
-        () => _localError = AppLocalizations.of(context).chatInvalidPilotNumber,
-      );
+  void _onAccountResultsScrolled() {
+    if (!_accountResultsController.hasClients ||
+        _accountCursor == null ||
+        _loadingAccounts) {
       return;
     }
+    final position = _accountResultsController.position;
+    if (position.extentAfter < 100) unawaited(_loadAccounts());
+  }
+
+  void _scheduleAccountSearch(String value) {
+    _accountSearchTimer?.cancel();
+    _accountSearchGeneration++;
+    final query = value.trim();
+    if (query.isNotEmpty && query.runes.length < 2) {
+      setState(() {
+        _accountResults = const [];
+        _accountCursor = null;
+        _accountSearchError = AppLocalizations.of(context).chatSearchMinimum;
+        _loadingAccounts = false;
+      });
+      return;
+    }
+    _accountSearchTimer = Timer(const Duration(milliseconds: 250), () {
+      unawaited(_loadAccounts(reset: true));
+    });
+  }
+
+  Future<void> _loadAccounts({bool reset = false}) async {
+    if ((_loadingAccounts && !reset) || _tabs.index != 2) return;
+    if (!reset && _accountCursor == null && _accountResults.isNotEmpty) return;
+    final generation = reset
+        ? ++_accountSearchGeneration
+        : _accountSearchGeneration;
+    final query = _accountSearchController.text.trim();
+    final cursor = reset ? null : _accountCursor;
+    setState(() {
+      _loadingAccounts = true;
+      _accountSearchError = null;
+      if (reset) {
+        _accountResults = const [];
+        _accountCursor = null;
+      }
+    });
     try {
-      await _chat.openDirect(number);
-      if (mounted) setState(() => _localError = null);
+      final page = await _chat.searchAccounts(query: query, cursor: cursor);
+      if (!mounted || generation != _accountSearchGeneration) return;
+      final existing = _accountResults
+          .map((account) => account.pilotNumber)
+          .toSet();
+      setState(() {
+        _accountResults = [
+          ..._accountResults,
+          ...page.accounts.where(
+            (account) => !existing.contains(account.pilotNumber),
+          ),
+        ];
+        _accountCursor = page.nextCursor;
+      });
+    } on Object catch (error) {
+      if (!mounted || generation != _accountSearchGeneration) return;
+      setState(() => _accountSearchError = _errorText(error));
+    } finally {
+      if (mounted && generation == _accountSearchGeneration) {
+        setState(() => _loadingAccounts = false);
+      }
+    }
+  }
+
+  Future<void> _selectRecipient(ChatAccount account) async {
+    _accountSearchTimer?.cancel();
+    _accountSearchGeneration++;
+    _loadingAccounts = false;
+    setState(() {
+      _selectedRecipient = account;
+      _localError = null;
+      _accountSearchError = null;
+    });
+    try {
+      await _chat.openDirect(account.pilotNumber);
     } on Object catch (error) {
       if (mounted) setState(() => _localError = _errorText(error));
     }
+  }
+
+  Future<void> _changeRecipient() async {
+    setState(() {
+      _selectedRecipient = null;
+      _localError = null;
+    });
+    await _chat.disconnect();
+    if (mounted && _tabs.index == 2) await _loadAccounts(reset: true);
   }
 
   String _errorText(Object error) {
@@ -145,6 +240,7 @@ class _ChatPageState extends State<_ChatPage>
     final code = error is ChatException ? error.code : _chat.lastError;
     return switch (code) {
       'pilot_not_found' => l10n.chatPilotNotFound,
+      'account_search_query_too_short' => l10n.chatSearchMinimum,
       'rate_limited' => l10n.chatRateLimited,
       'invalid_request' || 'invalid_message' => l10n.chatInvalidMessage,
       'chat_disconnected' => l10n.chatConnecting,
@@ -154,10 +250,9 @@ class _ChatPageState extends State<_ChatPage>
 
   Future<void> _send() async {
     if (_sending) return;
-    if (_tabs.index == 2 &&
-        int.tryParse(_directController.text) != _chat.pilotNumber) {
+    if (_tabs.index == 2 && _selectedRecipient == null) {
       setState(
-        () => _localError = AppLocalizations.of(context).chatInvalidPilotNumber,
+        () => _localError = AppLocalizations.of(context).chatSelectRecipient,
       );
       return;
     }
@@ -184,10 +279,15 @@ class _ChatPageState extends State<_ChatPage>
     final user = ParaBeaconAccountService.instance.user;
     final myPilotNumber = user?.pilotNumber;
     final connected = _chat.state == ChatConnectionState.connected;
+    final selectedRecipient = _selectedRecipient;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.chatTitle),
+        title: Text(
+          _tabs.index == 2 && selectedRecipient != null
+              ? selectedRecipient.title
+              : l10n.chatTitle,
+        ),
         bottom: TabBar(
           controller: _tabs,
           tabs: [
@@ -207,62 +307,9 @@ class _ChatPageState extends State<_ChatPage>
               title: Text(l10n.chatChannelNumber(_channelFilter)),
               subtitle: Text(l10n.chatUsesLiveTrackingFilter),
             ),
-          if (_tabs.index == 2)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _directController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(6),
-                      ],
-                      decoration: InputDecoration(
-                        labelText: l10n.chatPilotNumber,
-                        hintText: '123456',
-                        border: const OutlineInputBorder(),
-                      ),
-                      onChanged: (_) => setState(() {}),
-                      onSubmitted: (_) => _openDirect(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: _openDirect,
-                    child: Text(l10n.chatOpenConversation),
-                  ),
-                ],
-              ),
-            ),
-          if (_tabs.index == 2 &&
-              _chat.scope == 'direct' &&
-              int.tryParse(_directController.text) == _chat.pilotNumber)
-            ListTile(
-              dense: true,
-              leading: Icon(
-                _chat.partnerSharingLocation == true
-                    ? Icons.location_on_outlined
-                    : _chat.partnerSharingLocation == false
-                    ? Icons.location_off_outlined
-                    : Icons.location_searching,
-                color: _chat.partnerSharingLocation == true
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              title: Text(
-                _chat.partnerSharingLocation == true
-                    ? l10n.chatPartnerSharingLocation
-                    : _chat.partnerSharingLocation == false
-                    ? l10n.chatPartnerNotSharingLocation
-                    : l10n.chatCheckingLocationStatus,
-              ),
-            ),
-          if (_tabs.index == 2 &&
-              _chat.scope == 'direct' &&
-              int.tryParse(_directController.text) == _chat.pilotNumber)
+          if (_tabs.index == 2 && user != null)
+            _buildDirectPicker(context, l10n),
+          if (_tabs.index == 2 && selectedRecipient != null)
             ListTile(
               dense: true,
               leading: Icon(
@@ -295,6 +342,8 @@ class _ChatPageState extends State<_ChatPage>
             ),
           if (user == null)
             Expanded(child: Center(child: Text(l10n.chatSignInRequired)))
+          else if (_tabs.index == 2 && selectedRecipient == null)
+            Expanded(child: _buildAccountList(context, l10n))
           else
             Expanded(
               child: _chat.messages.isEmpty
@@ -317,48 +366,151 @@ class _ChatPageState extends State<_ChatPage>
                       },
                     ),
             ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      minLines: 1,
-                      maxLines: 4,
-                      maxLength: 1000,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: InputDecoration(
-                        hintText: l10n.chatMessageHint,
-                        border: const OutlineInputBorder(),
-                        counterText: '',
+          if (user != null && (_tabs.index != 2 || selectedRecipient != null))
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        minLines: 1,
+                        maxLines: 4,
+                        maxLength: 1000,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          hintText: l10n.chatMessageHint,
+                          border: const OutlineInputBorder(),
+                          counterText: '',
+                        ),
+                        onSubmitted: (_) => _send(),
                       ),
-                      onSubmitted: (_) => _send(),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    tooltip: l10n.chatSend,
-                    onPressed: connected && user != null && !_sending
-                        ? _send
-                        : null,
-                    icon: _sending
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      tooltip: l10n.chatSend,
+                      onPressed: connected && !_sending ? _send : null,
+                      icon: _sending
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDirectPicker(BuildContext context, AppLocalizations l10n) {
+    final selected = _selectedRecipient;
+    if (selected != null) {
+      return Card(
+        margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        child: ListTile(
+          leading: CircleAvatar(
+            child: Text(selected.title.substring(0, 1).toUpperCase()),
+          ),
+          title: Text(
+            selected.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text('@${selected.username}'),
+          trailing: IconButton(
+            tooltip: l10n.chatChangeRecipient,
+            onPressed: _changeRecipient,
+            icon: const Icon(Icons.person_search_outlined),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: TextField(
+        controller: _accountSearchController,
+        textInputAction: TextInputAction.search,
+        autocorrect: false,
+        decoration: InputDecoration(
+          labelText: l10n.chatSearchAccounts,
+          hintText: l10n.chatSearchAccountsHint,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _accountSearchController.text.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: l10n.clear,
+                  onPressed: () {
+                    _accountSearchController.clear();
+                    _scheduleAccountSearch('');
+                  },
+                  icon: const Icon(Icons.close),
+                ),
+          border: const OutlineInputBorder(),
+        ),
+        onChanged: _scheduleAccountSearch,
+      ),
+    );
+  }
+
+  Widget _buildAccountList(BuildContext context, AppLocalizations l10n) {
+    if (_accountResults.isEmpty && _loadingAccounts) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_accountResults.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Text(
+            _accountSearchError ?? l10n.chatNoAccountsFound,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+      controller: _accountResultsController,
+      itemCount:
+          _accountResults.length +
+          (_accountCursor != null || _loadingAccounts ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= _accountResults.length) {
+          return const Padding(
+            padding: EdgeInsets.all(12),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+        final account = _accountResults[index];
+        return ListTile(
+          leading: CircleAvatar(
+            child: Text(account.title.substring(0, 1).toUpperCase()),
+          ),
+          title: Text(
+            account.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: account.displayName.isNotEmpty
+              ? Text('@${account.username}')
+              : null,
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _selectRecipient(account),
+        );
+      },
     );
   }
 
@@ -418,7 +570,7 @@ class _ChatMessageTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${message.senderName} · ${message.senderPilotNumber.toString().padLeft(6, '0')}',
+                  message.senderName,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w700,

@@ -1052,6 +1052,42 @@ abstract class AppLocalizations {
   /// **'Pilot number'**
   String get chatPilotNumber;
 
+  /// No description provided for @chatSearchAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a pilot'**
+  String get chatSearchAccounts;
+
+  /// No description provided for @chatSearchAccountsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or username'**
+  String get chatSearchAccountsHint;
+
+  /// No description provided for @chatSearchMinimum.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least 2 characters to search.'**
+  String get chatSearchMinimum;
+
+  /// No description provided for @chatNoAccountsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No pilots found.'**
+  String get chatNoAccountsFound;
+
+  /// No description provided for @chatChangeRecipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another pilot'**
+  String get chatChangeRecipient;
+
+  /// No description provided for @chatSelectRecipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a pilot before sending a private message.'**
+  String get chatSelectRecipient;
+
   /// No description provided for @chatChannelNumber.
   ///
   /// In en, this message translates to:

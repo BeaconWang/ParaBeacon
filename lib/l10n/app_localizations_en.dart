@@ -527,6 +527,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatPilotNumber => 'Pilot number';
 
   @override
+  String get chatSearchAccounts => 'Find a pilot';
+
+  @override
+  String get chatSearchAccountsHint => 'Search by name or username';
+
+  @override
+  String get chatSearchMinimum => 'Enter at least 2 characters to search.';
+
+  @override
+  String get chatNoAccountsFound => 'No pilots found.';
+
+  @override
+  String get chatChangeRecipient => 'Choose another pilot';
+
+  @override
+  String get chatSelectRecipient =>
+      'Choose a pilot before sending a private message.';
+
+  @override
   String chatChannelNumber(String number) {
     return 'Channel $number';
   }

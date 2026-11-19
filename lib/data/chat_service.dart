@@ -13,6 +13,49 @@ import 'user_agent_settings.dart';
 enum ChatConnectionState { disconnected, connecting, connected, reconnecting }
 
 @immutable
+class ChatAccount {
+  const ChatAccount({
+    required this.pilotNumber,
+    required this.username,
+    required this.displayName,
+  });
+
+  final int pilotNumber;
+  final String username;
+  final String displayName;
+
+  String get title => displayName.isNotEmpty ? displayName : username;
+
+  static ChatAccount? fromJson(Object? raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    final pilotNumber = raw['pilot_number'];
+    final username = raw['username'];
+    final displayName = raw['display_name'] ?? '';
+    if (pilotNumber is! int ||
+        pilotNumber < 100000 ||
+        pilotNumber > 999999 ||
+        username is! String ||
+        username.trim().isEmpty ||
+        displayName is! String) {
+      return null;
+    }
+    return ChatAccount(
+      pilotNumber: pilotNumber,
+      username: username.trim(),
+      displayName: displayName.trim(),
+    );
+  }
+}
+
+@immutable
+class ChatAccountPage {
+  const ChatAccountPage({required this.accounts, this.nextCursor});
+
+  final List<ChatAccount> accounts;
+  final String? nextCursor;
+}
+
+@immutable
 class ChatMessage {
   const ChatMessage({
     required this.id,
@@ -291,6 +334,51 @@ class ChatService extends ChangeNotifier {
       _notify();
       rethrow;
     }
+  }
+
+  Future<ChatAccountPage> searchAccounts({
+    String query = '',
+    String? cursor,
+    int limit = 30,
+  }) async {
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.isNotEmpty && normalizedQuery.runes.length < 2) {
+      throw const ChatException('account_search_query_too_short');
+    }
+    final parameters = <String, String>{
+      'limit': limit.toString(),
+      if (normalizedQuery.isNotEmpty) 'q': normalizedQuery,
+      if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+    };
+    final uri = _apiBase
+        .resolve('/api/v1/chat/accounts')
+        .replace(queryParameters: parameters);
+    final response = await _sendRequest(
+      'GET',
+      uri,
+    ).timeout(const Duration(seconds: 12));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ChatException('accounts_http_${response.statusCode}');
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic> || decoded['accounts'] is! List) {
+      throw const ChatException('invalid_accounts_response');
+    }
+    final rawAccounts = decoded['accounts'] as List<dynamic>;
+    final accounts = rawAccounts
+        .map(ChatAccount.fromJson)
+        .whereType<ChatAccount>()
+        .toList(growable: false);
+    final nextCursor = decoded['next_cursor'];
+    if (nextCursor != null && nextCursor is! String) {
+      throw const ChatException('invalid_accounts_response');
+    }
+    return ChatAccountPage(
+      accounts: accounts,
+      nextCursor: nextCursor is String && nextCursor.isNotEmpty
+          ? nextCursor
+          : null,
+    );
   }
 
   Future<http.Response> _sendRequest(String method, Uri uri) async {

@@ -496,6 +496,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatPilotNumber => '飞行员编号';
 
   @override
+  String get chatSearchAccounts => '查找飞行员';
+
+  @override
+  String get chatSearchAccountsHint => '按姓名或用户名搜索';
+
+  @override
+  String get chatSearchMinimum => '请输入至少 2 个字符进行搜索。';
+
+  @override
+  String get chatNoAccountsFound => '没有找到飞行员。';
+
+  @override
+  String get chatChangeRecipient => '选择其他飞行员';
+
+  @override
+  String get chatSelectRecipient => '请先选择一位飞行员，再发送私聊消息。';
+
+  @override
   String chatChannelNumber(String number) {
     return '频道 $number';
   }

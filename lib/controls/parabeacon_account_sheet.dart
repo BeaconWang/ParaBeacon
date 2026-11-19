@@ -268,13 +268,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  child: Icon(
-                    PilotAvatar.iconFor(user?.avatarId ?? 0),
-                    size: 30,
-                  ),
-                ),
+                PilotAvatarPicture(avatarId: user?.avatarId ?? 0, size: 60),
                 const SizedBox(height: 12),
                 Text(
                   user?.username ?? l10n.accountSignedIn,
@@ -310,7 +304,10 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                       ChoiceChip(
                         key: ValueKey('account-avatar-$avatarId'),
                         tooltip: l10n.accountIconChoice(avatarId + 1),
-                        avatar: Icon(PilotAvatar.iconFor(avatarId), size: 20),
+                        avatar: PilotAvatarPicture(
+                          avatarId: avatarId,
+                          size: 24,
+                        ),
                         label: Text(l10n.accountIconChoice(avatarId + 1)),
                         selected: user?.avatarId == avatarId,
                         onSelected: service.isBusy || _savingAvatar

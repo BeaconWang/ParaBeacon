@@ -34,7 +34,7 @@ class ChatConversationTile extends StatelessWidget {
       leading: Stack(
         clipBehavior: Clip.none,
         children: [
-          CircleAvatar(child: Icon(PilotAvatar.iconFor(account.avatarId))),
+          PilotAvatarPicture(avatarId: account.avatarId, size: 40),
           Positioned(
             right: -1,
             bottom: -1,

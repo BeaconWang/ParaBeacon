@@ -584,9 +584,7 @@ class _ChatPageState extends State<_ChatPage>
       return Card(
         margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
         child: ListTile(
-          leading: CircleAvatar(
-            child: Icon(PilotAvatar.iconFor(selected.avatarId)),
-          ),
+          leading: PilotAvatarPicture(avatarId: selected.avatarId, size: 40),
           title: Text(
             selected.title,
             maxLines: 1,
@@ -762,14 +760,11 @@ class _ChatMessageTile extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircleAvatar(
-                      radius: 9,
+                    PilotAvatarPicture(
+                      avatarId: message.senderAvatarId,
+                      size: 18,
                       backgroundColor:
                           theme.colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        PilotAvatar.iconFor(message.senderAvatarId),
-                        size: 12,
-                      ),
                     ),
                     const SizedBox(width: 5),
                     Text(

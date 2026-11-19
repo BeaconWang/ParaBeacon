@@ -53,9 +53,10 @@ class LivePilotMapMarker extends StatelessWidget {
                 Container(
                   width: 38,
                   height: 38,
+                  padding: const EdgeInsets.all(2.5),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(11),
                     border: Border.all(color: color, width: 2.5),
                     boxShadow: const [
                       BoxShadow(
@@ -65,17 +66,11 @@ class LivePilotMapMarker extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Container(
-                    margin: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.14),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      PilotAvatar.iconFor(avatarId),
-                      size: 21,
-                      color: color,
-                    ),
+                  child: PilotAvatarPicture(
+                    avatarId: avatarId,
+                    size: 28,
+                    backgroundColor: color.withValues(alpha: 0.14),
+                    iconColor: color,
                   ),
                 ),
                 if (headingDegrees != null && headingDegrees!.isFinite)

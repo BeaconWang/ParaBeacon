@@ -926,6 +926,24 @@ abstract class AppLocalizations {
   /// **'Choose profile image'**
   String get accountChangeProfileImage;
 
+  /// No description provided for @accountCropProfileImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile image'**
+  String get accountCropProfileImage;
+
+  /// No description provided for @accountCropInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to position the image and pinch or use two fingers to zoom.'**
+  String get accountCropInstructions;
+
+  /// No description provided for @accountCropAndUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop and upload'**
+  String get accountCropAndUpload;
+
   /// No description provided for @accountRemoveProfileImage.
   ///
   /// In en, this message translates to:
@@ -947,7 +965,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountInvalidProfileImage.
   ///
   /// In en, this message translates to:
-  /// **'Choose a valid JPEG or PNG image under 8 MB.'**
+  /// **'Choose a supported image under 32 MB and 12 megapixels.'**
   String get accountInvalidProfileImage;
 
   /// No description provided for @accountSignOut.

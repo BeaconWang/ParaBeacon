@@ -207,6 +207,7 @@ class ChatService extends ChangeNotifier {
   }) : _account = accountService,
        _http = UserAgentHttpClient(innerClient: httpClient) {
     _ownsHttpClient = httpClient == null;
+    _lastAccountProfileImageUrl = _account.user?.profileImageUrl;
     _account.addListener(_onAccountChanged);
   }
 
@@ -245,10 +246,18 @@ class ChatService extends ChangeNotifier {
   Timer? _stableTimer;
   Future<void>? _historyFuture;
   int _historyEpoch = -1;
+  String? _lastAccountProfileImageUrl;
 
   Uri get _apiBase => ParaBeaconServerConfig.apiBaseUri;
 
   void _onAccountChanged() {
+    final currentProfileImageUrl = _account.user?.profileImageUrl;
+    final profileImageChanged =
+        currentProfileImageUrl != _lastAccountProfileImageUrl;
+    _lastAccountProfileImageUrl = currentProfileImageUrl;
+    if (profileImageChanged && _desiredConnection && _scope != 'presence') {
+      unawaited(loadHistory().catchError((Object _) {}));
+    }
     if (!_account.isSignedIn) {
       if (_desiredConnection) unawaited(disconnect());
       return;

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:file_picker/file_picker.dart';
@@ -8,6 +9,7 @@ import '../data/parabeacon_account_service.dart';
 import '../data/pilot_avatar.dart';
 import '../data/live_tracking_service.dart' as server_tracking;
 import '../l10n/app_localizations.dart';
+import 'profile_image_crop_page.dart';
 
 Future<void> showParaBeaconAccountSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -112,14 +114,24 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     final bytes = result.files.single.bytes;
     if (bytes == null ||
         bytes.isEmpty ||
-        bytes.length > ParaBeaconAccountService.maxProfileImageUploadBytes) {
+        bytes.length > ParaBeaconAccountService.maxProfileImageSourceBytes) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.accountInvalidProfileImage)));
       return;
     }
+    final croppedBytes = await ProfileImageCropPage.edit(
+      context,
+      imageBytes: Uint8List.fromList(bytes),
+      title: l10n.accountCropProfileImage,
+      instructions: l10n.accountCropInstructions,
+      cropAction: l10n.accountCropAndUpload,
+      cancelLabel: l10n.cancel,
+      invalidImageMessage: l10n.accountInvalidProfileImage,
+    );
+    if (!mounted || croppedBytes == null) return;
     setState(() => _savingProfileImage = true);
-    final saved = await service.uploadProfileImage(bytes: bytes);
+    final saved = await service.uploadProfileImage(bytes: croppedBytes);
     if (!mounted) return;
     setState(() => _savingProfileImage = false);
     if (saved) {

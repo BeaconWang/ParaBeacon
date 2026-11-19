@@ -433,6 +433,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountChangeProfileImage => '选择个人资料图片';
 
   @override
+  String get accountCropProfileImage => '编辑个人资料图片';
+
+  @override
+  String get accountCropInstructions => '拖动图片调整位置，双指捏合缩放。';
+
+  @override
+  String get accountCropAndUpload => '裁剪并上传';
+
+  @override
   String get accountRemoveProfileImage => '移除个人资料图片';
 
   @override
@@ -442,7 +451,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountProfileImageRemoved => '个人资料图片已移除。';
 
   @override
-  String get accountInvalidProfileImage => '请选择 8 MB 以内的有效 JPEG 或 PNG 图片。';
+  String get accountInvalidProfileImage =>
+      '请选择受支持的图片，文件需小于 32 MB 且不超过 1200 万像素。';
 
   @override
   String get accountSignOut => '退出登录';

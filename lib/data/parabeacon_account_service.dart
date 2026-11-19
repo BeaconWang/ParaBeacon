@@ -702,6 +702,7 @@ class ParaBeaconAccountService extends ChangeNotifier
   }
 
   static const int maxProfileImageUploadBytes = 8 * 1024 * 1024;
+  static const int maxProfileImageSourceBytes = 32 * 1024 * 1024;
 
   Future<bool> uploadProfileImage({required List<int> bytes}) async {
     final token = _token;
@@ -725,7 +726,7 @@ class ParaBeaconAccountService extends ChangeNotifier
               http.MultipartFile.fromBytes(
                 'image',
                 bytes,
-                filename: 'profile-image.jpg',
+                filename: 'profile-image.png',
               ),
             );
       final streamed = await _client

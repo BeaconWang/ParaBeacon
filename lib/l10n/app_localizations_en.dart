@@ -455,6 +455,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountChangeProfileImage => 'Choose profile image';
 
   @override
+  String get accountCropProfileImage => 'Edit profile image';
+
+  @override
+  String get accountCropInstructions =>
+      'Drag to position the image and pinch or use two fingers to zoom.';
+
+  @override
+  String get accountCropAndUpload => 'Crop and upload';
+
+  @override
   String get accountRemoveProfileImage => 'Remove profile image';
 
   @override
@@ -465,7 +475,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountInvalidProfileImage =>
-      'Choose a valid JPEG or PNG image under 8 MB.';
+      'Choose a supported image under 32 MB and 12 megapixels.';
 
   @override
   String get accountSignOut => 'Sign out';

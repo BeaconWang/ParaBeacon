@@ -35,6 +35,7 @@ class _ChatPageState extends State<_ChatPage>
   late TabController _tabs;
   int _channelNumber =
       ParaBeaconAccountService.instance.user?.channelNumber ?? 0;
+  String? _lastProfileImageUrl;
 
   String _scopeForTab(int index, {int? channelNumber}) {
     final scopes = chatScopesForChannel(channelNumber ?? _channelNumber);
@@ -70,7 +71,9 @@ class _ChatPageState extends State<_ChatPage>
       length: chatScopesForChannel(_channelNumber).length,
       vsync: this,
     )..addListener(_onTabChanged);
-    ParaBeaconAccountService.instance.addListener(_onAccountChannelChanged);
+    final account = ParaBeaconAccountService.instance;
+    _lastProfileImageUrl = account.user?.profileImageUrl;
+    account.addListener(_onAccountChannelChanged);
     _accountResultsController.addListener(_onAccountResultsScrolled);
     _chat.addListener(_onChatChanged);
     _partnerStatusTimer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -138,12 +141,15 @@ class _ChatPageState extends State<_ChatPage>
   }
 
   void _onAccountChannelChanged() {
-    final next = ParaBeaconAccountService.instance.user?.channelNumber ?? 0;
+    final user = ParaBeaconAccountService.instance.user;
+    final next = user?.channelNumber ?? 0;
+    final profileImageChanged = user?.profileImageUrl != _lastProfileImageUrl;
+    _lastProfileImageUrl = user?.profileImageUrl;
     if (_channelNumber == next) {
       if (mounted) setState(() {});
       if (_scopeForTab(_tabs.index) == 'direct' &&
           _selectedRecipient == null &&
-          _accountResults.isEmpty &&
+          (profileImageChanged || _accountResults.isEmpty) &&
           ParaBeaconAccountService.instance.isSignedIn) {
         unawaited(_loadConversations(reset: true));
       }

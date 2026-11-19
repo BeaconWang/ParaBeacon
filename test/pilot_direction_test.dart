@@ -8,6 +8,38 @@ import 'package:parabeacon/data/pilot_course.dart';
 import 'package:parabeacon/data/xcontest_live_tracking_service.dart';
 
 void main() {
+  testWidgets('rotates the sharp direction frame with pilot course', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: PilotDirectionFrame(
+            headingDegrees: 90,
+            mapRotationDegrees: -30,
+            color: Colors.blue,
+          ),
+        ),
+      ),
+    );
+
+    final transform = tester.widget<Transform>(
+      find.descendant(
+        of: find.byType(PilotDirectionFrame),
+        matching: find.byType(Transform),
+      ),
+    );
+    expect(transform.transform.entry(0, 0), closeTo(0.5, 1e-10));
+    expect(transform.transform.entry(1, 0), closeTo(0.8660254, 1e-6));
+    expect(
+      find.descendant(
+        of: find.byType(PilotDirectionFrame),
+        matching: find.byType(CustomPaint),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('draws a direction arrow over a public pilot marker', (
     tester,
   ) async {

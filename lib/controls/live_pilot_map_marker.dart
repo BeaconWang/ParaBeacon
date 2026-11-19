@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/pilot_avatar.dart';
-import 'pilot_direction_arrow.dart';
+import '../data/pilot_course.dart';
 
 /// Compact participant marker for a pilot sharing a live flight location.
 /// The paraglider glyph's center is the geographic anchor; identity and flight
@@ -19,8 +19,8 @@ class LivePilotMapMarker extends StatelessWidget {
   });
 
   static const double markerWidth = 160;
-  static const double markerHeight = 84;
-  static const double glyphCenterFromTop = 19;
+  static const double markerHeight = 96;
+  static const double glyphCenterFromTop = 26;
   static const Alignment markerAlignment = Alignment(
     0,
     (2 * glyphCenterFromTop / markerHeight) - 1,
@@ -50,13 +50,19 @@ class LivePilotMapMarker extends StatelessWidget {
               alignment: Alignment.center,
               clipBehavior: Clip.none,
               children: [
+                if (headingDegrees != null && headingDegrees!.isFinite)
+                  PilotDirectionFrame(
+                    headingDegrees: headingDegrees!,
+                    mapRotationDegrees: screenRotationDegrees,
+                    color: color,
+                  ),
                 Container(
                   width: 38,
                   height: 38,
                   padding: const EdgeInsets.all(2.5),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(11),
+                    shape: BoxShape.circle,
                     border: Border.all(color: color, width: 2.5),
                     boxShadow: const [
                       BoxShadow(
@@ -66,24 +72,20 @@ class LivePilotMapMarker extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: PilotAvatarPicture(
-                    avatarId: avatarId,
-                    size: 28,
-                    backgroundColor: color.withValues(alpha: 0.14),
-                    iconColor: color,
-                  ),
-                ),
-                if (headingDegrees != null && headingDegrees!.isFinite)
-                  Positioned(
-                    top: -3,
-                    child: PilotDirectionArrow(
-                      headingDegrees: headingDegrees!,
-                      mapRotationDegrees: screenRotationDegrees,
-                      color: color,
+                  child: ClipOval(
+                    child: ColoredBox(
+                      color: color.withValues(alpha: 0.14),
+                      child: Icon(
+                        PilotAvatar.iconFor(avatarId),
+                        size: 21,
+                        color: color,
+                      ),
                     ),
                   ),
+                ),
               ],
             ),
+
             const SizedBox(height: 3),
             _buildBadge(
               child: Row(
@@ -136,4 +138,86 @@ class LivePilotMapMarker extends StatelessWidget {
     ),
     child: child,
   );
+}
+
+class PilotDirectionFrame extends StatelessWidget {
+  const PilotDirectionFrame({
+    required this.headingDegrees,
+    required this.mapRotationDegrees,
+    required this.color,
+    super.key,
+  });
+
+  final double headingDegrees;
+  final double mapRotationDegrees;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Transform.rotate(
+    angle: PilotCourse.screenRadians(
+      courseDegrees: headingDegrees,
+      mapRotationDegrees: mapRotationDegrees,
+    ),
+    child: CustomPaint(
+      size: const Size.square(frameSize),
+      painter: _PilotDirectionFramePainter(color: color),
+    ),
+  );
+
+  static const double frameSize = 52;
+}
+
+class _PilotDirectionFramePainter extends CustomPainter {
+  const _PilotDirectionFramePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scaleX = size.width / PilotDirectionFrame.frameSize;
+    final scaleY = size.height / PilotDirectionFrame.frameSize;
+    canvas.save();
+    canvas.scale(scaleX, scaleY);
+    final corners = Path()
+      ..moveTo(20, 5)
+      ..lineTo(8, 5)
+      ..lineTo(8, 18)
+      ..moveTo(32, 5)
+      ..lineTo(44, 5)
+      ..lineTo(44, 18)
+      ..moveTo(44, 34)
+      ..lineTo(44, 47)
+      ..lineTo(32, 47)
+      ..moveTo(20, 47)
+      ..lineTo(8, 47)
+      ..lineTo(8, 34);
+    final outline = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.5
+      ..strokeCap = StrokeCap.square
+      ..strokeJoin = StrokeJoin.miter;
+    final accent = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.square
+      ..strokeJoin = StrokeJoin.miter;
+    canvas.drawPath(corners, outline);
+    canvas.drawPath(corners, accent);
+
+    final arrowTip = Path()
+      ..moveTo(26, 0)
+      ..lineTo(20.5, 8)
+      ..lineTo(26, 6)
+      ..lineTo(31.5, 8)
+      ..close();
+    canvas.drawPath(arrowTip, outline..style = PaintingStyle.stroke);
+    canvas.drawPath(arrowTip, accent..style = PaintingStyle.fill);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_PilotDirectionFramePainter oldDelegate) =>
+      oldDelegate.color != color;
 }

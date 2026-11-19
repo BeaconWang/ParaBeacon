@@ -427,6 +427,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountDisplayNameSaved => '显示名称已保存。';
 
   @override
+  String get accountProfileDetailsButton => '个人资料';
+
+  @override
+  String get accountProfileDetailsTitle => '我的资料';
+
+  @override
+  String get accountProfileSignInRequired => '请登录以查看个人资料。';
+
+  @override
+  String get accountProfileName => '名字';
+
+  @override
+  String get accountProfileIntroduction => '简介';
+
+  @override
+  String get accountProfileGender => '性别';
+
+  @override
+  String get accountProfileBirthday => '生日';
+
+  @override
+  String get accountProfileNotSet => '未设置';
+
+  @override
+  String get accountGenderMale => '男';
+
+  @override
+  String get accountGenderFemale => '女';
+
+  @override
+  String get accountGenderOther => '其他';
+
+  @override
+  String get accountGenderPreferNotToSay => '不愿透露';
+
+  @override
+  String get accountIntroductionHint => '添加简短介绍';
+
+  @override
+  String get accountProfileFieldSaved => '个人资料已更新。';
+
+  @override
+  String get accountProfileFieldInvalid => '请检查资料内容后重试。';
+
+  @override
   String get accountProfileImage => '个人资料图片';
 
   @override

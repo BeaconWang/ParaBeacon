@@ -18,10 +18,15 @@ abstract interface class AccountSessionStore {
 }
 
 class ParaBeaconUser {
+  static const genders = {'', 'male', 'female', 'other', 'prefer_not_to_say'};
+
   const ParaBeaconUser({
     required this.id,
     required this.username,
     this.displayName = '',
+    this.introduction = '',
+    this.gender = '',
+    this.birthday = '',
     this.pilotNumber,
     this.channelNumber = 0,
     this.avatarId = 0,
@@ -33,6 +38,9 @@ class ParaBeaconUser {
   final String id;
   final String username;
   final String displayName;
+  final String introduction;
+  final String gender;
+  final String birthday;
   final int? pilotNumber;
   final int channelNumber;
   final int avatarId;
@@ -60,6 +68,18 @@ class ParaBeaconUser {
       return null;
     }
 
+    final rawIntroduction = value['introduction'] ?? '';
+    final rawGender = value['gender'] ?? '';
+    final rawBirthday = value['birthday'] ?? '';
+    if (rawIntroduction is! String ||
+        rawIntroduction.runes.length > 200 ||
+        rawIntroduction.contains('\u0000') ||
+        rawGender is! String ||
+        !genders.contains(rawGender) ||
+        rawBirthday is! String ||
+        !isValidBirthday(rawBirthday)) {
+      return null;
+    }
     final rawPilotNumber = value['pilot_number'];
     final rawChannelNumber = value['channel_number'] ?? 0;
     final rawAvatarId = value['avatar_id'] ?? 0;
@@ -90,6 +110,9 @@ class ParaBeaconUser {
       id: id,
       username: username,
       displayName: normalizedDisplayName,
+      introduction: rawIntroduction.trim(),
+      gender: rawGender,
+      birthday: rawBirthday,
       pilotNumber: rawPilotNumber as int?,
       channelNumber: rawChannelNumber,
       avatarId: rawAvatarId,
@@ -101,10 +124,31 @@ class ParaBeaconUser {
     );
   }
 
+  static bool isValidBirthday(String value) {
+    if (value.isEmpty) return true;
+    if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) return false;
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null ||
+        parsed.year < 1900 ||
+        parsed.toIso8601String().substring(0, 10) != value) {
+      return false;
+    }
+    final today = DateTime.now().toUtc();
+    final todayDate = DateTime.utc(today.year, today.month, today.day);
+    return !DateTime.utc(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+    ).isAfter(todayDate);
+  }
+
   Map<String, Object?> toJson() => {
     'id': id,
     'username': username,
-    if (displayName.isNotEmpty) 'display_name': displayName,
+    'display_name': displayName,
+    'introduction': introduction,
+    'gender': gender,
+    'birthday': birthday,
     if (pilotNumber != null) 'pilot_number': pilotNumber,
     'channel_number': channelNumber,
     'avatar_id': avatarId,
@@ -616,6 +660,92 @@ class ParaBeaconAccountService extends ChangeNotifier
             ? 'accountServiceUnavailable'
             : response.statusCode == 400
             ? 'accountInvalidDisplayName'
+            : 'accountRequestFailed';
+        return false;
+      }
+      final updatedUser = ParaBeaconUser.fromJson(
+        _decodeMap(response.body)?['user'],
+      );
+      if (updatedUser == null || updatedUser.id != _user?.id) {
+        _errorCode = 'accountRequestFailed';
+        return false;
+      }
+      _user = updatedUser;
+      _errorCode = null;
+      await _store.write(_userKey, jsonEncode(updatedUser.toJson()));
+      notifyListeners();
+      return true;
+    } on TimeoutException {
+      _errorCode = 'accountConnectionFailure';
+      return false;
+    } on http.ClientException {
+      _errorCode = 'accountConnectionFailure';
+      return false;
+    } on Exception {
+      _errorCode = 'accountServiceUnavailable';
+      return false;
+    } finally {
+      _endRequest();
+    }
+  }
+
+  Future<bool> updateProfileDetails({
+    String? introduction,
+    String? gender,
+    String? birthday,
+  }) async {
+    final token = _token;
+    if (!isSignedIn || token == null || isBusy) {
+      _errorCode = 'accountServiceUnavailable';
+      notifyListeners();
+      return false;
+    }
+    final currentUser = _user;
+    final updates = <String, String>{};
+    if (introduction != null) {
+      final normalized = introduction.trim();
+      if (normalized.runes.length > 200 || normalized.contains('\u0000')) {
+        _errorCode = 'accountInvalidProfileDetails';
+        notifyListeners();
+        return false;
+      }
+      if (normalized != currentUser?.introduction) {
+        updates['introduction'] = normalized;
+      }
+    }
+    if (gender != null) {
+      final normalized = gender.trim().toLowerCase();
+      if (!ParaBeaconUser.genders.contains(normalized)) {
+        _errorCode = 'accountInvalidProfileDetails';
+        notifyListeners();
+        return false;
+      }
+      if (normalized != currentUser?.gender) updates['gender'] = normalized;
+    }
+    if (birthday != null) {
+      if (!ParaBeaconUser.isValidBirthday(birthday)) {
+        _errorCode = 'accountInvalidProfileDetails';
+        notifyListeners();
+        return false;
+      }
+      if (birthday != currentUser?.birthday) updates['birthday'] = birthday;
+    }
+    if (updates.isEmpty) return true;
+
+    _beginRequest();
+    try {
+      final response = await _client
+          .patch(
+            _apiUri('user/profile'),
+            headers: {..._jsonHeaders, 'Authorization': 'Bearer $token'},
+            body: jsonEncode(updates),
+          )
+          .timeout(_requestTimeout);
+      if (response.statusCode != 200) {
+        _errorCode = response.statusCode >= 500
+            ? 'accountServiceUnavailable'
+            : response.statusCode == 400
+            ? 'accountInvalidProfileDetails'
             : 'accountRequestFailed';
         return false;
       }

@@ -288,6 +288,78 @@ void main() {
     expect(ParaBeaconAccountService.isValidDisplayName('Bad\nName'), isFalse);
   });
 
+  test('updates and persists introduction, gender, and birthday', () async {
+    final store = _MemorySessionStore();
+    final requests = <http.Request>[];
+    final client = MockClient((request) async {
+      requests.add(request);
+      if (request.url.path == '/api/v1/auth/login') {
+        return http.Response(
+          jsonEncode({
+            'access_token': 'details-token',
+            'expires_at': DateTime.now()
+                .add(const Duration(minutes: 10))
+                .toUtc()
+                .toIso8601String(),
+            'refresh_token': 'details-refresh-token-long-value',
+            'refresh_expires_at': null,
+            'user': _userJson,
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      expect(request.method, 'PATCH');
+      expect(request.url.path, '/api/v1/user/profile');
+      expect(jsonDecode(request.body), {
+        'introduction': 'Ridge pilot',
+        'gender': 'female',
+        'birthday': '1990-05-06',
+      });
+      return http.Response(
+        jsonEncode({
+          'user': {
+            ..._userJson,
+            'introduction': 'Ridge pilot',
+            'gender': 'female',
+            'birthday': '1990-05-06',
+          },
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    final service = ParaBeaconAccountService(
+      client: client,
+      sessionStore: store,
+    );
+    addTearDown(service.dispose);
+    expect(
+      await service.login(identifier: 'pilot_one', password: 'abc123'),
+      isTrue,
+    );
+    expect(
+      await service.updateProfileDetails(
+        introduction: ' Ridge pilot ',
+        gender: 'Female',
+        birthday: '1990-05-06',
+      ),
+      isTrue,
+    );
+    expect(service.user?.introduction, 'Ridge pilot');
+    expect(service.user?.gender, 'female');
+    expect(service.user?.birthday, '1990-05-06');
+    final stored =
+        jsonDecode(store.values['parabeacon_account_user']!)
+            as Map<String, dynamic>;
+    expect(stored['introduction'], 'Ridge pilot');
+    expect(stored['gender'], 'female');
+    expect(stored['birthday'], '1990-05-06');
+    expect(await service.updateProfileDetails(gender: 'unknown'), isFalse);
+    expect(await service.updateProfileDetails(birthday: '2035-15-55'), isFalse);
+    expect(requests, hasLength(2));
+  });
+
   test('updates and persists the account channel number', () async {
     final store = _MemorySessionStore();
     final requests = <http.Request>[];
@@ -630,6 +702,9 @@ const _userJson = {
   'id': 'user-123',
   'username': 'pilot_one',
   'display_name': 'Sky Rider',
+  'introduction': '',
+  'gender': '',
+  'birthday': '',
   'pilot_number': 123456,
   'channel_number': 0,
   'avatar_id': 0,

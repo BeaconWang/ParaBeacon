@@ -10,11 +10,12 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../data/live_tracking_service.dart' as server_tracking;
 import '../data/parabeacon_account_service.dart';
 import '../data/pilot_avatar.dart';
 import '../data/profile_image_url.dart';
-import '../data/live_tracking_service.dart' as server_tracking;
 import '../l10n/app_localizations.dart';
+import 'profile_details_page.dart';
 import 'profile_image_crop_page.dart';
 import 'profile_image_preview.dart';
 
@@ -43,13 +44,10 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmationController = TextEditingController();
-  final _displayNameController = TextEditingController();
-  final _displayNameFocus = FocusNode();
   final _passwordChangeFormKey = GlobalKey<FormState>();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmNewPasswordController = TextEditingController();
-  bool _savingDisplayName = false;
   bool _savingProfileImage = false;
   bool _changingPassword = false;
   bool _obscureCurrentPassword = true;
@@ -72,8 +70,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmationController.dispose();
-    _displayNameController.dispose();
-    _displayNameFocus.dispose();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmNewPasswordController.dispose();
@@ -173,6 +169,29 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     }
   }
 
+  Future<void> _showProfileImagePreview(
+    ParaBeaconAccountService service,
+    AppLocalizations l10n,
+  ) async {
+    final imageUrl = service.user?.profileImageUrl;
+    if (imageUrl == null) return;
+    await showProfileImagePreview(
+      context,
+      imageUrl: imageUrl,
+      title: l10n.accountProfileImage,
+      closeLabel: l10n.close,
+      changeLabel: l10n.accountChangeProfileImage,
+      resetLabel: l10n.accountResetProfileImage,
+      downloadLabel: l10n.accountDownloadProfileImage,
+      downloadingLabel: l10n.accountDownloadingProfileImage,
+      downloadSuccessLabel: l10n.accountProfileImageDownloaded,
+      downloadFailedLabel: l10n.accountProfileImageDownloadFailed,
+      onChange: () => _pickProfileImage(service, l10n),
+      onReset: () => _removeProfileImage(service, l10n),
+      onDownload: () => _downloadProfileImage(imageUrl),
+    );
+  }
+
   Future<void> _removeProfileImage(
     ParaBeaconAccountService service,
     AppLocalizations l10n,
@@ -186,23 +205,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.accountProfileImageRemoved)));
-    }
-  }
-
-  Future<void> _saveDisplayName(
-    ParaBeaconAccountService service,
-    AppLocalizations l10n,
-  ) async {
-    if (_savingDisplayName) return;
-    setState(() => _savingDisplayName = true);
-    final saved = await service.updateDisplayName(_displayNameController.text);
-    if (!mounted) return;
-    setState(() => _savingDisplayName = false);
-    if (saved) {
-      _displayNameFocus.unfocus();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.accountDisplayNameSaved)));
     }
   }
 
@@ -341,10 +343,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
   ) {
     final theme = Theme.of(context);
     final user = service.user;
-    if (!_displayNameFocus.hasFocus &&
-        _displayNameController.text != (user?.displayName ?? '')) {
-      _displayNameController.text = user?.displayName ?? '';
-    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -365,25 +363,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                           ? null
                           : user?.profileImageUrl == null
                           ? () => _pickProfileImage(service, l10n)
-                          : () => showProfileImagePreview(
-                              context,
-                              imageUrl: user!.profileImageUrl!,
-                              title: l10n.accountProfileImage,
-                              closeLabel: l10n.close,
-                              changeLabel: l10n.accountChangeProfileImage,
-                              resetLabel: l10n.accountResetProfileImage,
-                              downloadLabel: l10n.accountDownloadProfileImage,
-                              downloadingLabel:
-                                  l10n.accountDownloadingProfileImage,
-                              downloadSuccessLabel:
-                                  l10n.accountProfileImageDownloaded,
-                              downloadFailedLabel:
-                                  l10n.accountProfileImageDownloadFailed,
-                              onChange: () => _pickProfileImage(service, l10n),
-                              onReset: () => _removeProfileImage(service, l10n),
-                              onDownload: () =>
-                                  _downloadProfileImage(user.profileImageUrl!),
-                            ),
+                          : () => _showProfileImagePreview(service, l10n),
                       child: Stack(
                         clipBehavior: Clip.none,
                         children: [
@@ -452,39 +432,20 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _displayNameController,
-                        focusNode: _displayNameFocus,
-                        maxLength: 48,
-                        textCapitalization: TextCapitalization.words,
-                        textInputAction: TextInputAction.done,
-                        decoration: InputDecoration(
-                          labelText: l10n.accountDisplayName,
-                          helperText: l10n.accountDisplayNameSubtitle,
-                          prefixIcon: const Icon(Icons.badge_outlined),
-                          border: const OutlineInputBorder(),
-                        ),
-                        onSubmitted: (_) => _saveDisplayName(service, l10n),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ProfileDetailsPage(
+                        account: service,
+                        onChangeProfileImage: () =>
+                            _pickProfileImage(service, l10n),
+                        onOpenProfileImage: () =>
+                            _showProfileImagePreview(service, l10n),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      tooltip: l10n.save,
-                      onPressed: service.isBusy || _savingDisplayName
-                          ? null
-                          : () => _saveDisplayName(service, l10n),
-                      icon: _savingDisplayName
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.save_outlined),
-                    ),
-                  ],
+                  ),
+                  icon: const Icon(Icons.person_outline),
+                  label: Text(l10n.accountProfileDetailsButton),
                 ),
                 if (user?.email != null) ...[
                   const SizedBox(height: 6),

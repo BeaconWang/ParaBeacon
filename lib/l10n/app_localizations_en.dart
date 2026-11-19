@@ -449,6 +449,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDisplayNameSaved => 'Display name saved.';
 
   @override
+  String get accountProfileDetailsButton => 'Profile details';
+
+  @override
+  String get accountProfileDetailsTitle => 'My profile';
+
+  @override
+  String get accountProfileSignInRequired => 'Sign in to view your profile.';
+
+  @override
+  String get accountProfileName => 'Name';
+
+  @override
+  String get accountProfileIntroduction => 'Introduction';
+
+  @override
+  String get accountProfileGender => 'Gender';
+
+  @override
+  String get accountProfileBirthday => 'Birthday';
+
+  @override
+  String get accountProfileNotSet => 'Not set';
+
+  @override
+  String get accountGenderMale => 'Male';
+
+  @override
+  String get accountGenderFemale => 'Female';
+
+  @override
+  String get accountGenderOther => 'Other';
+
+  @override
+  String get accountGenderPreferNotToSay => 'Prefer not to say';
+
+  @override
+  String get accountIntroductionHint => 'Add a short introduction';
+
+  @override
+  String get accountProfileFieldSaved => 'Profile details updated.';
+
+  @override
+  String get accountProfileFieldInvalid =>
+      'Check this profile detail and try again.';
+
+  @override
   String get accountProfileImage => 'Profile image';
 
   @override

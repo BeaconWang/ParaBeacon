@@ -914,6 +914,96 @@ abstract class AppLocalizations {
   /// **'Display name saved.'**
   String get accountDisplayNameSaved;
 
+  /// No description provided for @accountProfileDetailsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile details'**
+  String get accountProfileDetailsButton;
+
+  /// No description provided for @accountProfileDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My profile'**
+  String get accountProfileDetailsTitle;
+
+  /// No description provided for @accountProfileSignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to view your profile.'**
+  String get accountProfileSignInRequired;
+
+  /// No description provided for @accountProfileName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get accountProfileName;
+
+  /// No description provided for @accountProfileIntroduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Introduction'**
+  String get accountProfileIntroduction;
+
+  /// No description provided for @accountProfileGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get accountProfileGender;
+
+  /// No description provided for @accountProfileBirthday.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthday'**
+  String get accountProfileBirthday;
+
+  /// No description provided for @accountProfileNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get accountProfileNotSet;
+
+  /// No description provided for @accountGenderMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get accountGenderMale;
+
+  /// No description provided for @accountGenderFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get accountGenderFemale;
+
+  /// No description provided for @accountGenderOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get accountGenderOther;
+
+  /// No description provided for @accountGenderPreferNotToSay.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer not to say'**
+  String get accountGenderPreferNotToSay;
+
+  /// No description provided for @accountIntroductionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a short introduction'**
+  String get accountIntroductionHint;
+
+  /// No description provided for @accountProfileFieldSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile details updated.'**
+  String get accountProfileFieldSaved;
+
+  /// No description provided for @accountProfileFieldInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Check this profile detail and try again.'**
+  String get accountProfileFieldInvalid;
+
   /// No description provided for @accountProfileImage.
   ///
   /// In en, this message translates to:

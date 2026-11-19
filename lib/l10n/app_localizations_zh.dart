@@ -199,10 +199,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get paraBeaconServerAddressSubtitle =>
-      '请输入公网 HTTPS 服务器源地址；本地和私有网络地址会被阻止。更换服务器前需结束当前飞行并同步待上传轨迹；不同服务器的登录状态彼此独立。保存后需重启应用才能生效。';
+      '请输入公网 HTTPS 服务器源地址；本地和私有网络地址会被阻止。更换服务器前需结束当前飞行并同步待上传轨迹；不同服务器的登录状态彼此独立。新地址会立即生效，并在重新打开应用后继续使用。';
 
   @override
-  String get paraBeaconServerAddressSaved => '服务器地址已保存。请重启 ParaBeacon 以应用设置。';
+  String get paraBeaconServerAddressSaved => '服务器地址已立即生效，并已保存供下次打开应用时使用。';
 
   @override
   String get paraBeaconServerAddressInvalid =>

@@ -15,14 +15,17 @@ void main() {
       final settings = ParaBeaconServerSettings.instance;
       await settings.load();
       final runtimeBaseUri = ParaBeaconServerConfig.apiBaseUri;
-      addTearDown(() {
-        if (ParaBeaconServerConfig.isValidUserOrigin(runtimeBaseUri)) {
-          ParaBeaconServerConfig.configureBaseUri(runtimeBaseUri);
-        }
-      });
       Future<List<InternetAddress>> publicLookup(String host) async => [
         InternetAddress.tryParse('8.8.8.8')!,
       ];
+      addTearDown(() async {
+        if (ParaBeaconServerConfig.isValidUserOrigin(runtimeBaseUri)) {
+          await settings.setServerAddress(
+            runtimeBaseUri.toString(),
+            lookup: publicLookup,
+          );
+        }
+      });
 
       expect(settings.serverAddress, runtimeBaseUri.toString());
       expect(
@@ -59,7 +62,10 @@ void main() {
       );
       expect(saved, isTrue);
       expect(settings.serverAddress, 'https://example.org');
-      expect(ParaBeaconServerConfig.apiBaseUri, runtimeBaseUri);
+      expect(
+        ParaBeaconServerConfig.apiBaseUri,
+        Uri.parse('https://example.org'),
+      );
       final preferences = await SharedPreferences.getInstance();
       expect(
         preferences.getString(ParaBeaconServerSettings.preferenceKey),

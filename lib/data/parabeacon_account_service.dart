@@ -149,6 +149,27 @@ class ParaBeaconAccountService extends ChangeNotifier
       _expiresAt == null ||
       !_expiresAt!.isAfter(DateTime.now().add(const Duration(minutes: 2)));
 
+  Future<bool> switchServer(Uri serverBaseUri) async {
+    if (isBusy ||
+        _loggingOut ||
+        !ParaBeaconServerConfig.isValidUserOrigin(serverBaseUri)) {
+      return false;
+    }
+    final nextApiBaseUri = serverBaseUri.resolve('/api/v1/');
+    if (_serverApiBaseUri == nextApiBaseUri) return true;
+
+    _serverApiBaseUri = nextApiBaseUri;
+    _loaded = false;
+    _token = null;
+    _expiresAt = null;
+    _refreshToken = null;
+    _user = null;
+    _errorCode = null;
+    notifyListeners();
+    await load();
+    return true;
+  }
+
   Future<void> load() async {
     if (_loaded || _loading) return;
     _log('Session restore started.');

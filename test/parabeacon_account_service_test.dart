@@ -219,7 +219,9 @@ void main() {
 
   test('keeps account sessions isolated between server origins', () async {
     final previousServer = ParaBeaconServerConfig.apiBaseUri;
-    ParaBeaconServerConfig.configureBaseUri(Uri.parse('https://8.8.8.8'));
+    ParaBeaconServerConfig.configureBaseUri(
+      ParaBeaconServerConfig.defaultApiBaseUri,
+    );
     addTearDown(() {
       if (ParaBeaconServerConfig.isValidUserOrigin(previousServer)) {
         ParaBeaconServerConfig.configureBaseUri(previousServer);
@@ -253,7 +255,7 @@ void main() {
     );
     addTearDown(service.dispose);
 
-    await service.load();
+    expect(await service.switchServer(Uri.parse('https://8.8.8.8')), isTrue);
     expect(service.isSignedIn, isFalse);
     expect(
       await service.login(identifier: 'pilot_one', password: 'abc123'),

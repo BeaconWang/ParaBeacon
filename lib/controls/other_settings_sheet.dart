@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../data/app_update_service.dart';
+import '../data/chat_service.dart';
 import '../data/parabeacon_account_service.dart';
 import '../data/parabeacon_server_config.dart';
 import '../data/parabeacon_server_settings.dart';
@@ -110,9 +112,19 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
         return;
       }
 
+      late final LiveTrackingConfig nextTrackingConfig;
       try {
-        await LiveTrackingConfigLoader(apiBaseUri: nextBaseUri).load();
+        nextTrackingConfig = await LiveTrackingConfigLoader(
+          apiBaseUri: nextBaseUri,
+        ).load();
       } on Object {
+        setDialogState(() {
+          saving = false;
+          errorCode = 'invalid';
+        });
+        return;
+      }
+      if (!await settings.isPublicServerAddress(value)) {
         setDialogState(() {
           saving = false;
           errorCode = 'invalid';
@@ -127,13 +139,50 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
         return;
       }
 
+      final previousBaseUri = settings.baseUri;
+      final changingServer = previousBaseUri != nextBaseUri;
+      if (changingServer) {
+        await ChatService.instance.disconnect();
+        final switched = await account.switchServer(nextBaseUri);
+        if (!switched) {
+          setDialogState(() {
+            saving = false;
+            errorCode = 'busy';
+          });
+          return;
+        }
+        if (account.isBusy || !await liveTracking.canChangeServer()) {
+          await account.switchServer(previousBaseUri);
+          setDialogState(() {
+            saving = false;
+            errorCode = 'busy';
+          });
+          return;
+        }
+      }
+
       final saved = await settings.setServerAddress(value);
       if (!saved) {
+        if (changingServer) await account.switchServer(previousBaseUri);
         setDialogState(() {
           saving = false;
           errorCode = 'invalid';
         });
         return;
+      }
+      if (changingServer) {
+        try {
+          liveTracking.configure(nextTrackingConfig);
+        } on StateError {
+          await settings.setServerAddress(previousBaseUri.toString());
+          await account.switchServer(previousBaseUri);
+          setDialogState(() {
+            saving = false;
+            errorCode = 'busy';
+          });
+          return;
+        }
+        AppUpdateService.instance.configure(nextBaseUri);
       }
       if (mounted && context.mounted) {
         Navigator.of(context).pop();

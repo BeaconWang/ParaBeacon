@@ -59,6 +59,14 @@ class ParaBeaconServerSettings extends ChangeNotifier {
     }
   }
 
+  Future<bool> isPublicServerAddress(
+    String value, {
+    ServerAddressLookup lookup = InternetAddress.lookup,
+  }) async {
+    final uri = parseAddress(value);
+    return uri != null && await _resolvesOnlyToPublicAddresses(uri, lookup);
+  }
+
   Future<bool> setServerAddress(
     String value, {
     ServerAddressLookup lookup = InternetAddress.lookup,
@@ -67,7 +75,10 @@ class ParaBeaconServerSettings extends ChangeNotifier {
     if (uri == null || !await _resolvesOnlyToPublicAddresses(uri, lookup)) {
       return false;
     }
-    if (uri == _selectedBaseUri) return true;
+    if (uri == _selectedBaseUri) {
+      ParaBeaconServerConfig.configureBaseUri(uri);
+      return true;
+    }
 
     try {
       final preferences = await SharedPreferences.getInstance();
@@ -76,6 +87,7 @@ class ParaBeaconServerSettings extends ChangeNotifier {
       return false;
     }
     _selectedBaseUri = uri;
+    ParaBeaconServerConfig.configureBaseUri(uri);
     notifyListeners();
     return true;
   }

@@ -558,9 +558,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatSend => 'Send message';
 
   @override
-  String get chatPilotNumber => 'Pilot number';
-
-  @override
   String get chatSearchAccounts => 'Find a pilot';
 
   @override
@@ -592,10 +589,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatOpenConversation => 'Open';
 
   @override
-  String get chatInvalidPilotNumber => 'Enter a valid six-digit pilot number.';
-
-  @override
-  String get chatPilotNotFound => 'No pilot has that number.';
+  String get chatPilotNotFound => 'This pilot is no longer available.';
 
   @override
   String get chatRateLimited =>
@@ -751,11 +745,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get liveTrackingShareLocationWhileNotFlyingSubtitle =>
       'Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.';
-
-  @override
-  String liveTrackingYourPilotNumber(String number) {
-    return 'Your pilot number: $number';
-  }
 
   @override
   String get liveTrackingChannelNumber => 'Channel number';

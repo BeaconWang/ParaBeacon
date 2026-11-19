@@ -527,9 +527,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatSend => '发送消息';
 
   @override
-  String get chatPilotNumber => '飞行员编号';
-
-  @override
   String get chatSearchAccounts => '查找飞行员';
 
   @override
@@ -559,10 +556,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatOpenConversation => '打开';
 
   @override
-  String get chatInvalidPilotNumber => '请输入有效的六位飞行员编号。';
-
-  @override
-  String get chatPilotNotFound => '没有找到该编号的飞行员。';
+  String get chatPilotNotFound => '该飞行员已不可用。';
 
   @override
   String get chatRateLimited => '请稍等片刻再发送下一条消息。';
@@ -701,11 +695,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get liveTrackingShareLocationWhileNotFlyingSubtitle =>
       '在两次飞行之间继续公开最新位置。需要启用 ParaBeacon 同步和公开位置分享；暂停或关闭分享、或开始飞行时即停止。';
-
-  @override
-  String liveTrackingYourPilotNumber(String number) {
-    return '你的飞行员编号：$number';
-  }
 
   @override
   String get liveTrackingChannelNumber => '频道编号';

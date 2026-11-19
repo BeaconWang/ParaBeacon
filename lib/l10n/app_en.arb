@@ -182,7 +182,6 @@
   "chatSignInRequired": "Sign in to send and receive pilot chat messages.",
   "chatMessageHint": "Write a message",
   "chatSend": "Send message",
-  "chatPilotNumber": "Pilot number",
   "chatSearchAccounts": "Find a pilot",
   "chatSearchAccountsHint": "Search by name or username",
   "chatSearchMinimum": "Enter at least 2 characters to search.",
@@ -193,8 +192,7 @@
   "@chatChannelNumber": {"placeholders": {"number": {"type": "String"}}},
   "chatUsesLiveTrackingFilter": "Uses your account's selected radio-frequency channel.",
   "chatOpenConversation": "Open",
-  "chatInvalidPilotNumber": "Enter a valid six-digit pilot number.",
-  "chatPilotNotFound": "No pilot has that number.",
+  "chatPilotNotFound": "This pilot is no longer available.",
   "chatRateLimited": "Please wait a moment before sending another message.",
   "chatInvalidMessage": "That message is invalid or too long.",
   "chatServiceUnavailable": "Chat is temporarily unavailable.",
@@ -244,12 +242,6 @@
   "liveTrackingShareLocationPubliclySubtitle": "When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.",
   "liveTrackingShareLocationWhileNotFlying": "Share location while not flying",
   "liveTrackingShareLocationWhileNotFlyingSubtitle": "Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.",
-  "liveTrackingYourPilotNumber": "Your pilot number: {number}",
-  "@liveTrackingYourPilotNumber": {
-    "placeholders": {
-      "number": {"type": "String"}
-    }
-  },
   "liveTrackingChannelNumber": "Channel number",
   "liveTrackingChannelNumberSubtitle": "Choose your shared radio frequency. Only ParaBeacon pilots on the same channel appear on your map. Enter 000000 to turn channel sharing off and hide Channel chat.",
   "liveTrackingChannelNumberSaveFailed": "Channel number could not be saved. Check your connection and try again.",

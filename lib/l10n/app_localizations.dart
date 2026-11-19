@@ -1106,12 +1106,6 @@ abstract class AppLocalizations {
   /// **'Send message'**
   String get chatSend;
 
-  /// No description provided for @chatPilotNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Pilot number'**
-  String get chatPilotNumber;
-
   /// No description provided for @chatSearchAccounts.
   ///
   /// In en, this message translates to:
@@ -1166,16 +1160,10 @@ abstract class AppLocalizations {
   /// **'Open'**
   String get chatOpenConversation;
 
-  /// No description provided for @chatInvalidPilotNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a valid six-digit pilot number.'**
-  String get chatInvalidPilotNumber;
-
   /// No description provided for @chatPilotNotFound.
   ///
   /// In en, this message translates to:
-  /// **'No pilot has that number.'**
+  /// **'This pilot is no longer available.'**
   String get chatPilotNotFound;
 
   /// No description provided for @chatRateLimited.
@@ -1429,12 +1417,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.'**
   String get liveTrackingShareLocationWhileNotFlyingSubtitle;
-
-  /// No description provided for @liveTrackingYourPilotNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Your pilot number: {number}'**
-  String liveTrackingYourPilotNumber(String number);
 
   /// No description provided for @liveTrackingChannelNumber.
   ///

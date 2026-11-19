@@ -242,8 +242,14 @@ class PublicPilotLocation {
   bool belongsToLiveRoom(String? roomId) =>
       roomId != null && liveRoomId == roomId;
 
-  bool belongsToChannel(int channelNumber) =>
-      channelNumber > 0 && this.channelNumber == channelNumber;
+  bool isVisibleOnMap({required DateTime now, String? ownLiveRoomId}) {
+    if (belongsToLiveRoom(ownLiveRoomId)) return false;
+    final currentTime = now.toUtc();
+    final observedAtUtc = observedAt.toUtc();
+    final age = currentTime.difference(observedAtUtc);
+    return age <= const Duration(seconds: 90) &&
+        !observedAtUtc.isAfter(currentTime.add(const Duration(seconds: 5)));
+  }
 
   static PublicPilotLocation? fromJson(Object? value) {
     if (value is! Map<String, dynamic>) return null;

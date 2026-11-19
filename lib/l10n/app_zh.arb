@@ -178,7 +178,6 @@
   "chatSignInRequired": "登录后即可发送和接收飞行员聊天消息。",
   "chatMessageHint": "输入消息",
   "chatSend": "发送消息",
-  "chatPilotNumber": "飞行员编号",
   "chatSearchAccounts": "查找飞行员",
   "chatSearchAccountsHint": "按姓名或用户名搜索",
   "chatSearchMinimum": "请输入至少 2 个字符进行搜索。",
@@ -189,8 +188,7 @@
   "@chatChannelNumber": {"placeholders": {"number": {"type": "String"}}},
   "chatUsesLiveTrackingFilter": "使用账号中设置的无线电频率频道。",
   "chatOpenConversation": "打开",
-  "chatInvalidPilotNumber": "请输入有效的六位飞行员编号。",
-  "chatPilotNotFound": "没有找到该编号的飞行员。",
+  "chatPilotNotFound": "该飞行员已不可用。",
   "chatRateLimited": "请稍等片刻再发送下一条消息。",
   "chatInvalidMessage": "消息无效或内容过长。",
   "chatServiceUnavailable": "聊天服务暂时不可用。",
@@ -240,12 +238,6 @@
   "liveTrackingShareLocationPubliclySubtitle": "开启后，已登录的 ParaBeacon 地图用户可以看到你活动飞行中的名称和最新位置。默认关闭，可随时关闭。",
   "liveTrackingShareLocationWhileNotFlying": "非飞行时也分享位置",
   "liveTrackingShareLocationWhileNotFlyingSubtitle": "在两次飞行之间继续公开最新位置。需要启用 ParaBeacon 同步和公开位置分享；暂停或关闭分享、或开始飞行时即停止。",
-  "liveTrackingYourPilotNumber": "你的飞行员编号：{number}",
-  "@liveTrackingYourPilotNumber": {
-    "placeholders": {
-      "number": {"type": "String"}
-    }
-  },
   "liveTrackingChannelNumber": "频道编号",
   "liveTrackingChannelNumberSubtitle": "选择你的共享无线电频率。地图只显示同一频道的 ParaBeacon 飞行员。输入 000000 可关闭频道分享并隐藏聊天中的“频道”标签。",
   "liveTrackingChannelNumberSaveFailed": "无法保存频道编号，请检查网络后重试。",

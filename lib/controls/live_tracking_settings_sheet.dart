@@ -157,7 +157,6 @@ class _LiveTrackingSettingsSheetState
       builder: (context, _) {
         final signedIn = auth.isSignedIn;
         final serverSignedIn = serverAccount.isSignedIn;
-        final pilotNumber = serverAccount.user?.pilotNumber;
         final hasTrackingAccount = signedIn || serverSignedIn;
         final hasSelectedTrackingAccount =
             (settings.xcontestEnabled && signedIn) ||
@@ -246,12 +245,10 @@ class _LiveTrackingSettingsSheetState
                                 color: theme.colorScheme.primary,
                               ),
                               title: const Text('ParaBeacon'),
-                              subtitle: pilotNumber == null
+                              subtitle: serverSignedIn
                                   ? null
                                   : Text(
-                                      l10n.liveTrackingYourPilotNumber(
-                                        pilotNumber.toString().padLeft(6, '0'),
-                                      ),
+                                      l10n.liveTrackingServerAccountRequired,
                                     ),
                             ),
                             const Divider(height: 1),

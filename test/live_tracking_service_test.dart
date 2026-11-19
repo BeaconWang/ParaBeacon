@@ -322,9 +322,42 @@ void main() {
       expect(locations.single.pilotNumber, 123456);
       expect(locations.single.channelNumber, 483920);
       expect(locations.single.avatarId, 4);
-      expect(locations.single.belongsToChannel(483920), isTrue);
-      expect(locations.single.belongsToChannel(483921), isFalse);
-      expect(locations.single.belongsToChannel(0), isFalse);
+      expect(
+        locations.single.isVisibleOnMap(
+          now: DateTime.utc(2026, 3, 4, 5, 6, 10),
+          ownLiveRoomId: 'my-live-room',
+        ),
+        isTrue,
+      );
+      expect(
+        locations.single.isVisibleOnMap(
+          now: DateTime.utc(2026, 3, 4, 5, 6, 10),
+          ownLiveRoomId: locations.single.liveRoomId,
+        ),
+        isFalse,
+      );
+      final serverAuthorizedWithoutChannel = PublicPilotLocation.fromJson({
+        'pilot_name': 'Authorized pilot',
+        'lat': 47.1,
+        'lon': 8.5,
+        'observed_at': '2026-03-04T05:06:09.000Z',
+      });
+      expect(serverAuthorizedWithoutChannel?.channelNumber, 0);
+      expect(
+        serverAuthorizedWithoutChannel!.isVisibleOnMap(
+          now: DateTime.utc(2026, 3, 4, 5, 6, 10),
+        ),
+        isTrue,
+        reason: 'the server is authoritative for channel membership',
+      );
+      expect(
+        serverAuthorizedWithoutChannel.isVisibleOnMap(
+          now: DateTime.utc(2026, 3, 4, 5, 8),
+        ),
+        isFalse,
+        reason: 'server-authorized fixes still expire when stale',
+      );
+
       expect(
         PublicPilotLocation.fromJson({
           'pilot_name': 'bad number',

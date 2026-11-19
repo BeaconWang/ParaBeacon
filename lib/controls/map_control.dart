@@ -871,8 +871,7 @@ class _MapControlState extends State<MapControl> {
       setState(() => _serverPilotLocations = locations);
     } on Object {
       if (!mounted || requestId != _serverPilotRequestId) return;
-      _clearServerPilotMotion();
-      setState(() => _serverPilotLocations = const []);
+      setState(() {});
     }
   }
 
@@ -1063,8 +1062,6 @@ class _MapControlState extends State<MapControl> {
     final publicPilotNow = DateTime.now().toUtc();
     final ownLiveRoomId =
         server_tracking.LiveTrackingService.instance.sessionId;
-    final ownChannelNumber =
-        ParaBeaconAccountService.instance.user?.channelNumber ?? 0;
     final freshXContestPilots = widget.showOtherPilots
         ? XContestLiveTrackingService.instance.otherPilots
               .where(
@@ -1077,14 +1074,10 @@ class _MapControlState extends State<MapControl> {
     final freshServerPilots = widget.showOtherPilots
         ? _serverPilotLocations
               .where(
-                (pilot) =>
-                    pilot.belongsToChannel(ownChannelNumber) &&
-                    !pilot.belongsToLiveRoom(ownLiveRoomId) &&
-                    publicPilotNow.difference(pilot.observedAt) <=
-                        const Duration(seconds: 90) &&
-                    !pilot.observedAt.isAfter(
-                      publicPilotNow.add(const Duration(seconds: 5)),
-                    ),
+                (pilot) => pilot.isVisibleOnMap(
+                  now: publicPilotNow,
+                  ownLiveRoomId: ownLiveRoomId,
+                ),
               )
               .toList(growable: false)
         : const <server_tracking.PublicPilotLocation>[];

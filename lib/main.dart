@@ -32,6 +32,7 @@ import 'data/flight_state.dart';
 import 'data/parabeacon_account_service.dart';
 import 'data/chat_service.dart';
 import 'data/chat_notification_service.dart';
+import 'data/chat_notification_settings.dart';
 import 'data/parabeacon_server_config.dart';
 import 'data/parabeacon_server_settings.dart';
 import 'data/live_tracking_config.dart';
@@ -65,6 +66,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LocaleController.instance.load();
   await UserAgentSettings.instance.load();
+  await ChatNotificationSettings.instance.load();
   await ParaBeaconServerSettings.instance.load();
   XContestLiveTrackingService.instance.configure();
   try {
@@ -890,13 +892,14 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
             // App-wide pilot-chat alerts and voice-announcement captions stay
             // visible above every route, including sheets and dialogs.
             builder: (context, child) => ChatIncomingMessageOverlay(
-              messages: ChatService.instance.incomingDirectMessages,
+              messages: ChatService.instance.incomingChatMessages,
               onAlert: () => unawaited(
                 VarioAudioService.instance.playChime().catchError(
                   (Object _) {},
                 ),
               ),
               onBackgroundMessage: (message) {
+                if (!ChatNotificationSettings.instance.allows(message)) return;
                 unawaited(
                   ChatNotificationService.instance.showIncomingMessage(
                     message: message,

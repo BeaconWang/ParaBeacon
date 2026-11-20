@@ -580,7 +580,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatNotificationChannelName => '飞行员聊天消息';
 
   @override
-  String get chatNotificationChannelDescription => '其他飞行员发送新私聊消息时提醒。';
+  String get chatNotificationChannelDescription => '其他飞行员发送新消息时提醒。';
+
+  @override
+  String get chatNotificationSettingsTitle => '飞行员聊天通知';
+
+  @override
+  String get chatNotificationSettingsSubtitle => '选择哪些新消息通过 Android 系统通知提醒。';
+
+  @override
+  String get chatNotificationWorldwide => '全球消息';
+
+  @override
+  String get chatNotificationChannel => '频道消息';
+
+  @override
+  String get chatNotificationDirect => '私聊消息';
 
   @override
   String chatNewMessageFrom(String sender) {

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -219,6 +219,7 @@ class ChatService extends ChangeNotifier {
        _http = UserAgentHttpClient(innerClient: httpClient) {
     _ownsHttpClient = httpClient == null;
     _lastAccountProfileImageUrl = _account.user?.profileImageUrl;
+    _lastAccountChannelNumber = _account.user?.channelNumber;
     _account.addListener(_onAccountChanged);
   }
 
@@ -230,13 +231,12 @@ class ChatService extends ChangeNotifier {
   late final http.Client _http;
   late final bool _ownsHttpClient;
   final List<ChatMessage> _messages = <ChatMessage>[];
-  final StreamController<ChatMessage> _incomingDirectMessages =
+  final StreamController<ChatMessage> _incomingChatMessages =
       StreamController<ChatMessage>.broadcast(sync: true);
   final Queue<String> _incomingMessageOrder = Queue<String>();
   final Set<String> _incomingMessageIds = <String>{};
   List<ChatMessage> get messages => List.unmodifiable(_messages);
-  Stream<ChatMessage> get incomingDirectMessages =>
-      _incomingDirectMessages.stream;
+  Stream<ChatMessage> get incomingChatMessages => _incomingChatMessages.stream;
 
   ChatConnectionState _state = ChatConnectionState.disconnected;
   ChatConnectionState get state => _state;
@@ -264,6 +264,7 @@ class ChatService extends ChangeNotifier {
   Future<void>? _historyFuture;
   int _historyEpoch = -1;
   String? _lastAccountProfileImageUrl;
+  int? _lastAccountChannelNumber;
 
   Uri get _apiBase => ParaBeaconServerConfig.apiBaseUri;
 
@@ -278,8 +279,16 @@ class ChatService extends ChangeNotifier {
     final profileImageChanged =
         currentProfileImageUrl != _lastAccountProfileImageUrl;
     _lastAccountProfileImageUrl = currentProfileImageUrl;
+    final currentChannelNumber = _account.user?.channelNumber ?? 0;
+    final channelChanged = currentChannelNumber != _lastAccountChannelNumber;
+    _lastAccountChannelNumber = currentChannelNumber;
     if (profileImageChanged && _desiredConnection && _scope != 'presence') {
       unawaited(loadHistory().catchError((Object _) {}));
+    }
+    if (channelChanged &&
+        _desiredConnection &&
+        _state == ChatConnectionState.connected) {
+      _subscribeCurrent();
     }
     if (!_account.isSignedIn) {
       if (_desiredConnection) unawaited(disconnect());
@@ -729,7 +738,13 @@ class ChatService extends ChangeNotifier {
     final socket = _channel;
     if (socket == null) return;
     final payload = <String, Object>{'type': 'subscribe', 'scope': _scope};
-    if (_scope == 'channel') payload['channel_number'] = _channelNumber;
+    final accountChannelNumber = _account.user?.channelNumber ?? 0;
+    final notificationChannelNumber = _scope == 'channel'
+        ? _channelNumber
+        : accountChannelNumber;
+    if (notificationChannelNumber > 0) {
+      payload['channel_number'] = notificationChannelNumber;
+    }
     if (_scope == 'direct') payload['pilot_number'] = _pilotNumber;
     socket.sink.add(jsonEncode(payload));
   }
@@ -755,17 +770,28 @@ class ChatService extends ChangeNotifier {
       final message = ChatMessage.fromJson(decoded['message']);
       if (message == null) return;
       final myPilotNumber = _account.user?.pilotNumber;
-      final isIncomingDirectMessage =
-          message.scope == 'direct' &&
-          myPilotNumber != null &&
-          message.recipientPilotNumber == myPilotNumber &&
-          message.senderPilotNumber != myPilotNumber;
-      final conversationIsOpen =
-          _scope == 'direct' && _pilotNumber == message.senderPilotNumber;
-      if (isIncomingDirectMessage &&
-          !conversationIsOpen &&
+      final isFromAnotherPilot =
+          myPilotNumber != null && message.senderPilotNumber != myPilotNumber;
+      final isIncomingMessage = switch (message.scope) {
+        'public' || 'channel' => isFromAnotherPilot,
+        'direct' =>
+          isFromAnotherPilot && message.recipientPilotNumber == myPilotNumber,
+        _ => false,
+      };
+      final messageScopeIsOpen = switch (message.scope) {
+        'public' => _scope == 'public',
+        'channel' =>
+          _scope == 'channel' && message.channelNumber == _channelNumber,
+        'direct' =>
+          _scope == 'direct' && _pilotNumber == message.senderPilotNumber,
+        _ => false,
+      };
+      final appIsResumed =
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+      if (isIncomingMessage &&
+          !(appIsResumed && messageScopeIsOpen) &&
           _incomingMessageIds.add(message.id)) {
-        _incomingDirectMessages.add(message);
+        _incomingChatMessages.add(message);
         _incomingMessageOrder.addLast(message.id);
         if (_incomingMessageOrder.length > 300) {
           _incomingMessageIds.remove(_incomingMessageOrder.removeFirst());
@@ -886,7 +912,7 @@ class ChatService extends ChangeNotifier {
     unawaited(_subscription?.cancel());
     unawaited(_channel?.sink.close());
     if (_ownsHttpClient) _http.close();
-    unawaited(_incomingDirectMessages.close());
+    unawaited(_incomingChatMessages.close());
     super.dispose();
   }
 }

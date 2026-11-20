@@ -1217,8 +1217,38 @@ abstract class AppLocalizations {
   /// No description provided for @chatNotificationChannelDescription.
   ///
   /// In en, this message translates to:
-  /// **'Alerts for new direct messages from other pilots.'**
+  /// **'Alerts for new messages from other pilots.'**
   String get chatNotificationChannelDescription;
+
+  /// No description provided for @chatNotificationSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pilot Chat notifications'**
+  String get chatNotificationSettingsTitle;
+
+  /// No description provided for @chatNotificationSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which new messages appear as Android notifications.'**
+  String get chatNotificationSettingsSubtitle;
+
+  /// No description provided for @chatNotificationWorldwide.
+  ///
+  /// In en, this message translates to:
+  /// **'Worldwide messages'**
+  String get chatNotificationWorldwide;
+
+  /// No description provided for @chatNotificationChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel messages'**
+  String get chatNotificationChannel;
+
+  /// No description provided for @chatNotificationDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct messages'**
+  String get chatNotificationDirect;
 
   /// No description provided for @chatNewMessageFrom.
   ///

@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../data/app_update_service.dart';
+import '../data/chat_notification_settings.dart';
 import '../data/chat_service.dart';
 import '../data/parabeacon_account_service.dart';
 import '../data/parabeacon_server_config.dart';
@@ -45,6 +47,7 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
   void initState() {
     super.initState();
     CompetitionTaskStore.instance.load();
+    ChatNotificationSettings.instance.load();
   }
 
   Future<MapTileCacheSummary>? _mapCacheSummaryFuture;
@@ -528,10 +531,14 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
         FlightDetailsSettings.instance,
         VerticalSpeedSettings.instance,
         CompetitionTaskStore.instance,
+        ChatNotificationSettings.instance,
       ]),
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
         final theme = Theme.of(context);
+        final showChatNotificationSettings =
+            !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+        final chatNotifications = ChatNotificationSettings.instance;
         return SafeArea(
           child: ConstrainedBox(
             constraints: BoxConstraints(
@@ -561,6 +568,36 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  if (showChatNotificationSettings) ...[
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.notifications_active_outlined,
+                        color: theme.colorScheme.primary,
+                      ),
+                      title: Text(l10n.chatNotificationSettingsTitle),
+                      subtitle: Text(l10n.chatNotificationSettingsSubtitle),
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.chatNotificationWorldwide),
+                      value: chatNotifications.worldwide,
+                      onChanged: chatNotifications.setWorldwide,
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.chatNotificationChannel),
+                      value: chatNotifications.channel,
+                      onChanged: chatNotifications.setChannel,
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.chatNotificationDirect),
+                      value: chatNotifications.direct,
+                      onChanged: chatNotifications.setDirect,
+                    ),
+                    const Divider(height: 16),
+                  ],
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
                     secondary: Icon(

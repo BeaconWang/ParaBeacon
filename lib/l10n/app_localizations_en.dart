@@ -615,7 +615,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatNotificationChannelDescription =>
-      'Alerts for new direct messages from other pilots.';
+      'Alerts for new messages from other pilots.';
+
+  @override
+  String get chatNotificationSettingsTitle => 'Pilot Chat notifications';
+
+  @override
+  String get chatNotificationSettingsSubtitle =>
+      'Choose which new messages appear as Android notifications.';
+
+  @override
+  String get chatNotificationWorldwide => 'Worldwide messages';
+
+  @override
+  String get chatNotificationChannel => 'Channel messages';
+
+  @override
+  String get chatNotificationDirect => 'Direct messages';
 
   @override
   String chatNewMessageFrom(String sender) {

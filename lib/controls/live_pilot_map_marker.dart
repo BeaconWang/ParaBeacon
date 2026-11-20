@@ -21,7 +21,7 @@ class LivePilotMapMarker extends StatelessWidget {
   });
 
   static const double markerWidth = 160;
-  static const double markerHeight = 96;
+  static const double markerHeight = 104;
   static const double iconStageSize = 52;
   static const double glyphCenterFromTop = iconStageSize / 2;
   static const Alignment markerAlignment = Alignment(
@@ -44,95 +44,102 @@ class LivePilotMapMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: landed ? 0.45 : 1,
-      child: Semantics(
-        label: '$name, ${landed ? 'landed' : 'sharing live location'}',
-        excludeSemantics: true,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox.square(
-              dimension: iconStageSize,
-              child: Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
-                children: [
-                  if (headingDegrees != null && headingDegrees!.isFinite)
-                    PilotDirectionIndicator(
-                      headingDegrees: headingDegrees!,
-                      mapRotationDegrees: screenRotationDegrees,
-                      color: color,
-                    ),
-                  Container(
-                    width: 38,
-                    height: 38,
-                    padding: const EdgeInsets.all(2.5),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: color, width: 2.5),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black38,
-                          blurRadius: 5,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: PilotAvatarPicture(
-                      avatarId: avatarId,
-                      profileImageUrl: profileImageUrl,
-                      size: 28,
-                      circular: true,
-                      backgroundColor: color.withValues(alpha: 0.14),
-                      iconColor: color,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            if (showName) ...[
-              const SizedBox(height: 3),
-              _buildBadge(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+    return SizedBox(
+      width: markerWidth,
+      height: markerHeight,
+      child: Opacity(
+        opacity: landed ? 0.45 : 1,
+        child: Semantics(
+          label: '$name, ${landed ? 'landed' : 'sharing live location'}',
+          excludeSemantics: true,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox.square(
+                dimension: iconStageSize,
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
                   children: [
-                    const Icon(
-                      Icons.circle,
-                      size: 7,
-                      color: liveIndicatorColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: captionTextColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    if (headingDegrees != null && headingDegrees!.isFinite)
+                      PilotDirectionIndicator(
+                        headingDegrees: headingDegrees!,
+                        mapRotationDegrees: screenRotationDegrees,
+                        color: color,
+                      ),
+                    Container(
+                      width: 38,
+                      height: 38,
+                      padding: const EdgeInsets.all(2.5),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: color, width: 2.5),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black38,
+                            blurRadius: 5,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: PilotAvatarPicture(
+                        avatarId: avatarId,
+                        profileImageUrl: profileImageUrl,
+                        size: 28,
+                        circular: true,
+                        backgroundColor: color.withValues(alpha: 0.14),
+                        iconColor: color,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-            if (flightInfo != null && flightInfo!.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              _buildBadge(
-                child: Text(
-                  flightInfo!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: captionTextColor, fontSize: 9),
+
+              if (showName) ...[
+                const SizedBox(height: 3),
+                _buildBadge(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.circle,
+                        size: 7,
+                        color: liveIndicatorColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: captionTextColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
+              if (flightInfo != null && flightInfo!.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                _buildBadge(
+                  child: Text(
+                    flightInfo!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: captionTextColor,
+                      fontSize: 9,
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

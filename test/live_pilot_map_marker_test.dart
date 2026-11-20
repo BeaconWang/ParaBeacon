@@ -115,36 +115,52 @@ void main() {
     tester,
   ) async {
     for (final heading in <double?>[null, 90]) {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: LivePilotMapMarker(
-                name: 'Anchor Pilot',
-                color: Colors.blue,
-                landed: false,
-                headingDegrees: heading,
+      for (final showName in [true, false]) {
+        for (final flightInfo in <String?>[null, '1,250 m · 42 km/h']) {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: LivePilotMapMarker(
+                    name: 'Anchor Pilot',
+                    color: Colors.blue,
+                    landed: false,
+                    showName: showName,
+                    flightInfo: flightInfo,
+                    headingDegrees: heading,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      );
+          );
 
-      final icon = tester.getRect(find.byType(ClipOval));
-      final stageFinder = find.ancestor(
-        of: find.byType(ClipOval),
-        matching: find.byType(Stack),
-      );
-      expect(stageFinder, findsOneWidget);
-      final stage = tester.getRect(stageFinder);
-      final marker = tester.getRect(find.byType(LivePilotMapMarker));
-      expect(stage.size, const Size.square(LivePilotMapMarker.iconStageSize));
-      expect(icon.center.dx, closeTo(stage.center.dx, 0.1));
-      expect(icon.center.dy, closeTo(stage.center.dy, 0.1));
-      expect(
-        stage.center.dy - marker.top,
-        closeTo(LivePilotMapMarker.glyphCenterFromTop, 0.5),
-      );
+          final icon = tester.getRect(find.byType(ClipOval));
+          final stageFinder = find.ancestor(
+            of: find.byType(ClipOval),
+            matching: find.byType(Stack),
+          );
+          expect(stageFinder, findsOneWidget);
+          final stage = tester.getRect(stageFinder);
+          final marker = tester.getRect(find.byType(LivePilotMapMarker));
+          expect(
+            marker.size,
+            const Size(
+              LivePilotMapMarker.markerWidth,
+              LivePilotMapMarker.markerHeight,
+            ),
+          );
+          expect(
+            stage.size,
+            const Size.square(LivePilotMapMarker.iconStageSize),
+          );
+          expect(icon.center.dx, closeTo(stage.center.dx, 0.1));
+          expect(icon.center.dy, closeTo(stage.center.dy, 0.1));
+          expect(
+            stage.center.dy - marker.top,
+            closeTo(LivePilotMapMarker.glyphCenterFromTop, 0.5),
+          );
+        }
+      }
     }
   });
 

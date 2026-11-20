@@ -10,29 +10,29 @@ class ChatIncomingMessageOverlay extends StatefulWidget {
     required this.child,
     required this.messages,
     required this.onAlert,
+    required this.onBackgroundMessage,
     super.key,
   });
 
   final Widget child;
   final Stream<ChatMessage> messages;
   final VoidCallback onAlert;
+  final ValueChanged<ChatMessage> onBackgroundMessage;
 
   @override
   State<ChatIncomingMessageOverlay> createState() =>
       _ChatIncomingMessageOverlayState();
 }
 
-class _ChatIncomingMessageOverlayState extends State<ChatIncomingMessageOverlay>
-    with WidgetsBindingObserver {
+class _ChatIncomingMessageOverlayState
+    extends State<ChatIncomingMessageOverlay> {
   StreamSubscription<ChatMessage>? _subscription;
   Timer? _dismissTimer;
   ChatMessage? _visibleMessage;
-  ChatMessage? _pendingMessage;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _listen();
   }
 
@@ -50,14 +50,13 @@ class _ChatIncomingMessageOverlayState extends State<ChatIncomingMessageOverlay>
   void _onIncomingMessage(ChatMessage message) {
     final lifecycle = WidgetsBinding.instance.lifecycleState;
     if (lifecycle != null && lifecycle != AppLifecycleState.resumed) {
-      _pendingMessage = message;
+      widget.onBackgroundMessage(message);
       return;
     }
     _show(message);
   }
 
   void _show(ChatMessage message) {
-    _pendingMessage = null;
     _dismissTimer?.cancel();
     widget.onAlert();
     if (mounted) setState(() => _visibleMessage = message);
@@ -71,15 +70,7 @@ class _ChatIncomingMessageOverlayState extends State<ChatIncomingMessageOverlay>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _pendingMessage != null) {
-      _show(_pendingMessage!);
-    }
-  }
-
-  @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     unawaited(_subscription?.cancel());
     _dismissTimer?.cancel();
     super.dispose();

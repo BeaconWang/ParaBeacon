@@ -19,6 +19,7 @@ void main() {
         home: ChatIncomingMessageOverlay(
           messages: messages.stream,
           onAlert: () => alertCount++,
+          onBackgroundMessage: (_) {},
           child: const Scaffold(body: Text('Dashboard')),
         ),
       ),
@@ -45,6 +46,53 @@ void main() {
     await tester.tap(find.byTooltip('Close'));
     await tester.pump();
     expect(find.text('New message from Sky Pilot'), findsNothing);
+    await messages.close();
+  });
+
+  testWidgets('routes background Direct messages to the system notification', (
+    tester,
+  ) async {
+    final messages = StreamController<ChatMessage>.broadcast(sync: true);
+    final backgroundMessages = <ChatMessage>[];
+    var alertCount = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChatIncomingMessageOverlay(
+          messages: messages.stream,
+          onAlert: () => alertCount++,
+          onBackgroundMessage: backgroundMessages.add,
+          child: const Scaffold(body: Text('Dashboard')),
+        ),
+      ),
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    messages.add(
+      ChatMessage(
+        id: 'background-incoming-1',
+        scope: 'direct',
+        senderPilotNumber: 234567,
+        recipientPilotNumber: 123456,
+        senderName: 'Sky Pilot',
+        text: 'See you at launch',
+        createdAt: DateTime.utc(2026, 11, 20),
+      ),
+    );
+    await tester.pump();
+
+    expect(backgroundMessages, hasLength(1));
+    expect(backgroundMessages.single.text, 'See you at launch');
+    expect(alertCount, 0);
+    expect(find.text('New message from Sky Pilot'), findsNothing);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(
+      alertCount,
+      0,
+      reason: 'do not replay an already-posted system alert',
+    );
     await messages.close();
   });
 }

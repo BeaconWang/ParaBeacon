@@ -193,6 +193,8 @@
   "chatPilotOffline": "Offline",
   "chatLastChatTime": "Last chat {time}",
   "@chatLastChatTime": {"placeholders": {"time": {"type": "String"}}},
+  "chatNotificationChannelName": "Pilot Chat messages",
+  "chatNotificationChannelDescription": "Alerts for new direct messages from other pilots.",
   "chatNewMessageFrom": "New message from {sender}",
   "@chatNewMessageFrom": {"placeholders": {"sender": {"type": "String"}}},
   "chatUnreadMessages": "{count} unread messages",

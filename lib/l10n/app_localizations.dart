@@ -1208,6 +1208,18 @@ abstract class AppLocalizations {
   /// **'Last chat {time}'**
   String chatLastChatTime(String time);
 
+  /// No description provided for @chatNotificationChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'Pilot Chat messages'**
+  String get chatNotificationChannelName;
+
+  /// No description provided for @chatNotificationChannelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts for new direct messages from other pilots.'**
+  String get chatNotificationChannelDescription;
+
   /// No description provided for @chatNewMessageFrom.
   ///
   /// In en, this message translates to:

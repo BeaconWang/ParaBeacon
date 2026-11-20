@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -231,6 +232,8 @@ class ChatService extends ChangeNotifier {
   final List<ChatMessage> _messages = <ChatMessage>[];
   final StreamController<ChatMessage> _incomingDirectMessages =
       StreamController<ChatMessage>.broadcast(sync: true);
+  final Queue<String> _incomingMessageOrder = Queue<String>();
+  final Set<String> _incomingMessageIds = <String>{};
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   Stream<ChatMessage> get incomingDirectMessages =>
       _incomingDirectMessages.stream;
@@ -759,8 +762,14 @@ class ChatService extends ChangeNotifier {
           message.senderPilotNumber != myPilotNumber;
       final conversationIsOpen =
           _scope == 'direct' && _pilotNumber == message.senderPilotNumber;
-      if (isIncomingDirectMessage && !conversationIsOpen) {
+      if (isIncomingDirectMessage &&
+          !conversationIsOpen &&
+          _incomingMessageIds.add(message.id)) {
         _incomingDirectMessages.add(message);
+        _incomingMessageOrder.addLast(message.id);
+        if (_incomingMessageOrder.length > 300) {
+          _incomingMessageIds.remove(_incomingMessageOrder.removeFirst());
+        }
       }
       if (!_matchesConversation(message)) return;
       _lastError = null;

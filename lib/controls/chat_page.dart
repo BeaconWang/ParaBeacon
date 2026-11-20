@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'chat_conversation_tile.dart';
+import '../data/chat_notification_service.dart';
 import '../data/chat_service.dart';
 import '../data/parabeacon_account_service.dart';
 import '../data/pilot_avatar.dart';
@@ -14,9 +15,12 @@ List<String> chatScopesForChannel(int channelNumber) => [
   'direct',
 ];
 
-Future<void> showChatPage(BuildContext context) => Navigator.of(
-  context,
-).push(MaterialPageRoute<void>(builder: (_) => const _ChatPage()));
+Future<void> showChatPage(BuildContext context) {
+  unawaited(ChatNotificationService.instance.requestPermission());
+  return Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const _ChatPage()));
+}
 
 class _ChatPage extends StatefulWidget {
   const _ChatPage();

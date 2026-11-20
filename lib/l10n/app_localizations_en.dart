@@ -611,6 +611,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get chatNotificationChannelName => 'Pilot Chat messages';
+
+  @override
+  String get chatNotificationChannelDescription =>
+      'Alerts for new direct messages from other pilots.';
+
+  @override
   String chatNewMessageFrom(String sender) {
     return 'New message from $sender';
   }

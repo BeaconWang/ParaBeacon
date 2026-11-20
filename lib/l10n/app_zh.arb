@@ -189,6 +189,8 @@
   "chatPilotOffline": "离线",
   "chatLastChatTime": "最近聊天 {time}",
   "@chatLastChatTime": {"placeholders": {"time": {"type": "String"}}},
+  "chatNotificationChannelName": "飞行员聊天消息",
+  "chatNotificationChannelDescription": "其他飞行员发送新私聊消息时提醒。",
   "chatNewMessageFrom": "收到 {sender} 的新消息",
   "@chatNewMessageFrom": {"placeholders": {"sender": {"type": "String"}}},
   "chatUnreadMessages": "{count} 条未读消息",

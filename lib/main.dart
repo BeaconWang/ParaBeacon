@@ -31,6 +31,7 @@ import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/parabeacon_account_service.dart';
 import 'data/chat_service.dart';
+import 'data/chat_notification_service.dart';
 import 'data/parabeacon_server_config.dart';
 import 'data/parabeacon_server_settings.dart';
 import 'data/live_tracking_config.dart';
@@ -895,6 +896,22 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
                   (Object _) {},
                 ),
               ),
+              onBackgroundMessage: (message) {
+                unawaited(
+                  ChatNotificationService.instance.showIncomingMessage(
+                    message: message,
+                    title: AppLocalizations.of(
+                      context,
+                    ).chatNewMessageFrom(message.senderName),
+                    channelName: AppLocalizations.of(
+                      context,
+                    ).chatNotificationChannelName,
+                    channelDescription: AppLocalizations.of(
+                      context,
+                    ).chatNotificationChannelDescription,
+                  ),
+                );
+              },
               child: Stack(
                 children: [
                   ?child,

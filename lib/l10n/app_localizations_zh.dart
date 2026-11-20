@@ -577,6 +577,12 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get chatNotificationChannelName => '飞行员聊天消息';
+
+  @override
+  String get chatNotificationChannelDescription => '其他飞行员发送新私聊消息时提醒。';
+
+  @override
   String chatNewMessageFrom(String sender) {
     return '收到 $sender 的新消息';
   }

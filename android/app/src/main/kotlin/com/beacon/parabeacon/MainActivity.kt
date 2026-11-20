@@ -2,9 +2,13 @@ package com.beacon.parabeacon
 
 import android.app.Activity
 import android.app.DownloadManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
@@ -14,6 +18,8 @@ import android.os.PowerManager
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.Settings
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import java.io.File
 import io.flutter.embedding.android.FlutterActivity
@@ -26,6 +32,9 @@ class MainActivity : FlutterActivity() {
         private const val FLIGHT_PERMISSIONS_CHANNEL = "com.beacon.parabeacon/flight_permissions"
         private const val DEVICE_INFO_CHANNEL = "com.beacon.parabeacon/device_info"
         private const val APP_UPDATE_CHANNEL = "com.beacon.parabeacon/app_update"
+        private const val CHAT_NOTIFICATIONS_CHANNEL = "com.beacon.parabeacon/chat_notifications"
+        private const val CHAT_NOTIFICATION_ID = "pilot-chat-message"
+        private const val CHAT_NOTIFICATION_CHANNEL_ID = "pilot_chat_messages"
         private const val MAX_APK_SIZE_BYTES = 512L * 1024L * 1024L
         private const val CREATE_DOCUMENT_REQUEST = 4107
         private const val OPEN_IGC_TREE_REQUEST = 4108
@@ -87,6 +96,90 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            CHAT_NOTIFICATIONS_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "showIncomingMessage" -> handleIncomingChatNotification(call, result)
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun handleIncomingChatNotification(
+        call: io.flutter.plugin.common.MethodCall,
+        result: MethodChannel.Result,
+    ) {
+        val messageId = call.argument<String>("id")?.takeIf { it.isNotBlank() }
+        val title = call.argument<String>("title")?.takeIf { it.isNotBlank() }
+        val body = call.argument<String>("body")?.takeIf { it.isNotBlank() }
+        val channelName = call.argument<String>("channelName")?.takeIf { it.isNotBlank() }
+        val channelDescription = call.argument<String>("channelDescription")
+        val senderPilotNumber = call.argument<Int>("senderPilotNumber")
+        if (messageId == null || title == null || body == null ||
+            channelName == null || channelDescription == null ||
+            senderPilotNumber == null || senderPilotNumber !in 100000..999999) {
+            result.error("INVALID_CHAT_NOTIFICATION", "Notification data is invalid.", null)
+            return
+        }
+
+        try {
+            val notificationManager = NotificationManagerCompat.from(this)
+            if (!notificationManager.areNotificationsEnabled()) {
+                result.success(false)
+                return
+            }
+            createChatNotificationChannel(channelName, channelDescription)
+            val intent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                putExtra("pilot_chat_sender", senderPilotNumber)
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                messageId.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            val notification = NotificationCompat.Builder(this, CHAT_NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(applicationInfo.icon)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(true)
+                .setContentIntent(pendingIntent)
+                .build()
+            notificationManager.notify(CHAT_NOTIFICATION_ID, messageId.hashCode(), notification)
+            result.success(true)
+        } catch (_: SecurityException) {
+            result.success(false)
+        } catch (error: Exception) {
+            result.error("CHAT_NOTIFICATION_FAILED", error.message, null)
+        }
+    }
+
+    private fun createChatNotificationChannel(name: String, description: String) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (notificationManager.getNotificationChannel(CHAT_NOTIFICATION_CHANNEL_ID) != null) return
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        val channel = NotificationChannel(
+            CHAT_NOTIFICATION_CHANNEL_ID,
+            name,
+            NotificationManager.IMPORTANCE_HIGH,
+        ).apply {
+            this.description = description
+            enableVibration(true)
+            setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes)
+        }
+        notificationManager.createNotificationChannel(channel)
     }
 
     private fun isWifiConnected(): Boolean {

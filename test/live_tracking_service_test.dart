@@ -23,6 +23,26 @@ void main() {
     FlightState.instance.stop();
   });
 
+  test(
+    'tracking identity distinguishes simultaneous sessions sharing a name',
+    () {
+      PublicPilotLocation location(String roomId) =>
+          PublicPilotLocation.fromJson({
+            'pilot_name': 'Shared display name',
+            'live_room_id': roomId,
+            'pilot_number': 123456,
+            'lat': 47.1,
+            'lon': 8.5,
+            'observed_at': '2026-03-04T05:06:09.000Z',
+          })!;
+
+      expect(
+        location('session-one').trackingIdentity,
+        isNot(location('session-two').trackingIdentity),
+      );
+    },
+  );
+
   test('tracking destinations default off and persist independently', () async {
     SharedPreferences.setMockInitialValues({});
     final settings = LiveTrackingSettings.instance;
@@ -273,19 +293,19 @@ void main() {
                   'vertical_speed': -0.4,
                   'path': [
                     {
-                      'lat': 47.0,
-                      'lon': 8.4,
-                      'altitude': 1200.0,
-                      'speed': 10.0,
-                      'timestamp': '2026-03-04T05:06:06.000Z',
-                    },
-                    {
                       'lat': 47.1,
                       'lon': 8.5,
                       'altitude': 1234.5,
                       'speed': 12.0,
                       'vertical_speed': -0.4,
                       'timestamp': '2026-03-04T05:06:09.000Z',
+                    },
+                    {
+                      'lat': 47.0,
+                      'lon': 8.4,
+                      'altitude': 1200.0,
+                      'speed': 10.0,
+                      'timestamp': '2026-03-04T05:06:06.000Z',
                     },
                   ],
                   'observed_at': '2026-03-04T05:06:09.000Z',
@@ -321,6 +341,10 @@ void main() {
       expect(requests, hasLength(2));
       expect(locations, hasLength(1));
       expect(locations.single.pilotName, 'Sky Rider');
+      expect(
+        locations.single.trackingIdentity,
+        'd2719b5c-6a1f-4a4e-8b67-85139941a201',
+      );
       expect(locations.single.pilotNumber, 123456);
       expect(locations.single.channelNumber, 483920);
       expect(locations.single.avatarId, 4);

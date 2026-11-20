@@ -242,6 +242,10 @@ class PublicPilotLocation {
   final double? verticalSpeedMetersPerSecond;
   final List<LiveTrackpoint> path;
 
+  String get trackingIdentity =>
+      liveRoomId ??
+      (pilotNumber == null ? 'name:$pilotName' : 'pilot:$pilotNumber');
+
   bool belongsToLiveRoom(String? roomId) =>
       roomId != null && liveRoomId == roomId;
 
@@ -304,7 +308,11 @@ class PublicPilotLocation {
 
     final rawPath = value['path'];
     final path = rawPath is List
-        ? rawPath.map(LiveTrackpoint.fromJson).whereType<LiveTrackpoint>()
+        ? (rawPath
+              .map(LiveTrackpoint.fromJson)
+              .whereType<LiveTrackpoint>()
+              .toList()
+            ..sort((a, b) => a.timestamp.compareTo(b.timestamp)))
         : const <LiveTrackpoint>[];
     if (!lat.isFinite ||
         !lon.isFinite ||

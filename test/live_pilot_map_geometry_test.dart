@@ -14,6 +14,25 @@ void main() {
     expect(renderedTrail.last.longitude, currentPosition.longitude);
   });
 
+  test('anchors an empty trail at the current marker coordinate', () {
+    const currentPosition = LatLng(49.002, 8.003);
+
+    final renderedTrail = livePilotTrailEndingAt(const [], currentPosition);
+
+    expect(renderedTrail, hasLength(1));
+    expect(renderedTrail.single, currentPosition);
+  });
+
+  test('extends a single-point trail to the current marker coordinate', () {
+    const trail = [LatLng(49.0, 8.0)];
+    const currentPosition = LatLng(49.002, 8.003);
+
+    final renderedTrail = livePilotTrailEndingAt(trail, currentPosition);
+
+    expect(renderedTrail, hasLength(2));
+    expect(renderedTrail.last, currentPosition);
+  });
+
   test('does not add a duplicate point when trail already ends at marker', () {
     const trail = [LatLng(49.0, 8.0), LatLng(49.001, 8.001)];
     const currentPosition = LatLng(49.001, 8.001);

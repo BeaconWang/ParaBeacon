@@ -748,11 +748,15 @@ class _MapControlState extends State<MapControl> {
   void _animateServerPilotLocations(
     List<server_tracking.PublicPilotLocation> locations,
   ) {
-    final activeNames = locations.map((pilot) => pilot.pilotName).toSet();
-    _serverPilotMotion.removeWhere((name, _) => !activeNames.contains(name));
+    final activePilotIds = locations
+        .map((pilot) => pilot.trackingIdentity)
+        .toSet();
+    _serverPilotMotion.removeWhere(
+      (pilotId, _) => !activePilotIds.contains(pilotId),
+    );
     for (final pilot in locations) {
       final motion = _serverPilotMotion.putIfAbsent(
-        pilot.pilotName,
+        pilot.trackingIdentity,
         PeerLocationInterpolator.new,
       );
       motion.update(
@@ -790,7 +794,7 @@ class _MapControlState extends State<MapControl> {
   }
 
   LatLng _serverPilotPosition(server_tracking.PublicPilotLocation pilot) {
-    final interpolated = _serverPilotMotion[pilot.pilotName]?.positionAt(
+    final interpolated = _serverPilotMotion[pilot.trackingIdentity]?.positionAt(
       DateTime.now(),
     );
     return LatLng(
@@ -1102,7 +1106,7 @@ class _MapControlState extends State<MapControl> {
         };
     final otherPilotTrails = <Polyline>[
       for (final pilot in freshServerPilots)
-        if (pilot.path.length > 1)
+        if (pilot.path.isNotEmpty)
           Polyline(
             points: livePilotTrailEndingAt([
               for (final point in pilot.path)

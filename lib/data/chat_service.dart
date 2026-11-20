@@ -229,7 +229,11 @@ class ChatService extends ChangeNotifier {
   late final http.Client _http;
   late final bool _ownsHttpClient;
   final List<ChatMessage> _messages = <ChatMessage>[];
+  final StreamController<ChatMessage> _incomingDirectMessages =
+      StreamController<ChatMessage>.broadcast(sync: true);
   List<ChatMessage> get messages => List.unmodifiable(_messages);
+  Stream<ChatMessage> get incomingDirectMessages =>
+      _incomingDirectMessages.stream;
 
   ChatConnectionState _state = ChatConnectionState.disconnected;
   ChatConnectionState get state => _state;
@@ -746,7 +750,19 @@ class ChatService extends ChangeNotifier {
       }
       if (decoded['type'] != 'message') return;
       final message = ChatMessage.fromJson(decoded['message']);
-      if (message == null || !_matchesConversation(message)) return;
+      if (message == null) return;
+      final myPilotNumber = _account.user?.pilotNumber;
+      final isIncomingDirectMessage =
+          message.scope == 'direct' &&
+          myPilotNumber != null &&
+          message.recipientPilotNumber == myPilotNumber &&
+          message.senderPilotNumber != myPilotNumber;
+      final conversationIsOpen =
+          _scope == 'direct' && _pilotNumber == message.senderPilotNumber;
+      if (isIncomingDirectMessage && !conversationIsOpen) {
+        _incomingDirectMessages.add(message);
+      }
+      if (!_matchesConversation(message)) return;
       _lastError = null;
       _mergeMessages([message]);
       _notify();
@@ -861,6 +877,7 @@ class ChatService extends ChangeNotifier {
     unawaited(_subscription?.cancel());
     unawaited(_channel?.sink.close());
     if (_ownsHttpClient) _http.close();
+    unawaited(_incomingDirectMessages.close());
     super.dispose();
   }
 }

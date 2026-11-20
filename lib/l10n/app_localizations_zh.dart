@@ -577,6 +577,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String chatNewMessageFrom(String sender) {
+    return '收到 $sender 的新消息';
+  }
+
+  @override
   String chatUnreadMessages(int count) {
     return '$count 条未读消息';
   }

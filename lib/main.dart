@@ -10,6 +10,7 @@ import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
 import 'controls/announcement_caption_overlay.dart';
+import 'controls/chat_incoming_message_overlay.dart';
 import 'controls/map_picker_sheet.dart' show MapPickerDefaults;
 import 'controls/position_sharing_dialog.dart';
 import 'dash_grid_page.dart';
@@ -885,13 +886,21 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
             locale: LocaleController.instance.current.locale,
             supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
-            // Caption with the text of the current voice announcement, shown
-            // above every route (dashboard, sheets, dialogs).
-            builder: (context, child) => Stack(
-              children: [
-                ?child,
-                const Positioned.fill(child: AnnouncementCaptionOverlay()),
-              ],
+            // App-wide pilot-chat alerts and voice-announcement captions stay
+            // visible above every route, including sheets and dialogs.
+            builder: (context, child) => ChatIncomingMessageOverlay(
+              messages: ChatService.instance.incomingDirectMessages,
+              onAlert: () => unawaited(
+                VarioAudioService.instance.playChime().catchError(
+                  (Object _) {},
+                ),
+              ),
+              child: Stack(
+                children: [
+                  ?child,
+                  const Positioned.fill(child: AnnouncementCaptionOverlay()),
+                ],
+              ),
             ),
             home: const DashGridPage(),
           );

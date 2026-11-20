@@ -193,6 +193,8 @@
   "chatPilotOffline": "Offline",
   "chatLastChatTime": "Last chat {time}",
   "@chatLastChatTime": {"placeholders": {"time": {"type": "String"}}},
+  "chatNewMessageFrom": "New message from {sender}",
+  "@chatNewMessageFrom": {"placeholders": {"sender": {"type": "String"}}},
   "chatUnreadMessages": "{count} unread messages",
   "@chatUnreadMessages": {"placeholders": {"count": {"type": "int"}}},
   "chatPinConversation": "Pin conversation",

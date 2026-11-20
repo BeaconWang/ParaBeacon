@@ -611,6 +611,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String chatNewMessageFrom(String sender) {
+    return 'New message from $sender';
+  }
+
+  @override
   String chatUnreadMessages(int count) {
     return '$count unread messages';
   }

@@ -1208,6 +1208,12 @@ abstract class AppLocalizations {
   /// **'Last chat {time}'**
   String chatLastChatTime(String time);
 
+  /// No description provided for @chatNewMessageFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'New message from {sender}'**
+  String chatNewMessageFrom(String sender);
+
   /// No description provided for @chatUnreadMessages.
   ///
   /// In en, this message translates to:

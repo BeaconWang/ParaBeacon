@@ -35,6 +35,7 @@ import '../data/xcontest_live_tracking_service.dart';
 import '../live/peer_location_interpolator.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
+import 'live_pilot_map_geometry.dart';
 import 'live_pilot_map_marker.dart';
 
 // Keep the geographic point aligned to the ball center, with its label below.
@@ -1094,17 +1095,22 @@ class _MapControlState extends State<MapControl> {
               )
               .toList(growable: false)
         : const <server_tracking.PublicPilotLocation>[];
+    final serverPilotMapPositions =
+        <server_tracking.PublicPilotLocation, LatLng>{
+          for (final pilot in freshServerPilots)
+            pilot: _shift(_serverPilotPosition(pilot), widget.tileSource),
+        };
     final otherPilotTrails = <Polyline>[
       for (final pilot in freshServerPilots)
         if (pilot.path.length > 1)
           Polyline(
-            points: [
+            points: livePilotTrailEndingAt([
               for (final point in pilot.path)
                 _shift(
                   LatLng(point.latitude, point.longitude),
                   widget.tileSource,
                 ),
-            ],
+            ], serverPilotMapPositions[pilot]!),
             strokeWidth: 3.0 * widget.lineThickness,
             color: _publicPilotColor(pilot.pilotName).withAlpha(190),
           ),
@@ -1132,7 +1138,7 @@ class _MapControlState extends State<MapControl> {
         ),
       for (final pilot in freshServerPilots)
         Marker(
-          point: _shift(_serverPilotPosition(pilot), widget.tileSource),
+          point: serverPilotMapPositions[pilot]!,
           width: LivePilotMapMarker.markerWidth,
           height: LivePilotMapMarker.markerHeight,
           alignment: LivePilotMapMarker.markerAlignment,

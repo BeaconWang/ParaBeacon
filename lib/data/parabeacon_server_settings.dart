@@ -75,10 +75,7 @@ class ParaBeaconServerSettings extends ChangeNotifier {
     if (uri == null || !await _resolvesOnlyToPublicAddresses(uri, lookup)) {
       return false;
     }
-    if (uri == _selectedBaseUri) {
-      ParaBeaconServerConfig.configureBaseUri(uri);
-      return true;
-    }
+    if (uri == _selectedBaseUri) return true;
 
     try {
       final preferences = await SharedPreferences.getInstance();
@@ -87,7 +84,6 @@ class ParaBeaconServerSettings extends ChangeNotifier {
       return false;
     }
     _selectedBaseUri = uri;
-    ParaBeaconServerConfig.configureBaseUri(uri);
     notifyListeners();
     return true;
   }

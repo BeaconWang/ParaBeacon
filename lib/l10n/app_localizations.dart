@@ -473,13 +473,13 @@ abstract class AppLocalizations {
   /// No description provided for @paraBeaconServerAddressSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Use an HTTPS origin for a public server. Local and private-network addresses are blocked. Changing servers requires no active flight or unsynced tracking points; each server keeps a separate sign-in. The new address applies immediately and is retained when you reopen the app.'**
+  /// **'Use an HTTPS origin for a public server. Local and private-network addresses are blocked. The address is saved immediately and takes effect on the next app startup; the current server stays active until then.'**
   String get paraBeaconServerAddressSubtitle;
 
   /// No description provided for @paraBeaconServerAddressSaved.
   ///
   /// In en, this message translates to:
-  /// **'Server address applied now and saved for your next app launch.'**
+  /// **'Server address saved. It will take effect the next time you start the app.'**
   String get paraBeaconServerAddressSaved;
 
   /// No description provided for @paraBeaconServerAddressInvalid.
@@ -487,12 +487,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a reachable public HTTPS address, such as https://www.parabeacon.icu, with no path, username, or query.'**
   String get paraBeaconServerAddressInvalid;
-
-  /// No description provided for @paraBeaconServerAddressBusy.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop the current flight and sync pending tracking points before changing servers.'**
-  String get paraBeaconServerAddressBusy;
 
   /// No description provided for @paraBeaconServerAddressReset.
   ///

@@ -1,10 +1,7 @@
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 
-import '../data/app_update_service.dart';
 import '../data/chat_notification_settings.dart';
-import '../data/chat_service.dart';
-import '../data/parabeacon_account_service.dart';
 import '../data/parabeacon_server_config.dart';
 import '../data/parabeacon_server_settings.dart';
 import '../data/color_palette_settings.dart';
@@ -13,8 +10,6 @@ import '../data/flight_recorder.dart';
 import '../data/flight_store.dart';
 import '../data/flight_details_settings.dart';
 import '../data/map_tile_cache.dart';
-import '../data/live_tracking_config.dart';
-import '../data/live_tracking_service.dart';
 import '../data/map_source.dart';
 import '../data/share_card_settings.dart';
 import '../data/user_agent_settings.dart';
@@ -105,87 +100,14 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
         });
         return;
       }
-      final account = ParaBeaconAccountService.instance;
-      final liveTracking = LiveTrackingService.instance;
-      if (account.isBusy || !await liveTracking.canChangeServer()) {
-        setDialogState(() {
-          saving = false;
-          errorCode = 'busy';
-        });
-        return;
-      }
-
-      late final LiveTrackingConfig nextTrackingConfig;
-      try {
-        nextTrackingConfig = await LiveTrackingConfigLoader(
-          apiBaseUri: nextBaseUri,
-        ).load();
-      } on Object {
-        setDialogState(() {
-          saving = false;
-          errorCode = 'invalid';
-        });
-        return;
-      }
-      if (!await settings.isPublicServerAddress(value)) {
-        setDialogState(() {
-          saving = false;
-          errorCode = 'invalid';
-        });
-        return;
-      }
-      if (account.isBusy || !await liveTracking.canChangeServer()) {
-        setDialogState(() {
-          saving = false;
-          errorCode = 'busy';
-        });
-        return;
-      }
-
-      final previousBaseUri = settings.baseUri;
-      final changingServer = previousBaseUri != nextBaseUri;
-      if (changingServer) {
-        await ChatService.instance.disconnect();
-        final switched = await account.switchServer(nextBaseUri);
-        if (!switched) {
-          setDialogState(() {
-            saving = false;
-            errorCode = 'busy';
-          });
-          return;
-        }
-        if (account.isBusy || !await liveTracking.canChangeServer()) {
-          await account.switchServer(previousBaseUri);
-          setDialogState(() {
-            saving = false;
-            errorCode = 'busy';
-          });
-          return;
-        }
-      }
 
       final saved = await settings.setServerAddress(value);
       if (!saved) {
-        if (changingServer) await account.switchServer(previousBaseUri);
         setDialogState(() {
           saving = false;
           errorCode = 'invalid';
         });
         return;
-      }
-      if (changingServer) {
-        try {
-          liveTracking.configure(nextTrackingConfig);
-        } on StateError {
-          await settings.setServerAddress(previousBaseUri.toString());
-          await account.switchServer(previousBaseUri);
-          setDialogState(() {
-            saving = false;
-            errorCode = 'busy';
-          });
-          return;
-        }
-        AppUpdateService.instance.configure(nextBaseUri);
       }
       if (mounted && context.mounted) {
         Navigator.of(context).pop();
@@ -226,8 +148,6 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                   hintText: 'https://www.parabeacon.icu',
                   errorText: errorCode == null
                       ? null
-                      : errorCode == 'busy'
-                      ? AppLocalizations.of(context).paraBeaconServerAddressBusy
                       : AppLocalizations.of(
                           context,
                         ).paraBeaconServerAddressInvalid,

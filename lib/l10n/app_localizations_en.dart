@@ -207,19 +207,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paraBeaconServerAddressSubtitle =>
-      'Use an HTTPS origin for a public server. Local and private-network addresses are blocked. Changing servers requires no active flight or unsynced tracking points; each server keeps a separate sign-in. The new address applies immediately and is retained when you reopen the app.';
+      'Use an HTTPS origin for a public server. Local and private-network addresses are blocked. The address is saved immediately and takes effect on the next app startup; the current server stays active until then.';
 
   @override
   String get paraBeaconServerAddressSaved =>
-      'Server address applied now and saved for your next app launch.';
+      'Server address saved. It will take effect the next time you start the app.';
 
   @override
   String get paraBeaconServerAddressInvalid =>
       'Enter a reachable public HTTPS address, such as https://www.parabeacon.icu, with no path, username, or query.';
-
-  @override
-  String get paraBeaconServerAddressBusy =>
-      'Stop the current flight and sync pending tracking points before changing servers.';
 
   @override
   String get paraBeaconServerAddressReset => 'Use default server';

@@ -24,6 +24,7 @@ void main() {
             runtimeBaseUri.toString(),
             lookup: publicLookup,
           );
+          ParaBeaconServerConfig.configureBaseUri(runtimeBaseUri);
         }
       });
 
@@ -62,15 +63,14 @@ void main() {
       );
       expect(saved, isTrue);
       expect(settings.serverAddress, 'https://example.org');
-      expect(
-        ParaBeaconServerConfig.apiBaseUri,
-        Uri.parse('https://example.org'),
-      );
+      expect(settings.baseUri, runtimeBaseUri);
+      expect(ParaBeaconServerConfig.apiBaseUri, runtimeBaseUri);
       final preferences = await SharedPreferences.getInstance();
       expect(
         preferences.getString(ParaBeaconServerSettings.preferenceKey),
         'https://example.org',
       );
+      ParaBeaconServerConfig.configureBaseUri(runtimeBaseUri);
       final restoredSettings = ParaBeaconServerSettings();
       await restoredSettings.load();
       expect(restoredSettings.serverAddress, 'https://example.org');

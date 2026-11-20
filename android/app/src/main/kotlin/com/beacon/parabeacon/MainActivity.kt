@@ -34,7 +34,7 @@ class MainActivity : FlutterActivity() {
         private const val APP_UPDATE_CHANNEL = "com.beacon.parabeacon/app_update"
         private const val CHAT_NOTIFICATIONS_CHANNEL = "com.beacon.parabeacon/chat_notifications"
         private const val CHAT_NOTIFICATION_ID = "pilot-chat-message"
-        private const val CHAT_NOTIFICATION_CHANNEL_ID = "pilot_chat_messages"
+        private const val CHAT_NOTIFICATION_CHANNEL_ID = "pilot_chat_messages_v2"
         private const val MAX_APK_SIZE_BYTES = 512L * 1024L * 1024L
         private const val CREATE_DOCUMENT_REQUEST = 4107
         private const val OPEN_IGC_TREE_REQUEST = 4108

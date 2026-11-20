@@ -36,6 +36,7 @@ class ChatNotificationService {
   Future<bool> showIncomingMessage({
     required ChatMessage message,
     required String title,
+    required String sourceLabel,
     required String channelName,
     required String channelDescription,
   }) async {
@@ -44,6 +45,7 @@ class ChatNotificationService {
       return await _channel.invokeMethod<bool>('showIncomingMessage', {
             'id': message.id,
             'title': title,
+            'sourceLabel': sourceLabel,
             'body': message.text,
             'channelName': channelName,
             'channelDescription': channelDescription,

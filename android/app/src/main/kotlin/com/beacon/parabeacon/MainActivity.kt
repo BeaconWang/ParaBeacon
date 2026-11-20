@@ -113,11 +113,12 @@ class MainActivity : FlutterActivity() {
     ) {
         val messageId = call.argument<String>("id")?.takeIf { it.isNotBlank() }
         val title = call.argument<String>("title")?.takeIf { it.isNotBlank() }
+        val sourceLabel = call.argument<String>("sourceLabel")?.takeIf { it.isNotBlank() }
         val body = call.argument<String>("body")?.takeIf { it.isNotBlank() }
         val channelName = call.argument<String>("channelName")?.takeIf { it.isNotBlank() }
         val channelDescription = call.argument<String>("channelDescription")
         val senderPilotNumber = call.argument<Int>("senderPilotNumber")
-        if (messageId == null || title == null || body == null ||
+        if (messageId == null || title == null || sourceLabel == null || body == null ||
             channelName == null || channelDescription == null ||
             senderPilotNumber == null || senderPilotNumber !in 100000..999999) {
             result.error("INVALID_CHAT_NOTIFICATION", "Notification data is invalid.", null)
@@ -143,11 +144,12 @@ class MainActivity : FlutterActivity() {
             )
             val notification = NotificationCompat.Builder(this, CHAT_NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(applicationInfo.icon)
-                .setContentTitle(title)
+                .setContentTitle("$sourceLabel · $title")
                 .setContentText(body)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(body))
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
@@ -177,6 +179,7 @@ class MainActivity : FlutterActivity() {
         ).apply {
             this.description = description
             enableVibration(true)
+            vibrationPattern = longArrayOf(0, 250, 150, 250)
             setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes)
         }
         notificationManager.createNotificationChannel(channel)

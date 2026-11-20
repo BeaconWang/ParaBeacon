@@ -55,6 +55,7 @@ void main() {
         await service.showIncomingMessage(
           message: message,
           title: 'New message from Sky Pilot',
+          sourceLabel: 'Direct messages',
           channelName: 'Pilot Chat messages',
           channelDescription: 'Direct-message alerts',
         ),
@@ -65,6 +66,7 @@ void main() {
       expect(calls.single.arguments, {
         'id': 'message-123',
         'title': 'New message from Sky Pilot',
+        'sourceLabel': 'Direct messages',
         'body': 'Landing in ten minutes',
         'channelName': 'Pilot Chat messages',
         'channelDescription': 'Direct-message alerts',
@@ -97,6 +99,7 @@ void main() {
           createdAt: DateTime.utc(2026, 11, 20),
         ),
         title: 'New message',
+        sourceLabel: 'Direct messages',
         channelName: 'Pilot Chat',
         channelDescription: 'Direct messages',
       ),

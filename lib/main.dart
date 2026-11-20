@@ -908,18 +908,20 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
               ),
               onBackgroundMessage: (message) {
                 if (!ChatNotificationSettings.instance.allows(message)) return;
+                final l10n = AppLocalizations.of(context);
+                final sourceLabel = switch (message.scope) {
+                  'public' => l10n.chatNotificationWorldwide,
+                  'channel' => l10n.chatNotificationChannel,
+                  'direct' => l10n.chatNotificationDirect,
+                  _ => '',
+                };
                 unawaited(
                   ChatNotificationService.instance.showIncomingMessage(
                     message: message,
-                    title: AppLocalizations.of(
-                      context,
-                    ).chatNewMessageFrom(message.senderName),
-                    channelName: AppLocalizations.of(
-                      context,
-                    ).chatNotificationChannelName,
-                    channelDescription: AppLocalizations.of(
-                      context,
-                    ).chatNotificationChannelDescription,
+                    title: l10n.chatNewMessageFrom(message.senderName),
+                    sourceLabel: sourceLabel,
+                    channelName: l10n.chatNotificationChannelName,
+                    channelDescription: l10n.chatNotificationChannelDescription,
                   ),
                 );
               },

@@ -207,7 +207,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paraBeaconServerAddressSubtitle =>
-      'Use an HTTPS origin for a public server. Local and private-network addresses are blocked. The address is saved immediately and takes effect on the next app startup; the current server stays active until then.';
+      'Use a public server origin. HTTPS is recommended; HTTP sends data without encryption, so use it only with a trusted server. Local and private-network addresses are blocked. The address is saved immediately and takes effect on the next app startup; the current server stays active until then.';
 
   @override
   String get paraBeaconServerAddressSaved =>
@@ -215,7 +215,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paraBeaconServerAddressInvalid =>
-      'Enter a reachable public HTTPS address, such as https://www.parabeacon.icu, with no path, username, or query.';
+      'Enter a reachable public HTTP or HTTPS address, such as https://www.parabeacon.icu, with no path, username, or query.';
 
   @override
   String get paraBeaconServerAddressReset => 'Use default server';

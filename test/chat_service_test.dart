@@ -5,9 +5,70 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:parabeacon/data/chat_service.dart';
 import 'package:parabeacon/data/parabeacon_account_service.dart';
+import 'package:parabeacon/data/parabeacon_server_config.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test(
+    'uses configured public HTTP origin for authenticated chat requests',
+    () async {
+      final previousBaseUri = ParaBeaconServerConfig.apiBaseUri;
+      ParaBeaconServerConfig.configureBaseUri(Uri.parse('http://8.8.8.8:8080'));
+      addTearDown(() {
+        ParaBeaconServerConfig.configureBaseUri(previousBaseUri);
+      });
+
+      final accountClient = MockClient((request) async {
+        expect(request.url.scheme, 'http');
+        expect(request.url.port, 8080);
+        return http.Response(
+          jsonEncode({
+            'access_token': 'http-chat-token',
+            'expires_at': DateTime.now()
+                .add(const Duration(minutes: 10))
+                .toUtc()
+                .toIso8601String(),
+            'refresh_token': 'http-chat-refresh-token-long-value',
+            'refresh_expires_at': null,
+            'user': {
+              'id': 'current-user',
+              'username': 'current_pilot',
+              'pilot_number': 123456,
+            },
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+      final account = ParaBeaconAccountService(
+        client: accountClient,
+        sessionStore: _SearchSessionStore(),
+      );
+      addTearDown(account.dispose);
+      expect(
+        await account.login(identifier: 'current_pilot', password: 'abc123'),
+        isTrue,
+      );
+
+      final chatClient = MockClient((request) async {
+        expect(request.url.scheme, 'http');
+        expect(request.url.host, '8.8.8.8');
+        expect(request.url.port, 8080);
+        expect(request.headers['authorization'], 'Bearer http-chat-token');
+        return http.Response(jsonEncode({'conversations': []}), 200);
+      });
+      final chat = ChatService(accountService: account, httpClient: chatClient);
+      addTearDown(() {
+        chat.dispose();
+        chatClient.close();
+        accountClient.close();
+      });
+
+      final page = await chat.listConversations(limit: 20);
+      expect(page.conversations, isEmpty);
+    },
+  );
 
   test('searches accounts by name with an authenticated paged request', () async {
     final accountClient = MockClient((request) async {

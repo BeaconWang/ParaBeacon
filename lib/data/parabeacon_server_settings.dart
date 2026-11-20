@@ -49,10 +49,11 @@ class ParaBeaconServerSettings extends ChangeNotifier {
     final parsed = Uri.tryParse(candidate);
     if (!ParaBeaconServerConfig.isValidUserOrigin(parsed)) return null;
     try {
+      final defaultPort = parsed!.scheme == 'https' ? 443 : 80;
       return Uri(
-        scheme: 'https',
-        host: parsed!.host,
-        port: parsed.hasPort && parsed.port != 443 ? parsed.port : null,
+        scheme: parsed.scheme,
+        host: parsed.host,
+        port: parsed.hasPort && parsed.port != defaultPort ? parsed.port : null,
       );
     } on FormatException {
       return null;

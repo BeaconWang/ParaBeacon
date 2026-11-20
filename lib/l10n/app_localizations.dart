@@ -473,7 +473,7 @@ abstract class AppLocalizations {
   /// No description provided for @paraBeaconServerAddressSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Use an HTTPS origin for a public server. Local and private-network addresses are blocked. The address is saved immediately and takes effect on the next app startup; the current server stays active until then.'**
+  /// **'Use a public server origin. HTTPS is recommended; HTTP sends data without encryption, so use it only with a trusted server. Local and private-network addresses are blocked. The address is saved immediately and takes effect on the next app startup; the current server stays active until then.'**
   String get paraBeaconServerAddressSubtitle;
 
   /// No description provided for @paraBeaconServerAddressSaved.
@@ -485,7 +485,7 @@ abstract class AppLocalizations {
   /// No description provided for @paraBeaconServerAddressInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Enter a reachable public HTTPS address, such as https://www.parabeacon.icu, with no path, username, or query.'**
+  /// **'Enter a reachable public HTTP or HTTPS address, such as https://www.parabeacon.icu, with no path, username, or query.'**
   String get paraBeaconServerAddressInvalid;
 
   /// No description provided for @paraBeaconServerAddressReset.

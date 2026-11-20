@@ -18,13 +18,16 @@ class ParaBeaconServerConfig {
 
   static void configureBaseUri(Uri uri) {
     if (!isValidUserOrigin(uri)) {
-      throw ArgumentError.value(uri, 'uri', 'Expected a public HTTPS origin.');
+      throw ArgumentError.value(
+        uri,
+        'uri',
+        'Expected a public HTTP or HTTPS origin.',
+      );
     }
     _apiBaseUri = uri;
   }
 
-  static bool isValidUserOrigin(Uri? uri) =>
-      uri?.scheme == 'https' && isValidOrigin(uri);
+  static bool isValidUserOrigin(Uri? uri) => isValidOrigin(uri);
 
   static Uri _parseBaseUri(String value) {
     final uri = Uri.tryParse(value);

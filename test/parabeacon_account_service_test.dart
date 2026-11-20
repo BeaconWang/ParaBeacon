@@ -505,7 +505,9 @@ void main() {
       ..values['parabeacon_access_token'] = 'default-server-token'
       ..values['parabeacon_refresh_token'] = 'default-server-refresh-token';
     final client = MockClient((request) async {
+      expect(request.url.scheme, 'http');
       expect(request.url.host, '8.8.8.8');
+      expect(request.url.port, 8080);
       expect(request.url.path, '/api/v1/auth/login');
       expect(request.headers['authorization'], isNull);
       return http.Response(
@@ -529,7 +531,10 @@ void main() {
     );
     addTearDown(service.dispose);
 
-    expect(await service.switchServer(Uri.parse('https://8.8.8.8')), isTrue);
+    expect(
+      await service.switchServer(Uri.parse('http://8.8.8.8:8080')),
+      isTrue,
+    );
     expect(service.isSignedIn, isFalse);
     expect(
       await service.login(identifier: 'pilot_one', password: 'abc123'),

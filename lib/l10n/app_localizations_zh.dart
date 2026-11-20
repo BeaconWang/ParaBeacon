@@ -199,14 +199,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get paraBeaconServerAddressSubtitle =>
-      '请输入公网 HTTPS 服务器源地址；本地和私有网络地址会被阻止。地址会立即保存，并在下次启动应用时生效；在此之前仍使用当前服务器。';
+      '请输入公网服务器源地址。建议使用 HTTPS；HTTP 不会加密传输数据，仅应连接可信服务器。本地和私有网络地址会被阻止。地址会立即保存，并在下次启动应用时生效；在此之前仍使用当前服务器。';
 
   @override
   String get paraBeaconServerAddressSaved => '服务器地址已保存，将在下次启动应用时生效。';
 
   @override
   String get paraBeaconServerAddressInvalid =>
-      '请输入可访问的公网 HTTPS 地址，例如 https://www.parabeacon.icu；不要包含路径、用户名或查询参数。';
+      '请输入可访问的公网 HTTP 或 HTTPS 地址，例如 https://www.parabeacon.icu；不要包含路径、用户名或查询参数。';
 
   @override
   String get paraBeaconServerAddressReset => '使用默认服务器';

@@ -12,6 +12,12 @@ void main() {
       isTrue,
     );
     expect(
+      ParaBeaconServerConfig.isValidUserOrigin(
+        Uri.parse('http://8.8.8.8:8080'),
+      ),
+      isTrue,
+    );
+    expect(
       ParaBeaconServerConfig.isValidOrigin(
         Uri.parse('https://[2606:4700:4700::1111]:8443'),
       ),

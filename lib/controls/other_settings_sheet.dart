@@ -145,7 +145,7 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
                 maxLength: 2048,
                 decoration: InputDecoration(
                   border: const OutlineInputBorder(),
-                  hintText: 'https://www.parabeacon.icu',
+                  hintText: 'https://www.parabeacon.icu or http://example.org',
                   errorText: errorCode == null
                       ? null
                       : AppLocalizations.of(

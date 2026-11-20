@@ -626,7 +626,7 @@ class ChatService extends ChangeNotifier {
     Uri uri, {
     Object? body,
   }) async {
-    if (uri.scheme != 'https' ||
+    if (uri.scheme != _apiBase.scheme ||
         uri.host.toLowerCase() != _apiBase.host.toLowerCase() ||
         uri.port != _apiBase.port ||
         uri.userInfo.isNotEmpty) {

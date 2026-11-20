@@ -22,10 +22,11 @@ class LivePilotMapMarker extends StatelessWidget {
 
   static const double markerWidth = 160;
   static const double markerHeight = 96;
-  static const double glyphCenterFromTop = 26;
+  static const double iconStageSize = 52;
+  static const double glyphCenterFromTop = iconStageSize / 2;
   static const Alignment markerAlignment = Alignment(
     0,
-    (2 * glyphCenterFromTop / markerHeight) - 1,
+    1 - (2 * glyphCenterFromTop / markerHeight),
   );
 
   static const liveIndicatorColor = Color(0xff36c878);
@@ -50,42 +51,45 @@ class LivePilotMapMarker extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                if (headingDegrees != null && headingDegrees!.isFinite)
-                  PilotDirectionIndicator(
-                    headingDegrees: headingDegrees!,
-                    mapRotationDegrees: screenRotationDegrees,
-                    color: color,
+            SizedBox.square(
+              dimension: iconStageSize,
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  if (headingDegrees != null && headingDegrees!.isFinite)
+                    PilotDirectionIndicator(
+                      headingDegrees: headingDegrees!,
+                      mapRotationDegrees: screenRotationDegrees,
+                      color: color,
+                    ),
+                  Container(
+                    width: 38,
+                    height: 38,
+                    padding: const EdgeInsets.all(2.5),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: color, width: 2.5),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black38,
+                          blurRadius: 5,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: PilotAvatarPicture(
+                      avatarId: avatarId,
+                      profileImageUrl: profileImageUrl,
+                      size: 28,
+                      circular: true,
+                      backgroundColor: color.withValues(alpha: 0.14),
+                      iconColor: color,
+                    ),
                   ),
-                Container(
-                  width: 38,
-                  height: 38,
-                  padding: const EdgeInsets.all(2.5),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: color, width: 2.5),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black38,
-                        blurRadius: 5,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: PilotAvatarPicture(
-                    avatarId: avatarId,
-                    profileImageUrl: profileImageUrl,
-                    size: 28,
-                    circular: true,
-                    backgroundColor: color.withValues(alpha: 0.14),
-                    iconColor: color,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
 
             if (showName) ...[

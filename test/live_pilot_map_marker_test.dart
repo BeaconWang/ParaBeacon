@@ -103,11 +103,46 @@ void main() {
     semantics.dispose();
   });
 
-  test('anchors the live pilot avatar center to its map coordinate', () {
-    final marker = LivePilotMapMarker.markerAlignment;
-    expect(
-      (marker.y + 1) * LivePilotMapMarker.markerHeight / 2,
-      closeTo(LivePilotMapMarker.glyphCenterFromTop, 1e-10),
-    );
+  testWidgets('keeps avatar center on map coordinate with or without heading', (
+    tester,
+  ) async {
+    for (final heading in <double?>[null, 90]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: LivePilotMapMarker.markerWidth,
+                height: LivePilotMapMarker.markerHeight,
+                child: LivePilotMapMarker(
+                  name: 'Anchor Pilot',
+                  color: Colors.blue,
+                  landed: false,
+                  showName: false,
+                  headingDegrees: heading,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final avatar = tester.getRect(find.byType(ClipOval));
+      final markerRect = tester.getRect(find.byType(LivePilotMapMarker));
+      final anchorOffsetFromTop =
+          (1 - LivePilotMapMarker.markerAlignment.y) *
+          LivePilotMapMarker.markerHeight /
+          2;
+
+      expect(avatar.center.dx, closeTo(markerRect.center.dx, 0.1));
+      expect(
+        avatar.center.dy - markerRect.top,
+        closeTo(LivePilotMapMarker.glyphCenterFromTop, 0.1),
+      );
+      expect(
+        avatar.center.dy - markerRect.top,
+        closeTo(anchorOffsetFromTop, 0.1),
+      );
+    }
   });
 }

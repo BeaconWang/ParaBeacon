@@ -84,6 +84,12 @@ void main() {
 
     expect(find.text('cloud_pilot'), findsOneWidget);
     expect(find.textContaining('Offline'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('chat-unread-count-345678')),
+      findsOneWidget,
+    );
+    expect(find.text('0'), findsOneWidget);
+    expect(find.byTooltip('0 unread messages'), findsOneWidget);
     expect(find.byTooltip('Unpin conversation'), findsOneWidget);
     final pinButton = find.ancestor(
       of: find.byIcon(Icons.push_pin),

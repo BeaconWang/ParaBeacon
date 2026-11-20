@@ -498,6 +498,15 @@ class ControlWidget extends StatelessWidget {
               'showPublicPilots',
               fallback: true,
             ),
+            showPilotName: control.boolSetting('showPilotName', fallback: true),
+            showPilotAltitude: control.boolSetting(
+              'showPilotAltitude',
+              fallback: true,
+            ),
+            showPilotSpeed: control.boolSetting(
+              'showPilotSpeed',
+              fallback: true,
+            ),
             pilotArrowCoef:
                 control.doubleSetting('pilotArrowCoef', fallback: 100.0) /
                 100.0,

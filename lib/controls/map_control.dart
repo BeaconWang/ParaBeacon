@@ -92,12 +92,19 @@ double? _publicPilotCourse(
   return null;
 }
 
-String _publicPilotFlightInfo(server_tracking.PublicPilotLocation pilot) {
+String formatPilotFlightInfo({
+  double? altitudeMeters,
+  double? groundSpeedMetersPerSecond,
+  required bool showAltitude,
+  required bool showSpeed,
+}) {
   final fields = <String>[];
-  final altitude = pilot.altitudeMeters;
-  final speed = pilot.groundSpeedMetersPerSecond;
-  if (altitude != null) fields.add('${altitude.round()} m');
-  if (speed != null) fields.add('${(speed * 3.6).round()} km/h');
+  if (showAltitude && altitudeMeters != null) {
+    fields.add('${altitudeMeters.round()} m');
+  }
+  if (showSpeed && groundSpeedMetersPerSecond != null) {
+    fields.add('${(groundSpeedMetersPerSecond * 3.6).round()} km/h');
+  }
   return fields.join(' · ');
 }
 
@@ -349,6 +356,9 @@ class MapControl extends StatefulWidget {
   /// locations are fetched only for the current map viewport and signed-in
   /// users; the setting controls the overlay and its refresh requests.
   final bool showOtherPilots;
+  final bool showPilotName;
+  final bool showPilotAltitude;
+  final bool showPilotSpeed;
 
   /// Optional WGS-84 location marker, for map-based selection flows.
   final LatLng? selectionMarker;
@@ -394,6 +404,9 @@ class MapControl extends StatefulWidget {
     this.active = false,
     this.onMapTap,
     this.showOtherPilots = true,
+    this.showPilotName = true,
+    this.showPilotAltitude = true,
+    this.showPilotSpeed = true,
     this.selectionMarker,
   }) : _tileSource = tileSource;
 
@@ -1105,8 +1118,14 @@ class _MapControlState extends State<MapControl> {
           alignment: LivePilotMapMarker.markerAlignment,
           child: LivePilotMapMarker(
             name: pilot.name,
+            showName: widget.showPilotName,
             color: Color(pilot.colorArgb),
             landed: pilot.landed,
+            flightInfo: formatPilotFlightInfo(
+              altitudeMeters: pilot.altitude.toDouble(),
+              showAltitude: widget.showPilotAltitude,
+              showSpeed: false,
+            ),
             headingDegrees: pilot.headingDegrees,
             screenRotationDegrees: _rotationDeg,
           ),
@@ -1119,11 +1138,17 @@ class _MapControlState extends State<MapControl> {
           alignment: LivePilotMapMarker.markerAlignment,
           child: LivePilotMapMarker(
             name: pilot.pilotName,
+            showName: widget.showPilotName,
             color: _publicPilotColor(pilot.pilotName),
             landed: false,
             avatarId: pilot.avatarId,
             profileImageUrl: pilot.profileImageUrl,
-            flightInfo: _publicPilotFlightInfo(pilot),
+            flightInfo: formatPilotFlightInfo(
+              altitudeMeters: pilot.altitudeMeters,
+              groundSpeedMetersPerSecond: pilot.groundSpeedMetersPerSecond,
+              showAltitude: widget.showPilotAltitude,
+              showSpeed: widget.showPilotSpeed,
+            ),
             headingDegrees: _publicPilotCourse(pilot, publicPilotNow),
             screenRotationDegrees: _rotationDeg,
           ),

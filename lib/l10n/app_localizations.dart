@@ -6266,6 +6266,24 @@ abstract class AppLocalizations {
   /// **'Shows available public pilot locations from ParaBeacon and XContest LiveTrack.'**
   String get settingShowPublicPilotsSubtitle;
 
+  /// No description provided for @settingShowPilotName.
+  ///
+  /// In en, this message translates to:
+  /// **'Show pilot name'**
+  String get settingShowPilotName;
+
+  /// No description provided for @settingShowPilotAltitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Show pilot altitude'**
+  String get settingShowPilotAltitude;
+
+  /// No description provided for @settingShowPilotSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Show pilot speed'**
+  String get settingShowPilotSpeed;
+
   /// No description provided for @appUpdateAvailableTitle.
   ///
   /// In en, this message translates to:

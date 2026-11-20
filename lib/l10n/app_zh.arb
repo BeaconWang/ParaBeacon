@@ -1136,6 +1136,9 @@
   "settingShowNorth": "显示北方向",
   "settingShowPublicPilots": "显示公开飞行员实时位置",
   "settingShowPublicPilotsSubtitle": "显示 ParaBeacon 和 XContest LiveTrack 提供的可用公开飞行员位置。",
+  "settingShowPilotName": "显示飞行员姓名",
+  "settingShowPilotAltitude": "显示飞行员高度",
+  "settingShowPilotSpeed": "显示飞行员速度",
   "appUpdateAvailableTitle": "发现新版本",
   "appUpdateWifiRequired": "发现版本 {version}。请连接 Wi-Fi 后下载 APK。",
   "@appUpdateWifiRequired": {

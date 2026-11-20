@@ -52,6 +52,43 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('independently hides name and flight detail captions', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: LivePilotMapMarker(
+            name: 'Hidden Name',
+            color: Colors.blue,
+            landed: false,
+            showName: false,
+            flightInfo: '1,250 m',
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Hidden Name'), findsNothing);
+    expect(find.text('1,250 m'), findsOneWidget);
+    expect(find.byType(ClipOval), findsOneWidget);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: LivePilotMapMarker(
+            name: 'Visible Name',
+            color: Colors.blue,
+            landed: false,
+            showName: true,
+            flightInfo: '',
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Visible Name'), findsOneWidget);
+    expect(find.text('1,250 m'), findsNothing);
+  });
+
   testWidgets('keeps landed pilots visible but de-emphasized', (tester) async {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(

@@ -3342,6 +3342,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Shows available public pilot locations from ParaBeacon and XContest LiveTrack.';
 
   @override
+  String get settingShowPilotName => 'Show pilot name';
+
+  @override
+  String get settingShowPilotAltitude => 'Show pilot altitude';
+
+  @override
+  String get settingShowPilotSpeed => 'Show pilot speed';
+
+  @override
   String get appUpdateAvailableTitle => 'Update available';
 
   @override

@@ -1214,6 +1214,9 @@
   "settingShowNorth": "Display North direction",
   "settingShowPublicPilots": "Show public pilot locations",
   "settingShowPublicPilotsSubtitle": "Shows available public pilot locations from ParaBeacon and XContest LiveTrack.",
+  "settingShowPilotName": "Show pilot name",
+  "settingShowPilotAltitude": "Show pilot altitude",
+  "settingShowPilotSpeed": "Show pilot speed",
   "appUpdateAvailableTitle": "Update available",
   "appUpdateWifiRequired": "Version {version} is available. Connect to Wi-Fi to download the APK.",
   "@appUpdateWifiRequired": {

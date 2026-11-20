@@ -11,6 +11,7 @@ class LivePilotMapMarker extends StatelessWidget {
     required this.name,
     required this.color,
     required this.landed,
+    this.showName = true,
     this.avatarId = PilotAvatar.defaultId,
     this.profileImageUrl,
     this.flightInfo,
@@ -34,6 +35,7 @@ class LivePilotMapMarker extends StatelessWidget {
   final String name;
   final Color color;
   final bool landed;
+  final bool showName;
   final int avatarId;
   final String? profileImageUrl;
   final String? flightInfo;
@@ -91,28 +93,34 @@ class LivePilotMapMarker extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 3),
-            _buildBadge(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.circle, size: 7, color: liveIndicatorColor),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: captionTextColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+            if (showName) ...[
+              const SizedBox(height: 3),
+              _buildBadge(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.circle,
+                      size: 7,
+                      color: liveIndicatorColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: captionTextColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
             if (flightInfo != null && flightInfo!.isNotEmpty) ...[
               const SizedBox(height: 2),
               _buildBadge(

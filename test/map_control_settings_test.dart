@@ -3,11 +3,51 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/control_catalog.dart';
 import 'package:parabeacon/controls/control_settings.dart';
 import 'package:parabeacon/controls/control_settings_sheet.dart';
+import 'package:parabeacon/controls/map_control.dart';
 import 'package:parabeacon/data/color_palette_settings.dart';
 import 'package:parabeacon/controls/placed_control.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 
 void main() {
+  test('formats pilot altitude and speed independently', () {
+    expect(
+      formatPilotFlightInfo(
+        altitudeMeters: 1250,
+        groundSpeedMetersPerSecond: 11.7,
+        showAltitude: true,
+        showSpeed: true,
+      ),
+      '1250 m · 42 km/h',
+    );
+    expect(
+      formatPilotFlightInfo(
+        altitudeMeters: 1250,
+        groundSpeedMetersPerSecond: 11.7,
+        showAltitude: false,
+        showSpeed: true,
+      ),
+      '42 km/h',
+    );
+    expect(
+      formatPilotFlightInfo(
+        altitudeMeters: 1250,
+        groundSpeedMetersPerSecond: 11.7,
+        showAltitude: true,
+        showSpeed: false,
+      ),
+      '1250 m',
+    );
+    expect(
+      formatPilotFlightInfo(
+        altitudeMeters: 1250,
+        groundSpeedMetersPerSecond: 11.7,
+        showAltitude: false,
+        showSpeed: false,
+      ),
+      isEmpty,
+    );
+  });
+
   test('competition task setting follows the selected app language', () async {
     final setting = settingsSchemaFor(
       'map',
@@ -39,6 +79,37 @@ void main() {
     expect(restoredMap.boolSetting('showPublicPilots'), isTrue);
     expect(setting.labelOf(english), 'Show public pilot locations');
     expect(setting.labelOf(chinese), '显示公开飞行员实时位置');
+    for (final key in [
+      'showPilotName',
+      'showPilotAltitude',
+      'showPilotSpeed',
+    ]) {
+      final labelSetting = settingsSchemaFor(
+        'map',
+      ).singleWhere((setting) => setting.key == key);
+      expect(labelSetting.defaultValue, isTrue);
+      expect(map.boolSetting(key), isTrue);
+      expect(restoredMap.boolSetting(key), isTrue);
+      expect(labelSetting.visibleWhenKey, 'showPublicPilots');
+    }
+    expect(
+      settingsSchemaFor('map')
+          .singleWhere((setting) => setting.key == 'showPilotName')
+          .labelOf(english),
+      'Show pilot name',
+    );
+    expect(
+      settingsSchemaFor('map')
+          .singleWhere((setting) => setting.key == 'showPilotAltitude')
+          .labelOf(chinese),
+      '显示飞行员高度',
+    );
+    map.settings['showPilotSpeed'] = false;
+    final savedMap = PlacedControl.fromJson({
+      'typeId': 'map',
+      'settings': map.settings,
+    })!;
+    expect(savedMap.boolSetting('showPilotSpeed'), isFalse);
   });
 
   test('landing widgets have separately configurable arrow colors', () {
@@ -214,6 +285,20 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    for (final label in [
+      'Show pilot name',
+      'Show pilot altitude',
+      'Show pilot speed',
+    ]) {
+      await reveal(label);
+      expect(find.text(label), findsOneWidget);
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+    }
+    expect(control.boolSetting('showPilotName'), isFalse);
+    expect(control.boolSetting('showPilotAltitude'), isFalse);
+    expect(control.boolSetting('showPilotSpeed'), isFalse);
 
     await reveal('Show take-off point');
     expect(find.text('Take-off marker color'), findsOneWidget);

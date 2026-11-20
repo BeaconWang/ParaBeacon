@@ -44,15 +44,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmationController = TextEditingController();
-  final _passwordChangeFormKey = GlobalKey<FormState>();
-  final _currentPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmNewPasswordController = TextEditingController();
   bool _savingProfileImage = false;
-  bool _changingPassword = false;
-  bool _obscureCurrentPassword = true;
-  bool _obscureNewPassword = true;
-  bool _obscureConfirmNewPassword = true;
   bool _registering = false;
   bool _obscurePassword = true;
   bool _obscureConfirmation = true;
@@ -70,9 +62,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmationController.dispose();
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmNewPasswordController.dispose();
     super.dispose();
   }
 
@@ -205,31 +194,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.accountProfileImageRemoved)));
-    }
-  }
-
-  Future<void> _changePassword(
-    ParaBeaconAccountService service,
-    AppLocalizations l10n,
-  ) async {
-    if (_changingPassword ||
-        !(_passwordChangeFormKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    setState(() => _changingPassword = true);
-    final changed = await service.changePassword(
-      currentPassword: _currentPasswordController.text,
-      newPassword: _newPasswordController.text,
-    );
-    if (!mounted) return;
-    setState(() => _changingPassword = false);
-    if (changed) {
-      _currentPasswordController.clear();
-      _newPasswordController.clear();
-      _confirmNewPasswordController.clear();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.accountPasswordChanged)));
     }
   }
 
@@ -451,136 +415,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
           ),
         ),
         const SizedBox(height: 12),
-        Card(
-          child: ExpansionTile(
-            leading: const Icon(Icons.lock_reset_outlined),
-            title: Text(l10n.accountChangePassword),
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Form(
-                  key: _passwordChangeFormKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _currentPasswordController,
-                        obscureText: _obscureCurrentPassword,
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.password],
-                        decoration: InputDecoration(
-                          labelText: l10n.accountCurrentPassword,
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            tooltip: _obscureCurrentPassword
-                                ? l10n.showPassword
-                                : l10n.hidePassword,
-                            onPressed: () => setState(
-                              () => _obscureCurrentPassword =
-                                  !_obscureCurrentPassword,
-                            ),
-                            icon: Icon(
-                              _obscureCurrentPassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                            ),
-                          ),
-                        ),
-                        validator: (value) => value == null || value.isEmpty
-                            ? l10n.accountPasswordRequired
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _newPasswordController,
-                        obscureText: _obscureNewPassword,
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const [AutofillHints.newPassword],
-                        decoration: InputDecoration(
-                          labelText: l10n.accountNewPassword,
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            tooltip: _obscureNewPassword
-                                ? l10n.showPassword
-                                : l10n.hidePassword,
-                            onPressed: () => setState(
-                              () => _obscureNewPassword = !_obscureNewPassword,
-                            ),
-                            icon: Icon(
-                              _obscureNewPassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                            ),
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return l10n.accountPasswordRequired;
-                          }
-                          if (value.runes.length < 6) {
-                            return l10n.accountPasswordMinimum;
-                          }
-                          if (utf8.encode(value).length > 72) {
-                            return l10n.accountPasswordMaximum;
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _confirmNewPasswordController,
-                        obscureText: _obscureConfirmNewPassword,
-                        textInputAction: TextInputAction.done,
-                        autofillHints: const [AutofillHints.newPassword],
-                        decoration: InputDecoration(
-                          labelText: l10n.accountConfirmPassword,
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            tooltip: _obscureConfirmNewPassword
-                                ? l10n.showPassword
-                                : l10n.hidePassword,
-                            onPressed: () => setState(
-                              () => _obscureConfirmNewPassword =
-                                  !_obscureConfirmNewPassword,
-                            ),
-                            icon: Icon(
-                              _obscureConfirmNewPassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                            ),
-                          ),
-                        ),
-                        validator: (value) =>
-                            value != _newPasswordController.text
-                            ? l10n.accountPasswordMismatch
-                            : null,
-                        onFieldSubmitted: (_) => _changePassword(service, l10n),
-                      ),
-                      const SizedBox(height: 16),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: FilledButton.icon(
-                          onPressed: service.isBusy || _changingPassword
-                              ? null
-                              : () => _changePassword(service, l10n),
-                          icon: _changingPassword
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.lock_reset_outlined),
-                          label: Text(l10n.accountChangePassword),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
         if (service.errorCode != null) ...[
           const SizedBox(height: 12),
           _errorPanel(context, _errorText(l10n, service.errorCode!)),

@@ -14,6 +14,10 @@ void main() {
   testWidgets('shows profile rows and edits name, introduction, and gender', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1000, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final profileJson = <String, Object?>{
       'id': 'profile-user',
       'username': 'beacon',
@@ -41,6 +45,14 @@ void main() {
           200,
           headers: {'content-type': 'application/json'},
         );
+      }
+      if (request.url.path == '/api/v1/user/change-password') {
+        expect(request.method, 'POST');
+        expect(jsonDecode(request.body), {
+          'current_password': 'old-pass-123',
+          'new_password': 'new-pass-456',
+        });
+        return http.Response('', 204);
       }
       expect(request.method, 'PATCH');
       profileJson.addAll(jsonDecode(request.body) as Map<String, Object?>);
@@ -104,6 +116,40 @@ void main() {
     await tester.tap(find.text('Male').last);
     await tester.pumpAndSettle();
     expect(account.user?.gender, 'male');
+
+    expect(
+      find.byKey(const ValueKey('profile-change-password')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('profile-change-password')));
+    await tester.pumpAndSettle();
+    expect(find.text('Current password'), findsOneWidget);
+    expect(find.text('New password'), findsOneWidget);
+    expect(find.text('Confirm password'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Current password'),
+      'old-pass-123',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'New password'),
+      'new-pass-456',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Confirm password'),
+      'new-pass-456',
+    );
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    final changePasswordButton = find.widgetWithText(
+      FilledButton,
+      'Change password',
+    );
+    await tester.ensureVisible(changePasswordButton);
+    await tester.pumpAndSettle();
+    await tester.tap(changePasswordButton);
+    await tester.pumpAndSettle();
+    expect(account.isSignedIn, isFalse);
+    expect(find.text('Sign in to view your profile.'), findsOneWidget);
   });
 }
 

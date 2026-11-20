@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/parabeacon_account_service.dart';
 import '../data/pilot_avatar.dart';
 import '../l10n/app_localizations.dart';
+import 'profile_password_change_section.dart';
 
 class ProfileDetailsPage extends StatelessWidget {
   const ProfileDetailsPage({
@@ -82,6 +83,8 @@ class ProfileDetailsPage extends StatelessWidget {
               value: birthday,
               onTap: () => _editBirthday(context, user.birthday),
             ),
+            const Divider(height: 1, indent: 16),
+            ProfilePasswordChangeSection(account: account),
           ],
         ),
       );

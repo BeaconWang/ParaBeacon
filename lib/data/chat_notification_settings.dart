@@ -12,7 +12,7 @@ class ChatNotificationSettings extends ChangeNotifier {
   static const _directKey = 'pb.chat.notifications.direct';
 
   bool _loaded = false;
-  bool _worldwide = true;
+  bool _worldwide = false;
   bool _channel = true;
   bool _direct = true;
 
@@ -25,11 +25,11 @@ class ChatNotificationSettings extends ChangeNotifier {
     _loaded = true;
     try {
       final preferences = await SharedPreferences.getInstance();
-      _worldwide = preferences.getBool(_worldwideKey) ?? true;
+      _worldwide = preferences.getBool(_worldwideKey) ?? false;
       _channel = preferences.getBool(_channelKey) ?? true;
       _direct = preferences.getBool(_directKey) ?? true;
     } on Object {
-      // Keep the enabled defaults if local preferences are unavailable.
+      // Keep the configured defaults if local preferences are unavailable.
     }
     notifyListeners();
   }

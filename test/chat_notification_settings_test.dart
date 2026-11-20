@@ -18,13 +18,16 @@ void main() {
   );
 
   test(
-    'defaults all chat scopes on and persists each switch independently',
+    'defaults Worldwide off and Channel and Direct on, persisting switches',
     () async {
       SharedPreferences.setMockInitialValues({});
       final settings = ChatNotificationSettings();
       await settings.load();
 
-      expect(settings.allows(message('public')), isTrue);
+      expect(settings.worldwide, isFalse);
+      expect(settings.channel, isTrue);
+      expect(settings.direct, isTrue);
+      expect(settings.allows(message('public')), isFalse);
       expect(settings.allows(message('channel')), isTrue);
       expect(settings.allows(message('direct')), isTrue);
 
@@ -39,6 +42,15 @@ void main() {
       expect(restored.worldwide, isFalse);
       expect(restored.channel, isFalse);
       expect(restored.direct, isTrue);
+
+      SharedPreferences.setMockInitialValues({
+        'pb.chat.notifications.worldwide': true,
+      });
+      final optedIn = ChatNotificationSettings();
+      await optedIn.load();
+      expect(optedIn.worldwide, isTrue);
+      expect(optedIn.channel, isTrue);
+      expect(optedIn.direct, isTrue);
     },
   );
 }

@@ -18,10 +18,12 @@ class SessionMetricsService {
     this.heartbeatInterval = const Duration(seconds: 60),
     Future<String> Function()? appVersionLoader,
     DateTime Function()? clock,
+    String? Function()? accessTokenProvider,
   }) : _client = client ?? http.Client(),
        _ownsClient = client == null,
        _appVersionLoader = appVersionLoader ?? _loadAppVersion,
-       _clock = clock ?? DateTime.now;
+       _clock = clock ?? DateTime.now,
+       _accessTokenProvider = accessTokenProvider;
 
   static final SessionMetricsService instance = SessionMetricsService();
 
@@ -37,6 +39,7 @@ class SessionMetricsService {
   final Duration heartbeatInterval;
   final Future<String> Function() _appVersionLoader;
   final DateTime Function() _clock;
+  String? Function()? _accessTokenProvider;
   final Stopwatch _stopwatch = Stopwatch();
   final List<Map<String, dynamic>> _pendingEvents = [];
 
@@ -53,10 +56,16 @@ class SessionMetricsService {
   bool _started = false;
   bool _closed = false;
 
-  Future<void> start({String? Function()? userIdProvider}) async {
+  Future<void> start({
+    String? Function()? userIdProvider,
+    String? Function()? accessTokenProvider,
+  }) async {
     if (_started || _closed) return;
     _started = true;
     _userIdProvider = userIdProvider;
+    if (accessTokenProvider != null) {
+      _accessTokenProvider = accessTokenProvider;
+    }
     _sessionId = _createUuid();
     _stopwatch.start();
     _appVersion = _loadVersionSafely();
@@ -189,11 +198,13 @@ class SessionMetricsService {
       }
     }
 
-    final userId = _safeUserId();
+    final accessToken = _safeAccessToken();
+    final userId = accessToken == null ? null : _safeUserId();
     final locale = WidgetsBinding.instance.platformDispatcher.locale;
     final localNow = _clock();
     final now = localNow.toUtc();
     final payload = <String, dynamic>{
+      'event_id': _createUuid(),
       'session_id': _sessionId,
       'hardware_id': _hardwareId,
       'app_version': await _appVersion,
@@ -232,6 +243,15 @@ class SessionMetricsService {
     }
   }
 
+  String? _safeAccessToken() {
+    try {
+      final value = _accessTokenProvider?.call()?.trim();
+      return value == null || value.isEmpty ? null : value;
+    } on Object {
+      return null;
+    }
+  }
+
   Future<bool> _post(Map<String, dynamic> payload) async {
     final uri = ParaBeaconServerSettings.instance.selectedBaseUri.replace(
       path: '/api/v1/metrics/session',
@@ -244,6 +264,10 @@ class SessionMetricsService {
         ..headers['Content-Type'] = 'application/json; charset=utf-8'
         ..headers['User-Agent'] = UserAgentSettings.instance.forRequest(uri)
         ..body = jsonEncode(payload);
+      final accessToken = _safeAccessToken();
+      if (accessToken != null) {
+        request.headers['Authorization'] = 'Bearer $accessToken';
+      }
       return await (() async {
         final response = await _client.send(request);
         await response.stream.drain<void>();

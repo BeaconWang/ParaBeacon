@@ -22,14 +22,17 @@ void main() {
       }),
       heartbeatInterval: const Duration(hours: 1),
       appVersionLoader: () async => '1.2.3+45',
+      accessTokenProvider: () => 'access-token',
     );
 
     await service.start(userIdProvider: () => 'user-7');
 
     expect(requests, hasLength(1));
+    expect(requests.single.headers['authorization'], 'Bearer access-token');
     expect(requests.single.method, 'POST');
     expect(requests.single.url.path, '/api/v1/metrics/session');
     final payload = jsonDecode(requests.single.body) as Map<String, dynamic>;
+    expect(payload['event_id'], matches(RegExp(r'^[0-9a-f-]{36}$')));
     expect(payload['session_id'], matches(RegExp(r'^[0-9a-f-]{36}$')));
     expect(payload['hardware_id'], matches(RegExp(r'^[0-9a-f-]{36}$')));
     expect(payload['app_version'], '1.2.3+45');

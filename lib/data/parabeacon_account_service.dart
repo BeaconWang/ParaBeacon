@@ -219,6 +219,15 @@ class ParaBeaconAccountService extends ChangeNotifier
       (_expiresAt == null || _expiresAt!.isAfter(DateTime.now()));
   ParaBeaconUser? get user => _user;
   String? get errorCode => _errorCode;
+  String? metricsAccessTokenFor(Uri serverBaseUri) {
+    final expectedApiBaseUri = serverBaseUri.resolve('/api/v1/');
+    if (_serverApiBaseUri.origin != expectedApiBaseUri.origin ||
+        _serverApiBaseUri.path != expectedApiBaseUri.path) {
+      return null;
+    }
+    return _loaded && !_loggingOut && isSignedIn ? _token : null;
+  }
+
   bool get _canRefresh => _refreshToken?.isNotEmpty == true;
   bool get _needsAccessRefresh =>
       _expiresAt == null ||

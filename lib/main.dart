@@ -169,6 +169,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     unawaited(
       SessionMetricsService.instance.start(
         userIdProvider: () => ParaBeaconAccountService.instance.user?.id,
+        accessTokenProvider: () =>
+            ParaBeaconAccountService.instance.metricsAccessTokenFor(
+              ParaBeaconServerSettings.instance.selectedBaseUri,
+            ),
       ),
     );
     ParaBeaconAccountService.instance.addListener(_maintainChatPresence);

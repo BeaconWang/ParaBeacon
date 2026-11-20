@@ -333,6 +333,8 @@ void main() {
       String scope = 'public',
       int? channel,
       int? recipient,
+      bool? recipientHasRead,
+      int? readerCount,
     }) => {
       'id': 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
       'scope': scope,
@@ -343,12 +345,17 @@ void main() {
       'sender_profile_image_url':
           '/api/v1/profile-images/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       ...?(recipient == null ? null : {'recipient_pilot_number': recipient}),
+      ...?(recipientHasRead == null
+          ? null
+          : {'recipient_has_read': recipientHasRead}),
+      ...?(readerCount == null ? null : {'reader_count': readerCount}),
       'text': 'Hello, pilots',
       'created_at': '2026-11-18T10:00:00Z',
     };
 
-    final public = ChatMessage.fromJson(payload());
+    final public = ChatMessage.fromJson(payload(readerCount: 7));
     expect(public?.scope, 'public');
+    expect(public?.readerCount, 7);
     expect(public?.senderPilotNumber, 123456);
     expect(public?.senderAvatarId, 3);
     expect(
@@ -364,10 +371,11 @@ void main() {
     expect(channel?.channelNumber, 456789);
 
     final direct = ChatMessage.fromJson(
-      payload(scope: 'direct', recipient: 654321),
+      payload(scope: 'direct', recipient: 654321, recipientHasRead: true),
     );
     expect(direct?.scope, 'direct');
     expect(direct?.recipientPilotNumber, 654321);
+    expect(direct?.recipientHasRead, isTrue);
     expect(
       ChatMessage.fromJson({...payload(), 'sender_avatar_id': 99}),
       isNull,
@@ -376,6 +384,14 @@ void main() {
       ChatMessage.fromJson({
         ...payload(),
         'sender_profile_image_url': 'https://attacker.example/image.jpg',
+      }),
+      isNull,
+    );
+    expect(ChatMessage.fromJson(payload(readerCount: -1)), isNull);
+    expect(
+      ChatMessage.fromJson({
+        ...payload(scope: 'direct'),
+        'recipient_has_read': 'yes',
       }),
       isNull,
     );

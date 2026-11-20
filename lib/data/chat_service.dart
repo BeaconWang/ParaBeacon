@@ -142,6 +142,8 @@ class ChatMessage {
     this.recipientPilotNumber,
     this.senderAvatarId = PilotAvatar.defaultId,
     this.senderProfileImageUrl,
+    this.recipientHasRead,
+    this.readerCount,
   });
 
   final String id;
@@ -152,6 +154,8 @@ class ChatMessage {
   final int? recipientPilotNumber;
   final int senderAvatarId;
   final String? senderProfileImageUrl;
+  final bool? recipientHasRead;
+  final int? readerCount;
   final String text;
   final DateTime createdAt;
 
@@ -165,6 +169,8 @@ class ChatMessage {
     final timestamp = raw['created_at'];
     final channel = raw['channel_number'];
     final recipient = raw['recipient_pilot_number'];
+    final recipientHasRead = raw['recipient_has_read'];
+    final readerCount = raw['reader_count'];
     final senderAvatarId = raw['sender_avatar_id'] ?? PilotAvatar.defaultId;
     final rawSenderProfileImageUrl = raw['sender_profile_image_url'];
     final senderProfileImageUrl = rawSenderProfileImageUrl == null
@@ -191,7 +197,9 @@ class ChatMessage {
         (channel != null &&
             (channel is! int || channel < 0 || channel > 999999)) ||
         (recipient != null &&
-            (recipient is! int || recipient < 100000 || recipient > 999999))) {
+            (recipient is! int || recipient < 100000 || recipient > 999999)) ||
+        (recipientHasRead != null && recipientHasRead is! bool) ||
+        (readerCount != null && (readerCount is! int || readerCount < 0))) {
       return null;
     }
     final createdAt = DateTime.tryParse(timestamp);
@@ -203,6 +211,8 @@ class ChatMessage {
       senderName: senderName.trim(),
       senderAvatarId: senderAvatarId,
       senderProfileImageUrl: senderProfileImageUrl,
+      recipientHasRead: recipientHasRead as bool?,
+      readerCount: readerCount as int?,
       channelNumber: channel as int?,
       recipientPilotNumber: recipient as int?,
       text: text,

@@ -6,10 +6,12 @@ import 'package:parabeacon/data/pilot_avatar.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 
 void main() {
-  Widget buildTile(ChatMessage message) => MaterialApp(
+  Widget buildTile(ChatMessage message, {bool mine = false}) => MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(body: ChatMessageTile(message: message, mine: false)),
+    home: Scaffold(
+      body: ChatMessageTile(message: message, mine: mine),
+    ),
   );
 
   testWidgets('Direct message shows profile image and content without title', (
@@ -33,6 +35,51 @@ void main() {
     expect(find.byType(PilotAvatarPicture), findsOneWidget);
     expect(find.text('Landing in ten minutes'), findsOneWidget);
     expect(find.text('Sky Pilot'), findsNothing);
+  });
+
+  testWidgets('own Direct message shows whether the recipient has read it', (
+    tester,
+  ) async {
+    for (final hasRead in [true, false]) {
+      await tester.pumpWidget(
+        buildTile(
+          ChatMessage(
+            id: 'direct-read-$hasRead',
+            scope: 'direct',
+            senderPilotNumber: 123456,
+            recipientPilotNumber: 234567,
+            senderName: 'Current Pilot',
+            text: 'Meet at launch',
+            createdAt: DateTime.utc(2026, 11, 20, 12),
+            recipientHasRead: hasRead,
+          ),
+          mine: true,
+        ),
+      );
+      expect(find.text(hasRead ? 'Read' : 'Not read'), findsOneWidget);
+    }
+  });
+
+  testWidgets('Worldwide and Channel messages show reader counts', (
+    tester,
+  ) async {
+    for (final scope in ['public', 'channel']) {
+      await tester.pumpWidget(
+        buildTile(
+          ChatMessage(
+            id: '$scope-read-count',
+            scope: scope,
+            senderPilotNumber: 234567,
+            channelNumber: scope == 'channel' ? 456789 : null,
+            senderName: 'Sky Pilot',
+            text: 'Conditions look good',
+            createdAt: DateTime.utc(2026, 11, 20, 12),
+            readerCount: 7,
+          ),
+        ),
+      );
+      expect(find.text('Read by 7'), findsOneWidget);
+    }
   });
 
   testWidgets('public chat continues to show the sender title', (tester) async {

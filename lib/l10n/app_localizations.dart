@@ -1256,6 +1256,24 @@ abstract class AppLocalizations {
   /// **'{count} unread messages'**
   String chatUnreadMessages(int count);
 
+  /// No description provided for @chatRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get chatRead;
+
+  /// No description provided for @chatNotRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Not read'**
+  String get chatNotRead;
+
+  /// No description provided for @chatReaderCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Read by {count}'**
+  String chatReaderCount(int count);
+
   /// No description provided for @chatPinConversation.
   ///
   /// In en, this message translates to:

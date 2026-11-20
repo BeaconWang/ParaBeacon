@@ -814,16 +814,43 @@ class ChatMessageTile extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(message.text),
                 const SizedBox(height: 3),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    MaterialLocalizations.of(context).formatTimeOfDay(
-                      TimeOfDay.fromDateTime(message.createdAt.toLocal()),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (mine &&
+                        message.scope == 'direct' &&
+                        message.recipientHasRead != null) ...[
+                      Text(
+                        message.recipientHasRead!
+                            ? l10n.chatRead
+                            : l10n.chatNotRead,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if ((message.scope == 'public' ||
+                            message.scope == 'channel') &&
+                        message.readerCount != null) ...[
+                      Text(
+                        l10n.chatReaderCount(message.readerCount!),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      MaterialLocalizations.of(context).formatTimeOfDay(
+                        TimeOfDay.fromDateTime(message.createdAt.toLocal()),
+                      ),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                  ],
                 ),
                 if (message.scope == 'channel' && message.channelNumber != null)
                   Text(

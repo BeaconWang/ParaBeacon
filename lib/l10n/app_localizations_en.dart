@@ -640,6 +640,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get chatRead => 'Read';
+
+  @override
+  String get chatNotRead => 'Not read';
+
+  @override
+  String chatReaderCount(int count) {
+    return 'Read by $count';
+  }
+
+  @override
   String get chatPinConversation => 'Pin conversation';
 
   @override

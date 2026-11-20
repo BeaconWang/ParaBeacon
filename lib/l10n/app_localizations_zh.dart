@@ -605,6 +605,17 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get chatRead => '已读';
+
+  @override
+  String get chatNotRead => '未读';
+
+  @override
+  String chatReaderCount(int count) {
+    return '$count 人已读';
+  }
+
+  @override
   String get chatPinConversation => '置顶会话';
 
   @override

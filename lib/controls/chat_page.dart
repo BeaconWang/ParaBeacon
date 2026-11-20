@@ -557,7 +557,7 @@ class _ChatPageState extends State<_ChatPage>
                       itemBuilder: (context, index) {
                         final message = _chat.messages[index];
                         final mine = message.senderPilotNumber == myPilotNumber;
-                        return _ChatMessageTile(message: message, mine: mine);
+                        return ChatMessageTile(message: message, mine: mine);
                       },
                     ),
             ),
@@ -766,8 +766,8 @@ class _ChatPageState extends State<_ChatPage>
   }
 }
 
-class _ChatMessageTile extends StatelessWidget {
-  const _ChatMessageTile({required this.message, required this.mine});
+class ChatMessageTile extends StatelessWidget {
+  const ChatMessageTile({required this.message, required this.mine, super.key});
 
   final ChatMessage message;
   final bool mine;
@@ -799,14 +799,16 @@ class _ChatMessageTile extends StatelessWidget {
                       backgroundColor:
                           theme.colorScheme.surfaceContainerHighest,
                     ),
-                    const SizedBox(width: 5),
-                    Text(
-                      message.senderName,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w700,
+                    if (message.scope != 'direct') ...[
+                      const SizedBox(width: 5),
+                      Text(
+                        message.senderName,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 3),

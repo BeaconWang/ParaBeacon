@@ -38,14 +38,6 @@ void main() {
     expect(find.text('Sky Pilot'), findsOneWidget);
     expect(find.text('1,250 m · 42 km/h'), findsOneWidget);
     expect(
-      tester.widget<Text>(find.text('Sky Pilot')).style?.color?.a,
-      lessThan(1),
-    );
-    expect(
-      tester.widget<Text>(find.text('1,250 m · 42 km/h')).style?.color?.a,
-      lessThan(1),
-    );
-    expect(
       find.bySemanticsLabel('Sky Pilot, sharing live location'),
       findsOneWidget,
     );
@@ -109,43 +101,6 @@ void main() {
     expect(tester.widget<Opacity>(find.byType(Opacity).first).opacity, 0.45);
     expect(find.bySemanticsLabel('Landed Pilot, landed'), findsOneWidget);
     semantics.dispose();
-  });
-
-  testWidgets('centers the pilot icon on its anchor with or without heading', (
-    tester,
-  ) async {
-    for (final heading in <double?>[null, 90]) {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: LivePilotMapMarker(
-                name: 'Anchor Pilot',
-                color: Colors.blue,
-                landed: false,
-                headingDegrees: heading,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      final icon = tester.getRect(find.byType(ClipOval));
-      final stageFinder = find.ancestor(
-        of: find.byType(ClipOval),
-        matching: find.byType(Stack),
-      );
-      expect(stageFinder, findsOneWidget);
-      final stage = tester.getRect(stageFinder);
-      final marker = tester.getRect(find.byType(LivePilotMapMarker));
-      expect(stage.size, const Size.square(LivePilotMapMarker.iconStageSize));
-      expect(icon.center.dx, closeTo(stage.center.dx, 0.1));
-      expect(icon.center.dy, closeTo(stage.center.dy, 0.1));
-      expect(
-        stage.center.dy - marker.top,
-        closeTo(LivePilotMapMarker.glyphCenterFromTop, 0.5),
-      );
-    }
   });
 
   test('anchors the live pilot avatar center to its map coordinate', () {

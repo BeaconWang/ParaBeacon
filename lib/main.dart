@@ -30,6 +30,7 @@ import 'data/flight_details_settings.dart';
 import 'data/flight_recorder.dart';
 import 'data/flight_state.dart';
 import 'data/parabeacon_account_service.dart';
+import 'data/session_metrics_service.dart';
 import 'data/chat_service.dart';
 import 'data/chat_notification_service.dart';
 import 'data/chat_notification_settings.dart';
@@ -165,6 +166,11 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     // temporarily shows the system bars (e.g. after a permission dialog or
     // when the user returns from another app).
     WidgetsBinding.instance.addObserver(this);
+    unawaited(
+      SessionMetricsService.instance.start(
+        userIdProvider: () => ParaBeaconAccountService.instance.user?.id,
+      ),
+    );
     ParaBeaconAccountService.instance.addListener(_maintainChatPresence);
     unawaited(ChatService.instance.maintainPresence());
     // Restore accounts and tracking preferences, then offer an explicit
@@ -336,6 +342,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   @override
   void dispose() {
     _appUpdateMonitor?.cancel();
+    unawaited(SessionMetricsService.instance.stop());
     ParaBeaconAccountService.instance.removeListener(_maintainChatPresence);
     unawaited(ChatService.instance.disconnect());
     WidgetsBinding.instance.removeObserver(this);
@@ -842,6 +849,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    SessionMetricsService.instance.onLifecycleStateChanged(state);
     _gpsBridge.onAppLifecycleStateChanged(state);
     if (state == AppLifecycleState.resumed) {
       _maintainChatPresence();

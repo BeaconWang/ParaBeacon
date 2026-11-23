@@ -15,11 +15,10 @@ Future<void> showBluetoothSensorSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
-    // Background driven by the theme's bottomSheetTheme (see other sheets).
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
+    useSafeArea: true,
+    enableDrag: false,
+    constraints: const BoxConstraints.expand(),
+    shape: const RoundedRectangleBorder(),
     builder: (context) => const SheetNoticeHost(child: _BluetoothSensorSheet()),
   );
 }
@@ -53,83 +52,74 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
 
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.75,
-      minChildSize: 0.45,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Row(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: Row(
+            children: [
+              Icon(Icons.sensors, color: theme.colorScheme.primary),
+              const SizedBox(width: 10),
+              Text(l10n.sensorTitle, style: theme.textTheme.titleLarge),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_svc, _internal]),
+            builder: (context, _) {
+              if (!_svc.supported) {
+                return _buildUnsupported(theme, l10n);
+              }
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 children: [
-                  Icon(Icons.sensors, color: theme.colorScheme.primary),
-                  const SizedBox(width: 10),
-                  Text(l10n.sensorTitle, style: theme.textTheme.titleLarge),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  _sectionLabel(theme, l10n.sensorOptions),
+                  const SizedBox(height: 8),
+                  _optionsCard(theme, l10n),
+                  const SizedBox(height: 20),
+                  if (_internal.supported) ...[
+                    _sectionLabel(theme, l10n.sensorInternalSection),
+                    const SizedBox(height: 8),
+                    _internalSensorCard(theme, l10n),
+                    const SizedBox(height: 20),
+                  ],
+                  _sectionLabel(theme, l10n.sensorConnection),
+                  const SizedBox(height: 8),
+                  _adapterBanner(theme, l10n),
+                  if (_svc.error != null) ...[
+                    const SizedBox(height: 8),
+                    _errorBanner(theme, _svc.error!),
+                  ],
+                  const SizedBox(height: 8),
+                  _connectionCard(theme, l10n),
+                  const SizedBox(height: 20),
+                  _sectionLabel(theme, l10n.sensorLiveDataFields),
+                  const SizedBox(height: 8),
+                  _readingsCard(theme, l10n, _svc.readings),
+                  if (_svc.isConnected) ...[
+                    const SizedBox(height: 20),
+                    _sectionLabel(theme, l10n.sensorExtCalibrationSection),
+                    const SizedBox(height: 8),
+                    _externalCalibrationCard(theme, l10n),
+                  ],
+                  const SizedBox(height: 20),
+                  _sectionLabel(theme, l10n.sensorNearbyDevices),
+                  const SizedBox(height: 8),
+                  _scanControls(theme, l10n),
+                  const SizedBox(height: 8),
+                  _scanList(theme, l10n),
                 ],
-              ),
-            ),
-            Expanded(
-              child: AnimatedBuilder(
-                animation: Listenable.merge([_svc, _internal]),
-                builder: (context, _) {
-                  if (!_svc.supported) {
-                    return _buildUnsupported(theme, l10n);
-                  }
-                  return ListView(
-                    controller: scrollController,
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                    children: [
-                      _sectionLabel(theme, l10n.sensorOptions),
-                      const SizedBox(height: 8),
-                      _optionsCard(theme, l10n),
-                      const SizedBox(height: 20),
-                      if (_internal.supported) ...[
-                        _sectionLabel(theme, l10n.sensorInternalSection),
-                        const SizedBox(height: 8),
-                        _internalSensorCard(theme, l10n),
-                        const SizedBox(height: 20),
-                      ],
-                      _sectionLabel(theme, l10n.sensorConnection),
-                      const SizedBox(height: 8),
-                      _adapterBanner(theme, l10n),
-                      if (_svc.error != null) ...[
-                        const SizedBox(height: 8),
-                        _errorBanner(theme, _svc.error!),
-                      ],
-                      const SizedBox(height: 8),
-                      _connectionCard(theme, l10n),
-                      const SizedBox(height: 20),
-                      _sectionLabel(theme, l10n.sensorLiveDataFields),
-                      const SizedBox(height: 8),
-                      _readingsCard(theme, l10n, _svc.readings),
-                      if (_svc.isConnected) ...[
-                        const SizedBox(height: 20),
-                        _sectionLabel(theme, l10n.sensorExtCalibrationSection),
-                        const SizedBox(height: 8),
-                        _externalCalibrationCard(theme, l10n),
-                      ],
-                      const SizedBox(height: 20),
-                      _sectionLabel(theme, l10n.sensorNearbyDevices),
-                      const SizedBox(height: 8),
-                      _scanControls(theme, l10n),
-                      const SizedBox(height: 8),
-                      _scanList(theme, l10n),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

@@ -1343,7 +1343,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatShareLocation.
   ///
   /// In en, this message translates to:
-  /// **'Share current location'**
+  /// **'Choose location'**
   String get chatShareLocation;
 
   /// No description provided for @chatRecordVoice.
@@ -1397,19 +1397,19 @@ abstract class AppLocalizations {
   /// No description provided for @chatLocationConsentTitle.
   ///
   /// In en, this message translates to:
-  /// **'Share your location?'**
+  /// **'Choose a location to share?'**
   String get chatLocationConsentTitle;
 
   /// No description provided for @chatLocationConsentBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose a point on the map to share with this chat. The selected coordinates will be sent and kept in its history.'**
+  /// **'Select a point on the map. Its coordinates will only be sent after you confirm, and will be saved in this chat\'s history.'**
   String get chatLocationConsentBody;
 
   /// No description provided for @chatLocationPickerConsentBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose a point on the map to share with this chat. The selected coordinates will be sent and kept in its history.'**
+  /// **'Select a point on the map. Its coordinates will only be sent after you confirm, and will be saved in this chat\'s history.'**
   String get chatLocationPickerConsentBody;
 
   /// No description provided for @chatLocationConfirmTitle.
@@ -1421,7 +1421,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatLocationConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'The selected coordinates will be sent to this chat and kept in its history.'**
+  /// **'This will send the selected coordinates to this chat and save them in its history.'**
   String get chatLocationConfirmBody;
 
   /// No description provided for @chatChooseLocation.

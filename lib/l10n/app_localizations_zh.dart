@@ -649,7 +649,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatSendImage => '发送图片';
 
   @override
-  String get chatShareLocation => '分享当前位置';
+  String get chatShareLocation => '选择位置';
 
   @override
   String get chatRecordVoice => '录制语音消息';
@@ -676,20 +676,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatOpenLocationFailed => '无法打开地图应用。';
 
   @override
-  String get chatLocationConsentTitle => '分享你的位置？';
+  String get chatLocationConsentTitle => '选择要分享的位置？';
 
   @override
-  String get chatLocationConsentBody => '在地图上选择一个位置分享至此聊天。所选坐标将发送并保存在聊天记录中。';
+  String get chatLocationConsentBody =>
+      '在地图上选择一个点。只有在你确认后，坐标才会发送到此聊天，并保存在聊天记录中。';
 
   @override
   String get chatLocationPickerConsentBody =>
-      '在地图上选择一个位置分享至此聊天。所选坐标将发送并保存在聊天记录中。';
+      '在地图上选择一个点。只有在你确认后，坐标才会发送到此聊天，并保存在聊天记录中。';
 
   @override
   String get chatLocationConfirmTitle => '分享此位置？';
 
   @override
-  String get chatLocationConfirmBody => '所选坐标将发送到此聊天并保存在聊天记录中。';
+  String get chatLocationConfirmBody => '所选坐标将发送到此聊天，并保存在聊天记录中。';
 
   @override
   String get chatChooseLocation => '在地图上选择位置';

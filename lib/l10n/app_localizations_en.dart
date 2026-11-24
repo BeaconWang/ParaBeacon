@@ -685,7 +685,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatSendImage => 'Send image';
 
   @override
-  String get chatShareLocation => 'Share current location';
+  String get chatShareLocation => 'Choose location';
 
   @override
   String get chatRecordVoice => 'Record voice message';
@@ -712,22 +712,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatOpenLocationFailed => 'Could not open the map application.';
 
   @override
-  String get chatLocationConsentTitle => 'Share your location?';
+  String get chatLocationConsentTitle => 'Choose a location to share?';
 
   @override
   String get chatLocationConsentBody =>
-      'Choose a point on the map to share with this chat. The selected coordinates will be sent and kept in its history.';
+      'Select a point on the map. Its coordinates will only be sent after you confirm, and will be saved in this chat\'s history.';
 
   @override
   String get chatLocationPickerConsentBody =>
-      'Choose a point on the map to share with this chat. The selected coordinates will be sent and kept in its history.';
+      'Select a point on the map. Its coordinates will only be sent after you confirm, and will be saved in this chat\'s history.';
 
   @override
   String get chatLocationConfirmTitle => 'Share this location?';
 
   @override
   String get chatLocationConfirmBody =>
-      'The selected coordinates will be sent to this chat and kept in its history.';
+      'This will send the selected coordinates to this chat and save them in its history.';
 
   @override
   String get chatChooseLocation => 'Choose location on map';

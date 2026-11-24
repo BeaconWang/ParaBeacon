@@ -691,7 +691,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatRecordVoice => 'Record voice message';
 
   @override
-  String get chatStopVoiceRecording => 'Stop and send voice message';
+  String get chatStopVoiceRecording => 'Send voice message';
+
+  @override
+  String get chatCancelVoiceRecording => 'Discard voice recording';
+
+  @override
+  String get chatRecordingVoice => 'Recording voice message';
+
+  @override
+  String get chatJumpToLatest => 'Jump to latest messages';
+
+  @override
+  String get chatToday => 'Today';
+
+  @override
+  String get chatOpenLocation => 'Open location in maps';
+
+  @override
+  String get chatOpenLocationFailed => 'Could not open the map application.';
 
   @override
   String get chatLocationConsentTitle => 'Share your location?';

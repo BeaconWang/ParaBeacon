@@ -202,6 +202,8 @@ void main() {
                 'pinned': true,
                 'unread_count': 5,
                 'last_chat_at': '2026-11-19T09:30:00Z',
+                'last_message_text': 'Meet at the north launch',
+                'last_message_kind': 'text',
               },
             ],
             'next_cursor': '20',
@@ -240,6 +242,8 @@ void main() {
     expect(conversation.pinned, isTrue);
     expect(conversation.unreadCount, 5);
     expect(conversation.lastChatAt, DateTime.utc(2026, 11, 19, 9, 30));
+    expect(conversation.lastMessageText, 'Meet at the north launch');
+    expect(conversation.lastMessageKind, 'text');
     await chat.markConversationRead(pilotNumber: 234567);
     expect(page.nextCursor, '20');
     expect(

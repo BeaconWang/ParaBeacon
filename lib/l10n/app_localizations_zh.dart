@@ -655,7 +655,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatRecordVoice => '录制语音消息';
 
   @override
-  String get chatStopVoiceRecording => '停止并发送语音消息';
+  String get chatStopVoiceRecording => '发送语音消息';
+
+  @override
+  String get chatCancelVoiceRecording => '丢弃语音录音';
+
+  @override
+  String get chatRecordingVoice => '正在录制语音消息';
+
+  @override
+  String get chatJumpToLatest => '跳转到最新消息';
+
+  @override
+  String get chatToday => '今天';
+
+  @override
+  String get chatOpenLocation => '在地图中打开位置';
+
+  @override
+  String get chatOpenLocationFailed => '无法打开地图应用。';
 
   @override
   String get chatLocationConsentTitle => '分享你的位置？';

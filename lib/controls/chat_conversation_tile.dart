@@ -29,6 +29,14 @@ class ChatConversationTile extends StatelessWidget {
       conversation.online ? l10n.chatPilotOnline : l10n.chatPilotOffline,
       if (lastChatTime != null) l10n.chatLastChatTime(lastChatTime!),
     ].join(' · ');
+    final lastMessagePreview = conversation.lastMessageText.trim().isNotEmpty
+        ? conversation.lastMessageText.trim()
+        : switch (conversation.lastMessageKind) {
+            'image' => l10n.chatImageMessage,
+            'voice' => l10n.chatVoiceMessage,
+            'location' => l10n.chatLocationMessage,
+            _ => null,
+          };
 
     return ListTile(
       leading: Stack(
@@ -60,38 +68,48 @@ class ChatConversationTile extends StatelessWidget {
         ],
       ),
       title: Text(account.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (lastMessagePreview != null)
+            Text(
+              lastMessagePreview,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ],
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Tooltip(
-            message: l10n.chatUnreadMessages(conversation.unreadCount),
-            child: Container(
-              key: ValueKey('chat-unread-count-${account.pilotNumber}'),
-              constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: conversation.unreadCount > 0
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Text(
-                conversation.unreadCount > 99
-                    ? '99+'
-                    : conversation.unreadCount.toString(),
-                style: TextStyle(
-                  color: conversation.unreadCount > 0
-                      ? Theme.of(context).colorScheme.onError
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+          if (conversation.unreadCount > 0)
+            Tooltip(
+              message: l10n.chatUnreadMessages(conversation.unreadCount),
+              child: Container(
+                key: ValueKey('chat-unread-count-${account.pilotNumber}'),
+                constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.error,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Text(
+                  conversation.unreadCount > 99
+                      ? '99+'
+                      : conversation.unreadCount.toString(),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onError,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 4),
+          if (conversation.unreadCount > 0) const SizedBox(width: 4),
           IconButton(
             tooltip: conversation.pinned
                 ? l10n.chatUnpinConversation

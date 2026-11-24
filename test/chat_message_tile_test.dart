@@ -6,11 +6,21 @@ import 'package:parabeacon/data/pilot_avatar.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 
 void main() {
-  Widget buildTile(ChatMessage message, {bool mine = false}) => MaterialApp(
+  Widget buildTile(
+    ChatMessage message, {
+    bool mine = false,
+    bool groupedWithPrevious = false,
+    bool groupedWithNext = false,
+  }) => MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
-      body: ChatMessageTile(message: message, mine: mine),
+      body: ChatMessageTile(
+        message: message,
+        mine: mine,
+        groupedWithPrevious: groupedWithPrevious,
+        groupedWithNext: groupedWithNext,
+      ),
     ),
   );
 
@@ -82,6 +92,28 @@ void main() {
     }
   });
 
+  testWidgets('grouped public messages omit repeated sender header', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildTile(
+        ChatMessage(
+          id: 'public-grouped',
+          scope: 'public',
+          senderPilotNumber: 234567,
+          senderName: 'Sky Pilot',
+          text: 'Another update',
+          createdAt: DateTime.utc(2026, 11, 20, 12, 1),
+        ),
+        groupedWithPrevious: true,
+        groupedWithNext: true,
+      ),
+    );
+
+    expect(find.text('Sky Pilot'), findsNothing);
+    expect(find.text('Another update'), findsOneWidget);
+  });
+
   testWidgets('location messages show coordinates and optional caption', (
     tester,
   ) async {
@@ -103,6 +135,7 @@ void main() {
 
     expect(find.text('Location'), findsOneWidget);
     expect(find.text('37.42200, -122.08406'), findsOneWidget);
+    expect(find.byTooltip('Open location in maps'), findsOneWidget);
     expect(find.text('At launch'), findsOneWidget);
   });
 

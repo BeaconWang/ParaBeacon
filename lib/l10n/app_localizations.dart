@@ -1355,8 +1355,44 @@ abstract class AppLocalizations {
   /// No description provided for @chatStopVoiceRecording.
   ///
   /// In en, this message translates to:
-  /// **'Stop and send voice message'**
+  /// **'Send voice message'**
   String get chatStopVoiceRecording;
+
+  /// No description provided for @chatCancelVoiceRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard voice recording'**
+  String get chatCancelVoiceRecording;
+
+  /// No description provided for @chatRecordingVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording voice message'**
+  String get chatRecordingVoice;
+
+  /// No description provided for @chatJumpToLatest.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to latest messages'**
+  String get chatJumpToLatest;
+
+  /// No description provided for @chatToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get chatToday;
+
+  /// No description provided for @chatOpenLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open location in maps'**
+  String get chatOpenLocation;
+
+  /// No description provided for @chatOpenLocationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the map application.'**
+  String get chatOpenLocationFailed;
 
   /// No description provided for @chatLocationConsentTitle.
   ///

@@ -99,6 +99,8 @@ class ChatConversation {
     required this.pinned,
     this.unreadCount = 0,
     this.lastChatAt,
+    this.lastMessageText = '',
+    this.lastMessageKind = 'text',
   });
 
   final ChatAccount account;
@@ -106,6 +108,8 @@ class ChatConversation {
   final bool pinned;
   final int unreadCount;
   final DateTime? lastChatAt;
+  final String lastMessageText;
+  final String lastMessageKind;
 
   static ChatConversation? fromJson(Object? raw) {
     if (raw is! Map<String, dynamic>) return null;
@@ -114,10 +118,21 @@ class ChatConversation {
     final pinned = raw['pinned'];
     final rawUnreadCount = raw['unread_count'] ?? 0;
     final rawLastChatAt = raw['last_chat_at'];
+    final lastMessageText = raw['last_message_text'] ?? '';
+    final lastMessageKind = raw['last_message_kind'] ?? 'text';
     if (account == null ||
         online is! bool ||
         pinned is! bool ||
         rawUnreadCount is! int ||
+        lastMessageText is! String ||
+        lastMessageText.runes.length > 1000 ||
+        lastMessageKind is! String ||
+        !const {
+          'text',
+          'image',
+          'voice',
+          'location',
+        }.contains(lastMessageKind) ||
         rawUnreadCount < 0) {
       return null;
     }
@@ -133,6 +148,8 @@ class ChatConversation {
       pinned: pinned,
       unreadCount: rawUnreadCount,
       lastChatAt: lastChatAt,
+      lastMessageText: lastMessageText,
+      lastMessageKind: lastMessageKind,
     );
   }
 }

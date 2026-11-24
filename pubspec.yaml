@@ -145,6 +145,7 @@ dependencies:
   qr_flutter: ^4.1.0
   record: ^7.2.0
   audioplayers: ^6.8.1
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

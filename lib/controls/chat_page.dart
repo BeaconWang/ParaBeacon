@@ -9,6 +9,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'chat_conversation_tile.dart';
 import 'chat_emoji.dart';
@@ -32,6 +33,44 @@ Future<void> showChatPage(BuildContext context) {
 }
 
 enum _ChatAttachmentAction { image, location, voice }
+
+bool _sameCalendarDay(DateTime first, DateTime second) {
+  final localFirst = first.toLocal();
+  final localSecond = second.toLocal();
+  return localFirst.year == localSecond.year &&
+      localFirst.month == localSecond.month &&
+      localFirst.day == localSecond.day;
+}
+
+class _ChatDateSeparator extends StatelessWidget {
+  const _ChatDateSeparator({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final localDate = date.toLocal();
+    final label = _sameCalendarDay(localDate, DateTime.now())
+        ? AppLocalizations.of(context).chatToday
+        : localizations.formatMediumDate(localDate);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Center(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            child: Text(label, style: Theme.of(context).textTheme.labelSmall),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _ChatPage extends StatefulWidget {
   const _ChatPage();
@@ -69,6 +108,10 @@ class _ChatPageState extends State<_ChatPage>
   bool _sending = false;
   bool _voiceRecording = false;
   ChatTarget? _voiceTarget;
+  DateTime? _voiceStartedAt;
+  Duration _voiceElapsed = Duration.zero;
+  String? _activeVoicePath;
+  Timer? _voiceElapsedTimer;
   Timer? _voiceLimitTimer;
   String? _localError;
   ChatAccount? _selectedRecipient;
@@ -83,6 +126,8 @@ class _ChatPageState extends State<_ChatPage>
   int _accountSearchGeneration = 0;
   Timer? _partnerStatusTimer;
   String? _lastObservedMessageId;
+  bool _showJumpToLatest = false;
+  int _newMessageCount = 0;
 
   @override
   void initState() {
@@ -132,6 +177,7 @@ class _ChatPageState extends State<_ChatPage>
     _accountResultsController.dispose();
     _scrollController.dispose();
     _voiceLimitTimer?.cancel();
+    _voiceElapsedTimer?.cancel();
     unawaited(_voiceRecorder.dispose());
     _accountSearchTimer?.cancel();
     _directoryRefreshTimer?.cancel();
@@ -148,17 +194,40 @@ class _ChatPageState extends State<_ChatPage>
     final messages = _chat.messages;
     final latestMessageId = messages.isEmpty ? null : messages.last.id;
     final shouldScroll = latestMessageId != _lastObservedMessageId;
+    final wasNearLatest = _isNearLatestMessage;
     _lastObservedMessageId = latestMessageId;
+    if (shouldScroll && !wasNearLatest) {
+      _newMessageCount++;
+      _showJumpToLatest = true;
+    }
     if (mounted) setState(() {});
-    if (!shouldScroll) return;
+    if (!shouldScroll || !wasNearLatest) return;
+    _scrollToLatest();
+  }
+
+  bool get _isNearLatestMessage =>
+      !_scrollController.hasClients ||
+      _scrollController.position.maxScrollExtent -
+              _scrollController.position.pixels <
+          120;
+
+  void _scrollToLatest() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-        );
-      }
+      if (!_scrollController.hasClients) return;
+      _scrollController
+          .animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+          )
+          .whenComplete(() {
+            if (mounted && _showJumpToLatest) {
+              setState(() {
+                _showJumpToLatest = false;
+                _newMessageCount = 0;
+              });
+            }
+          });
     });
   }
 
@@ -199,6 +268,7 @@ class _ChatPageState extends State<_ChatPage>
   }
 
   Future<void> _openTab(int index) async {
+    if (_voiceRecording) unawaited(_cancelVoiceRecording());
     final scope = _scopeForTab(index);
     if (scope != 'direct') {
       _selectedRecipient = null;
@@ -635,7 +705,16 @@ class _ChatPageState extends State<_ChatPage>
       setState(() {
         _voiceRecording = true;
         _voiceTarget = target;
+        _voiceStartedAt = DateTime.now();
+        _voiceElapsed = Duration.zero;
+        _activeVoicePath = path;
         _localError = null;
+      });
+      _voiceElapsedTimer?.cancel();
+      _voiceElapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        final startedAt = _voiceStartedAt;
+        if (!mounted || startedAt == null) return;
+        setState(() => _voiceElapsed = DateTime.now().difference(startedAt));
       });
       _voiceLimitTimer = Timer(
         const Duration(seconds: 90),
@@ -646,11 +725,42 @@ class _ChatPageState extends State<_ChatPage>
     }
   }
 
+  Future<void> _cancelVoiceRecording() async {
+    if (!_voiceRecording) return;
+    _voiceLimitTimer?.cancel();
+    _voiceElapsedTimer?.cancel();
+    final path = _activeVoicePath;
+    _activeVoicePath = null;
+    _voiceTarget = null;
+    setState(() {
+      _voiceRecording = false;
+      _voiceStartedAt = null;
+      _voiceElapsed = Duration.zero;
+      _sending = true;
+    });
+    try {
+      await _voiceRecorder.stop();
+    } on Object {
+      // A stopped recorder is already cancelled.
+    }
+    if (path != null) {
+      try {
+        await File(path).delete();
+      } on FileSystemException {
+        // Temporary cleanup is best-effort.
+      }
+    }
+    if (mounted) setState(() => _sending = false);
+  }
+
   Future<void> _finishVoiceRecording() async {
     if (!_voiceRecording || _sending) return;
     final target = _voiceTarget;
     _voiceTarget = null;
+    _activeVoicePath = null;
+    _voiceStartedAt = null;
     _voiceLimitTimer?.cancel();
+    _voiceElapsedTimer?.cancel();
     setState(() {
       _voiceRecording = false;
       _sending = true;
@@ -661,6 +771,9 @@ class _ChatPageState extends State<_ChatPage>
       path = await _voiceRecorder.stop();
       if (path == null || target == null) {
         throw const ChatException('chat_voice_record_failed');
+      }
+      if (!mounted || !_chat.isCurrentTarget(target)) {
+        throw const ChatException('chat_conversation_changed');
       }
       final bytes = await File(path).readAsBytes();
       if (bytes.isEmpty || bytes.length > ChatService.maxVoiceUploadBytes) {
@@ -681,6 +794,13 @@ class _ChatPageState extends State<_ChatPage>
     } on Object catch (error) {
       if (mounted) setState(() => _localError = _errorText(error));
     } finally {
+      _activeVoicePath = null;
+      if (mounted) {
+        setState(() {
+          _voiceStartedAt = null;
+          _voiceElapsed = Duration.zero;
+        });
+      }
       if (path != null) {
         try {
           await File(path).delete();
@@ -806,15 +926,91 @@ class _ChatPageState extends State<_ChatPage>
                         ),
                       ),
                     )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(12),
-                      itemCount: _chat.messages.length,
-                      itemBuilder: (context, index) {
-                        final message = _chat.messages[index];
-                        final mine = message.senderPilotNumber == myPilotNumber;
-                        return ChatMessageTile(message: message, mine: mine);
+                  : NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification is ScrollUpdateNotification &&
+                            _isNearLatestMessage &&
+                            _showJumpToLatest) {
+                          setState(() {
+                            _showJumpToLatest = false;
+                            _newMessageCount = 0;
+                          });
+                        }
+                        return false;
                       },
+                      child: Stack(
+                        children: [
+                          ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+                            itemCount: _chat.messages.length,
+                            itemBuilder: (context, index) {
+                              final message = _chat.messages[index];
+                              final previous = index == 0
+                                  ? null
+                                  : _chat.messages[index - 1];
+                              final next = index + 1 < _chat.messages.length
+                                  ? _chat.messages[index + 1]
+                                  : null;
+                              return Column(
+                                children: [
+                                  if (previous == null ||
+                                      !_sameCalendarDay(
+                                        previous.createdAt,
+                                        message.createdAt,
+                                      ))
+                                    _ChatDateSeparator(date: message.createdAt),
+                                  ChatMessageTile(
+                                    message: message,
+                                    mine:
+                                        message.senderPilotNumber ==
+                                        myPilotNumber,
+                                    groupedWithPrevious:
+                                        previous != null &&
+                                        previous.senderPilotNumber ==
+                                            message.senderPilotNumber &&
+                                        _sameCalendarDay(
+                                          previous.createdAt,
+                                          message.createdAt,
+                                        ) &&
+                                        message.createdAt
+                                                .difference(previous.createdAt)
+                                                .inMinutes <
+                                            3,
+                                    groupedWithNext:
+                                        next != null &&
+                                        next.senderPilotNumber ==
+                                            message.senderPilotNumber &&
+                                        _sameCalendarDay(
+                                          next.createdAt,
+                                          message.createdAt,
+                                        ) &&
+                                        next.createdAt
+                                                .difference(message.createdAt)
+                                                .inMinutes <
+                                            3,
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          if (_showJumpToLatest)
+                            Positioned(
+                              right: 16,
+                              bottom: 12,
+                              child: FloatingActionButton.small(
+                                heroTag: 'chat-jump-to-latest',
+                                tooltip: l10n.chatJumpToLatest,
+                                onPressed: _scrollToLatest,
+                                child: Badge(
+                                  isLabelVisible: _newMessageCount > 0,
+                                  label: Text('$_newMessageCount'),
+                                  child: const Icon(Icons.south),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
             ),
           if (user != null &&
@@ -826,13 +1022,27 @@ class _ChatPageState extends State<_ChatPage>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    if (_voiceRecording)
-                      IconButton.filledTonal(
+                    if (_voiceRecording) ...[
+                      IconButton(
+                        tooltip: l10n.chatCancelVoiceRecording,
+                        onPressed: _cancelVoiceRecording,
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                      const Icon(Icons.fiber_manual_record, color: Colors.red),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${l10n.chatRecordingVoice} · ${_formatChatDuration(_voiceElapsed, null)}',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
                         tooltip: l10n.chatStopVoiceRecording,
                         onPressed: _finishVoiceRecording,
-                        icon: const Icon(Icons.stop),
-                      )
-                    else
+                        icon: const Icon(Icons.send),
+                      ),
+                    ] else ...[
                       PopupMenuButton<_ChatAttachmentAction>(
                         tooltip: l10n.chatAttachMedia,
                         enabled: connected && !_sending,
@@ -868,43 +1078,44 @@ class _ChatPageState extends State<_ChatPage>
                           child: Icon(Icons.add_circle_outline),
                         ),
                       ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      tooltip: l10n.chatEmojiPicker,
-                      onPressed: _sending ? null : _showEmojiPicker,
-                      icon: const Icon(Icons.emoji_emotions_outlined),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        focusNode: _messageFocusNode,
-                        minLines: 1,
-                        maxLines: 4,
-                        maxLength: chatMaximumMessageLength,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          hintText: l10n.chatMessageHint,
-                          border: const OutlineInputBorder(),
-                          counterText: '',
-                        ),
-                        onSubmitted: (_) => _send(),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        tooltip: l10n.chatEmojiPicker,
+                        onPressed: _sending ? null : _showEmojiPicker,
+                        icon: const Icon(Icons.emoji_emotions_outlined),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      tooltip: l10n.chatSend,
-                      onPressed: connected && !_sending && !_voiceRecording
-                          ? _send
-                          : null,
-                      icon: _sending
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send),
-                    ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: TextField(
+                          controller: _messageController,
+                          focusNode: _messageFocusNode,
+                          minLines: 1,
+                          maxLines: 4,
+                          maxLength: chatMaximumMessageLength,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: InputDecoration(
+                            hintText: l10n.chatMessageHint,
+                            border: const OutlineInputBorder(),
+                            counterText: '',
+                          ),
+                          onSubmitted: (_) => _send(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
+                        tooltip: l10n.chatSend,
+                        onPressed: connected && !_sending ? _send : null,
+                        icon: _sending
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.send),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1132,10 +1343,18 @@ class _ChatPageState extends State<_ChatPage>
 }
 
 class ChatMessageTile extends StatelessWidget {
-  const ChatMessageTile({required this.message, required this.mine, super.key});
+  const ChatMessageTile({
+    required this.message,
+    required this.mine,
+    this.groupedWithPrevious = false,
+    this.groupedWithNext = false,
+    super.key,
+  });
 
   final ChatMessage message;
   final bool mine;
+  final bool groupedWithPrevious;
+  final bool groupedWithNext;
 
   @override
   Widget build(BuildContext context) {
@@ -1148,34 +1367,49 @@ class ChatMessageTile extends StatelessWidget {
           maxWidth: MediaQuery.sizeOf(context).width * 0.82,
         ),
         child: Card(
+          margin: EdgeInsets.only(
+            left: mine ? 36 : 0,
+            right: mine ? 0 : 36,
+            top: groupedWithPrevious ? 2 : 5,
+            bottom: groupedWithNext ? 1 : 5,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16).copyWith(
+              topLeft: Radius.circular(groupedWithPrevious && !mine ? 5 : 16),
+              topRight: Radius.circular(groupedWithPrevious && mine ? 5 : 16),
+              bottomLeft: Radius.circular(groupedWithNext && !mine ? 5 : 16),
+              bottomRight: Radius.circular(groupedWithNext && mine ? 5 : 16),
+            ),
+          ),
           color: mine ? theme.colorScheme.primaryContainer : null,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 7),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    PilotAvatarPicture(
-                      avatarId: message.senderAvatarId,
-                      profileImageUrl: message.senderProfileImageUrl,
-                      size: 18,
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
-                    ),
-                    if (message.scope != 'direct') ...[
-                      const SizedBox(width: 5),
-                      Text(
-                        message.senderName,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                if (!groupedWithPrevious)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PilotAvatarPicture(
+                        avatarId: message.senderAvatarId,
+                        profileImageUrl: message.senderProfileImageUrl,
+                        size: 18,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
                       ),
+                      if (message.scope != 'direct') ...[
+                        const SizedBox(width: 5),
+                        Text(
+                          message.senderName,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
+                  ),
                 if (message.kind == 'image' && message.mediaId != null)
                   _ChatImageBubble(mediaId: message.mediaId!),
                 if (message.kind == 'voice' && message.mediaId != null)
@@ -1203,6 +1437,21 @@ class ChatMessageTile extends StatelessWidget {
                               style: theme.textTheme.bodySmall,
                             ),
                           ],
+                        ),
+                        const SizedBox(width: 4),
+                        Tooltip(
+                          message: l10n.chatOpenLocation,
+                          child: IconButton(
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () => unawaited(
+                              _openLocation(
+                                context,
+                                message.latitude!,
+                                message.longitude!,
+                              ),
+                            ),
+                            icon: const Icon(Icons.directions_outlined),
+                          ),
                         ),
                       ],
                     ),
@@ -1264,6 +1513,35 @@ class ChatMessageTile extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _openLocation(
+    BuildContext context,
+    double latitude,
+    double longitude,
+  ) async {
+    final uri = Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': '$latitude,$longitude',
+    });
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).chatOpenLocationFailed),
+          ),
+        );
+      }
+    } on Object {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).chatOpenLocationFailed),
+          ),
+        );
+      }
+    }
+  }
 }
 
 class _ChatImageBubble extends StatelessWidget {
@@ -1291,15 +1569,44 @@ class _ChatImageBubble extends StatelessWidget {
                 ),
               );
             }
-            return Image.memory(
-              snapshot.data!,
-              width: 260,
-              height: 220,
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const SizedBox(
-                width: 240,
-                height: 150,
-                child: Icon(Icons.broken_image_outlined),
+            final bytes = snapshot.data!;
+            return GestureDetector(
+              onTap: () => showDialog<void>(
+                context: context,
+                builder: (dialogContext) => Dialog.fullscreen(
+                  backgroundColor: Colors.black,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: InteractiveViewer(
+                          minScale: 0.5,
+                          maxScale: 5,
+                          child: Center(child: Image.memory(bytes)),
+                        ),
+                      ),
+                      Positioned(
+                        top: MediaQuery.paddingOf(dialogContext).top + 8,
+                        right: 8,
+                        child: IconButton.filledTonal(
+                          tooltip: AppLocalizations.of(dialogContext).close,
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              child: Image.memory(
+                bytes,
+                width: 260,
+                height: 220,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const SizedBox(
+                  width: 240,
+                  height: 150,
+                  child: Icon(Icons.broken_image_outlined),
+                ),
               ),
             );
           },

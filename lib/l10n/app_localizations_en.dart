@@ -716,7 +716,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatLocationConsentBody =>
-      'Your current coordinates will be sent to this chat and kept in its history.';
+      'Choose a point on the map to share with this chat. The selected coordinates will be sent and kept in its history.';
+
+  @override
+  String get chatLocationPickerConsentBody =>
+      'Choose a point on the map to share with this chat. The selected coordinates will be sent and kept in its history.';
+
+  @override
+  String get chatLocationConfirmTitle => 'Share this location?';
+
+  @override
+  String get chatLocationConfirmBody =>
+      'The selected coordinates will be sent to this chat and kept in its history.';
+
+  @override
+  String get chatChooseLocation => 'Choose location on map';
 
   @override
   String get chatShare => 'Share';

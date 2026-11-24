@@ -9,7 +9,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'chat_conversation_tile.dart';
 import 'chat_emoji.dart';
@@ -18,6 +17,7 @@ import '../data/chat_service.dart';
 import '../data/parabeacon_account_service.dart';
 import '../data/pilot_avatar.dart';
 import '../l10n/app_localizations.dart';
+import 'map_picker_sheet.dart';
 
 List<String> chatScopesForChannel(int channelNumber) => [
   'public',
@@ -612,6 +612,35 @@ class _ChatPageState extends State<_ChatPage>
     }
   }
 
+  Future<Position?> _resolveLocationPickerCenter() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return null;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+      return await Geolocator.getLastKnownPosition() ??
+          await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              timeLimit: Duration(seconds: 8),
+            ),
+          );
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<(double, double)?> _resolveCurrentLocationCoordinates() async {
+    final position = await _resolveLocationPickerCenter();
+    if (position == null) return null;
+    return (position.latitude, position.longitude);
+  }
+
   Future<void> _shareLocation() async {
     if (!_canAttach()) return;
     final target = _chat.currentTarget;
@@ -620,7 +649,7 @@ class _ChatPageState extends State<_ChatPage>
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.chatLocationConsentTitle),
-        content: Text(l10n.chatLocationConsentBody),
+        content: Text(l10n.chatLocationPickerConsentBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -639,28 +668,44 @@ class _ChatPageState extends State<_ChatPage>
       _localError = null;
     });
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        throw const ChatException('chat_location_unavailable');
+      final initialPosition = await _resolveLocationPickerCenter();
+      if (!mounted || !_chat.isCurrentTarget(target)) {
+        throw const ChatException('chat_conversation_changed');
       }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        throw const ChatException('chat_location_unavailable');
-      }
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 20),
+      final selected = await showMapPickerSheet(
+        context,
+        initialLat: initialPosition?.latitude,
+        initialLon: initialPosition?.longitude,
+        resolveCurrentLocation: _resolveCurrentLocationCoordinates,
+      );
+      if (selected == null || !mounted) return;
+      final shareConfirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l10n.chatLocationConfirmTitle),
+          content: Text(
+            '${l10n.chatLocationConfirmBody}\n\n'
+            '${selected.$1.toStringAsFixed(5)}, '
+            '${selected.$2.toStringAsFixed(5)}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.chatShare),
+            ),
+          ],
         ),
       );
+      if (shareConfirmed != true || !mounted) return;
       await _chat.send(
         _messageController.text,
         kind: 'location',
-        latitude: position.latitude,
-        longitude: position.longitude,
+        latitude: selected.$1,
+        longitude: selected.$2,
         target: target,
       );
       _messageController.clear();
@@ -1444,10 +1489,11 @@ class ChatMessageTile extends StatelessWidget {
                           child: IconButton(
                             visualDensity: VisualDensity.compact,
                             onPressed: () => unawaited(
-                              _openLocation(
+                              showMapLocationSheet(
                                 context,
-                                message.latitude!,
-                                message.longitude!,
+                                latitude: message.latitude!,
+                                longitude: message.longitude!,
+                                title: l10n.chatLocationMessage,
                               ),
                             ),
                             icon: const Icon(Icons.directions_outlined),
@@ -1512,35 +1558,6 @@ class ChatMessageTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _openLocation(
-    BuildContext context,
-    double latitude,
-    double longitude,
-  ) async {
-    final uri = Uri.https('www.google.com', '/maps/search/', {
-      'api': '1',
-      'query': '$latitude,$longitude',
-    });
-    try {
-      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!opened && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context).chatOpenLocationFailed),
-          ),
-        );
-      }
-    } on Object {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context).chatOpenLocationFailed),
-          ),
-        );
-      }
-    }
   }
 }
 

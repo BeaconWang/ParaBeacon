@@ -679,7 +679,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatLocationConsentTitle => '分享你的位置？';
 
   @override
-  String get chatLocationConsentBody => '你的当前位置坐标将发送到此聊天并保存在聊天记录中。';
+  String get chatLocationConsentBody => '在地图上选择一个位置分享至此聊天。所选坐标将发送并保存在聊天记录中。';
+
+  @override
+  String get chatLocationPickerConsentBody =>
+      '在地图上选择一个位置分享至此聊天。所选坐标将发送并保存在聊天记录中。';
+
+  @override
+  String get chatLocationConfirmTitle => '分享此位置？';
+
+  @override
+  String get chatLocationConfirmBody => '所选坐标将发送到此聊天并保存在聊天记录中。';
+
+  @override
+  String get chatChooseLocation => '在地图上选择位置';
 
   @override
   String get chatShare => '分享';

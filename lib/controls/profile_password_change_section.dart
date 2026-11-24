@@ -6,18 +6,18 @@ import '../data/parabeacon_account_service.dart';
 import '../l10n/app_localizations.dart';
 import 'app_notice.dart';
 
-class ProfilePasswordChangeSection extends StatefulWidget {
-  const ProfilePasswordChangeSection({required this.account, super.key});
+class ProfilePasswordChangePage extends StatefulWidget {
+  const ProfilePasswordChangePage({required this.account, super.key});
 
   final ParaBeaconAccountService account;
 
   @override
-  State<ProfilePasswordChangeSection> createState() =>
-      _ProfilePasswordChangeSectionState();
+  State<ProfilePasswordChangePage> createState() =>
+      _ProfilePasswordChangePageState();
 }
 
-class _ProfilePasswordChangeSectionState
-    extends State<ProfilePasswordChangeSection> {
+class _ProfilePasswordChangePageState
+    extends State<ProfilePasswordChangePage> {
   final _formKey = GlobalKey<FormState>();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
@@ -52,6 +52,8 @@ class _ProfilePasswordChangeSectionState
         _confirmPasswordController.clear();
       }
       AppNotice.show(l10n.accountPasswordChanged);
+      if (mounted) Navigator.of(context).pop();
+      return;
     }
     if (mounted) setState(() => _changingPassword = false);
   }
@@ -81,6 +83,9 @@ class _ProfilePasswordChangeSectionState
   }) => TextFormField(
     controller: controller,
     obscureText: obscure,
+    keyboardType: TextInputType.visiblePassword,
+    autocorrect: false,
+    enableSuggestions: false,
     textInputAction: textInputAction,
     autofillHints: autofillHints,
     decoration: InputDecoration(
@@ -103,102 +108,118 @@ class _ProfilePasswordChangeSectionState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Card(
-      child: ExpansionTile(
-        key: const ValueKey('profile-change-password'),
-        leading: const Icon(Icons.lock_reset_outlined),
-        title: Text(l10n.accountChangePassword),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  _passwordField(
-                    controller: _currentPasswordController,
-                    label: l10n.accountCurrentPassword,
-                    obscure: _obscureCurrentPassword,
-                    toggleVisibility: () => setState(
-                      () => _obscureCurrentPassword = !_obscureCurrentPassword,
-                    ),
-                    textInputAction: TextInputAction.next,
-                    autofillHints: const [AutofillHints.password],
-                    validator: (value) => value == null || value.isEmpty
-                        ? l10n.accountPasswordRequired
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  _passwordField(
-                    controller: _newPasswordController,
-                    label: l10n.accountNewPassword,
-                    obscure: _obscureNewPassword,
-                    toggleVisibility: () => setState(
-                      () => _obscureNewPassword = !_obscureNewPassword,
-                    ),
-                    textInputAction: TextInputAction.next,
-                    autofillHints: const [AutofillHints.newPassword],
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return l10n.accountPasswordRequired;
-                      }
-                      if (value.runes.length < 6) {
-                        return l10n.accountPasswordMinimum;
-                      }
-                      if (utf8.encode(value).length > 72) {
-                        return l10n.accountPasswordMaximum;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _passwordField(
-                    controller: _confirmPasswordController,
-                    label: l10n.accountConfirmPassword,
-                    obscure: _obscureConfirmPassword,
-                    toggleVisibility: () => setState(
-                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                    ),
-                    textInputAction: TextInputAction.done,
-                    autofillHints: const [AutofillHints.newPassword],
-                    validator: (value) => value != _newPasswordController.text
-                        ? l10n.accountPasswordMismatch
-                        : null,
-                    onSubmitted: (_) => _changePassword(),
-                  ),
-                  if (_errorText(l10n) case final error?) ...[
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        error,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.accountChangePassword)),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          _passwordField(
+                            controller: _currentPasswordController,
+                            label: l10n.accountCurrentPassword,
+                            obscure: _obscureCurrentPassword,
+                            toggleVisibility: () => setState(
+                              () => _obscureCurrentPassword =
+                                  !_obscureCurrentPassword,
+                            ),
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.password],
+                            validator: (value) =>
+                                value == null || value.isEmpty
+                                ? l10n.accountPasswordRequired
+                                : null,
+                          ),
+                          const SizedBox(height: 12),
+                          _passwordField(
+                            controller: _newPasswordController,
+                            label: l10n.accountNewPassword,
+                            obscure: _obscureNewPassword,
+                            toggleVisibility: () => setState(
+                              () => _obscureNewPassword =
+                                  !_obscureNewPassword,
+                            ),
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.newPassword],
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return l10n.accountPasswordRequired;
+                              }
+                              if (value.runes.length < 6) {
+                                return l10n.accountPasswordMinimum;
+                              }
+                              if (utf8.encode(value).length > 72) {
+                                return l10n.accountPasswordMaximum;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          _passwordField(
+                            controller: _confirmPasswordController,
+                            label: l10n.accountConfirmPassword,
+                            obscure: _obscureConfirmPassword,
+                            toggleVisibility: () => setState(
+                              () => _obscureConfirmPassword =
+                                  !_obscureConfirmPassword,
+                            ),
+                            textInputAction: TextInputAction.done,
+                            autofillHints: const [AutofillHints.newPassword],
+                            validator: (value) =>
+                                value != _newPasswordController.text
+                                ? l10n.accountPasswordMismatch
+                                : null,
+                            onSubmitted: (_) => _changePassword(),
+                          ),
+                          if (_errorText(l10n) case final error?) ...[
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: Text(
+                                error,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: FilledButton.icon(
+                              onPressed:
+                                  widget.account.isBusy || _changingPassword
+                                  ? null
+                                  : _changePassword,
+                              icon: _changingPassword
+                                  ? const SizedBox.square(
+                                      dimension: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.lock_reset_outlined),
+                              label: Text(l10n.accountChangePassword),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton.icon(
-                      onPressed: widget.account.isBusy || _changingPassword
-                          ? null
-                          : _changePassword,
-                      icon: _changingPassword
-                          ? const SizedBox.square(
-                              dimension: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.lock_reset_outlined),
-                      label: Text(l10n.accountChangePassword),
-                    ),
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

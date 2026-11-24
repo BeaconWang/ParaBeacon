@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:parabeacon/controls/app_notice.dart';
 import 'package:parabeacon/controls/profile_details_page.dart';
 import 'package:parabeacon/data/parabeacon_account_service.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
@@ -14,6 +15,8 @@ void main() {
   testWidgets('shows profile rows and edits name, introduction, and gender', (
     tester,
   ) async {
+    AppNotice.clear();
+    addTearDown(AppNotice.clear);
     tester.view.physicalSize = const Size(1000, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -123,6 +126,10 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('profile-change-password')));
     await tester.pumpAndSettle();
+    expect(
+      find.widgetWithText(AppBar, 'Change password'),
+      findsOneWidget,
+    );
     expect(find.text('Current password'), findsOneWidget);
     expect(find.text('New password'), findsOneWidget);
     expect(find.text('Confirm password'), findsOneWidget);
@@ -134,10 +141,22 @@ void main() {
       find.widgetWithText(TextFormField, 'New password'),
       'new-pass-456',
     );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Confirm password'),
-      'new-pass-456',
+    final confirmPasswordField = find.widgetWithText(
+      TextFormField,
+      'Confirm password',
     );
+    await tester.ensureVisible(confirmPasswordField);
+    await tester.tap(confirmPasswordField);
+    await tester.pump();
+    final confirmPasswordEditor = tester.widget<EditableText>(
+      find.descendant(
+        of: confirmPasswordField,
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(confirmPasswordEditor.focusNode.hasFocus, isTrue);
+    expect(tester.testTextInput.isVisible, isTrue);
+    await tester.enterText(confirmPasswordField, 'new-pass-456');
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
     final changePasswordButton = find.widgetWithText(
@@ -150,6 +169,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(account.isSignedIn, isFalse);
     expect(find.text('Sign in to view your profile.'), findsOneWidget);
+    AppNotice.clear();
   });
 }
 

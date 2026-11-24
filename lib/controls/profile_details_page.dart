@@ -85,7 +85,15 @@ class ProfileDetailsPage extends StatelessWidget {
               onTap: () => _editBirthday(context, user.birthday),
             ),
             const Divider(height: 1, indent: 16),
-            ProfilePasswordChangeSection(account: account),
+            _ProfileDetailRow(
+              key: const ValueKey('profile-change-password'),
+              title: l10n.accountChangePassword,
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) => ProfilePasswordChangePage(account: account),
+                ),
+              ),
+            ),
           ],
         ),
       );

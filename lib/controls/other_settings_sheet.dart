@@ -15,6 +15,7 @@ import '../data/share_card_settings.dart';
 import '../data/user_agent_settings.dart';
 import '../data/vertical_speed_settings.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'color_palette_settings_sheet.dart';
 import 'map_control.dart' show MapTileSources;
 import 'sheet_notice_host.dart';
@@ -112,12 +113,8 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
       if (mounted && context.mounted) {
         Navigator.of(context).pop();
         setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context).paraBeaconServerAddressSaved,
-            ),
-          ),
+        AppNotice.show(
+          AppLocalizations.of(context).paraBeaconServerAddressSaved,
         );
       }
     }
@@ -277,14 +274,10 @@ class _OtherSettingsSheetState extends State<_OtherSettingsSheet> {
       setState(() {
         _mapCacheSummaryFuture = MapTileCacheService.instance.getCacheSummary();
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.mapCacheCleared)));
+      AppNotice.show(l10n.mapCacheCleared);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.mapCacheClearFailed)));
+      AppNotice.show(l10n.mapCacheClearFailed);
     }
   }
 

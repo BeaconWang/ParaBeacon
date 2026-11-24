@@ -732,6 +732,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatImageMessage => 'Image';
 
   @override
+  String get chatDownloadImage => 'Save image';
+
+  @override
+  String get chatDownloadingImage => 'Saving image…';
+
+  @override
+  String get chatImageDownloaded => 'Image saved to your gallery.';
+
+  @override
+  String get chatImageDownloadFailed => 'Could not save the image.';
+
+  @override
   String get chatVoiceMessage => 'Voice message';
 
   @override

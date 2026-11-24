@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'sheet_notice_host.dart';
 
 Future<bool?> showAddPilotTrainingRecordSheet(BuildContext context) {
@@ -271,9 +272,8 @@ class _PilotTrainingRecordFormState extends State<_PilotTrainingRecordForm> {
     if (success) {
       Navigator.of(context).pop(true);
     } else {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(l10n.pilotTrainingSaveFailed)));
+      AppNotice.hideCurrent();
+      AppNotice.show(l10n.pilotTrainingSaveFailed);
     }
   }
 

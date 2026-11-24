@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:path/path.dart' as p;
@@ -17,6 +18,7 @@ import '../data/chat_service.dart';
 import '../data/parabeacon_account_service.dart';
 import '../data/pilot_avatar.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'map_picker_sheet.dart';
 
 List<String> chatScopesForChannel(int channelNumber) => [
@@ -1520,6 +1522,78 @@ class ChatMessageTile extends StatelessWidget {
   }
 }
 
+typedef ChatImageSaveHandler = Future<bool> Function(Uint8List bytes);
+
+class ChatImageSaveButton extends StatefulWidget {
+  const ChatImageSaveButton({super.key, required this.bytes, this.onSave});
+
+  final Uint8List bytes;
+  final ChatImageSaveHandler? onSave;
+
+  @override
+  State<ChatImageSaveButton> createState() => _ChatImageSaveButtonState();
+}
+
+class _ChatImageSaveButtonState extends State<ChatImageSaveButton> {
+  bool _saving = false;
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    final l10n = AppLocalizations.of(context);
+    try {
+      final saved = await (widget.onSave ?? _saveChatImage)(widget.bytes);
+      if (!mounted) return;
+      AppNotice.show(
+        saved ? l10n.chatImageDownloaded : l10n.chatImageDownloadFailed,
+      );
+    } on Object {
+      if (mounted) {
+        AppNotice.show(l10n.chatImageDownloadFailed);
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return IconButton.filledTonal(
+      key: const ValueKey('chat-save-image'),
+      tooltip: _saving ? l10n.chatDownloadingImage : l10n.chatDownloadImage,
+      onPressed: _saving ? null : _save,
+      icon: _saving
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.download_outlined),
+    );
+  }
+}
+
+Future<bool> _saveChatImage(Uint8List bytes) async {
+  if (bytes.isEmpty || bytes.length > ChatService.maxImageUploadBytes) {
+    return false;
+  }
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS) &&
+      !await Gal.hasAccess(toAlbum: true) &&
+      !await Gal.requestAccess(toAlbum: true)) {
+    return false;
+  }
+  await Gal.putImageBytes(
+    bytes,
+    album: 'ParaBeacon',
+    name: 'parabeacon-chat-${DateTime.now().toUtc().microsecondsSinceEpoch}',
+  );
+  return true;
+}
+
 class _ChatImageBubble extends StatelessWidget {
   const _ChatImageBubble({required this.mediaId});
 
@@ -1563,10 +1637,21 @@ class _ChatImageBubble extends StatelessWidget {
                       Positioned(
                         top: MediaQuery.paddingOf(dialogContext).top + 8,
                         right: 8,
-                        child: IconButton.filledTonal(
-                          tooltip: AppLocalizations.of(dialogContext).close,
-                          onPressed: () => Navigator.of(dialogContext).pop(),
-                          icon: const Icon(Icons.close),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ChatImageSaveButton(
+                              bytes: bytes,
+                              onSave: _saveChatImage,
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filledTonal(
+                              tooltip: AppLocalizations.of(dialogContext).close,
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(),
+                              icon: const Icon(Icons.close),
+                            ),
+                          ],
                         ),
                       ),
                     ],

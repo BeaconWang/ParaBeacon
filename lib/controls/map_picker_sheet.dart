@@ -14,6 +14,7 @@ import '../data/offline_tiles_service.dart';
 import '../data/weather_favorites.dart';
 import '../data/weather_service.dart' show WeatherException;
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'favorite_rename_dialog.dart';
 import 'map_control.dart' show MapTileSource, MapTileSources;
 import 'navigation_app_picker.dart';
@@ -455,10 +456,8 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
   }
 
   void _snack(String message) {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    messenger
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    if (!mounted) return;
+    AppNotice.show(message);
   }
 
   String _coordsLabel([LatLng? at]) {

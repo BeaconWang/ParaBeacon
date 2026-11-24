@@ -4,6 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../data/competition/competition_task.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'sheet_notice_host.dart';
 
 /// Shows the active task as an XCTrack-compatible QR code (`XCTSK:` + compact
@@ -99,9 +100,7 @@ class _TaskQrSheet extends StatelessWidget {
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: code));
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.competitionCodeCopied)),
-                  );
+                  AppNotice.show(l10n.competitionCodeCopied);
                 }
               },
               icon: const Icon(Icons.copy_all_outlined),

@@ -18,6 +18,7 @@ import '../data/igc_import_service.dart';
 import '../data/reverse_geocoder_service.dart';
 import '../l10n/aircraft_l10n.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'flight_replay_sheet.dart';
 import 'flight_statistics_sheet.dart';
 import 'map_picker_sheet.dart' show showMapLocationSheet;
@@ -1305,9 +1306,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
 
   void _snack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppNotice.show(message);
   }
 
   Widget _sectionLabel(ThemeData theme, String text) {
@@ -1987,9 +1986,7 @@ class _FlightsSheetState extends State<_FlightsSheet> {
     }
     if (!mounted) return;
     _leaveSelectionMode();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.flightsMergeDone)));
+    AppNotice.show(l10n.flightsMergeDone);
   }
 
   Future<void> _showMergeIssues(FlightMergeCheck check) {

@@ -1430,6 +1430,30 @@ abstract class AppLocalizations {
   /// **'Image'**
   String get chatImageMessage;
 
+  /// No description provided for @chatDownloadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Save image'**
+  String get chatDownloadImage;
+
+  /// No description provided for @chatDownloadingImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving image…'**
+  String get chatDownloadingImage;
+
+  /// No description provided for @chatImageDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Image saved to your gallery.'**
+  String get chatImageDownloaded;
+
+  /// No description provided for @chatImageDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the image.'**
+  String get chatImageDownloadFailed;
+
   /// No description provided for @chatVoiceMessage.
   ///
   /// In en, this message translates to:

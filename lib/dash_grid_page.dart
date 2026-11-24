@@ -10,6 +10,7 @@ import 'package:geolocator/geolocator.dart';
 import 'l10n/app_localizations.dart';
 import 'dashboard_menu_content.dart';
 
+import 'controls/app_notice.dart';
 import 'controls/accounts_sheet.dart';
 import 'controls/about_sheet.dart';
 import 'controls/aircraft_settings_sheet.dart';
@@ -331,20 +332,14 @@ class _DashGridPageState extends State<DashGridPage> {
         saveToDownloads: saveToDownloads,
       );
       if (!mounted || !sheetContext.mounted || !exported) return;
-      ScaffoldMessenger.of(sheetContext).showSnackBar(
-        SnackBar(
-          content: Text(
-            saveToDownloads
-                ? l10n.flightsExportSavedToDownloads
-                : l10n.interfaceConfigurationExported,
-          ),
-        ),
+      AppNotice.show(
+        saveToDownloads
+            ? l10n.flightsExportSavedToDownloads
+            : l10n.interfaceConfigurationExported,
       );
     } catch (_) {
       if (!mounted || !sheetContext.mounted) return;
-      ScaffoldMessenger.of(sheetContext).showSnackBar(
-        SnackBar(content: Text(l10n.interfaceConfigurationExportFailed)),
-      );
+      AppNotice.show(l10n.interfaceConfigurationExportFailed);
     }
   }
 
@@ -395,9 +390,7 @@ class _DashGridPageState extends State<DashGridPage> {
         currentPage: _currentPage,
       );
       if (!mounted || !sheetContext.mounted) return;
-      ScaffoldMessenger.of(sheetContext).showSnackBar(
-        SnackBar(content: Text(l10n.interfaceConfigurationImported)),
-      );
+      AppNotice.show(l10n.interfaceConfigurationImported);
     } catch (_) {
       if (!mounted) return;
       await showDialog<void>(
@@ -2901,9 +2894,7 @@ class _SimStartLocationFieldsState extends State<_SimStartLocationFields> {
     final location = await _getCurrentLocation();
     if (!mounted) return;
     if (location == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).simStartGpsFailed)),
-      );
+      AppNotice.show(AppLocalizations.of(context).simStartGpsFailed);
       return;
     }
     _setStartLocation(location.$1, location.$2);

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:map_launcher/map_launcher.dart';
 
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 
 typedef NavigationMapsLoader =
     Future<List<SupportedMap>> Function(double latitude, double longitude);
@@ -149,7 +150,6 @@ bool get _supportsBrowserLaunch =>
     defaultTargetPlatform == TargetPlatform.macOS;
 
 void _showMessage(BuildContext context, String message) {
-  ScaffoldMessenger.maybeOf(context)
-    ?..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message)));
+  if (!context.mounted) return;
+  AppNotice.show(message);
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/profile_image_url.dart';
+import 'app_notice.dart';
 
 Future<void> showProfileImagePreview(
   BuildContext context, {
@@ -100,14 +101,8 @@ class _ProfileImagePreviewPageState extends State<_ProfileImagePreviewPage> {
       if (mounted) setState(() => _downloading = false);
     }
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            succeeded
-                ? widget.downloadSuccessLabel
-                : widget.downloadFailedLabel,
-          ),
-        ),
+      AppNotice.show(
+        succeeded ? widget.downloadSuccessLabel : widget.downloadFailedLabel,
       );
     }
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/parabeacon_account_service.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 
 class ProfilePasswordChangeSection extends StatefulWidget {
   const ProfilePasswordChangeSection({required this.account, super.key});
@@ -36,7 +37,6 @@ class _ProfilePasswordChangeSectionState
 
   Future<void> _changePassword() async {
     final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
     if (_changingPassword || !(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -51,9 +51,7 @@ class _ProfilePasswordChangeSectionState
         _newPasswordController.clear();
         _confirmPasswordController.clear();
       }
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.accountPasswordChanged)),
-      );
+      AppNotice.show(l10n.accountPasswordChanged);
     }
     if (mounted) setState(() => _changingPassword = false);
   }

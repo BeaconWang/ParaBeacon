@@ -32,6 +32,14 @@
 	<string>ParaBeacon uses the camera to scan competition-task QR codes.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>ParaBeacon records short voice messages only when you choose to send one in Pilot Chat.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>ParaBeacon saves Pilot Chat images to your photo library only when you choose Save image.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ParaBeacon needs photo library access to save an image to your ParaBeacon album.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>ParaBeacon saves Pilot Chat images to your photo library only when you choose Save image.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ParaBeacon needs photo library access to save an image to your ParaBeacon album.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>airnavpro</string>

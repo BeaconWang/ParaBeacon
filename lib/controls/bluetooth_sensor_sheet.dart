@@ -5,6 +5,7 @@ import '../data/ble/ble_sensor_service.dart';
 import '../data/ble/sensor_readings.dart';
 import '../data/sensors/internal_sensor_service.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'sheet_notice_host.dart';
 
 /// Opens the Bluetooth sensor screen as a modal bottom sheet.
@@ -380,9 +381,7 @@ class _BluetoothSensorSheetState extends State<_BluetoothSensorSheet> {
     final ok = await calibrate(result);
     if (!mounted) return;
     if (!ok) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.sensorCalibrateFailed)));
+      AppNotice.show(l10n.sensorCalibrateFailed);
     }
   }
 

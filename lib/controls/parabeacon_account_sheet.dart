@@ -15,6 +15,7 @@ import '../data/parabeacon_account_service.dart';
 import '../data/pilot_avatar.dart';
 import '../data/profile_image_url.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'profile_details_page.dart';
 import 'profile_image_crop_page.dart';
 import 'profile_image_preview.dart';
@@ -96,9 +97,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
       );
     } on Object {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.accountErrorService)));
+        AppNotice.show(l10n.accountErrorService);
       }
       return;
     }
@@ -107,9 +106,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     if (bytes == null ||
         bytes.isEmpty ||
         bytes.length > ParaBeaconAccountService.maxProfileImageSourceBytes) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.accountInvalidProfileImage)));
+      AppNotice.show(l10n.accountInvalidProfileImage);
       return;
     }
     final croppedBytes = await ProfileImageCropPage.edit(
@@ -127,9 +124,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     if (!mounted) return;
     setState(() => _savingProfileImage = false);
     if (saved) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.accountProfileImageSaved)));
+      AppNotice.show(l10n.accountProfileImageSaved);
     }
   }
 
@@ -191,9 +186,7 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     if (!mounted) return;
     setState(() => _savingProfileImage = false);
     if (removed) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.accountProfileImageRemoved)));
+      AppNotice.show(l10n.accountProfileImageRemoved);
     }
   }
 

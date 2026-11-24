@@ -13,6 +13,7 @@ import '../data/map_source.dart' show defaultMapSourceIdForLocale;
 import '../data/map_tile_cache.dart';
 import '../data/offline_tiles_service.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'map_control.dart' show MapTileSources, MapTileSource;
 import 'replay_gaps.dart';
 import 'sheet_notice_host.dart';
@@ -280,11 +281,7 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
           (index) => identical(widget.track.samples[index], _samples[index]),
         );
     if (!sourceMatchesSnapshot) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).replayTrimUnavailable),
-        ),
-      );
+      AppNotice.show(AppLocalizations.of(context).replayTrimUnavailable);
       return;
     }
 
@@ -295,20 +292,11 @@ class _FlightReplaySheetState extends State<_FlightReplaySheet>
       endIndex: endIndex,
     );
     if (!trimmed) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).replayTrimUnavailable),
-        ),
-      );
+      AppNotice.show(AppLocalizations.of(context).replayTrimUnavailable);
       return;
     }
 
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context).flightDetailTrimApplied),
-      ),
-    );
+    AppNotice.show(AppLocalizations.of(context).flightDetailTrimApplied);
     Navigator.of(context).pop();
   }
 

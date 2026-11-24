@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'sheet_notice_host.dart';
 
 Future<void> showCertificateApplicationSheet(
@@ -346,9 +347,8 @@ class _CertificateApplicationSheetState
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppNotice.hideCurrent();
+    AppNotice.show(message);
   }
 
   Future<void> _submit() async {

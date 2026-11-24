@@ -1,11 +1,17 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parabeacon/controls/app_notice.dart';
 import 'package:parabeacon/controls/chat_page.dart';
 import 'package:parabeacon/data/chat_service.dart';
 import 'package:parabeacon/data/pilot_avatar.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 
 void main() {
+  setUp(AppNotice.clear);
+  tearDown(AppNotice.clear);
+
   Widget buildTile(
     ChatMessage message, {
     bool mine = false,
@@ -14,6 +20,7 @@ void main() {
   }) => MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
+    builder: (context, child) => AppNoticeOverlay(child: child!),
     home: Scaffold(
       body: ChatMessageTile(
         message: message,
@@ -112,6 +119,70 @@ void main() {
 
     expect(find.text('Sky Pilot'), findsNothing);
     expect(find.text('Another update'), findsOneWidget);
+  });
+
+  testWidgets('chat image save control saves provided image bytes', (
+    tester,
+  ) async {
+    var receivedBytes = Uint8List(0);
+    var saveCalls = 0;
+    final imageBytes = Uint8List.fromList([1, 2, 3, 4]);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => AppNoticeOverlay(child: child!),
+        home: Scaffold(
+          body: Center(
+            child: ChatImageSaveButton(
+              bytes: imageBytes,
+              onSave: (bytes) async {
+                saveCalls++;
+                receivedBytes = bytes;
+                return true;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('chat-save-image')));
+    await tester.pumpAndSettle();
+
+    expect(saveCalls, 1);
+    expect(receivedBytes, imageBytes);
+    expect(find.text('Image saved to your gallery.'), findsOneWidget);
+    AppNotice.clear();
+    await tester.pump();
+  });
+
+  testWidgets('chat image save control reports permission or save failures', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => AppNoticeOverlay(child: child!),
+        home: Scaffold(
+          body: Center(
+            child: ChatImageSaveButton(
+              bytes: Uint8List.fromList([1, 2, 3]),
+              onSave: (_) async => false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('chat-save-image')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Could not save the image.'), findsOneWidget);
+    AppNotice.clear();
+    await tester.pump();
   });
 
   testWidgets('location messages show coordinates and optional caption', (

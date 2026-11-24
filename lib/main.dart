@@ -10,6 +10,7 @@ import 'audio/vario_audio_example.dart';
 import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
 import 'controls/announcement_caption_overlay.dart';
+import 'controls/app_notice.dart';
 import 'controls/chat_incoming_message_overlay.dart';
 import 'controls/map_picker_sheet.dart' show MapPickerDefaults;
 import 'controls/position_sharing_dialog.dart';
@@ -901,47 +902,52 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
             locale: LocaleController.instance.current.locale,
             supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
-            // App-wide pilot-chat alerts and voice-announcement captions stay
-            // visible above every route, including sheets and dialogs.
-            builder: (context, child) => ChatIncomingMessageOverlay(
-              messages: ChatService.instance.incomingChatMessages,
-              onAlert: () => unawaited(
-                VarioAudioService.instance.playChime().catchError(
-                  (Object _) {},
-                ),
-              ),
-              onBackgroundMessage: (message) {
-                if (!ChatNotificationSettings.instance.allows(message)) return;
-                final l10n = AppLocalizations.of(context);
-                final sourceLabel = switch (message.scope) {
-                  'public' => l10n.chatNotificationWorldwide,
-                  'channel' => l10n.chatNotificationChannel,
-                  'direct' => l10n.chatNotificationDirect,
-                  _ => '',
-                };
-                unawaited(
-                  ChatNotificationService.instance.showIncomingMessage(
-                    message: message,
-                    title: l10n.chatNewMessageFrom(message.senderName),
-                    sourceLabel: sourceLabel,
-                    body: message.text.trim().isNotEmpty
-                        ? message.text
-                        : switch (message.kind) {
-                            'image' => l10n.chatImageMessage,
-                            'voice' => l10n.chatVoiceMessage,
-                            'location' => l10n.chatLocationMessage,
-                            _ => '',
-                          },
-                    channelName: l10n.chatNotificationChannelName,
-                    channelDescription: l10n.chatNotificationChannelDescription,
+            // App notices, pilot-chat alerts, and voice-announcement captions
+            // stay visible above every route, including sheets and dialogs.
+            builder: (context, child) => AppNoticeOverlay(
+              child: ChatIncomingMessageOverlay(
+                messages: ChatService.instance.incomingChatMessages,
+                onAlert: () => unawaited(
+                  VarioAudioService.instance.playChime().catchError(
+                    (Object _) {},
                   ),
-                );
-              },
-              child: Stack(
-                children: [
-                  ?child,
-                  const Positioned.fill(child: AnnouncementCaptionOverlay()),
-                ],
+                ),
+                onBackgroundMessage: (message) {
+                  if (!ChatNotificationSettings.instance.allows(message)) {
+                    return;
+                  }
+                  final l10n = AppLocalizations.of(context);
+                  final sourceLabel = switch (message.scope) {
+                    'public' => l10n.chatNotificationWorldwide,
+                    'channel' => l10n.chatNotificationChannel,
+                    'direct' => l10n.chatNotificationDirect,
+                    _ => '',
+                  };
+                  unawaited(
+                    ChatNotificationService.instance.showIncomingMessage(
+                      message: message,
+                      title: l10n.chatNewMessageFrom(message.senderName),
+                      sourceLabel: sourceLabel,
+                      body: message.text.trim().isNotEmpty
+                          ? message.text
+                          : switch (message.kind) {
+                              'image' => l10n.chatImageMessage,
+                              'voice' => l10n.chatVoiceMessage,
+                              'location' => l10n.chatLocationMessage,
+                              _ => '',
+                            },
+                      channelName: l10n.chatNotificationChannelName,
+                      channelDescription:
+                          l10n.chatNotificationChannelDescription,
+                    ),
+                  );
+                },
+                child: Stack(
+                  children: [
+                    ?child,
+                    const Positioned.fill(child: AnnouncementCaptionOverlay()),
+                  ],
+                ),
               ),
             ),
             home: const DashGridPage(),

@@ -33,6 +33,10 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Microphone: record a voice clip only after the user starts recording in Pilot Chat. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Gallery saves on Android 10 and earlier. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- Background execution: keep GPS/vario/BLE working with the screen off or
@@ -56,6 +60,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
+        android:requestLegacyExternalStorage="true"
         android:usesCleartextTraffic="true"
         android:label="ParaBeacon"
         android:name="${applicationName}"

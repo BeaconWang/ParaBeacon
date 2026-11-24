@@ -4,6 +4,7 @@ import '../data/ble/ble_sensor_service.dart';
 import '../data/sensors/barometer_source.dart';
 import '../data/sensors/internal_sensor_service.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'sheet_notice_host.dart';
 
 /// Opens the altimeter/QNH settings screen.
@@ -330,9 +331,7 @@ class _AltimeterQnhSettingsSheetState
 
     final accepted = await _internal.setReferencePressureHpa(value);
     if (!accepted && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.altimeterQnhManualInvalid)));
+      AppNotice.show(l10n.altimeterQnhManualInvalid);
     }
   }
 
@@ -399,9 +398,7 @@ class _AltimeterQnhSettingsSheetState
       value,
     );
     if (!accepted && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.sensorCalibrateFailed)));
+      AppNotice.show(l10n.sensorCalibrateFailed);
     }
   }
 }

@@ -11,6 +11,7 @@ import '../data/flight_recorder.dart';
 import '../data/flight_statistics.dart';
 import '../data/flight_statistics_share_card_service.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 
 /// Opens the flight Statistics screen for [tracks] as a full-screen sheet.
 ///
@@ -397,9 +398,7 @@ class _FlightStatisticsSheetState extends State<_FlightStatisticsSheet> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppNotice.show(message);
   }
 
   void _stopDetailedWork() {

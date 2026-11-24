@@ -15,6 +15,7 @@ import '../data/competition/qr_image_decoder.dart';
 import '../data/flight_data_provider.dart';
 import '../data/landing_point_store.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'competition_task_qr_sheet.dart';
 import 'map_picker_sheet.dart';
 import 'qr_scanner_screen.dart';
@@ -788,9 +789,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     if (!mounted) return null;
     final points = LandingPointStore.instance.points;
     if (points.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.competitionNoLandingPoints)));
+      AppNotice.show(l10n.competitionNoLandingPoints);
       return null;
     }
     return showModalBottomSheet<TaskWaypoint>(
@@ -1254,9 +1253,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
   }
 
   void _snack(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppNotice.show(message);
   }
 }
 

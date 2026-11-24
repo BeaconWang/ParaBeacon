@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/asfc_auth_service.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'sheet_notice_host.dart';
 
 Future<void> showAsfcFlightRecordsSheet(BuildContext context) {
@@ -88,9 +89,8 @@ class _AsfcFlightRecordsSheetState extends State<_AsfcFlightRecordsSheet> {
   }
 
   void _message(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    AppNotice.hideCurrent();
+    AppNotice.show(message);
   }
 
   @override
@@ -348,9 +348,7 @@ class _AsfcFlightRecordFormState extends State<_AsfcFlightRecordForm> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final l10n = AppLocalizations.of(context);
     if (_agency == null || _coach == null || _takeoffMode.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.asfcFlightSelectionRequired)));
+      AppNotice.show(l10n.asfcFlightSelectionRequired);
       return;
     }
     final success = await _auth.saveFlightRecord(
@@ -371,11 +369,7 @@ class _AsfcFlightRecordFormState extends State<_AsfcFlightRecordForm> {
     if (success) {
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_auth.errorMessage ?? l10n.asfcFlightSaveFailed),
-        ),
-      );
+      AppNotice.show(_auth.errorMessage ?? l10n.asfcFlightSaveFailed);
     }
   }
 

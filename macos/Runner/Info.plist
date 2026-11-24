@@ -9,6 +9,14 @@
 	</dict>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>ParaBeacon records short voice messages only when you choose to send one in Pilot Chat.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>ParaBeacon saves Pilot Chat images to your photo library only when you choose Save image.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ParaBeacon needs photo library access to save an image to your ParaBeacon album.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>ParaBeacon saves Pilot Chat images to your photo library only when you choose Save image.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ParaBeacon needs photo library access to save an image to your ParaBeacon album.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>

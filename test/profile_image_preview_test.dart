@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parabeacon/controls/app_notice.dart';
 import 'package:parabeacon/controls/profile_image_preview.dart';
 
 void main() {
@@ -11,6 +12,7 @@ void main() {
     var downloadCount = 0;
     await tester.pumpWidget(
       MaterialApp(
+        builder: (context, child) => AppNoticeOverlay(child: child!),
         home: Builder(
           builder: (context) => Scaffold(
             body: Center(
@@ -81,5 +83,7 @@ void main() {
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     expect(find.text('Open preview'), findsOneWidget);
+    AppNotice.clear();
+    await tester.pump();
   });
 }

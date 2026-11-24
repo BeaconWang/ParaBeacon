@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/parabeacon_account_service.dart';
 import '../data/pilot_avatar.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'profile_password_change_section.dart';
 
 class ProfileDetailsPage extends StatelessWidget {
@@ -209,14 +210,8 @@ class ProfileDetailsPage extends StatelessWidget {
     bool saved,
     AppLocalizations l10n,
   ) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          saved
-              ? l10n.accountProfileFieldSaved
-              : l10n.accountProfileFieldInvalid,
-        ),
-      ),
+    AppNotice.show(
+      saved ? l10n.accountProfileFieldSaved : l10n.accountProfileFieldInvalid,
     );
   }
 }

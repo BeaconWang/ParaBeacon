@@ -13,6 +13,7 @@ import '../data/weather_favorites.dart';
 import '../data/weather_providers.dart' show WeatherModel;
 import '../data/weather_units.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'desktop_scrolling.dart';
 import 'favorite_rename_dialog.dart';
 import 'map_picker_sheet.dart';
@@ -479,9 +480,8 @@ class _WeatherSheetState extends State<_WeatherSheet> {
   }
 
   void _snack(String message) {
-    ScaffoldMessenger.maybeOf(context)
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    if (!mounted) return;
+    AppNotice.show(message);
   }
 
   String _languageCode() => Localizations.localeOf(context).languageCode;

@@ -694,6 +694,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatImageMessage => '图片';
 
   @override
+  String get chatDownloadImage => '保存图片';
+
+  @override
+  String get chatDownloadingImage => '正在保存图片…';
+
+  @override
+  String get chatImageDownloaded => '图片已保存到相册。';
+
+  @override
+  String get chatImageDownloadFailed => '无法保存图片。';
+
+  @override
   String get chatVoiceMessage => '语音消息';
 
   @override

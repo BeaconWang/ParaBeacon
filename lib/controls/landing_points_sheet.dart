@@ -11,6 +11,7 @@ import '../data/landing_point_flight_import.dart';
 import '../data/landing_points_config_io.dart';
 import '../data/landing_point_server_sync_service.dart';
 import '../l10n/app_localizations.dart';
+import 'app_notice.dart';
 import 'flights_sheet.dart' show showFlightRecordPicker;
 import 'landing_point_editor.dart';
 import 'map_picker_sheet.dart' show showMapPickerSheet;
@@ -37,9 +38,7 @@ class _LandingPointsSheet extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final data = FlightDataProvider.of(context);
     if (!_hasValidFix(data)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.landingPointNoGpsFix)));
+      AppNotice.show(l10n.landingPointNoGpsFix);
       return;
     }
     final point = await showLandingPointEditorDialog(
@@ -98,9 +97,7 @@ class _LandingPointsSheet extends StatelessWidget {
     if (track == null || !context.mounted) return;
     final location = LandingPointFlightLocation.fromTrack(track);
     if (location == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.landingPointFlightNoLocation)),
-      );
+      AppNotice.show(l10n.landingPointFlightNoLocation);
       return;
     }
     final point = await showLandingPointEditorDialog(
@@ -134,26 +131,18 @@ class _LandingPointsSheet extends StatelessWidget {
       );
       await store.applyImportMerge(merged.points, defaultId: merged.defaultId);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${point.name} · ${l10n.landingPointSaved}')),
-      );
+      AppNotice.show('${point.name} · ${l10n.landingPointSaved}');
     } on LandingPointsLimitException {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImportLimit)));
+      AppNotice.show(l10n.landingPointsImportLimit);
     }
   }
 
   Future<void> _savePoint(BuildContext context, LandingPoint point) async {
     await LandingPointStore.instance.add(point);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${point.name} · ${AppLocalizations.of(context).landingPointSaved}',
-        ),
-      ),
+    AppNotice.show(
+      '${point.name} · ${AppLocalizations.of(context).landingPointSaved}',
     );
   }
 
@@ -172,14 +161,10 @@ class _LandingPointsSheet extends StatelessWidget {
     final saved = await LandingPointStore.instance.update(edited);
     if (!context.mounted) return;
     final l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          saved
-              ? '${edited.name} · ${l10n.landingPointUpdated}'
-              : l10n.landingPointUpdateFailed,
-        ),
-      ),
+    AppNotice.show(
+      saved
+          ? '${edited.name} · ${l10n.landingPointUpdated}'
+          : l10n.landingPointUpdateFailed,
     );
   }
 
@@ -288,9 +273,7 @@ class _LandingPointsSheet extends StatelessWidget {
 
   Future<void> _exportLandingPointsToServer(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.landingPointsExportingServer)));
+    AppNotice.show(l10n.landingPointsExportingServer);
     try {
       final store = LandingPointStore.instance;
       final synced = await LandingPointServerSyncService.instance.exportPoints(
@@ -298,32 +281,22 @@ class _LandingPointsSheet extends StatelessWidget {
         defaultId: store.defaultPoint?.id,
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.landingPointsExportedServer(synced))),
-      );
+      AppNotice.show(l10n.landingPointsExportedServer(synced));
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.landingPointsServerTransferFailed('$error')),
-        ),
-      );
+      AppNotice.show(l10n.landingPointsServerTransferFailed('$error'));
     }
   }
 
   Future<void> _importLandingPointsFromServer(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImportingServer)));
+    AppNotice.show(l10n.landingPointsImportingServer);
     try {
       final remote = await LandingPointServerSyncService.instance
           .importPoints();
       if (!context.mounted) return;
       if (remote.points.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.landingPointsServerNoPoints)),
-        );
+        AppNotice.show(l10n.landingPointsServerNoPoints);
         return;
       }
       final store = LandingPointStore.instance;
@@ -359,21 +332,13 @@ class _LandingPointsSheet extends StatelessWidget {
       );
       await store.applyImportMerge(merged.points, defaultId: merged.defaultId);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImported)));
+      AppNotice.show(l10n.landingPointsImported);
     } on LandingPointsLimitException {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImportLimit)));
+      AppNotice.show(l10n.landingPointsImportLimit);
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.landingPointsServerTransferFailed('$error')),
-        ),
-      );
+      AppNotice.show(l10n.landingPointsServerTransferFailed('$error'));
     }
   }
 
@@ -389,20 +354,14 @@ class _LandingPointsSheet extends StatelessWidget {
         saveToDownloads: saveToDownloads,
       );
       if (!context.mounted || !exported) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            saveToDownloads
-                ? l10n.flightsExportSavedToDownloads
-                : l10n.landingPointsExported,
-          ),
-        ),
+      AppNotice.show(
+        saveToDownloads
+            ? l10n.flightsExportSavedToDownloads
+            : l10n.landingPointsExported,
       );
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsExportFailed)));
+      AppNotice.show(l10n.landingPointsExportFailed);
     }
   }
 
@@ -559,14 +518,10 @@ class _LandingPointsSheet extends StatelessWidget {
       );
       await store.applyImportMerge(merged.points, defaultId: merged.defaultId);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImported)));
+      AppNotice.show(l10n.landingPointsImported);
     } on LandingPointsLimitException {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.landingPointsImportLimit)));
+      AppNotice.show(l10n.landingPointsImportLimit);
     } catch (_) {
       if (!context.mounted) return;
       await showDialog<void>(

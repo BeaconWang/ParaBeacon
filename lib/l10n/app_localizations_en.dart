@@ -673,6 +673,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatMessageHint => 'Write a message';
 
   @override
+  String get chatEmojiPicker => 'Insert emoji';
+
+  @override
+  String get chatChooseEmoji => 'Choose an emoji';
+
+  @override
   String get chatSend => 'Send message';
 
   @override

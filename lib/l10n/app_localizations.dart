@@ -1316,6 +1316,18 @@ abstract class AppLocalizations {
   /// **'Write a message'**
   String get chatMessageHint;
 
+  /// No description provided for @chatEmojiPicker.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert emoji'**
+  String get chatEmojiPicker;
+
+  /// No description provided for @chatChooseEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an emoji'**
+  String get chatChooseEmoji;
+
   /// No description provided for @chatSend.
   ///
   /// In en, this message translates to:

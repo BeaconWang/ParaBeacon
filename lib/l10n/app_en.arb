@@ -214,6 +214,8 @@
   "chatNoMessages": "No messages yet. Start the conversation.",
   "chatSignInRequired": "Sign in to send and receive pilot chat messages.",
   "chatMessageHint": "Write a message",
+  "chatEmojiPicker": "Insert emoji",
+  "chatChooseEmoji": "Choose an emoji",
   "chatSend": "Send message",
   "chatSearchAccounts": "Find a pilot",
   "chatSearchAccountsHint": "Search by name or username",

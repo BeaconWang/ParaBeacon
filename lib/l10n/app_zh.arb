@@ -210,6 +210,8 @@
   "chatNoMessages": "还没有消息，来开启对话吧。",
   "chatSignInRequired": "登录后即可发送和接收飞行员聊天消息。",
   "chatMessageHint": "输入消息",
+  "chatEmojiPicker": "插入表情",
+  "chatChooseEmoji": "选择表情",
   "chatSend": "发送消息",
   "chatSearchAccounts": "查找飞行员",
   "chatSearchAccountsHint": "按姓名或用户名搜索",

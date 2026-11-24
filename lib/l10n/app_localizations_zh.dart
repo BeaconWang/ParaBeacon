@@ -637,6 +637,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatMessageHint => '输入消息';
 
   @override
+  String get chatEmojiPicker => '插入表情';
+
+  @override
+  String get chatChooseEmoji => '选择表情';
+
+  @override
   String get chatSend => '发送消息';
 
   @override

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'chat_conversation_tile.dart';
+import 'chat_emoji.dart';
 import '../data/chat_notification_service.dart';
 import '../data/chat_service.dart';
 import '../data/parabeacon_account_service.dart';
@@ -33,6 +34,7 @@ class _ChatPageState extends State<_ChatPage>
     with SingleTickerProviderStateMixin {
   final _chat = ChatService.instance;
   final _messageController = TextEditingController();
+  final _messageFocusNode = FocusNode();
   final _accountSearchController = TextEditingController();
   final _accountResultsController = ScrollController();
   final _scrollController = ScrollController();
@@ -110,6 +112,7 @@ class _ChatPageState extends State<_ChatPage>
     _tabs.removeListener(_onTabChanged);
     _tabs.dispose();
     _messageController.dispose();
+    _messageFocusNode.dispose();
     _accountSearchController.dispose();
     _accountResultsController.removeListener(_onAccountResultsScrolled);
     _accountResultsController.dispose();
@@ -570,12 +573,19 @@ class _ChatPageState extends State<_ChatPage>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    IconButton(
+                      tooltip: l10n.chatEmojiPicker,
+                      onPressed: _showEmojiPicker,
+                      icon: const Icon(Icons.emoji_emotions_outlined),
+                    ),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: TextField(
                         controller: _messageController,
+                        focusNode: _messageFocusNode,
                         minLines: 1,
                         maxLines: 4,
-                        maxLength: 1000,
+                        maxLength: chatMaximumMessageLength,
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
                           hintText: l10n.chatMessageHint,
@@ -604,6 +614,63 @@ class _ChatPageState extends State<_ChatPage>
         ],
       ),
     );
+  }
+
+  Future<void> _showEmojiPicker() async {
+    final messageValue = _messageController.value;
+    _messageFocusNode.unfocus();
+    final emoji = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return SafeArea(
+          top: false,
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.45,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      l10n.chatChooseEmoji,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(8),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 7,
+                          mainAxisSpacing: 2,
+                          crossAxisSpacing: 2,
+                        ),
+                    itemCount: pilotChatEmojis.length,
+                    itemBuilder: (context, index) {
+                      final value = pilotChatEmojis[index];
+                      return IconButton(
+                        tooltip: value,
+                        onPressed: () => Navigator.of(context).pop(value),
+                        icon: Text(value, style: const TextStyle(fontSize: 26)),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (emoji == null || !mounted) return;
+    _messageController.value = insertPilotChatEmoji(messageValue, emoji);
+    _messageFocusNode.requestFocus();
   }
 
   Widget _buildDirectPicker(BuildContext context, AppLocalizations l10n) {

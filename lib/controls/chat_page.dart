@@ -644,25 +644,6 @@ class _ChatPageState extends State<_ChatPage>
   Future<void> _shareLocation() async {
     if (!_canAttach()) return;
     final target = _chat.currentTarget;
-    final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.chatLocationConsentTitle),
-        content: Text(l10n.chatLocationPickerConsentBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.chatShare),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
     setState(() {
       _sending = true;
       _localError = null;
@@ -679,28 +660,6 @@ class _ChatPageState extends State<_ChatPage>
         resolveCurrentLocation: _resolveCurrentLocationCoordinates,
       );
       if (selected == null || !mounted) return;
-      final shareConfirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(l10n.chatLocationConfirmTitle),
-          content: Text(
-            '${l10n.chatLocationConfirmBody}\n\n'
-            '${selected.$1.toStringAsFixed(5)}, '
-            '${selected.$2.toStringAsFixed(5)}',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(l10n.chatShare),
-            ),
-          ],
-        ),
-      );
-      if (shareConfirmed != true || !mounted) return;
       await _chat.send(
         _messageController.text,
         kind: 'location',

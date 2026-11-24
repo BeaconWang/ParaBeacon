@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
@@ -14,6 +15,21 @@ import 'profile_image_url.dart';
 import 'user_agent_settings.dart';
 
 enum ChatConnectionState { disconnected, connecting, connected, reconnecting }
+
+@immutable
+class ChatTarget {
+  const ChatTarget({
+    required this.scope,
+    this.channelNumber = 0,
+    this.pilotNumber = 0,
+    this.accountId,
+  });
+
+  final String scope;
+  final int channelNumber;
+  final int pilotNumber;
+  final String? accountId;
+}
 
 @immutable
 class ChatAccount {
@@ -144,6 +160,10 @@ class ChatMessage {
     this.senderProfileImageUrl,
     this.recipientHasRead,
     this.readerCount,
+    this.kind = 'text',
+    this.mediaId,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
@@ -158,6 +178,15 @@ class ChatMessage {
   final int? readerCount;
   final String text;
   final DateTime createdAt;
+  final String kind;
+  final String? mediaId;
+  final double? latitude;
+  final double? longitude;
+
+  static final _mediaIdPattern = RegExp(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+    caseSensitive: false,
+  );
 
   static ChatMessage? fromJson(Object? raw) {
     if (raw is! Map<String, dynamic>) return null;
@@ -166,6 +195,12 @@ class ChatMessage {
     final senderNumber = raw['sender_pilot_number'];
     final senderName = raw['sender_name'];
     final text = raw['text'];
+    final kind = raw['kind'] ?? 'text';
+    final mediaId = raw['media_id'];
+    final rawLatitude = raw['latitude'];
+    final rawLongitude = raw['longitude'];
+    final latitude = rawLatitude is num ? rawLatitude.toDouble() : null;
+    final longitude = rawLongitude is num ? rawLongitude.toDouble() : null;
     final timestamp = raw['created_at'];
     final channel = raw['channel_number'];
     final recipient = raw['recipient_pilot_number'];
@@ -179,6 +214,36 @@ class ChatMessage {
               ProfileImageUrl.resolve(rawSenderProfileImageUrl) != null
         ? rawSenderProfileImageUrl
         : null;
+    final validText = text is String && text.runes.length <= 1000;
+    final validMediaID =
+        mediaId is String &&
+        _mediaIdPattern.hasMatch(mediaId) &&
+        mediaId != '00000000-0000-0000-0000-000000000000';
+    final validContent = switch (kind) {
+      'text' =>
+        validText &&
+            text.trim().isNotEmpty &&
+            mediaId == null &&
+            rawLatitude == null &&
+            rawLongitude == null,
+      'image' || 'voice' =>
+        validText &&
+            validMediaID &&
+            rawLatitude == null &&
+            rawLongitude == null,
+      'location' =>
+        validText &&
+            mediaId == null &&
+            rawLatitude is num &&
+            rawLongitude is num &&
+            latitude!.isFinite &&
+            longitude!.isFinite &&
+            latitude >= -90 &&
+            latitude <= 90 &&
+            longitude >= -180 &&
+            longitude <= 180,
+      _ => false,
+    };
     if ((rawSenderProfileImageUrl != null && senderProfileImageUrl == null) ||
         id is! String ||
         id.isEmpty ||
@@ -190,9 +255,8 @@ class ChatMessage {
         senderName.trim().isEmpty ||
         senderAvatarId is! int ||
         !PilotAvatar.isValid(senderAvatarId) ||
+        !validContent ||
         text is! String ||
-        text.trim().isEmpty ||
-        text.runes.length > 1000 ||
         timestamp is! String ||
         (channel != null &&
             (channel is! int || channel < 0 || channel > 999999)) ||
@@ -217,11 +281,18 @@ class ChatMessage {
       recipientPilotNumber: recipient as int?,
       text: text,
       createdAt: createdAt.toUtc(),
+      kind: kind as String,
+      mediaId: mediaId as String?,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }
 
 class ChatService extends ChangeNotifier {
+  static const maxImageUploadBytes = 8 * 1024 * 1024;
+  static const maxVoiceUploadBytes = 12 * 1024 * 1024;
+
   ChatService({
     required ParaBeaconAccountService accountService,
     http.Client? httpClient,
@@ -245,6 +316,10 @@ class ChatService extends ChangeNotifier {
       StreamController<ChatMessage>.broadcast(sync: true);
   final Queue<String> _incomingMessageOrder = Queue<String>();
   final Set<String> _incomingMessageIds = <String>{};
+  final LinkedHashMap<String, Uint8List> _mediaCache =
+      LinkedHashMap<String, Uint8List>();
+  final Map<String, Future<Uint8List>> _mediaRequests =
+      <String, Future<Uint8List>>{};
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   Stream<ChatMessage> get incomingChatMessages => _incomingChatMessages.stream;
 
@@ -259,6 +334,17 @@ class ChatService extends ChangeNotifier {
   int get channelNumber => _channelNumber;
   int _pilotNumber = 0;
   int get pilotNumber => _pilotNumber;
+  ChatTarget get currentTarget => ChatTarget(
+    scope: _scope,
+    channelNumber: _channelNumber,
+    pilotNumber: _pilotNumber,
+    accountId: _account.user?.id,
+  );
+  bool isCurrentTarget(ChatTarget target) =>
+      target.scope == _scope &&
+      target.channelNumber == _channelNumber &&
+      target.pilotNumber == _pilotNumber &&
+      target.accountId == _account.user?.id;
   bool? _partnerSharingLocation;
   bool? get partnerSharingLocation => _partnerSharingLocation;
   int _conversationEpoch = 0;
@@ -285,6 +371,7 @@ class ChatService extends ChangeNotifier {
   }
 
   void _onAccountChanged() {
+    _mediaCache.clear();
     final currentProfileImageUrl = _account.user?.profileImageUrl;
     final profileImageChanged =
         currentProfileImageUrl != _lastAccountProfileImageUrl;
@@ -477,9 +564,44 @@ class ChatService extends ChangeNotifier {
     }
   }
 
-  Future<void> send(String text) async {
+  Future<void> send(
+    String text, {
+    String kind = 'text',
+    String? mediaId,
+    double? latitude,
+    double? longitude,
+    ChatTarget? target,
+  }) async {
+    final sendTarget = target ?? currentTarget;
+    if (!isCurrentTarget(sendTarget)) {
+      throw const ChatException('chat_conversation_changed');
+    }
     final normalized = text.trim();
-    if (normalized.isEmpty || normalized.runes.length > 1000) {
+    final validText = normalized.runes.length <= 1000;
+    final validContent = switch (kind) {
+      'text' =>
+        normalized.isNotEmpty &&
+            mediaId == null &&
+            latitude == null &&
+            longitude == null,
+      'image' || 'voice' =>
+        mediaId != null &&
+            ChatMessage._mediaIdPattern.hasMatch(mediaId) &&
+            latitude == null &&
+            longitude == null,
+      'location' =>
+        mediaId == null &&
+            latitude != null &&
+            longitude != null &&
+            latitude.isFinite &&
+            longitude.isFinite &&
+            latitude >= -90 &&
+            latitude <= 90 &&
+            longitude >= -180 &&
+            longitude <= 180,
+      _ => false,
+    };
+    if (!validText || !validContent) {
       throw const ChatException('invalid_message');
     }
     final channel = _channel;
@@ -488,11 +610,19 @@ class ChatService extends ChangeNotifier {
     }
     final payload = <String, Object>{
       'type': 'send',
-      'scope': _scope,
+      'scope': sendTarget.scope,
       'text': normalized,
+      'kind': kind,
     };
-    if (_scope == 'channel') payload['channel_number'] = _channelNumber;
-    if (_scope == 'direct') payload['pilot_number'] = _pilotNumber;
+    if (mediaId != null) payload['media_id'] = mediaId;
+    if (latitude != null) payload['latitude'] = latitude;
+    if (longitude != null) payload['longitude'] = longitude;
+    if (sendTarget.scope == 'channel') {
+      payload['channel_number'] = sendTarget.channelNumber;
+    }
+    if (sendTarget.scope == 'direct') {
+      payload['pilot_number'] = sendTarget.pilotNumber;
+    }
     try {
       channel.sink.add(jsonEncode(payload));
     } on Object catch (error) {
@@ -502,6 +632,160 @@ class ChatService extends ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<String> uploadMedia({
+    required String kind,
+    required List<int> bytes,
+    ChatTarget? target,
+  }) async {
+    final uploadTarget = target ?? currentTarget;
+    if (!isCurrentTarget(uploadTarget)) {
+      throw const ChatException('chat_conversation_changed');
+    }
+    final limit = switch (kind) {
+      'image' => maxImageUploadBytes,
+      'voice' => maxVoiceUploadBytes,
+      _ => 0,
+    };
+    if (limit == 0 || bytes.isEmpty || bytes.length > limit) {
+      throw const ChatException('chat_media_too_large');
+    }
+    if (!_account.isSignedIn || !_isTrustedApiUri(_apiBase)) {
+      throw const ChatException('chat_media_unavailable');
+    }
+    final uri = _apiBase.resolve('/api/v1/chat/media');
+    if (!_isTrustedApiUri(uri)) {
+      throw const ChatException('untrusted_chat_uri');
+    }
+    final authorizationHeaders = await _account.authorizationHeaders();
+    if (!isCurrentTarget(uploadTarget)) {
+      throw const ChatException('chat_conversation_changed');
+    }
+    final request = http.MultipartRequest('POST', uri)
+      ..followRedirects = false
+      ..headers.addAll(authorizationHeaders)
+      ..fields['kind'] = kind
+      ..fields['scope'] = uploadTarget.scope;
+    if (uploadTarget.scope == 'channel') {
+      request.fields['channel_number'] = uploadTarget.channelNumber.toString();
+    }
+    if (uploadTarget.scope == 'direct') {
+      request.fields['pilot_number'] = uploadTarget.pilotNumber.toString();
+    }
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: kind == 'image' ? 'chat-image.jpg' : 'chat-voice.m4a',
+      ),
+    );
+    final streamed = await _http
+        .send(request)
+        .timeout(const Duration(seconds: 60));
+    final response = await http.Response.fromStream(
+      streamed,
+    ).timeout(const Duration(seconds: 15));
+    if (!isCurrentTarget(uploadTarget)) {
+      throw const ChatException('chat_conversation_changed');
+    }
+    if (response.statusCode != 201) {
+      if (response.statusCode == 400 || response.statusCode == 413) {
+        throw const ChatException('chat_media_too_large');
+      }
+      throw ChatException('chat_media_http_${response.statusCode}');
+    }
+    final decoded = jsonDecode(response.body);
+    final mediaId = decoded is Map<String, dynamic>
+        ? decoded['media_id']
+        : null;
+    if (mediaId is! String || !ChatMessage._mediaIdPattern.hasMatch(mediaId)) {
+      throw const ChatException('invalid_chat_media_response');
+    }
+    return mediaId;
+  }
+
+  Future<Uint8List> loadMedia(String mediaId) {
+    if (!_account.isSignedIn) {
+      return Future<Uint8List>.error(
+        const ChatException('chat_media_unavailable'),
+      );
+    }
+    if (!ChatMessage._mediaIdPattern.hasMatch(mediaId)) {
+      return Future<Uint8List>.error(const ChatException('invalid_chat_media'));
+    }
+    final cached = _mediaCache.remove(mediaId);
+    if (cached != null) {
+      _mediaCache[mediaId] = cached;
+      return Future<Uint8List>.value(cached);
+    }
+    final inFlight = _mediaRequests[mediaId];
+    if (inFlight != null) return inFlight;
+    final request = _fetchMedia(mediaId);
+    _mediaRequests[mediaId] = request;
+    return request.whenComplete(() => _mediaRequests.remove(mediaId));
+  }
+
+  Future<Uint8List> _fetchMedia(String mediaId) async {
+    final accountID = _account.user?.id;
+    if (!_account.isSignedIn || accountID == null) {
+      throw const ChatException('chat_media_unavailable');
+    }
+    final uri = _apiBase.resolve('/api/v1/chat/media/$mediaId');
+    if (!_isTrustedApiUri(uri)) {
+      throw const ChatException('untrusted_chat_uri');
+    }
+    final request = http.Request('GET', uri)
+      ..followRedirects = false
+      ..headers.addAll({
+        'Accept': 'image/jpeg, audio/mp4',
+        ...await _account.authorizationHeaders(),
+      });
+    final response = await _http
+        .send(request)
+        .timeout(const Duration(seconds: 30));
+    if (!_account.isSignedIn || _account.user?.id != accountID) {
+      throw const ChatException('chat_media_unavailable');
+    }
+    if (response.statusCode != 200) {
+      throw ChatException('chat_media_http_${response.statusCode}');
+    }
+    final contentType = response.headers['content-type']
+        ?.split(';')
+        .first
+        .trim()
+        .toLowerCase();
+    final limit = switch (contentType) {
+      'image/jpeg' => maxImageUploadBytes,
+      'audio/mp4' => maxVoiceUploadBytes,
+      _ => 0,
+    };
+    if (limit == 0 ||
+        response.contentLength != null && response.contentLength! > limit) {
+      throw const ChatException('invalid_chat_media');
+    }
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in response.stream.timeout(
+      const Duration(seconds: 30),
+    )) {
+      builder.add(chunk);
+      if (builder.length > limit) {
+        throw const ChatException('invalid_chat_media');
+      }
+    }
+    final bytes = builder.takeBytes();
+    if (bytes.isEmpty) throw const ChatException('invalid_chat_media');
+    _mediaCache[mediaId] = bytes;
+    while (_mediaCache.length > 4) {
+      _mediaCache.remove(_mediaCache.keys.first);
+    }
+    return bytes;
+  }
+
+  bool _isTrustedApiUri(Uri uri) =>
+      uri.scheme == _apiBase.scheme &&
+      uri.host.toLowerCase() == _apiBase.host.toLowerCase() &&
+      uri.port == _apiBase.port &&
+      uri.userInfo.isEmpty;
 
   Future<void> markConversationRead({required int pilotNumber}) async {
     if (pilotNumber < 100000 || pilotNumber > 999999) {

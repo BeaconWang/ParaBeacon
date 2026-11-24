@@ -82,6 +82,30 @@ void main() {
     }
   });
 
+  testWidgets('location messages show coordinates and optional caption', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildTile(
+        ChatMessage(
+          id: 'location-1',
+          scope: 'direct',
+          senderPilotNumber: 234567,
+          senderName: 'Sky Pilot',
+          text: 'At launch',
+          kind: 'location',
+          latitude: 37.4219999,
+          longitude: -122.0840575,
+          createdAt: DateTime.utc(2026, 11, 20, 12),
+        ),
+      ),
+    );
+
+    expect(find.text('Location'), findsOneWidget);
+    expect(find.text('37.42200, -122.08406'), findsOneWidget);
+    expect(find.text('At launch'), findsOneWidget);
+  });
+
   testWidgets('public chat continues to show the sender title', (tester) async {
     await tester.pumpWidget(
       buildTile(

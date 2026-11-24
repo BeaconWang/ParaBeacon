@@ -679,6 +679,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatChooseEmoji => 'Choose an emoji';
 
   @override
+  String get chatAttachMedia => 'Add to chat';
+
+  @override
+  String get chatSendImage => 'Send image';
+
+  @override
+  String get chatShareLocation => 'Share current location';
+
+  @override
+  String get chatRecordVoice => 'Record voice message';
+
+  @override
+  String get chatStopVoiceRecording => 'Stop and send voice message';
+
+  @override
+  String get chatLocationConsentTitle => 'Share your location?';
+
+  @override
+  String get chatLocationConsentBody =>
+      'Your current coordinates will be sent to this chat and kept in its history.';
+
+  @override
+  String get chatShare => 'Share';
+
+  @override
+  String get chatImageMessage => 'Image';
+
+  @override
+  String get chatVoiceMessage => 'Voice message';
+
+  @override
+  String get chatLocationMessage => 'Location';
+
+  @override
+  String get chatMediaTooLarge => 'This file is too large or unsupported.';
+
+  @override
+  String get chatMediaSendFailed =>
+      'Could not send this attachment. Please try again.';
+
+  @override
+  String get chatLocationUnavailable => 'Could not get your current location.';
+
+  @override
+  String get chatMicrophoneDenied =>
+      'Microphone permission is required to record a voice message.';
+
+  @override
+  String get chatVoiceRecordFailed => 'Could not record the voice message.';
+
+  @override
   String get chatSend => 'Send message';
 
   @override

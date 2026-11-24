@@ -376,6 +376,45 @@ void main() {
     expect(direct?.scope, 'direct');
     expect(direct?.recipientPilotNumber, 654321);
     expect(direct?.recipientHasRead, isTrue);
+
+    const mediaId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+    final image = ChatMessage.fromJson({
+      ...payload(),
+      'kind': 'image',
+      'media_id': mediaId,
+      'text': '',
+    });
+    expect(image?.kind, 'image');
+    expect(image?.mediaId, mediaId);
+
+    final location = ChatMessage.fromJson({
+      ...payload(),
+      'kind': 'location',
+      'text': '',
+      'latitude': 37.4219999,
+      'longitude': -122.0840575,
+    });
+    expect(location?.kind, 'location');
+    expect(location?.latitude, closeTo(37.4219999, 0.000001));
+    expect(location?.longitude, closeTo(-122.0840575, 0.000001));
+    expect(
+      ChatMessage.fromJson({
+        ...payload(),
+        'kind': 'image',
+        'media_id': 'https://evil.example/a.jpg',
+      }),
+      isNull,
+    );
+    expect(
+      ChatMessage.fromJson({
+        ...payload(),
+        'kind': 'location',
+        'latitude': 91,
+        'longitude': 0,
+      }),
+      isNull,
+    );
+
     expect(
       ChatMessage.fromJson({...payload(), 'sender_avatar_id': 99}),
       isNull,

@@ -39,14 +39,25 @@ class ChatNotificationService {
     required String sourceLabel,
     required String channelName,
     required String channelDescription,
+    String? body,
   }) async {
     if (!isAndroid) return false;
+    final notificationBody =
+        body ??
+        (message.text.trim().isNotEmpty
+            ? message.text
+            : switch (message.kind) {
+                'image' => 'Image',
+                'voice' => 'Voice message',
+                'location' => 'Location',
+                _ => '',
+              });
     try {
       return await _channel.invokeMethod<bool>('showIncomingMessage', {
             'id': message.id,
             'title': title,
             'sourceLabel': sourceLabel,
-            'body': message.text,
+            'body': notificationBody,
             'channelName': channelName,
             'channelDescription': channelDescription,
             'senderPilotNumber': message.senderPilotNumber,

@@ -76,6 +76,17 @@ class _ChatIncomingMessageOverlayState
     super.dispose();
   }
 
+  String _previewText(BuildContext context, ChatMessage message) {
+    if (message.text.trim().isNotEmpty) return message.text;
+    final l10n = AppLocalizations.of(context);
+    return switch (message.kind) {
+      'image' => l10n.chatImageMessage,
+      'voice' => l10n.chatVoiceMessage,
+      'location' => l10n.chatLocationMessage,
+      _ => '',
+    };
+  }
+
   @override
   Widget build(BuildContext context) => Stack(
     fit: StackFit.expand,
@@ -127,7 +138,7 @@ class _ChatIncomingMessageOverlayState
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  message.text,
+                                  _previewText(context, message),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.bodyMedium,

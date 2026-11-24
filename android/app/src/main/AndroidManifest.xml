@@ -31,6 +31,8 @@
 
     <!-- Camera: scanning competition-task QR codes (optional feature). -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Microphone: record a voice clip only after the user starts recording in Pilot Chat. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- Background execution: keep GPS/vario/BLE working with the screen off or

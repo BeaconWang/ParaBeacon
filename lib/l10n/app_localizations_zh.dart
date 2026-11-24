@@ -643,6 +643,54 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatChooseEmoji => '选择表情';
 
   @override
+  String get chatAttachMedia => '添加到聊天';
+
+  @override
+  String get chatSendImage => '发送图片';
+
+  @override
+  String get chatShareLocation => '分享当前位置';
+
+  @override
+  String get chatRecordVoice => '录制语音消息';
+
+  @override
+  String get chatStopVoiceRecording => '停止并发送语音消息';
+
+  @override
+  String get chatLocationConsentTitle => '分享你的位置？';
+
+  @override
+  String get chatLocationConsentBody => '你的当前位置坐标将发送到此聊天并保存在聊天记录中。';
+
+  @override
+  String get chatShare => '分享';
+
+  @override
+  String get chatImageMessage => '图片';
+
+  @override
+  String get chatVoiceMessage => '语音消息';
+
+  @override
+  String get chatLocationMessage => '位置';
+
+  @override
+  String get chatMediaTooLarge => '文件过大或格式不受支持。';
+
+  @override
+  String get chatMediaSendFailed => '无法发送附件，请重试。';
+
+  @override
+  String get chatLocationUnavailable => '无法获取当前位置。';
+
+  @override
+  String get chatMicrophoneDenied => '录制语音消息需要麦克风权限。';
+
+  @override
+  String get chatVoiceRecordFailed => '无法录制语音消息。';
+
+  @override
   String get chatSend => '发送消息';
 
   @override

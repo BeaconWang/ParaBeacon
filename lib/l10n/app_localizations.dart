@@ -1328,6 +1328,102 @@ abstract class AppLocalizations {
   /// **'Choose an emoji'**
   String get chatChooseEmoji;
 
+  /// No description provided for @chatAttachMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to chat'**
+  String get chatAttachMedia;
+
+  /// No description provided for @chatSendImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Send image'**
+  String get chatSendImage;
+
+  /// No description provided for @chatShareLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Share current location'**
+  String get chatShareLocation;
+
+  /// No description provided for @chatRecordVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Record voice message'**
+  String get chatRecordVoice;
+
+  /// No description provided for @chatStopVoiceRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and send voice message'**
+  String get chatStopVoiceRecording;
+
+  /// No description provided for @chatLocationConsentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your location?'**
+  String get chatLocationConsentTitle;
+
+  /// No description provided for @chatLocationConsentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current coordinates will be sent to this chat and kept in its history.'**
+  String get chatLocationConsentBody;
+
+  /// No description provided for @chatShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get chatShare;
+
+  /// No description provided for @chatImageMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get chatImageMessage;
+
+  /// No description provided for @chatVoiceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice message'**
+  String get chatVoiceMessage;
+
+  /// No description provided for @chatLocationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get chatLocationMessage;
+
+  /// No description provided for @chatMediaTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is too large or unsupported.'**
+  String get chatMediaTooLarge;
+
+  /// No description provided for @chatMediaSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send this attachment. Please try again.'**
+  String get chatMediaSendFailed;
+
+  /// No description provided for @chatLocationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get your current location.'**
+  String get chatLocationUnavailable;
+
+  /// No description provided for @chatMicrophoneDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission is required to record a voice message.'**
+  String get chatMicrophoneDenied;
+
+  /// No description provided for @chatVoiceRecordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not record the voice message.'**
+  String get chatVoiceRecordFailed;
+
   /// No description provided for @chatSend.
   ///
   /// In en, this message translates to:

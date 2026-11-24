@@ -1,6 +1,14 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 
 import 'chat_conversation_tile.dart';
 import 'chat_emoji.dart';
@@ -23,6 +31,8 @@ Future<void> showChatPage(BuildContext context) {
   ).push(MaterialPageRoute<void>(builder: (_) => const _ChatPage()));
 }
 
+enum _ChatAttachmentAction { image, location, voice }
+
 class _ChatPage extends StatefulWidget {
   const _ChatPage();
 
@@ -35,6 +45,7 @@ class _ChatPageState extends State<_ChatPage>
   final _chat = ChatService.instance;
   final _messageController = TextEditingController();
   final _messageFocusNode = FocusNode();
+  final _voiceRecorder = AudioRecorder();
   final _accountSearchController = TextEditingController();
   final _accountResultsController = ScrollController();
   final _scrollController = ScrollController();
@@ -56,6 +67,9 @@ class _ChatPageState extends State<_ChatPage>
   }
 
   bool _sending = false;
+  bool _voiceRecording = false;
+  ChatTarget? _voiceTarget;
+  Timer? _voiceLimitTimer;
   String? _localError;
   ChatAccount? _selectedRecipient;
   List<ChatConversation> _accountResults = const [];
@@ -117,6 +131,8 @@ class _ChatPageState extends State<_ChatPage>
     _accountResultsController.removeListener(_onAccountResultsScrolled);
     _accountResultsController.dispose();
     _scrollController.dispose();
+    _voiceLimitTimer?.cancel();
+    unawaited(_voiceRecorder.dispose());
     _accountSearchTimer?.cancel();
     _directoryRefreshTimer?.cancel();
     _partnerStatusTimer?.cancel();
@@ -411,12 +427,21 @@ class _ChatPageState extends State<_ChatPage>
       'rate_limited' => l10n.chatRateLimited,
       'invalid_request' || 'invalid_message' => l10n.chatInvalidMessage,
       'chat_disconnected' => l10n.chatConnecting,
+      'chat_media_too_large' => l10n.chatMediaTooLarge,
+      'chat_location_unavailable' => l10n.chatLocationUnavailable,
+      'chat_microphone_denied' => l10n.chatMicrophoneDenied,
+      'chat_voice_record_failed' => l10n.chatVoiceRecordFailed,
+      'chat_conversation_changed' => l10n.chatMediaSendFailed,
+      'chat_media_unavailable' ||
+      'invalid_chat_media' => l10n.chatMediaSendFailed,
+      _ when code?.startsWith('chat_media_http_') == true =>
+        l10n.chatMediaSendFailed,
       _ => l10n.chatServiceUnavailable,
     };
   }
 
   Future<void> _send() async {
-    if (_sending) return;
+    if (_sending || _voiceRecording) return;
     if (_scopeForTab(_tabs.index) == 'direct' && _selectedRecipient == null) {
       setState(
         () => _localError = AppLocalizations.of(context).chatSelectRecipient,
@@ -435,6 +460,234 @@ class _ChatPageState extends State<_ChatPage>
     } on Object catch (error) {
       if (mounted) setState(() => _localError = _errorText(error));
     } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  bool _canAttach() {
+    final l10n = AppLocalizations.of(context);
+    if (_sending) return false;
+    if (_scopeForTab(_tabs.index) == 'direct' && _selectedRecipient == null) {
+      setState(() => _localError = l10n.chatSelectRecipient);
+      return false;
+    }
+    if (_chat.state != ChatConnectionState.connected) {
+      setState(() => _localError = l10n.chatConnecting);
+      return false;
+    }
+    return true;
+  }
+
+  void _selectAttachment(_ChatAttachmentAction action) {
+    switch (action) {
+      case _ChatAttachmentAction.image:
+        unawaited(_pickAndSendImage());
+      case _ChatAttachmentAction.location:
+        unawaited(_shareLocation());
+      case _ChatAttachmentAction.voice:
+        unawaited(_startVoiceRecording());
+    }
+  }
+
+  Future<void> _pickAndSendImage() async {
+    if (!_canAttach()) return;
+    final target = _chat.currentTarget;
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: true,
+      );
+      if (result == null) return;
+      final bytes = result.files.single.bytes;
+      if (bytes == null ||
+          bytes.isEmpty ||
+          bytes.length > ChatService.maxImageUploadBytes) {
+        if (mounted) {
+          setState(
+            () => _localError = AppLocalizations.of(context).chatMediaTooLarge,
+          );
+        }
+        return;
+      }
+      await _uploadAndSendMedia('image', bytes, target);
+    } on Object catch (error) {
+      if (mounted) setState(() => _localError = _errorText(error));
+    }
+  }
+
+  Future<void> _uploadAndSendMedia(
+    String kind,
+    List<int> bytes,
+    ChatTarget target,
+  ) async {
+    if (_sending) return;
+    final caption = _messageController.text;
+    setState(() {
+      _sending = true;
+      _localError = null;
+    });
+    try {
+      final mediaId = await _chat.uploadMedia(
+        kind: kind,
+        bytes: bytes,
+        target: target,
+      );
+      await _chat.send(caption, kind: kind, mediaId: mediaId, target: target);
+      _messageController.clear();
+    } on Object catch (error) {
+      if (mounted) setState(() => _localError = _errorText(error));
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _shareLocation() async {
+    if (!_canAttach()) return;
+    final target = _chat.currentTarget;
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.chatLocationConsentTitle),
+        content: Text(l10n.chatLocationConsentBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.chatShare),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() {
+      _sending = true;
+      _localError = null;
+    });
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw const ChatException('chat_location_unavailable');
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw const ChatException('chat_location_unavailable');
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
+      );
+      await _chat.send(
+        _messageController.text,
+        kind: 'location',
+        latitude: position.latitude,
+        longitude: position.longitude,
+        target: target,
+      );
+      _messageController.clear();
+    } on Object catch (error) {
+      if (mounted) setState(() => _localError = _errorText(error));
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _startVoiceRecording() async {
+    if (!_canAttach()) return;
+    final target = _chat.currentTarget;
+    try {
+      if (!await _voiceRecorder.hasPermission()) {
+        throw const ChatException('chat_microphone_denied');
+      }
+      if (!_chat.isCurrentTarget(target)) {
+        throw const ChatException('chat_conversation_changed');
+      }
+      final directory = await getTemporaryDirectory();
+      final path = p.join(
+        directory.path,
+        'pilot-chat-${DateTime.now().millisecondsSinceEpoch}.m4a',
+      );
+      await _voiceRecorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+        ),
+        path: path,
+      );
+      if (!mounted) {
+        await _voiceRecorder.stop();
+        return;
+      }
+      if (!_chat.isCurrentTarget(target)) {
+        await _voiceRecorder.stop();
+        throw const ChatException('chat_conversation_changed');
+      }
+      setState(() {
+        _voiceRecording = true;
+        _voiceTarget = target;
+        _localError = null;
+      });
+      _voiceLimitTimer = Timer(
+        const Duration(seconds: 90),
+        () => unawaited(_finishVoiceRecording()),
+      );
+    } on Object catch (error) {
+      if (mounted) setState(() => _localError = _errorText(error));
+    }
+  }
+
+  Future<void> _finishVoiceRecording() async {
+    if (!_voiceRecording || _sending) return;
+    final target = _voiceTarget;
+    _voiceTarget = null;
+    _voiceLimitTimer?.cancel();
+    setState(() {
+      _voiceRecording = false;
+      _sending = true;
+      _localError = null;
+    });
+    String? path;
+    try {
+      path = await _voiceRecorder.stop();
+      if (path == null || target == null) {
+        throw const ChatException('chat_voice_record_failed');
+      }
+      final bytes = await File(path).readAsBytes();
+      if (bytes.isEmpty || bytes.length > ChatService.maxVoiceUploadBytes) {
+        throw const ChatException('chat_media_too_large');
+      }
+      final mediaId = await _chat.uploadMedia(
+        kind: 'voice',
+        bytes: bytes,
+        target: target,
+      );
+      await _chat.send(
+        _messageController.text,
+        kind: 'voice',
+        mediaId: mediaId,
+        target: target,
+      );
+      _messageController.clear();
+    } on Object catch (error) {
+      if (mounted) setState(() => _localError = _errorText(error));
+    } finally {
+      if (path != null) {
+        try {
+          await File(path).delete();
+        } on FileSystemException {
+          // Temporary cleanup is best-effort.
+        }
+      }
       if (mounted) setState(() => _sending = false);
     }
   }
@@ -573,9 +826,52 @@ class _ChatPageState extends State<_ChatPage>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    if (_voiceRecording)
+                      IconButton.filledTonal(
+                        tooltip: l10n.chatStopVoiceRecording,
+                        onPressed: _finishVoiceRecording,
+                        icon: const Icon(Icons.stop),
+                      )
+                    else
+                      PopupMenuButton<_ChatAttachmentAction>(
+                        tooltip: l10n.chatAttachMedia,
+                        enabled: connected && !_sending,
+                        onSelected: _selectAttachment,
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: _ChatAttachmentAction.image,
+                            child: ListTile(
+                              leading: const Icon(Icons.image_outlined),
+                              title: Text(l10n.chatSendImage),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: _ChatAttachmentAction.location,
+                            child: ListTile(
+                              leading: const Icon(Icons.location_on_outlined),
+                              title: Text(l10n.chatShareLocation),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: _ChatAttachmentAction.voice,
+                            child: ListTile(
+                              leading: const Icon(Icons.mic_none),
+                              title: Text(l10n.chatRecordVoice),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ],
+                        child: const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Icon(Icons.add_circle_outline),
+                        ),
+                      ),
+                    const SizedBox(width: 4),
                     IconButton(
                       tooltip: l10n.chatEmojiPicker,
-                      onPressed: _showEmojiPicker,
+                      onPressed: _sending ? null : _showEmojiPicker,
                       icon: const Icon(Icons.emoji_emotions_outlined),
                     ),
                     const SizedBox(width: 4),
@@ -598,7 +894,9 @@ class _ChatPageState extends State<_ChatPage>
                     const SizedBox(width: 8),
                     IconButton.filled(
                       tooltip: l10n.chatSend,
-                      onPressed: connected && !_sending ? _send : null,
+                      onPressed: connected && !_sending && !_voiceRecording
+                          ? _send
+                          : null,
                       icon: _sending
                           ? const SizedBox(
                               width: 18,
@@ -878,8 +1176,41 @@ class ChatMessageTile extends StatelessWidget {
                     ],
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(message.text),
+                if (message.kind == 'image' && message.mediaId != null)
+                  _ChatImageBubble(mediaId: message.mediaId!),
+                if (message.kind == 'voice' && message.mediaId != null)
+                  _ChatVoiceBubble(mediaId: message.mediaId!),
+                if (message.kind == 'location' &&
+                    message.latitude != null &&
+                    message.longitude != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l10n.chatLocationMessage),
+                            SelectableText(
+                              '${message.latitude!.toStringAsFixed(5)}, '
+                              '${message.longitude!.toStringAsFixed(5)}',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                if (message.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(message.text),
+                ],
                 const SizedBox(height: 3),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -933,4 +1264,163 @@ class ChatMessageTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ChatImageBubble extends StatelessWidget {
+  const _ChatImageBubble({required this.mediaId});
+
+  final String mediaId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: FutureBuilder<Uint8List>(
+          future: ChatService.instance.loadMedia(mediaId),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return SizedBox(
+                width: 240,
+                height: 150,
+                child: Center(
+                  child: snapshot.hasError
+                      ? const Icon(Icons.broken_image_outlined)
+                      : const CircularProgressIndicator(),
+                ),
+              );
+            }
+            return Image.memory(
+              snapshot.data!,
+              width: 260,
+              height: 220,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const SizedBox(
+                width: 240,
+                height: 150,
+                child: Icon(Icons.broken_image_outlined),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatVoiceBubble extends StatefulWidget {
+  const _ChatVoiceBubble({required this.mediaId});
+
+  final String mediaId;
+
+  @override
+  State<_ChatVoiceBubble> createState() => _ChatVoiceBubbleState();
+}
+
+class _ChatVoiceBubbleState extends State<_ChatVoiceBubble> {
+  final AudioPlayer _player = AudioPlayer();
+  late final StreamSubscription<PlayerState> _stateSubscription;
+  late final StreamSubscription<Duration> _positionSubscription;
+  late final StreamSubscription<Duration> _durationSubscription;
+  Uint8List? _audioBytes;
+  PlayerState _playerState = PlayerState.stopped;
+  Duration _position = Duration.zero;
+  Duration? _duration;
+  bool _loadFailed = false;
+
+  bool get _loaded => _audioBytes != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _stateSubscription = _player.onPlayerStateChanged.listen((state) {
+      if (mounted) setState(() => _playerState = state);
+    });
+    _positionSubscription = _player.onPositionChanged.listen((position) {
+      if (mounted) setState(() => _position = position);
+    });
+    _durationSubscription = _player.onDurationChanged.listen((duration) {
+      if (mounted) setState(() => _duration = duration);
+    });
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    try {
+      final bytes = await ChatService.instance.loadMedia(widget.mediaId);
+      if (mounted) setState(() => _audioBytes = bytes);
+    } on Object {
+      if (mounted) setState(() => _loadFailed = true);
+    }
+  }
+
+  Future<void> _togglePlayback() async {
+    final bytes = _audioBytes;
+    if (bytes == null) return;
+    try {
+      if (_playerState == PlayerState.playing) {
+        await _player.pause();
+      } else if (_playerState == PlayerState.paused) {
+        await _player.resume();
+      } else {
+        await _player.play(BytesSource(bytes));
+      }
+    } on Object {
+      if (mounted) setState(() => _loadFailed = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_disposeResources());
+    super.dispose();
+  }
+
+  Future<void> _disposeResources() async {
+    await _stateSubscription.cancel();
+    await _positionSubscription.cancel();
+    await _durationSubscription.cancel();
+    await _player.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: l10n.chatVoiceMessage,
+          onPressed: _loaded ? _togglePlayback : null,
+          icon: Icon(
+            _playerState == PlayerState.playing
+                ? Icons.pause
+                : _loadFailed
+                ? Icons.volume_off_outlined
+                : _loaded
+                ? Icons.play_arrow
+                : Icons.graphic_eq,
+          ),
+        ),
+        Text(l10n.chatVoiceMessage),
+        const SizedBox(width: 8),
+        Text(
+          _formatChatDuration(_position, _duration),
+          style: Theme.of(context).textTheme.labelSmall,
+        ),
+      ],
+    );
+  }
+}
+
+String _formatChatDuration(Duration position, Duration? duration) {
+  final remaining = duration == null
+      ? position
+      : duration - position < Duration.zero
+      ? Duration.zero
+      : duration - position;
+  final minutes = remaining.inMinutes.toString().padLeft(2, '0');
+  final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+  return '$minutes:$seconds';
 }

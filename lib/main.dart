@@ -924,6 +924,14 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
                     message: message,
                     title: l10n.chatNewMessageFrom(message.senderName),
                     sourceLabel: sourceLabel,
+                    body: message.text.trim().isNotEmpty
+                        ? message.text
+                        : switch (message.kind) {
+                            'image' => l10n.chatImageMessage,
+                            'voice' => l10n.chatVoiceMessage,
+                            'location' => l10n.chatLocationMessage,
+                            _ => '',
+                          },
                     channelName: l10n.chatNotificationChannelName,
                     channelDescription: l10n.chatNotificationChannelDescription,
                   ),

@@ -1370,6 +1370,36 @@ abstract class AppLocalizations {
   /// **'Recording voice message'**
   String get chatRecordingVoice;
 
+  /// No description provided for @chatVoicePaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording paused'**
+  String get chatVoicePaused;
+
+  /// No description provided for @chatPauseVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause recording'**
+  String get chatPauseVoice;
+
+  /// No description provided for @chatResumeVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume recording'**
+  String get chatResumeVoice;
+
+  /// No description provided for @chatSendingVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending voice message…'**
+  String get chatSendingVoice;
+
+  /// No description provided for @chatDiscardingVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Discarding recording…'**
+  String get chatDiscardingVoice;
+
   /// No description provided for @chatJumpToLatest.
   ///
   /// In en, this message translates to:

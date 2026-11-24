@@ -36,6 +36,131 @@ Future<void> showChatPage(BuildContext context) {
 
 enum _ChatAttachmentAction { image, location, voice }
 
+const chatMaximumVoiceDuration = Duration(seconds: 90);
+
+class ChatVoiceRecordingControls extends StatelessWidget {
+  const ChatVoiceRecordingControls({
+    required this.elapsed,
+    required this.maximumDuration,
+    required this.paused,
+    required this.sending,
+    required this.cancelling,
+    required this.onCancel,
+    required this.onTogglePause,
+    required this.onSend,
+    super.key,
+  });
+
+  final Duration elapsed;
+  final Duration maximumDuration;
+  final bool paused;
+  final bool sending;
+  final bool cancelling;
+  final VoidCallback? onCancel;
+  final VoidCallback? onTogglePause;
+  final VoidCallback? onSend;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final progress = (elapsed.inMilliseconds / maximumDuration.inMilliseconds)
+        .clamp(0.0, 1.0);
+    final status = sending
+        ? (cancelling ? l10n.chatDiscardingVoice : l10n.chatSendingVoice)
+        : paused
+        ? l10n.chatVoicePaused
+        : l10n.chatRecordingVoice;
+
+    return Container(
+      key: const ValueKey('chat-voice-recording-controls'),
+      padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: l10n.chatCancelVoiceRecording,
+            onPressed: onCancel,
+            icon: const Icon(Icons.delete_outline),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      sending
+                          ? Icons.cloud_upload_outlined
+                          : paused
+                          ? Icons.pause_circle_outline
+                          : Icons.fiber_manual_record,
+                      size: 16,
+                      color: sending || paused
+                          ? theme.colorScheme.onSurfaceVariant
+                          : theme.colorScheme.error,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        status,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${_formatChatDuration(elapsed, null)} / '
+                      '${_formatChatDuration(maximumDuration, null)}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 7),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: sending ? null : progress,
+                    minHeight: 4,
+                    backgroundColor: theme.colorScheme.surface,
+                    color: paused
+                        ? theme.colorScheme.tertiary
+                        : theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            tooltip: paused ? l10n.chatResumeVoice : l10n.chatPauseVoice,
+            onPressed: sending ? null : onTogglePause,
+            icon: Icon(paused ? Icons.mic : Icons.pause),
+          ),
+          IconButton.filled(
+            tooltip: l10n.chatStopVoiceRecording,
+            onPressed: sending ? null : onSend,
+            icon: sending
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.send),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 bool _sameCalendarDay(DateTime first, DateTime second) {
   final localFirst = first.toLocal();
   final localSecond = second.toLocal();
@@ -109,12 +234,13 @@ class _ChatPageState extends State<_ChatPage>
 
   bool _sending = false;
   bool _voiceRecording = false;
+  bool _voicePaused = false;
+  bool _voiceUploading = false;
+  bool _voiceCancelling = false;
   ChatTarget? _voiceTarget;
-  DateTime? _voiceStartedAt;
   Duration _voiceElapsed = Duration.zero;
   String? _activeVoicePath;
   Timer? _voiceElapsedTimer;
-  Timer? _voiceLimitTimer;
   String? _localError;
   ChatAccount? _selectedRecipient;
   List<ChatConversation> _accountResults = const [];
@@ -178,7 +304,6 @@ class _ChatPageState extends State<_ChatPage>
     _accountResultsController.removeListener(_onAccountResultsScrolled);
     _accountResultsController.dispose();
     _scrollController.dispose();
-    _voiceLimitTimer?.cancel();
     _voiceElapsedTimer?.cancel();
     unawaited(_voiceRecorder.dispose());
     _accountSearchTimer?.cancel();
@@ -710,37 +835,63 @@ class _ChatPageState extends State<_ChatPage>
       }
       setState(() {
         _voiceRecording = true;
+        _voicePaused = false;
+        _voiceUploading = false;
+        _voiceCancelling = false;
         _voiceTarget = target;
-        _voiceStartedAt = DateTime.now();
         _voiceElapsed = Duration.zero;
         _activeVoicePath = path;
         _localError = null;
       });
-      _voiceElapsedTimer?.cancel();
-      _voiceElapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-        final startedAt = _voiceStartedAt;
-        if (!mounted || startedAt == null) return;
-        setState(() => _voiceElapsed = DateTime.now().difference(startedAt));
-      });
-      _voiceLimitTimer = Timer(
-        const Duration(seconds: 90),
-        () => unawaited(_finishVoiceRecording()),
-      );
+      _startVoiceElapsedTimer();
+    } on Object catch (error) {
+      if (mounted) setState(() => _localError = _errorText(error));
+    }
+  }
+
+  void _startVoiceElapsedTimer() {
+    _voiceElapsedTimer?.cancel();
+    _voiceElapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !_voiceRecording || _voicePaused) return;
+      final elapsed = _voiceElapsed + const Duration(seconds: 1);
+      setState(() => _voiceElapsed = elapsed);
+      if (elapsed >= chatMaximumVoiceDuration) {
+        unawaited(_finishVoiceRecording());
+      }
+    });
+  }
+
+  Future<void> _toggleVoicePause() async {
+    if (!_voiceRecording || _sending) return;
+    final resume = _voicePaused;
+    try {
+      if (resume) {
+        await _voiceRecorder.resume();
+      } else {
+        await _voiceRecorder.pause();
+      }
+      if (!mounted || !_voiceRecording) return;
+      setState(() => _voicePaused = !resume);
+      if (resume) {
+        _startVoiceElapsedTimer();
+      } else {
+        _voiceElapsedTimer?.cancel();
+      }
     } on Object catch (error) {
       if (mounted) setState(() => _localError = _errorText(error));
     }
   }
 
   Future<void> _cancelVoiceRecording() async {
-    if (!_voiceRecording) return;
-    _voiceLimitTimer?.cancel();
+    if (!_voiceRecording || _sending) return;
     _voiceElapsedTimer?.cancel();
     final path = _activeVoicePath;
     _activeVoicePath = null;
     _voiceTarget = null;
     setState(() {
       _voiceRecording = false;
-      _voiceStartedAt = null;
+      _voicePaused = false;
+      _voiceCancelling = true;
       _voiceElapsed = Duration.zero;
       _sending = true;
     });
@@ -756,7 +907,12 @@ class _ChatPageState extends State<_ChatPage>
         // Temporary cleanup is best-effort.
       }
     }
-    if (mounted) setState(() => _sending = false);
+    if (mounted) {
+      setState(() {
+        _sending = false;
+        _voiceCancelling = false;
+      });
+    }
   }
 
   Future<void> _finishVoiceRecording() async {
@@ -764,11 +920,11 @@ class _ChatPageState extends State<_ChatPage>
     final target = _voiceTarget;
     _voiceTarget = null;
     _activeVoicePath = null;
-    _voiceStartedAt = null;
-    _voiceLimitTimer?.cancel();
+    _voicePaused = false;
     _voiceElapsedTimer?.cancel();
     setState(() {
       _voiceRecording = false;
+      _voiceUploading = true;
       _sending = true;
       _localError = null;
     });
@@ -803,8 +959,8 @@ class _ChatPageState extends State<_ChatPage>
       _activeVoicePath = null;
       if (mounted) {
         setState(() {
-          _voiceStartedAt = null;
           _voiceElapsed = Duration.zero;
+          _voiceUploading = false;
         });
       }
       if (path != null) {
@@ -1028,27 +1184,26 @@ class _ChatPageState extends State<_ChatPage>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    if (_voiceRecording) ...[
-                      IconButton(
-                        tooltip: l10n.chatCancelVoiceRecording,
-                        onPressed: _cancelVoiceRecording,
-                        icon: const Icon(Icons.delete_outline),
-                      ),
-                      const Icon(Icons.fiber_manual_record, color: Colors.red),
-                      const SizedBox(width: 6),
+                    if (_voiceRecording || _voiceUploading || _voiceCancelling)
                       Expanded(
-                        child: Text(
-                          '${l10n.chatRecordingVoice} · ${_formatChatDuration(_voiceElapsed, null)}',
-                          style: theme.textTheme.bodyMedium,
+                        child: ChatVoiceRecordingControls(
+                          elapsed: _voiceElapsed,
+                          maximumDuration: chatMaximumVoiceDuration,
+                          paused: _voicePaused,
+                          sending: _voiceUploading || _voiceCancelling,
+                          cancelling: _voiceCancelling,
+                          onCancel: _voiceRecording
+                              ? _cancelVoiceRecording
+                              : null,
+                          onTogglePause: _voiceRecording
+                              ? _toggleVoicePause
+                              : null,
+                          onSend: _voiceRecording
+                              ? _finishVoiceRecording
+                              : null,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filled(
-                        tooltip: l10n.chatStopVoiceRecording,
-                        onPressed: _finishVoiceRecording,
-                        icon: const Icon(Icons.send),
-                      ),
-                    ] else ...[
+                      )
+                    else ...[
                       PopupMenuButton<_ChatAttachmentAction>(
                         tooltip: l10n.chatAttachMedia,
                         enabled: connected && !_sending,

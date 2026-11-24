@@ -700,6 +700,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatRecordingVoice => 'Recording voice message';
 
   @override
+  String get chatVoicePaused => 'Recording paused';
+
+  @override
+  String get chatPauseVoice => 'Pause recording';
+
+  @override
+  String get chatResumeVoice => 'Resume recording';
+
+  @override
+  String get chatSendingVoice => 'Sending voice message…';
+
+  @override
+  String get chatDiscardingVoice => 'Discarding recording…';
+
+  @override
   String get chatJumpToLatest => 'Jump to latest messages';
 
   @override

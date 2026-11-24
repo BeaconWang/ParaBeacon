@@ -32,6 +32,33 @@
 	<string>ParaBeacon uses the camera to scan competition-task QR codes.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>ParaBeacon records short voice messages only when you choose to send one in Pilot Chat.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>airnavpro</string>
+		<string>iosamap</string>
+		<string>baidumap</string>
+		<string>citymapper</string>
+		<string>comgooglemaps</string>
+		<string>com.sygic.aura</string>
+		<string>copilot</string>
+		<string>dgis</string>
+		<string>here-location</string>
+		<string>kakaomap</string>
+		<string>magicearth</string>
+		<string>mappls</string>
+		<string>mapswithme</string>
+		<string>moovit</string>
+		<string>nmap</string>
+		<string>neshan</string>
+		<string>osmandmaps</string>
+		<string>qqmap</string>
+		<string>szn-mapy</string>
+		<string>tomtomgo</string>
+		<string>tmap</string>
+		<string>waze</string>
+		<string>yandexmaps</string>
+		<string>yandexnavi</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

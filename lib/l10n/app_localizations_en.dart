@@ -51,8 +51,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutSubtitle => 'App details, version, and licenses';
 
   @override
-  String get aboutDescription =>
-      'A cross-platform paraglider flight assistant with live vario audio, BLE sensors, mapping, and flight logging.';
+  String get aboutDescription => 'A cross-platform paraglider flight assistant with live vario audio, BLE sensors, mapping, and flight logging.';
 
   @override
   String get aboutApplicationDetails => 'Application details';
@@ -97,8 +96,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutOpenSourceLicenses => 'Open-source licenses';
 
   @override
-  String get aboutOpenSourceLicensesSubtitle =>
-      'View licenses for this app and its dependencies';
+  String get aboutOpenSourceLicensesSubtitle => 'View licenses for this app and its dependencies';
 
   @override
   String get aboutLoading => 'Loading app details…';
@@ -110,8 +108,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutSphereHint => 'Drag to rotate · it spins slowly on its own';
 
   @override
-  String get aboutSphereSemantics =>
-      'Interactive 3D sphere displaying information.';
+  String get aboutSphereSemantics => 'Interactive 3D sphere displaying information.';
 
   @override
   String get preferencesSectionAccountFlight => 'Accounts & flight';
@@ -138,23 +135,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get interfaceConfigurationImportTitle => 'Replace dashboard layout?';
 
   @override
-  String get interfaceConfigurationImportConfirmation =>
-      'This replaces all dashboard pages and controls with the imported layout. Theme, language, account settings and flight records are not changed.';
+  String get interfaceConfigurationImportConfirmation => 'This replaces all dashboard pages and controls with the imported layout. Theme, language, account settings and flight records are not changed.';
 
   @override
   String get interfaceConfigurationImported => 'Dashboard layout imported.';
 
   @override
-  String get interfaceConfigurationImportFailed =>
-      'Unable to import this dashboard layout. Check that the file is valid and compatible.';
+  String get interfaceConfigurationImportFailed => 'Unable to import this dashboard layout. Check that the file is valid and compatible.';
 
   @override
-  String get interfaceConfigurationExported =>
-      'Dashboard layout is ready to share.';
+  String get interfaceConfigurationExported => 'Dashboard layout is ready to share.';
 
   @override
-  String get interfaceConfigurationExportFailed =>
-      'Unable to export the dashboard layout.';
+  String get interfaceConfigurationExportFailed => 'Unable to export the dashboard layout.';
 
   @override
   String get units => 'Units';
@@ -172,15 +165,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get defaultPrecision => 'Default precision';
 
   @override
-  String get defaultPrecisionDescription =>
-      'When on, GPS accuracy, altitude, speed, climb rate and wind speed use one decimal place by default. When off, they use whole numbers. Custom precision settings are unchanged.';
+  String get defaultPrecisionDescription => 'When on, GPS accuracy, altitude, speed, climb rate and wind speed use one decimal place by default. When off, they use whole numbers. Custom precision settings are unchanged.';
 
   @override
   String get largerFont => 'Larger font';
 
   @override
-  String get largerFontDescription =>
-      'Enlarge numeric readouts and tighten the spacing within dashboard controls.';
+  String get largerFontDescription => 'Enlarge numeric readouts and tighten the spacing within dashboard controls.';
 
   @override
   String get otherSettings => 'Other settings';
@@ -192,12 +183,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get networkUserAgentTitle => 'Network User-Agent';
 
   @override
-  String get networkUserAgentSubtitle =>
-      'Applied to app network requests. Nominatim requests retain ParaBeacon identification; browsers and native map SDKs may override it.';
+  String get networkUserAgentSubtitle => 'Applied to app network requests. Nominatim requests retain ParaBeacon identification; browsers and native map SDKs may override it.';
 
   @override
-  String get networkUserAgentInvalid =>
-      'Enter a valid User-Agent (1–512 characters, no control characters).';
+  String get networkUserAgentInvalid => 'Enter a valid User-Agent (1–512 characters, no control characters).';
 
   @override
   String get networkUserAgentReset => 'Use Chrome default';
@@ -206,16 +195,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paraBeaconServerAddressTitle => 'ParaBeacon server address';
 
   @override
-  String get paraBeaconServerAddressSubtitle =>
-      'Use a public server origin. HTTPS is recommended; HTTP sends data without encryption, so use it only with a trusted server. Local and private-network addresses are blocked. The address is saved immediately and takes effect on the next app startup; the current server stays active until then.';
+  String get paraBeaconServerAddressSubtitle => 'Use a public server origin. HTTPS is recommended; HTTP sends data without encryption, so use it only with a trusted server. Local and private-network addresses are blocked. The address is saved immediately and takes effect on the next app startup; the current server stays active until then.';
 
   @override
-  String get paraBeaconServerAddressSaved =>
-      'Server address saved. It will take effect the next time you start the app.';
+  String get paraBeaconServerAddressSaved => 'Server address saved. It will take effect the next time you start the app.';
 
   @override
-  String get paraBeaconServerAddressInvalid =>
-      'Enter a reachable public HTTP or HTTPS address, such as https://www.parabeacon.icu, with no path, username, or query.';
+  String get paraBeaconServerAddressInvalid => 'Enter a reachable public HTTP or HTTPS address, such as https://www.parabeacon.icu, with no path, username, or query.';
 
   @override
   String get paraBeaconServerAddressReset => 'Use default server';
@@ -224,33 +210,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareCardFlatDesign => 'Flat share cards';
 
   @override
-  String get shareCardFlatDesignSubtitle =>
-      'Use a flat design instead of the glass style';
+  String get shareCardFlatDesignSubtitle => 'Use a flat design instead of the glass style';
 
   @override
   String get shareCardCompactLayout => 'Compact share card layout';
 
   @override
-  String get shareCardCompactLayoutSubtitle =>
-      'On: current grouped mobile layout. Off: classic layout from the older share card.';
+  String get shareCardCompactLayoutSubtitle => 'On: current grouped mobile layout. Off: classic layout from the older share card.';
 
   @override
   String get shareCardMapSource => 'Share card map source';
 
   @override
-  String get shareCardMapSourceSubtitle =>
-      'Choose the basemap behind the flight track. None disables map tiles; selected tiles may be downloaded when sharing.';
+  String get shareCardMapSourceSubtitle => 'Choose the basemap behind the flight track. None disables map tiles; selected tiles may be downloaded when sharing.';
 
   @override
   String get verticalSpeedAverageWindow => 'Vertical speed averaging window';
 
   @override
-  String get competitionTaskRadiusReduction =>
-      'Competition cylinder radius reduction';
+  String get competitionTaskRadiusReduction => 'Competition cylinder radius reduction';
 
   @override
-  String get competitionTaskRadiusReductionSubtitle =>
-      'Applied to navigation and task geometry; displayed and exported task radii stay unchanged.';
+  String get competitionTaskRadiusReductionSubtitle => 'Applied to navigation and task geometry; displayed and exported task radii stay unchanged.';
 
   @override
   String verticalSpeedAverageWindowBadge(String seconds) {
@@ -261,8 +242,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailOutlierFilter => 'Filter climb/sink outliers';
 
   @override
-  String get flightDetailOutlierFilterSubtitle =>
-      'Use a local median/MAD check for flight details only. Saved samples are never changed.';
+  String get flightDetailOutlierFilterSubtitle => 'Use a local median/MAD check for flight details only. Saved samples are never changed.';
 
   @override
   String get flightDetailOutlierSensitivity => 'MAD sensitivity';
@@ -343,15 +323,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accounts => 'Accounts';
 
   @override
-  String get accountsSubtitle =>
-      'Manage your ParaBeacon, ASFC and XContest accounts';
+  String get accountsSubtitle => 'Manage your ParaBeacon, ASFC and XContest accounts';
 
   @override
   String get paraBeaconAccount => 'ParaBeacon account';
 
   @override
-  String get paraBeaconAccountSubtitle =>
-      'Sign in or create a ParaBeacon account';
+  String get paraBeaconAccountSubtitle => 'Sign in or create a ParaBeacon account';
 
   @override
   String get accountSignedIn => 'Signed in';
@@ -390,8 +368,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountPasswordRequired => 'Enter your password.';
 
   @override
-  String get accountPasswordMinimum =>
-      'Password must be at least 6 characters.';
+  String get accountPasswordMinimum => 'Password must be at least 6 characters.';
 
   @override
   String get accountPasswordMaximum => 'Password cannot exceed 72 UTF-8 bytes.';
@@ -400,26 +377,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountCurrentPassword => 'Current password';
 
   @override
-  String get accountCurrentPasswordIncorrect =>
-      'The current password is incorrect.';
+  String get accountCurrentPasswordIncorrect => 'The current password is incorrect.';
 
   @override
-  String get accountSessionExpired =>
-      'Your session has expired. Sign in again and retry.';
+  String get accountSessionExpired => 'Your session has expired. Sign in again and retry.';
 
   @override
   String get accountNewPassword => 'New password';
 
   @override
-  String get accountPasswordUnchanged =>
-      'Choose a new password different from your current one.';
+  String get accountPasswordUnchanged => 'Choose a new password different from your current one.';
 
   @override
   String get accountChangePassword => 'Change password';
 
   @override
-  String get accountPasswordChanged =>
-      'Password changed. Sign in again with your new password.';
+  String get accountPasswordChanged => 'Password changed. Sign in again with your new password.';
 
   @override
   String get accountConfirmPassword => 'Confirm password';
@@ -434,12 +407,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDisplayName => 'Display name for live tracking';
 
   @override
-  String get accountDisplayNameSubtitle =>
-      'Optional, 1–48 characters. Leave blank to show your username instead.';
+  String get accountDisplayNameSubtitle => 'Optional, 1–48 characters. Leave blank to show your username instead.';
 
   @override
-  String get accountDisplayNameInvalid =>
-      'Use up to 48 characters without line breaks or control characters.';
+  String get accountDisplayNameInvalid => 'Use up to 48 characters without line breaks or control characters.';
 
   @override
   String get accountDisplayNameSaved => 'Display name saved.';
@@ -487,8 +458,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountProfileFieldSaved => 'Profile details updated.';
 
   @override
-  String get accountProfileFieldInvalid =>
-      'Check this profile detail and try again.';
+  String get accountProfileFieldInvalid => 'Check this profile detail and try again.';
 
   @override
   String get accountProfileImage => 'Profile image';
@@ -500,8 +470,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountCropProfileImage => 'Edit profile image';
 
   @override
-  String get accountCropInstructions =>
-      'Drag to position the image and pinch or use two fingers to zoom.';
+  String get accountCropInstructions => 'Drag to position the image and pinch or use two fingers to zoom.';
 
   @override
   String get accountCropAndUpload => 'Crop and upload';
@@ -519,12 +488,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDownloadingProfileImage => 'Downloading…';
 
   @override
-  String get accountProfileImageDownloaded =>
-      'Profile image saved to your gallery.';
+  String get accountProfileImageDownloaded => 'Profile image saved to your gallery.';
 
   @override
-  String get accountProfileImageDownloadFailed =>
-      'Could not save the profile image.';
+  String get accountProfileImageDownloadFailed => 'Could not save the profile image.';
 
   @override
   String get accountProfileImageSaved => 'Profile image updated.';
@@ -533,8 +500,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountProfileImageRemoved => 'Profile image removed.';
 
   @override
-  String get accountInvalidProfileImage =>
-      'Choose a supported image under 32 MB and 12 megapixels.';
+  String get accountInvalidProfileImage => 'Choose a supported image under 32 MB and 12 megapixels.';
 
   @override
   String get accountSignOut => 'Sign out';
@@ -543,45 +509,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountPleaseWait => 'Please wait…';
 
   @override
-  String get accountSecureSession =>
-      'Your sign-in token is stored securely on this device.';
+  String get accountSecureSession => 'Your sign-in token is stored securely on this device.';
 
   @override
-  String get accountErrorInvalidCredentials =>
-      'The username/email or password is incorrect.';
+  String get accountErrorInvalidCredentials => 'The username/email or password is incorrect.';
 
   @override
-  String get accountErrorAlreadyExists =>
-      'That username or email is already in use.';
+  String get accountErrorAlreadyExists => 'That username or email is already in use.';
 
   @override
   String get accountErrorInvalidInput => 'Check your details and try again.';
 
   @override
-  String get accountErrorConnection =>
-      'Could not connect to ParaBeacon. Try again.';
+  String get accountErrorConnection => 'Could not connect to ParaBeacon. Try again.';
 
   @override
-  String get accountErrorStorage =>
-      'Could not securely store your sign-in on this device.';
+  String get accountErrorStorage => 'Could not securely store your sign-in on this device.';
 
   @override
-  String get accountErrorService =>
-      'The account service is temporarily unavailable.';
+  String get accountErrorService => 'The account service is temporarily unavailable.';
 
   @override
   String get aircraft => 'Aircraft';
 
   @override
-  String get aircraftSubtitle =>
-      'Configure aircraft type, model and flight performance';
+  String get aircraftSubtitle => 'Configure aircraft type, model and flight performance';
 
   @override
   String get chatTitle => 'Pilot Chat';
 
   @override
-  String get chatSubtitle =>
-      'Worldwide public chat, pilot-number channels, and direct messages.';
+  String get chatSubtitle => 'Worldwide public chat, pilot-number channels, and direct messages.';
 
   @override
   String get chatWorldwide => 'Worldwide';
@@ -610,15 +568,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatNotificationChannelName => 'Pilot Chat messages';
 
   @override
-  String get chatNotificationChannelDescription =>
-      'Alerts for new messages from other pilots.';
+  String get chatNotificationChannelDescription => 'Alerts for new messages from other pilots.';
 
   @override
   String get chatNotificationSettingsTitle => 'Pilot Chat notifications';
 
   @override
-  String get chatNotificationSettingsSubtitle =>
-      'Choose which new messages appear as Android notifications.';
+  String get chatNotificationSettingsSubtitle => 'Choose which new messages appear as Android notifications.';
 
   @override
   String get chatNotificationWorldwide => 'Worldwide messages';
@@ -666,8 +622,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatNoMessages => 'No messages yet. Start the conversation.';
 
   @override
-  String get chatSignInRequired =>
-      'Sign in to send and receive pilot chat messages.';
+  String get chatSignInRequired => 'Sign in to send and receive pilot chat messages.';
 
   @override
   String get chatMessageHint => 'Write a message';
@@ -715,22 +670,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatLocationConsentTitle => 'Choose a location to share?';
 
   @override
-  String get chatLocationConsentBody =>
-      'Select a point on the map. Its coordinates will only be sent after you confirm, and will be saved in this chat\'s history.';
+  String get chatLocationConsentBody => 'Select a point on the map. Its coordinates will only be sent after you confirm, and will be saved in this chat\'s history.';
 
   @override
-  String get chatLocationPickerConsentBody =>
-      'Select a point on the map. Its coordinates will only be sent after you confirm, and will be saved in this chat\'s history.';
+  String get chatLocationPickerConsentBody => 'Select a point on the map. Its coordinates will only be sent after you confirm, and will be saved in this chat\'s history.';
 
   @override
   String get chatLocationConfirmTitle => 'Share this location?';
 
   @override
-  String get chatLocationConfirmBody =>
-      'This will send the selected coordinates to this chat and save them in its history.';
+  String get chatLocationConfirmBody => 'This will send the selected coordinates to this chat and save them in its history.';
 
   @override
   String get chatChooseLocation => 'Choose location on map';
+
+  @override
+  String get chatNavigate => 'Navigate';
+
+  @override
+  String get chatNavigateWith => 'Navigate with';
+
+  @override
+  String get chatNoNavigationApps => 'No compatible navigation apps are available.';
+
+  @override
+  String get chatNavigationLaunchFailed => 'Could not open the selected navigation app.';
 
   @override
   String get chatShare => 'Share';
@@ -748,15 +712,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatMediaTooLarge => 'This file is too large or unsupported.';
 
   @override
-  String get chatMediaSendFailed =>
-      'Could not send this attachment. Please try again.';
+  String get chatMediaSendFailed => 'Could not send this attachment. Please try again.';
 
   @override
   String get chatLocationUnavailable => 'Could not get your current location.';
 
   @override
-  String get chatMicrophoneDenied =>
-      'Microphone permission is required to record a voice message.';
+  String get chatMicrophoneDenied => 'Microphone permission is required to record a voice message.';
 
   @override
   String get chatVoiceRecordFailed => 'Could not record the voice message.';
@@ -780,8 +742,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatChangeRecipient => 'Choose another pilot';
 
   @override
-  String get chatSelectRecipient =>
-      'Choose a pilot before sending a private message.';
+  String get chatSelectRecipient => 'Choose a pilot before sending a private message.';
 
   @override
   String chatChannelNumber(String number) {
@@ -789,8 +750,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get chatUsesLiveTrackingFilter =>
-      'Uses your account\'s selected radio-frequency channel.';
+  String get chatUsesLiveTrackingFilter => 'Uses your account\'s selected radio-frequency channel.';
 
   @override
   String get chatOpenConversation => 'Open';
@@ -799,8 +759,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatPilotNotFound => 'This pilot is no longer available.';
 
   @override
-  String get chatRateLimited =>
-      'Please wait a moment before sending another message.';
+  String get chatRateLimited => 'Please wait a moment before sending another message.';
 
   @override
   String get chatInvalidMessage => 'That message is invalid or too long.';
@@ -809,12 +768,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatServiceUnavailable => 'Chat is temporarily unavailable.';
 
   @override
-  String get chatPartnerSharingLocation =>
-      'This pilot is sharing their live location';
+  String get chatPartnerSharingLocation => 'This pilot is sharing their live location';
 
   @override
-  String get chatPartnerNotSharingLocation =>
-      'This pilot is not currently sharing their location';
+  String get chatPartnerNotSharingLocation => 'This pilot is not currently sharing their location';
 
   @override
   String get chatCheckingLocationStatus => 'Checking location-sharing status…';
@@ -823,8 +780,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveTracking => 'LiveTracking';
 
   @override
-  String get liveTrackingSubtitle =>
-      'Sign in, then choose whether to share live flight data with XContest, ParaBeacon, or both.';
+  String get liveTrackingSubtitle => 'Sign in, then choose whether to share live flight data with XContest, ParaBeacon, or both.';
 
   @override
   String get positionSharingTitle => 'Position sharing';
@@ -838,180 +794,145 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get positionSharingPromptBody =>
-      'Choosing to share resumes your enabled destinations. The first time, it enables services you are currently signed in to. Live data is sent only during active flights.';
+  String get positionSharingPromptBody => 'Choosing to share resumes your enabled destinations. The first time, it enables services you are currently signed in to. Live data is sent only during active flights.';
 
   @override
   String get positionSharingDisableAction => 'Disable sharing';
 
   @override
-  String get positionSharingDisableSubtitle =>
-      'Pause sharing for now. This prompt will appear again the next time you open the app.';
+  String get positionSharingDisableSubtitle => 'Pause sharing for now. This prompt will appear again the next time you open the app.';
 
   @override
   String get liveTrackingXContestSync => 'Sync to XContest';
 
   @override
-  String get liveTrackingXContestSyncSubtitle =>
-      'Send live flight data to your XContest account.';
+  String get liveTrackingXContestSyncSubtitle => 'Send live flight data to your XContest account.';
 
   @override
-  String get liveTrackingXContestSignInRequired =>
-      'Sign in to XContest to enable this switch.';
+  String get liveTrackingXContestSignInRequired => 'Sign in to XContest to enable this switch.';
 
   @override
   String get liveTrackingParaBeaconSync => 'Sync to ParaBeacon';
 
   @override
-  String get liveTrackingParaBeaconSyncSubtitle =>
-      'Send live flight data to ParaBeacon Server.';
+  String get liveTrackingParaBeaconSyncSubtitle => 'Send live flight data to ParaBeacon Server.';
 
   @override
-  String get liveTrackingParaBeaconSignInRequired =>
-      'Sign in to ParaBeacon to enable this switch.';
+  String get liveTrackingParaBeaconSignInRequired => 'Sign in to ParaBeacon to enable this switch.';
 
   @override
-  String get liveTrackingRequiresXContest =>
-      'Sign in to XContest or ParaBeacon to enable a live-tracking destination.';
+  String get liveTrackingRequiresXContest => 'Sign in to XContest or ParaBeacon to enable a live-tracking destination.';
 
   @override
-  String get liveTrackingNoDestinationSelected =>
-      'Turn on at least one signed-in destination to share live data.';
+  String get liveTrackingNoDestinationSelected => 'Turn on at least one signed-in destination to share live data.';
 
   @override
   String get liveTrackingProxyToken => 'Proxy access token';
 
   @override
-  String get liveTrackingProxyTokenSubtitle =>
-      'Stored securely on this device and sent only to your configured ParaBeacon proxy.';
+  String get liveTrackingProxyTokenSubtitle => 'Stored securely on this device and sent only to your configured ParaBeacon proxy.';
 
   @override
-  String get liveTrackingConfigInvalid =>
-      'Live tracking configuration could not be loaded. Check the bundled JSON configuration.';
+  String get liveTrackingConfigInvalid => 'Live tracking configuration could not be loaded. Check the bundled JSON configuration.';
 
   @override
-  String get liveTrackingProxyAuthRequired =>
-      'Enter the bearer token issued by your ParaBeacon proxy before tracking can start.';
+  String get liveTrackingProxyAuthRequired => 'Enter the bearer token issued by your ParaBeacon proxy before tracking can start.';
 
   @override
   String get liveTrackingConnecting => 'Connecting to XContest LiveTrack…';
 
   @override
-  String get liveTrackingConnected =>
-      'XContest LiveTrack session active; flight points are uploading.';
+  String get liveTrackingConnected => 'XContest LiveTrack session active; flight points are uploading.';
 
   @override
-  String get liveTrackingRetrying =>
-      'XContest LiveTrack connection failed; queued points will retry automatically.';
+  String get liveTrackingRetrying => 'XContest LiveTrack connection failed; queued points will retry automatically.';
 
   @override
-  String get liveTrackingFailed =>
-      'XContest LiveTrack could not start. Check the connection and account.';
+  String get liveTrackingFailed => 'XContest LiveTrack could not start. Check the connection and account.';
 
   @override
   String get liveTrackingClaimContest => 'Claim contest flight';
 
   @override
-  String get liveTrackingClaimContestSubtitle =>
-      'Claim the flight for an XContest competition';
+  String get liveTrackingClaimContestSubtitle => 'Claim the flight for an XContest competition';
 
   @override
-  String get liveTrackingClaimContestLockedSubtitle =>
-      'Contest claiming is locked after live tracking starts. You can change it for the next flight.';
+  String get liveTrackingClaimContestLockedSubtitle => 'Contest claiming is locked after live tracking starts. You can change it for the next flight.';
 
   @override
   String get liveTrackingShowPublic => 'Show public tracking';
 
   @override
-  String get liveTrackingShowPublicSubtitle =>
-      'Show other public pilots on the map';
+  String get liveTrackingShowPublicSubtitle => 'Show other public pilots on the map';
 
   @override
   String get liveTrackingFlightPublic => 'Make flight public';
 
   @override
-  String get liveTrackingFlightPublicSubtitle =>
-      'Publish the completed flight on XContest';
+  String get liveTrackingFlightPublicSubtitle => 'Publish the completed flight on XContest';
 
   @override
-  String get liveTrackingFlightPublicLockedSubtitle =>
-      'Visibility is locked after live tracking starts. You can change it for the next flight.';
+  String get liveTrackingFlightPublicLockedSubtitle => 'Visibility is locked after live tracking starts. You can change it for the next flight.';
 
   @override
-  String get liveTrackingShareLocationPublicly =>
-      'Share my live location with other ParaBeacon pilots';
+  String get liveTrackingShareLocationPublicly => 'Share my live location with other ParaBeacon pilots';
 
   @override
-  String get liveTrackingShareLocationPubliclySubtitle =>
-      'When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.';
+  String get liveTrackingShareLocationPubliclySubtitle => 'When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.';
 
   @override
-  String get liveTrackingShareLocationWhileNotFlying =>
-      'Share location while not flying';
+  String get liveTrackingShareLocationWhileNotFlying => 'Share location while not flying';
 
   @override
-  String get liveTrackingShareLocationWhileNotFlyingSubtitle =>
-      'Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.';
+  String get liveTrackingShareLocationWhileNotFlyingSubtitle => 'Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.';
 
   @override
   String get liveTrackingChannelNumber => 'Channel number';
 
   @override
-  String get liveTrackingChannelNumberSubtitle =>
-      'Choose your radio frequency to filter the map and use Channel chat. With 000000, the map shows all public pilots in range and Channel chat is hidden.';
+  String get liveTrackingChannelNumberSubtitle => 'Choose your radio frequency to filter the map and use Channel chat. With 000000, the map shows all public pilots in range and Channel chat is hidden.';
 
   @override
-  String get liveTrackingChannelNumberSaveFailed =>
-      'Channel number could not be saved. Check your connection and try again.';
+  String get liveTrackingChannelNumberSaveFailed => 'Channel number could not be saved. Check your connection and try again.';
 
   @override
   String get liveTrackingTemporaryDisable => 'Temporarily stop sharing';
 
   @override
-  String get liveTrackingTemporaryDisableSubtitle =>
-      'Pause all selected destinations without changing their switches.';
+  String get liveTrackingTemporaryDisableSubtitle => 'Pause all selected destinations without changing their switches.';
 
   @override
-  String get liveTrackingTemporarilyDisabled =>
-      'LiveTracking is temporarily paused.';
+  String get liveTrackingTemporarilyDisabled => 'LiveTracking is temporarily paused.';
 
   @override
-  String get liveTrackingReady =>
-      'Tracking will start automatically when a flight becomes active.';
+  String get liveTrackingReady => 'Tracking will start automatically when a flight becomes active.';
 
   @override
   String get liveTrackingServerTitle => 'ParaBeacon Server';
 
   @override
-  String get liveTrackingServerAccountRequired =>
-      'Sign in to a ParaBeacon account to share live telemetry.';
+  String get liveTrackingServerAccountRequired => 'Sign in to a ParaBeacon account to share live telemetry.';
 
   @override
-  String get liveTrackingServerSyncDisabled =>
-      'ParaBeacon syncing is turned off.';
+  String get liveTrackingServerSyncDisabled => 'ParaBeacon syncing is turned off.';
 
   @override
-  String get liveTrackingServerPaused =>
-      'Server sharing is paused by the LiveTracking setting.';
+  String get liveTrackingServerPaused => 'Server sharing is paused by the LiveTracking setting.';
 
   @override
   String get liveTrackingServerWaiting => 'Waiting for an active flight.';
 
   @override
-  String get liveTrackingServerConnecting =>
-      'Opening a ParaBeacon Server flight session…';
+  String get liveTrackingServerConnecting => 'Opening a ParaBeacon Server flight session…';
 
   @override
-  String get liveTrackingServerActive =>
-      'Realtime flight data is being shared with ParaBeacon Server.';
+  String get liveTrackingServerActive => 'Realtime flight data is being shared with ParaBeacon Server.';
 
   @override
-  String get liveTrackingServerRetrying =>
-      'Server connection failed; buffered flight data will retry automatically.';
+  String get liveTrackingServerRetrying => 'Server connection failed; buffered flight data will retry automatically.';
 
   @override
-  String get liveTrackingServerFailed =>
-      'Flight data could not be shared. Check the server connection and account.';
+  String get liveTrackingServerFailed => 'Flight data could not be shared. Check the server connection and account.';
 
   @override
   String get aircraftFaiClass => 'FAI class';
@@ -1029,24 +950,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aircraftFaiRigidWingFai2 => 'Rigid Wing (FAI-2)';
 
   @override
-  String get aircraftFaiPoweredParagliderFoot =>
-      'RPF (Paramotor - foot launched)';
+  String get aircraftFaiPoweredParagliderFoot => 'RPF (Paramotor - foot launched)';
 
   @override
-  String get aircraftFaiPoweredParagliderTrike =>
-      'RPL (Paramotor - landplane/trike)';
+  String get aircraftFaiPoweredParagliderTrike => 'RPL (Paramotor - landplane/trike)';
 
   @override
-  String get aircraftFaiPoweredAircraft =>
-      'RAL (Landplane/Movable aerodynamic control)';
+  String get aircraftFaiPoweredAircraft => 'RAL (Landplane/Movable aerodynamic control)';
 
   @override
-  String get aircraftFaiRigidWingPowered =>
-      'RWL (Landplane/Weight-shift control)';
+  String get aircraftFaiRigidWingPowered => 'RWL (Landplane/Weight-shift control)';
 
   @override
-  String get aircraftFaiRigidWingFootLaunched =>
-      'RWF (Foot-launched/Weight-shift control)';
+  String get aircraftFaiRigidWingFootLaunched => 'RWF (Foot-launched/Weight-shift control)';
 
   @override
   String get aircraftFaiRigidGlider => 'RGL (Landplane/autogyro)';
@@ -1199,16 +1115,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get xcontestSignedIn => 'Signed in to XContest';
 
   @override
-  String get xcontestCredentialsRequired =>
-      'Enter your XContest username and password.';
+  String get xcontestCredentialsRequired => 'Enter your XContest username and password.';
 
   @override
-  String get xcontestInvalidCredentials =>
-      'The XContest username or password is incorrect.';
+  String get xcontestInvalidCredentials => 'The XContest username or password is incorrect.';
 
   @override
-  String get xcontestConnectionFailed =>
-      'Unable to connect to XContest. Check your network and try again.';
+  String get xcontestConnectionFailed => 'Unable to connect to XContest. Check your network and try again.';
 
   @override
   String get xcontestLoginFailed => 'XContest login failed. Try again.';
@@ -1255,8 +1168,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get asfcSmsCodeRequired => 'Enter the SMS code.';
 
   @override
-  String get asfcSmsCredentialsRequired =>
-      'Enter your mobile number and SMS code.';
+  String get asfcSmsCredentialsRequired => 'Enter your mobile number and SMS code.';
 
   @override
   String get asfcCaptchaLoadFailed => 'Unable to load the image code.';
@@ -1316,8 +1228,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certificatePendingApproval => 'Pending approval';
 
   @override
-  String get certificatePendingApprovalSubtitle =>
-      'Your certificate application is being reviewed.';
+  String get certificatePendingApprovalSubtitle => 'Your certificate application is being reviewed.';
 
   @override
   String get certificateNumber => 'Certificate number';
@@ -1362,12 +1273,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pilotTrainingNoRecords => 'No pilot training records';
 
   @override
-  String get pilotTrainingLoadFailed =>
-      'Couldn\'t load pilot training records.';
+  String get pilotTrainingLoadFailed => 'Couldn\'t load pilot training records.';
 
   @override
-  String get pilotTrainingSignInRequired =>
-      'Sign in to view pilot training records.';
+  String get pilotTrainingSignInRequired => 'Sign in to view pilot training records.';
 
   @override
   String get pilotTrainingRetry => 'Retry';
@@ -1526,8 +1435,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get asfcFlightRequired => 'This field is required.';
 
   @override
-  String get asfcFlightSelectionRequired =>
-      'Select an agency, coach and takeoff mode.';
+  String get asfcFlightSelectionRequired => 'Select an agency, coach and takeoff mode.';
 
   @override
   String get asfcFlightSaveFailed => 'Unable to save the flight record.';
@@ -1542,15 +1450,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get asfcFlightDeleteTitle => 'Delete flight record?';
 
   @override
-  String get asfcFlightDeleteConfirmation =>
-      'This flight record will be permanently deleted.';
+  String get asfcFlightDeleteConfirmation => 'This flight record will be permanently deleted.';
 
   @override
   String get certificateApplication => 'ASFC certificate application';
 
   @override
-  String get certificateApplicationSubtitle =>
-      'Submit a paragliding license application through your ASFC account.';
+  String get certificateApplicationSubtitle => 'Submit a paragliding license application through your ASFC account.';
 
   @override
   String get certificateFullName => 'Full name';
@@ -1607,8 +1513,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certificateDocuments => 'Documents';
 
   @override
-  String get certificateGroupPhotoWithCoach =>
-      'Students take a group photo with their coach';
+  String get certificateGroupPhotoWithCoach => 'Students take a group photo with their coach';
 
   @override
   String get certificateImagePreview => 'Preview image';
@@ -1641,8 +1546,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certificateRequired => 'This field is required.';
 
   @override
-  String get certificatePhotoRequired =>
-      'Upload both certificate photos before submitting.';
+  String get certificatePhotoRequired => 'Upload both certificate photos before submitting.';
 
   @override
   String get certificateNotSignedIn => 'Sign in to your ASFC account first.';
@@ -1654,12 +1558,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certificateImageUploadFailed => 'Unable to upload the image.';
 
   @override
-  String get certificateApplicationFailed =>
-      'The certificate application failed.';
+  String get certificateApplicationFailed => 'The certificate application failed.';
 
   @override
-  String get certificateApplicationSuccess =>
-      'Certificate application submitted.';
+  String get certificateApplicationSuccess => 'Certificate application submitted.';
 
   @override
   String get submitApplication => 'Submit application';
@@ -1676,8 +1578,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get asfcConnectionFailed =>
-      'Unable to connect. Check your network and try again.';
+  String get asfcConnectionFailed => 'Unable to connect. Check your network and try again.';
 
   @override
   String get asfcCredentialsRequired => 'Enter your username and password.';
@@ -1698,8 +1599,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get varioSoundSettings => 'Vario sound settings';
 
   @override
-  String get varioSoundSettingsSubtitle =>
-      'Sound, volume, thresholds, pitch and waveform';
+  String get varioSoundSettingsSubtitle => 'Sound, volume, thresholds, pitch and waveform';
 
   @override
   String get gridSize => 'Grid size';
@@ -1737,8 +1637,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get simulatedFlightData => 'Simulated flight data';
 
   @override
-  String get simulatedFlightDataSubtitle =>
-      'Feed fake sensor values when no BLE device is connected';
+  String get simulatedFlightDataSubtitle => 'Feed fake sensor values when no BLE device is connected';
 
   @override
   String get simStartLocation => 'Start location';
@@ -1762,8 +1661,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get simFollowTaskRoute => 'Fly competition task route';
 
   @override
-  String get simFollowTaskRouteSubtitle =>
-      'Simulate flying along the active task path (takeoff → turnpoints → goal)';
+  String get simFollowTaskRouteSubtitle => 'Simulate flying along the active task path (takeoff → turnpoints → goal)';
 
   @override
   String get simFollowTaskRouteNoTask => 'Load a competition task first';
@@ -1772,37 +1670,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trackRecordingSmart => 'Smart (default)';
 
   @override
-  String get trackRecordingSmartSubtitle =>
-      'At least 1 s apart, and only when moved ≥ 3 m or altitude changed ≥ 1 m';
+  String get trackRecordingSmartSubtitle => 'At least 1 s apart, and only when moved ≥ 3 m or altitude changed ≥ 1 m';
 
   @override
   String get trackRecordingEverySecond => 'Every 1 second';
 
   @override
-  String get trackRecordingEverySecondSubtitle =>
-      'Store one point per second regardless of movement';
+  String get trackRecordingEverySecondSubtitle => 'Store one point per second regardless of movement';
 
   @override
-  String get trackRecordingChooseHint =>
-      'Choose how often a track point is stored during flight.';
+  String get trackRecordingChooseHint => 'Choose how often a track point is stored during flight.';
 
   @override
   String get recordMoreInformation => 'Record more information';
 
   @override
-  String get recordMoreInformationFull =>
-      'Full data per point: vario, wind, pressure, temperature, GPS accuracy, satellites, battery, heart rate';
+  String get recordMoreInformationFull => 'Full data per point: vario, wind, pressure, temperature, GPS accuracy, satellites, battery, heart rate';
 
   @override
-  String get recordMoreInformationXcTrack =>
-      'XCTrack style: position, baro/GPS altitude, heading, speed and time only';
+  String get recordMoreInformationXcTrack => 'XCTrack style: position, baro/GPS altitude, heading, speed and time only';
 
   @override
   String get autoDeleteShortFlights => 'Automatically delete short flights';
 
   @override
-  String get autoDeleteShortFlightsSubtitle =>
-      'Remove completed flight records shorter than the selected duration';
+  String get autoDeleteShortFlightsSubtitle => 'Remove completed flight records shorter than the selected duration';
 
   @override
   String get shortFlightThreshold => 'Minimum duration to keep';
@@ -1846,12 +1738,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearAllControlsTitle => 'Clear all controls?';
 
   @override
-  String get clearAllControlsMessage =>
-      'This removes every control from the dashboard. This cannot be undone.';
+  String get clearAllControlsMessage => 'This removes every control from the dashboard. This cannot be undone.';
 
   @override
-  String get blankInterfacePrompt =>
-      'The interface is blank. Do you want to load a preset interface?';
+  String get blankInterfacePrompt => 'The interface is blank. Do you want to load a preset interface?';
 
   @override
   String get yes => 'Yes';
@@ -1869,44 +1759,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get defaultDashboardConditions => 'Conditions';
 
   @override
-  String get dashboardTemplateFlightDescription =>
-      'Vario, heading, altitude, speed and flight time';
+  String get dashboardTemplateFlightDescription => 'Vario, heading, altitude, speed and flight time';
 
   @override
-  String get dashboardTemplateNavigationDescription =>
-      'Map, nearest landing point and take-off reference';
+  String get dashboardTemplateNavigationDescription => 'Map, nearest landing point and take-off reference';
 
   @override
-  String get dashboardTemplateConditionsDescription =>
-      'Wind, weather readings and climb profile';
+  String get dashboardTemplateConditionsDescription => 'Wind, weather readings and climb profile';
 
   @override
   String get dashboardTemplateLanding => 'Landing Options';
 
   @override
-  String get dashboardTemplateLandingDescription =>
-      'Map with nearest, saved and take-off landing references';
+  String get dashboardTemplateLandingDescription => 'Map with nearest, saved and take-off landing references';
 
   @override
   String get dashboardTemplateInstrumentConsole => 'Instrument Console';
 
   @override
-  String get dashboardTemplateInstrumentConsoleDescription =>
-      'Flight controls, live sensor monitor and pilot readouts';
+  String get dashboardTemplateInstrumentConsoleDescription => 'Flight controls, live sensor monitor and pilot readouts';
 
   @override
   String get dashboardTemplateTakeoffCheck => 'Take-off Check';
 
   @override
-  String get dashboardTemplateTakeoffCheckDescription =>
-      'Wind, take-off reference, GPS status and map';
+  String get dashboardTemplateTakeoffCheckDescription => 'Wind, take-off reference, GPS status and map';
 
   @override
   String get pageTemplate => 'Page layout template';
 
   @override
-  String get pageTemplateSubtitle =>
-      'Replace this page with a ready-to-use layout';
+  String get pageTemplateSubtitle => 'Replace this page with a ready-to-use layout';
 
   @override
   String get pageTemplateChoose => 'Choose a template';
@@ -2024,12 +1907,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weatherPressure => 'Pressure';
 
   @override
-  String get weatherNoGps =>
-      'No GPS fix yet. Enable location services and try again.';
+  String get weatherNoGps => 'No GPS fix yet. Enable location services and try again.';
 
   @override
-  String get weatherLoadFailed =>
-      'Couldn\'t load the forecast. Check your connection and try again.';
+  String get weatherLoadFailed => 'Couldn\'t load the forecast. Check your connection and try again.';
 
   @override
   String get weatherRetry => 'Retry';
@@ -2153,8 +2034,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapPickerTitle => 'Pick a location';
 
   @override
-  String get mapPickerHint =>
-      'Drag the map to place the crosshair, then confirm.';
+  String get mapPickerHint => 'Drag the map to place the crosshair, then confirm.';
 
   @override
   String get mapPickerConfirm => 'Use this location';
@@ -2275,8 +2155,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageChineseSimplifiedDescription => 'Simplified Chinese';
 
   @override
-  String get languageApplyNote =>
-      'Changes apply instantly, no restart needed. Your choice is saved on this device.';
+  String get languageApplyNote => 'Changes apply instantly, no restart needed. Your choice is saved on this device.';
 
   @override
   String get themeDarkThemes => 'Dark themes';
@@ -2288,8 +2167,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeHighContrast => 'High contrast (WCAG AAA)';
 
   @override
-  String get themeApplyNote =>
-      'Changes apply instantly, no restart needed. Your choice is saved on this device.\nHigh-contrast themes: pure black/white backgrounds with high-saturation accents — ideal for bright sunlight, eye strain, and older users.';
+  String get themeApplyNote => 'Changes apply instantly, no restart needed. Your choice is saved on this device.\nHigh-contrast themes: pure black/white backgrounds with high-saturation accents — ideal for bright sunlight, eye strain, and older users.';
 
   @override
   String get themeDarkCyan => 'Dark Cyan (default)';
@@ -2334,8 +2212,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeDarkSlateDesc => 'Business dark grey + blue-violet accents';
 
   @override
-  String get themeDarkAmberDesc =>
-      'Cockpit amber, easy on the eyes for long night flights';
+  String get themeDarkAmberDesc => 'Cockpit amber, easy on the eyes for long night flights';
 
   @override
   String get themeDarkForestDesc => 'Deep forest green + golden sunlight';
@@ -2344,31 +2221,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeDarkOceanDesc => 'Deep ocean blue-violet + teal coral';
 
   @override
-  String get themeLightSkyDesc =>
-      'High contrast in sunlight, best for daytime flying';
+  String get themeLightSkyDesc => 'High contrast in sunlight, best for daytime flying';
 
   @override
-  String get themeLightSandDesc =>
-      'Warm sand base, comfortable for extended use';
+  String get themeLightSandDesc => 'Warm sand base, comfortable for extended use';
 
   @override
   String get themeLightMintDesc => 'Fresh mint green, easy on the eyes';
 
   @override
-  String get themeLightPaperDesc =>
-      'Aeronautical chart paper style, nostalgic VFR';
+  String get themeLightPaperDesc => 'Aeronautical chart paper style, nostalgic VFR';
 
   @override
-  String get themeLightLavenderDesc =>
-      'Soft lavender + deep purple, gentle on the eyes';
+  String get themeLightLavenderDesc => 'Soft lavender + deep purple, gentle on the eyes';
 
   @override
-  String get themeDarkContrastDesc =>
-      'Pure black + high-saturation yellow (WCAG AAA)';
+  String get themeDarkContrastDesc => 'Pure black + high-saturation yellow (WCAG AAA)';
 
   @override
-  String get themeLightContrastDesc =>
-      'Pure white + black + deep blue (WCAG AAA)';
+  String get themeLightContrastDesc => 'Pure white + black + deep blue (WCAG AAA)';
 
   @override
   String get controlKindData => 'Data Control';
@@ -2561,8 +2432,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get competitionNoTask =>
-      'No competition task yet. Add turnpoints or import an .xctsk file.';
+  String get competitionNoTask => 'No competition task yet. Add turnpoints or import an .xctsk file.';
 
   @override
   String get competitionTaskComplete => 'Task complete';
@@ -2604,8 +2474,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionStartSection => 'Start of speed section';
 
   @override
-  String get competitionStartHint =>
-      'Mark a turnpoint as SSS to configure the start.';
+  String get competitionStartHint => 'Mark a turnpoint as SSS to configure the start.';
 
   @override
   String get competitionStartType => 'Start type';
@@ -2680,15 +2549,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionNoLandingPoints => 'No saved landing points.';
 
   @override
-  String get competitionInvalidCoordinates =>
-      'Enter a valid latitude and longitude.';
+  String get competitionInvalidCoordinates => 'Enter a valid latitude and longitude.';
 
   @override
   String get competitionRadius => 'Radius';
 
   @override
-  String get competitionInvalidRadius =>
-      'Enter a radius between 1 and 200000 m.';
+  String get competitionInvalidRadius => 'Enter a radius between 1 and 200000 m.';
 
   @override
   String get competitionSetRole => 'Set role';
@@ -2712,8 +2579,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionScanQr => 'Scan QR code';
 
   @override
-  String get competitionScanQrHint =>
-      'Point the camera at an XCTrack task QR code.';
+  String get competitionScanQrHint => 'Point the camera at an XCTrack task QR code.';
 
   @override
   String get competitionScanImage => 'Scan QR from image';
@@ -2743,8 +2609,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionDownloadUrlHint => 'https://… or task code';
 
   @override
-  String get competitionDownloadUrlHelp =>
-      'Enter a link to an .xctsk file, an xctrack.org planner link, or an XContest task code.';
+  String get competitionDownloadUrlHelp => 'Enter a link to an .xctsk file, an xctrack.org planner link, or an XContest task code.';
 
   @override
   String get competitionDownloadFailed => 'Download failed.';
@@ -2762,19 +2627,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionShowQr => 'Show QR code';
 
   @override
-  String get competitionShowQrHint =>
-      'Scan this with XCTrack or another XCTSK app to load the task.';
+  String get competitionShowQrHint => 'Scan this with XCTrack or another XCTSK app to load the task.';
 
   @override
-  String get competitionQrTooBig =>
-      'Task too large for a QR code. Share the file instead.';
+  String get competitionQrTooBig => 'Task too large for a QR code. Share the file instead.';
 
   @override
   String get competitionImportCode => 'Import task code';
 
   @override
-  String get competitionImportCodeHint =>
-      'Paste an XCTSK: task code or task JSON';
+  String get competitionImportCodeHint => 'Paste an XCTSK: task code or task JSON';
 
   @override
   String get competitionImport => 'Import';
@@ -2894,8 +2756,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapCacheTitle => 'Map cache data';
 
   @override
-  String get mapCacheSubtitle =>
-      'Cached map blocks by source, with a combined summary.';
+  String get mapCacheSubtitle => 'Cached map blocks by source, with a combined summary.';
 
   @override
   String get mapCacheSummary => 'Summary';
@@ -2907,8 +2768,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapCacheClearTitle => 'Clear map cache?';
 
   @override
-  String get mapCacheClearConfirmation =>
-      'Downloaded online map tiles will be removed; offline .mbtiles maps are not affected.';
+  String get mapCacheClearConfirmation => 'Downloaded online map tiles will be removed; offline .mbtiles maps are not affected.';
 
   @override
   String get mapCacheCleared => 'Map cache cleared.';
@@ -2937,15 +2797,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightLibraryStorageTitle => 'Flight library storage';
 
   @override
-  String get flightLibraryStorageSubtitle =>
-      'Space used by saved flight records.';
+  String get flightLibraryStorageSubtitle => 'Space used by saved flight records.';
 
   @override
   String get flightLibraryStorageLoading => 'Calculating flight library size…';
 
   @override
-  String get flightLibraryStorageUnavailable =>
-      'Flight library size unavailable';
+  String get flightLibraryStorageUnavailable => 'Flight library size unavailable';
 
   @override
   String flightLibraryStorageDetails(String size, int flights) {
@@ -2968,8 +2826,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsNotificationTitle => 'ParaBeacon — recording flight';
 
   @override
-  String get gpsNotificationText =>
-      'Logging your track with the screen off. Tap to return.';
+  String get gpsNotificationText => 'Logging your track with the screen off. Tap to return.';
 
   @override
   String get gpsNotificationChannel => 'Flight recording';
@@ -3002,12 +2859,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get androidFlightPermissionsTitle => 'Background flight recording';
 
   @override
-  String get androidFlightPermissionsBatteryWarning =>
-      'Battery management: If battery use is restricted, Android may stop ParaBeacon in the background and interrupt flight recording. Allow unrestricted battery use to reduce this risk.';
+  String get androidFlightPermissionsBatteryWarning => 'Battery management: If battery use is restricted, Android may stop ParaBeacon in the background and interrupt flight recording. Allow unrestricted battery use to reduce this risk.';
 
   @override
-  String get androidFlightPermissionsLocationWarning =>
-      'Background location: Without “Allow all the time” access, Android may pause or stop GPS updates when ParaBeacon is in the background or the screen is off, preventing continuous flight-data recording.';
+  String get androidFlightPermissionsLocationWarning => 'Background location: Without “Allow all the time” access, Android may pause or stop GPS updates when ParaBeacon is in the background or the screen is off, preventing continuous flight-data recording.';
 
   @override
   String get androidFlightPermissionBatteryTitle => 'Battery use';
@@ -3016,12 +2871,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get androidFlightPermissionBatteryUnrestricted => 'Unrestricted';
 
   @override
-  String get androidFlightPermissionBatteryNotUnrestricted =>
-      'Not unrestricted';
+  String get androidFlightPermissionBatteryNotUnrestricted => 'Not unrestricted';
 
   @override
-  String get androidFlightPermissionLocationTitle =>
-      'Background location · Allow all the time';
+  String get androidFlightPermissionLocationTitle => 'Background location · Allow all the time';
 
   @override
   String get androidFlightPermissionGranted => 'Allowed';
@@ -3036,12 +2889,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get androidFlightPermissionOpenLocation => 'Location settings';
 
   @override
-  String get androidFlightPermissionsOemNote =>
-      '“Unrestricted” is confirmed by Android’s battery-optimization exemption status. Some manufacturers apply additional background restrictions in their own settings.';
+  String get androidFlightPermissionsOemNote => '“Unrestricted” is confirmed by Android’s battery-optimization exemption status. Some manufacturers apply additional background restrictions in their own settings.';
 
   @override
-  String get androidFlightPermissionsDisablePrompt =>
-      'Stop checking and hide this prompt';
+  String get androidFlightPermissionsDisablePrompt => 'Stop checking and hide this prompt';
 
   @override
   String get androidFlightPermissionRecheck => 'Re-check';
@@ -3056,15 +2907,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightButtonAuto => 'AUTO';
 
   @override
-  String get flightButtonAutoTooltip =>
-      'Tap to toggle auto-detection; long-press for settings';
+  String get flightButtonAutoTooltip => 'Tap to toggle auto-detection; long-press for settings';
 
   @override
   String get flightAutoSettingsTitle => 'Auto take-off / landing';
 
   @override
-  String get flightAutoSettingsSubtitle =>
-      'Adjust shared take-off and landing detection settings';
+  String get flightAutoSettingsSubtitle => 'Adjust shared take-off and landing detection settings';
 
   @override
   String get resetToDefaults => 'Reset';
@@ -3073,8 +2922,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightAutoTakeoffSpeed => 'Take-off speed threshold';
 
   @override
-  String get flightAutoLandingMinimumFlight =>
-      'Minimum flight before landing detection';
+  String get flightAutoLandingMinimumFlight => 'Minimum flight before landing detection';
 
   @override
   String get flightAutoLandingSpeedSensitivity => 'Landing speed threshold';
@@ -3083,29 +2931,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightLandingAutomatic => 'Automatic landing';
 
   @override
-  String get flightLandingAutomaticDescription =>
-      'End the flight automatically when landing is detected';
+  String get flightLandingAutomaticDescription => 'End the flight automatically when landing is detected';
 
   @override
   String get flightLandingManual => 'Manual confirmation';
 
   @override
-  String get flightLandingManualDescription =>
-      'Ask before ending the flight after landing is detected';
+  String get flightLandingManualDescription => 'Ask before ending the flight after landing is detected';
 
   @override
   String get flightLandingNoDetection => 'Do not detect landing';
 
   @override
-  String get flightLandingNoDetectionDescription =>
-      'Take-off detection stays on; stop the flight manually';
+  String get flightLandingNoDetectionDescription => 'Take-off detection stays on; stop the flight manually';
 
   @override
   String get flightLandingDetectedTitle => 'Landing detected';
 
   @override
-  String get flightLandingDetectedBody =>
-      'Confirm landing and finish this flight recording?';
+  String get flightLandingDetectedBody => 'Confirm landing and finish this flight recording?';
 
   @override
   String get flightLandingConfirm => 'Just landed';
@@ -3146,8 +2990,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowVerticalAcceleration => 'Show vertical acceleration';
 
   @override
-  String get settingVerticalAccelerationFillOpacity =>
-      'Acceleration fill opacity';
+  String get settingVerticalAccelerationFillOpacity => 'Acceleration fill opacity';
 
   @override
   String get settingVerticalGraphInterval => 'Shown interval';
@@ -3186,8 +3029,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingVarioColorPlus10 => 'Color at +10 m/s';
 
   @override
-  String get settingVarioColorsGlobalNote =>
-      'Shared by all Vario bars and the map flight path.';
+  String get settingVarioColorsGlobalNote => 'Shared by all Vario bars and the map flight path.';
 
   @override
   String get settingAveragingInterval => 'Averaging interval';
@@ -3250,12 +3092,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingGridDistanceDecimals => 'Grid distance decimal places';
 
   @override
-  String get settingMapScaleDistanceDecimals =>
-      'Map scale distance decimal places';
+  String get settingMapScaleDistanceDecimals => 'Map scale distance decimal places';
 
   @override
-  String get settingVarioMinimumDecimals =>
-      'Vario scale minimum decimal places';
+  String get settingVarioMinimumDecimals => 'Vario scale minimum decimal places';
 
   @override
   String get settingSinkThresholdDecimals => 'Sink threshold decimal places';
@@ -3264,8 +3104,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingLiftThresholdDecimals => 'Lift threshold decimal places';
 
   @override
-  String get settingVarioMaximumDecimals =>
-      'Vario scale maximum decimal places';
+  String get settingVarioMaximumDecimals => 'Vario scale maximum decimal places';
 
   @override
   String get settingAltitudeDecimals => 'Altitude decimal places';
@@ -3277,8 +3116,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingDistanceDecimals => 'Distance decimal places';
 
   @override
-  String get settingAltitudeDifferenceDecimals =>
-      'Altitude difference decimal places';
+  String get settingAltitudeDifferenceDecimals => 'Altitude difference decimal places';
 
   @override
   String get settingBearingDecimals => 'Bearing decimal places';
@@ -3457,8 +3295,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowPublicPilots => 'Show public pilot locations';
 
   @override
-  String get settingShowPublicPilotsSubtitle =>
-      'Shows available public pilot locations from ParaBeacon and XContest LiveTrack.';
+  String get settingShowPublicPilotsSubtitle => 'Shows available public pilot locations from ParaBeacon and XContest LiveTrack.';
 
   @override
   String get settingShowPilotName => 'Show pilot name';
@@ -3483,8 +3320,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get appUpdateInstallPermissionBody =>
-      'Allow ParaBeacon to install APK updates in Android settings, then return and tap Install.';
+  String get appUpdateInstallPermissionBody => 'Allow ParaBeacon to install APK updates in Android settings, then return and tap Install.';
 
   @override
   String get appUpdateDownloadOverWifi => 'Download over Wi-Fi';
@@ -3571,12 +3407,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowNearestLandingPoint => 'Show nearest landing point';
 
   @override
-  String get settingShowDefaultLandingLine =>
-      'Show line to default landing point';
+  String get settingShowDefaultLandingLine => 'Show line to default landing point';
 
   @override
-  String get settingShowNearestLandingLine =>
-      'Show line to nearest landing point';
+  String get settingShowNearestLandingLine => 'Show line to nearest landing point';
 
   @override
   String get settingTakeoffPointColor => 'Take-off marker color';
@@ -3597,8 +3431,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingNearestLandingLineColor => 'Nearest landing line color';
 
   @override
-  String get settingLandingDirectionArrowColor =>
-      'Landing direction arrow color';
+  String get settingLandingDirectionArrowColor => 'Landing direction arrow color';
 
   @override
   String get colorPalettePreferencesTitle => 'Color picker palette';
@@ -3609,16 +3442,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get colorPaletteSettingsDescription =>
-      'Choose up to 20 preset colors. High Saturation adds dark and bright high-saturation colors; when enabled, black, white and gray are appended at the end.';
+  String get colorPaletteSettingsDescription => 'Choose up to 20 preset colors. High Saturation adds dark and bright high-saturation colors; when enabled, black, white and gray are appended at the end.';
 
   @override
-  String get colorPaletteIncludeNeutralColors =>
-      'Include black, white and gray';
+  String get colorPaletteIncludeNeutralColors => 'Include black, white and gray';
 
   @override
-  String get colorPaletteIncludeNeutralColorsDescription =>
-      'Append black, white and gray to the end of each palette.';
+  String get colorPaletteIncludeNeutralColorsDescription => 'Append black, white and gray to the end of each palette.';
 
   @override
   String get colorPaletteSchemeLabel => 'Color scheme';
@@ -3674,19 +3504,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointsTitle => 'Landing points';
 
   @override
-  String get landingPointsSubtitle =>
-      'Manage saved landing destinations and the default target.';
+  String get landingPointsSubtitle => 'Manage saved landing destinations and the default target.';
 
   @override
-  String get landingPointsEmpty =>
-      'No landing points saved yet. Add your current location or pick a point on the map.';
+  String get landingPointsEmpty => 'No landing points saved yet. Add your current location or pick a point on the map.';
 
   @override
   String get landingPointAddCurrent => 'Add current location';
 
   @override
-  String get landingPointNoGpsFix =>
-      'A valid GPS fix is required to save the current location.';
+  String get landingPointNoGpsFix => 'A valid GPS fix is required to save the current location.';
 
   @override
   String get landingPointAddTitle => 'Add landing point';
@@ -3710,8 +3537,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointNameRequired => 'Enter a name for this landing point.';
 
   @override
-  String get landingPointAltitudeInvalid =>
-      'Enter a valid altitude between -12,000 and 100,000 m.';
+  String get landingPointAltitudeInvalid => 'Enter a valid altitude between -12,000 and 100,000 m.';
 
   @override
   String get landingPointCapturedAt => 'Location captured';
@@ -3744,8 +3570,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointPickMapTitle => 'Choose location on map';
 
   @override
-  String get landingPointPickPrompt =>
-      'Tap the map to place the marker, then apply the selected location.';
+  String get landingPointPickPrompt => 'Tap the map to place the marker, then apply the selected location.';
 
   @override
   String get landingPointApply => 'Apply';
@@ -3757,12 +3582,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointUpdated => 'Landing point updated';
 
   @override
-  String get landingPointUpdateFailed =>
-      'This landing point could not be updated.';
+  String get landingPointUpdateFailed => 'This landing point could not be updated.';
 
   @override
-  String get landingPointImportFromFlight =>
-      'Import landing location from flight';
+  String get landingPointImportFromFlight => 'Import landing location from flight';
 
   @override
   String get landingPointSelectFlight => 'Select a flight record';
@@ -3789,12 +3612,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointsExportServer => 'Export to ParaBeacon Server';
 
   @override
-  String get landingPointsImportingServer =>
-      'Importing landing points from ParaBeacon Server…';
+  String get landingPointsImportingServer => 'Importing landing points from ParaBeacon Server…';
 
   @override
-  String get landingPointsExportingServer =>
-      'Uploading landing points to ParaBeacon Server…';
+  String get landingPointsExportingServer => 'Uploading landing points to ParaBeacon Server…';
 
   @override
   String landingPointsExportedServer(int count) {
@@ -3802,8 +3623,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get landingPointsServerNoPoints =>
-      'No landing points are stored on ParaBeacon Server.';
+  String get landingPointsServerNoPoints => 'No landing points are stored on ParaBeacon Server.';
 
   @override
   String landingPointsServerTransferFailed(String error) {
@@ -3814,12 +3634,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointsImportTitle => 'Import landing points?';
 
   @override
-  String get landingPointsImportConfirmation =>
-      'New points will be added and saved points will remain. For matching names, choose one point to keep.';
+  String get landingPointsImportConfirmation => 'New points will be added and saved points will remain. For matching names, choose one point to keep.';
 
   @override
-  String get landingPointsImportConflictPrompt =>
-      'Choose one point to keep for each matching name:';
+  String get landingPointsImportConflictPrompt => 'Choose one point to keep for each matching name:';
 
   @override
   String get landingPointsImportSaved => 'Saved point';
@@ -3828,15 +3646,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingPointsImportFromFile => 'Imported point';
 
   @override
-  String get landingPointsImportLimit =>
-      'The import would exceed the 100-point limit. Remove some saved points before importing.';
+  String get landingPointsImportLimit => 'The import would exceed the 100-point limit. Remove some saved points before importing.';
 
   @override
   String get landingPointsImported => 'Landing points imported.';
 
   @override
-  String get landingPointsImportFailed =>
-      'Unable to import these landing points. Check that the file is valid and compatible.';
+  String get landingPointsImportFailed => 'Unable to import these landing points. Check that the file is valid and compatible.';
 
   @override
   String get landingPointsExported => 'Landing points are ready to share.';
@@ -3950,15 +3766,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsImportParaBeaconServer => 'Sync From ParaBeacon Server';
 
   @override
-  String get flightsImportingParaBeaconServer =>
-      'Importing flights from ParaBeacon Server…';
+  String get flightsImportingParaBeaconServer => 'Importing flights from ParaBeacon Server…';
 
   @override
-  String flightsImportParaBeaconServerResult(
-    int added,
-    int skipped,
-    int failed,
-  ) {
+  String flightsImportParaBeaconServerResult(int added, int skipped, int failed) {
     return 'Imported $added · skipped $skipped · failed $failed';
   }
 
@@ -3966,8 +3777,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsSyncParaBeaconServer => 'Sync to ParaBeacon Server';
 
   @override
-  String get flightsSyncingParaBeaconServer =>
-      'Synchronizing flight records with ParaBeacon Server…';
+  String get flightsSyncingParaBeaconServer => 'Synchronizing flight records with ParaBeacon Server…';
 
   @override
   String flightsSyncParaBeaconServerResult(int synced) {
@@ -3978,8 +3788,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsSyncConfirmTitle => 'Replace server flight records?';
 
   @override
-  String get flightsSyncConfirmMessage =>
-      'This makes the server match the flight records on this device. Server records not present here will be deleted. If this device has no records, all server flight records will be cleared.';
+  String get flightsSyncConfirmMessage => 'This makes the server match the flight records on this device. Server records not present here will be deleted. If this device has no records, all server flight records will be cleared.';
 
   @override
   String get flightsSyncConfirmAction => 'Sync and replace';
@@ -4005,30 +3814,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsExportDestinationShare => 'Share directly';
 
   @override
-  String get flightsExportSavedToDownloads =>
-      'Export saved to Downloads/ParaBeacon.';
+  String get flightsExportSavedToDownloads => 'Export saved to Downloads/ParaBeacon.';
 
   @override
-  String get flightsImportXcTrackPickMode =>
-      'How do you want to select the tracklogs?';
+  String get flightsImportXcTrackPickMode => 'How do you want to select the tracklogs?';
 
   @override
   String get flightsImportModeFolder => 'Select a folder';
 
   @override
-  String get flightsImportModeFolderNote =>
-      'Import every .igc in a folder — no file limit';
+  String get flightsImportModeFolderNote => 'Import every .igc in a folder — no file limit';
 
   @override
   String get flightsImportModeFiles => 'Select files';
 
   @override
-  String get flightsImportModeFilesNote =>
-      'Pick individual .igc files (up to 100)';
+  String get flightsImportModeFilesNote => 'Pick individual .igc files (up to 100)';
 
   @override
-  String get flightsImportXcTrackNote =>
-      'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThat folder can\'t be opened directly on most phones. Copy it (or its .igc files) to Download first, then import from there.';
+  String get flightsImportXcTrackNote => 'XCTrack stores tracklogs at:\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\nThat folder can\'t be opened directly on most phones. Copy it (or its .igc files) to Download first, then import from there.';
 
   @override
   String get flightsImportingXcTrack => 'Importing XCTrack flights…';
@@ -4078,8 +3882,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsShareCardSaved => 'Share card saved to gallery';
 
   @override
-  String get flightsShareCardSharedFile =>
-      'Saved to a file and opened the share sheet';
+  String get flightsShareCardSharedFile => 'Saved to a file and opened the share sheet';
 
   @override
   String flightsShareCardFailed(String error) {
@@ -4087,19 +3890,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get flightsSetAmapKeyFirst =>
-      'Set an AMap key in place-name settings first.';
+  String get flightsSetAmapKeyFirst => 'Set an AMap key in place-name settings first.';
 
   @override
-  String get flightsNoPointsToLocate =>
-      'This flight has no track points to locate.';
+  String get flightsNoPointsToLocate => 'This flight has no track points to locate.';
 
   @override
   String get flightsLookingUpSites => 'Looking up site names…';
 
   @override
-  String get flightsNoPlaceNames =>
-      'No place names found for these coordinates.';
+  String get flightsNoPlaceNames => 'No place names found for these coordinates.';
 
   @override
   String get flightsSiteNamesUpdated => 'Site names updated.';
@@ -4116,8 +3916,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get placeNameLookup => 'Place-name lookup';
 
   @override
-  String get placeNameLookupDescription =>
-      'Reverse-geocode takeoff/landing coordinates to place names using the AMap (AutoNavi) web service. Requests only ever go to restapi.amap.com.';
+  String get placeNameLookupDescription => 'Reverse-geocode takeoff/landing coordinates to place names using the AMap (AutoNavi) web service. Requests only ever go to restapi.amap.com.';
 
   @override
   String get placeNameAmapKeyLabel => 'AMap web-service key';
@@ -4145,8 +3944,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsExportDoneTitle => 'Export complete';
 
   @override
-  String get flightsExportDoneSaved =>
-      'The flight bundle was saved to your device.';
+  String get flightsExportDoneSaved => 'The flight bundle was saved to your device.';
 
   @override
   String get flightsExportDoneShared => 'The flight bundle is ready to share.';
@@ -4188,8 +3986,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailTrimLog => 'Trim flight log';
 
   @override
-  String get flightDetailTrimDescription =>
-      'Choose the first and last samples to keep. Keep at least two points; removed samples cannot be restored.';
+  String get flightDetailTrimDescription => 'Choose the first and last samples to keep. Keep at least two points; removed samples cannot be restored.';
 
   @override
   String flightDetailTrimFrom(String time) {
@@ -4213,8 +4010,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightDetailTrimApplied => 'Flight log trimmed.';
 
   @override
-  String get replayTrimUnavailable =>
-      'This flight log changed or is no longer available. Close and reopen replay before trimming.';
+  String get replayTrimUnavailable => 'This flight log changed or is no longer available. Close and reopen replay before trimming.';
 
   @override
   String get flightDetailFlight => 'Flight';
@@ -4455,12 +4251,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get statsNoDetailedTracks =>
-      'No recorded track details are available.';
+  String get statsNoDetailedTracks => 'No recorded track details are available.';
 
   @override
-  String get statsCalculationFailed =>
-      'Detailed statistics could not be calculated. Your summary is still available.';
+  String get statsCalculationFailed => 'Detailed statistics could not be calculated. Your summary is still available.';
 
   @override
   String get statsNotEnoughData => 'Not enough data';
@@ -4609,8 +4403,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsDeleteSamplesTitle => 'Delete sample data?';
 
   @override
-  String get flightsDeleteSamplesMessage =>
-      'This removes the per-point track data (position/altitude/vario) for this flight. The flight and its summary stay in the log, but it can no longer be replayed. This cannot be undone.';
+  String get flightsDeleteSamplesMessage => 'This removes the per-point track data (position/altitude/vario) for this flight. The flight and its summary stay in the log, but it can no longer be replayed. This cannot be undone.';
 
   @override
   String get flightsClearAllTitle => 'Clear all flights?';
@@ -4622,8 +4415,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightsDeleteTitle => 'Delete flight?';
 
   @override
-  String get flightsDeleteMessage =>
-      'This flight record will be permanently deleted. This cannot be undone.';
+  String get flightsDeleteMessage => 'This flight record will be permanently deleted. This cannot be undone.';
 
   @override
   String flightsDeleteSelectedTitle(int count) {
@@ -4631,8 +4423,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get flightsDeleteSelectedMessage =>
-      'The selected flight records will be permanently deleted. This cannot be undone.';
+  String get flightsDeleteSelectedMessage => 'The selected flight records will be permanently deleted. This cannot be undone.';
 
   @override
   String get flightsMerge => 'Merge flights';
@@ -4685,51 +4476,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String flightsMergeIssueOverlap(
-    String first,
-    String second,
-    String duration,
-  ) {
+  String flightsMergeIssueOverlap(String first, String second, String duration) {
     return '$first → $second: the flights overlap by $duration.';
   }
 
   @override
-  String flightsMergeIssueGap(
-    String first,
-    String second,
-    String duration,
-    String max,
-  ) {
+  String flightsMergeIssueGap(String first, String second, String duration, String max) {
     return '$first → $second: $duration between landing and the next takeoff (max $max).';
   }
 
   @override
-  String flightsMergeIssueDistance(
-    String first,
-    String second,
-    String distance,
-    String max,
-  ) {
+  String flightsMergeIssueDistance(String first, String second, String distance, String max) {
     return '$first → $second: the landing point is $distance km from the next takeoff (max $max km).';
   }
 
   @override
-  String flightsMergeIssueAircraft(
-    String first,
-    String second,
-    String previous,
-    String next,
-  ) {
+  String flightsMergeIssueAircraft(String first, String second, String previous, String next) {
     return '$first → $second: different wings ($previous / $next).';
   }
 
   @override
-  String flightsMergeIssuePilot(
-    String first,
-    String second,
-    String previous,
-    String next,
-  ) {
+  String flightsMergeIssuePilot(String first, String second, String previous, String next) {
     return '$first → $second: different pilots ($previous / $next).';
   }
 
@@ -4768,8 +4535,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get replayColorAltitude => 'Color: Altitude';
 
   @override
-  String get replayNoPointsMessage =>
-      'This flight has no recorded track points to replay.';
+  String get replayNoPointsMessage => 'This flight has no recorded track points to replay.';
 
   @override
   String get replayRestart => 'Restart';
@@ -4827,8 +4593,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altimeterQnhManual => 'Manual QNH';
 
   @override
-  String get altimeterQnhManualDescription =>
-      'Set the sea-level reference pressure directly';
+  String get altimeterQnhManualDescription => 'Set the sea-level reference pressure directly';
 
   @override
   String get altimeterQnhManualTitle => 'Adjust QNH manually';
@@ -4837,8 +4602,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altimeterQnhManualLabel => 'QNH pressure';
 
   @override
-  String get altimeterQnhManualInvalid =>
-      'Enter a QNH between 870 and 1085 hPa';
+  String get altimeterQnhManualInvalid => 'Enter a QNH between 870 and 1085 hPa';
 
   @override
   String get altimeterQnhRange => 'Supported manual range: 870–1085 hPa';
@@ -4868,8 +4632,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altimeterQnhSourceLive => 'Reading live pressure';
 
   @override
-  String get altimeterQnhSourceBluetoothLive =>
-      'Reading pressure from Bluetooth sensor';
+  String get altimeterQnhSourceBluetoothLive => 'Reading pressure from Bluetooth sensor';
 
   @override
   String get altimeterQnhSourceWaiting => 'Waiting for sensor pressure…';
@@ -4878,8 +4641,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altimeterQnhUseDeviceBarometer => 'Use device barometer';
 
   @override
-  String get altimeterQnhUseDeviceBarometerDescription =>
-      'When off, pressure comes from a connected Bluetooth sensor';
+  String get altimeterQnhUseDeviceBarometerDescription => 'When off, pressure comes from a connected Bluetooth sensor';
 
   @override
   String get sensorTitle => 'Sensor';
@@ -4891,19 +4653,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sensorEnableBluetooth => 'Enable Bluetooth sensor';
 
   @override
-  String get sensorEnableBluetoothSubtitle =>
-      'Scan and connect to external sensors';
+  String get sensorEnableBluetoothSubtitle => 'Scan and connect to external sensors';
 
   @override
   String get sensorPreferInternal => 'Prefer internal sensor';
 
   @override
-  String get sensorPreferInternalSubtitle =>
-      'Enable the built-in barometer when you want to use it. iOS may request Motion access; no Health data is read.';
+  String get sensorPreferInternalSubtitle => 'Enable the built-in barometer when you want to use it. iOS may request Motion access; no Health data is read.';
 
   @override
-  String get sensorNoInternalBarometer =>
-      'No built-in barometer detected on this device';
+  String get sensorNoInternalBarometer => 'No built-in barometer detected on this device';
 
   @override
   String get sensorInternalSection => 'Internal sensor';
@@ -4918,8 +4677,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sensorBarometerConnected => 'Barometer connected';
 
   @override
-  String get sensorBarometerNotPreferred =>
-      'Barometer detected (not preferred)';
+  String get sensorBarometerNotPreferred => 'Barometer detected (not preferred)';
 
   @override
   String get sensorConnection => 'Connection';
@@ -4972,8 +4730,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sensorCalibrateTitle => 'Calibrate altitude';
 
   @override
-  String get sensorCalibrateDescription =>
-      'Enter the current known altitude. The reference pressure (QNH) is adjusted so the barometric altitude matches.';
+  String get sensorCalibrateDescription => 'Enter the current known altitude. The reference pressure (QNH) is adjusted so the barometric altitude matches.';
 
   @override
   String get sensorCalibrateAltitudeLabel => 'Current altitude';
@@ -4982,8 +4739,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sensorCalibrateInvalid => 'Enter a valid altitude';
 
   @override
-  String get sensorCalibrateFailed =>
-      'Calibration failed — no barometer reading or value out of range';
+  String get sensorCalibrateFailed => 'Calibration failed — no barometer reading or value out of range';
 
   @override
   String get sensorExtCalibrationSection => 'External sensor altitude';
@@ -4995,8 +4751,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sensorFieldAltitudeOffset => 'Altitude offset';
 
   @override
-  String get sensorExtCalibrationNone =>
-      'No offset applied (raw sensor altitude)';
+  String get sensorExtCalibrationNone => 'No offset applied (raw sensor altitude)';
 
   @override
   String get sensorExtCalibrationApplied => 'Calibrated to a known altitude';
@@ -5049,38 +4804,31 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get sensorUnsupported =>
-      'Bluetooth sensors are only available on iOS and Android.';
+  String get sensorUnsupported => 'Bluetooth sensors are only available on iOS and Android.';
 
   @override
   String get altitudeAnnouncementTitle => 'Voice announcements';
 
   @override
-  String get altitudeAnnouncementSubtitle =>
-      'Takeoff/landing, glide dead zone and altitude record';
+  String get altitudeAnnouncementSubtitle => 'Takeoff/landing, glide dead zone and altitude record';
 
   @override
-  String get altitudeAnnouncementDescription =>
-      'Choose which flight events are spoken. Every announcement text can be customized and previewed.';
+  String get altitudeAnnouncementDescription => 'Choose which flight events are spoken. Every announcement text can be customized and previewed.';
 
   @override
   String get altitudeAnnouncementVoiceEnabled => 'Voice announcements';
 
   @override
-  String get altitudeAnnouncementVoiceEnabledDescription =>
-      'Turn all automatic voice announcements on or off.';
+  String get altitudeAnnouncementVoiceEnabledDescription => 'Turn all automatic voice announcements on or off.';
 
   @override
-  String get bleSensorAnnouncementEnabled =>
-      'Bluetooth sensor connection announcements';
+  String get bleSensorAnnouncementEnabled => 'Bluetooth sensor connection announcements';
 
   @override
-  String get bleSensorAnnouncementEnabledDescription =>
-      'Speak when a Bluetooth sensor connects or disconnects.';
+  String get bleSensorAnnouncementEnabledDescription => 'Speak when a Bluetooth sensor connects or disconnects.';
 
   @override
-  String get bleSensorAnnouncementTextDescription =>
-      'Customize the spoken phrase in the currently selected language.';
+  String get bleSensorAnnouncementTextDescription => 'Customize the spoken phrase in the currently selected language.';
 
   @override
   String get altitudeAnnouncementSectionVoice => 'Voice';
@@ -5095,19 +4843,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementSectionRecord => 'Altitude record';
 
   @override
-  String get altitudeAnnouncementSectionCustomRules =>
-      'Data-triggered announcements';
+  String get altitudeAnnouncementSectionCustomRules => 'Data-triggered announcements';
 
   @override
-  String get altitudeAnnouncementCustomRulesDescription =>
-      'During flight, speak custom text when a live value crosses a threshold or enters a range. Each rule can repeat at its own interval.';
+  String get altitudeAnnouncementCustomRulesDescription => 'During flight, speak custom text when a live value crosses a threshold or enters a range. Each rule can repeat at its own interval.';
 
   @override
   String get altitudeAnnouncementCustomRuleAdd => 'Add condition';
 
   @override
-  String get altitudeAnnouncementCustomRuleLimit =>
-      'You can configure up to 20 conditions.';
+  String get altitudeAnnouncementCustomRuleLimit => 'You can configure up to 20 conditions.';
 
   @override
   String get altitudeAnnouncementCustomRuleEmpty => 'No custom conditions yet.';
@@ -5140,8 +4885,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementCustomUpper => 'Maximum';
 
   @override
-  String get altitudeAnnouncementCustomRepeat =>
-      'Repeat while condition remains true';
+  String get altitudeAnnouncementCustomRepeat => 'Repeat while condition remains true';
 
   @override
   String altitudeAnnouncementCustomRepeatInterval(String seconds) {
@@ -5152,12 +4896,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementCustomContent => 'Spoken content template';
 
   @override
-  String get altitudeAnnouncementCustomContentRequired =>
-      'Enter the text to speak.';
+  String get altitudeAnnouncementCustomContentRequired => 'Enter the text to speak.';
 
   @override
-  String get altitudeAnnouncementCustomTemplateDescription =>
-      'Type the announcement and add live flight values using the tokens below. The preview uses sample values.';
+  String get altitudeAnnouncementCustomTemplateDescription => 'Type the announcement and add live flight values using the tokens below. The preview uses sample values.';
 
   @override
   String get altitudeAnnouncementCustomDelete => 'Delete condition';
@@ -5190,16 +4932,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementMetricHeading => 'Heading';
 
   @override
-  String get altitudeAnnouncementTakeoffLandingEnabled =>
-      'Takeoff & landing announcements';
+  String get altitudeAnnouncementTakeoffLandingEnabled => 'Takeoff & landing announcements';
 
   @override
-  String get altitudeAnnouncementTakeoffLandingDescription =>
-      'Plays a notification ding, then speaks when a flight starts or ends. With automatic takeoff/landing detection on, a takeoff that merges into the previous flight record announces \"continue flight\" instead.';
+  String get altitudeAnnouncementTakeoffLandingDescription => 'Plays a notification ding, then speaks when a flight starts or ends. With automatic takeoff/landing detection on, a takeoff that merges into the previous flight record announces \"continue flight\" instead.';
 
   @override
-  String get altitudeAnnouncementAutoDetectOff =>
-      'Automatic takeoff/landing detection is off, so \"continue flight\" is never announced.';
+  String get altitudeAnnouncementAutoDetectOff => 'Automatic takeoff/landing detection is off, so \"continue flight\" is never announced.';
 
   @override
   String get altitudeAnnouncementEventTakeoff => 'Takeoff';
@@ -5220,8 +4959,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementGlideEnabled => 'Dead-zone announcement';
 
   @override
-  String get altitudeAnnouncementGlideDescription =>
-      'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks after the vertical speed has stayed in the zone for the set delay, then repeats at the set interval while it stays there.';
+  String get altitudeAnnouncementGlideDescription => 'The vario stays silent while the vertical speed is in the dead zone. During a flight this speaks after the vertical speed has stayed in the zone for the set delay, then repeats at the set interval while it stays there.';
 
   @override
   String altitudeAnnouncementGlideRange(String minimum, String maximum) {
@@ -5239,12 +4977,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get altitudeAnnouncementRecordEnabled =>
-      'New altitude record announcement';
+  String get altitudeAnnouncementRecordEnabled => 'New altitude record announcement';
 
   @override
-  String get altitudeAnnouncementRecordDescription =>
-      'During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. While records keep being broken, announcements are spaced by at least the interval below.';
+  String get altitudeAnnouncementRecordDescription => 'During a flight this speaks immediately when the altitude exceeds the highest altitude recorded so far. While records keep being broken, announcements are spaced by at least the interval below.';
 
   @override
   String altitudeAnnouncementRecordInterval(String seconds) {
@@ -5264,8 +5000,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementPlaceholderAgl => 'Height above ground';
 
   @override
-  String get altitudeAnnouncementPlaceholderTakeoffHeight =>
-      'Height above takeoff';
+  String get altitudeAnnouncementPlaceholderTakeoffHeight => 'Height above takeoff';
 
   @override
   String get altitudeAnnouncementPlaceholderMaxAltitude => 'Max altitude';
@@ -5292,19 +5027,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementTest => 'Test announcement';
 
   @override
-  String get altitudeAnnouncementTestSuccess =>
-      'Voice announcement is working.';
+  String get altitudeAnnouncementTestSuccess => 'Voice announcement is working.';
 
   @override
-  String get altitudeAnnouncementUnavailable =>
-      'No text-to-speech voice is available. Install or enable a speech engine with an English or Chinese voice in the system settings, check the media volume, then test again.';
+  String get altitudeAnnouncementUnavailable => 'No text-to-speech voice is available. Install or enable a speech engine with an English or Chinese voice in the system settings, check the media volume, then test again.';
 
   @override
   String get altitudeAnnouncementTemplate => 'Announcement text';
 
   @override
-  String get altitudeAnnouncementTemplateDescription =>
-      'Write what should be spoken and tap a value to insert it. Text containing Chinese is spoken with a Chinese voice, other text with an English voice. Leave empty to use the default.';
+  String get altitudeAnnouncementTemplateDescription => 'Write what should be spoken and tap a value to insert it. Text containing Chinese is spoken with a Chinese voice, other text with an English voice. Leave empty to use the default.';
 
   @override
   String get altitudeAnnouncementTemplateReset => 'Restore default';
@@ -5333,8 +5065,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get altitudeAnnouncementPlaceholderSpeedUnit => 'Speed unit';
 
   @override
-  String get altitudeAnnouncementDuckVario =>
-      'Lower vario sound while speaking';
+  String get altitudeAnnouncementDuckVario => 'Lower vario sound while speaking';
 
   @override
   String altitudeAnnouncementSpeechRate(String rate) {
@@ -5350,8 +5081,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get altitudeAnnouncementDuckVarioDescription =>
-      'Turns the vario tone down during announcements so the voice can be heard over a loud vario.';
+  String get altitudeAnnouncementDuckVarioDescription => 'Turns the vario tone down during announcements so the voice can be heard over a loud vario.';
 
   @override
   String altitudeAnnouncementDuckLevel(String percent) {
@@ -5377,12 +5107,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get varioSoundProfileCustom => 'Custom';
 
   @override
-  String get varioSoundProfileXcTrackDescription =>
-      'Stock XCTrack sound. Custom tuning is disabled.';
+  String get varioSoundProfileXcTrackDescription => 'Stock XCTrack sound. Custom tuning is disabled.';
 
   @override
-  String get varioSoundProfileCustomDescription =>
-      'Tune thresholds, pitch, waveform and keypoints yourself.';
+  String get varioSoundProfileCustomDescription => 'Tune thresholds, pitch, waveform and keypoints yourself.';
 
   @override
   String get varioSoundPreview => 'Preview sound';
@@ -5400,8 +5128,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get varioSoundKeypointsTitle => 'Vertical speed keypoints';
 
   @override
-  String get varioSoundKeypointsDescription =>
-      'Pin a custom pitch, beep rate, duty and waveform to a vertical speed. The vario interpolates between keypoints and uses the default sound outside their range.';
+  String get varioSoundKeypointsDescription => 'Pin a custom pitch, beep rate, duty and waveform to a vertical speed. The vario interpolates between keypoints and uses the default sound outside their range.';
 
   @override
   String varioSoundKeypointAddAt(String speed) {
@@ -5412,12 +5139,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get varioSoundKeypointClearAll => 'Clear all';
 
   @override
-  String get varioSoundKeypointsEmpty =>
-      'No keypoints yet. Drag the vertical speed slider above and add one.';
+  String get varioSoundKeypointsEmpty => 'No keypoints yet. Drag the vertical speed slider above and add one.';
 
   @override
-  String get varioSoundKeypointsNeedTwo =>
-      'Add at least two keypoints to shape the sound.';
+  String get varioSoundKeypointsNeedTwo => 'Add at least two keypoints to shape the sound.';
 
   @override
   String get varioSoundKeypointAudition => 'Audition';
@@ -5477,8 +5202,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get varioSoundVarioSound => 'Vario sound';
 
   @override
-  String get varioSoundVarioSoundDescription =>
-      'Master on/off for the vario beeper.';
+  String get varioSoundVarioSoundDescription => 'Master on/off for the vario beeper.';
 
   @override
   String get varioSoundVolume => 'Vario volume';
@@ -5493,16 +5217,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get varioSoundOnlyWhenFlying => 'Sound only when flying';
 
   @override
-  String get varioSoundOnlyWhenFlyingDescription =>
-      'Stay silent until a flight is started, then beep normally.';
+  String get varioSoundOnlyWhenFlyingDescription => 'Stay silent until a flight is started, then beep normally.';
 
   @override
-  String get varioSoundOnlyWhenSensorConnected =>
-      'Sound only when sensor connected';
+  String get varioSoundOnlyWhenSensorConnected => 'Sound only when sensor connected';
 
   @override
-  String get varioSoundOnlyWhenSensorConnectedDescription =>
-      'Stay silent unless a Bluetooth sensor is connected.';
+  String get varioSoundOnlyWhenSensorConnectedDescription => 'Stay silent unless a Bluetooth sensor is connected.';
 
   @override
   String get varioSoundSinkZoneCue => 'Sink notification zone';

@@ -146,6 +146,7 @@ dependencies:
   record: ^7.2.0
   audioplayers: ^6.8.1
   url_launcher: ^6.3.3
+  map_launcher: ^7.0.0
 
 dev_dependencies:
   flutter_test:

@@ -16,6 +16,7 @@ import '../data/weather_service.dart' show WeatherException;
 import '../l10n/app_localizations.dart';
 import 'favorite_rename_dialog.dart';
 import 'map_control.dart' show MapTileSource, MapTileSources;
+import 'navigation_app_picker.dart';
 import 'search_query_policy.dart';
 import 'sheet_notice_host.dart';
 
@@ -188,6 +189,7 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
 
   /// True while the "my location" button waits for a device fix.
   bool _locating = false;
+  bool _openingNavigationApp = false;
 
   /// True while a favorite is being saved (reverse geocode in flight).
   bool _savingFavorite = false;
@@ -639,7 +641,7 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
               ),
             ),
             _isLocationViewer
-                ? _buildLocationViewerBottomBar()
+                ? _buildLocationViewerBottomBar(l10n)
                 : _buildBottomBar(l10n),
           ],
         ),
@@ -843,26 +845,66 @@ class _MapPickerSheetState extends State<_MapPickerSheet> {
     );
   }
 
-  Widget _buildLocationViewerBottomBar() {
+  Widget _buildLocationViewerBottomBar(AppLocalizations l10n) {
+    final location = _fixedMarker!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.place_outlined, color: Colors.white70),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _coordsLabel(_fixedMarker),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontFeatures: [FontFeature.tabularFigures()],
+          Row(
+            children: [
+              const Icon(Icons.place_outlined, color: Colors.white70),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _coordsLabel(location),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const ValueKey('navigate-to-chat-location'),
+              onPressed: _openingNavigationApp
+                  ? null
+                  : () => _navigateToLocation(l10n, location),
+              icon: _openingNavigationApp
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.navigation_outlined),
+              label: Text(l10n.chatNavigate),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _navigateToLocation(
+    AppLocalizations l10n,
+    LatLng location,
+  ) async {
+    setState(() => _openingNavigationApp = true);
+    try {
+      await showNavigationAppPicker(
+        context,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      );
+    } finally {
+      if (mounted) setState(() => _openingNavigationApp = false);
+    }
   }
 
   Widget _buildBottomBar(AppLocalizations l10n) {

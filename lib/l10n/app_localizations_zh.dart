@@ -135,8 +135,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get interfaceConfigurationImportTitle => '替换仪表盘布局？';
 
   @override
-  String get interfaceConfigurationImportConfirmation =>
-      '导入的布局将替换所有仪表盘页面和控件；不会更改主题、语言、账户设置或飞行记录。';
+  String get interfaceConfigurationImportConfirmation => '导入的布局将替换所有仪表盘页面和控件；不会更改主题、语言、账户设置或飞行记录。';
 
   @override
   String get interfaceConfigurationImported => '仪表盘布局已导入。';
@@ -166,8 +165,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get defaultPrecision => '默认精度';
 
   @override
-  String get defaultPrecisionDescription =>
-      '开启时，GPS 精度、高度、速度、爬升/下降率和风速默认显示 1 位小数；关闭时默认显示整数。自定义精度不受影响。';
+  String get defaultPrecisionDescription => '开启时，GPS 精度、高度、速度、爬升/下降率和风速默认显示 1 位小数；关闭时默认显示整数。自定义精度不受影响。';
 
   @override
   String get largerFont => '更大字体';
@@ -185,8 +183,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get networkUserAgentTitle => '网络 User-Agent';
 
   @override
-  String get networkUserAgentSubtitle =>
-      '应用网络请求将使用此值。Nominatim 请求仍会附加 ParaBeacon 标识；浏览器和原生地图 SDK 可能会覆盖此设置。';
+  String get networkUserAgentSubtitle => '应用网络请求将使用此值。Nominatim 请求仍会附加 ParaBeacon 标识；浏览器和原生地图 SDK 可能会覆盖此设置。';
 
   @override
   String get networkUserAgentInvalid => '请输入有效的 User-Agent（1–512 个字符，不含控制字符）。';
@@ -198,15 +195,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paraBeaconServerAddressTitle => 'ParaBeacon 服务器地址';
 
   @override
-  String get paraBeaconServerAddressSubtitle =>
-      '请输入公网服务器源地址。建议使用 HTTPS；HTTP 不会加密传输数据，仅应连接可信服务器。本地和私有网络地址会被阻止。地址会立即保存，并在下次启动应用时生效；在此之前仍使用当前服务器。';
+  String get paraBeaconServerAddressSubtitle => '请输入公网服务器源地址。建议使用 HTTPS；HTTP 不会加密传输数据，仅应连接可信服务器。本地和私有网络地址会被阻止。地址会立即保存，并在下次启动应用时生效；在此之前仍使用当前服务器。';
 
   @override
   String get paraBeaconServerAddressSaved => '服务器地址已保存，将在下次启动应用时生效。';
 
   @override
-  String get paraBeaconServerAddressInvalid =>
-      '请输入可访问的公网 HTTP 或 HTTPS 地址，例如 https://www.parabeacon.icu；不要包含路径、用户名或查询参数。';
+  String get paraBeaconServerAddressInvalid => '请输入可访问的公网 HTTP 或 HTTPS 地址，例如 https://www.parabeacon.icu；不要包含路径、用户名或查询参数。';
 
   @override
   String get paraBeaconServerAddressReset => '使用默认服务器';
@@ -227,8 +222,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareCardMapSource => '分享卡片地图源';
 
   @override
-  String get shareCardMapSourceSubtitle =>
-      '选择飞行轨迹下方的底图。选择“无”将关闭地图瓦片；分享时可能会下载所选地图瓦片。';
+  String get shareCardMapSourceSubtitle => '选择飞行轨迹下方的底图。选择“无”将关闭地图瓦片；分享时可能会下载所选地图瓦片。';
 
   @override
   String get verticalSpeedAverageWindow => '垂直速度平均时长';
@@ -237,8 +231,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionTaskRadiusReduction => '竞赛绕点半径缩减';
 
   @override
-  String get competitionTaskRadiusReductionSubtitle =>
-      '用于导航和航线几何计算；显示和导出的任务半径保持不变。';
+  String get competitionTaskRadiusReductionSubtitle => '用于导航和航线几何计算；显示和导出的任务半径保持不变。';
 
   @override
   String verticalSpeedAverageWindowBadge(String seconds) {
@@ -249,8 +242,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightDetailOutlierFilter => '过滤爬升/下降异常值';
 
   @override
-  String get flightDetailOutlierFilterSubtitle =>
-      '仅在飞行详情中使用局部中位数/MAD 检测；不会更改已保存的样本。';
+  String get flightDetailOutlierFilterSubtitle => '仅在飞行详情中使用局部中位数/MAD 检测；不会更改已保存的样本。';
 
   @override
   String get flightDetailOutlierSensitivity => 'MAD 灵敏度';
@@ -508,8 +500,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountProfileImageRemoved => '个人资料图片已移除。';
 
   @override
-  String get accountInvalidProfileImage =>
-      '请选择受支持的图片，文件需小于 32 MB 且不超过 1200 万像素。';
+  String get accountInvalidProfileImage => '请选择受支持的图片，文件需小于 32 MB 且不超过 1200 万像素。';
 
   @override
   String get accountSignOut => '退出登录';
@@ -679,12 +670,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatLocationConsentTitle => '选择要分享的位置？';
 
   @override
-  String get chatLocationConsentBody =>
-      '在地图上选择一个点。只有在你确认后，坐标才会发送到此聊天，并保存在聊天记录中。';
+  String get chatLocationConsentBody => '在地图上选择一个点。只有在你确认后，坐标才会发送到此聊天，并保存在聊天记录中。';
 
   @override
-  String get chatLocationPickerConsentBody =>
-      '在地图上选择一个点。只有在你确认后，坐标才会发送到此聊天，并保存在聊天记录中。';
+  String get chatLocationPickerConsentBody => '在地图上选择一个点。只有在你确认后，坐标才会发送到此聊天，并保存在聊天记录中。';
 
   @override
   String get chatLocationConfirmTitle => '分享此位置？';
@@ -694,6 +683,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatChooseLocation => '在地图上选择位置';
+
+  @override
+  String get chatNavigate => '开始导航';
+
+  @override
+  String get chatNavigateWith => '选择导航应用';
+
+  @override
+  String get chatNoNavigationApps => '没有可用的兼容导航应用。';
+
+  @override
+  String get chatNavigationLaunchFailed => '无法打开所选导航应用。';
 
   @override
   String get chatShare => '分享';
@@ -779,8 +780,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTracking => '实时追踪';
 
   @override
-  String get liveTrackingSubtitle =>
-      '登录 ParaBeacon 或 XContest 账户后，即可通过对应服务分享实时飞行数据。';
+  String get liveTrackingSubtitle => '登录 ParaBeacon 或 XContest 账户后，即可通过对应服务分享实时飞行数据。';
 
   @override
   String get positionSharingTitle => '位置共享';
@@ -794,8 +794,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get positionSharingPromptBody =>
-      '选择共享后将恢复已启用的服务；首次选择时，会启用当前已登录的服务。实时数据仅在飞行期间发送。';
+  String get positionSharingPromptBody => '选择共享后将恢复已启用的服务；首次选择时，会启用当前已登录的服务。实时数据仅在飞行期间发送。';
 
   @override
   String get positionSharingDisableAction => '停用位置共享';
@@ -816,15 +815,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingParaBeaconSync => '同步至 ParaBeacon';
 
   @override
-  String get liveTrackingParaBeaconSyncSubtitle =>
-      '将实时飞行数据发送到 ParaBeacon Server。';
+  String get liveTrackingParaBeaconSyncSubtitle => '将实时飞行数据发送到 ParaBeacon Server。';
 
   @override
   String get liveTrackingParaBeaconSignInRequired => '请登录 ParaBeacon 后启用此开关。';
 
   @override
-  String get liveTrackingRequiresXContest =>
-      '请先登录 XContest 或 ParaBeacon，再启用对应的实时追踪目标。';
+  String get liveTrackingRequiresXContest => '请先登录 XContest 或 ParaBeacon，再启用对应的实时追踪目标。';
 
   @override
   String get liveTrackingNoDestinationSelected => '请至少启用一个已登录的同步目标，以分享实时数据。';
@@ -833,15 +830,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingProxyToken => '代理访问令牌';
 
   @override
-  String get liveTrackingProxyTokenSubtitle =>
-      '令牌仅安全保存在本设备，并只发送到已配置的 ParaBeacon 代理。';
+  String get liveTrackingProxyTokenSubtitle => '令牌仅安全保存在本设备，并只发送到已配置的 ParaBeacon 代理。';
 
   @override
   String get liveTrackingConfigInvalid => '无法加载实时追踪配置，请检查内置 JSON 配置文件。';
 
   @override
-  String get liveTrackingProxyAuthRequired =>
-      '开始追踪前，请输入 ParaBeacon 代理签发的 Bearer 令牌。';
+  String get liveTrackingProxyAuthRequired => '开始追踪前，请输入 ParaBeacon 代理签发的 Bearer 令牌。';
 
   @override
   String get liveTrackingConnecting => '正在连接 XContest LiveTrack……';
@@ -862,8 +857,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingClaimContestSubtitle => '将飞行认领到 XContest 竞赛中';
 
   @override
-  String get liveTrackingClaimContestLockedSubtitle =>
-      '实时追踪开始后，当前飞行的竞赛认领状态将锁定；可为下一次飞行更改。';
+  String get liveTrackingClaimContestLockedSubtitle => '实时追踪开始后，当前飞行的竞赛认领状态将锁定；可为下一次飞行更改。';
 
   @override
   String get liveTrackingShowPublic => '显示公开追踪';
@@ -878,29 +872,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingFlightPublicSubtitle => '在 XContest 发布已完成的飞行';
 
   @override
-  String get liveTrackingFlightPublicLockedSubtitle =>
-      '实时追踪开始后，当前飞行的公开状态将锁定；可为下一次飞行更改。';
+  String get liveTrackingFlightPublicLockedSubtitle => '实时追踪开始后，当前飞行的公开状态将锁定；可为下一次飞行更改。';
 
   @override
   String get liveTrackingShareLocationPublicly => '向其他 ParaBeacon 飞行员公开我的实时位置';
 
   @override
-  String get liveTrackingShareLocationPubliclySubtitle =>
-      '开启后，已登录的 ParaBeacon 地图用户可以看到你活动飞行中的名称和最新位置。默认关闭，可随时关闭。';
+  String get liveTrackingShareLocationPubliclySubtitle => '开启后，已登录的 ParaBeacon 地图用户可以看到你活动飞行中的名称和最新位置。默认关闭，可随时关闭。';
 
   @override
   String get liveTrackingShareLocationWhileNotFlying => '非飞行时也分享位置';
 
   @override
-  String get liveTrackingShareLocationWhileNotFlyingSubtitle =>
-      '在两次飞行之间继续公开最新位置。需要启用 ParaBeacon 同步和公开位置分享；暂停或关闭分享、或开始飞行时即停止。';
+  String get liveTrackingShareLocationWhileNotFlyingSubtitle => '在两次飞行之间继续公开最新位置。需要启用 ParaBeacon 同步和公开位置分享；暂停或关闭分享、或开始飞行时即停止。';
 
   @override
   String get liveTrackingChannelNumber => '频道编号';
 
   @override
-  String get liveTrackingChannelNumberSubtitle =>
-      '选择无线电频率以筛选地图和使用频道聊天。设置为 000000 时，地图会显示范围内所有公开飞行员，并隐藏频道聊天。';
+  String get liveTrackingChannelNumberSubtitle => '选择无线电频率以筛选地图和使用频道聊天。设置为 000000 时，地图会显示范围内所有公开飞行员，并隐藏频道聊天。';
 
   @override
   String get liveTrackingChannelNumberSaveFailed => '无法保存频道编号，请检查网络后重试。';
@@ -1680,8 +1670,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trackRecordingSmart => '智能（默认）';
 
   @override
-  String get trackRecordingSmartSubtitle =>
-      '至少间隔 1 秒，且仅在移动 ≥ 3 米或高度变化 ≥ 1 米时记录';
+  String get trackRecordingSmartSubtitle => '至少间隔 1 秒，且仅在移动 ≥ 3 米或高度变化 ≥ 1 米时记录';
 
   @override
   String get trackRecordingEverySecond => '每 1 秒';
@@ -1696,12 +1685,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get recordMoreInformation => '记录更多信息';
 
   @override
-  String get recordMoreInformationFull =>
-      '每个点的完整数据：升降速率、风、气压、温度、GPS 精度、卫星数、电量、心率';
+  String get recordMoreInformationFull => '每个点的完整数据：升降速率、风、气压、温度、GPS 精度、卫星数、电量、心率';
 
   @override
-  String get recordMoreInformationXcTrack =>
-      'XCTrack 风格：仅位置、气压/GPS 高度、航向、速度与时间';
+  String get recordMoreInformationXcTrack => 'XCTrack 风格：仅位置、气压/GPS 高度、航向、速度与时间';
 
   @override
   String get autoDeleteShortFlights => '自动删除短时飞行记录';
@@ -1778,8 +1765,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dashboardTemplateInstrumentConsole => '仪表与传感器';
 
   @override
-  String get dashboardTemplateInstrumentConsoleDescription =>
-      '飞行控制、实时传感器监视和飞行员读数';
+  String get dashboardTemplateInstrumentConsoleDescription => '飞行控制、实时传感器监视和飞行员读数';
 
   @override
   String get dashboardTemplateTakeoffCheck => '起飞检查';
@@ -2169,8 +2155,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeHighContrast => '高对比度（WCAG AAA）';
 
   @override
-  String get themeApplyNote =>
-      '更改立即生效，无需重启。你的选择已保存在本设备上。\n高对比度主题：纯黑/白背景搭配高饱和度点缀色——适合强烈阳光、缓解眼疲劳以及年长用户。';
+  String get themeApplyNote => '更改立即生效，无需重启。你的选择已保存在本设备上。\n高对比度主题：纯黑/白背景搭配高饱和度点缀色——适合强烈阳光、缓解眼疲劳以及年长用户。';
 
   @override
   String get themeDarkCyan => '深青色（默认）';
@@ -2612,8 +2597,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionDownloadUrlHint => 'https://… 或航线代码';
 
   @override
-  String get competitionDownloadUrlHelp =>
-      '输入 .xctsk 文件链接、xctrack.org 规划链接或 XContest 航线代码。';
+  String get competitionDownloadUrlHelp => '输入 .xctsk 文件链接、xctrack.org 规划链接或 XContest 航线代码。';
 
   @override
   String get competitionDownloadFailed => '下载失败。';
@@ -2863,12 +2847,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get androidFlightPermissionsTitle => '后台飞行记录权限';
 
   @override
-  String get androidFlightPermissionsBatteryWarning =>
-      '电池管理：如果电池使用受到限制，Android 可能会在 ParaBeacon 进入后台后停止应用运行，导致飞行记录中断。建议将电池使用方式设为“不受限制”以降低此风险。';
+  String get androidFlightPermissionsBatteryWarning => '电池管理：如果电池使用受到限制，Android 可能会在 ParaBeacon 进入后台后停止应用运行，导致飞行记录中断。建议将电池使用方式设为“不受限制”以降低此风险。';
 
   @override
-  String get androidFlightPermissionsLocationWarning =>
-      '后台定位：如果未授予“始终允许”访问权限，Android 可能会在 ParaBeacon 进入后台或屏幕关闭时暂停或停止 GPS 更新，导致飞行数据无法连续记录。';
+  String get androidFlightPermissionsLocationWarning => '后台定位：如果未授予“始终允许”访问权限，Android 可能会在 ParaBeacon 进入后台或屏幕关闭时暂停或停止 GPS 更新，导致飞行数据无法连续记录。';
 
   @override
   String get androidFlightPermissionBatteryTitle => '电池使用方式';
@@ -2895,8 +2877,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get androidFlightPermissionOpenLocation => '定位设置';
 
   @override
-  String get androidFlightPermissionsOemNote =>
-      '通过 Android 电池优化豁免状态确认是否已设为“不受限制”。部分制造商还会在自有设置中施加额外的后台运行限制。';
+  String get androidFlightPermissionsOemNote => '通过 Android 电池优化豁免状态确认是否已设为“不受限制”。部分制造商还会在自有设置中施加额外的后台运行限制。';
 
   @override
   String get androidFlightPermissionsDisablePrompt => '停止检查并隐藏此提示';
@@ -3302,8 +3283,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowPublicPilots => '显示公开飞行员实时位置';
 
   @override
-  String get settingShowPublicPilotsSubtitle =>
-      '显示 ParaBeacon 和 XContest LiveTrack 提供的可用公开飞行员位置。';
+  String get settingShowPublicPilotsSubtitle => '显示 ParaBeacon 和 XContest LiveTrack 提供的可用公开飞行员位置。';
 
   @override
   String get settingShowPilotName => '显示飞行员姓名';
@@ -3328,8 +3308,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get appUpdateInstallPermissionBody =>
-      '请在 Android 设置中允许 ParaBeacon 安装 APK 更新，然后返回并点击“安装”。';
+  String get appUpdateInstallPermissionBody => '请在 Android 设置中允许 ParaBeacon 安装 APK 更新，然后返回并点击“安装”。';
 
   @override
   String get appUpdateDownloadOverWifi => '通过 Wi-Fi 下载';
@@ -3451,15 +3430,13 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get colorPaletteSettingsDescription =>
-      '最多可选择 20 种预设颜色。高饱和度方案会加入深色和亮色高饱和度颜色；开启开关时，黑、白、灰会自动追加在末尾。';
+  String get colorPaletteSettingsDescription => '最多可选择 20 种预设颜色。高饱和度方案会加入深色和亮色高饱和度颜色；开启开关时，黑、白、灰会自动追加在末尾。';
 
   @override
   String get colorPaletteIncludeNeutralColors => '包含黑、白、灰';
 
   @override
-  String get colorPaletteIncludeNeutralColorsDescription =>
-      '将黑色、白色和灰色追加到每套配色的末尾。';
+  String get colorPaletteIncludeNeutralColorsDescription => '将黑色、白色和灰色追加到每套配色的末尾。';
 
   @override
   String get colorPaletteSchemeLabel => '配色方案';
@@ -3645,8 +3622,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get landingPointsImportTitle => '导入降落点？';
 
   @override
-  String get landingPointsImportConfirmation =>
-      '将添加新降落点并保留现有降落点。同名时，请选择要保留的降落点。';
+  String get landingPointsImportConfirmation => '将添加新降落点并保留现有降落点。同名时，请选择要保留的降落点。';
 
   @override
   String get landingPointsImportConflictPrompt => '请为每个同名降落点选择一个要保留的项目：';
@@ -3781,11 +3757,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsImportingParaBeaconServer => '正在从 ParaBeacon Server 导入飞行…';
 
   @override
-  String flightsImportParaBeaconServerResult(
-    int added,
-    int skipped,
-    int failed,
-  ) {
+  String flightsImportParaBeaconServerResult(int added, int skipped, int failed) {
     return '已导入 $added · 已跳过 $skipped · 失败 $failed';
   }
 
@@ -3804,8 +3776,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsSyncConfirmTitle => '替换服务器上的飞行记录？';
 
   @override
-  String get flightsSyncConfirmMessage =>
-      '服务器上的记录将与此设备上的记录保持一致。此设备上不存在的服务器记录将被删除。如果此设备没有记录，服务器上的全部飞行记录都会被清除。';
+  String get flightsSyncConfirmMessage => '服务器上的记录将与此设备上的记录保持一致。此设备上不存在的服务器记录将被删除。如果此设备没有记录，服务器上的全部飞行记录都会被清除。';
 
   @override
   String get flightsSyncConfirmAction => '同步并替换';
@@ -3849,8 +3820,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsImportModeFilesNote => '逐个选择 .igc 文件（最多 100 个）';
 
   @override
-  String get flightsImportXcTrackNote =>
-      'XCTrack 的航迹文件存放在：\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\n多数手机无法直接打开该目录。请先将其（或其中的 .igc 文件）复制到 Download 目录，再从那里导入。';
+  String get flightsImportXcTrackNote => 'XCTrack 的航迹文件存放在：\n/storage/emulated/0/Android/data/org.xcontest.XCTrack/files/Tracklogs\n\n多数手机无法直接打开该目录。请先将其（或其中的 .igc 文件）复制到 Download 目录，再从那里导入。';
 
   @override
   String get flightsImportingXcTrack => '正在导入 XCTrack 飞行…';
@@ -3934,8 +3904,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get placeNameLookup => '地名查询';
 
   @override
-  String get placeNameLookupDescription =>
-      '使用高德（AutoNavi）Web 服务将起飞/降落坐标反向地理编码为地名。请求仅发送到 restapi.amap.com。';
+  String get placeNameLookupDescription => '使用高德（AutoNavi）Web 服务将起飞/降落坐标反向地理编码为地名。请求仅发送到 restapi.amap.com。';
 
   @override
   String get placeNameAmapKeyLabel => '高德 Web 服务 Key';
@@ -4421,8 +4390,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flightsDeleteSamplesTitle => '删除采样数据？';
 
   @override
-  String get flightsDeleteSamplesMessage =>
-      '这将删除此飞行的逐点航迹数据（位置/海拔/升降）。飞行及其摘要仍保留在记录中，但将无法再回放。此操作无法撤销。';
+  String get flightsDeleteSamplesMessage => '这将删除此飞行的逐点航迹数据（位置/海拔/升降）。飞行及其摘要仍保留在记录中，但将无法再回放。此操作无法撤销。';
 
   @override
   String get flightsClearAllTitle => '清除所有飞行？';
@@ -4495,51 +4463,27 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String flightsMergeIssueOverlap(
-    String first,
-    String second,
-    String duration,
-  ) {
+  String flightsMergeIssueOverlap(String first, String second, String duration) {
     return '$first → $second：两条飞行记录时间重叠 $duration。';
   }
 
   @override
-  String flightsMergeIssueGap(
-    String first,
-    String second,
-    String duration,
-    String max,
-  ) {
+  String flightsMergeIssueGap(String first, String second, String duration, String max) {
     return '$first → $second：降落到下一次起飞间隔 $duration（上限 $max）。';
   }
 
   @override
-  String flightsMergeIssueDistance(
-    String first,
-    String second,
-    String distance,
-    String max,
-  ) {
+  String flightsMergeIssueDistance(String first, String second, String distance, String max) {
     return '$first → $second：降落点距离下一次起飞点 $distance 公里（上限 $max 公里）。';
   }
 
   @override
-  String flightsMergeIssueAircraft(
-    String first,
-    String second,
-    String previous,
-    String next,
-  ) {
+  String flightsMergeIssueAircraft(String first, String second, String previous, String next) {
     return '$first → $second：翼型不同（$previous / $next）。';
   }
 
   @override
-  String flightsMergeIssuePilot(
-    String first,
-    String second,
-    String previous,
-    String next,
-  ) {
+  String flightsMergeIssuePilot(String first, String second, String previous, String next) {
     return '$first → $second：飞行员不同（$previous / $next）。';
   }
 
@@ -4696,8 +4640,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sensorPreferInternal => '优先使用内置传感器';
 
   @override
-  String get sensorPreferInternalSubtitle =>
-      '启用后可使用本设备的内置气压计。iOS 可能请求运动权限；不会读取健康数据。';
+  String get sensorPreferInternalSubtitle => '启用后可使用本设备的内置气压计。iOS 可能请求运动权限；不会读取健康数据。';
 
   @override
   String get sensorNoInternalBarometer => '本设备未检测到内置气压计';
@@ -4768,8 +4711,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sensorCalibrateTitle => '校准海拔';
 
   @override
-  String get sensorCalibrateDescription =>
-      '输入当前的已知海拔，将自动调整基准气压（QNH），使气压海拔与之匹配。';
+  String get sensorCalibrateDescription => '输入当前的已知海拔，将自动调整基准气压（QNH），使气压海拔与之匹配。';
 
   @override
   String get sensorCalibrateAltitudeLabel => '当前海拔';
@@ -4885,8 +4827,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementSectionCustomRules => '数据条件播报';
 
   @override
-  String get altitudeAnnouncementCustomRulesDescription =>
-      '飞行期间，当实时数据超过阈值或进入设定范围时播报自定义内容。每条规则都可单独设置重复间隔。';
+  String get altitudeAnnouncementCustomRulesDescription => '飞行期间，当实时数据超过阈值或进入设定范围时播报自定义内容。每条规则都可单独设置重复间隔。';
 
   @override
   String get altitudeAnnouncementCustomRuleAdd => '添加条件';
@@ -4939,8 +4880,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementCustomContentRequired => '请输入要播报的文字。';
 
   @override
-  String get altitudeAnnouncementCustomTemplateDescription =>
-      '编写播报内容并点击下方占位符插入实时飞行数据。预览使用示例数值。';
+  String get altitudeAnnouncementCustomTemplateDescription => '编写播报内容并点击下方占位符插入实时飞行数据。预览使用示例数值。';
 
   @override
   String get altitudeAnnouncementCustomDelete => '删除条件';
@@ -4976,8 +4916,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementTakeoffLandingEnabled => '起飞/降落播报';
 
   @override
-  String get altitudeAnnouncementTakeoffLandingDescription =>
-      '先播放一声“叮”提示音，再在飞行开始或结束时播报。开启自动起降检测后，如果再次起飞合并了上一条飞行记录，则改为播报“继续飞行”。';
+  String get altitudeAnnouncementTakeoffLandingDescription => '先播放一声“叮”提示音，再在飞行开始或结束时播报。开启自动起降检测后，如果再次起飞合并了上一条飞行记录，则改为播报“继续飞行”。';
 
   @override
   String get altitudeAnnouncementAutoDetectOff => '自动起降检测已关闭，不会播报“继续飞行”。';
@@ -5001,8 +4940,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementGlideEnabled => '死区播报';
 
   @override
-  String get altitudeAnnouncementGlideDescription =>
-      '垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定的延时后播报，之后只要仍在死区内，就按设定的间隔重复播报。';
+  String get altitudeAnnouncementGlideDescription => '垂直速度处于死区时升降音保持静音。飞行中垂直速度在死区内停留设定的延时后播报，之后只要仍在死区内，就按设定的间隔重复播报。';
 
   @override
   String altitudeAnnouncementGlideRange(String minimum, String maximum) {
@@ -5023,8 +4961,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementRecordEnabled => '新的最高高度播报';
 
   @override
-  String get altitudeAnnouncementRecordDescription =>
-      '飞行中高度超过此前记录的最高高度时立即播报。连续刷新最高高度时，两次播报之间至少间隔下方设定的时间。';
+  String get altitudeAnnouncementRecordDescription => '飞行中高度超过此前记录的最高高度时立即播报。连续刷新最高高度时，两次播报之间至少间隔下方设定的时间。';
 
   @override
   String altitudeAnnouncementRecordInterval(String seconds) {
@@ -5074,15 +5011,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get altitudeAnnouncementTestSuccess => '语音播报工作正常。';
 
   @override
-  String get altitudeAnnouncementUnavailable =>
-      '没有可用的语音合成（TTS）声音。请在系统设置中安装或启用带中文或英文语音的语音引擎，并检查媒体音量，然后重新试听。';
+  String get altitudeAnnouncementUnavailable => '没有可用的语音合成（TTS）声音。请在系统设置中安装或启用带中文或英文语音的语音引擎，并检查媒体音量，然后重新试听。';
 
   @override
   String get altitudeAnnouncementTemplate => '播报内容';
 
   @override
-  String get altitudeAnnouncementTemplateDescription =>
-      '填写要播报的文字，点击下方数值即可插入。包含中文的内容使用中文语音播报，否则使用英文语音。留空则使用默认内容。';
+  String get altitudeAnnouncementTemplateDescription => '填写要播报的文字，点击下方数值即可插入。包含中文的内容使用中文语音播报，否则使用英文语音。留空则使用默认内容。';
 
   @override
   String get altitudeAnnouncementTemplateReset => '恢复默认';
@@ -5127,8 +5062,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get altitudeAnnouncementDuckVarioDescription =>
-      '语音播报期间调低升降音音量，避免升降音过响时听不清播报。';
+  String get altitudeAnnouncementDuckVarioDescription => '语音播报期间调低升降音音量，避免升降音过响时听不清播报。';
 
   @override
   String altitudeAnnouncementDuckLevel(String percent) {
@@ -5175,8 +5109,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get varioSoundKeypointsTitle => '升降速度关键点';
 
   @override
-  String get varioSoundKeypointsDescription =>
-      '为某个升降速度固定自定义的音高、蜂鸣节奏、音长和波形。关键点之间会线性插值，超出范围时使用默认声音。';
+  String get varioSoundKeypointsDescription => '为某个升降速度固定自定义的音高、蜂鸣节奏、音长和波形。关键点之间会线性插值，超出范围时使用默认声音。';
 
   @override
   String varioSoundKeypointAddAt(String speed) {

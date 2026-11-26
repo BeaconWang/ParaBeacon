@@ -1484,6 +1484,8 @@ class _CompetitionTaskServerListSheetState
     extends State<_CompetitionTaskServerListSheet> {
   late Future<CompetitionTaskServerList> _tasks;
   String? _currentTaskOwnerId;
+  CompetitionTaskServerEntry? _ownTaskEntry;
+  String? _deletingOwnerId;
 
   @override
   void initState() {
@@ -1500,6 +1502,10 @@ class _CompetitionTaskServerListSheetState
     var taskList = await service.listTasksWithSelection();
     final currentTask = store.task;
     if (syncCurrentTask && currentTask != null && !currentTask.isEmpty) {
+      final accountId = ParaBeaconAccountService.instance.user?.id;
+      final autoSyncSuppressed =
+          accountId != null &&
+          await service.isAutoSyncSuppressed(accountId, currentTask);
       CompetitionTaskServerEntry? selectedEntry;
       for (final entry in taskList.tasks) {
         if (entry.ownerId == taskList.currentTaskOwnerId) {
@@ -1509,7 +1515,8 @@ class _CompetitionTaskServerListSheetState
       }
       final ownTaskIsSelected =
           selectedEntry?.ownerId == ParaBeaconAccountService.instance.user?.id;
-      if ((selectedEntry == null || ownTaskIsSelected) &&
+      if (!autoSyncSuppressed &&
+          (selectedEntry == null || ownTaskIsSelected) &&
           (selectedEntry == null ||
               selectedEntry.task.toXctskString() !=
                   currentTask.toXctskString())) {
@@ -1523,8 +1530,21 @@ class _CompetitionTaskServerListSheetState
         }
       }
     }
+    final accountId = ParaBeaconAccountService.instance.user?.id;
+    CompetitionTaskServerEntry? ownTaskEntry;
+    if (accountId != null) {
+      for (final entry in taskList.tasks) {
+        if (entry.ownerId == accountId) {
+          ownTaskEntry = entry;
+          break;
+        }
+      }
+    }
     if (mounted) {
-      setState(() => _currentTaskOwnerId = taskList.currentTaskOwnerId);
+      setState(() {
+        _currentTaskOwnerId = taskList.currentTaskOwnerId;
+        _ownTaskEntry = ownTaskEntry;
+      });
     }
     return taskList;
   }
@@ -1532,12 +1552,53 @@ class _CompetitionTaskServerListSheetState
   void _refresh() {
     setState(() {
       _currentTaskOwnerId = null;
+      _ownTaskEntry = null;
       _tasks = _loadTasks();
     });
   }
 
   void _unselectCurrentTask() {
     Navigator.of(context).pop(const _ServerTaskSelection.clear());
+  }
+
+  Future<void> _deleteOwnTask(CompetitionTaskServerEntry entry) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(widget.l10n.competitionServerDeleteOwnTask),
+        content: Text(widget.l10n.competitionServerDeleteTaskConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(widget.l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(widget.l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deletingOwnerId = entry.ownerId);
+    try {
+      final service = CompetitionTaskServerService.instance;
+      await service.deleteOwnTask();
+      final accountId = ParaBeaconAccountService.instance.user?.id;
+      if (accountId != null) {
+        await service.suppressAutoSyncForTask(accountId, entry.task);
+      }
+      if (!mounted) return;
+      AppNotice.show(widget.l10n.competitionServerTaskDeleted);
+      _refresh();
+    } catch (_) {
+      if (mounted) {
+        AppNotice.show(widget.l10n.competitionServerRequestFailed);
+      }
+    } finally {
+      if (mounted) setState(() => _deletingOwnerId = null);
+    }
   }
 
   Future<void> _previewTask(CompetitionTaskServerEntry entry) async {
@@ -1575,6 +1636,21 @@ class _CompetitionTaskServerListSheetState
                         style: theme.textTheme.titleLarge,
                       ),
                     ),
+                    if (_ownTaskEntry != null)
+                      IconButton(
+                        tooltip: l10n.competitionServerDeleteOwnTask,
+                        onPressed: _deletingOwnerId == _ownTaskEntry!.ownerId
+                            ? null
+                            : () => _deleteOwnTask(_ownTaskEntry!),
+                        icon: _deletingOwnerId == _ownTaskEntry!.ownerId
+                            ? const SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.delete_outline),
+                      ),
                     if (_currentTaskOwnerId != null)
                       IconButton(
                         tooltip: l10n.competitionServerUnselectCurrentTask,

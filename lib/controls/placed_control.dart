@@ -151,14 +151,11 @@ class PlacedControl {
       }
       if (typeId == 'map') {
         settings.remove('zoom');
+        settings.remove('competitionTaskSource');
         final legacyTaskFilter = saved['otherPilotTaskFilter'];
         if (legacyTaskFilter is String) {
           if (!saved.containsKey('filterOtherPilotsByTask')) {
             settings['filterOtherPilotsByTask'] = legacyTaskFilter != 'all';
-          }
-          if (legacyTaskFilter != 'all' &&
-              !saved.containsKey('competitionTaskSource')) {
-            settings['competitionTaskSource'] = legacyTaskFilter;
           }
           settings.remove('otherPilotTaskFilter');
         }

@@ -450,6 +450,33 @@ void main() {
     },
   );
 
+  test('omits task filter when no current task is pinned', () async {
+    final client = MockClient((request) async {
+      expect(request.url.path, '/api/v1/map/active-locations');
+      expect(request.url.queryParameters.containsKey('task_owner_id'), isFalse);
+      return http.Response(
+        jsonEncode({'locations': [], 'next_cursor': ''}),
+        200,
+      );
+    });
+    final service = LiveTrackingService(
+      config: _config(),
+      authProvider: _TestProxyAuthProvider(),
+      pointStore: _MemoryProxyPointStore(),
+      httpClient: client,
+    );
+    addTearDown(service.shutdown);
+    addTearDown(client.close);
+
+    final locations = await service.loadPublicPilotLocations(
+      west: 8,
+      south: 47,
+      east: 9,
+      north: 48,
+    );
+    expect(locations, isEmpty);
+  });
+
   test('shares a fresh ground location only with explicit opt-ins', () async {
     final settings = LiveTrackingSettings.instance;
     await settings.load();

@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/color_palette_settings.dart';
-import '../data/competition/competition_task_server_service.dart';
-import '../data/parabeacon_account_service.dart';
 import '../data/vario_color_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
@@ -50,15 +48,10 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
   late final List<ControlSetting> _schema = settingsSchemaFor(
     widget.control.type.id,
   );
-  Future<List<CompetitionTaskServerEntry>>? _mapServerTasks;
-
   @override
   void initState() {
     super.initState();
     final control = widget.control;
-    if (control.type.id == 'map') {
-      _mapServerTasks = _loadMapServerTasks();
-    }
     if (control.type.id != 'map' ||
         !control.settings.containsKey('showLandingPoints')) {
       return;
@@ -77,29 +70,8 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
     );
   }
 
-  Future<List<CompetitionTaskServerEntry>> _loadMapServerTasks() async {
-    final account = ParaBeaconAccountService.instance;
-    await account.load();
-    if (!account.isSignedIn) throw StateError('ParaBeacon sign-in required');
-    return CompetitionTaskServerService.instance.listTasks();
-  }
-
-  void _reloadMapServerTasks() {
-    setState(() => _mapServerTasks = _loadMapServerTasks());
-  }
-
   void _set(String key, dynamic value) {
     setState(() => widget.control.settings[key] = value);
-    widget.onChanged();
-  }
-
-  void _setMapTaskSource(String sourceId) {
-    setState(() {
-      widget.control.settings['competitionTaskSource'] = sourceId;
-      if (sourceId == 'local') {
-        widget.control.settings['filterOtherPilotsByTask'] = false;
-      }
-    });
     widget.onChanged();
   }
 
@@ -166,7 +138,7 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount:
-                      visibleSchema.length + (control.type.id == 'map' ? 2 : 0),
+                      visibleSchema.length + (control.type.id == 'map' ? 1 : 0),
                   separatorBuilder: (context, index) =>
                       const Divider(height: 1),
                   itemBuilder: (context, index) {
@@ -177,31 +149,12 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
                         visibleSchema[index],
                       );
                     }
-                    if (index == visibleSchema.length) {
-                      final key = 'competitionTaskSource';
-                      final selectedId = control.setting(key);
-                      return _MapServerTaskSettingTile(
-                        title: l10n.competitionMapTaskSource,
-                        selectedId: selectedId is String ? selectedId : 'local',
-                        tasks: _mapServerTasks!,
-                        onRetry: _reloadMapServerTasks,
-                        onSelected: _setMapTaskSource,
-                      );
-                    }
                     const key = 'filterOtherPilotsByTask';
-                    final taskSource = control.setting('competitionTaskSource');
-                    final canFilter =
-                        taskSource is String &&
-                        taskSource != 'local' &&
-                        RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(taskSource);
                     return SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
                       title: Text(l10n.competitionMapTaskFilter),
-                      subtitle: canFilter
-                          ? null
-                          : Text(l10n.competitionMapFilterNeedsServerTask),
                       value: control.boolSetting(key, fallback: false),
-                      onChanged: canFilter ? (value) => _set(key, value) : null,
+                      onChanged: (value) => _set(key, value),
                     );
                   },
                 ),
@@ -387,199 +340,6 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
           colorIndex: index,
         );
     }
-  }
-}
-
-class _MapServerTaskSettingTile extends StatefulWidget {
-  const _MapServerTaskSettingTile({
-    required this.title,
-    required this.selectedId,
-    required this.tasks,
-    required this.onRetry,
-    required this.onSelected,
-  });
-
-  final String title;
-  final String selectedId;
-  final Future<List<CompetitionTaskServerEntry>> tasks;
-  final VoidCallback onRetry;
-  final ValueChanged<String> onSelected;
-
-  @override
-  State<_MapServerTaskSettingTile> createState() =>
-      _MapServerTaskSettingTileState();
-}
-
-class _MapServerTaskSettingTileState extends State<_MapServerTaskSettingTile> {
-  late Future<List<CompetitionTaskServerEntry>> _tasks;
-
-  @override
-  void initState() {
-    super.initState();
-    _tasks = widget.tasks;
-  }
-
-  @override
-  void didUpdateWidget(covariant _MapServerTaskSettingTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.tasks != widget.tasks) _tasks = widget.tasks;
-  }
-
-  Future<void> _choose() async {
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => _MapTaskChoiceSheet(
-        title: widget.title,
-        selectedId: widget.selectedId,
-        tasks: _tasks,
-      ),
-    );
-    if (selected != null) widget.onSelected(selected);
-  }
-
-  String _selectedLabel(
-    AppLocalizations l10n,
-    List<CompetitionTaskServerEntry>? tasks,
-  ) {
-    if (widget.selectedId == 'local') {
-      return l10n.competitionMapLocalTask;
-    }
-    for (final entry in tasks ?? const <CompetitionTaskServerEntry>[]) {
-      if (entry.ownerId != widget.selectedId) continue;
-      final name = entry.task.name.trim().isEmpty
-          ? l10n.competitionUnnamedTask
-          : entry.task.name;
-      final owner = entry.displayName.trim().isEmpty
-          ? '@${entry.username}'
-          : '${entry.displayName} · @${entry.username}';
-      return '$name · $owner';
-    }
-    return l10n.competitionMapTaskLoadFailed;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return FutureBuilder<List<CompetitionTaskServerEntry>>(
-      future: _tasks,
-      builder: (context, snapshot) => ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(widget.title),
-        subtitle: Text(
-          _selectedLabel(l10n, snapshot.data),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: snapshot.connectionState == ConnectionState.waiting
-            ? const SizedBox.square(
-                dimension: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : IconButton(
-                tooltip: snapshot.hasError ? l10n.refresh : l10n.edit,
-                onPressed: snapshot.hasError ? widget.onRetry : _choose,
-                icon: Icon(
-                  snapshot.hasError
-                      ? Icons.refresh
-                      : Icons.arrow_drop_down_circle_outlined,
-                ),
-              ),
-        onTap: snapshot.connectionState == ConnectionState.waiting
-            ? null
-            : _choose,
-      ),
-    );
-  }
-}
-
-class _MapTaskChoiceSheet extends StatelessWidget {
-  const _MapTaskChoiceSheet({
-    required this.title,
-    required this.selectedId,
-    required this.tasks,
-  });
-
-  final String title;
-  final String selectedId;
-  final Future<List<CompetitionTaskServerEntry>> tasks;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return SafeArea(
-      child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.7,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: FutureBuilder<List<CompetitionTaskServerEntry>>(
-                future: tasks,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          l10n.competitionMapSignInToLoad,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    );
-                  }
-                  final entries = snapshot.data ?? const [];
-                  return ListView(
-                    children: [
-                      ListTile(
-                        leading: const Icon(Icons.flag_outlined),
-                        title: Text(l10n.competitionMapLocalTask),
-                        trailing: selectedId == 'local'
-                            ? const Icon(Icons.check)
-                            : null,
-                        onTap: () => Navigator.of(context).pop('local'),
-                      ),
-                      for (final entry in entries)
-                        ListTile(
-                          leading: const Icon(Icons.cloud_outlined),
-                          title: Text(
-                            entry.task.name.trim().isEmpty
-                                ? l10n.competitionUnnamedTask
-                                : entry.task.name,
-                          ),
-                          subtitle: Text(
-                            entry.displayName.trim().isEmpty
-                                ? '@${entry.username}'
-                                : '${entry.displayName} · @${entry.username}',
-                          ),
-                          trailing: selectedId == entry.ownerId
-                              ? const Icon(Icons.check)
-                              : null,
-                          onTap: () => Navigator.of(context).pop(entry.ownerId),
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

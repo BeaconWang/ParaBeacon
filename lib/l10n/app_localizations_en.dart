@@ -2608,20 +2608,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionServerTaskUnselected => 'Current task unselected.';
 
   @override
+  String get competitionServerDeleteOwnTask => 'Delete my server task';
+
+  @override
+  String get competitionServerDeleteTaskConfirm =>
+      'Delete your shared task from the server? Pilots using it will no longer be matched to that task.';
+
+  @override
+  String get competitionServerTaskDeleted => 'Your server task was deleted.';
+
+  @override
   String get competitionServerUnselectCurrentTask => 'Unselect current task';
 
   @override
   String get competitionServerCurrentTask => 'Current task';
 
   @override
-  String get competitionMapTaskSource => 'Competition task';
-
-  @override
-  String get competitionMapTaskFilter => 'Filter pilots flying this task';
-
-  @override
-  String get competitionMapFilterNeedsServerTask =>
-      'Select a server task to enable this filter.';
+  String get competitionMapTaskFilter =>
+      'Filter pilots by current competition task';
 
   @override
   String get competitionMapLocalTask => 'Local task';

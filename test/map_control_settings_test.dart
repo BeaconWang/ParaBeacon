@@ -96,8 +96,8 @@ void main() {
     expect(setting.defaultValue, isTrue);
     expect(map.boolSetting('showPublicPilots'), isTrue);
     expect(restoredMap.boolSetting('showPublicPilots'), isTrue);
-    expect(map.setting('competitionTaskSource'), 'local');
-    expect(restoredMap.setting('competitionTaskSource'), 'local');
+    expect(map.settings.containsKey('competitionTaskSource'), isFalse);
+    expect(restoredMap.settings.containsKey('competitionTaskSource'), isFalse);
     expect(map.boolSetting('filterOtherPilotsByTask'), isFalse);
     expect(restoredMap.boolSetting('filterOtherPilotsByTask'), isFalse);
     expect(setting.labelOf(english), 'Show public pilot locations');
@@ -271,9 +271,6 @@ void main() {
   ) async {
     final mapType = ControlCatalog.byId('map')!;
     final control = PlacedControl.fromType(mapType, instanceId: 'map-test');
-    control.settings['competitionTaskSource'] =
-        '11111111-1111-4111-8111-111111111111';
-
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -374,13 +371,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Nearest landing line color'), findsOneWidget);
 
-    await reveal('Filter pilots flying this task');
+    expect(find.text('Competition task'), findsNothing);
+    await reveal('Filter pilots by current competition task');
     final taskFilterTile = find.ancestor(
-      of: find.text('Filter pilots flying this task'),
+      of: find.text('Filter pilots by current competition task'),
       matching: find.byType(SwitchListTile),
     );
     expect(tester.widget<SwitchListTile>(taskFilterTile).value, isFalse);
-    await tester.tap(find.text('Filter pilots flying this task'));
+    await tester.tap(find.text('Filter pilots by current competition task'));
     await tester.pump();
     expect(control.boolSetting('filterOtherPilotsByTask'), isTrue);
   });
@@ -398,26 +396,27 @@ void main() {
     expect(mapType.id, control.type.id);
   });
 
-  test('legacy task filter migrates to the current-task toggle', () {
+  test('legacy task filter migrates without a per-map task source', () {
     final selectedTask = PlacedControl.fromJson({
       'typeId': 'map',
       'settings': {
         'otherPilotTaskFilter': '11111111-1111-4111-8111-111111111111',
+        'competitionTaskSource': '22222222-2222-4222-8222-222222222222',
       },
     })!;
     final allPilots = PlacedControl.fromJson({
       'typeId': 'map',
-      'settings': {'otherPilotTaskFilter': 'all'},
+      'settings': {
+        'otherPilotTaskFilter': 'all',
+        'competitionTaskSource': 'local',
+      },
     })!;
 
     expect(selectedTask.boolSetting('filterOtherPilotsByTask'), isTrue);
-    expect(
-      selectedTask.setting('competitionTaskSource'),
-      '11111111-1111-4111-8111-111111111111',
-    );
     expect(selectedTask.settings.containsKey('otherPilotTaskFilter'), isFalse);
+    expect(selectedTask.settings.containsKey('competitionTaskSource'), isFalse);
     expect(allPilots.boolSetting('filterOtherPilotsByTask'), isFalse);
-    expect(allPilots.setting('competitionTaskSource'), 'local');
+    expect(allPilots.settings.containsKey('competitionTaskSource'), isFalse);
   });
 
   test(

@@ -2478,19 +2478,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionServerTaskUnselected => '已取消当前航线。';
 
   @override
+  String get competitionServerDeleteOwnTask => '删除我的服务器航线';
+
+  @override
+  String get competitionServerDeleteTaskConfirm =>
+      '要从服务器删除你分享的航线吗？使用该航线的飞行员将不再匹配到此航线。';
+
+  @override
+  String get competitionServerTaskDeleted => '已删除服务器航线。';
+
+  @override
   String get competitionServerUnselectCurrentTask => '取消当前航线';
 
   @override
   String get competitionServerCurrentTask => '当前航线';
 
   @override
-  String get competitionMapTaskSource => '竞赛航线';
-
-  @override
-  String get competitionMapTaskFilter => '按此航线筛选飞行员';
-
-  @override
-  String get competitionMapFilterNeedsServerTask => '请先选择服务器航线以启用此筛选。';
+  String get competitionMapTaskFilter => '按当前竞赛航线筛选飞行员';
 
   @override
   String get competitionMapLocalTask => '本地航线';

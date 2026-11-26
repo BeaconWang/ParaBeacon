@@ -1,6 +1,9 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../parabeacon_account_service.dart';
 import '../parabeacon_server_config.dart';
@@ -50,6 +53,16 @@ class CompetitionTaskServerService {
   static final CompetitionTaskServerService instance =
       CompetitionTaskServerService();
   static const _requestTimeout = Duration(seconds: 30);
+  static const _suppressedAutoSyncKeyPrefix =
+      'pb.competition.serverTaskAutoSyncSuppressed.';
+  static final Map<String, String> _suppressedAutoSyncFingerprints = {};
+  static final ValueNotifier<String?> currentTaskOwnerId = ValueNotifier(null);
+  static int _currentTaskOwnerRevision = 0;
+
+  static void resetCurrentTaskOwner() {
+    _currentTaskOwnerRevision++;
+    currentTaskOwnerId.value = null;
+  }
 
   final ParaBeaconAccountService _accountService;
   final Future<Map<String, String>> Function()? authorizationHeaders;
@@ -89,6 +102,86 @@ class CompetitionTaskServerService {
         _uploadEndpoint,
       );
     }
+    final accountId = _accountService.user?.id;
+    if (accountId != null) {
+      await clearAutoSyncSuppression(accountId);
+      _currentTaskOwnerRevision++;
+      currentTaskOwnerId.value = accountId;
+    }
+  }
+
+  Future<void> suppressAutoSyncForTask(
+    String accountId,
+    CompetitionTask task,
+  ) async {
+    final fingerprint = _taskFingerprint(task);
+    _suppressedAutoSyncFingerprints[accountId] = fingerprint;
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString(
+        '$_suppressedAutoSyncKeyPrefix$accountId',
+        fingerprint,
+      );
+    } catch (_) {
+      // Keep the suppression in memory for the current process.
+    }
+  }
+
+  Future<bool> isAutoSyncSuppressed(
+    String accountId,
+    CompetitionTask task,
+  ) async {
+    final fingerprint = _taskFingerprint(task);
+    final inMemory = _suppressedAutoSyncFingerprints[accountId];
+    if (inMemory != null) {
+      if (inMemory == fingerprint) return true;
+      await clearAutoSyncSuppression(accountId);
+      return false;
+    }
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final key = '$_suppressedAutoSyncKeyPrefix$accountId';
+      final savedFingerprint = preferences.getString(key);
+      if (savedFingerprint == null) return false;
+      if (savedFingerprint == fingerprint) {
+        _suppressedAutoSyncFingerprints[accountId] = savedFingerprint;
+        return true;
+      }
+      await preferences.remove(key);
+    } catch (_) {
+      return false;
+    }
+    return false;
+  }
+
+  Future<void> clearAutoSyncSuppression(String accountId) async {
+    _suppressedAutoSyncFingerprints.remove(accountId);
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.remove('$_suppressedAutoSyncKeyPrefix$accountId');
+    } catch (_) {
+      // Keep suppression cleared in memory for the current process.
+    }
+  }
+
+  String _taskFingerprint(CompetitionTask task) =>
+      sha256.convert(utf8.encode(task.toXctskString())).toString();
+
+  Future<void> deleteOwnTask() async {
+    final response = await _client
+        .delete(_uploadEndpoint, headers: await _headers())
+        .timeout(_requestTimeout);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw http.ClientException(
+        'ParaBeacon Server returned HTTP ${response.statusCode}.',
+        _uploadEndpoint,
+      );
+    }
+    final accountId = _accountService.user?.id;
+    _currentTaskOwnerRevision++;
+    if (accountId != null && currentTaskOwnerId.value == accountId) {
+      currentTaskOwnerId.value = null;
+    }
   }
 
   Future<void> setCurrentTask(String? taskOwnerId) async {
@@ -106,13 +199,38 @@ class CompetitionTaskServerService {
           body: jsonEncode({'task_owner_id': normalizedOwnerId}),
         )
         .timeout(_requestTimeout);
-    _decodeResponse(response, _selectionEndpoint);
+    final payload = _decodeResponse(response, _selectionEndpoint);
+    if (payload['current_task_owner_id'] != normalizedOwnerId) {
+      throw const FormatException('Invalid current competition task response.');
+    }
+    _currentTaskOwnerRevision++;
+    currentTaskOwnerId.value = normalizedOwnerId;
+  }
+
+  Future<String?> refreshCurrentTaskOwner() async {
+    final revision = _currentTaskOwnerRevision;
+    final response = await _client
+        .get(_selectionEndpoint, headers: await _headers())
+        .timeout(_requestTimeout);
+    final payload = _decodeResponse(response, _selectionEndpoint);
+    final ownerId = payload['current_task_owner_id'];
+    if (ownerId != null &&
+        (ownerId is! String ||
+            !RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(ownerId))) {
+      throw const FormatException('Invalid current competition task response.');
+    }
+    final normalizedOwnerId = ownerId?.toLowerCase();
+    if (revision == _currentTaskOwnerRevision) {
+      currentTaskOwnerId.value = normalizedOwnerId;
+    }
+    return normalizedOwnerId;
   }
 
   Future<List<CompetitionTaskServerEntry>> listTasks() async =>
       (await listTasksWithSelection()).tasks;
 
   Future<CompetitionTaskServerList> listTasksWithSelection() async {
+    final revision = _currentTaskOwnerRevision;
     final response = await _client
         .get(_listEndpoint, headers: await _headers())
         .timeout(_requestTimeout);
@@ -160,9 +278,13 @@ class CompetitionTaskServerService {
         ),
       );
     }
+    final currentOwnerId = rawCurrentOwnerId?.toLowerCase();
+    if (revision == _currentTaskOwnerRevision) {
+      currentTaskOwnerId.value = currentOwnerId;
+    }
     return CompetitionTaskServerList(
       tasks: List.unmodifiable(entries),
-      currentTaskOwnerId: rawCurrentOwnerId?.toLowerCase(),
+      currentTaskOwnerId: currentOwnerId,
     );
   }
 

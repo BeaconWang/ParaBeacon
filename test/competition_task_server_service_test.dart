@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:parabeacon/data/competition/competition_task.dart';
 import 'package:parabeacon/data/competition/competition_task_server_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   final task = CompetitionTask(
@@ -119,6 +120,72 @@ void main() {
       ]);
     },
   );
+
+  test('deletes the authenticated account task', () async {
+    final client = MockClient((request) async {
+      expect(request.method, 'DELETE');
+      expect(request.url.path, '/api/v1/user/competition-task');
+      expect(request.headers['Authorization'], 'Bearer account-token');
+      expect(request.body, isEmpty);
+      return http.Response('', 204);
+    });
+    final service = CompetitionTaskServerService(
+      client: client,
+      authorizationHeaders: () async => const {
+        'Authorization': 'Bearer account-token',
+      },
+      uploadEndpoint: Uri.https(
+        'test.example',
+        '/api/v1/user/competition-task',
+      ),
+    );
+
+    await service.deleteOwnTask();
+  });
+
+  test('refreshes the authenticated account current task pin', () async {
+    String? ownerId;
+    final service = CompetitionTaskServerService(
+      client: MockClient((request) async {
+        expect(request.method, 'GET');
+        expect(request.url.path, '/api/v1/user/current-competition-task');
+        return http.Response(
+          jsonEncode({'current_task_owner_id': ownerId}),
+          200,
+        );
+      }),
+      authorizationHeaders: () async => const {
+        'Authorization': 'Bearer account-token',
+      },
+      selectionEndpoint: Uri.https(
+        'test.example',
+        '/api/v1/user/current-competition-task',
+      ),
+    );
+
+    expect(await service.refreshCurrentTaskOwner(), isNull);
+    expect(CompetitionTaskServerService.currentTaskOwnerId.value, isNull);
+
+    ownerId = '11111111-1111-4111-8111-111111111111';
+    expect(await service.refreshCurrentTaskOwner(), ownerId);
+    expect(CompetitionTaskServerService.currentTaskOwnerId.value, ownerId);
+  });
+
+  test('suppresses auto-sync of a task deleted from the server', () async {
+    SharedPreferences.setMockInitialValues({});
+    const accountId = '11111111-1111-4111-8111-111111111111';
+    final service = CompetitionTaskServerService(
+      authorizationHeaders: () async => const {},
+    );
+
+    await service.suppressAutoSyncForTask(accountId, task);
+    expect(await service.isAutoSyncSuppressed(accountId, task), isTrue);
+
+    final editedTask = task.copyWith(name: 'Edited local task');
+    expect(await service.isAutoSyncSuppressed(accountId, editedTask), isFalse);
+    expect(await service.isAutoSyncSuppressed(accountId, task), isFalse);
+    await service.clearAutoSyncSuppression(accountId);
+  });
 
   test('rejects malformed task-list responses and empty uploads', () async {
     final service = CompetitionTaskServerService(

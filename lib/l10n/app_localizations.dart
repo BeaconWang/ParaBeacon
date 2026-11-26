@@ -4880,6 +4880,24 @@ abstract class AppLocalizations {
   /// **'Current task unselected.'**
   String get competitionServerTaskUnselected;
 
+  /// No description provided for @competitionServerDeleteOwnTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete my server task'**
+  String get competitionServerDeleteOwnTask;
+
+  /// No description provided for @competitionServerDeleteTaskConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your shared task from the server? Pilots using it will no longer be matched to that task.'**
+  String get competitionServerDeleteTaskConfirm;
+
+  /// No description provided for @competitionServerTaskDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your server task was deleted.'**
+  String get competitionServerTaskDeleted;
+
   /// No description provided for @competitionServerUnselectCurrentTask.
   ///
   /// In en, this message translates to:
@@ -4892,23 +4910,11 @@ abstract class AppLocalizations {
   /// **'Current task'**
   String get competitionServerCurrentTask;
 
-  /// No description provided for @competitionMapTaskSource.
-  ///
-  /// In en, this message translates to:
-  /// **'Competition task'**
-  String get competitionMapTaskSource;
-
   /// No description provided for @competitionMapTaskFilter.
   ///
   /// In en, this message translates to:
-  /// **'Filter pilots flying this task'**
+  /// **'Filter pilots by current competition task'**
   String get competitionMapTaskFilter;
-
-  /// No description provided for @competitionMapFilterNeedsServerTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a server task to enable this filter.'**
-  String get competitionMapFilterNeedsServerTask;
 
   /// No description provided for @competitionMapLocalTask.
   ///

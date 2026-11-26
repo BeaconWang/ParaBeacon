@@ -1531,7 +1531,6 @@ Map<String, dynamic> defaultSettingsFor(String typeId) {
     map[setting.key] = setting.defaultValue;
   }
   if (typeId == 'map') {
-    map.putIfAbsent('competitionTaskSource', () => 'local');
     map.putIfAbsent('filterOtherPilotsByTask', () => false);
   }
   return map;

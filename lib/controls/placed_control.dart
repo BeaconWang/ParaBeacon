@@ -150,6 +150,17 @@ class PlacedControl {
         settings['format'] = 'cardinal';
       }
       if (typeId == 'map') {
+        final legacyTaskFilter = saved['otherPilotTaskFilter'];
+        if (legacyTaskFilter is String) {
+          if (!saved.containsKey('filterOtherPilotsByTask')) {
+            settings['filterOtherPilotsByTask'] = legacyTaskFilter != 'all';
+          }
+          if (legacyTaskFilter != 'all' &&
+              !saved.containsKey('competitionTaskSource')) {
+            settings['competitionTaskSource'] = legacyTaskFilter;
+          }
+          settings.remove('otherPilotTaskFilter');
+        }
         const legacySettingKeys = {
           'showLastLandingLine': 'showNearestLandingLine',
           'lastLandingPointColor': 'nearestLandingPointColor',

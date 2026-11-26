@@ -2477,7 +2477,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionMapTaskSource => '竞赛航线';
 
   @override
-  String get competitionMapTaskFilter => '其他飞行员竞赛航线筛选';
+  String get competitionMapTaskFilter => '按当前竞赛航线筛选';
+
+  @override
+  String get competitionMapFilterNeedsServerTask => '请先选择服务器航线以启用此筛选。';
 
   @override
   String get competitionMapLocalTask => '本地航线';

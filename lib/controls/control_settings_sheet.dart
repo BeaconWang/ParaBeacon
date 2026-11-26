@@ -93,6 +93,16 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
     widget.onChanged();
   }
 
+  void _setMapTaskSource(String sourceId) {
+    setState(() {
+      widget.control.settings['competitionTaskSource'] = sourceId;
+      if (sourceId == 'local') {
+        widget.control.settings['filterOtherPilotsByTask'] = false;
+      }
+    });
+    widget.onChanged();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -167,22 +177,31 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
                         visibleSchema[index],
                       );
                     }
-                    final isFilter = index == visibleSchema.length + 1;
-                    final key = isFilter
-                        ? 'otherPilotTaskFilter'
-                        : 'competitionTaskSource';
-                    final fallback = isFilter ? 'all' : 'local';
-                    return _MapServerTaskSettingTile(
-                      title: isFilter
-                          ? l10n.competitionMapTaskFilter
-                          : l10n.competitionMapTaskSource,
-                      selectedId: control.setting(key) is String
-                          ? control.setting(key) as String
-                          : fallback,
-                      isFilter: isFilter,
-                      tasks: _mapServerTasks!,
-                      onRetry: _reloadMapServerTasks,
-                      onSelected: (value) => _set(key, value),
+                    if (index == visibleSchema.length) {
+                      final key = 'competitionTaskSource';
+                      final selectedId = control.setting(key);
+                      return _MapServerTaskSettingTile(
+                        title: l10n.competitionMapTaskSource,
+                        selectedId: selectedId is String ? selectedId : 'local',
+                        tasks: _mapServerTasks!,
+                        onRetry: _reloadMapServerTasks,
+                        onSelected: _setMapTaskSource,
+                      );
+                    }
+                    const key = 'filterOtherPilotsByTask';
+                    final taskSource = control.setting('competitionTaskSource');
+                    final canFilter =
+                        taskSource is String &&
+                        taskSource != 'local' &&
+                        RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(taskSource);
+                    return SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.competitionMapTaskFilter),
+                      subtitle: canFilter
+                          ? null
+                          : Text(l10n.competitionMapFilterNeedsServerTask),
+                      value: control.boolSetting(key, fallback: false),
+                      onChanged: canFilter ? (value) => _set(key, value) : null,
                     );
                   },
                 ),
@@ -375,7 +394,6 @@ class _MapServerTaskSettingTile extends StatefulWidget {
   const _MapServerTaskSettingTile({
     required this.title,
     required this.selectedId,
-    required this.isFilter,
     required this.tasks,
     required this.onRetry,
     required this.onSelected,
@@ -383,7 +401,6 @@ class _MapServerTaskSettingTile extends StatefulWidget {
 
   final String title;
   final String selectedId;
-  final bool isFilter;
   final Future<List<CompetitionTaskServerEntry>> tasks;
   final VoidCallback onRetry;
   final ValueChanged<String> onSelected;
@@ -402,6 +419,12 @@ class _MapServerTaskSettingTileState extends State<_MapServerTaskSettingTile> {
     _tasks = widget.tasks;
   }
 
+  @override
+  void didUpdateWidget(covariant _MapServerTaskSettingTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tasks != widget.tasks) _tasks = widget.tasks;
+  }
+
   Future<void> _choose() async {
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -409,7 +432,6 @@ class _MapServerTaskSettingTileState extends State<_MapServerTaskSettingTile> {
       useSafeArea: true,
       builder: (context) => _MapTaskChoiceSheet(
         title: widget.title,
-        isFilter: widget.isFilter,
         selectedId: widget.selectedId,
         tasks: _tasks,
       ),
@@ -421,10 +443,7 @@ class _MapServerTaskSettingTileState extends State<_MapServerTaskSettingTile> {
     AppLocalizations l10n,
     List<CompetitionTaskServerEntry>? tasks,
   ) {
-    if (widget.isFilter && widget.selectedId == 'all') {
-      return l10n.competitionMapAllPilots;
-    }
-    if (!widget.isFilter && widget.selectedId == 'local') {
+    if (widget.selectedId == 'local') {
       return l10n.competitionMapLocalTask;
     }
     for (final entry in tasks ?? const <CompetitionTaskServerEntry>[]) {
@@ -478,13 +497,11 @@ class _MapServerTaskSettingTileState extends State<_MapServerTaskSettingTile> {
 class _MapTaskChoiceSheet extends StatelessWidget {
   const _MapTaskChoiceSheet({
     required this.title,
-    required this.isFilter,
     required this.selectedId,
     required this.tasks,
   });
 
   final String title;
-  final bool isFilter;
   final String selectedId;
   final Future<List<CompetitionTaskServerEntry>> tasks;
 
@@ -528,24 +545,14 @@ class _MapTaskChoiceSheet extends StatelessWidget {
                   final entries = snapshot.data ?? const [];
                   return ListView(
                     children: [
-                      if (isFilter)
-                        ListTile(
-                          leading: const Icon(Icons.groups_outlined),
-                          title: Text(l10n.competitionMapAllPilots),
-                          trailing: selectedId == 'all'
-                              ? const Icon(Icons.check)
-                              : null,
-                          onTap: () => Navigator.of(context).pop('all'),
-                        )
-                      else
-                        ListTile(
-                          leading: const Icon(Icons.flag_outlined),
-                          title: Text(l10n.competitionMapLocalTask),
-                          trailing: selectedId == 'local'
-                              ? const Icon(Icons.check)
-                              : null,
-                          onTap: () => Navigator.of(context).pop('local'),
-                        ),
+                      ListTile(
+                        leading: const Icon(Icons.flag_outlined),
+                        title: Text(l10n.competitionMapLocalTask),
+                        trailing: selectedId == 'local'
+                            ? const Icon(Icons.check)
+                            : null,
+                        onTap: () => Navigator.of(context).pop('local'),
+                      ),
                       for (final entry in entries)
                         ListTile(
                           leading: const Icon(Icons.cloud_outlined),

@@ -1542,7 +1542,7 @@ Map<String, dynamic> defaultSettingsFor(String typeId) {
   }
   if (typeId == 'map') {
     map.putIfAbsent('competitionTaskSource', () => 'local');
-    map.putIfAbsent('otherPilotTaskFilter', () => 'all');
+    map.putIfAbsent('filterOtherPilotsByTask', () => false);
   }
   return map;
 }

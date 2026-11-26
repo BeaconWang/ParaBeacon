@@ -4883,8 +4883,14 @@ abstract class AppLocalizations {
   /// No description provided for @competitionMapTaskFilter.
   ///
   /// In en, this message translates to:
-  /// **'Other pilots competition-task filter'**
+  /// **'Filter by current competition task'**
   String get competitionMapTaskFilter;
+
+  /// No description provided for @competitionMapFilterNeedsServerTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a server task to enable this filter.'**
+  String get competitionMapFilterNeedsServerTask;
 
   /// No description provided for @competitionMapLocalTask.
   ///

@@ -2608,7 +2608,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionMapTaskSource => 'Competition task';
 
   @override
-  String get competitionMapTaskFilter => 'Other pilots competition-task filter';
+  String get competitionMapTaskFilter => 'Filter by current competition task';
+
+  @override
+  String get competitionMapFilterNeedsServerTask =>
+      'Select a server task to enable this filter.';
 
   @override
   String get competitionMapLocalTask => 'Local task';

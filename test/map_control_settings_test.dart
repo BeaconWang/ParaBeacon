@@ -79,8 +79,8 @@ void main() {
     expect(restoredMap.boolSetting('showPublicPilots'), isTrue);
     expect(map.setting('competitionTaskSource'), 'local');
     expect(restoredMap.setting('competitionTaskSource'), 'local');
-    expect(map.setting('otherPilotTaskFilter'), 'all');
-    expect(restoredMap.setting('otherPilotTaskFilter'), 'all');
+    expect(map.boolSetting('filterOtherPilotsByTask'), isFalse);
+    expect(restoredMap.boolSetting('filterOtherPilotsByTask'), isFalse);
     expect(setting.labelOf(english), 'Show public pilot locations');
     expect(setting.labelOf(chinese), '显示公开飞行员实时位置');
     for (final key in [
@@ -252,6 +252,8 @@ void main() {
   ) async {
     final mapType = ControlCatalog.byId('map')!;
     final control = PlacedControl.fromType(mapType, instanceId: 'map-test');
+    control.settings['competitionTaskSource'] =
+        '11111111-1111-4111-8111-111111111111';
 
     await tester.pumpWidget(
       MaterialApp(
@@ -340,6 +342,16 @@ void main() {
     await tester.tap(find.text('Show line to nearest landing point'));
     await tester.pumpAndSettle();
     expect(find.text('Nearest landing line color'), findsOneWidget);
+
+    await reveal('Filter by current competition task');
+    final taskFilterTile = find.ancestor(
+      of: find.text('Filter by current competition task'),
+      matching: find.byType(SwitchListTile),
+    );
+    expect(tester.widget<SwitchListTile>(taskFilterTile).value, isFalse);
+    await tester.tap(find.text('Filter by current competition task'));
+    await tester.pump();
+    expect(control.boolSetting('filterOtherPilotsByTask'), isTrue);
   });
 
   test('old combined landing visibility migrates to both point switches', () {
@@ -353,6 +365,28 @@ void main() {
     expect(control.boolSetting('showDefaultLandingPoint'), isFalse);
     expect(control.boolSetting('showNearestLandingPoint'), isFalse);
     expect(mapType.id, control.type.id);
+  });
+
+  test('legacy task filter migrates to the current-task toggle', () {
+    final selectedTask = PlacedControl.fromJson({
+      'typeId': 'map',
+      'settings': {
+        'otherPilotTaskFilter': '11111111-1111-4111-8111-111111111111',
+      },
+    })!;
+    final allPilots = PlacedControl.fromJson({
+      'typeId': 'map',
+      'settings': {'otherPilotTaskFilter': 'all'},
+    })!;
+
+    expect(selectedTask.boolSetting('filterOtherPilotsByTask'), isTrue);
+    expect(
+      selectedTask.setting('competitionTaskSource'),
+      '11111111-1111-4111-8111-111111111111',
+    );
+    expect(selectedTask.settings.containsKey('otherPilotTaskFilter'), isFalse);
+    expect(allPilots.boolSetting('filterOtherPilotsByTask'), isFalse);
+    expect(allPilots.setting('competitionTaskSource'), 'local');
   });
 
   test(

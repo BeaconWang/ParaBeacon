@@ -537,10 +537,13 @@ class ControlWidget extends StatelessWidget {
               control.setting('competitionTaskSource'),
               localSentinel: 'local',
             ),
-            pilotTaskOwnerId: _serverOwnerId(
-              control.setting('otherPilotTaskFilter'),
-              localSentinel: 'all',
-            ),
+            pilotTaskOwnerId:
+                control.boolSetting('filterOtherPilotsByTask', fallback: false)
+                ? _serverOwnerId(
+                    control.setting('competitionTaskSource'),
+                    localSentinel: 'local',
+                  )
+                : null,
             showTakeoffLine: control.boolSetting(
               'showTakeoffLine',
               fallback: false,

@@ -3563,7 +3563,7 @@ abstract class AppLocalizations {
   /// No description provided for @blankInterfacePrompt.
   ///
   /// In en, this message translates to:
-  /// **'The interface is blank. Do you want to load a preset interface?'**
+  /// **'This dashboard is blank. Load all three starter pages: Default, Land, and Competition spectator?'**
   String get blankInterfacePrompt;
 
   /// No description provided for @yes.

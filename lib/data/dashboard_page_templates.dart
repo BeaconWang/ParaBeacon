@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../controls/dash_page.dart';
 import '../controls/placed_control.dart';
 import '../l10n/app_localizations.dart';
 import 'imported_page_template_data.dart';
@@ -117,6 +118,28 @@ class DashboardPageTemplates {
         )
         .toList(growable: false);
   }
+
+  static List<DashPage> createPages({
+    required AppLocalizations l10n,
+    required Size viewport,
+    required double gridSize,
+    required String Function() nextPageId,
+    required String Function() nextInstanceId,
+  }) => all
+      .map(
+        (template) => DashPage(
+          id: nextPageId(),
+          icon: template.icon,
+          title: template.titleOf(l10n),
+          controls: createControls(
+            template: template,
+            viewport: viewport,
+            gridSize: gridSize,
+            nextInstanceId: nextInstanceId,
+          ),
+        ),
+      )
+      .toList(growable: false);
 
   static List<int> _edgesFor(
     List<PlacedControl> controls,

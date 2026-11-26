@@ -4,6 +4,7 @@ import 'package:parabeacon/dashboard_menu_content.dart';
 import 'package:parabeacon/data/dashboard_page_templates.dart';
 import 'package:parabeacon/data/map_source.dart'
     show defaultMapSourceIdForLocale;
+import 'package:parabeacon/controls/dash_page.dart';
 import 'package:parabeacon/controls/placed_control.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 import 'package:parabeacon/l10n/app_localizations_en.dart';
@@ -31,6 +32,52 @@ void main() {
       DashboardPageTemplate.competitionSpectator.titleOf(l10n),
       'Competition spectator',
     );
+  });
+
+  test('creates all template pages with unique IDs and metadata', () {
+    var pageSequence = 1;
+    var controlSequence = 0;
+    final pages = DashboardPageTemplates.createPages(
+      l10n: AppLocalizationsEn(),
+      viewport: const Size(384, 832),
+      gridSize: 32,
+      nextPageId: () => 'page_${pageSequence++}',
+      nextInstanceId: () => 'ctrl_${controlSequence++}',
+    );
+
+    expect(pages, hasLength(3));
+    expect(pages.map((page) => page.id), ['page_1', 'page_2', 'page_3']);
+    expect(pages.map((page) => page.title), [
+      'Default',
+      'Land',
+      'Competition spectator',
+    ]);
+    expect(pages.map((page) => page.icon.codePoint), [
+      Icons.dashboard_outlined.codePoint,
+      Icons.flight_land.codePoint,
+      Icons.flag_outlined.codePoint,
+    ]);
+    final restoredPages = pages
+        .map((page) => DashPage.fromJson(page.toJson()))
+        .toList();
+    expect(restoredPages.map((page) => page.title), [
+      'Default',
+      'Land',
+      'Competition spectator',
+    ]);
+    expect(restoredPages.map((page) => page.icon.codePoint), [
+      Icons.dashboard_outlined.codePoint,
+      Icons.flight_land.codePoint,
+      Icons.flag_outlined.codePoint,
+    ]);
+    expect(pages.map((page) => page.controls.length), [21, 3, 1]);
+    final instanceIds = pages
+        .expand((page) => page.controls)
+        .map((control) => control.instanceId)
+        .toList();
+    expect(instanceIds.toSet(), hasLength(instanceIds.length));
+    expect('page_${pageSequence++}', 'page_4');
+    expect('ctrl_${controlSequence++}', 'ctrl_25');
   });
 
   for (final template in DashboardPageTemplates.all) {

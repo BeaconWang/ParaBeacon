@@ -1785,7 +1785,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get clearAllControlsMessage => '这将从仪表盘中移除所有控件，且无法撤销。';
 
   @override
-  String get blankInterfacePrompt => '界面为空。是否要加载预设界面？';
+  String get blankInterfacePrompt =>
+      '仪表盘为空。是否加载全部三个预设页面：Default、Land 和 Competition spectator？';
 
   @override
   String get yes => '是';

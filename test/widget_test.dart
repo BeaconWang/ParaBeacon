@@ -55,7 +55,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text(
-          'The interface is blank. Do you want to load a preset interface?',
+          'This dashboard is blank. Load all three starter pages: Default, Land, and Competition spectator?',
         ),
         findsOneWidget,
       );
@@ -78,7 +78,7 @@ void main() {
     });
   });
 
-  testWidgets('Yes loads the Default template on a blank single page', (
+  testWidgets('Yes initializes all page templates on a blank single page', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(384, 832);
@@ -91,7 +91,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text(
-          'The interface is blank. Do you want to load a preset interface?',
+          'This dashboard is blank. Load all three starter pages: Default, Land, and Competition spectator?',
         ),
         findsOneWidget,
       );
@@ -103,14 +103,72 @@ void main() {
       final saved =
           jsonDecode(preferences.getString('pb.layout.v1')!)
               as Map<String, dynamic>;
-      final pages = saved['pages'] as List<dynamic>;
-      expect(pages, hasLength(1));
-      final controls =
-          (pages.single as Map<String, dynamic>)['controls'] as List<dynamic>;
-      expect(controls, hasLength(21));
+      final pages = (saved['pages'] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
+      expect(pages, hasLength(3));
+      expect(pages.map((page) => page['id']), ['page_1', 'page_2', 'page_3']);
+      expect(pages.map((page) => page['title']), [
+        'Default',
+        'Land',
+        'Competition spectator',
+      ]);
+      expect(pages.map((page) => page['iconCodePoint']), [
+        Icons.dashboard_outlined.codePoint,
+        Icons.flight_land.codePoint,
+        Icons.flag_outlined.codePoint,
+      ]);
+      final pageControls = pages
+          .map((page) => (page['controls'] as List<dynamic>))
+          .toList();
+      expect(pageControls.map((controls) => controls.length), [21, 3, 1]);
       expect(
-        controls.map((control) => (control as Map<String, dynamic>)['typeId']),
+        pageControls.first.map(
+          (control) => (control as Map<String, dynamic>)['typeId'],
+        ),
         containsAll(['map', 'vario', 'flight_button']),
+      );
+      final allControls = pageControls.expand((controls) => controls).toList();
+      final instanceIds = allControls
+          .map((control) => (control as Map<String, dynamic>)['instanceId'])
+          .toList();
+      expect(instanceIds.toSet(), hasLength(instanceIds.length));
+    });
+  });
+
+  testWidgets('a populated single page does not prompt for templates', (
+    WidgetTester tester,
+  ) async {
+    final layout = jsonEncode({
+      'version': 1,
+      'gridSize': 32.0,
+      'currentPage': 0,
+      'pages': [
+        {
+          'id': 'page_0',
+          'controls': [
+            {
+              'instanceId': 'ctrl_0',
+              'typeId': 'vario',
+              'col': 0,
+              'row': 0,
+              'cols': 2,
+              'rows': 4,
+              'settings': <String, dynamic>{},
+            },
+          ],
+        },
+      ],
+    });
+    SharedPreferences.setMockInitialValues({'pb.layout.v1': layout});
+
+    await runWithWindowsPlatform(() async {
+      await tester.pumpWidget(const ParaBeaconApp());
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'This dashboard is blank. Load all three starter pages: Default, Land, and Competition spectator?',
+        ),
+        findsNothing,
       );
     });
   });
@@ -134,7 +192,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text(
-          'The interface is blank. Do you want to load a preset interface?',
+          'This dashboard is blank. Load all three starter pages: Default, Land, and Competition spectator?',
         ),
         findsNothing,
       );
@@ -300,7 +358,7 @@ void main() {
 
 Future<void> _declineBlankPromptIfVisible(WidgetTester tester) async {
   final prompt = find.text(
-    'The interface is blank. Do you want to load a preset interface?',
+    'This dashboard is blank. Load all three starter pages: Default, Land, and Competition spectator?',
   );
   if (prompt.evaluate().isEmpty) return;
   await tester.tap(find.text('No'));

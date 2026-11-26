@@ -1900,7 +1900,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get blankInterfacePrompt =>
-      'The interface is blank. Do you want to load a preset interface?';
+      'This dashboard is blank. Load all three starter pages: Default, Land, and Competition spectator?';
 
   @override
   String get yes => 'Yes';

@@ -204,12 +204,7 @@ class _DashGridPageState extends State<DashGridPage> {
       );
       if (!mounted) return;
       if (loadDefault == true) {
-        await _applyPageTemplate(DashboardPageTemplate.defaultLayout);
-        await LayoutStore.instance.flush(
-          pages: _pages,
-          gridSize: _gridSize,
-          currentPage: _currentPage,
-        );
+        await _initializePageTemplates();
         return;
       }
     }
@@ -1502,6 +1497,43 @@ class _DashGridPageState extends State<DashGridPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _initializePageTemplates() async {
+    final l10n = AppLocalizations.of(context);
+    final pages = DashboardPageTemplates.createPages(
+      l10n: l10n,
+      viewport: MediaQuery.of(context).size,
+      gridSize: _gridSize,
+      nextPageId: () => 'page_${_pageSeq++}',
+      nextInstanceId: () => 'ctrl_${_controlSeq++}',
+    );
+    _pageIndicatorHideTimer?.cancel();
+    setState(() {
+      _pages
+        ..clear()
+        ..addAll(pages);
+      _currentPage = 0;
+      _selectedControlId = null;
+      _activeControlId = null;
+      _controlKeys.clear();
+      _pageIndicatorVisible = false;
+      _verticalGraphPointers.clear();
+      _verticalGraphGestureControlId = null;
+      _verticalGraphTwoFingerCenter = null;
+      _verticalGraphTwoFingerRemainder = 0.0;
+      _isEditMode = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _pageController.hasClients) {
+        _pageController.jumpToPage(0);
+      }
+    });
+    await LayoutStore.instance.flush(
+      pages: _pages,
+      gridSize: _gridSize,
+      currentPage: _currentPage,
     );
   }
 

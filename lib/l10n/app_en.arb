@@ -620,7 +620,7 @@
 
   "clearAllControlsTitle": "Clear all controls?",
   "clearAllControlsMessage": "This removes every control from the dashboard. This cannot be undone.",
-  "blankInterfacePrompt": "The interface is blank. Do you want to load a preset interface?",
+  "blankInterfacePrompt": "This dashboard is blank. Load all three starter pages: Default, Land, and Competition spectator?",
   "yes": "Yes",
   "no": "No",
 

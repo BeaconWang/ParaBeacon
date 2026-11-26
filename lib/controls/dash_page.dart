@@ -71,6 +71,7 @@ const List<IconData> kPageHeaderIcons = [
   Icons.dashboard_outlined,
   Icons.home_outlined,
   Icons.flight_takeoff,
+  Icons.flight_land,
   Icons.explore_outlined,
   Icons.map_outlined,
   Icons.speed,

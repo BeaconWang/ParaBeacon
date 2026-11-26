@@ -18,14 +18,19 @@ void main() {
   ];
   const gridSizes = [16.0, 24.0, 32.0, 40.0, 48.0, 64.0, 80.0, 96.0, 120.0];
 
-  test('only the two imported page templates are available', () {
+  test('the three imported page templates are available', () {
     expect(DashboardPageTemplates.all, [
       DashboardPageTemplate.defaultLayout,
       DashboardPageTemplate.land,
+      DashboardPageTemplate.competitionSpectator,
     ]);
     final l10n = AppLocalizationsEn();
     expect(DashboardPageTemplate.defaultLayout.titleOf(l10n), 'Default');
     expect(DashboardPageTemplate.land.titleOf(l10n), 'Land');
+    expect(
+      DashboardPageTemplate.competitionSpectator.titleOf(l10n),
+      'Competition spectator',
+    );
   });
 
   for (final template in DashboardPageTemplates.all) {
@@ -80,11 +85,17 @@ void main() {
       DashboardPageTemplate.defaultLayout,
     );
     final landingControls = _createControls(DashboardPageTemplate.land);
+    final spectatorControls = _createControls(
+      DashboardPageTemplate.competitionSpectator,
+    );
     final defaultByType = {
       for (final control in defaultControls) control.type.id: control,
     };
     final landingByType = {
       for (final control in landingControls) control.type.id: control,
+    };
+    final spectatorByType = {
+      for (final control in spectatorControls) control.type.id: control,
     };
 
     expect(defaultControls, hasLength(21));
@@ -114,11 +125,22 @@ void main() {
     );
     expect(landingByType['default_landing_waypoint']!.row, 0);
     expect(landingByType['nearest_landing_waypoint']!.row, 8);
-    expect(landingByType['map']!.row, 15);
-    expect(landingByType['map']!.rows, 11);
+    expect(landingByType['map']!.row, 16);
+    expect(landingByType['map']!.rows, 10);
     expect(landingByType['map']!.settings['tracklogMinutes'], 30.0);
     expect(landingByType['map']!.settings['showBearing'], isTrue);
     expect(landingByType['map']!.settings['showTakeoffLine'], isTrue);
+
+    expect(spectatorControls, hasLength(1));
+    expect(spectatorByType.keys, ['map']);
+    expect(spectatorByType['map']!.col, 0);
+    expect(spectatorByType['map']!.row, 0);
+    expect(spectatorByType['map']!.cols, 12);
+    expect(spectatorByType['map']!.rows, 26);
+    expect(spectatorByType['map']!.settings['showNorth'], isTrue);
+    expect(spectatorByType['map']!.settings['showTask'], isTrue);
+    expect(spectatorByType['map']!.settings['showTrack'], isFalse);
+    expect(spectatorByType['map']!.settings['mapVarioLiftDecimals'], '0-6');
   });
 
   testWidgets('edit menu offers and applies each imported page template', (
@@ -157,11 +179,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Default'), findsOneWidget);
     expect(find.text('Land'), findsOneWidget);
+    expect(find.text('Competition spectator'), findsOneWidget);
     expect(find.text(l10n.defaultDashboardNavigation), findsNothing);
-    await tester.tap(find.text('Land'));
+    await tester.tap(find.text('Competition spectator'));
     await tester.pumpAndSettle();
 
-    expect(selectedTemplate, DashboardPageTemplate.land);
+    expect(selectedTemplate, DashboardPageTemplate.competitionSpectator);
   });
 }
 

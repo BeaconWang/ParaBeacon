@@ -7,23 +7,27 @@ import '../l10n/app_localizations.dart';
 import 'imported_page_template_data.dart';
 import 'map_source.dart' show defaultMapSourceIdForLocale;
 
-enum DashboardPageTemplate { defaultLayout, land }
+enum DashboardPageTemplate { defaultLayout, land, competitionSpectator }
 
 extension DashboardPageTemplateDetails on DashboardPageTemplate {
   IconData get icon => switch (this) {
     DashboardPageTemplate.defaultLayout => Icons.dashboard_outlined,
     DashboardPageTemplate.land => Icons.flight_land,
+    DashboardPageTemplate.competitionSpectator => Icons.flag_outlined,
   };
 
   String titleOf(AppLocalizations _) => switch (this) {
     DashboardPageTemplate.defaultLayout => 'Default',
     DashboardPageTemplate.land => 'Land',
+    DashboardPageTemplate.competitionSpectator => 'Competition spectator',
   };
 
   String descriptionOf(AppLocalizations l10n) => switch (this) {
     DashboardPageTemplate.defaultLayout =>
       l10n.dashboardTemplateFlightDescription,
     DashboardPageTemplate.land => l10n.dashboardTemplateLandingDescription,
+    DashboardPageTemplate.competitionSpectator =>
+      'Competition map and task view',
   };
 }
 
@@ -45,6 +49,7 @@ class DashboardPageTemplates {
       switch (template) {
         DashboardPageTemplate.defaultLayout => 0,
         DashboardPageTemplate.land => 1,
+        DashboardPageTemplate.competitionSpectator => 2,
       };
 
   static List<PlacedControl> _loadSourceControls(String json, int pageIndex) {
@@ -161,6 +166,7 @@ class DashboardPageTemplates {
         'default_landing_waypoint',
         'nearest_landing_waypoint',
       ],
+      DashboardPageTemplate.competitionSpectator => const ['map'],
     };
     final controlsByType = {
       for (final control in sourceControls) control.type.id: control,

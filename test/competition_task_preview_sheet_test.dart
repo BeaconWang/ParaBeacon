@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/competition_task_preview_sheet.dart';
 import 'package:parabeacon/data/competition/competition_task.dart';
@@ -43,8 +44,11 @@ Widget _previewHost(ValueChanged<bool?> onResult) => MaterialApp(
               context: context,
               isScrollControlled: true,
               useSafeArea: true,
-              builder: (_) =>
-                  CompetitionTaskPreviewSheet(task: _task, l10n: l10n),
+              builder: (_) => CompetitionTaskPreviewSheet(
+                task: _task,
+                l10n: l10n,
+                mapSourceId: 'none',
+              ),
             ),
           );
         },
@@ -58,6 +62,10 @@ void main() {
   testWidgets('previews route details and applies only after confirmation', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1000, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     bool? result;
     await tester.pumpWidget(_previewHost((value) => result = value));
     await tester.tap(find.text('Open preview'));
@@ -69,6 +77,19 @@ void main() {
     expect(find.text('Goal'), findsNWidgets(2));
     expect(find.textContaining('Race to goal'), findsOneWidget);
     expect(find.textContaining('Goal type: Line'), findsOneWidget);
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(
+      tester.widget<CircleLayer>(find.byType(CircleLayer)).circles,
+      hasLength(2),
+    );
+    expect(
+      tester.widget<PolylineLayer>(find.byType(PolylineLayer)).polylines,
+      hasLength(1),
+    );
+    expect(
+      tester.widget<MarkerLayer>(find.byType(MarkerLayer)).markers,
+      hasLength(2),
+    );
     expect(result, isNull);
 
     await tester.tap(find.text('Use this task'));

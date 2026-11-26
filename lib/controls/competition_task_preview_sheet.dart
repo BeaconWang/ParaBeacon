@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../data/competition/competition_task.dart';
+import '../data/gcj02.dart';
+import '../data/map_tile_cache.dart';
+import '../data/map_view_source_settings.dart';
 import '../l10n/app_localizations.dart';
+import 'map_control.dart' show MapTileSource, MapTileSources;
 
 class CompetitionTaskPreviewSheet extends StatelessWidget {
   const CompetitionTaskPreviewSheet({
     required this.task,
     required this.l10n,
+    this.mapSourceId,
     super.key,
   });
 
   final CompetitionTask task;
   final AppLocalizations l10n;
+  final String? mapSourceId;
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +80,11 @@ class CompetitionTaskPreviewSheet extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    _TaskRouteMapPreview(
+                      task: task,
+                      initialSourceId: mapSourceId,
+                    ),
+                    const SizedBox(height: 12),
                     for (var index = 0; index < task.turnpoints.length; index++)
                       _TurnpointPreviewCard(
                         index: index,
@@ -118,6 +131,209 @@ class CompetitionTaskPreviewSheet extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskRouteMapPreview extends StatefulWidget {
+  const _TaskRouteMapPreview({required this.task, this.initialSourceId});
+
+  final CompetitionTask task;
+  final String? initialSourceId;
+
+  @override
+  State<_TaskRouteMapPreview> createState() => _TaskRouteMapPreviewState();
+}
+
+class _TaskRouteMapPreviewState extends State<_TaskRouteMapPreview> {
+  final MapController _controller = MapController();
+  late String _sourceId;
+
+  @override
+  void initState() {
+    super.initState();
+    _sourceId =
+        widget.initialSourceId ?? MapViewSourceSettings.instance.pickerSourceId;
+    if (widget.initialSourceId == null) _restoreSourceSelection();
+  }
+
+  Future<void> _restoreSourceSelection() async {
+    await MapViewSourceSettings.instance.load();
+    if (mounted) {
+      setState(() => _sourceId = MapViewSourceSettings.instance.pickerSourceId);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  LatLng _displayPoint(Turnpoint turnpoint, MapTileSource source) {
+    final point = LatLng(turnpoint.latitude, turnpoint.longitude);
+    if (!source.requiresGcjShift) return point;
+    final shifted = Gcj02.wgsToGcj(point.latitude, point.longitude);
+    return LatLng(shifted[0], shifted[1]);
+  }
+
+  void _fitTask(MapTileSource source) {
+    final points = widget.task.turnpoints
+        .map((point) => _displayPoint(point, source))
+        .toList(growable: false);
+    if (points.isEmpty) return;
+    if (points.length == 1) {
+      _controller.move(points.single, 12);
+      return;
+    }
+    _controller.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds.fromPoints(points),
+        padding: const EdgeInsets.all(48),
+        maxZoom: 14,
+      ),
+    );
+  }
+
+  Color _roleColor(TurnpointRole role, ColorScheme scheme) => switch (role) {
+    TurnpointRole.takeoff => const Color(0xFF43A047),
+    TurnpointRole.sss => const Color(0xFF1E88E5),
+    TurnpointRole.ess => const Color(0xFFF4511E),
+    TurnpointRole.turnpoint => scheme.primary,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final source = MapTileSources.byId(_sourceId);
+    final points = widget.task.turnpoints
+        .map((point) => _displayPoint(point, source))
+        .toList(growable: false);
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        height: 260,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: FlutterMap(
+                key: ValueKey('competition-task-map-${source.id}'),
+                mapController: _controller,
+                options: MapOptions(
+                  initialCenter: points.isEmpty
+                      ? const LatLng(0, 0)
+                      : points.first,
+                  initialZoom: points.length == 1 ? 12 : 8,
+                  minZoom: 2,
+                  maxZoom: source.maxZoom,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  onMapReady: () => _fitTask(source),
+                ),
+                children: [
+                  if (!source.isNone)
+                    TileLayer(
+                      urlTemplate: source.urlTemplate,
+                      tileProvider: OfflineFirstTileProvider(
+                        onlineProvider: MapTileCacheProvider(),
+                      ),
+                      maxNativeZoom: source.maxZoom.round(),
+                      userAgentPackageName: 'com.beacon.parabeacon',
+                    ),
+                  CircleLayer(
+                    circles: [
+                      for (
+                        var index = 0;
+                        index < widget.task.turnpoints.length;
+                        index++
+                      )
+                        CircleMarker(
+                          point: points[index],
+                          radius: widget.task.turnpoints[index].radiusMeters,
+                          useRadiusInMeter: true,
+                          color: _roleColor(
+                            widget.task.turnpoints[index].role,
+                            theme.colorScheme,
+                          ).withAlpha(36),
+                          borderColor: _roleColor(
+                            widget.task.turnpoints[index].role,
+                            theme.colorScheme,
+                          ),
+                          borderStrokeWidth: 2,
+                        ),
+                    ],
+                  ),
+                  if (points.length > 1)
+                    PolylineLayer(
+                      polylines: [
+                        Polyline(
+                          points: points,
+                          strokeWidth: 4,
+                          color: theme.colorScheme.tertiary,
+                        ),
+                      ],
+                    ),
+                  MarkerLayer(
+                    markers: [
+                      for (var index = 0; index < points.length; index++)
+                        Marker(
+                          point: points[index],
+                          width: 34,
+                          height: 34,
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: _roleColor(
+                                widget.task.turnpoints[index].role,
+                                theme.colorScheme,
+                              ),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: theme.colorScheme.surface,
+                                width: 2,
+                              ),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black38, blurRadius: 3),
+                              ],
+                            ),
+                            child: Text(
+                              '${index + 1}',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (source.attribution.isNotEmpty)
+              Positioned(
+                right: 6,
+                bottom: 6,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface.withAlpha(220),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    child: Text(
+                      source.attribution,
+                      style: theme.textTheme.labelSmall,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

@@ -21,16 +21,27 @@ void main() {
     'uploads with account authorization and reads all server tasks',
     () async {
       final requests = <http.Request>[];
+      final selectedOwners = <Object?>[];
       final timestamp = DateTime.utc(2026, 11, 26, 12);
       final client = MockClient((request) async {
         requests.add(request);
-        if (request.method == 'PUT') {
+        if (request.method == 'PUT' &&
+            request.url.path == '/api/v1/user/competition-task') {
           expect(request.headers['Authorization'], 'Bearer account-token');
-          expect(request.url.path, '/api/v1/user/competition-task');
           final body = jsonDecode(request.body) as Map<String, dynamic>;
           expect(body['task'], task.toXctsk());
           return http.Response(
             jsonEncode({'updated_at': timestamp.toIso8601String()}),
+            200,
+          );
+        }
+        if (request.method == 'PUT') {
+          expect(request.headers['Authorization'], 'Bearer account-token');
+          expect(request.url.path, '/api/v1/user/current-competition-task');
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          selectedOwners.add(body['task_owner_id']);
+          return http.Response(
+            jsonEncode({'current_task_owner_id': body['task_owner_id']}),
             200,
           );
         }
@@ -39,6 +50,7 @@ void main() {
         expect(request.headers['Authorization'], 'Bearer account-token');
         return http.Response(
           jsonEncode({
+            'current_task_owner_id': '11111111-1111-4111-8111-111111111111',
             'tasks': [
               {
                 'task': task.toXctsk(),
@@ -69,12 +81,29 @@ void main() {
           'test.example',
           '/api/v1/user/competition-task',
         ),
+        selectionEndpoint: Uri.https(
+          'test.example',
+          '/api/v1/user/current-competition-task',
+        ),
       );
 
       await service.uploadTask(task);
-      final entries = await service.listTasks();
+      final taskList = await service.listTasksWithSelection();
+      await service.setCurrentTask('22222222-2222-4222-8222-222222222222');
+      await service.setCurrentTask(null);
+      final entries = taskList.tasks;
 
-      expect(requests.map((request) => request.method), ['PUT', 'GET']);
+      expect(requests.map((request) => request.method), [
+        'PUT',
+        'GET',
+        'PUT',
+        'PUT',
+      ]);
+      expect(selectedOwners, ['22222222-2222-4222-8222-222222222222', null]);
+      expect(
+        taskList.currentTaskOwnerId,
+        '11111111-1111-4111-8111-111111111111',
+      );
       expect(entries.map((entry) => entry.task.name), [
         'Valley route',
         'Mountain route',
@@ -114,6 +143,10 @@ void main() {
     await expectLater(service.listTasks(), throwsFormatException);
     await expectLater(
       service.uploadTask(const CompetitionTask()),
+      throwsFormatException,
+    );
+    await expectLater(
+      service.setCurrentTask('not-a-uuid'),
       throwsFormatException,
     );
   });

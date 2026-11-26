@@ -2602,13 +2602,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get competitionServerTaskLoaded =>
-      'Server task loaded into the current task.';
+      'Server task selected as the current task.';
+
+  @override
+  String get competitionServerTaskUnselected => 'Current task unselected.';
+
+  @override
+  String get competitionServerSyncCurrentTask => 'Sync current task to server';
+
+  @override
+  String get competitionServerUnselectCurrentTask => 'Unselect current task';
+
+  @override
+  String get competitionServerCurrentTask => 'Current task';
 
   @override
   String get competitionMapTaskSource => 'Competition task';
 
   @override
-  String get competitionMapTaskFilter => 'Filter by current competition task';
+  String get competitionMapTaskFilter => 'Filter pilots flying this task';
 
   @override
   String get competitionMapFilterNeedsServerTask =>

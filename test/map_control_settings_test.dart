@@ -300,7 +300,11 @@ void main() {
     final list = find.byType(ListView).first;
     Future<void> reveal(String label) async {
       final target = find.text(label);
-      for (var attempt = 0; target.evaluate().isEmpty && attempt < 50; attempt++) {
+      for (
+        var attempt = 0;
+        target.evaluate().isEmpty && attempt < 50;
+        attempt++
+      ) {
         await tester.drag(list, const Offset(0, -300));
         await tester.pump(const Duration(milliseconds: 100));
       }
@@ -370,13 +374,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Nearest landing line color'), findsOneWidget);
 
-    await reveal('Filter by current competition task');
+    await reveal('Filter pilots flying this task');
     final taskFilterTile = find.ancestor(
-      of: find.text('Filter by current competition task'),
+      of: find.text('Filter pilots flying this task'),
       matching: find.byType(SwitchListTile),
     );
     expect(tester.widget<SwitchListTile>(taskFilterTile).value, isFalse);
-    await tester.tap(find.text('Filter by current competition task'));
+    await tester.tap(find.text('Filter pilots flying this task'));
     await tester.pump();
     expect(control.boolSetting('filterOtherPilotsByTask'), isTrue);
   });

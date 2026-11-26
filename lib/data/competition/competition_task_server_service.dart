@@ -23,6 +23,16 @@ class CompetitionTaskServerEntry {
   final String displayName;
 }
 
+class CompetitionTaskServerList {
+  const CompetitionTaskServerList({
+    required this.tasks,
+    required this.currentTaskOwnerId,
+  });
+
+  final List<CompetitionTaskServerEntry> tasks;
+  final String? currentTaskOwnerId;
+}
+
 class CompetitionTaskServerService {
   CompetitionTaskServerService({
     ParaBeaconAccountService? accountService,
@@ -30,10 +40,12 @@ class CompetitionTaskServerService {
     http.Client? client,
     Uri? listEndpoint,
     Uri? uploadEndpoint,
+    Uri? selectionEndpoint,
   }) : _accountService = accountService ?? ParaBeaconAccountService.instance,
        _client = UserAgentHttpClient(innerClient: client),
        _listEndpointOverride = listEndpoint,
-       _uploadEndpointOverride = uploadEndpoint;
+       _uploadEndpointOverride = uploadEndpoint,
+       _selectionEndpointOverride = selectionEndpoint;
 
   static final CompetitionTaskServerService instance =
       CompetitionTaskServerService();
@@ -44,6 +56,7 @@ class CompetitionTaskServerService {
   final http.Client _client;
   final Uri? _listEndpointOverride;
   final Uri? _uploadEndpointOverride;
+  final Uri? _selectionEndpointOverride;
 
   Uri get _listEndpoint =>
       _listEndpointOverride ??
@@ -52,6 +65,11 @@ class CompetitionTaskServerService {
       _uploadEndpointOverride ??
       ParaBeaconServerConfig.apiBaseUri.resolve(
         '/api/v1/user/competition-task',
+      );
+  Uri get _selectionEndpoint =>
+      _selectionEndpointOverride ??
+      ParaBeaconServerConfig.apiBaseUri.resolve(
+        '/api/v1/user/current-competition-task',
       );
 
   Future<void> uploadTask(CompetitionTask task) async {
@@ -73,7 +91,28 @@ class CompetitionTaskServerService {
     }
   }
 
-  Future<List<CompetitionTaskServerEntry>> listTasks() async {
+  Future<void> setCurrentTask(String? taskOwnerId) async {
+    final normalizedOwnerId = taskOwnerId?.trim().toLowerCase();
+    if (normalizedOwnerId != null &&
+        !RegExp(
+          r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+        ).hasMatch(normalizedOwnerId)) {
+      throw const FormatException('Invalid competition task owner ID.');
+    }
+    final response = await _client
+        .put(
+          _selectionEndpoint,
+          headers: await _headers(),
+          body: jsonEncode({'task_owner_id': normalizedOwnerId}),
+        )
+        .timeout(_requestTimeout);
+    _decodeResponse(response, _selectionEndpoint);
+  }
+
+  Future<List<CompetitionTaskServerEntry>> listTasks() async =>
+      (await listTasksWithSelection()).tasks;
+
+  Future<CompetitionTaskServerList> listTasksWithSelection() async {
     final response = await _client
         .get(_listEndpoint, headers: await _headers())
         .timeout(_requestTimeout);
@@ -81,6 +120,12 @@ class CompetitionTaskServerService {
     final tasks = payload['tasks'];
     if (tasks is! List) {
       throw const FormatException('Invalid competition task list response.');
+    }
+    final rawCurrentOwnerId = payload['current_task_owner_id'];
+    if (rawCurrentOwnerId != null &&
+        (rawCurrentOwnerId is! String ||
+            !RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(rawCurrentOwnerId))) {
+      throw const FormatException('Invalid current competition task response.');
     }
     final entries = <CompetitionTaskServerEntry>[];
     for (final rawEntry in tasks) {
@@ -115,7 +160,10 @@ class CompetitionTaskServerService {
         ),
       );
     }
-    return List.unmodifiable(entries);
+    return CompetitionTaskServerList(
+      tasks: List.unmodifiable(entries),
+      currentTaskOwnerId: rawCurrentOwnerId?.toLowerCase(),
+    );
   }
 
   Future<Map<String, String>> _headers() async {

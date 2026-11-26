@@ -43,6 +43,14 @@ class _CompetitionTaskSheet extends StatefulWidget {
   State<_CompetitionTaskSheet> createState() => _CompetitionTaskSheetState();
 }
 
+class _ServerTaskSelection {
+  const _ServerTaskSelection.select(this.entry) : clear = false;
+  const _ServerTaskSelection.clear() : entry = null, clear = true;
+
+  final CompetitionTaskServerEntry? entry;
+  final bool clear;
+}
+
 class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
   final CompetitionTaskStore _store = CompetitionTaskStore.instance;
 
@@ -250,15 +258,27 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       _snack(l10n.competitionServerSignInRequired);
       return;
     }
-    final selected = await showModalBottomSheet<CompetitionTask>(
+    final selection = await showModalBottomSheet<_ServerTaskSelection>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => _CompetitionTaskServerListSheet(l10n: l10n),
     );
-    if (selected == null || !mounted) return;
-    await _store.setTask(selected);
-    if (mounted) _snack(l10n.competitionServerTaskLoaded);
+    if (selection == null || !mounted) return;
+    try {
+      if (selection.clear) {
+        await CompetitionTaskServerService.instance.setCurrentTask(null);
+        await _store.clear();
+        if (mounted) _snack(l10n.competitionServerTaskUnselected);
+        return;
+      }
+      final entry = selection.entry!;
+      await CompetitionTaskServerService.instance.setCurrentTask(entry.ownerId);
+      await _store.setTask(entry.task);
+      if (mounted) _snack(l10n.competitionServerTaskLoaded);
+    } catch (_) {
+      if (mounted) _snack(l10n.competitionServerRequestFailed);
+    }
   }
 
   Widget _buildEmpty(ThemeData theme, AppLocalizations l10n) {
@@ -1462,16 +1482,40 @@ class _CompetitionTaskServerListSheet extends StatefulWidget {
 
 class _CompetitionTaskServerListSheetState
     extends State<_CompetitionTaskServerListSheet> {
-  late Future<List<CompetitionTaskServerEntry>> _tasks;
+  late Future<CompetitionTaskServerList> _tasks;
+  bool _syncing = false;
 
   @override
   void initState() {
     super.initState();
-    _tasks = CompetitionTaskServerService.instance.listTasks();
+    _tasks = CompetitionTaskServerService.instance.listTasksWithSelection();
   }
 
   void _refresh() {
-    setState(() => _tasks = CompetitionTaskServerService.instance.listTasks());
+    setState(
+      () => _tasks = CompetitionTaskServerService.instance
+          .listTasksWithSelection(),
+    );
+  }
+
+  Future<void> _syncCurrentTask() async {
+    final task = CompetitionTaskStore.instance.task;
+    if (task == null || task.isEmpty || _syncing) return;
+    setState(() => _syncing = true);
+    try {
+      await CompetitionTaskServerService.instance.uploadTask(task);
+      if (!mounted) return;
+      AppNotice.show(widget.l10n.competitionServerUploadSuccess);
+      _refresh();
+    } catch (_) {
+      if (mounted) AppNotice.show(widget.l10n.competitionServerRequestFailed);
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
+
+  void _unselectCurrentTask() {
+    Navigator.of(context).pop(const _ServerTaskSelection.clear());
   }
 
   Future<void> _previewTask(CompetitionTaskServerEntry entry) async {
@@ -1483,7 +1527,7 @@ class _CompetitionTaskServerListSheetState
           CompetitionTaskPreviewSheet(task: entry.task, l10n: widget.l10n),
     );
     if (confirmed == true && mounted) {
-      Navigator.of(context).pop(entry.task);
+      Navigator.of(context).pop(_ServerTaskSelection.select(entry));
     }
   }
 
@@ -1510,6 +1554,24 @@ class _CompetitionTaskServerListSheetState
                       ),
                     ),
                     IconButton(
+                      tooltip: l10n.competitionServerSyncCurrentTask,
+                      onPressed:
+                          _syncing || !CompetitionTaskStore.instance.hasTask
+                          ? null
+                          : _syncCurrentTask,
+                      icon: _syncing
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.cloud_sync_outlined),
+                    ),
+                    IconButton(
+                      tooltip: l10n.competitionServerUnselectCurrentTask,
+                      onPressed: _unselectCurrentTask,
+                      icon: const Icon(Icons.push_pin_outlined),
+                    ),
+                    IconButton(
                       tooltip: l10n.refresh,
                       onPressed: _refresh,
                       icon: const Icon(Icons.refresh),
@@ -1525,7 +1587,7 @@ class _CompetitionTaskServerListSheetState
             ),
             const Divider(height: 1),
             Expanded(
-              child: FutureBuilder<List<CompetitionTaskServerEntry>>(
+              child: FutureBuilder<CompetitionTaskServerList>(
                 future: _tasks,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
@@ -1553,7 +1615,16 @@ class _CompetitionTaskServerListSheetState
                       ),
                     );
                   }
-                  final entries = snapshot.data ?? const [];
+                  final taskList = snapshot.data!;
+                  final entries = [...taskList.tasks]
+                    ..sort((a, b) {
+                      final aIsCurrent =
+                          a.ownerId == taskList.currentTaskOwnerId;
+                      final bIsCurrent =
+                          b.ownerId == taskList.currentTaskOwnerId;
+                      if (aIsCurrent == bIsCurrent) return 0;
+                      return aIsCurrent ? -1 : 1;
+                    });
                   if (entries.isEmpty) {
                     return Center(child: Text(l10n.competitionServerEmpty));
                   }
@@ -1563,6 +1634,8 @@ class _CompetitionTaskServerListSheetState
                         const Divider(height: 1, indent: 72),
                     itemBuilder: (context, index) {
                       final entry = entries[index];
+                      final isCurrent =
+                          entry.ownerId == taskList.currentTaskOwnerId;
                       final name = entry.task.name.trim().isEmpty
                           ? l10n.competitionUnnamedTask
                           : entry.task.name;
@@ -1582,8 +1655,11 @@ class _CompetitionTaskServerListSheetState
                         date,
                       ].join(' · ');
                       return ListTile(
-                        leading: const CircleAvatar(
-                          child: Icon(Icons.flag_outlined),
+                        selected: isCurrent,
+                        leading: CircleAvatar(
+                          child: Icon(
+                            isCurrent ? Icons.push_pin : Icons.flag_outlined,
+                          ),
                         ),
                         title: Text(
                           name,
@@ -1593,6 +1669,13 @@ class _CompetitionTaskServerListSheetState
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (isCurrent)
+                              Text(
+                                l10n.competitionServerCurrentTask,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
                             Text(
                               ownerName,
                               maxLines: 1,
@@ -1605,7 +1688,12 @@ class _CompetitionTaskServerListSheetState
                             ),
                           ],
                         ),
-                        trailing: const Icon(Icons.visibility_outlined),
+                        trailing: Icon(
+                          isCurrent
+                              ? Icons.push_pin
+                              : Icons.visibility_outlined,
+                          color: isCurrent ? theme.colorScheme.primary : null,
+                        ),
                         onTap: () => _previewTask(entry),
                       );
                     },

@@ -4871,8 +4871,32 @@ abstract class AppLocalizations {
   /// No description provided for @competitionServerTaskLoaded.
   ///
   /// In en, this message translates to:
-  /// **'Server task loaded into the current task.'**
+  /// **'Server task selected as the current task.'**
   String get competitionServerTaskLoaded;
+
+  /// No description provided for @competitionServerTaskUnselected.
+  ///
+  /// In en, this message translates to:
+  /// **'Current task unselected.'**
+  String get competitionServerTaskUnselected;
+
+  /// No description provided for @competitionServerSyncCurrentTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync current task to server'**
+  String get competitionServerSyncCurrentTask;
+
+  /// No description provided for @competitionServerUnselectCurrentTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Unselect current task'**
+  String get competitionServerUnselectCurrentTask;
+
+  /// No description provided for @competitionServerCurrentTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Current task'**
+  String get competitionServerCurrentTask;
 
   /// No description provided for @competitionMapTaskSource.
   ///
@@ -4883,7 +4907,7 @@ abstract class AppLocalizations {
   /// No description provided for @competitionMapTaskFilter.
   ///
   /// In en, this message translates to:
-  /// **'Filter by current competition task'**
+  /// **'Filter pilots flying this task'**
   String get competitionMapTaskFilter;
 
   /// No description provided for @competitionMapFilterNeedsServerTask.

@@ -247,8 +247,6 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingGlideShowVario;
     case 'follow':
       return l10n.settingFollowPosition;
-    case 'zoom':
-      return l10n.settingZoom;
     case 'tileSource':
       return l10n.settingMapSource;
     case 'rotation':
@@ -996,14 +994,6 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'follow',
       label: 'Follow position',
       defaultValue: true,
-    ),
-    ControlSetting.slider(
-      key: 'zoom',
-      label: 'Zoom',
-      defaultValue: 17.0,
-      min: 3.0,
-      max: 18.0,
-      divisions: 15,
     ),
     ControlSetting.choice(
       key: 'tileSource',

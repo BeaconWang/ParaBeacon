@@ -59,23 +59,23 @@ void main() {
     expect(setting.labelOf(chinese), '显示竞赛航线');
   });
 
-  test('map zoom setting has a useful range and persists', () {
-    final setting = settingsSchemaFor(
-      'map',
-    ).singleWhere((setting) => setting.key == 'zoom');
-    expect(setting.kind, SettingKind.slider);
-    expect(setting.defaultValue, 17.0);
-    expect(setting.min, 3.0);
-    expect(setting.max, 18.0);
-    expect(setting.divisions, 15);
+  test('map zoom is no longer a configurable setting', () {
+    expect(
+      settingsSchemaFor('map').any((setting) => setting.key == 'zoom'),
+      isFalse,
+    );
 
-    final control = PlacedControl.fromType(
+    final map = PlacedControl.fromType(
       ControlCatalog.byId('map')!,
       instanceId: 'map-zoom-test',
     );
-    control.settings['zoom'] = 11.0;
-    final restored = PlacedControl.fromJson(control.toJson())!;
-    expect(restored.doubleSetting('zoom'), 11.0);
+    expect(map.settings.containsKey('zoom'), isFalse);
+
+    final restored = PlacedControl.fromJson({
+      'typeId': 'map',
+      'settings': {'zoom': 11.0},
+    })!;
+    expect(restored.settings.containsKey('zoom'), isFalse);
   });
 
   test('public pilot locations are on by default and localized', () async {
@@ -298,8 +298,16 @@ void main() {
     await tester.pumpAndSettle();
 
     final list = find.byType(ListView).first;
-    Future<void> reveal(String label) =>
-        tester.dragUntilVisible(find.text(label), list, const Offset(0, -300));
+    Future<void> reveal(String label) async {
+      final target = find.text(label);
+      for (var attempt = 0; target.evaluate().isEmpty && attempt < 50; attempt++) {
+        await tester.drag(list, const Offset(0, -300));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(target, findsOneWidget, reason: 'Could not find setting: $label');
+      await tester.ensureVisible(target);
+      await tester.pump();
+    }
 
     expect(find.text('Show landing points'), findsNothing);
 

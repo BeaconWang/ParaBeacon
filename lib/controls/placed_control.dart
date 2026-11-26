@@ -150,6 +150,7 @@ class PlacedControl {
         settings['format'] = 'cardinal';
       }
       if (typeId == 'map') {
+        settings.remove('zoom');
         final legacyTaskFilter = saved['otherPilotTaskFilter'];
         if (legacyTaskFilter is String) {
           if (!saved.containsKey('filterOtherPilotsByTask')) {

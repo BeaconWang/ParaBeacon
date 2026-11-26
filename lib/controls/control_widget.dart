@@ -497,7 +497,6 @@ class ControlWidget extends StatelessWidget {
             // long-press-unlocked widget in view mode.
             active: isSelected || isControlled,
             follow: control.boolSetting('follow', fallback: true),
-            initialZoom: control.doubleSetting('zoom', fallback: 17.0),
             tileSource: source is String ? source : defaultMapTileSourceId(),
             trackUp: rot == 'track',
             showNorth: control.boolSetting('showNorth', fallback: false),

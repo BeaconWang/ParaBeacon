@@ -78,6 +78,50 @@ void main() {
     expect(restored.settings.containsKey('zoom'), isFalse);
   });
 
+  test('XContest pilots respect channel and pinned-task filters', () {
+    expect(
+      shouldShowXContestPilots(
+        showOtherPilots: true,
+        channelNumber: 0,
+        pinnedTaskOwnerId: null,
+      ),
+      isTrue,
+    );
+    expect(
+      shouldShowXContestPilots(
+        showOtherPilots: true,
+        channelNumber: 483920,
+        pinnedTaskOwnerId: null,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldShowXContestPilots(
+        showOtherPilots: true,
+        channelNumber: -1,
+        pinnedTaskOwnerId: null,
+      ),
+      isFalse,
+      reason: 'hide pilots until a signed-in account channel is loaded',
+    );
+    expect(
+      shouldShowXContestPilots(
+        showOtherPilots: true,
+        channelNumber: 0,
+        pinnedTaskOwnerId: '11111111-1111-4111-8111-111111111111',
+      ),
+      isFalse,
+    );
+    expect(
+      shouldShowXContestPilots(
+        showOtherPilots: false,
+        channelNumber: 0,
+        pinnedTaskOwnerId: null,
+      ),
+      isFalse,
+    );
+  });
+
   test('public pilot locations are on by default and localized', () async {
     final setting = settingsSchemaFor(
       'map',

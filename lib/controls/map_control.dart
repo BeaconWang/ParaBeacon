@@ -52,6 +52,12 @@ String _formatMapNumber(
   required int autoDecimals,
 }) => formatDecimalValue(value, autoDecimals: autoDecimals, range: precision);
 
+bool shouldShowXContestPilots({
+  required bool showOtherPilots,
+  required int channelNumber,
+  required String? pinnedTaskOwnerId,
+}) => showOtherPilots && channelNumber == 0 && pinnedTaskOwnerId == null;
+
 Color _publicPilotColor(String pilotName) => HSVColor.fromAHSV(
   1,
   (pilotName.hashCode & 0x7fffffff) % 360,
@@ -488,6 +494,7 @@ class _MapControlState extends State<MapControl> {
   Timer? _serverPilotDebounceTimer;
   Timer? _currentTaskOwnerRefreshTimer;
   int _serverPilotRequestId = 0;
+  String? _accountUserId;
 
   /// Self-contained thermal detector fed from the flight-data / GPS feed.
   final ThermalDetector _thermalDetector = ThermalDetector();
@@ -549,6 +556,7 @@ class _MapControlState extends State<MapControl> {
     // Redraw when public XContest pilots change.
     XContestLiveTrackingService.instance.addListener(_onExternalChange);
     LiveTrackingSettings.instance.addListener(_onExternalChange);
+    _accountUserId = ParaBeaconAccountService.instance.user?.id;
     ParaBeaconAccountService.instance.addListener(_onPublicPilotAccountChanged);
     if (widget.showOtherPilots) _startPublicPilotRefreshTimer();
   }
@@ -899,7 +907,12 @@ class _MapControlState extends State<MapControl> {
   }
 
   void _onPublicPilotAccountChanged() {
-    if (!ParaBeaconAccountService.instance.isSignedIn) {
+    final account = ParaBeaconAccountService.instance;
+    final currentUserId = account.user?.id;
+    final accountChanged = currentUserId != _accountUserId;
+    _accountUserId = currentUserId;
+    if (accountChanged) CompetitionTaskServerService.resetCurrentTaskOwner();
+    if (!account.isSignedIn) {
       _serverPilotRequestId++;
       _serverPilotRefreshTimer?.cancel();
       _serverPilotRefreshTimer = null;
@@ -911,6 +924,10 @@ class _MapControlState extends State<MapControl> {
       if (mounted) setState(() => _serverPilotLocations = const []);
       return;
     }
+    _serverPilotRequestId++;
+    _serverPilotDebounceTimer?.cancel();
+    _clearServerPilotMotion();
+    if (mounted) setState(() => _serverPilotLocations = const []);
     if (widget.filterByCurrentTask) _startCurrentTaskOwnerRefresh();
     if (widget.showOtherPilots) _startPublicPilotRefreshTimer();
     _schedulePublicPilotRefresh(Duration.zero);
@@ -1163,8 +1180,15 @@ class _MapControlState extends State<MapControl> {
     final publicPilotNow = DateTime.now().toUtc();
     final ownLiveRoomId =
         server_tracking.LiveTrackingService.instance.sessionId;
+    final account = ParaBeaconAccountService.instance;
+    final channelNumber =
+        account.user?.channelNumber ?? (account.isSignedIn ? -1 : 0);
     final freshXContestPilots =
-        widget.showOtherPilots && _pilotTaskOwnerId == null
+        shouldShowXContestPilots(
+          showOtherPilots: widget.showOtherPilots,
+          channelNumber: channelNumber,
+          pinnedTaskOwnerId: _pilotTaskOwnerId,
+        )
         ? XContestLiveTrackingService.instance.otherPilots
               .where(
                 (pilot) =>

@@ -2478,9 +2478,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionServerTaskUnselected => '已取消当前航线。';
 
   @override
-  String get competitionServerSyncCurrentTask => '同步当前航线到服务器';
-
-  @override
   String get competitionServerUnselectCurrentTask => '取消当前航线';
 
   @override

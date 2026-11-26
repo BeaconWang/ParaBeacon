@@ -4880,12 +4880,6 @@ abstract class AppLocalizations {
   /// **'Current task unselected.'**
   String get competitionServerTaskUnselected;
 
-  /// No description provided for @competitionServerSyncCurrentTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync current task to server'**
-  String get competitionServerSyncCurrentTask;
-
   /// No description provided for @competitionServerUnselectCurrentTask.
   ///
   /// In en, this message translates to:

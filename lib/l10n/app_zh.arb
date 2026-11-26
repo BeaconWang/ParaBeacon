@@ -868,7 +868,6 @@
   "competitionServerLoadFailed": "无法加载服务器航线。",
   "competitionServerTaskLoaded": "已将服务器航线设为当前航线。",
   "competitionServerTaskUnselected": "已取消当前航线。",
-  "competitionServerSyncCurrentTask": "同步当前航线到服务器",
   "competitionServerUnselectCurrentTask": "取消当前航线",
   "competitionServerCurrentTask": "当前航线",
   "competitionMapTaskSource": "竞赛航线",

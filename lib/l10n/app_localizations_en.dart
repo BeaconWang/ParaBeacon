@@ -2608,9 +2608,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionServerTaskUnselected => 'Current task unselected.';
 
   @override
-  String get competitionServerSyncCurrentTask => 'Sync current task to server';
-
-  @override
   String get competitionServerUnselectCurrentTask => 'Unselect current task';
 
   @override

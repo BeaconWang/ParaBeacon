@@ -1483,35 +1483,57 @@ class _CompetitionTaskServerListSheet extends StatefulWidget {
 class _CompetitionTaskServerListSheetState
     extends State<_CompetitionTaskServerListSheet> {
   late Future<CompetitionTaskServerList> _tasks;
-  bool _syncing = false;
+  String? _currentTaskOwnerId;
 
   @override
   void initState() {
     super.initState();
-    _tasks = CompetitionTaskServerService.instance.listTasksWithSelection();
+    _tasks = _loadTasks(syncCurrentTask: true);
+  }
+
+  Future<CompetitionTaskServerList> _loadTasks({
+    bool syncCurrentTask = false,
+  }) async {
+    final store = CompetitionTaskStore.instance;
+    if (syncCurrentTask) await store.load();
+    final service = CompetitionTaskServerService.instance;
+    var taskList = await service.listTasksWithSelection();
+    final currentTask = store.task;
+    if (syncCurrentTask && currentTask != null && !currentTask.isEmpty) {
+      CompetitionTaskServerEntry? selectedEntry;
+      for (final entry in taskList.tasks) {
+        if (entry.ownerId == taskList.currentTaskOwnerId) {
+          selectedEntry = entry;
+          break;
+        }
+      }
+      final ownTaskIsSelected =
+          selectedEntry?.ownerId == ParaBeaconAccountService.instance.user?.id;
+      if ((selectedEntry == null || ownTaskIsSelected) &&
+          (selectedEntry == null ||
+              selectedEntry.task.toXctskString() !=
+                  currentTask.toXctskString())) {
+        try {
+          await service.uploadTask(currentTask);
+          taskList = await service.listTasksWithSelection();
+        } catch (_) {
+          if (mounted) {
+            AppNotice.show(widget.l10n.competitionServerRequestFailed);
+          }
+        }
+      }
+    }
+    if (mounted) {
+      setState(() => _currentTaskOwnerId = taskList.currentTaskOwnerId);
+    }
+    return taskList;
   }
 
   void _refresh() {
-    setState(
-      () => _tasks = CompetitionTaskServerService.instance
-          .listTasksWithSelection(),
-    );
-  }
-
-  Future<void> _syncCurrentTask() async {
-    final task = CompetitionTaskStore.instance.task;
-    if (task == null || task.isEmpty || _syncing) return;
-    setState(() => _syncing = true);
-    try {
-      await CompetitionTaskServerService.instance.uploadTask(task);
-      if (!mounted) return;
-      AppNotice.show(widget.l10n.competitionServerUploadSuccess);
-      _refresh();
-    } catch (_) {
-      if (mounted) AppNotice.show(widget.l10n.competitionServerRequestFailed);
-    } finally {
-      if (mounted) setState(() => _syncing = false);
-    }
+    setState(() {
+      _currentTaskOwnerId = null;
+      _tasks = _loadTasks();
+    });
   }
 
   void _unselectCurrentTask() {
@@ -1553,24 +1575,12 @@ class _CompetitionTaskServerListSheetState
                         style: theme.textTheme.titleLarge,
                       ),
                     ),
-                    IconButton(
-                      tooltip: l10n.competitionServerSyncCurrentTask,
-                      onPressed:
-                          _syncing || !CompetitionTaskStore.instance.hasTask
-                          ? null
-                          : _syncCurrentTask,
-                      icon: _syncing
-                          ? const SizedBox.square(
-                              dimension: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.cloud_sync_outlined),
-                    ),
-                    IconButton(
-                      tooltip: l10n.competitionServerUnselectCurrentTask,
-                      onPressed: _unselectCurrentTask,
-                      icon: const Icon(Icons.push_pin_outlined),
-                    ),
+                    if (_currentTaskOwnerId != null)
+                      IconButton(
+                        tooltip: l10n.competitionServerUnselectCurrentTask,
+                        onPressed: _unselectCurrentTask,
+                        icon: const Icon(Icons.push_pin_outlined),
+                      ),
                     IconButton(
                       tooltip: l10n.refresh,
                       onPressed: _refresh,

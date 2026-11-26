@@ -11,24 +11,46 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
-    'registers pending email verification without storing a session',
+    'registers then signs in and stores only the session and public user',
     () async {
       final store = _MemorySessionStore();
       final requests = <http.Request>[];
       final client = MockClient((request) async {
         requests.add(request);
-        expect(request.method, 'POST');
-        expect(request.url.path, '/api/v1/auth/register');
-        expect(jsonDecode(request.body), {
-          'username': 'pilot_one',
-          'email': 'pilot@example.com',
-          'password': 'abc123',
-        });
-        return http.Response(
-          jsonEncode({'status': 'verification_required'}),
-          202,
-          headers: {'content-type': 'application/json'},
-        );
+        if (request.url.path == '/api/v1/auth/register') {
+          expect(request.method, 'POST');
+          expect(jsonDecode(request.body), {
+            'username': 'pilot_one',
+            'email': 'pilot@example.com',
+            'password': 'abc123',
+          });
+          return http.Response(
+            jsonEncode({'user': _userJson}),
+            201,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        if (request.url.path == '/api/v1/auth/login') {
+          expect(jsonDecode(request.body), {
+            'identifier': 'pilot_one',
+            'password': 'abc123',
+          });
+          return http.Response(
+            jsonEncode({
+              'access_token': 'test-access-token',
+              'expires_at': DateTime.now()
+                  .add(const Duration(minutes: 10))
+                  .toUtc()
+                  .toIso8601String(),
+              'refresh_token': 'test-refresh-token-long-enough-value',
+              'refresh_expires_at': null,
+              'user': _userJson,
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        fail('Unexpected request: ${request.url}');
       });
       final service = ParaBeaconAccountService(
         client: client,
@@ -36,105 +58,36 @@ void main() {
       );
       addTearDown(service.dispose);
 
-      final accepted = await service.register(
+      final succeeded = await service.register(
         username: 'pilot_one',
         email: 'pilot@example.com',
         password: 'abc123',
       );
 
-      expect(accepted, isTrue);
-      expect(requests, hasLength(1));
-      expect(service.isSignedIn, isFalse);
-      expect(service.user, isNull);
-      expect(service.pendingVerificationEmail, 'pilot@example.com');
-      expect(service.verificationEmailRequested, isTrue);
-      expect(service.errorCode, isNull);
-      expect(store.values, isEmpty);
+      expect(succeeded, isTrue);
+      expect(requests, hasLength(2));
+      expect(service.isSignedIn, isTrue);
+      expect(service.user?.username, 'pilot_one');
+      expect(service.user?.displayName, 'Sky Rider');
+      expect(service.user?.pilotNumber, 123456);
+      expect(service.user?.channelNumber, 0);
+      expect(service.user?.avatarId, 0);
+      expect(store.values['parabeacon_access_token'], 'test-access-token');
+      expect(
+        store.values['parabeacon_refresh_token'],
+        'test-refresh-token-long-enough-value',
+      );
+      expect(store.values['parabeacon_refresh_token_expires_at'], isNull);
+      expect(store.values.toString(), isNot(contains('abc123')));
       final logs = service.debugLog.join('\n');
-      expect(logs, contains('Registration response received (HTTP 202).'));
+      expect(logs, contains('Registration response received (HTTP 201).'));
+      expect(logs, contains('Sign-in succeeded; session stored securely.'));
       expect(logs, isNot(contains('pilot_one')));
       expect(logs, isNot(contains('pilot@example.com')));
       expect(logs, isNot(contains('abc123')));
+      expect(logs, isNot(contains('test-access-token')));
     },
   );
-
-  test(
-    'requires a valid email and username before sending registration',
-    () async {
-      final store = _MemorySessionStore();
-      final service = ParaBeaconAccountService(
-        client: MockClient(
-          (request) async => fail('Unexpected request: ${request.url}'),
-        ),
-        sessionStore: store,
-      );
-      addTearDown(service.dispose);
-
-      expect(
-        await service.register(
-          username: 'pilot_one',
-          email: '',
-          password: 'abc123',
-        ),
-        isFalse,
-      );
-      expect(service.errorCode, 'accountInvalidInput');
-      expect(
-        await service.register(
-          username: 'invalid-name',
-          email: 'pilot@example.com',
-          password: 'abc123',
-        ),
-        isFalse,
-      );
-      expect(service.errorCode, 'accountInvalidInput');
-      expect(store.values, isEmpty);
-    },
-  );
-
-  test('resends verification after an unverified login response', () async {
-    final store = _MemorySessionStore();
-    final requests = <http.Request>[];
-    final client = MockClient((request) async {
-      requests.add(request);
-      if (request.url.path == '/api/v1/auth/login') {
-        return http.Response('{"error":"email address is not verified"}', 403);
-      }
-      expect(request.url.path, '/api/v1/auth/resend-verification');
-      expect(jsonDecode(request.body), {'email': 'pilot@example.com'});
-      return http.Response(
-        jsonEncode({'status': 'verification_email_requested'}),
-        202,
-        headers: {'content-type': 'application/json'},
-      );
-    });
-    final service = ParaBeaconAccountService(
-      client: client,
-      sessionStore: store,
-    );
-    addTearDown(service.dispose);
-
-    expect(
-      await service.login(identifier: 'pilot@example.com', password: 'abc123'),
-      isFalse,
-    );
-    expect(service.errorCode, 'accountEmailNotVerified');
-    expect(service.isSignedIn, isFalse);
-    expect(store.values, isEmpty);
-
-    expect(
-      await service.resendVerificationEmail(email: 'pilot@example.com'),
-      isTrue,
-    );
-    expect(requests.map((request) => request.url.path), [
-      '/api/v1/auth/login',
-      '/api/v1/auth/resend-verification',
-    ]);
-    expect(service.pendingVerificationEmail, 'pilot@example.com');
-    expect(service.verificationEmailRequested, isTrue);
-    expect(service.errorCode, isNull);
-    expect(store.values, isEmpty);
-  });
 
   test('updates and persists the account frequency channel', () async {
     final store = _MemorySessionStore();
@@ -616,7 +569,7 @@ void main() {
 
       final succeeded = await service.register(
         username: 'pilot_one',
-        email: 'pilot@example.com',
+        email: '',
         password: 'abc12',
       );
 

@@ -358,7 +358,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountIdentifier => '用户名或电子邮箱';
 
   @override
-  String get accountEmail => '电子邮箱';
+  String get accountEmailOptional => '电子邮箱（可选）';
 
   @override
   String get accountUsernameRequired => '请输入用户名或电子邮箱。';
@@ -367,31 +367,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountUsernameLength => '用户名需为 3–32 个字符。';
 
   @override
-  String get accountUsernameInvalid => '用户名需为 3–32 个英文字母、数字或下划线。';
-
-  @override
-  String get accountEmailRequired => '请输入可正常收取邮件的电子邮箱，以验证账户。';
-
-  @override
   String get accountEmailInvalid => '请输入有效的电子邮箱地址。';
-
-  @override
-  String get accountCheckEmailTitle => '请检查电子邮箱';
-
-  @override
-  String get accountCheckEmailBody => '如果此邮箱有待验证的注册，验证链接已发送。请打开链接以完成注册，然后登录。';
-
-  @override
-  String get accountResendVerification => '重新发送验证邮件';
-
-  @override
-  String get accountVerificationEmailSent => '如果此邮箱有待验证的账户，新的验证邮件已发送。';
-
-  @override
-  String get accountEmailNotVerified => '请先验证电子邮箱再登录。请检查收件箱中的验证链接。';
-
-  @override
-  String get accountBackToSignIn => '返回登录';
 
   @override
   String get accountPassword => '密码';

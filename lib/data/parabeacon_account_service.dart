@@ -207,8 +207,6 @@ class ParaBeaconAccountService extends ChangeNotifier
   bool _loggingOut = false;
   ParaBeaconUser? _user;
   String? _errorCode;
-  String? _pendingVerificationEmail;
-  bool _verificationEmailRequested = false;
 
   bool get isLoaded => _loaded;
   bool get isLoading => _loading;
@@ -221,8 +219,6 @@ class ParaBeaconAccountService extends ChangeNotifier
       (_expiresAt == null || _expiresAt!.isAfter(DateTime.now()));
   ParaBeaconUser? get user => _user;
   String? get errorCode => _errorCode;
-  String? get pendingVerificationEmail => _pendingVerificationEmail;
-  bool get verificationEmailRequested => _verificationEmailRequested;
   String? metricsAccessTokenFor(Uri serverBaseUri) {
     final expectedApiBaseUri = serverBaseUri.resolve('/api/v1/');
     if (_serverApiBaseUri.origin != expectedApiBaseUri.origin ||
@@ -253,8 +249,6 @@ class ParaBeaconAccountService extends ChangeNotifier
     _refreshToken = null;
     _user = null;
     _errorCode = null;
-    _pendingVerificationEmail = null;
-    _verificationEmailRequested = false;
     notifyListeners();
     await load();
     return true;
@@ -344,9 +338,11 @@ class ParaBeaconAccountService extends ChangeNotifier
   }) async {
     final normalizedUsername = username.trim();
     final normalizedEmail = email.trim();
-    if (!isValidUsername(normalizedUsername) ||
-        !isValidEmail(normalizedEmail) ||
-        normalizedEmail.length > 254 ||
+    final usernameLength = normalizedUsername.runes.length;
+    if (usernameLength < 3 ||
+        usernameLength > 32 ||
+        (normalizedEmail.isNotEmpty && !_looksLikeEmail(normalizedEmail)) ||
+        (normalizedEmail.length > 254) ||
         utf8.encode(password).length > 72 ||
         password.runes.length < 6) {
       _setError('accountInvalidInput');
@@ -354,20 +350,19 @@ class ParaBeaconAccountService extends ChangeNotifier
     }
     if (_loading) return false;
 
-    _pendingVerificationEmail = null;
-    _verificationEmailRequested = false;
     _log('Registration requested.');
     _beginRequest();
     try {
+      final payload = <String, String>{
+        'username': normalizedUsername,
+        'password': password,
+        if (normalizedEmail.isNotEmpty) 'email': normalizedEmail,
+      };
       final response = await _client
           .post(
             _apiUri('auth/register'),
             headers: _jsonHeaders,
-            body: jsonEncode({
-              'username': normalizedUsername,
-              'email': normalizedEmail,
-              'password': password,
-            }),
+            body: jsonEncode(payload),
           )
           .timeout(_requestTimeout);
       _log('Registration response received (HTTP ${response.statusCode}).');
@@ -380,19 +375,14 @@ class ParaBeaconAccountService extends ChangeNotifier
         _errorCode = 'accountInvalidInput';
         return false;
       }
-      final responseStatus = _decodeMap(response.body)?['status'];
-      if (response.statusCode != 202 ||
-          responseStatus != 'verification_required') {
+      if (response.statusCode != 201) {
         _errorCode = response.statusCode >= 500
             ? 'accountServiceUnavailable'
             : 'accountRequestFailed';
         return false;
       }
 
-      _pendingVerificationEmail = normalizedEmail;
-      _verificationEmailRequested = true;
-      _errorCode = null;
-      return true;
+      return await _performLogin(normalizedUsername, password);
     } on TimeoutException {
       _errorCode = 'accountConnectionFailure';
       _log('Registration request timed out.');
@@ -404,62 +394,6 @@ class ParaBeaconAccountService extends ChangeNotifier
     } finally {
       _endRequest();
     }
-  }
-
-  Future<bool> resendVerificationEmail({required String email}) async {
-    final normalizedEmail = email.trim();
-    if (!isValidEmail(normalizedEmail) || normalizedEmail.length > 254) {
-      _setError('accountInvalidInput');
-      return false;
-    }
-    if (_loading) return false;
-
-    _verificationEmailRequested = false;
-    _beginRequest();
-    try {
-      final response = await _client
-          .post(
-            _apiUri('auth/resend-verification'),
-            headers: _jsonHeaders,
-            body: jsonEncode({'email': normalizedEmail}),
-          )
-          .timeout(_requestTimeout);
-      _log(
-        'Verification resend response received (HTTP ${response.statusCode}).',
-      );
-      if (response.statusCode == 400) {
-        _errorCode = 'accountInvalidInput';
-        return false;
-      }
-      final responseStatus = _decodeMap(response.body)?['status'];
-      if (response.statusCode != 202 ||
-          responseStatus != 'verification_email_requested') {
-        _errorCode = response.statusCode >= 500
-            ? 'accountServiceUnavailable'
-            : 'accountRequestFailed';
-        return false;
-      }
-      _pendingVerificationEmail = normalizedEmail;
-      _verificationEmailRequested = true;
-      _errorCode = null;
-      return true;
-    } on TimeoutException {
-      _errorCode = 'accountConnectionFailure';
-      return false;
-    } on Exception {
-      _errorCode = 'accountServiceUnavailable';
-      return false;
-    } finally {
-      _endRequest();
-    }
-  }
-
-  void clearPendingRegistration() {
-    if (_pendingVerificationEmail == null) return;
-    _pendingVerificationEmail = null;
-    _verificationEmailRequested = false;
-    _errorCode = null;
-    notifyListeners();
   }
 
   Future<void> logout() async {
@@ -544,10 +478,6 @@ class ParaBeaconAccountService extends ChangeNotifier
 
     if (response.statusCode == 401) {
       _errorCode = 'accountInvalidCredentials';
-      return false;
-    }
-    if (response.statusCode == 403) {
-      _errorCode = 'accountEmailNotVerified';
       return false;
     }
     if (response.statusCode == 400) {
@@ -1227,11 +1157,6 @@ class ParaBeaconAccountService extends ChangeNotifier
     'Accept': 'application/json',
     'Content-Type': 'application/json',
   };
-
-  static bool isValidEmail(String value) => _looksLikeEmail(value.trim());
-
-  static bool isValidUsername(String value) =>
-      RegExp(r'^[A-Za-z0-9_]{3,32}$').hasMatch(value.trim());
 
   static bool _looksLikeEmail(String value) =>
       RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value);

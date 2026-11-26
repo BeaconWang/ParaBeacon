@@ -776,11 +776,11 @@ abstract class AppLocalizations {
   /// **'Username or email'**
   String get accountIdentifier;
 
-  /// No description provided for @accountEmail.
+  /// No description provided for @accountEmailOptional.
   ///
   /// In en, this message translates to:
-  /// **'Email'**
-  String get accountEmail;
+  /// **'Email (optional)'**
+  String get accountEmailOptional;
 
   /// No description provided for @accountUsernameRequired.
   ///
@@ -794,59 +794,11 @@ abstract class AppLocalizations {
   /// **'Username must be 3–32 characters.'**
   String get accountUsernameLength;
 
-  /// No description provided for @accountUsernameInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Use 3–32 letters, numbers, or underscores for your username.'**
-  String get accountUsernameInvalid;
-
-  /// No description provided for @accountEmailRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter an email address you can access to verify your account.'**
-  String get accountEmailRequired;
-
   /// No description provided for @accountEmailInvalid.
   ///
   /// In en, this message translates to:
   /// **'Enter a valid email address.'**
   String get accountEmailInvalid;
-
-  /// No description provided for @accountCheckEmailTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Check your email'**
-  String get accountCheckEmailTitle;
-
-  /// No description provided for @accountCheckEmailBody.
-  ///
-  /// In en, this message translates to:
-  /// **'If this address belongs to a pending registration, a verification link has been sent. Open it to complete registration before signing in.'**
-  String get accountCheckEmailBody;
-
-  /// No description provided for @accountResendVerification.
-  ///
-  /// In en, this message translates to:
-  /// **'Resend verification email'**
-  String get accountResendVerification;
-
-  /// No description provided for @accountVerificationEmailSent.
-  ///
-  /// In en, this message translates to:
-  /// **'If an account is awaiting verification for this address, a new email has been sent.'**
-  String get accountVerificationEmailSent;
-
-  /// No description provided for @accountEmailNotVerified.
-  ///
-  /// In en, this message translates to:
-  /// **'Verify your email address before signing in. Check your inbox for the verification link.'**
-  String get accountEmailNotVerified;
-
-  /// No description provided for @accountBackToSignIn.
-  ///
-  /// In en, this message translates to:
-  /// **'Back to sign in'**
-  String get accountBackToSignIn;
 
   /// No description provided for @accountPassword.
   ///

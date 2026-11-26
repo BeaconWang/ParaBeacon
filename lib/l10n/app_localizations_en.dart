@@ -372,7 +372,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountIdentifier => 'Username or email';
 
   @override
-  String get accountEmail => 'Email';
+  String get accountEmailOptional => 'Email (optional)';
 
   @override
   String get accountUsernameRequired => 'Enter your username or email.';
@@ -381,36 +381,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountUsernameLength => 'Username must be 3–32 characters.';
 
   @override
-  String get accountUsernameInvalid =>
-      'Use 3–32 letters, numbers, or underscores for your username.';
-
-  @override
-  String get accountEmailRequired =>
-      'Enter an email address you can access to verify your account.';
-
-  @override
   String get accountEmailInvalid => 'Enter a valid email address.';
-
-  @override
-  String get accountCheckEmailTitle => 'Check your email';
-
-  @override
-  String get accountCheckEmailBody =>
-      'If this address belongs to a pending registration, a verification link has been sent. Open it to complete registration before signing in.';
-
-  @override
-  String get accountResendVerification => 'Resend verification email';
-
-  @override
-  String get accountVerificationEmailSent =>
-      'If an account is awaiting verification for this address, a new email has been sent.';
-
-  @override
-  String get accountEmailNotVerified =>
-      'Verify your email address before signing in. Check your inbox for the verification link.';
-
-  @override
-  String get accountBackToSignIn => 'Back to sign in';
 
   @override
   String get accountPassword => 'Password';

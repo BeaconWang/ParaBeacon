@@ -192,7 +192,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
 
   String _errorText(AppLocalizations l10n, String code) => switch (code) {
     'accountInvalidCredentials' => l10n.accountErrorInvalidCredentials,
-    'accountEmailNotVerified' => l10n.accountEmailNotVerified,
     'accountAlreadyExists' => l10n.accountErrorAlreadyExists,
     'accountInvalidInput' => l10n.accountErrorInvalidInput,
     'accountInvalidDisplayName' => l10n.accountDisplayNameInvalid,
@@ -273,12 +272,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                                 const Center(child: CircularProgressIndicator())
                               else if (service.isSignedIn)
                                 _buildProfile(context, service, l10n)
-                              else if (service.pendingVerificationEmail != null)
-                                _buildVerificationPending(
-                                  context,
-                                  service,
-                                  l10n,
-                                )
                               else
                                 _buildForm(context, service, l10n),
                               if (kDebugMode) ...[
@@ -446,81 +439,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
     );
   }
 
-  Widget _buildVerificationPending(
-    BuildContext context,
-    ParaBeaconAccountService service,
-    AppLocalizations l10n,
-  ) {
-    final theme = Theme.of(context);
-    final email = service.pendingVerificationEmail!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Icon(
-          Icons.mark_email_read_outlined,
-          size: 64,
-          color: theme.colorScheme.primary,
-        ),
-        const SizedBox(height: 16),
-        Text(
-          l10n.accountCheckEmailTitle,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          l10n.accountCheckEmailBody,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 8),
-        SelectableText(email, textAlign: TextAlign.center),
-        if (service.verificationEmailRequested) ...[
-          const SizedBox(height: 12),
-          Text(
-            l10n.accountVerificationEmailSent,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ],
-        if (service.errorCode != null) ...[
-          const SizedBox(height: 16),
-          _errorPanel(context, _errorText(l10n, service.errorCode!)),
-        ],
-        const SizedBox(height: 20),
-        OutlinedButton.icon(
-          onPressed: service.isLoading
-              ? null
-              : () => service.resendVerificationEmail(email: email),
-          icon: service.isLoading
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.mark_email_unread_outlined),
-          label: Text(l10n.accountResendVerification),
-        ),
-        const SizedBox(height: 8),
-        TextButton(
-          onPressed: service.isLoading
-              ? null
-              : () {
-                  service.clearPendingRegistration();
-                  setState(() {
-                    _registering = false;
-                    _passwordController.clear();
-                    _confirmationController.clear();
-                  });
-                },
-          child: Text(l10n.accountBackToSignIn),
-        ),
-      ],
-    );
-  }
-
   Widget _buildForm(
     BuildContext context,
     ParaBeaconAccountService service,
@@ -547,30 +465,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
         if (service.errorCode != null) ...[
           _errorPanel(context, _errorText(l10n, service.errorCode!)),
           const SizedBox(height: 16),
-        ],
-        if (!_registering &&
-            service.errorCode == 'accountEmailNotVerified') ...[
-          if (ParaBeaconAccountService.isValidEmail(_usernameController.text))
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: TextButton.icon(
-                onPressed: service.isLoading
-                    ? null
-                    : () => service.resendVerificationEmail(
-                        email: _usernameController.text,
-                      ),
-                icon: const Icon(Icons.mark_email_unread_outlined),
-                label: Text(l10n.accountResendVerification),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                l10n.accountEmailRequired,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
         ],
         Form(
           key: _formKey,
@@ -599,10 +493,6 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                         (text.runes.length < 3 || text.runes.length > 32)) {
                       return l10n.accountUsernameLength;
                     }
-                    if (_registering &&
-                        !ParaBeaconAccountService.isValidUsername(text)) {
-                      return l10n.accountUsernameInvalid;
-                    }
                     if (!_registering && text.length > 254) {
                       return l10n.accountErrorInvalidInput;
                     }
@@ -617,14 +507,16 @@ class _ParaBeaconAccountSheetState extends State<_ParaBeaconAccountSheet> {
                     textInputAction: TextInputAction.next,
                     autofillHints: const [AutofillHints.email],
                     decoration: InputDecoration(
-                      labelText: l10n.accountEmail,
+                      labelText: l10n.accountEmailOptional,
                       prefixIcon: const Icon(Icons.mail_outline),
                     ),
                     validator: (value) {
                       final email = value?.trim() ?? '';
-                      if (email.isEmpty) return l10n.accountEmailRequired;
+                      if (email.isEmpty) return null;
                       if (email.length > 254 ||
-                          !ParaBeaconAccountService.isValidEmail(email)) {
+                          !RegExp(
+                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                          ).hasMatch(email)) {
                         return l10n.accountEmailInvalid;
                       }
                       return null;

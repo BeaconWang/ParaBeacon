@@ -4874,6 +4874,18 @@ abstract class AppLocalizations {
   /// **'Server task loaded into the current task.'**
   String get competitionServerTaskLoaded;
 
+  /// No description provided for @competitionServerPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview task'**
+  String get competitionServerPreview;
+
+  /// No description provided for @competitionServerUseTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this task'**
+  String get competitionServerUseTask;
+
   /// No description provided for @competitionTaskSummarySubtitle.
   ///
   /// In en, this message translates to:

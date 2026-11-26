@@ -929,6 +929,8 @@
   "competitionServerEmpty": "No tasks have been shared yet.",
   "competitionServerLoadFailed": "Unable to load server tasks.",
   "competitionServerTaskLoaded": "Server task loaded into the current task.",
+  "competitionServerPreview": "Preview task",
+  "competitionServerUseTask": "Use this task",
   "competitionTaskSummarySubtitle": "{count} turnpoints",
   "@competitionTaskSummarySubtitle": {
     "placeholders": {

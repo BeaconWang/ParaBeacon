@@ -11,10 +11,14 @@ class CompetitionTaskServerEntry {
   const CompetitionTaskServerEntry({
     required this.task,
     required this.updatedAt,
+    required this.username,
+    required this.displayName,
   });
 
   final CompetitionTask task;
   final DateTime updatedAt;
+  final String username;
+  final String displayName;
 }
 
 class CompetitionTaskServerService {
@@ -85,10 +89,25 @@ class CompetitionTaskServerService {
       final updatedAt = DateTime.tryParse(
         rawEntry['updated_at']?.toString() ?? '',
       );
-      if (task == null || updatedAt == null) {
+      final username = rawEntry['username'];
+      final displayName = rawEntry['display_name'];
+      if (task == null ||
+          updatedAt == null ||
+          username is! String ||
+          username.trim().isEmpty ||
+          username.runes.length > 32 ||
+          displayName is! String ||
+          displayName.runes.length > 48) {
         throw const FormatException('Invalid competition task list response.');
       }
-      entries.add(CompetitionTaskServerEntry(task: task, updatedAt: updatedAt));
+      entries.add(
+        CompetitionTaskServerEntry(
+          task: task,
+          updatedAt: updatedAt,
+          username: username.trim(),
+          displayName: displayName.trim(),
+        ),
+      );
     }
     return List.unmodifiable(entries);
   }

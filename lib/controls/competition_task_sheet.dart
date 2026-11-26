@@ -18,6 +18,7 @@ import '../data/landing_point_store.dart';
 import '../data/parabeacon_account_service.dart';
 import '../l10n/app_localizations.dart';
 import 'app_notice.dart';
+import 'competition_task_preview_sheet.dart';
 import 'competition_task_qr_sheet.dart';
 import 'map_picker_sheet.dart';
 import 'qr_scanner_screen.dart';
@@ -1473,6 +1474,19 @@ class _CompetitionTaskServerListSheetState
     setState(() => _tasks = CompetitionTaskServerService.instance.listTasks());
   }
 
+  Future<void> _previewTask(CompetitionTaskServerEntry entry) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) =>
+          CompetitionTaskPreviewSheet(task: entry.task, l10n: widget.l10n),
+    );
+    if (confirmed == true && mounted) {
+      Navigator.of(context).pop(entry.task);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
@@ -1555,6 +1569,18 @@ class _CompetitionTaskServerListSheetState
                       final date = MaterialLocalizations.of(
                         context,
                       ).formatMediumDate(entry.updatedAt.toLocal());
+                      final displayName = entry.displayName.trim();
+                      final accountName = '@${entry.username}';
+                      final ownerName = displayName.isEmpty
+                          ? accountName
+                          : displayName;
+                      final details = [
+                        if (displayName.isNotEmpty) accountName,
+                        l10n.competitionTaskSummarySubtitle(
+                          entry.task.turnpoints.length,
+                        ),
+                        date,
+                      ].join(' · ');
                       return ListTile(
                         leading: const CircleAvatar(
                           child: Icon(Icons.flag_outlined),
@@ -1564,11 +1590,23 @@ class _CompetitionTaskServerListSheetState
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        subtitle: Text(
-                          '${l10n.competitionTaskSummarySubtitle(entry.task.turnpoints.length)} · $date',
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              ownerName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              details,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => Navigator.of(context).pop(entry.task),
+                        trailing: const Icon(Icons.visibility_outlined),
+                        onTap: () => _previewTask(entry),
                       );
                     },
                   );

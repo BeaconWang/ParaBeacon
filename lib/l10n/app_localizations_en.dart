@@ -2605,6 +2605,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Server task loaded into the current task.';
 
   @override
+  String get competitionServerPreview => 'Preview task';
+
+  @override
+  String get competitionServerUseTask => 'Use this task';
+
+  @override
   String competitionTaskSummarySubtitle(int count) {
     return '$count turnpoints';
   }

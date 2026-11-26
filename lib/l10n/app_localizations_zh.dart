@@ -2474,6 +2474,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionServerTaskLoaded => '服务器航线已载入为当前航线。';
 
   @override
+  String get competitionServerPreview => '预览航线';
+
+  @override
+  String get competitionServerUseTask => '使用此航线';
+
+  @override
   String competitionTaskSummarySubtitle(int count) {
     return '$count 个绕点';
   }

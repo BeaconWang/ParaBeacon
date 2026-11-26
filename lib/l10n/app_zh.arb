@@ -867,6 +867,8 @@
   "competitionServerEmpty": "服务器上还没有分享的航线。",
   "competitionServerLoadFailed": "无法加载服务器航线。",
   "competitionServerTaskLoaded": "服务器航线已载入为当前航线。",
+  "competitionServerPreview": "预览航线",
+  "competitionServerUseTask": "使用此航线",
   "competitionTaskSummarySubtitle": "{count} 个绕点",
   "@competitionTaskSummarySubtitle": {
     "placeholders": {

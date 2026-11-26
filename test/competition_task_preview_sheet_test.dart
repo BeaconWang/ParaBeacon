@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/competition_task_preview_sheet.dart';
 import 'package:parabeacon/data/competition/competition_task.dart';
+import 'package:parabeacon/data/map_view_source_settings.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 
 const _task = CompetitionTask(
@@ -31,7 +32,10 @@ const _task = CompetitionTask(
   goal: TaskGoal(type: TaskGoalType.line, deadlineSeconds: 64800),
 );
 
-Widget _previewHost(ValueChanged<bool?> onResult) => MaterialApp(
+Widget _previewHost(
+  ValueChanged<bool?> onResult, {
+  String mapSourceId = 'none',
+}) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: Builder(
@@ -47,7 +51,7 @@ Widget _previewHost(ValueChanged<bool?> onResult) => MaterialApp(
               builder: (_) => CompetitionTaskPreviewSheet(
                 task: _task,
                 l10n: l10n,
-                mapSourceId: 'none',
+                mapSourceId: mapSourceId,
               ),
             ),
           );
@@ -95,6 +99,34 @@ void main() {
     await tester.tap(find.text('Use this task'));
     await tester.pumpAndSettle();
     expect(result, isTrue);
+  });
+
+  testWidgets('changes and remembers the map source from the preview', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    bool? result;
+    await tester.pumpWidget(
+      _previewHost((value) => result = value, mapSourceId: 'none'),
+    );
+    await tester.tap(find.text('Open preview'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Map source'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OpenStreetMap'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OpenStreetMap'), findsOneWidget);
+    expect(
+      tester.widget<TileLayer>(find.byType(TileLayer)).urlTemplate,
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    );
+    expect(MapViewSourceSettings.instance.pickerSourceId, 'osm');
+    expect(result, isNull);
   });
 
   testWidgets('canceling preview does not apply the task', (tester) async {

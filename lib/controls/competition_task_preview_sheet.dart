@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -166,6 +168,29 @@ class _TaskRouteMapPreviewState extends State<_TaskRouteMapPreview> {
     }
   }
 
+  void _selectSource(String sourceId) {
+    if (sourceId == _sourceId) return;
+    setState(() => _sourceId = sourceId);
+    unawaited(MapViewSourceSettings.instance.setPickerSourceId(sourceId));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _fitTask(MapTileSources.byId(sourceId));
+    });
+  }
+
+  String _sourceLabel(MapTileSource source, AppLocalizations l10n) =>
+      switch (source.id) {
+        'none' => l10n.settingMapSourceNone,
+        'osm' => l10n.settingMapSourceOsm,
+        'osmfr' => l10n.settingMapSourceOsmFr,
+        'carto-dark' => l10n.settingMapSourceCartoDark,
+        'carto-voyager' => l10n.settingMapSourceCartoVoyager,
+        'google' => l10n.settingMapSourceGoogle,
+        'google-sat' => l10n.settingMapSourceGoogleSat,
+        'amap' => l10n.settingMapSourceAmap,
+        'amap-sat' => l10n.settingMapSourceAmapSat,
+        _ => source.label,
+      };
+
   @override
   void dispose() {
     _controller.dispose();
@@ -220,7 +245,6 @@ class _TaskRouteMapPreviewState extends State<_TaskRouteMapPreview> {
           children: [
             Positioned.fill(
               child: FlutterMap(
-                key: ValueKey('competition-task-map-${source.id}'),
                 mapController: _controller,
                 options: MapOptions(
                   initialCenter: points.isEmpty
@@ -235,6 +259,7 @@ class _TaskRouteMapPreviewState extends State<_TaskRouteMapPreview> {
                 children: [
                   if (!source.isNone)
                     TileLayer(
+                      key: ValueKey('competition-task-tiles-${source.id}'),
                       urlTemplate: source.urlTemplate,
                       tileProvider: OfflineFirstTileProvider(
                         onlineProvider: MapTileCacheProvider(),
@@ -310,6 +335,65 @@ class _TaskRouteMapPreviewState extends State<_TaskRouteMapPreview> {
                     ],
                   ),
                 ],
+              ),
+            ),
+            Positioned(
+              left: 8,
+              top: 8,
+              child: PopupMenuButton<String>(
+                tooltip: AppLocalizations.of(context).settingMapSource,
+                initialValue: _sourceId,
+                onSelected: _selectSource,
+                itemBuilder: (context) => [
+                  for (final mapSource in MapTileSources.all)
+                    PopupMenuItem<String>(
+                      value: mapSource.id,
+                      child: Row(
+                        children: [
+                          Icon(
+                            mapSource.id == _sourceId
+                                ? Icons.check
+                                : Icons.layers_outlined,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                              _sourceLabel(
+                                mapSource,
+                                AppLocalizations.of(context),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+                child: Material(
+                  color: theme.colorScheme.surface.withAlpha(230),
+                  borderRadius: BorderRadius.circular(8),
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.layers_outlined, size: 20),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            _sourceLabel(source, AppLocalizations.of(context)),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(Icons.arrow_drop_down),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
             if (source.attribution.isNotEmpty)

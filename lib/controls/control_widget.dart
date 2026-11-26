@@ -53,6 +53,13 @@ class _ScaledTextScaler extends TextScaler {
 /// [isControlled] marks a widget that the user has long-pressed to unlock in
 /// view mode: it is currently allowed to receive its own pointer events
 /// (map pan/zoom, buttons, etc.). Every other widget is locked / static.
+String? _serverOwnerId(Object? value, {required String localSentinel}) {
+  if (value is! String || value == localSentinel) return null;
+  return RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(value)
+      ? value.toLowerCase()
+      : null;
+}
+
 class ControlWidget extends StatelessWidget {
   final PlacedControl control;
   final bool isEditMode;
@@ -526,6 +533,14 @@ class ControlWidget extends StatelessWidget {
             showSun: control.boolSetting('showSun', fallback: false),
             showBearing: control.boolSetting('showBearing', fallback: false),
             showTask: control.boolSetting('showTask', fallback: true),
+            serverTaskOwnerId: _serverOwnerId(
+              control.setting('competitionTaskSource'),
+              localSentinel: 'local',
+            ),
+            pilotTaskOwnerId: _serverOwnerId(
+              control.setting('otherPilotTaskFilter'),
+              localSentinel: 'all',
+            ),
             showTakeoffLine: control.boolSetting(
               'showTakeoffLine',
               fallback: false,

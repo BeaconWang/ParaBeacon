@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/color_palette_settings.dart';
+import '../data/competition/competition_task_server_service.dart';
+import '../data/parabeacon_account_service.dart';
 import '../data/vario_color_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'decimal_places.dart';
@@ -48,11 +50,15 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
   late final List<ControlSetting> _schema = settingsSchemaFor(
     widget.control.type.id,
   );
+  Future<List<CompetitionTaskServerEntry>>? _mapServerTasks;
 
   @override
   void initState() {
     super.initState();
     final control = widget.control;
+    if (control.type.id == 'map') {
+      _mapServerTasks = _loadMapServerTasks();
+    }
     if (control.type.id != 'map' ||
         !control.settings.containsKey('showLandingPoints')) {
       return;
@@ -69,6 +75,17 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
       'showNearestLandingPoint',
       () => legacyVisibility,
     );
+  }
+
+  Future<List<CompetitionTaskServerEntry>> _loadMapServerTasks() async {
+    final account = ParaBeaconAccountService.instance;
+    await account.load();
+    if (!account.isSignedIn) throw StateError('ParaBeacon sign-in required');
+    return CompetitionTaskServerService.instance.listTasks();
+  }
+
+  void _reloadMapServerTasks() {
+    setState(() => _mapServerTasks = _loadMapServerTasks());
   }
 
   void _set(String key, dynamic value) {
@@ -138,11 +155,36 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
-                  itemCount: visibleSchema.length,
+                  itemCount:
+                      visibleSchema.length + (control.type.id == 'map' ? 2 : 0),
                   separatorBuilder: (context, index) =>
                       const Divider(height: 1),
-                  itemBuilder: (context, index) =>
-                      _buildSettingTile(context, l10n, visibleSchema[index]),
+                  itemBuilder: (context, index) {
+                    if (index < visibleSchema.length) {
+                      return _buildSettingTile(
+                        context,
+                        l10n,
+                        visibleSchema[index],
+                      );
+                    }
+                    final isFilter = index == visibleSchema.length + 1;
+                    final key = isFilter
+                        ? 'otherPilotTaskFilter'
+                        : 'competitionTaskSource';
+                    final fallback = isFilter ? 'all' : 'local';
+                    return _MapServerTaskSettingTile(
+                      title: isFilter
+                          ? l10n.competitionMapTaskFilter
+                          : l10n.competitionMapTaskSource,
+                      selectedId: control.setting(key) is String
+                          ? control.setting(key) as String
+                          : fallback,
+                      isFilter: isFilter,
+                      tasks: _mapServerTasks!,
+                      onRetry: _reloadMapServerTasks,
+                      onSelected: (value) => _set(key, value),
+                    );
+                  },
                 ),
               ),
           ],
@@ -326,6 +368,211 @@ class _ControlSettingsSheetState extends State<_ControlSettingsSheet> {
           colorIndex: index,
         );
     }
+  }
+}
+
+class _MapServerTaskSettingTile extends StatefulWidget {
+  const _MapServerTaskSettingTile({
+    required this.title,
+    required this.selectedId,
+    required this.isFilter,
+    required this.tasks,
+    required this.onRetry,
+    required this.onSelected,
+  });
+
+  final String title;
+  final String selectedId;
+  final bool isFilter;
+  final Future<List<CompetitionTaskServerEntry>> tasks;
+  final VoidCallback onRetry;
+  final ValueChanged<String> onSelected;
+
+  @override
+  State<_MapServerTaskSettingTile> createState() =>
+      _MapServerTaskSettingTileState();
+}
+
+class _MapServerTaskSettingTileState extends State<_MapServerTaskSettingTile> {
+  late Future<List<CompetitionTaskServerEntry>> _tasks;
+
+  @override
+  void initState() {
+    super.initState();
+    _tasks = widget.tasks;
+  }
+
+  Future<void> _choose() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => _MapTaskChoiceSheet(
+        title: widget.title,
+        isFilter: widget.isFilter,
+        selectedId: widget.selectedId,
+        tasks: _tasks,
+      ),
+    );
+    if (selected != null) widget.onSelected(selected);
+  }
+
+  String _selectedLabel(
+    AppLocalizations l10n,
+    List<CompetitionTaskServerEntry>? tasks,
+  ) {
+    if (widget.isFilter && widget.selectedId == 'all') {
+      return l10n.competitionMapAllPilots;
+    }
+    if (!widget.isFilter && widget.selectedId == 'local') {
+      return l10n.competitionMapLocalTask;
+    }
+    for (final entry in tasks ?? const <CompetitionTaskServerEntry>[]) {
+      if (entry.ownerId != widget.selectedId) continue;
+      final name = entry.task.name.trim().isEmpty
+          ? l10n.competitionUnnamedTask
+          : entry.task.name;
+      final owner = entry.displayName.trim().isEmpty
+          ? '@${entry.username}'
+          : '${entry.displayName} · @${entry.username}';
+      return '$name · $owner';
+    }
+    return l10n.competitionMapTaskLoadFailed;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return FutureBuilder<List<CompetitionTaskServerEntry>>(
+      future: _tasks,
+      builder: (context, snapshot) => ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(widget.title),
+        subtitle: Text(
+          _selectedLabel(l10n, snapshot.data),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: snapshot.connectionState == ConnectionState.waiting
+            ? const SizedBox.square(
+                dimension: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : IconButton(
+                tooltip: snapshot.hasError ? l10n.refresh : l10n.edit,
+                onPressed: snapshot.hasError ? widget.onRetry : _choose,
+                icon: Icon(
+                  snapshot.hasError
+                      ? Icons.refresh
+                      : Icons.arrow_drop_down_circle_outlined,
+                ),
+              ),
+        onTap: snapshot.connectionState == ConnectionState.waiting
+            ? null
+            : _choose,
+      ),
+    );
+  }
+}
+
+class _MapTaskChoiceSheet extends StatelessWidget {
+  const _MapTaskChoiceSheet({
+    required this.title,
+    required this.isFilter,
+    required this.selectedId,
+    required this.tasks,
+  });
+
+  final String title;
+  final bool isFilter;
+  final String selectedId;
+  final Future<List<CompetitionTaskServerEntry>> tasks;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.7,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: FutureBuilder<List<CompetitionTaskServerEntry>>(
+                future: tasks,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          l10n.competitionMapSignInToLoad,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    );
+                  }
+                  final entries = snapshot.data ?? const [];
+                  return ListView(
+                    children: [
+                      if (isFilter)
+                        ListTile(
+                          leading: const Icon(Icons.groups_outlined),
+                          title: Text(l10n.competitionMapAllPilots),
+                          trailing: selectedId == 'all'
+                              ? const Icon(Icons.check)
+                              : null,
+                          onTap: () => Navigator.of(context).pop('all'),
+                        )
+                      else
+                        ListTile(
+                          leading: const Icon(Icons.flag_outlined),
+                          title: Text(l10n.competitionMapLocalTask),
+                          trailing: selectedId == 'local'
+                              ? const Icon(Icons.check)
+                              : null,
+                          onTap: () => Navigator.of(context).pop('local'),
+                        ),
+                      for (final entry in entries)
+                        ListTile(
+                          leading: const Icon(Icons.cloud_outlined),
+                          title: Text(
+                            entry.task.name.trim().isEmpty
+                                ? l10n.competitionUnnamedTask
+                                : entry.task.name,
+                          ),
+                          subtitle: Text(
+                            entry.displayName.trim().isEmpty
+                                ? '@${entry.username}'
+                                : '${entry.displayName} · @${entry.username}',
+                          ),
+                          trailing: selectedId == entry.ownerId
+                              ? const Icon(Icons.check)
+                              : null,
+                          onTap: () => Navigator.of(context).pop(entry.ownerId),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

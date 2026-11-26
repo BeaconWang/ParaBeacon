@@ -43,12 +43,14 @@ void main() {
               {
                 'task': task.toXctsk(),
                 'updated_at': timestamp.toIso8601String(),
+                'owner_id': '11111111-1111-4111-8111-111111111111',
                 'username': 'pilot-one',
                 'display_name': 'Pilot One',
               },
               {
                 'task': task.copyWith(name: 'Mountain route').toXctsk(),
                 'updated_at': timestamp.toIso8601String(),
+                'owner_id': '22222222-2222-4222-8222-222222222222',
                 'username': 'pilot-two',
                 'display_name': '',
               },
@@ -82,6 +84,10 @@ void main() {
         'pilot-two',
       ]);
       expect(entries.map((entry) => entry.displayName), ['Pilot One', '']);
+      expect(entries.map((entry) => entry.ownerId), [
+        '11111111-1111-4111-8111-111111111111',
+        '22222222-2222-4222-8222-222222222222',
+      ]);
     },
   );
 

@@ -77,6 +77,10 @@ void main() {
     expect(setting.defaultValue, isTrue);
     expect(map.boolSetting('showPublicPilots'), isTrue);
     expect(restoredMap.boolSetting('showPublicPilots'), isTrue);
+    expect(map.setting('competitionTaskSource'), 'local');
+    expect(restoredMap.setting('competitionTaskSource'), 'local');
+    expect(map.setting('otherPilotTaskFilter'), 'all');
+    expect(restoredMap.setting('otherPilotTaskFilter'), 'all');
     expect(setting.labelOf(english), 'Show public pilot locations');
     expect(setting.labelOf(chinese), '显示公开飞行员实时位置');
     for (final key in [

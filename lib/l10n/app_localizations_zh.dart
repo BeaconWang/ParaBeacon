@@ -2474,6 +2474,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionServerTaskLoaded => '服务器航线已载入为当前航线。';
 
   @override
+  String get competitionMapTaskSource => '竞赛航线';
+
+  @override
+  String get competitionMapTaskFilter => '其他飞行员竞赛航线筛选';
+
+  @override
+  String get competitionMapLocalTask => '本地航线';
+
+  @override
+  String get competitionMapAllPilots => '所有飞行员';
+
+  @override
+  String get competitionMapSignInToLoad => '请登录后浏览服务器航线。';
+
+  @override
+  String get competitionMapTaskLoadFailed => '无法加载服务器航线。';
+
+  @override
   String get competitionServerPreview => '预览航线';
 
   @override

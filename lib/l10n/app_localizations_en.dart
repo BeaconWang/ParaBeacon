@@ -2605,6 +2605,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Server task loaded into the current task.';
 
   @override
+  String get competitionMapTaskSource => 'Competition task';
+
+  @override
+  String get competitionMapTaskFilter => 'Other pilots competition-task filter';
+
+  @override
+  String get competitionMapLocalTask => 'Local task';
+
+  @override
+  String get competitionMapAllPilots => 'All pilots';
+
+  @override
+  String get competitionMapSignInToLoad => 'Sign in to browse server tasks.';
+
+  @override
+  String get competitionMapTaskLoadFailed => 'Unable to load server tasks.';
+
+  @override
   String get competitionServerPreview => 'Preview task';
 
   @override

@@ -4874,6 +4874,42 @@ abstract class AppLocalizations {
   /// **'Server task loaded into the current task.'**
   String get competitionServerTaskLoaded;
 
+  /// No description provided for @competitionMapTaskSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Competition task'**
+  String get competitionMapTaskSource;
+
+  /// No description provided for @competitionMapTaskFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Other pilots competition-task filter'**
+  String get competitionMapTaskFilter;
+
+  /// No description provided for @competitionMapLocalTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Local task'**
+  String get competitionMapLocalTask;
+
+  /// No description provided for @competitionMapAllPilots.
+  ///
+  /// In en, this message translates to:
+  /// **'All pilots'**
+  String get competitionMapAllPilots;
+
+  /// No description provided for @competitionMapSignInToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to browse server tasks.'**
+  String get competitionMapSignInToLoad;
+
+  /// No description provided for @competitionMapTaskLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load server tasks.'**
+  String get competitionMapTaskLoadFailed;
+
   /// No description provided for @competitionServerPreview.
   ///
   /// In en, this message translates to:

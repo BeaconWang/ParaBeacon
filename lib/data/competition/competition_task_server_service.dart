@@ -11,12 +11,14 @@ class CompetitionTaskServerEntry {
   const CompetitionTaskServerEntry({
     required this.task,
     required this.updatedAt,
+    required this.ownerId,
     required this.username,
     required this.displayName,
   });
 
   final CompetitionTask task;
   final DateTime updatedAt;
+  final String ownerId;
   final String username;
   final String displayName;
 }
@@ -89,10 +91,13 @@ class CompetitionTaskServerService {
       final updatedAt = DateTime.tryParse(
         rawEntry['updated_at']?.toString() ?? '',
       );
+      final ownerId = rawEntry['owner_id'];
       final username = rawEntry['username'];
       final displayName = rawEntry['display_name'];
       if (task == null ||
           updatedAt == null ||
+          ownerId is! String ||
+          !RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(ownerId) ||
           username is! String ||
           username.trim().isEmpty ||
           username.runes.length > 32 ||
@@ -104,6 +109,7 @@ class CompetitionTaskServerService {
         CompetitionTaskServerEntry(
           task: task,
           updatedAt: updatedAt,
+          ownerId: ownerId.toLowerCase(),
           username: username.trim(),
           displayName: displayName.trim(),
         ),

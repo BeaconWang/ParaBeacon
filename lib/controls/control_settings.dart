@@ -1540,5 +1540,9 @@ Map<String, dynamic> defaultSettingsFor(String typeId) {
     if (setting.kind == SettingKind.globalColor) continue;
     map[setting.key] = setting.defaultValue;
   }
+  if (typeId == 'map') {
+    map.putIfAbsent('competitionTaskSource', () => 'local');
+    map.putIfAbsent('otherPilotTaskFilter', () => 'all');
+  }
   return map;
 }

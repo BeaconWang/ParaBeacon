@@ -272,6 +272,10 @@ void main() {
         expect(request.url.queryParameters['south'], '47.0000000000');
         expect(request.url.queryParameters['east'], '9.00000000000');
         expect(request.url.queryParameters['north'], '48.0000000000');
+        expect(
+          request.url.queryParameters['task_owner_id'],
+          '11111111-1111-4111-8111-111111111111',
+        );
         if (requests.length == 1) {
           expect(request.url.queryParameters.containsKey('cursor'), isFalse);
           return http.Response(
@@ -336,6 +340,7 @@ void main() {
         south: 47,
         east: 9,
         north: 48,
+        taskOwnerId: '11111111-1111-4111-8111-111111111111',
       );
 
       expect(requests, hasLength(2));

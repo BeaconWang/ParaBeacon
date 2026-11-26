@@ -8,8 +8,10 @@ import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../audio/vario_sound_settings.dart';
 import '../data/airspace_store.dart';
-import '../data/competition/competition_task.dart' show TurnpointRole;
+import '../data/competition/competition_task.dart';
+import '../data/competition/competition_task_server_service.dart';
 import '../data/competition/competition_task_store.dart';
+import '../data/competition/task_optimizer.dart';
 import '../data/debug_settings.dart';
 import '../data/flight_data.dart';
 import '../data/flight_data_provider.dart';
@@ -308,8 +310,15 @@ class MapControl extends StatefulWidget {
   /// Draw a bearing (course) line from the aircraft along its ground track.
   final bool showBearing;
 
-  /// Draw the active competition task (cylinders, optimized route, goal).
+  /// Draw the selected competition task (cylinders, route and turnpoints).
   final bool showTask;
+
+  /// Server task owner id for this map; null uses the local active task.
+  final String? serverTaskOwnerId;
+
+  /// Optional server task owner filter for other ParaBeacon pilots.
+  /// Null means show all pilots (the default).
+  final String? pilotTaskOwnerId;
 
   /// Draw a straight line from the current position back to the take-off
   /// point (the first fixed sample of the in-progress flight).
@@ -384,6 +393,8 @@ class MapControl extends StatefulWidget {
     this.showSun = false,
     this.showBearing = false,
     this.showTask = true,
+    this.serverTaskOwnerId,
+    this.pilotTaskOwnerId,
     this.showTakeoffLine = false,
     this.showTakeoffPoint = true,
     this.showDefaultLandingPoint = true,
@@ -475,6 +486,8 @@ class _MapControlState extends State<MapControl> {
   /// bearing line.
   double _lastHeading = 0.0;
   List<server_tracking.PublicPilotLocation> _serverPilotLocations = const [];
+  CompetitionTaskServerEntry? _serverTaskEntry;
+  int _serverTaskRequestId = 0;
   final Map<String, PeerLocationInterpolator> _serverPilotMotion = {};
   Timer? _serverPilotAnimationTimer;
   Timer? _serverPilotRefreshTimer;
@@ -523,6 +536,7 @@ class _MapControlState extends State<MapControl> {
     TakeoffReference.instance.addListener(_onExternalChange);
     CompetitionTaskStore.instance.addListener(_onExternalChange);
     unawaited(CompetitionTaskStore.instance.load());
+    if (widget.serverTaskOwnerId != null) unawaited(_loadSelectedServerTask());
     // The task overlay is only drawn once a flight has started, so repaint on
     // flight start/stop.
     FlightState.instance.addListener(_onExternalChange);
@@ -587,9 +601,49 @@ class _MapControlState extends State<MapControl> {
         : null;
   }
 
+  Future<void> _loadSelectedServerTask() async {
+    final ownerId = widget.serverTaskOwnerId;
+    final requestId = ++_serverTaskRequestId;
+    if (ownerId == null) {
+      if (mounted) setState(() => _serverTaskEntry = null);
+      return;
+    }
+    try {
+      final entries = await CompetitionTaskServerService.instance.listTasks();
+      if (!mounted || requestId != _serverTaskRequestId) return;
+      CompetitionTaskServerEntry? selected;
+      for (final entry in entries) {
+        if (entry.ownerId == ownerId) {
+          selected = entry;
+          break;
+        }
+      }
+      setState(() => _serverTaskEntry = selected);
+    } catch (_) {
+      if (!mounted || requestId != _serverTaskRequestId) return;
+      setState(() => _serverTaskEntry = null);
+    }
+  }
+
+  CompetitionTask? get _selectedMapTask => widget.serverTaskOwnerId == null
+      ? CompetitionTaskStore.instance.task
+      : _serverTaskEntry?.ownerId == widget.serverTaskOwnerId
+      ? _serverTaskEntry?.task
+      : null;
+
   @override
   void didUpdateWidget(covariant MapControl oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.serverTaskOwnerId != widget.serverTaskOwnerId) {
+      unawaited(_loadSelectedServerTask());
+    }
+    if (oldWidget.pilotTaskOwnerId != widget.pilotTaskOwnerId) {
+      _serverPilotRequestId++;
+      _serverPilotDebounceTimer?.cancel();
+      _clearServerPilotMotion();
+      _serverPilotLocations = const [];
+      if (widget.showOtherPilots) _schedulePublicPilotRefresh(Duration.zero);
+    }
     if (oldWidget.follow != widget.follow) {
       _follow = widget.follow;
     }
@@ -818,16 +872,23 @@ class _MapControlState extends State<MapControl> {
 
   void _onPublicPilotAccountChanged() {
     if (!ParaBeaconAccountService.instance.isSignedIn) {
+      _serverTaskRequestId++;
       _serverPilotRequestId++;
       _serverPilotRefreshTimer?.cancel();
       _serverPilotRefreshTimer = null;
       _serverPilotDebounceTimer?.cancel();
       _serverPilotDebounceTimer = null;
       _clearServerPilotMotion();
-      if (_serverPilotLocations.isNotEmpty && mounted) {
-        setState(() => _serverPilotLocations = const []);
+      if (mounted) {
+        setState(() {
+          _serverPilotLocations = const [];
+          _serverTaskEntry = null;
+        });
       }
       return;
+    }
+    if (widget.serverTaskOwnerId != null) {
+      unawaited(_loadSelectedServerTask());
     }
     if (widget.showOtherPilots) _startPublicPilotRefreshTimer();
     _schedulePublicPilotRefresh(Duration.zero);
@@ -878,6 +939,7 @@ class _MapControlState extends State<MapControl> {
             south: (southLatitude - 0.05).clamp(-90, 90).toDouble(),
             east: east,
             north: (northLatitude + 0.05).clamp(-90, 90).toDouble(),
+            taskOwnerId: widget.pilotTaskOwnerId,
           );
       if (!mounted ||
           requestId != _serverPilotRequestId ||
@@ -1079,7 +1141,8 @@ class _MapControlState extends State<MapControl> {
     final publicPilotNow = DateTime.now().toUtc();
     final ownLiveRoomId =
         server_tracking.LiveTrackingService.instance.sessionId;
-    final freshXContestPilots = widget.showOtherPilots
+    final freshXContestPilots =
+        widget.showOtherPilots && widget.pilotTaskOwnerId == null
         ? XContestLiveTrackingService.instance.otherPilots
               .where(
                 (pilot) =>
@@ -1158,14 +1221,20 @@ class _MapControlState extends State<MapControl> {
           ),
         ),
     ];
-    final taskRoute = widget.showTask && wgs != null
-        ? CompetitionTaskStore.instance.liveRouteToGoal(
-            wgs.latitude,
-            wgs.longitude,
-          )
+    final mapTask = widget.showTask ? _selectedMapTask : null;
+    final localTaskSelected = widget.serverTaskOwnerId == null;
+    final localStore = CompetitionTaskStore.instance;
+    final taskRoute = widget.showTask && wgs != null && mapTask != null
+        ? localTaskSelected
+              ? localStore.liveRouteToGoal(wgs.latitude, wgs.longitude)
+              : _routeForServerTask(mapTask, wgs.latitude, wgs.longitude)
+        : null;
+    final nextTurnpointIndex =
+        localTaskSelected && FlightState.instance.isFlying
+        ? localStore.nextTurnpointIndex
         : null;
     final taskMarkers = widget.showTask
-        ? _buildTaskMarkers()
+        ? _buildTaskMarkers(mapTask, nextTurnpointIndex)
         : const <Marker>[];
 
     return _SuppressPageSwipe(
@@ -1237,8 +1306,10 @@ class _MapControlState extends State<MapControl> {
                 // plus a single live-optimized route from the current position
                 // through the remaining course. Small route dots mark its
                 // optimized checkpoint touch points.
-                if (widget.showTask) ...[
-                  CircleLayer(circles: _buildTaskCircles()),
+                if (widget.showTask && mapTask != null) ...[
+                  CircleLayer(
+                    circles: _buildTaskCircles(mapTask, nextTurnpointIndex),
+                  ),
                   if (taskRoute != null) ...[
                     PolylineLayer(
                       polylines: _buildLiveRoutePolylines(taskRoute),
@@ -1725,16 +1796,29 @@ class _MapControlState extends State<MapControl> {
   // ── Competition task overlay ───────────────────────────────────────────
   static const Color _taskRouteColor = Color(0xFFFF6D00);
 
+  List<(double, double)>? _routeForServerTask(
+    CompetitionTask task,
+    double latitude,
+    double longitude,
+  ) {
+    if (task.turnpoints.isEmpty) return null;
+    final optimized = TaskOptimizer.optimizeFromStart(
+      latitude,
+      longitude,
+      task.turnpoints,
+      radiusReductionMeters:
+          CompetitionTaskStore.instance.radiusReductionMeters,
+    );
+    if (optimized[0].isEmpty) return null;
+    return [
+      (latitude, longitude),
+      for (var index = 0; index < optimized[0].length; index++)
+        (optimized[0][index], optimized[1][index]),
+    ];
+  }
+
   /// Translucent cylinders for every turnpoint, tinted by role.
-  List<CircleMarker> _buildTaskCircles() {
-    final store = CompetitionTaskStore.instance;
-    final task = store.task;
-    if (task == null) return const [];
-    // The "next turnpoint" highlight only applies in flight; on the ground the
-    // course is shown without a current target.
-    final nextIndex = FlightState.instance.isFlying
-        ? store.nextTurnpointIndex
-        : null;
+  List<CircleMarker> _buildTaskCircles(CompetitionTask task, int? nextIndex) {
     final out = <CircleMarker>[];
     for (var i = 0; i < task.turnpoints.length; i++) {
       final tp = task.turnpoints[i];
@@ -1805,14 +1889,8 @@ class _MapControlState extends State<MapControl> {
   }
 
   /// Numbered labels at every turnpoint centre.
-  List<Marker> _buildTaskMarkers() {
-    final store = CompetitionTaskStore.instance;
-    final task = store.task;
+  List<Marker> _buildTaskMarkers(CompetitionTask? task, int? nextIndex) {
     if (task == null) return const [];
-    // No "next turnpoint" highlight until the flight starts.
-    final nextIndex = FlightState.instance.isFlying
-        ? store.nextTurnpointIndex
-        : null;
     final markers = <Marker>[];
     for (var i = 0; i < task.turnpoints.length; i++) {
       final tp = task.turnpoints[i];

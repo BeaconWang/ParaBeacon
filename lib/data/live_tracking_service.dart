@@ -595,6 +595,7 @@ class LiveTrackingService extends ChangeNotifier {
     required double south,
     required double east,
     required double north,
+    String? taskOwnerId,
   }) async {
     if (!_configured) {
       throw const LiveTrackingProxyException('tracking_config_unavailable');
@@ -624,6 +625,7 @@ class LiveTrackingService extends ChangeNotifier {
         'south': south.toStringAsPrecision(12),
         'east': east.toStringAsPrecision(12),
         'north': north.toStringAsPrecision(12),
+        ...?(taskOwnerId == null ? null : {'task_owner_id': taskOwnerId}),
         ...?(cursor == null ? null : {'cursor': cursor}),
       };
       final response = await _sendAuthorizedGet(

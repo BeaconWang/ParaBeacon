@@ -2571,6 +2571,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionTaskSubtitle => 'Build or import a turnpoint task';
 
   @override
+  String get competitionServerTasks => 'Server tasks';
+
+  @override
+  String get competitionServerBrowse => 'Browse server tasks';
+
+  @override
+  String get competitionServerUpload => 'Upload / replace my task';
+
+  @override
+  String get competitionServerSignInRequired =>
+      'Sign in to a ParaBeacon account to upload a task.';
+
+  @override
+  String get competitionServerUploading => 'Uploading task…';
+
+  @override
+  String get competitionServerUploadSuccess =>
+      'Task uploaded. Your previous server task was replaced.';
+
+  @override
+  String get competitionServerRequestFailed =>
+      'Unable to contact the ParaBeacon server.';
+
+  @override
+  String get competitionServerEmpty => 'No tasks have been shared yet.';
+
+  @override
+  String get competitionServerLoadFailed => 'Unable to load server tasks.';
+
+  @override
+  String get competitionServerTaskLoaded =>
+      'Server task loaded into the current task.';
+
+  @override
   String competitionTaskSummarySubtitle(int count) {
     return '$count turnpoints';
   }

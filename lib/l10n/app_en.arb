@@ -919,6 +919,16 @@
   "taskNextPointLabel": "Next point",
   "competitionTaskTitle": "Competition task",
   "competitionTaskSubtitle": "Build or import a turnpoint task",
+  "competitionServerTasks": "Server tasks",
+  "competitionServerBrowse": "Browse server tasks",
+  "competitionServerUpload": "Upload / replace my task",
+  "competitionServerSignInRequired": "Sign in to a ParaBeacon account to upload a task.",
+  "competitionServerUploading": "Uploading task…",
+  "competitionServerUploadSuccess": "Task uploaded. Your previous server task was replaced.",
+  "competitionServerRequestFailed": "Unable to contact the ParaBeacon server.",
+  "competitionServerEmpty": "No tasks have been shared yet.",
+  "competitionServerLoadFailed": "Unable to load server tasks.",
+  "competitionServerTaskLoaded": "Server task loaded into the current task.",
   "competitionTaskSummarySubtitle": "{count} turnpoints",
   "@competitionTaskSummarySubtitle": {
     "placeholders": {

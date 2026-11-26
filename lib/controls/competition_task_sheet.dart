@@ -10,10 +10,12 @@ import 'package:geolocator/geolocator.dart';
 import '../data/competition/competition_task.dart';
 import '../data/competition/competition_task_downloader.dart';
 import '../data/competition/competition_task_io.dart';
+import '../data/competition/competition_task_server_service.dart';
 import '../data/competition/competition_task_store.dart';
 import '../data/competition/qr_image_decoder.dart';
 import '../data/flight_data_provider.dart';
 import '../data/landing_point_store.dart';
+import '../data/parabeacon_account_service.dart';
 import '../l10n/app_localizations.dart';
 import 'app_notice.dart';
 import 'competition_task_qr_sheet.dart';
@@ -103,6 +105,12 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       icon: const Icon(Icons.more_vert),
       onSelected: (value) async {
         switch (value) {
+          case 'server_tasks':
+            await _showServerTasks(l10n);
+            break;
+          case 'upload_server':
+            await _uploadToServer(l10n);
+            break;
           case 'scan_qr':
             await _scanQrCamera(l10n);
             break;
@@ -135,6 +143,22 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       itemBuilder: (context) {
         final hasTask = _store.hasTask;
         return [
+          PopupMenuItem(
+            value: 'server_tasks',
+            child: _menuRow(
+              Icons.cloud_download_outlined,
+              l10n.competitionServerBrowse,
+            ),
+          ),
+          if (hasTask)
+            PopupMenuItem(
+              value: 'upload_server',
+              child: _menuRow(
+                Icons.cloud_upload_outlined,
+                l10n.competitionServerUpload,
+              ),
+            ),
+          const PopupMenuDivider(),
           if (isCameraScanSupported)
             PopupMenuItem(
               value: 'scan_qr',
@@ -197,6 +221,44 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       Flexible(child: Text(label)),
     ],
   );
+
+  Future<void> _uploadToServer(AppLocalizations l10n) async {
+    final task = _store.task;
+    if (task == null) return;
+    final account = ParaBeaconAccountService.instance;
+    await account.load();
+    if (!mounted) return;
+    if (!account.isSignedIn) {
+      _snack(l10n.competitionServerSignInRequired);
+      return;
+    }
+    _snack(l10n.competitionServerUploading);
+    try {
+      await CompetitionTaskServerService.instance.uploadTask(task);
+      if (mounted) _snack(l10n.competitionServerUploadSuccess);
+    } catch (_) {
+      if (mounted) _snack(l10n.competitionServerRequestFailed);
+    }
+  }
+
+  Future<void> _showServerTasks(AppLocalizations l10n) async {
+    final account = ParaBeaconAccountService.instance;
+    await account.load();
+    if (!mounted) return;
+    if (!account.isSignedIn) {
+      _snack(l10n.competitionServerSignInRequired);
+      return;
+    }
+    final selected = await showModalBottomSheet<CompetitionTask>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _CompetitionTaskServerListSheet(l10n: l10n),
+    );
+    if (selected == null || !mounted) return;
+    await _store.setTask(selected);
+    if (mounted) _snack(l10n.competitionServerTaskLoaded);
+  }
 
   Widget _buildEmpty(ThemeData theme, AppLocalizations l10n) {
     return Center(
@@ -640,6 +702,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
           l10n,
           title: l10n.competitionEditName,
           initial: tp.name,
+          maxLength: 80,
         );
         if (name != null && mounted) {
           await _store.updateTurnpoint(
@@ -716,6 +779,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
           l10n,
           title: l10n.competitionWaypointName,
           initial: initial?.name ?? _suggestName(),
+          maxLength: 80,
         );
         if (name == null) return null;
         return TaskWaypoint(
@@ -950,12 +1014,14 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     AppLocalizations l10n, {
     required String title,
     required String initial,
+    required int maxLength,
   }) async {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => _CompetitionTextEntryDialog(
         title: title,
         initial: initial,
+        maxLength: maxLength,
         l10n: l10n,
       ),
     );
@@ -1001,6 +1067,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       l10n,
       title: l10n.competitionRenameTask,
       initial: task.name,
+      maxLength: 120,
     );
     if (name != null && mounted) await _store.setName(name);
   }
@@ -1263,11 +1330,13 @@ class _CompetitionTextEntryDialog extends StatefulWidget {
   const _CompetitionTextEntryDialog({
     required this.title,
     required this.initial,
+    required this.maxLength,
     required this.l10n,
   });
 
   final String title;
   final String initial;
+  final int maxLength;
   final AppLocalizations l10n;
 
   @override
@@ -1295,7 +1364,11 @@ class _CompetitionTextEntryDialogState
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(widget.title),
-      content: TextField(controller: _controller, autofocus: true),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLength: widget.maxLength,
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
@@ -1372,6 +1445,139 @@ class _CompetitionRadiusDialogState extends State<_CompetitionRadiusDialog> {
           child: Text(l10n.save),
         ),
       ],
+    );
+  }
+}
+
+class _CompetitionTaskServerListSheet extends StatefulWidget {
+  const _CompetitionTaskServerListSheet({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  State<_CompetitionTaskServerListSheet> createState() =>
+      _CompetitionTaskServerListSheetState();
+}
+
+class _CompetitionTaskServerListSheetState
+    extends State<_CompetitionTaskServerListSheet> {
+  late Future<List<CompetitionTaskServerEntry>> _tasks;
+
+  @override
+  void initState() {
+    super.initState();
+    _tasks = CompetitionTaskServerService.instance.listTasks();
+  }
+
+  void _refresh() {
+    setState(() => _tasks = CompetitionTaskServerService.instance.listTasks());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    final theme = Theme.of(context);
+    return FractionallySizedBox(
+      heightFactor: 0.86,
+      child: Material(
+        color: theme.colorScheme.surface,
+        child: Column(
+          children: [
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 8, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.competitionServerTasks,
+                        style: theme.textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: l10n.refresh,
+                      onPressed: _refresh,
+                      icon: const Icon(Icons.refresh),
+                    ),
+                    IconButton(
+                      tooltip: l10n.close,
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: FutureBuilder<List<CompetitionTaskServerEntry>>(
+                future: _tasks,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              l10n.competitionServerLoadFailed,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              onPressed: _refresh,
+                              icon: const Icon(Icons.refresh),
+                              label: Text(l10n.refresh),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  final entries = snapshot.data ?? const [];
+                  if (entries.isEmpty) {
+                    return Center(child: Text(l10n.competitionServerEmpty));
+                  }
+                  return ListView.separated(
+                    itemCount: entries.length,
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1, indent: 72),
+                    itemBuilder: (context, index) {
+                      final entry = entries[index];
+                      final name = entry.task.name.trim().isEmpty
+                          ? l10n.competitionUnnamedTask
+                          : entry.task.name;
+                      final date = MaterialLocalizations.of(
+                        context,
+                      ).formatMediumDate(entry.updatedAt.toLocal());
+                      return ListTile(
+                        leading: const CircleAvatar(
+                          child: Icon(Icons.flag_outlined),
+                        ),
+                        title: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          '${l10n.competitionTaskSummarySubtitle(entry.task.turnpoints.length)} · $date',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(context).pop(entry.task),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

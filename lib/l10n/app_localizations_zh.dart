@@ -2444,6 +2444,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionTaskSubtitle => '创建或导入绕点航线';
 
   @override
+  String get competitionServerTasks => '服务器航线';
+
+  @override
+  String get competitionServerBrowse => '浏览服务器航线';
+
+  @override
+  String get competitionServerUpload => '上传/替换我的航线';
+
+  @override
+  String get competitionServerSignInRequired => '请先登录 ParaBeacon 账户再上传航线。';
+
+  @override
+  String get competitionServerUploading => '正在上传航线…';
+
+  @override
+  String get competitionServerUploadSuccess => '航线已上传，服务器中该账户的原有航线已替换。';
+
+  @override
+  String get competitionServerRequestFailed => '无法连接 ParaBeacon 服务器。';
+
+  @override
+  String get competitionServerEmpty => '服务器上还没有分享的航线。';
+
+  @override
+  String get competitionServerLoadFailed => '无法加载服务器航线。';
+
+  @override
+  String get competitionServerTaskLoaded => '服务器航线已载入为当前航线。';
+
+  @override
   String competitionTaskSummarySubtitle(int count) {
     return '$count 个绕点';
   }

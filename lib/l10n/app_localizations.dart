@@ -4814,6 +4814,66 @@ abstract class AppLocalizations {
   /// **'Build or import a turnpoint task'**
   String get competitionTaskSubtitle;
 
+  /// No description provided for @competitionServerTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Server tasks'**
+  String get competitionServerTasks;
+
+  /// No description provided for @competitionServerBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse server tasks'**
+  String get competitionServerBrowse;
+
+  /// No description provided for @competitionServerUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload / replace my task'**
+  String get competitionServerUpload;
+
+  /// No description provided for @competitionServerSignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to a ParaBeacon account to upload a task.'**
+  String get competitionServerSignInRequired;
+
+  /// No description provided for @competitionServerUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading task…'**
+  String get competitionServerUploading;
+
+  /// No description provided for @competitionServerUploadSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Task uploaded. Your previous server task was replaced.'**
+  String get competitionServerUploadSuccess;
+
+  /// No description provided for @competitionServerRequestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to contact the ParaBeacon server.'**
+  String get competitionServerRequestFailed;
+
+  /// No description provided for @competitionServerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks have been shared yet.'**
+  String get competitionServerEmpty;
+
+  /// No description provided for @competitionServerLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load server tasks.'**
+  String get competitionServerLoadFailed;
+
+  /// No description provided for @competitionServerTaskLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Server task loaded into the current task.'**
+  String get competitionServerTaskLoaded;
+
   /// No description provided for @competitionTaskSummarySubtitle.
   ///
   /// In en, this message translates to:

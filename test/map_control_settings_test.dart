@@ -59,6 +59,25 @@ void main() {
     expect(setting.labelOf(chinese), '显示竞赛航线');
   });
 
+  test('map zoom setting has a useful range and persists', () {
+    final setting = settingsSchemaFor(
+      'map',
+    ).singleWhere((setting) => setting.key == 'zoom');
+    expect(setting.kind, SettingKind.slider);
+    expect(setting.defaultValue, 17.0);
+    expect(setting.min, 3.0);
+    expect(setting.max, 18.0);
+    expect(setting.divisions, 15);
+
+    final control = PlacedControl.fromType(
+      ControlCatalog.byId('map')!,
+      instanceId: 'map-zoom-test',
+    );
+    control.settings['zoom'] = 11.0;
+    final restored = PlacedControl.fromJson(control.toJson())!;
+    expect(restored.doubleSetting('zoom'), 11.0);
+  });
+
   test('public pilot locations are on by default and localized', () async {
     final setting = settingsSchemaFor(
       'map',

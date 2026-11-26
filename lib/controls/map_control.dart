@@ -243,7 +243,7 @@ class MapTileSources {
 /// (where GPS isn't available) the feed simply falls back to the BLE sensor
 /// or the debug simulator.
 class MapControl extends StatefulWidget {
-  /// Initial zoom level (flutter_map zoom, ~1..19).
+  /// Configured zoom level, applied at mount and when changed in map settings.
   final double initialZoom;
 
   /// Optional initial map center for location-picking dialogs.
@@ -478,6 +478,7 @@ class _MapControlState extends State<MapControl> {
   /// Current zoom level, mirrored from the camera so the readout and zoom
   /// buttons stay in sync with pinch gestures.
   late double _zoom = widget.initialZoom;
+  double? _pendingConfiguredZoom;
 
   /// Last WGS-84 position pushed to the map (for re-center / follow).
   LatLng? _lastWgs;
@@ -646,6 +647,16 @@ class _MapControlState extends State<MapControl> {
     }
     if (oldWidget.follow != widget.follow) {
       _follow = widget.follow;
+    }
+    if (oldWidget.initialZoom != widget.initialZoom) {
+      final requestedZoom = widget.initialZoom;
+      if (_ready) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _applyConfiguredZoom(requestedZoom);
+        });
+      } else {
+        _pendingConfiguredZoom = requestedZoom;
+      }
     }
     if (oldWidget.showOtherPilots != widget.showOtherPilots) {
       _serverPilotRequestId++;
@@ -1278,6 +1289,9 @@ class _MapControlState extends State<MapControl> {
                 },
                 onMapReady: () {
                   _ready = true;
+                  final pendingZoom = _pendingConfiguredZoom;
+                  _pendingConfiguredZoom = null;
+                  if (pendingZoom != null) _applyConfiguredZoom(pendingZoom);
                   final p = _lastWgs;
                   if (p != null) _maybeFollow(p);
                   _schedulePublicPilotRefresh(Duration.zero);
@@ -1582,6 +1596,20 @@ class _MapControlState extends State<MapControl> {
       errorTileCallback: _onTileLoadError,
       reset: _tileResetCtrl.stream,
     );
+  }
+
+  void _applyConfiguredZoom(double requestedZoom) {
+    if (!_ready) {
+      _pendingConfiguredZoom = requestedZoom;
+      return;
+    }
+    final src = MapTileSources.byId(widget.tileSource);
+    final next = requestedZoom.clamp(2.0, src.maxZoom).toDouble();
+    if ((_map.camera.zoom - next).abs() > 0.01) {
+      _map.move(_map.camera.center, next);
+    } else if ((_zoom - next).abs() > 0.01) {
+      setState(() => _zoom = next);
+    }
   }
 
   /// Zooms in/out by [delta] levels, clamped to the source's range.

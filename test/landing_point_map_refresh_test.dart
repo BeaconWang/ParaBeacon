@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart' show MarkerLayer;
+import 'package:flutter_map/flutter_map.dart' show FlutterMap, MarkerLayer;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:parabeacon/controls/map_control.dart';
@@ -15,6 +15,34 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('map setting changes update the mounted camera zoom', (
+    tester,
+  ) async {
+    final source = BluetoothSensorFlightDataSource();
+    final transformer = FlightDataTransformer(rawSource: source);
+    addTearDown(() {
+      transformer.dispose();
+      source.dispose();
+    });
+    source.ingestGpsSnapshot(
+      latitude: 46.5,
+      longitude: 6.6,
+      heading: 0,
+      groundSpeedKmh: 0,
+    );
+
+    await tester.pumpWidget(_zoomHarness(transformer, 8));
+    await tester.pumpAndSettle();
+    _expectCameraZoom(tester, 8);
+    expect(find.textContaining('Z 8'), findsOneWidget);
+
+    await tester.pumpWidget(_zoomHarness(transformer, 12));
+    await tester.pumpAndSettle();
+    _expectCameraZoom(tester, 12);
+    expect(find.textContaining('Z 8'), findsNothing);
+    expect(find.textContaining('Z 12'), findsOneWidget);
   });
 
   testWidgets('all mounted map controls reflect landing point mutations', (
@@ -91,6 +119,40 @@ void main() {
     _expectMapMarkers(tester, const []);
     expect(find.text('Updated LZ'), findsNothing);
   });
+}
+
+Widget _zoomHarness(FlightDataTransformer transformer, double zoom) =>
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: FlightDataProvider(
+          transformer: transformer,
+          child: MapControl(
+            key: const ValueKey('zoom-test-map'),
+            initialCenter: const LatLng(46.5, 6.6),
+            initialZoom: zoom,
+            follow: false,
+            tileSource: 'none',
+            showTrack: false,
+            showThermal: false,
+            showAirspace: false,
+            showWind: false,
+            showNorth: false,
+            showScale: false,
+            showLegend: false,
+            showZoomLevel: true,
+            showAttribution: false,
+            showStatus: false,
+            showOtherPilots: false,
+          ),
+        ),
+      ),
+    );
+
+void _expectCameraZoom(WidgetTester tester, double zoom) {
+  final map = tester.widget<FlutterMap>(find.byType(FlutterMap));
+  expect(map.mapController!.camera.zoom, closeTo(zoom, 0.01));
 }
 
 MapControl _map() => const MapControl(

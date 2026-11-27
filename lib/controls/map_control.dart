@@ -489,7 +489,8 @@ class _MapControlState extends State<MapControl> {
   double _lastHeading = 0.0;
   List<server_tracking.PublicPilotLocation> _serverPilotLocations = const [];
   final Map<String, PeerLocationInterpolator> _serverPilotMotion = {};
-  Timer? _serverPilotAnimationTimer;
+  final Map<String, PeerLocationInterpolator> _xContestPilotMotion = {};
+  Timer? _otherPilotAnimationTimer;
   Timer? _serverPilotRefreshTimer;
   Timer? _serverPilotDebounceTimer;
   Timer? _currentTaskOwnerRefreshTimer;
@@ -553,8 +554,9 @@ class _MapControlState extends State<MapControl> {
     // map should immediately switch to the simulated position (highest
     // priority), and when it turns off fall back to real device GPS / BLE.
     DebugSettings.instance.addListener(_onExternalChange);
-    // Redraw when public XContest pilots change.
-    XContestLiveTrackingService.instance.addListener(_onExternalChange);
+    // Smooth public XContest position samples before rebuilding their markers.
+    XContestLiveTrackingService.instance.addListener(_onXContestPilotsChanged);
+    _onXContestPilotsChanged();
     LiveTrackingSettings.instance.addListener(_onExternalChange);
     _accountUserId = ParaBeaconAccountService.instance.user?.id;
     ParaBeaconAccountService.instance.addListener(_onPublicPilotAccountChanged);
@@ -685,11 +687,14 @@ class _MapControlState extends State<MapControl> {
       if (widget.showOtherPilots) {
         _startPublicPilotRefreshTimer();
         _schedulePublicPilotRefresh(Duration.zero);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _onXContestPilotsChanged();
+        });
       } else {
         _serverPilotRefreshTimer?.cancel();
         _serverPilotRefreshTimer = null;
         _serverPilotLocations = const [];
-        _clearServerPilotMotion();
+        _clearOtherPilotMotion();
       }
     }
     // Switching rotation mode: snap back to north-up when leaving track-up, and
@@ -714,7 +719,7 @@ class _MapControlState extends State<MapControl> {
     CompetitionTaskServerService.currentTaskOwnerId.removeListener(
       _onCurrentTaskOwnerChanged,
     );
-    _clearServerPilotMotion();
+    _clearOtherPilotMotion();
     _serverPilotRequestId++;
     _tileResetCtrl.close();
     _airspaceSub?.cancel();
@@ -727,7 +732,9 @@ class _MapControlState extends State<MapControl> {
     VarioSoundSettings.instance.removeListener(_onThresholdsChanged);
     VarioColorSettings.instance.removeListener(_onExternalChange);
     DebugSettings.instance.removeListener(_onExternalChange);
-    XContestLiveTrackingService.instance.removeListener(_onExternalChange);
+    XContestLiveTrackingService.instance.removeListener(
+      _onXContestPilotsChanged,
+    );
     LiveTrackingSettings.instance.removeListener(_onExternalChange);
     ParaBeaconAccountService.instance.removeListener(
       _onPublicPilotAccountChanged,
@@ -856,18 +863,74 @@ class _MapControlState extends State<MapControl> {
         headingDegrees: pilot.headingDegrees,
       );
     }
-    if (locations.isEmpty || _serverPilotAnimationTimer != null) return;
-    _serverPilotAnimationTimer = Timer.periodic(
-      const Duration(milliseconds: 50),
-      (timer) {
-        final now = DateTime.now();
-        final animating = _serverPilotMotion.values.any(
+    _startOtherPilotAnimationTimer();
+  }
+
+  void _animateXContestPilots(List<LiveOtherPilot> pilots) {
+    final activePilotIds = pilots.map((pilot) => pilot.flightId).toSet();
+    _xContestPilotMotion.removeWhere(
+      (pilotId, _) => !activePilotIds.contains(pilotId),
+    );
+    for (final pilot in pilots) {
+      final timestamp = pilot.time;
+      if (timestamp == null) continue;
+      // XContest samples don't expose reliable ground speed here, so bridge
+      // its position-only updates across most of the expected one-second gap.
+      final motion = _xContestPilotMotion.putIfAbsent(
+        pilot.flightId,
+        () => PeerLocationInterpolator(
+          interpolationDuration: const Duration(milliseconds: 900),
+        ),
+      );
+      motion.update(
+        latitude: pilot.lat,
+        longitude: pilot.lon,
+        timestamp: timestamp,
+        headingDegrees: pilot.headingDegrees,
+      );
+    }
+    _startOtherPilotAnimationTimer();
+  }
+
+  void _onXContestPilotsChanged() {
+    if (!mounted || !widget.showOtherPilots) return;
+    final now = DateTime.now().toUtc();
+    final pilots = XContestLiveTrackingService.instance.otherPilots
+        .where(
+          (pilot) =>
+              pilot.time != null && PilotCourse.isFresh(pilot.time!, now),
+        )
+        .toList(growable: false);
+    _animateXContestPilots(pilots);
+    setState(() {});
+  }
+
+  void _startOtherPilotAnimationTimer() {
+    if (_otherPilotAnimationTimer != null) return;
+    final now = DateTime.now();
+    final animating =
+        _serverPilotMotion.values.any(
+          (motion) => motion.needsAnimationAt(now),
+        ) ||
+        _xContestPilotMotion.values.any(
           (motion) => motion.needsAnimationAt(now),
         );
+    if (!mounted || !widget.showOtherPilots || !animating) return;
+    _otherPilotAnimationTimer = Timer.periodic(
+      const Duration(milliseconds: 16),
+      (timer) {
+        final now = DateTime.now();
+        final animating =
+            _serverPilotMotion.values.any(
+              (motion) => motion.needsAnimationAt(now),
+            ) ||
+            _xContestPilotMotion.values.any(
+              (motion) => motion.needsAnimationAt(now),
+            );
         if (!mounted || !widget.showOtherPilots || !animating) {
           timer.cancel();
-          if (identical(_serverPilotAnimationTimer, timer)) {
-            _serverPilotAnimationTimer = null;
+          if (identical(_otherPilotAnimationTimer, timer)) {
+            _otherPilotAnimationTimer = null;
           }
           return;
         }
@@ -877,9 +940,24 @@ class _MapControlState extends State<MapControl> {
   }
 
   void _clearServerPilotMotion() {
-    _serverPilotAnimationTimer?.cancel();
-    _serverPilotAnimationTimer = null;
     _serverPilotMotion.clear();
+  }
+
+  void _clearOtherPilotMotion() {
+    _otherPilotAnimationTimer?.cancel();
+    _otherPilotAnimationTimer = null;
+    _serverPilotMotion.clear();
+    _xContestPilotMotion.clear();
+  }
+
+  LatLng _xContestPilotPosition(LiveOtherPilot pilot) {
+    final interpolated = _xContestPilotMotion[pilot.flightId]?.positionAt(
+      DateTime.now(),
+    );
+    return LatLng(
+      interpolated?.latitude ?? pilot.lat,
+      interpolated?.longitude ?? pilot.lon,
+    );
   }
 
   LatLng _serverPilotPosition(server_tracking.PublicPilotLocation pilot) {
@@ -1225,7 +1303,7 @@ class _MapControlState extends State<MapControl> {
     final otherPilotMarkers = <Marker>[
       for (final pilot in freshXContestPilots)
         Marker(
-          point: _shift(LatLng(pilot.lat, pilot.lon), widget.tileSource),
+          point: _shift(_xContestPilotPosition(pilot), widget.tileSource),
           width: LivePilotMapMarker.markerWidth,
           height: LivePilotMapMarker.markerHeight,
           alignment: LivePilotMapMarker.markerAlignment,

@@ -202,13 +202,19 @@ class RoomTrackingWebSocketClient extends ChangeNotifier {
       }
       _channel = channel;
       _lastError = null;
-      _setState(RoomSocketState.active);
       _subscription = channel.stream.listen(
         _onMessage,
         onError: (Object error) => _onDisconnected(error),
         onDone: () => _onDisconnected(null),
         cancelOnError: false,
       );
+      channel.sink.add(
+        jsonEncode({
+          'type': 'flight_reset',
+          'timestamp': DateTime.now().toUtc().toIso8601String(),
+        }),
+      );
+      _setState(RoomSocketState.active);
       _stableTimer?.cancel();
       _stableTimer = Timer(const Duration(seconds: 30), () => _attempt = 0);
     } on Object catch (error) {

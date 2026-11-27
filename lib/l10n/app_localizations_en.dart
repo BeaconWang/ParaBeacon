@@ -2605,6 +2605,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Server task selected as the current task.';
 
   @override
+  String get competitionServerTaskReadOnly =>
+      'This task is from the server and is read-only. Copy it to a local task to make changes.';
+
+  @override
+  String get competitionCopyToLocalTask => 'Copy to current local task';
+
+  @override
+  String get competitionTaskCopiedToLocal =>
+      'Server task copied to the current local task. You can now edit it.';
+
+  @override
   String get competitionServerTaskUnselected => 'Current task unselected.';
 
   @override

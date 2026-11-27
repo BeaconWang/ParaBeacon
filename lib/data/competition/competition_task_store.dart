@@ -27,6 +27,8 @@ class CompetitionTaskStore extends ChangeNotifier {
   static const int maximumRadiusReductionMeters = 100;
 
   CompetitionTask? _task;
+  String? _serverTaskOwnerId;
+  bool _isLocalServerCopy = false;
   int _radiusReductionMeters = defaultRadiusReductionMeters;
   OptimizedTask? _optimized;
 
@@ -40,6 +42,12 @@ class CompetitionTaskStore extends ChangeNotifier {
   CompetitionTask? get task => _task;
   OptimizedTask? get optimized => _optimized;
   bool get hasTask => _task != null && !_task!.isEmpty;
+  String? get serverTaskOwnerId => _serverTaskOwnerId;
+  bool get isCurrentTaskServerSourced =>
+      _serverTaskOwnerId != null && !_isLocalServerCopy;
+  bool get isCurrentTaskLocalCopy => _isLocalServerCopy;
+  bool get canAutoSyncCurrentTask =>
+      _serverTaskOwnerId == null && !_isLocalServerCopy;
   bool get isLoaded => _loaded;
   int get reachedCount => _reachedCount;
   int get radiusReductionMeters => _radiusReductionMeters;
@@ -86,6 +94,13 @@ class CompetitionTaskStore extends ChangeNotifier {
           final task = CompetitionTask.tryParse(decoded['task']);
           if (task != null) {
             _task = task;
+            final ownerId = decoded['serverTaskOwnerId'];
+            _serverTaskOwnerId = ownerId is String && ownerId.isNotEmpty
+                ? ownerId
+                : null;
+            _isLocalServerCopy =
+                _serverTaskOwnerId != null &&
+                decoded['isLocalServerCopy'] == true;
             _optimized = TaskOptimizer.optimize(
               task,
               radiusReductionMeters: _radiusReductionMeters,
@@ -135,18 +150,66 @@ class CompetitionTaskStore extends ChangeNotifier {
     }
   }
 
-  /// Replaces the active task (or clears it when [task] is null).
+  /// Replaces the local task. A server-sourced task can only be replaced by
+  /// explicitly copying it locally or selecting another server task.
   Future<void> setTask(CompetitionTask? task) async {
     await load();
+    if (task != null && isCurrentTaskServerSourced) return;
+    await _replaceTask(task, serverTaskOwnerId: null, isLocalServerCopy: false);
+  }
+
+  Future<void> setServerTask(
+    CompetitionTask task, {
+    required String ownerId,
+  }) async {
+    if (ownerId.isEmpty || task.isEmpty) return;
+    await load();
+    await _replaceTask(
+      task,
+      serverTaskOwnerId: ownerId,
+      isLocalServerCopy: false,
+    );
+  }
+
+  Future<void> copyTaskFromServer(
+    CompetitionTask task, {
+    required String ownerId,
+  }) async {
+    if (ownerId.isEmpty || task.isEmpty) return;
+    await load();
+    await _replaceTask(
+      task,
+      serverTaskOwnerId: ownerId,
+      isLocalServerCopy: true,
+    );
+  }
+
+  Future<void> makeCurrentServerTaskEditableCopy() async {
+    await load();
+    if (!isCurrentTaskServerSourced) return;
+    _isLocalServerCopy = true;
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> _replaceTask(
+    CompetitionTask? task, {
+    required String? serverTaskOwnerId,
+    required bool isLocalServerCopy,
+  }) async {
     if (task == null || task.isEmpty) {
       _task = null;
       _optimized = null;
+      _serverTaskOwnerId = null;
+      _isLocalServerCopy = false;
     } else {
       _task = task;
       _optimized = TaskOptimizer.optimize(
         task,
         radiusReductionMeters: _radiusReductionMeters,
       );
+      _serverTaskOwnerId = serverTaskOwnerId;
+      _isLocalServerCopy = isLocalServerCopy;
     }
     _reachedCount = 0;
     notifyListeners();
@@ -159,6 +222,7 @@ class CompetitionTaskStore extends ChangeNotifier {
 
   Future<void> addTurnpoint(Turnpoint turnpoint) async {
     await load();
+    if (isCurrentTaskServerSourced) return;
     final current = _task ?? const CompetitionTask();
     final updated = [...current.turnpoints, turnpoint];
     await _updateTask(current.copyWith(turnpoints: updated));
@@ -256,6 +320,7 @@ class CompetitionTaskStore extends ChangeNotifier {
   }
 
   Future<void> _updateTask(CompetitionTask task) async {
+    if (isCurrentTaskServerSourced) return;
     if (task.isEmpty) {
       _task = null;
       _optimized = null;
@@ -533,7 +598,13 @@ class CompetitionTaskStore extends ChangeNotifier {
       }
       await prefs.setString(
         _key,
-        jsonEncode({'task': task.toJson(), 'reachedCount': _reachedCount}),
+        jsonEncode({
+          'task': task.toJson(),
+          'reachedCount': _reachedCount,
+          if (_serverTaskOwnerId != null)
+            'serverTaskOwnerId': _serverTaskOwnerId,
+          if (_isLocalServerCopy) 'isLocalServerCopy': true,
+        }),
       );
     } catch (_) {
       // Best-effort; keep the in-memory task if storage is unavailable.

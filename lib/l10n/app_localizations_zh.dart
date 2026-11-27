@@ -2475,6 +2475,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionServerTaskLoaded => '已将服务器航线设为当前航线。';
 
   @override
+  String get competitionServerTaskReadOnly => '此航线来自服务器，当前为只读。复制到本地后即可修改。';
+
+  @override
+  String get competitionCopyToLocalTask => '复制到当前本地航线';
+
+  @override
+  String get competitionTaskCopiedToLocal => '已复制到当前本地航线，现在可以编辑。';
+
+  @override
   String get competitionServerTaskUnselected => '已取消当前航线。';
 
   @override

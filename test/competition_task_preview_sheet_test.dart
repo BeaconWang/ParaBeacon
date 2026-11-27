@@ -33,7 +33,7 @@ const _task = CompetitionTask(
 );
 
 Widget _previewHost(
-  ValueChanged<bool?> onResult, {
+  ValueChanged<CompetitionTaskPreviewAction?> onResult, {
   String mapSourceId = 'none',
 }) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -44,7 +44,7 @@ Widget _previewHost(
         onPressed: () async {
           final l10n = AppLocalizations.of(context);
           onResult(
-            await showModalBottomSheet<bool>(
+            await showModalBottomSheet<CompetitionTaskPreviewAction>(
               context: context,
               isScrollControlled: true,
               useSafeArea: true,
@@ -70,7 +70,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    bool? result;
+    CompetitionTaskPreviewAction? result;
     await tester.pumpWidget(_previewHost((value) => result = value));
     await tester.tap(find.text('Open preview'));
     await tester.pumpAndSettle();
@@ -98,7 +98,7 @@ void main() {
 
     await tester.tap(find.text('Use this task'));
     await tester.pumpAndSettle();
-    expect(result, isTrue);
+    expect(result, CompetitionTaskPreviewAction.useServerTask);
   });
 
   testWidgets('changes and remembers the map source from the preview', (
@@ -108,7 +108,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    bool? result;
+    CompetitionTaskPreviewAction? result;
     await tester.pumpWidget(
       _previewHost((value) => result = value, mapSourceId: 'none'),
     );
@@ -129,13 +129,28 @@ void main() {
     expect(result, isNull);
   });
 
+  testWidgets('copy action returns a local-copy choice', (tester) async {
+    tester.view.physicalSize = const Size(1000, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    CompetitionTaskPreviewAction? result;
+    await tester.pumpWidget(_previewHost((value) => result = value));
+    await tester.tap(find.text('Open preview'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Copy to current local task'));
+    await tester.pumpAndSettle();
+    expect(result, CompetitionTaskPreviewAction.copyToLocal);
+  });
+
   testWidgets('canceling preview does not apply the task', (tester) async {
-    bool? result;
+    CompetitionTaskPreviewAction? result;
     await tester.pumpWidget(_previewHost((value) => result = value));
     await tester.tap(find.text('Open preview'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(result, isFalse);
+    expect(result, isNull);
   });
 }

@@ -44,11 +44,20 @@ class _CompetitionTaskSheet extends StatefulWidget {
 }
 
 class _ServerTaskSelection {
-  const _ServerTaskSelection.select(this.entry) : clear = false;
-  const _ServerTaskSelection.clear() : entry = null, clear = true;
+  const _ServerTaskSelection.select(this.entry)
+    : clear = false,
+      copyToLocal = false;
+  const _ServerTaskSelection.copy(this.entry)
+    : clear = false,
+      copyToLocal = true;
+  const _ServerTaskSelection.clear()
+    : entry = null,
+      clear = true,
+      copyToLocal = false;
 
   final CompetitionTaskServerEntry? entry;
   final bool clear;
+  final bool copyToLocal;
 }
 
 class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
@@ -113,6 +122,14 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
       onSelected: (value) async {
+        if (_store.isCurrentTaskServerSourced &&
+            value != 'server_tasks' &&
+            value != 'show_qr' &&
+            value != 'export_file' &&
+            value != 'copy_code' &&
+            value != 'clear') {
+          return;
+        }
         switch (value) {
           case 'server_tasks':
             await _showServerTasks(l10n);
@@ -151,6 +168,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
       },
       itemBuilder: (context) {
         final hasTask = _store.hasTask;
+        final isReadOnly = _store.isCurrentTaskServerSourced;
         return [
           PopupMenuItem(
             value: 'server_tasks',
@@ -159,7 +177,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
               l10n.competitionServerBrowse,
             ),
           ),
-          if (hasTask)
+          if (hasTask && !isReadOnly)
             PopupMenuItem(
               value: 'upload_server',
               child: _menuRow(
@@ -167,34 +185,36 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                 l10n.competitionServerUpload,
               ),
             ),
-          const PopupMenuDivider(),
-          if (isCameraScanSupported)
+          if (!isReadOnly) ...[
+            const PopupMenuDivider(),
+            if (isCameraScanSupported)
+              PopupMenuItem(
+                value: 'scan_qr',
+                child: _menuRow(Icons.qr_code_scanner, l10n.competitionScanQr),
+              ),
             PopupMenuItem(
-              value: 'scan_qr',
-              child: _menuRow(Icons.qr_code_scanner, l10n.competitionScanQr),
+              value: 'scan_image',
+              child: _menuRow(Icons.image_outlined, l10n.competitionScanImage),
             ),
-          PopupMenuItem(
-            value: 'scan_image',
-            child: _menuRow(Icons.image_outlined, l10n.competitionScanImage),
-          ),
-          PopupMenuItem(
-            value: 'download_url',
-            child: _menuRow(
-              Icons.cloud_download_outlined,
-              l10n.competitionDownloadUrl,
+            PopupMenuItem(
+              value: 'download_url',
+              child: _menuRow(
+                Icons.cloud_download_outlined,
+                l10n.competitionDownloadUrl,
+              ),
             ),
-          ),
-          PopupMenuItem(
-            value: 'import_file',
-            child: _menuRow(
-              Icons.file_open_outlined,
-              l10n.competitionImportFile,
+            PopupMenuItem(
+              value: 'import_file',
+              child: _menuRow(
+                Icons.file_open_outlined,
+                l10n.competitionImportFile,
+              ),
             ),
-          ),
-          PopupMenuItem(
-            value: 'import_code',
-            child: _menuRow(Icons.content_paste, l10n.competitionImportCode),
-          ),
+            PopupMenuItem(
+              value: 'import_code',
+              child: _menuRow(Icons.content_paste, l10n.competitionImportCode),
+            ),
+          ],
           if (hasTask) ...[
             const PopupMenuDivider(),
             PopupMenuItem(
@@ -233,7 +253,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
 
   Future<void> _uploadToServer(AppLocalizations l10n) async {
     final task = _store.task;
-    if (task == null) return;
+    if (task == null || _store.isCurrentTaskServerSourced) return;
     final account = ParaBeaconAccountService.instance;
     await account.load();
     if (!mounted) return;
@@ -273,8 +293,13 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
         return;
       }
       final entry = selection.entry!;
+      if (selection.copyToLocal) {
+        await _store.copyTaskFromServer(entry.task, ownerId: entry.ownerId);
+        if (mounted) _snack(l10n.competitionTaskCopiedToLocal);
+        return;
+      }
       await CompetitionTaskServerService.instance.setCurrentTask(entry.ownerId);
-      await _store.setTask(entry.task);
+      await _store.setServerTask(entry.task, ownerId: entry.ownerId);
       if (mounted) _snack(l10n.competitionServerTaskLoaded);
     } catch (_) {
       if (mounted) _snack(l10n.competitionServerRequestFailed);
@@ -348,6 +373,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     CompetitionTask task,
     dynamic optimized,
   ) {
+    final readOnly = _store.isCurrentTaskServerSourced;
     final totalKm = optimized == null
         ? 0.0
         : (optimized.totalDistanceM as double) / 1000.0;
@@ -358,6 +384,22 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
       children: [
+        if (readOnly) ...[
+          Card(
+            color: theme.colorScheme.secondaryContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Icon(Icons.lock_outline, color: theme.colorScheme.primary),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(l10n.competitionServerTaskReadOnly)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         // Summary card.
         Card(
           margin: EdgeInsets.zero,
@@ -379,7 +421,9 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 18),
                       tooltip: l10n.competitionRenameTask,
-                      onPressed: () => _renameTask(l10n, task),
+                      onPressed: readOnly
+                          ? null
+                          : () => _renameTask(l10n, task),
                     ),
                   ],
                 ),
@@ -421,7 +465,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
               ),
             ),
             TextButton.icon(
-              onPressed: () => _addTurnpoint(l10n),
+              onPressed: readOnly ? null : () => _addTurnpoint(l10n),
               icon: const Icon(Icons.add, size: 18),
               label: Text(l10n.competitionAddTurnpoint),
             ),
@@ -433,8 +477,10 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
           physics: const NeverScrollableScrollPhysics(),
           buildDefaultDragHandles: false,
           itemCount: task.turnpoints.length,
-          onReorder: (oldIndex, newIndex) =>
-              _store.moveTurnpoint(oldIndex, newIndex),
+          onReorder: readOnly
+              ? null
+              : (oldIndex, newIndex) =>
+                    _store.moveTurnpoint(oldIndex, newIndex),
           itemBuilder: (context, index) {
             final tp = task.turnpoints[index];
             return _TurnpointTile(
@@ -446,6 +492,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
               index: index,
               turnpoint: tp,
               l10n: l10n,
+              readOnly: readOnly,
               onEdit: () => _editTurnpoint(l10n, index, tp),
               onDelete: () => _store.removeTurnpoint(index),
               onRole: (role) => _store.setTurnpointRole(index, role),
@@ -455,11 +502,11 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
         const SizedBox(height: 16),
 
         // Start of speed section.
-        _buildStartCard(theme, l10n, task),
+        _buildStartCard(theme, l10n, task, readOnly: readOnly),
         const SizedBox(height: 16),
 
         // Goal.
-        _buildGoalCard(theme, l10n, task),
+        _buildGoalCard(theme, l10n, task, readOnly: readOnly),
       ],
     );
   }
@@ -483,8 +530,9 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
   Widget _buildStartCard(
     ThemeData theme,
     AppLocalizations l10n,
-    CompetitionTask task,
-  ) {
+    CompetitionTask task, {
+    required bool readOnly,
+  }) {
     final start = task.start;
     final hasSss = task.sssIndex != null;
     return Card(
@@ -517,9 +565,11 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                   TaskStartType.race: l10n.competitionStartTypeRace,
                   TaskStartType.elapsedTime: l10n.competitionStartTypeElapsed,
                 },
-                onChanged: (v) => _store.setStart(
-                  (start ?? const TaskStart()).copyWith(type: v),
-                ),
+                onChanged: readOnly
+                    ? null
+                    : (v) => _store.setStart(
+                        (start ?? const TaskStart()).copyWith(type: v),
+                      ),
               ),
               _choiceRow<TaskStartDirection>(
                 label: l10n.competitionStartDirection,
@@ -528,9 +578,11 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                   TaskStartDirection.exit: l10n.competitionStartExit,
                   TaskStartDirection.enter: l10n.competitionStartEnter,
                 },
-                onChanged: (v) => _store.setStart(
-                  (start ?? const TaskStart()).copyWith(direction: v),
-                ),
+                onChanged: readOnly
+                    ? null
+                    : (v) => _store.setStart(
+                        (start ?? const TaskStart()).copyWith(direction: v),
+                      ),
               ),
               const SizedBox(height: 8),
               Row(
@@ -542,7 +594,9 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                     ),
                   ),
                   TextButton.icon(
-                    onPressed: () => _addTimeGate(l10n, start),
+                    onPressed: readOnly
+                        ? null
+                        : () => _addTimeGate(l10n, start),
                     icon: const Icon(Icons.add, size: 18),
                     label: Text(l10n.competitionAddGate),
                   ),
@@ -563,10 +617,14 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                     for (var i = 0; i < start!.timeGates.length; i++)
                       InputChip(
                         label: Text(secondsToClock(start.timeGates[i])),
-                        onDeleted: () {
-                          final gates = [...start.timeGates]..removeAt(i);
-                          _store.setStart(start.copyWith(timeGates: gates));
-                        },
+                        onDeleted: readOnly
+                            ? null
+                            : () {
+                                final gates = [...start.timeGates]..removeAt(i);
+                                _store.setStart(
+                                  start.copyWith(timeGates: gates),
+                                );
+                              },
                       ),
                   ],
                 ),
@@ -580,8 +638,9 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
   Widget _buildGoalCard(
     ThemeData theme,
     AppLocalizations l10n,
-    CompetitionTask task,
-  ) {
+    CompetitionTask task, {
+    required bool readOnly,
+  }) {
     final goal = task.goal;
     final deadline = goal.deadlineSeconds;
     return Card(
@@ -603,7 +662,9 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                 TaskGoalType.cylinder: l10n.competitionGoalCylinder,
                 TaskGoalType.line: l10n.competitionGoalLine,
               },
-              onChanged: (v) => _store.setGoal(goal.copyWith(type: v)),
+              onChanged: readOnly
+                  ? null
+                  : (v) => _store.setGoal(goal.copyWith(type: v)),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -618,10 +679,13 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.clear),
-                      onPressed: () =>
-                          _store.setGoal(goal.copyWith(clearDeadline: true)),
+                      onPressed: readOnly
+                          ? null
+                          : () => _store.setGoal(
+                              goal.copyWith(clearDeadline: true),
+                            ),
                     ),
-              onTap: () => _pickDeadline(l10n, goal),
+              onTap: readOnly ? null : () => _pickDeadline(l10n, goal),
             ),
           ],
         ),
@@ -633,7 +697,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     required String label,
     required T value,
     required Map<T, String> options,
-    required ValueChanged<T> onChanged,
+    required ValueChanged<T>? onChanged,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -648,9 +712,11 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
               for (final entry in options.entries)
                 DropdownMenuItem(value: entry.key, child: Text(entry.value)),
             ],
-            onChanged: (v) {
-              if (v != null) onChanged(v);
-            },
+            onChanged: onChanged == null
+                ? null
+                : (v) {
+                    if (v != null) onChanged(v);
+                  },
           ),
         ],
       ),
@@ -1501,7 +1567,10 @@ class _CompetitionTaskServerListSheetState
     final service = CompetitionTaskServerService.instance;
     var taskList = await service.listTasksWithSelection();
     final currentTask = store.task;
-    if (syncCurrentTask && currentTask != null && !currentTask.isEmpty) {
+    if (syncCurrentTask &&
+        store.canAutoSyncCurrentTask &&
+        currentTask != null &&
+        !currentTask.isEmpty) {
       final accountId = ParaBeaconAccountService.instance.user?.id;
       final autoSyncSuppressed =
           accountId != null &&
@@ -1588,6 +1657,11 @@ class _CompetitionTaskServerListSheetState
       final accountId = ParaBeaconAccountService.instance.user?.id;
       if (accountId != null) {
         await service.suppressAutoSyncForTask(accountId, entry.task);
+        final taskStore = CompetitionTaskStore.instance;
+        if (taskStore.serverTaskOwnerId == accountId &&
+            taskStore.isCurrentTaskServerSourced) {
+          await taskStore.makeCurrentServerTaskEditableCopy();
+        }
       }
       if (!mounted) return;
       AppNotice.show(widget.l10n.competitionServerTaskDeleted);
@@ -1602,16 +1676,19 @@ class _CompetitionTaskServerListSheetState
   }
 
   Future<void> _previewTask(CompetitionTaskServerEntry entry) async {
-    final confirmed = await showModalBottomSheet<bool>(
+    final action = await showModalBottomSheet<CompetitionTaskPreviewAction>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) =>
           CompetitionTaskPreviewSheet(task: entry.task, l10n: widget.l10n),
     );
-    if (confirmed == true && mounted) {
-      Navigator.of(context).pop(_ServerTaskSelection.select(entry));
-    }
+    if (action == null || !mounted) return;
+    Navigator.of(context).pop(
+      action == CompetitionTaskPreviewAction.copyToLocal
+          ? _ServerTaskSelection.copy(entry)
+          : _ServerTaskSelection.select(entry),
+    );
   }
 
   @override
@@ -1800,6 +1877,7 @@ class _TurnpointTile extends StatelessWidget {
     required this.index,
     required this.turnpoint,
     required this.l10n,
+    required this.readOnly,
     required this.onEdit,
     required this.onDelete,
     required this.onRole,
@@ -1808,6 +1886,7 @@ class _TurnpointTile extends StatelessWidget {
   final int index;
   final Turnpoint turnpoint;
   final AppLocalizations l10n;
+  final bool readOnly;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final ValueChanged<TurnpointRole> onRole;
@@ -1866,6 +1945,7 @@ class _TurnpointTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             PopupMenuButton<TurnpointRole>(
+              enabled: !readOnly,
               icon: const Icon(Icons.label_outline),
               tooltip: l10n.competitionSetRole,
               onSelected: onRole,
@@ -1879,22 +1959,23 @@ class _TurnpointTile extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.edit_outlined),
-              onPressed: onEdit,
+              onPressed: readOnly ? null : onEdit,
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline),
-              onPressed: onDelete,
+              onPressed: readOnly ? null : onDelete,
             ),
-            ReorderableDragStartListener(
-              index: index,
-              child: const Padding(
-                padding: EdgeInsets.all(8),
-                child: Icon(Icons.drag_handle),
+            if (!readOnly)
+              ReorderableDragStartListener(
+                index: index,
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.drag_handle),
+                ),
               ),
-            ),
           ],
         ),
-        onTap: onEdit,
+        onTap: readOnly ? null : onEdit,
       ),
     );
   }

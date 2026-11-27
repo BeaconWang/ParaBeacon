@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/data/competition/competition_task.dart';
 import 'package:parabeacon/data/competition/competition_task_store.dart';
@@ -43,6 +45,42 @@ void main() {
       expect(store.task!.turnpoints.single.radiusMeters, 100);
       final preferences = await SharedPreferences.getInstance();
       expect(preferences.getInt('pb.competition.radiusReductionMeters'), 25);
+
+      const ownerId = '11111111-1111-4111-8111-111111111111';
+      final serverTask = CompetitionTask(
+        name: 'Server route',
+        turnpoints: [turnpoint],
+      );
+      await store.setServerTask(serverTask, ownerId: ownerId);
+      expect(store.isCurrentTaskServerSourced, isTrue);
+      expect(store.canAutoSyncCurrentTask, isFalse);
+      await store.setName('Attempted edit');
+      expect(store.task!.name, 'Server route');
+      await store.setTask(const CompetitionTask(turnpoints: []));
+      expect(store.task!.name, 'Server route');
+
+      final serverRecord =
+          jsonDecode(preferences.getString('pb.competition.task.v1')!)
+              as Map<String, dynamic>;
+      expect(serverRecord['serverTaskOwnerId'], ownerId);
+      expect(serverRecord['isLocalServerCopy'], isNull);
+
+      await store.copyTaskFromServer(serverTask, ownerId: ownerId);
+      expect(store.isCurrentTaskServerSourced, isFalse);
+      expect(store.isCurrentTaskLocalCopy, isTrue);
+      expect(store.canAutoSyncCurrentTask, isFalse);
+      final copyRecord =
+          jsonDecode(preferences.getString('pb.competition.task.v1')!)
+              as Map<String, dynamic>;
+      expect(copyRecord['serverTaskOwnerId'], ownerId);
+      expect(copyRecord['isLocalServerCopy'], isTrue);
+      await store.setName('Editable local copy');
+      expect(store.task!.name, 'Editable local copy');
+
+      await store.setTask(const CompetitionTask(turnpoints: [turnpoint]));
+      expect(store.serverTaskOwnerId, isNull);
+      expect(store.isCurrentTaskLocalCopy, isFalse);
+      expect(store.canAutoSyncCurrentTask, isTrue);
     },
   );
 }

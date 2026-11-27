@@ -4874,6 +4874,24 @@ abstract class AppLocalizations {
   /// **'Server task selected as the current task.'**
   String get competitionServerTaskLoaded;
 
+  /// No description provided for @competitionServerTaskReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'This task is from the server and is read-only. Copy it to a local task to make changes.'**
+  String get competitionServerTaskReadOnly;
+
+  /// No description provided for @competitionCopyToLocalTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to current local task'**
+  String get competitionCopyToLocalTask;
+
+  /// No description provided for @competitionTaskCopiedToLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Server task copied to the current local task. You can now edit it.'**
+  String get competitionTaskCopiedToLocal;
+
   /// No description provided for @competitionServerTaskUnselected.
   ///
   /// In en, this message translates to:

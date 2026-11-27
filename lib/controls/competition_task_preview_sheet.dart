@@ -11,6 +11,8 @@ import '../data/map_view_source_settings.dart';
 import '../l10n/app_localizations.dart';
 import 'map_control.dart' show MapTileSource, MapTileSources;
 
+enum CompetitionTaskPreviewAction { useServerTask, copyToLocal }
+
 class CompetitionTaskPreviewSheet extends StatelessWidget {
   const CompetitionTaskPreviewSheet({
     required this.task,
@@ -115,16 +117,26 @@ class CompetitionTaskPreviewSheet extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
+                      onPressed: () => Navigator.of(context).pop(),
                       child: Text(l10n.cancel),
                     ),
-                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pop(CompetitionTaskPreviewAction.copyToLocal),
+                      icon: const Icon(Icons.copy_outlined),
+                      label: Text(l10n.competitionCopyToLocalTask),
+                    ),
                     FilledButton.icon(
-                      onPressed: () => Navigator.of(context).pop(true),
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pop(CompetitionTaskPreviewAction.useServerTask),
                       icon: const Icon(Icons.check),
                       label: Text(l10n.competitionServerUseTask),
                     ),

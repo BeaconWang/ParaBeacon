@@ -80,6 +80,22 @@ void main() {
     expect('ctrl_${controlSequence++}', 'ctrl_25');
   });
 
+  test('the single-control spectator page has a removable control list', () {
+    var pageSequence = 0;
+    var controlSequence = 0;
+    final spectatorPage = DashboardPageTemplates.createPages(
+      l10n: AppLocalizationsEn(),
+      viewport: const Size(384, 832),
+      gridSize: 32,
+      nextPageId: () => 'page_${pageSequence++}',
+      nextInstanceId: () => 'ctrl_${controlSequence++}',
+    ).last;
+
+    expect(spectatorPage.controls, hasLength(1));
+    spectatorPage.controls.removeWhere((control) => control.type.id == 'map');
+    expect(spectatorPage.controls, isEmpty);
+  });
+
   for (final template in DashboardPageTemplates.all) {
     for (final viewport in viewports) {
       for (final gridSize in gridSizes) {

@@ -23,7 +23,7 @@ class DashPage {
     List<PlacedControl>? controls,
     this.icon = Icons.dashboard_outlined,
     this.title,
-  }) : controls = controls ?? [];
+  }) : controls = List<PlacedControl>.of(controls ?? const []);
 
   /// Serializes this page (and its controls) to a JSON-safe map.
   Map<String, dynamic> toJson() => {

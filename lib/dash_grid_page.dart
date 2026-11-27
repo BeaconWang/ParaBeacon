@@ -2437,9 +2437,8 @@ class _DashGridPageState extends State<DashGridPage> {
   /// by grid cell.
   List<Widget> _buildPlacedControls(List<PlacedControl> controls) {
     // Diameter of the corner affordances (delete button and resize handle).
-    // When a control is selected in edit mode we enlarge its outer layout
-    // box by half of this so both affordances fall fully inside a hittable
-    // area, even though visually they still overhang the control corners.
+    // When a control is selected in edit mode, its outer layout box expands
+    // around the corners for affordances, while staying within page bounds.
     const double affordanceSize = 32;
     const double overhang = affordanceSize / 2;
 
@@ -2474,12 +2473,41 @@ class _DashGridPageState extends State<DashGridPage> {
         onTap: null,
       );
 
-      // When affordances are visible, expand the layout box by `overhang` on
-      // every side so the corner buttons fit inside it and remain hittable.
-      final outerLeft = showAffordances ? left - overhang : left;
-      final outerTop = showAffordances ? top - overhang : top;
-      final outerWidth = showAffordances ? width + affordanceSize : width;
-      final outerHeight = showAffordances ? height + affordanceSize : height;
+      // Expand the layout box around the control for its corner buttons, but
+      // clamp that box to the page. Full-page controls otherwise push their
+      // buttons outside the Stack's hit-test bounds.
+      final outerLeft = showAffordances
+          ? (left - overhang).clamp(0.0, size.width).toDouble()
+          : left;
+      final outerTop = showAffordances
+          ? (top - overhang).clamp(0.0, size.height).toDouble()
+          : top;
+      final outerRight = showAffordances
+          ? (left + width + overhang).clamp(0.0, size.width).toDouble()
+          : left + width;
+      final outerBottom = showAffordances
+          ? (top + height + overhang).clamp(0.0, size.height).toDouble()
+          : top + height;
+      final outerWidth = outerRight - outerLeft;
+      final outerHeight = outerBottom - outerTop;
+      final controlLeft = left - outerLeft;
+      final controlTop = top - outerTop;
+      final maxButtonLeft = (outerWidth - affordanceSize)
+          .clamp(0.0, double.infinity)
+          .toDouble();
+      final maxButtonTop = (outerHeight - affordanceSize)
+          .clamp(0.0, double.infinity)
+          .toDouble();
+      final deleteLeft = (left + width - overhang - outerLeft)
+          .clamp(0.0, maxButtonLeft)
+          .toDouble();
+      final deleteTop = (top - overhang - outerTop)
+          .clamp(0.0, maxButtonTop)
+          .toDouble();
+      final resizeLeft = deleteLeft;
+      final resizeTop = (top + height - overhang - outerTop)
+          .clamp(0.0, maxButtonTop)
+          .toDouble();
 
       return Positioned(
         left: outerLeft,
@@ -2492,12 +2520,11 @@ class _DashGridPageState extends State<DashGridPage> {
             ? Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // The actual control face is inset by [overhang] on every
-                  // side (only when affordances are shown) so its position
-                  // and size on the grid stay exactly as before.
+                  // Keep the control face at its original page position even
+                  // when the surrounding layout is clamped at an edge.
                   Positioned(
-                    left: showAffordances ? overhang : 0,
-                    top: showAffordances ? overhang : 0,
+                    left: controlLeft,
+                    top: controlTop,
                     width: width,
                     height: height,
                     child: _verticalGraphPointerLayer(
@@ -2542,8 +2569,8 @@ class _DashGridPageState extends State<DashGridPage> {
                   // its full circular area is inside a hittable region.
                   if (showAffordances)
                     Positioned(
-                      top: 0,
-                      right: 0,
+                      left: deleteLeft,
+                      top: deleteTop,
                       width: affordanceSize,
                       height: affordanceSize,
                       child: _CornerButton(
@@ -2562,8 +2589,8 @@ class _DashGridPageState extends State<DashGridPage> {
                   // the enlarged box so every pixel of it receives gestures.
                   if (showAffordances)
                     Positioned(
-                      right: 0,
-                      bottom: 0,
+                      left: resizeLeft,
+                      top: resizeTop,
                       width: affordanceSize,
                       height: affordanceSize,
                       child: GestureDetector(

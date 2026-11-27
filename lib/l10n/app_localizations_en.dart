@@ -3605,6 +3605,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Shows available public pilot locations from ParaBeacon and XContest LiveTrack.';
 
   @override
+  String get settingShowOfflinePilots => 'Show offline pilots';
+
+  @override
   String get settingShowPilotName => 'Show pilot name';
 
   @override

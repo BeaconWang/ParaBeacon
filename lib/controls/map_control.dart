@@ -58,6 +58,11 @@ bool shouldShowXContestPilots({
   required String? pinnedTaskOwnerId,
 }) => showOtherPilots && channelNumber == 0 && pinnedTaskOwnerId == null;
 
+bool shouldShowOfflinePilot({
+  required bool isOffline,
+  required bool showOfflinePilots,
+}) => showOfflinePilots || !isOffline;
+
 Color _publicPilotColor(String pilotName) => HSVColor.fromAHSV(
   1,
   (pilotName.hashCode & 0x7fffffff) % 360,
@@ -367,6 +372,7 @@ class MapControl extends StatefulWidget {
   /// locations are fetched only for the current map viewport and signed-in
   /// users; the setting controls the overlay and its refresh requests.
   final bool showOtherPilots;
+  final bool showOfflinePilots;
   final bool showPilotName;
   final bool showPilotAltitude;
   final bool showPilotSpeed;
@@ -416,6 +422,7 @@ class MapControl extends StatefulWidget {
     this.active = false,
     this.onMapTap,
     this.showOtherPilots = true,
+    this.showOfflinePilots = false,
     this.showPilotName = true,
     this.showPilotAltitude = true,
     this.showPilotSpeed = true,
@@ -1271,7 +1278,11 @@ class _MapControlState extends State<MapControl> {
               .where(
                 (pilot) =>
                     pilot.time != null &&
-                    PilotCourse.isFresh(pilot.time!, publicPilotNow),
+                    PilotCourse.isFresh(pilot.time!, publicPilotNow) &&
+                    shouldShowOfflinePilot(
+                      isOffline: pilot.landed,
+                      showOfflinePilots: widget.showOfflinePilots,
+                    ),
               )
               .toList(growable: false)
         : const <LiveOtherPilot>[];

@@ -1220,6 +1220,7 @@
   "settingShowNorth": "显示北方向",
   "settingShowPublicPilots": "显示公开飞行员实时位置",
   "settingShowPublicPilotsSubtitle": "显示 ParaBeacon 和 XContest LiveTrack 提供的可用公开飞行员位置。",
+  "settingShowOfflinePilots": "显示离线飞行员",
   "settingShowPilotName": "显示飞行员姓名",
   "settingShowPilotAltitude": "显示飞行员高度",
   "settingShowPilotSpeed": "显示飞行员速度",

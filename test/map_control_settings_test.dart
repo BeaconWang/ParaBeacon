@@ -122,6 +122,54 @@ void main() {
     );
   });
 
+  test(
+    'offline pilots are hidden by default and the option is localized',
+    () async {
+      final setting = settingsSchemaFor(
+        'map',
+      ).singleWhere((setting) => setting.key == 'showOfflinePilots');
+      final english = await AppLocalizations.delegate.load(const Locale('en'));
+      final chinese = await AppLocalizations.delegate.load(const Locale('zh'));
+      final map = PlacedControl.fromType(
+        ControlCatalog.byId('map')!,
+        instanceId: 'map-offline-pilots-default',
+      );
+      final restoredMap = PlacedControl.fromJson({
+        'typeId': 'map',
+        'settings': <String, dynamic>{},
+      })!;
+
+      expect(setting.defaultValue, isFalse);
+      expect(setting.visibleWhenKey, 'showPublicPilots');
+      expect(map.boolSetting('showOfflinePilots'), isFalse);
+      expect(restoredMap.boolSetting('showOfflinePilots'), isFalse);
+      expect(setting.labelOf(english), 'Show offline pilots');
+      expect(setting.labelOf(chinese), '显示离线飞行员');
+
+      map.settings['showOfflinePilots'] = true;
+      final savedMap = PlacedControl.fromJson({
+        'typeId': 'map',
+        'settings': map.settings,
+      })!;
+      expect(savedMap.boolSetting('showOfflinePilots'), isTrue);
+    },
+  );
+
+  test('offline pilot visibility can be enabled independently', () {
+    expect(
+      shouldShowOfflinePilot(isOffline: false, showOfflinePilots: false),
+      isTrue,
+    );
+    expect(
+      shouldShowOfflinePilot(isOffline: true, showOfflinePilots: false),
+      isFalse,
+    );
+    expect(
+      shouldShowOfflinePilot(isOffline: true, showOfflinePilots: true),
+      isTrue,
+    );
+  });
+
   test('public pilot locations are on by default and localized', () async {
     final setting = settingsSchemaFor(
       'map',
@@ -363,6 +411,16 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    await reveal('Show offline pilots');
+    final offlinePilotsTile = find.ancestor(
+      of: find.text('Show offline pilots'),
+      matching: find.byType(SwitchListTile),
+    );
+    expect(tester.widget<SwitchListTile>(offlinePilotsTile).value, isFalse);
+    await tester.tap(find.text('Show offline pilots'));
+    await tester.pumpAndSettle();
+    expect(control.boolSetting('showOfflinePilots'), isTrue);
 
     for (final label in [
       'Show pilot name',

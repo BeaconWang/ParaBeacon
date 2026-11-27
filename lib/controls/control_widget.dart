@@ -497,6 +497,10 @@ class ControlWidget extends StatelessWidget {
               'showPublicPilots',
               fallback: true,
             ),
+            showOfflinePilots: control.boolSetting(
+              'showOfflinePilots',
+              fallback: false,
+            ),
             showPilotName: control.boolSetting('showPilotName', fallback: true),
             showPilotAltitude: control.boolSetting(
               'showPilotAltitude',

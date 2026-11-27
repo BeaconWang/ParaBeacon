@@ -255,6 +255,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowNorth;
     case 'showPublicPilots':
       return l10n.settingShowPublicPilots;
+    case 'showOfflinePilots':
+      return l10n.settingShowOfflinePilots;
     case 'showPilotName':
       return l10n.settingShowPilotName;
     case 'showPilotAltitude':
@@ -1026,6 +1028,12 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'showPublicPilots',
       label: 'Show public pilots',
       defaultValue: true,
+    ),
+    ControlSetting.toggle(
+      key: 'showOfflinePilots',
+      label: 'Show offline pilots',
+      defaultValue: false,
+      visibleWhenKey: 'showPublicPilots',
     ),
     ControlSetting.toggle(
       key: 'showPilotName',

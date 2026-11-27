@@ -1298,6 +1298,7 @@
   "settingShowNorth": "Display North direction",
   "settingShowPublicPilots": "Show public pilot locations",
   "settingShowPublicPilotsSubtitle": "Shows available public pilot locations from ParaBeacon and XContest LiveTrack.",
+  "settingShowOfflinePilots": "Show offline pilots",
   "settingShowPilotName": "Show pilot name",
   "settingShowPilotAltitude": "Show pilot altitude",
   "settingShowPilotSpeed": "Show pilot speed",

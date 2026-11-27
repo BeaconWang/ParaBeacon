@@ -3441,6 +3441,9 @@ class AppLocalizationsZh extends AppLocalizations {
       '显示 ParaBeacon 和 XContest LiveTrack 提供的可用公开飞行员位置。';
 
   @override
+  String get settingShowOfflinePilots => '显示离线飞行员';
+
+  @override
   String get settingShowPilotName => '显示飞行员姓名';
 
   @override

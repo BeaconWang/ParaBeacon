@@ -256,7 +256,6 @@ class CompetitionTaskStore extends ChangeNotifier {
     final updated = [...current.turnpoints];
     if (oldIndex < 0 || oldIndex >= updated.length) return;
     var target = newIndex;
-    if (target > oldIndex) target -= 1;
     if (target < 0) target = 0;
     if (target > updated.length - 1) target = updated.length - 1;
     final item = updated.removeAt(oldIndex);

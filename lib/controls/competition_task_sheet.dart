@@ -477,10 +477,9 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
           physics: const NeverScrollableScrollPhysics(),
           buildDefaultDragHandles: false,
           itemCount: task.turnpoints.length,
-          onReorder: readOnly
-              ? null
-              : (oldIndex, newIndex) =>
-                    _store.moveTurnpoint(oldIndex, newIndex),
+          onReorderItem: (oldIndex, newIndex) {
+            if (!readOnly) _store.moveTurnpoint(oldIndex, newIndex);
+          },
           itemBuilder: (context, index) {
             final tp = task.turnpoints[index];
             return _TurnpointTile(

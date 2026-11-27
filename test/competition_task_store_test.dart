@@ -9,6 +9,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('reorders turnpoints using the adjusted destination index', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = CompetitionTaskStore.instance;
+    const a = Turnpoint(
+      waypoint: TaskWaypoint(name: 'A', latitude: 0, longitude: 0),
+      radiusMeters: 100,
+    );
+    const b = Turnpoint(
+      waypoint: TaskWaypoint(name: 'B', latitude: 1, longitude: 1),
+      radiusMeters: 100,
+    );
+    const c = Turnpoint(
+      waypoint: TaskWaypoint(name: 'C', latitude: 2, longitude: 2),
+      radiusMeters: 100,
+    );
+    await store.setTask(const CompetitionTask(turnpoints: [a, b, c]));
+
+    await store.moveTurnpoint(0, 2);
+    expect(store.task!.turnpoints.map((point) => point.name), ['B', 'C', 'A']);
+
+    await store.moveTurnpoint(2, 0);
+    expect(store.task!.turnpoints.map((point) => point.name), ['A', 'B', 'C']);
+  });
+
   test(
     'persists radius reduction and navigates against effective radius',
     () async {

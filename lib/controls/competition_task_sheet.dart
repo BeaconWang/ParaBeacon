@@ -62,6 +62,7 @@ class _ServerTaskSelection {
 
 class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
   final CompetitionTaskStore _store = CompetitionTaskStore.instance;
+  bool _unselectingServerTask = false;
 
   @override
   void initState() {
@@ -270,6 +271,20 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     }
   }
 
+  Future<void> _unselectCurrentServerTask(AppLocalizations l10n) async {
+    if (_unselectingServerTask || !_store.isCurrentTaskServerSourced) return;
+    setState(() => _unselectingServerTask = true);
+    try {
+      await CompetitionTaskServerService.instance.setCurrentTask(null);
+      await _store.clear();
+      if (mounted) _snack(l10n.competitionServerTaskUnselected);
+    } catch (_) {
+      if (mounted) _snack(l10n.competitionServerRequestFailed);
+    } finally {
+      if (mounted) setState(() => _unselectingServerTask = false);
+    }
+  }
+
   Future<void> _showServerTasks(AppLocalizations l10n) async {
     final account = ParaBeaconAccountService.instance;
     await account.load();
@@ -287,9 +302,7 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     if (selection == null || !mounted) return;
     try {
       if (selection.clear) {
-        await CompetitionTaskServerService.instance.setCurrentTask(null);
-        await _store.clear();
-        if (mounted) _snack(l10n.competitionServerTaskUnselected);
+        await _unselectCurrentServerTask(l10n);
         return;
       }
       final entry = selection.entry!;
@@ -394,6 +407,18 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
                   Icon(Icons.lock_outline, color: theme.colorScheme.primary),
                   const SizedBox(width: 10),
                   Expanded(child: Text(l10n.competitionServerTaskReadOnly)),
+                  IconButton(
+                    tooltip: l10n.competitionServerUnselectCurrentTask,
+                    onPressed: _unselectingServerTask
+                        ? null
+                        : () => _unselectCurrentServerTask(l10n),
+                    icon: _unselectingServerTask
+                        ? const SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.push_pin_outlined),
+                  ),
                 ],
               ),
             ),

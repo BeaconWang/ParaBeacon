@@ -5060,6 +5060,66 @@ abstract class AppLocalizations {
   /// **'Turnpoints'**
   String get competitionTurnpoints;
 
+  /// No description provided for @competitionObjectiveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap any turnpoint to select the next objective. The highlighted turnpoint is active.'**
+  String get competitionObjectiveHint;
+
+  /// No description provided for @competitionNextObjective.
+  ///
+  /// In en, this message translates to:
+  /// **'Next objective'**
+  String get competitionNextObjective;
+
+  /// No description provided for @competitionRunStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Competition timer running'**
+  String get competitionRunStarted;
+
+  /// No description provided for @competitionRunFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Competition finished'**
+  String get competitionRunFinished;
+
+  /// No description provided for @competitionStartedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Start: {time}'**
+  String competitionStartedAt(String time);
+
+  /// No description provided for @competitionFinishedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'End: {time}'**
+  String competitionFinishedAt(String time);
+
+  /// No description provided for @competitionElapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Elapsed: {duration}'**
+  String competitionElapsed(String duration);
+
+  /// No description provided for @competitionElapsedUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No Start objective was reached; elapsed time is unavailable.'**
+  String get competitionElapsedUnavailable;
+
+  /// No description provided for @competitionSaveResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Save result'**
+  String get competitionSaveResult;
+
+  /// No description provided for @competitionSavedResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved results'**
+  String get competitionSavedResults;
+
   /// No description provided for @competitionStartSection.
   ///
   /// In en, this message translates to:

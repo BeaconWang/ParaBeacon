@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'dart:io' show File;
@@ -63,12 +65,26 @@ class _ServerTaskSelection {
 class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
   final CompetitionTaskStore _store = CompetitionTaskStore.instance;
   bool _unselectingServerTask = false;
+  Timer? _elapsedTimer;
 
   @override
   void initState() {
     super.initState();
     _store.load();
     LandingPointStore.instance.load();
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted &&
+          _store.competitionStartedAt != null &&
+          !_store.isCompetitionFinished) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _elapsedTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -380,6 +396,137 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
     );
   }
 
+  Widget _buildRunStatus(ThemeData theme, AppLocalizations l10n) {
+    final pending = _store.pendingResult;
+    final startedAt = _store.competitionStartedAt;
+    final elapsed = startedAt == null
+        ? null
+        : (pending?.finishedAt ?? DateTime.now()).difference(startedAt);
+    final elapsedText = _formatCompetitionDuration(
+      elapsed != null && !elapsed.isNegative ? elapsed : null,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (pending != null)
+          Card(
+            color: theme.colorScheme.tertiaryContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.flag_circle_outlined,
+                        color: theme.colorScheme.onTertiaryContainer,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          l10n.competitionRunFinished,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onTertiaryContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (pending.taskName.isNotEmpty)
+                    Text(pending.taskName, style: theme.textTheme.titleSmall),
+                  if (pending.startedAt != null)
+                    Text(
+                      l10n.competitionStartedAt(
+                        _formatCompetitionClock(pending.startedAt!),
+                      ),
+                    )
+                  else
+                    Text(l10n.competitionElapsedUnavailable),
+                  Text(
+                    l10n.competitionFinishedAt(
+                      _formatCompetitionClock(pending.finishedAt),
+                    ),
+                  ),
+                  if (pending.elapsed != null)
+                    Text(
+                      l10n.competitionElapsed(
+                        _formatCompetitionDuration(pending.elapsed)!,
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: FilledButton.icon(
+                      onPressed: () => _store.savePendingResult(pending),
+                      icon: const Icon(Icons.save_outlined),
+                      label: Text(l10n.competitionSaveResult),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        if (startedAt != null && !_store.isCompetitionFinished)
+          Card(
+            color: theme.colorScheme.primaryContainer,
+            child: ListTile(
+              leading: Icon(
+                Icons.timer_outlined,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+              title: Text(l10n.competitionRunStarted),
+              subtitle: Text(
+                '${l10n.competitionStartedAt(_formatCompetitionClock(startedAt))}\n'
+                '${l10n.competitionElapsed(elapsedText ?? '--:--:--')}',
+              ),
+            ),
+          ),
+        if (_store.savedResults.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(l10n.competitionSavedResults, style: theme.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          for (final result in _store.savedResults.take(10))
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.check_circle_outline),
+              title: Text(
+                result.taskName.isEmpty
+                    ? l10n.competitionUnnamedTask
+                    : result.taskName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                l10n.competitionFinishedAt(
+                  _formatCompetitionClock(result.finishedAt),
+                ),
+              ),
+              trailing: Text(
+                _formatCompetitionDuration(result.elapsed) ?? '--:--:--',
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  String _formatCompetitionClock(DateTime value) {
+    final local = value.toLocal();
+    String twoDigits(int number) => number.toString().padLeft(2, '0');
+    return '${twoDigits(local.hour)}:${twoDigits(local.minute)}:${twoDigits(local.second)}';
+  }
+
+  String? _formatCompetitionDuration(Duration? value) {
+    if (value == null || value.isNegative) return null;
+    String twoDigits(int number) => number.toString().padLeft(2, '0');
+    final hours = value.inHours;
+    final minutes = value.inMinutes.remainder(60);
+    final seconds = value.inSeconds.remainder(60);
+    return '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
+  }
+
   Widget _buildTask(
     ThemeData theme,
     AppLocalizations l10n,
@@ -478,9 +625,10 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
             ),
           ),
         ),
+        _buildRunStatus(theme, l10n),
         const SizedBox(height: 16),
 
-        // Turnpoints.
+        // Turnpoints and the manually selectable competition objective.
         Row(
           children: [
             Expanded(
@@ -496,7 +644,15 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            l10n.competitionObjectiveHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
         ReorderableListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -517,6 +673,14 @@ class _CompetitionTaskSheetState extends State<_CompetitionTaskSheet> {
               turnpoint: tp,
               l10n: l10n,
               readOnly: readOnly,
+              isNextObjective: _store.nextTurnpointIndex == index,
+              isEndObjective:
+                  tp.role == TurnpointRole.ess ||
+                  (index == task.turnpoints.length - 1 &&
+                      task.essIndex == null &&
+                      tp.role != TurnpointRole.takeoff &&
+                      tp.role != TurnpointRole.sss),
+              onSelect: () => _store.setNextTurnpointIndex(index),
               onEdit: () => _editTurnpoint(l10n, index, tp),
               onDelete: () => _store.removeTurnpoint(index),
               onRole: (role) => _store.setTurnpointRole(index, role),
@@ -1902,6 +2066,9 @@ class _TurnpointTile extends StatelessWidget {
     required this.turnpoint,
     required this.l10n,
     required this.readOnly,
+    required this.isNextObjective,
+    required this.isEndObjective,
+    required this.onSelect,
     required this.onEdit,
     required this.onDelete,
     required this.onRole,
@@ -1911,6 +2078,9 @@ class _TurnpointTile extends StatelessWidget {
   final Turnpoint turnpoint;
   final AppLocalizations l10n;
   final bool readOnly;
+  final bool isNextObjective;
+  final bool isEndObjective;
+  final VoidCallback onSelect;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final ValueChanged<TurnpointRole> onRole;
@@ -1920,7 +2090,16 @@ class _TurnpointTile extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 3),
+      color: isNextObjective ? theme.colorScheme.primaryContainer : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isNextObjective
+            ? BorderSide(color: theme.colorScheme.primary, width: 2)
+            : BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
       child: ListTile(
+        selected: isNextObjective,
+        selectedColor: theme.colorScheme.onPrimaryContainer,
         leading: CircleAvatar(
           radius: 15,
           backgroundColor: _roleColor(theme, turnpoint.role),
@@ -1942,7 +2121,8 @@ class _TurnpointTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (turnpoint.role != TurnpointRole.turnpoint) ...[
+            if (turnpoint.role != TurnpointRole.turnpoint ||
+                isEndObjective) ...[
               const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -1951,7 +2131,9 @@ class _TurnpointTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  _roleShort(l10n, turnpoint.role),
+                  isEndObjective
+                      ? l10n.competitionRoleEss
+                      : _roleShort(l10n, turnpoint.role),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSecondaryContainer,
                     fontWeight: FontWeight.w700,
@@ -1999,7 +2181,7 @@ class _TurnpointTile extends StatelessWidget {
               ),
           ],
         ),
-        onTap: readOnly ? null : onEdit,
+        onTap: onSelect,
       ),
     );
   }
@@ -2035,9 +2217,9 @@ class _TurnpointTile extends StatelessWidget {
       case TurnpointRole.takeoff:
         return l10n.competitionRoleTakeoff;
       case TurnpointRole.sss:
-        return 'SSS';
+        return l10n.competitionRoleSss;
       case TurnpointRole.ess:
-        return 'ESS';
+        return l10n.competitionRoleEss;
       case TurnpointRole.turnpoint:
         return l10n.competitionRoleTurnpoint;
     }

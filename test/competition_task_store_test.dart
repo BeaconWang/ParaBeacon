@@ -107,4 +107,97 @@ void main() {
       expect(store.canAutoSyncCurrentTask, isTrue);
     },
   );
+
+  test(
+    'runs Takeoff, Start, turnpoints and End, then saves the result',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final store = CompetitionTaskStore.instance;
+      final pendingBefore = store.pendingResults.length;
+      final resultsBefore = store.savedResults.length;
+      await store.clear();
+      const task = CompetitionTask(
+        name: 'Local race',
+        turnpoints: [
+          Turnpoint(
+            waypoint: TaskWaypoint(name: 'Takeoff', latitude: 0, longitude: 0),
+            radiusMeters: 1000,
+            role: TurnpointRole.takeoff,
+          ),
+          Turnpoint(
+            waypoint: TaskWaypoint(name: 'Start', latitude: 0, longitude: 0),
+            radiusMeters: 1000,
+            role: TurnpointRole.sss,
+          ),
+          Turnpoint(
+            waypoint: TaskWaypoint(name: 'TP1', latitude: 0, longitude: 0),
+            radiusMeters: 1000,
+          ),
+          Turnpoint(
+            waypoint: TaskWaypoint(name: 'TP2', latitude: 0, longitude: 0),
+            radiusMeters: 1000,
+          ),
+          Turnpoint(
+            waypoint: TaskWaypoint(name: 'End', latitude: 0, longitude: 0),
+            radiusMeters: 1000,
+            role: TurnpointRole.ess,
+          ),
+        ],
+      );
+      await store.setTask(task);
+
+      final takeoffAt = DateTime.utc(2026, 1, 1, 10);
+      expect(store.nextTurnpointIndex, 0);
+      expect(store.updatePosition(0, 0, at: takeoffAt), isTrue);
+      expect(store.nextTurnpointIndex, 1);
+      expect(store.competitionStartedAt, isNull);
+
+      final startedAt = takeoffAt.add(const Duration(minutes: 2));
+      expect(store.updatePosition(0, 0, at: startedAt), isTrue);
+      expect(store.competitionStartedAt, startedAt);
+      expect(store.nextTurnpointIndex, 2);
+
+      store.setNextTurnpointIndex(3);
+      expect(store.nextTurnpointIndex, 3);
+      expect(
+        store.updatePosition(
+          0,
+          0,
+          at: startedAt.add(const Duration(minutes: 1)),
+        ),
+        isTrue,
+      );
+      expect(store.nextTurnpointIndex, 4);
+      final finishedAt = startedAt.add(const Duration(minutes: 7, seconds: 12));
+      expect(store.updatePosition(0, 0, at: finishedAt), isTrue);
+      expect(store.isCompetitionFinished, isTrue);
+      expect(
+        store.pendingResult?.elapsed,
+        const Duration(minutes: 7, seconds: 12),
+      );
+      expect(store.updatePosition(0, 0, at: finishedAt), isFalse);
+      expect(store.pendingResults, hasLength(pendingBefore + 1));
+      final localResult = store.pendingResult!;
+      expect(localResult.taskName, 'Local race');
+
+      await store.savePendingResult(localResult);
+      expect(store.pendingResults, hasLength(pendingBefore));
+      expect(store.savedResults, hasLength(resultsBefore + 1));
+      expect(store.savedResults.first.taskName, 'Local race');
+      final preferences = await SharedPreferences.getInstance();
+      final savedResults =
+          jsonDecode(preferences.getString('pb.competition.results.v1')!)
+              as List<dynamic>;
+      expect(savedResults, hasLength(resultsBefore + 1));
+
+      await store.clear();
+      const ownerId = '11111111-1111-4111-8111-111111111111';
+      await store.setServerTask(task, ownerId: ownerId);
+      expect(store.isCurrentTaskServerSourced, isTrue);
+      store.setNextTurnpointIndex(2);
+      expect(store.nextTurnpointIndex, 2);
+      expect(store.updatePosition(0, 0, at: startedAt), isTrue);
+      expect(store.nextTurnpointIndex, 3);
+    },
+  );
 }

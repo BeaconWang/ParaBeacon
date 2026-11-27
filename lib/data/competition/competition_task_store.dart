@@ -8,18 +8,67 @@ import '../geo_math.dart';
 import 'competition_task.dart';
 import 'task_optimizer.dart';
 
-/// Holds the single active competition task, persists it, caches its optimized
-/// geometry, and tracks live navigation progress (which turnpoint is next).
+@immutable
+class CompetitionTaskResult {
+  const CompetitionTaskResult({
+    required this.taskName,
+    required this.finishedAt,
+    this.startedAt,
+    this.serverTaskOwnerId,
+  });
+
+  final String taskName;
+  final DateTime? startedAt;
+  final DateTime finishedAt;
+  final String? serverTaskOwnerId;
+
+  Duration? get elapsed {
+    final start = startedAt;
+    if (start == null) return null;
+    final duration = finishedAt.difference(start);
+    return duration.isNegative ? null : duration;
+  }
+
+  Map<String, Object?> toJson() => {
+    'taskName': taskName,
+    if (startedAt != null) 'startedAt': startedAt!.toIso8601String(),
+    'finishedAt': finishedAt.toIso8601String(),
+    if (serverTaskOwnerId != null) 'serverTaskOwnerId': serverTaskOwnerId,
+  };
+
+  static CompetitionTaskResult? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final finishedAt = DateTime.tryParse(raw['finishedAt']?.toString() ?? '');
+    if (finishedAt == null) return null;
+    final startedRaw = raw['startedAt'];
+    final startedAt = startedRaw is String
+        ? DateTime.tryParse(startedRaw)
+        : null;
+    final ownerId = raw['serverTaskOwnerId'];
+    return CompetitionTaskResult(
+      taskName: raw['taskName'] is String ? raw['taskName'] as String : '',
+      startedAt: startedAt,
+      finishedAt: finishedAt,
+      serverTaskOwnerId: ownerId is String && ownerId.isNotEmpty
+          ? ownerId
+          : null,
+    );
+  }
+}
+
+/// Holds the active competition task, persists its optimized geometry and run
+/// state, and tracks the currently selected objective.
 ///
 /// Follows the app-wide singleton `ChangeNotifier` + `SharedPreferences`
-/// pattern (see [LandingPointStore]); widgets and the map listen to it so edits
-/// and progress repaint live.
+/// pattern; widgets and the map listen so task edits and progress repaint live.
 class CompetitionTaskStore extends ChangeNotifier {
   CompetitionTaskStore._();
 
   static final CompetitionTaskStore instance = CompetitionTaskStore._();
 
   static const String _key = 'pb.competition.task.v1';
+  static const String _runKey = 'pb.competition.run.v1';
+  static const String _resultsKey = 'pb.competition.results.v1';
   static const String _radiusReductionKey =
       'pb.competition.radiusReductionMeters';
   static const int defaultRadiusReductionMeters = 10;
@@ -32,9 +81,12 @@ class CompetitionTaskStore extends ChangeNotifier {
   int _radiusReductionMeters = defaultRadiusReductionMeters;
   OptimizedTask? _optimized;
 
-  /// Number of turnpoints already achieved in the current flight. The "next"
-  /// turnpoint to navigate to is [reachedCount] (when < turnpoint count).
+  /// Index of the next objective in the task; selecting one manually does not
+  /// start the timer or record a result until its cylinder is entered.
   int _reachedCount = 0;
+  DateTime? _competitionStartedAt;
+  List<CompetitionTaskResult> _pendingResults = [];
+  List<CompetitionTaskResult> _results = [];
 
   bool _loaded = false;
   Future<void>? _loading;
@@ -51,6 +103,14 @@ class CompetitionTaskStore extends ChangeNotifier {
   bool get isLoaded => _loaded;
   int get reachedCount => _reachedCount;
   int get radiusReductionMeters => _radiusReductionMeters;
+  DateTime? get competitionStartedAt => _competitionStartedAt;
+  CompetitionTaskResult? get pendingResult =>
+      _pendingResults.isEmpty ? null : _pendingResults.last;
+  List<CompetitionTaskResult> get pendingResults =>
+      List.unmodifiable(_pendingResults);
+  List<CompetitionTaskResult> get savedResults => List.unmodifiable(_results);
+  bool get isCompetitionFinished =>
+      _task != null && _reachedCount >= _task!.turnpoints.length;
 
   double effectiveRadiusMeters(Turnpoint turnpoint) =>
       TaskOptimizer.effectiveRadiusMeters(
@@ -113,6 +173,49 @@ class CompetitionTaskStore extends ChangeNotifier {
               _task?.turnpoints.length ?? 0,
             );
           }
+        }
+      }
+      final runRaw = prefs.getString(_runKey);
+      if (runRaw != null && runRaw.isNotEmpty) {
+        try {
+          final run = jsonDecode(runRaw);
+          if (run is Map) {
+            final started = run['startedAt'];
+            _competitionStartedAt = started is String
+                ? DateTime.tryParse(started)
+                : null;
+            final pendingRaw = run['pendingResults'];
+            if (pendingRaw is List) {
+              _pendingResults = pendingRaw
+                  .map(CompetitionTaskResult.tryParse)
+                  .whereType<CompetitionTaskResult>()
+                  .take(100)
+                  .toList();
+            } else {
+              final legacyPending = CompetitionTaskResult.tryParse(
+                run['pendingResult'],
+              );
+              _pendingResults = legacyPending == null ? [] : [legacyPending];
+            }
+          }
+        } on Object {
+          _competitionStartedAt = null;
+          _pendingResults = [];
+        }
+      }
+      final resultsRaw = prefs.getString(_resultsKey);
+      if (resultsRaw != null && resultsRaw.isNotEmpty) {
+        try {
+          final decodedResults = jsonDecode(resultsRaw);
+          if (decodedResults is List) {
+            _results = decodedResults
+                .map(CompetitionTaskResult.tryParse)
+                .whereType<CompetitionTaskResult>()
+                .take(100)
+                .toList();
+          }
+        } on Object {
+          _results = [];
         }
       }
       notifyListeners();
@@ -212,6 +315,7 @@ class CompetitionTaskStore extends ChangeNotifier {
       _isLocalServerCopy = isLocalServerCopy;
     }
     _reachedCount = 0;
+    _competitionStartedAt = null;
     notifyListeners();
     await _persist();
   }
@@ -324,6 +428,7 @@ class CompetitionTaskStore extends ChangeNotifier {
       _task = null;
       _optimized = null;
       _reachedCount = 0;
+      _competitionStartedAt = null;
     } else {
       _task = task;
       _optimized = TaskOptimizer.optimize(
@@ -340,102 +445,113 @@ class CompetitionTaskStore extends ChangeNotifier {
 
   // ── Live navigation ────────────────────────────────────────────────────
 
-  /// Resets progress to the first turnpoint.
+  /// Resets the selected objective and starts a fresh competition attempt.
   void resetProgress() {
-    if (_reachedCount == 0) return;
+    if (_reachedCount == 0 && _competitionStartedAt == null) return;
     _reachedCount = 0;
+    _competitionStartedAt = null;
     notifyListeners();
     _persist();
   }
 
-  /// Manually marks the next turnpoint as reached.
+  /// Selects the following objective without treating it as physically reached.
   void advance() {
     final task = _task;
-    if (task == null) return;
-    if (_reachedCount >= task.turnpoints.length) return;
-    _reachedCount++;
-    notifyListeners();
-    _persist();
+    if (task == null || task.turnpoints.isEmpty) return;
+    setNextTurnpointIndex(_reachedCount + 1);
   }
 
-  /// Manually steps the target back to the previous turnpoint.
+  /// Selects the previous objective without stopping an active timer.
   void retreat() {
-    final task = _task;
-    if (task == null) return;
     if (_reachedCount <= 0) return;
-    _reachedCount--;
-    notifyListeners();
-    _persist();
+    setNextTurnpointIndex(_reachedCount - 1);
   }
 
-  /// Manually sets the current target to the turnpoint at [index], marking
-  /// every earlier turnpoint as reached. Passing a value equal to the number of
-  /// turnpoints marks the whole task complete. Out-of-range values are clamped;
-  /// a no-op when the target is unchanged or there is no task.
+  /// Manually selects the next objective. Reaching the end is only recorded by
+  /// entering an End cylinder, not by moving this selection.
   void setNextTurnpointIndex(int index) {
     final task = _task;
     if (task == null || task.isEmpty) return;
-    final clamped = index.clamp(0, task.turnpoints.length);
+    final clamped = index.clamp(0, task.turnpoints.length - 1);
     if (_reachedCount == clamped) return;
+    if (_reachedCount >= task.turnpoints.length) {
+      _competitionStartedAt = null;
+    }
     _reachedCount = clamped;
     notifyListeners();
     _persist();
   }
 
-  /// Sets the next target to the turnpoint closest to [latitude]/[longitude],
-  /// marking every earlier turnpoint as already reached.
-  ///
-  /// Used at takeoff: when a task is loaded, the nearest turnpoint to the
-  /// launch position becomes the current target so navigation starts from the
-  /// relevant part of the course instead of always the first turnpoint.
-  /// No-op when there is no task or the chosen target is already current.
-  void setProgressToNearest(double latitude, double longitude) {
-    final task = _task;
-    if (task == null || task.isEmpty) return;
-    if (!latitude.isFinite || !longitude.isFinite) return;
-    var bestIndex = 0;
-    var bestDist = double.infinity;
-    for (var i = 0; i < task.turnpoints.length; i++) {
-      final tp = task.turnpoints[i];
-      final d = GeoMath.distanceMeters(
-        latitude,
-        longitude,
-        tp.latitude,
-        tp.longitude,
+  Future<void> savePendingResult([CompetitionTaskResult? selected]) async {
+    if (_pendingResults.isEmpty) return;
+    final CompetitionTaskResult result;
+    if (selected == null) {
+      result = _pendingResults.removeLast();
+    } else {
+      final pendingIndex = _pendingResults.indexWhere(
+        (candidate) => identical(candidate, selected),
       );
-      if (d < bestDist) {
-        bestDist = d;
-        bestIndex = i;
-      }
+      if (pendingIndex < 0) return;
+      result = _pendingResults.removeAt(pendingIndex);
     }
-    if (_reachedCount == bestIndex) return;
-    _reachedCount = bestIndex;
+    _results = [result, ..._results].take(100).toList();
     notifyListeners();
-    _persist();
+    await _persist();
   }
 
-  /// Feeds a live position; auto-advances when the pilot enters the next
-  /// turnpoint's cylinder. Returns true when progress changed.
-  bool updatePosition(double latitude, double longitude) {
+  /// Feeds a live position and advances only after entering the selected
+  /// objective's cylinder. Entering Takeoff selects Start; entering Start
+  /// starts the timer; entering End completes the attempt.
+  bool updatePosition(double latitude, double longitude, {DateTime? at}) {
     final task = _task;
-    if (task == null || task.isEmpty) return false;
-    if (_reachedCount >= task.turnpoints.length) return false;
-    final tp = task.turnpoints[_reachedCount];
+    if (task == null ||
+        task.isEmpty ||
+        !latitude.isFinite ||
+        !longitude.isFinite ||
+        _reachedCount >= task.turnpoints.length) {
+      return false;
+    }
+    final index = _reachedCount;
+    final turnpoint = task.turnpoints[index];
     final distance = GeoMath.distanceMeters(
       latitude,
       longitude,
-      tp.latitude,
-      tp.longitude,
+      turnpoint.latitude,
+      turnpoint.longitude,
     );
-    // Entry-based crossing: inside the cylinder counts as reached. A small
-    // tolerance absorbs GPS noise near the edge.
-    if (distance <= effectiveRadiusMeters(tp) + 5) {
-      _reachedCount++;
-      notifyListeners();
-      _persist();
-      return true;
+    if (distance > effectiveRadiusMeters(turnpoint) + 5) return false;
+
+    final crossedAt = at ?? DateTime.now();
+    if (turnpoint.role == TurnpointRole.sss && _competitionStartedAt == null) {
+      _competitionStartedAt = crossedAt;
     }
-    return false;
+    final isEnd =
+        turnpoint.role == TurnpointRole.ess ||
+        (index == task.turnpoints.length - 1 &&
+            turnpoint.role != TurnpointRole.takeoff &&
+            turnpoint.role != TurnpointRole.sss);
+    if (isEnd) {
+      _reachedCount = task.turnpoints.length;
+      _pendingResults.add(
+        CompetitionTaskResult(
+          taskName: task.name,
+          startedAt: _competitionStartedAt,
+          finishedAt: crossedAt,
+          serverTaskOwnerId: _serverTaskOwnerId,
+        ),
+      );
+      _competitionStartedAt = null;
+    } else if (turnpoint.role == TurnpointRole.takeoff) {
+      final nextStart = task.turnpoints.indexWhere(
+        (candidate) => candidate.role == TurnpointRole.sss,
+      );
+      _reachedCount = nextStart > index ? nextStart : index + 1;
+    } else {
+      _reachedCount = index + 1;
+    }
+    notifyListeners();
+    _persist();
+    return true;
   }
 
   /// Real-time shortest route from [latitude]/[longitude] through the
@@ -593,17 +709,31 @@ class CompetitionTaskStore extends ChangeNotifier {
       final task = _task;
       if (task == null) {
         await prefs.remove(_key);
-        return;
+      } else {
+        await prefs.setString(
+          _key,
+          jsonEncode({
+            'task': task.toJson(),
+            'reachedCount': _reachedCount,
+            if (_serverTaskOwnerId != null)
+              'serverTaskOwnerId': _serverTaskOwnerId,
+            if (_isLocalServerCopy) 'isLocalServerCopy': true,
+          }),
+        );
       }
       await prefs.setString(
-        _key,
+        _runKey,
         jsonEncode({
-          'task': task.toJson(),
-          'reachedCount': _reachedCount,
-          if (_serverTaskOwnerId != null)
-            'serverTaskOwnerId': _serverTaskOwnerId,
-          if (_isLocalServerCopy) 'isLocalServerCopy': true,
+          if (_competitionStartedAt != null)
+            'startedAt': _competitionStartedAt!.toIso8601String(),
+          'pendingResults': _pendingResults
+              .map((result) => result.toJson())
+              .toList(),
         }),
+      );
+      await prefs.setString(
+        _resultsKey,
+        jsonEncode(_results.map((result) => result.toJson()).toList()),
       );
     } catch (_) {
       // Best-effort; keep the in-memory task if storage is unavailable.

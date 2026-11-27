@@ -2707,6 +2707,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get competitionTurnpoints => 'Turnpoints';
 
   @override
+  String get competitionObjectiveHint =>
+      'Tap any turnpoint to select the next objective. The highlighted turnpoint is active.';
+
+  @override
+  String get competitionNextObjective => 'Next objective';
+
+  @override
+  String get competitionRunStarted => 'Competition timer running';
+
+  @override
+  String get competitionRunFinished => 'Competition finished';
+
+  @override
+  String competitionStartedAt(String time) {
+    return 'Start: $time';
+  }
+
+  @override
+  String competitionFinishedAt(String time) {
+    return 'End: $time';
+  }
+
+  @override
+  String competitionElapsed(String duration) {
+    return 'Elapsed: $duration';
+  }
+
+  @override
+  String get competitionElapsedUnavailable =>
+      'No Start objective was reached; elapsed time is unavailable.';
+
+  @override
+  String get competitionSaveResult => 'Save result';
+
+  @override
+  String get competitionSavedResults => 'Saved results';
+
+  @override
   String get competitionStartSection => 'Start of speed section';
 
   @override

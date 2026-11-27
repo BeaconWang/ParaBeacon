@@ -2573,6 +2573,42 @@ class AppLocalizationsZh extends AppLocalizations {
   String get competitionTurnpoints => '绕点';
 
   @override
+  String get competitionObjectiveHint => '点击绕点以选择下一个目标；高亮绕点即为当前目标。';
+
+  @override
+  String get competitionNextObjective => '下一个目标';
+
+  @override
+  String get competitionRunStarted => '竞赛计时中';
+
+  @override
+  String get competitionRunFinished => '竞赛已结束';
+
+  @override
+  String competitionStartedAt(String time) {
+    return '开始：$time';
+  }
+
+  @override
+  String competitionFinishedAt(String time) {
+    return '结束：$time';
+  }
+
+  @override
+  String competitionElapsed(String duration) {
+    return '用时：$duration';
+  }
+
+  @override
+  String get competitionElapsedUnavailable => '尚未经过 Start 目标，无法计算用时。';
+
+  @override
+  String get competitionSaveResult => '保存成绩';
+
+  @override
+  String get competitionSavedResults => '已保存成绩';
+
+  @override
   String get competitionStartSection => '计时起点 (SSS)';
 
   @override

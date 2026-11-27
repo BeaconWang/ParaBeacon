@@ -658,14 +658,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     );
   }
 
-  /// On a fresh takeoff, if a competition task is loaded, make the turnpoint
-  /// nearest the launch position the current target. The launch position comes
-  /// from [TakeoffReference] (populated before this fires), falling back to the
-  /// started track's takeoff coordinates.
-  ///
-  /// A [FlightTransitionKind.resumedTakeoff] (automatic quick-relaunch that
-  /// continues the previous flight) is intentionally skipped so task progress
-  /// resumes from where it stopped last time rather than snapping back.
+  /// Checks the current objective at the takeoff transition without replacing
+  /// the pilot's manually selected objective with a nearest turnpoint.
   void _onFlightTransition(FlightTransition transition) {
     if (transition.kind != FlightTransitionKind.takeoff) return;
     final store = CompetitionTaskStore.instance;
@@ -674,7 +668,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     final lat = point?.latitude ?? transition.track?.takeoffLatitude;
     final lon = point?.longitude ?? transition.track?.takeoffLongitude;
     if (lat == null || lon == null) return;
-    store.setProgressToNearest(lat, lon);
+    store.updatePosition(lat, lon);
   }
 
   void _onFlightRecorderChanged() {

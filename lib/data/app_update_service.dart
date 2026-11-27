@@ -14,12 +14,21 @@ abstract interface class AppUpdatePlatform {
   bool get isAndroid;
   Future<bool> isWifiConnected();
   Future<bool> isAirplaneModeEnabled();
+  Future<Map<String, Object?>?> getPendingApk();
+  Future<bool> showUpdateReadyNotification({
+    required String title,
+    required String body,
+  });
   Future<String> downloadApk({
     required Uri url,
     required Uri serverBaseUri,
     required String fileName,
+    required String versionName,
+    required int versionCode,
+    required String packageName,
     required int sizeBytes,
     required String sha256Hex,
+    required void Function(double progress) onProgress,
   });
   Future<InstallApkResult> installApk({
     required String filePath,
@@ -37,6 +46,7 @@ enum AppUpdateStatus {
   checking,
   upToDate,
   waitingForWifi,
+  downloading,
   downloaded,
   installPermissionRequired,
   error,
@@ -94,14 +104,19 @@ class AppUpdateService extends ChangeNotifier {
   final Future<InstalledAppVersion> Function() _installedVersion;
   Uri? _apiBaseUri;
   Future<void>? _checkFuture;
+  Future<void>? _downloadFuture;
   AppUpdateStatus _status = AppUpdateStatus.idle;
   AppUpdateRelease? _release;
   String? _downloadedApkPath;
   String? _errorCode;
+  double? _downloadProgress;
+  int _downloadGeneration = 0;
 
   AppUpdateStatus get status => _status;
   AppUpdateRelease? get availableRelease => _release;
   String? get errorCode => _errorCode;
+  double? get downloadProgress => _downloadProgress;
+  int get downloadGeneration => _downloadGeneration;
   bool get hasPendingInstall =>
       _release != null &&
       _downloadedApkPath != null &&
@@ -115,6 +130,7 @@ class AppUpdateService extends ChangeNotifier {
     _release = null;
     _downloadedApkPath = null;
     _errorCode = null;
+    _downloadProgress = null;
     _setStatus(AppUpdateStatus.idle);
   }
 
@@ -136,6 +152,43 @@ class AppUpdateService extends ChangeNotifier {
     }
   }
 
+  Future<void> restorePendingUpdate() async {
+    final baseUri = _apiBaseUri;
+    if (!_platform.isAndroid || baseUri == null) return;
+    try {
+      final metadata = await _platform.getPendingApk();
+      final filePath = metadata?['file_path'];
+      if (metadata == null || filePath is! String || filePath.isEmpty) return;
+      final release = _parseRelease(jsonEncode(metadata), baseUri);
+      final installed = await _installedVersion();
+      if (release.packageName != installed.packageName ||
+          release.versionCode <= installed.versionCode) {
+        return;
+      }
+      _release = release;
+      _downloadedApkPath = filePath;
+      _downloadProgress = 1;
+      _setStatus(AppUpdateStatus.downloaded);
+    } on Object {
+      return;
+    }
+  }
+
+  Future<bool> showUpdateReadyNotification({
+    required String title,
+    required String body,
+  }) async {
+    if (!_platform.isAndroid) return false;
+    try {
+      return await _platform.showUpdateReadyNotification(
+        title: title,
+        body: body,
+      );
+    } on Object {
+      return false;
+    }
+  }
+
   Future<void> checkForUpdate() async {
     if (!_platform.isAndroid || _apiBaseUri == null) return;
     final existing = _checkFuture;
@@ -150,12 +203,8 @@ class AppUpdateService extends ChangeNotifier {
   }
 
   Future<void> _checkForUpdate() async {
-    if ((_status == AppUpdateStatus.downloaded ||
-            _status == AppUpdateStatus.installPermissionRequired) &&
-        _downloadedApkPath != null) {
-      return;
-    }
-    _setStatus(AppUpdateStatus.checking);
+    final hadPendingInstall = hasPendingInstall;
+    if (!hadPendingInstall) _setStatus(AppUpdateStatus.checking);
     try {
       final baseUri = _apiBaseUri!;
       final request = http.Request(
@@ -166,8 +215,11 @@ class AppUpdateService extends ChangeNotifier {
         await _httpClient.send(request).timeout(const Duration(seconds: 20)),
       ).timeout(const Duration(seconds: 20));
       if (response.statusCode == 404) {
-        _release = null;
-        _setStatus(AppUpdateStatus.upToDate);
+        if (!hadPendingInstall) {
+          _release = null;
+          _downloadedApkPath = null;
+          _setStatus(AppUpdateStatus.upToDate);
+        }
         return;
       }
       if (response.statusCode != 200) {
@@ -181,31 +233,100 @@ class AppUpdateService extends ChangeNotifier {
       if (release.versionCode <= installed.versionCode) {
         _release = null;
         _downloadedApkPath = null;
+        _downloadProgress = null;
         _setStatus(AppUpdateStatus.upToDate);
         return;
       }
+      if (hadPendingInstall &&
+          _release?.versionCode == release.versionCode &&
+          _release?.sha256Hex == release.sha256Hex) {
+        if (_status != AppUpdateStatus.installPermissionRequired) {
+          _setStatus(AppUpdateStatus.downloaded);
+        }
+        return;
+      }
+      _downloadedApkPath = null;
+      _downloadProgress = null;
       _release = release;
-      if (!await _platform.isWifiConnected()) {
+      if (!await isWifiConnected()) {
         _setStatus(AppUpdateStatus.waitingForWifi);
         return;
       }
-      _setStatus(AppUpdateStatus.checking);
-      _downloadedApkPath = await _platform.downloadApk(
-        url: release.downloadUri,
-        serverBaseUri: baseUri,
-        fileName: 'parabeacon-${release.versionCode}.apk',
-        sizeBytes: release.sizeBytes,
-        sha256Hex: release.sha256Hex,
-      );
-      if (_downloadedApkPath == null || _downloadedApkPath!.isEmpty) {
-        throw const _AppUpdateException('update_download_failed');
-      }
-      _setStatus(AppUpdateStatus.downloaded);
+      await _startDownload(release, baseUri);
     } on _AppUpdateException catch (error) {
+      if (hadPendingInstall) return;
       _errorCode = error.code;
       _setStatus(AppUpdateStatus.error);
     } on Object {
+      if (hadPendingInstall) return;
       _errorCode = 'update_connection_failed';
+      _setStatus(AppUpdateStatus.error);
+    }
+  }
+
+  Future<void> downloadAvailableUpdate() async {
+    final release = _release;
+    final baseUri = _apiBaseUri;
+    if (!_platform.isAndroid ||
+        release == null ||
+        baseUri == null ||
+        _status != AppUpdateStatus.waitingForWifi ||
+        !await isWifiConnected()) {
+      return;
+    }
+    await _startDownload(release, baseUri);
+  }
+
+  Future<void> _startDownload(AppUpdateRelease release, Uri baseUri) async {
+    final existing = _downloadFuture;
+    if (existing != null) return existing;
+    final future = _download(release, baseUri);
+    _downloadFuture = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_downloadFuture, future)) _downloadFuture = null;
+    }
+  }
+
+  Future<void> _download(AppUpdateRelease release, Uri baseUri) async {
+    _downloadGeneration++;
+    _downloadProgress = 0;
+    _errorCode = null;
+    _setStatus(AppUpdateStatus.downloading);
+    try {
+      final path = await _platform.downloadApk(
+        url: release.downloadUri,
+        serverBaseUri: baseUri,
+        fileName: 'parabeacon-${release.versionCode}.apk',
+        versionName: release.versionName,
+        versionCode: release.versionCode,
+        packageName: release.packageName,
+        sizeBytes: release.sizeBytes,
+        sha256Hex: release.sha256Hex,
+        onProgress: (value) {
+          if (!value.isFinite) return;
+          _downloadProgress = value.clamp(0.0, 1.0).toDouble();
+          notifyListeners();
+        },
+      );
+      if (path.isEmpty) {
+        throw const _AppUpdateException('update_download_failed');
+      }
+      _downloadedApkPath = path;
+      _downloadProgress = 1;
+      _setStatus(AppUpdateStatus.downloaded);
+    } on _AppUpdateException catch (error) {
+      _errorCode = error.code;
+      _downloadProgress = null;
+      _setStatus(
+        error.code == 'wifi_required'
+            ? AppUpdateStatus.waitingForWifi
+            : AppUpdateStatus.error,
+      );
+    } on Object {
+      _errorCode = 'update_download_failed';
+      _downloadProgress = null;
       _setStatus(AppUpdateStatus.error);
     }
   }
@@ -328,25 +449,66 @@ class _MethodChannelAppUpdatePlatform implements AppUpdatePlatform {
       false;
 
   @override
+  Future<Map<String, Object?>?> getPendingApk() async => await AppUpdateService
+      ._channel
+      .invokeMapMethod<String, Object?>('getPendingApk');
+
+  @override
+  Future<bool> showUpdateReadyNotification({
+    required String title,
+    required String body,
+  }) async =>
+      await AppUpdateService._channel.invokeMethod<bool>(
+        'showUpdateReadyNotification',
+        {'title': title, 'body': body},
+      ) ??
+      false;
+
+  @override
   Future<String> downloadApk({
     required Uri url,
     required Uri serverBaseUri,
     required String fileName,
+    required String versionName,
+    required int versionCode,
+    required String packageName,
     required int sizeBytes,
     required String sha256Hex,
+    required void Function(double progress) onProgress,
   }) async {
-    final path = await AppUpdateService._channel
-        .invokeMethod<String>('downloadApk', {
-          'url': url.toString(),
-          'serverOrigin': serverBaseUri.toString(),
-          'fileName': fileName,
-          'sizeBytes': sizeBytes,
-          'sha256': sha256Hex,
-        });
-    if (path == null || path.isEmpty) {
+    AppUpdateService._channel.setMethodCallHandler((call) async {
+      if (call.method != 'downloadProgress' || call.arguments is! Map) return;
+      final arguments = call.arguments as Map;
+      final bytes = arguments['bytesDownloaded'];
+      final total = arguments['totalBytes'];
+      if (bytes is num && total is num && total > 0) {
+        onProgress(bytes / total);
+      }
+    });
+    try {
+      final path = await AppUpdateService._channel
+          .invokeMethod<String>('downloadApk', {
+            'url': url.toString(),
+            'serverOrigin': serverBaseUri.toString(),
+            'fileName': fileName,
+            'versionName': versionName,
+            'versionCode': versionCode,
+            'packageName': packageName,
+            'sizeBytes': sizeBytes,
+            'sha256': sha256Hex,
+          });
+      if (path == null || path.isEmpty) {
+        throw const _AppUpdateException('update_download_failed');
+      }
+      return path;
+    } on PlatformException catch (error) {
+      if (error.code == 'WIFI_REQUIRED') {
+        throw const _AppUpdateException('wifi_required');
+      }
       throw const _AppUpdateException('update_download_failed');
+    } finally {
+      AppUpdateService._channel.setMethodCallHandler(null);
     }
-    return path;
   }
 
   @override

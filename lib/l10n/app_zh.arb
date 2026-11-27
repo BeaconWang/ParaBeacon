@@ -1229,6 +1229,14 @@
   },
   "appUpdateInstallPermissionBody": "请在 Android 设置中允许 ParaBeacon 安装 APK 更新，然后返回并点击“安装”。",
   "appUpdateDownloadOverWifi": "通过 Wi-Fi 下载",
+  "appUpdateDownloading": "正在下载版本 {version}",
+  "@appUpdateDownloading": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "appUpdateInstall": "安装",
   "appUpdateLater": "稍后",
   "settingPilotArrowSize": "飞行员箭头大小",

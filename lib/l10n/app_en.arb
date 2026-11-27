@@ -1307,6 +1307,14 @@
   },
   "appUpdateInstallPermissionBody": "Allow ParaBeacon to install APK updates in Android settings, then return and tap Install.",
   "appUpdateDownloadOverWifi": "Download over Wi-Fi",
+  "appUpdateDownloading": "Downloading version {version}",
+  "@appUpdateDownloading": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "appUpdateInstall": "Install",
   "appUpdateLater": "Later",
   "settingPilotArrowSize": "Pilot arrow size",

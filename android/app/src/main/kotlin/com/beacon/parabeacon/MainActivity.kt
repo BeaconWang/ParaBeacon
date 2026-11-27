@@ -1,7 +1,6 @@
 package com.beacon.parabeacon
 
 import android.app.Activity
-import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -22,6 +21,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicLong
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -35,7 +41,11 @@ class MainActivity : FlutterActivity() {
         private const val CHAT_NOTIFICATIONS_CHANNEL = "com.beacon.parabeacon/chat_notifications"
         private const val CHAT_NOTIFICATION_ID = "pilot-chat-message"
         private const val CHAT_NOTIFICATION_CHANNEL_ID = "pilot_chat_messages_v2"
+        private const val UPDATE_NOTIFICATION_CHANNEL_ID = "app_updates"
+        private const val UPDATE_NOTIFICATION_ID = 7301
+        private const val APP_UPDATE_PREFERENCES = "app_update_pending"
         private const val MAX_APK_SIZE_BYTES = 512L * 1024L * 1024L
+        private const val APK_DOWNLOAD_PARTS = 4
         private const val CREATE_DOCUMENT_REQUEST = 4107
         private const val OPEN_IGC_TREE_REQUEST = 4108
         private const val BATTERY_PERMISSION_SETTINGS_REQUEST = 4109
@@ -48,6 +58,7 @@ class MainActivity : FlutterActivity() {
     private var pendingImportResult: MethodChannel.Result? = null
     private var pendingBatteryPermissionSettingsResult: MethodChannel.Result? = null
     private var pendingApkDownloadResult: MethodChannel.Result? = null
+    private var appUpdateChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -87,13 +98,18 @@ class MainActivity : FlutterActivity() {
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             APP_UPDATE_CHANNEL,
-        ).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "isWifiConnected" -> result.success(isWifiConnected())
-                "isAirplaneModeEnabled" -> result.success(isAirplaneModeEnabled())
-                "downloadApk" -> handleApkDownload(call, result)
-                "installApk" -> handleInstallApk(call, result)
-                else -> result.notImplemented()
+        ).also { channel ->
+            appUpdateChannel = channel
+            channel.setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "isWifiConnected" -> result.success(isWifiConnected())
+                    "isAirplaneModeEnabled" -> result.success(isAirplaneModeEnabled())
+                    "getPendingApk" -> result.success(getPendingApk())
+                    "downloadApk" -> handleApkDownload(call, result)
+                    "installApk" -> handleInstallApk(call, result)
+                    "showUpdateReadyNotification" -> handleUpdateReadyNotification(call, result)
+                    else -> result.notImplemented()
+                }
             }
         }
         MethodChannel(
@@ -200,6 +216,94 @@ class MainActivity : FlutterActivity() {
             0,
         ) != 0
 
+    private fun getPendingApk(): Map<String, Any?>? {
+        val preferences = getSharedPreferences(APP_UPDATE_PREFERENCES, Context.MODE_PRIVATE)
+        val versionName = preferences.getString("versionName", null) ?: return null
+        val versionCode = preferences.getInt("versionCode", 0)
+        val expectedSize = preferences.getLong("sizeBytes", 0L)
+        val sha256 = preferences.getString("sha256", null) ?: return null
+        val downloadUrl = preferences.getString("downloadUrl", null) ?: return null
+        val path = preferences.getString("filePath", null) ?: return null
+        val expectedPackage = preferences.getString("packageName", null) ?: return null
+        val directory = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.canonicalFile ?: return null
+        val apk = runCatching { File(path).canonicalFile }.getOrNull() ?: return null
+        if (versionCode < 1 || versionName.isBlank() || versionName.length > 64 ||
+            expectedSize !in 1..MAX_APK_SIZE_BYTES ||
+            expectedPackage != packageName || !sha256.matches(Regex("[a-f0-9]{64}")) ||
+            apk.parentFile != directory || apk.name != "parabeacon-$versionCode.apk" ||
+            !apk.isFile || apk.length() != expectedSize) {
+            preferences.edit().clear().apply()
+            return null
+        }
+        @Suppress("DEPRECATION")
+        val installedVersion = packageManager.getPackageInfo(packageName, 0).versionCode
+        if (installedVersion >= versionCode) {
+            preferences.edit().clear().apply()
+            return null
+        }
+        return mapOf(
+            "version_name" to versionName,
+            "version_code" to versionCode,
+            "package_name" to expectedPackage,
+            "size_bytes" to expectedSize,
+            "sha256" to sha256,
+            "download_url" to downloadUrl,
+            "file_path" to apk.path,
+        )
+    }
+
+    private fun handleUpdateReadyNotification(
+        call: io.flutter.plugin.common.MethodCall,
+        result: MethodChannel.Result,
+    ) {
+        val title = call.argument<String>("title")?.takeIf { it.isNotBlank() }
+        val body = call.argument<String>("body")?.takeIf { it.isNotBlank() }
+        if (title == null || body == null) {
+            result.error("INVALID_UPDATE_NOTIFICATION", "Notification text is missing.", null)
+            return
+        }
+        try {
+            val manager = NotificationManagerCompat.from(this)
+            if (!manager.areNotificationsEnabled()) {
+                result.success(false)
+                return
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    UPDATE_NOTIFICATION_CHANNEL_ID,
+                    title,
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                )
+                getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+            }
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                ?: Intent(this, MainActivity::class.java)
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                UPDATE_NOTIFICATION_ID,
+                launchIntent.apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            val notification = NotificationCompat.Builder(this, UPDATE_NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(applicationInfo.icon)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .build()
+            manager.notify(UPDATE_NOTIFICATION_ID, notification)
+            result.success(true)
+        } catch (error: SecurityException) {
+            result.success(false)
+        } catch (error: Exception) {
+            result.error("UPDATE_NOTIFICATION_FAILED", error.message, null)
+        }
+    }
+
     private fun handleApkDownload(
         call: io.flutter.plugin.common.MethodCall,
         result: MethodChannel.Result,
@@ -212,6 +316,9 @@ class MainActivity : FlutterActivity() {
         val fileName = call.argument<String>("fileName")
         val expectedSize = call.argument<Number>("sizeBytes")?.toLong()
         val expectedSha256 = call.argument<String>("sha256")?.lowercase()
+        val versionName = call.argument<String>("versionName")
+        val versionCode = call.argument<Number>("versionCode")?.toInt()
+        val expectedPackage = call.argument<String>("packageName")
         val rawServerOrigin = call.argument<String>("serverOrigin")
         val uri = rawUrl?.let { runCatching { Uri.parse(it) }.getOrNull() }
         val serverOrigin = rawServerOrigin?.let { runCatching { Uri.parse(it) }.getOrNull() }
@@ -242,8 +349,11 @@ class MainActivity : FlutterActivity() {
             !uri.userInfo.isNullOrEmpty() ||
             uri.query != null ||
             uri.fragment != null ||
-            uri.path?.matches(Regex("/api/v1/app/releases/[1-9][0-9]*/download")) != true ||
-            !fileName.orEmpty().matches(Regex("parabeacon-[1-9][0-9]*\\.apk")) ||
+            versionCode == null || versionCode < 1 || versionCode > 2100000000 ||
+            versionName.isNullOrBlank() || versionName.length > 64 ||
+            expectedPackage != packageName ||
+            uri.path != "/api/v1/app/releases/$versionCode/download" ||
+            fileName != "parabeacon-$versionCode.apk" ||
             expectedSize == null || expectedSize !in 1..MAX_APK_SIZE_BYTES ||
             !expectedSha256.orEmpty().matches(Regex("[a-f0-9]{64}"))) {
             result.error("INVALID_UPDATE", "The update metadata is invalid.", null)
@@ -260,90 +370,178 @@ class MainActivity : FlutterActivity() {
         }
         pendingApkDownloadResult = result
         Thread {
-            var downloadId = -1L
-            val manager = getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
             try {
-                if (manager == null) throw IllegalStateException("Android DownloadManager is unavailable.")
-                val destination = File(downloadDirectory, fileName!!)
-                if (destination.exists() && !destination.delete()) {
-                    throw IllegalStateException("Unable to replace the previous APK download.")
-                }
-                val request = DownloadManager.Request(uri).apply {
-                    setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
-                    setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    setTitle("ParaBeacon update $fileName")
-                    setDescription("Downloading over Wi-Fi")
-                    setMimeType("application/vnd.android.package-archive")
-                    setDestinationInExternalFilesDir(
-                        this@MainActivity,
-                        Environment.DIRECTORY_DOWNLOADS,
-                        fileName,
-                    )
-                }
-                downloadId = manager.enqueue(request)
-                val apk = waitForApkDownload(
-                    manager,
-                    downloadId,
+                val apk = downloadApkWithRanges(
+                    uri,
                     downloadDirectory,
-                    fileName,
+                    fileName!!,
                     expectedSize,
                     expectedSha256!!,
                 )
+                getSharedPreferences(APP_UPDATE_PREFERENCES, Context.MODE_PRIVATE).edit()
+                    .putString("versionName", versionName!!)
+                    .putInt("versionCode", versionCode!!)
+                    .putString("packageName", expectedPackage!!)
+                    .putLong("sizeBytes", expectedSize)
+                    .putString("sha256", expectedSha256)
+                    .putString("downloadUrl", uri.toString())
+                    .putString("filePath", apk.canonicalPath)
+                    .apply()
                 runOnUiThread {
                     if (pendingApkDownloadResult === result) pendingApkDownloadResult = null
                     result.success(apk.canonicalPath)
                 }
             } catch (error: Exception) {
-                if (downloadId > 0 && manager != null) manager.remove(downloadId)
                 runOnUiThread {
                     if (pendingApkDownloadResult === result) pendingApkDownloadResult = null
-                    result.error("UPDATE_DOWNLOAD_FAILED", error.message, null)
+                    if (error is WifiRequiredException) {
+                        result.error("WIFI_REQUIRED", error.message, null)
+                    } else {
+                        result.error("UPDATE_DOWNLOAD_FAILED", error.message, null)
+                    }
                 }
             }
         }.start()
     }
 
-    private fun waitForApkDownload(
-        manager: DownloadManager,
-        downloadId: Long,
-        downloadDirectory: File,
+    private class WifiRequiredException : IOException("Wi-Fi is required to download updates.")
+
+    private fun downloadApkWithRanges(
+        uri: Uri,
+        directory: File,
         fileName: String,
         expectedSize: Long,
         expectedSha256: String,
     ): File {
-        val deadline = System.currentTimeMillis() + 30L * 60L * 1000L
-        while (System.currentTimeMillis() < deadline) {
-            val query = manager.query(DownloadManager.Query().setFilterById(downloadId))
-                ?: throw IllegalStateException("Unable to query the APK download.")
-            query.use { cursor ->
-                if (!cursor.moveToFirst()) throw IllegalStateException("APK download disappeared.")
-                when (cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))) {
-                    DownloadManager.STATUS_SUCCESSFUL -> {
-                        val localUri = cursor.getString(
-                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI),
-                        )
-                        val downloaded = File(Uri.parse(localUri).path ?: "").canonicalFile
-                        val expectedDirectory = downloadDirectory.canonicalFile
-                        if (downloaded.parentFile != expectedDirectory ||
-                            downloaded.name != fileName ||
-                            !downloaded.isFile ||
-                            downloaded.length() != expectedSize ||
-                            sha256File(downloaded) != expectedSha256) {
-                            throw IllegalStateException("Downloaded APK failed size or SHA-256 verification.")
-                        }
-                        return downloaded
-                    }
-                    DownloadManager.STATUS_FAILED -> {
-                        val reason = cursor.getInt(
-                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON),
-                        )
-                        throw IllegalStateException("APK download failed (reason $reason).")
-                    }
+        val destination = File(directory, fileName)
+        if (destination.isFile && destination.length() == expectedSize &&
+            sha256File(destination) == expectedSha256) {
+            publishApkProgress(expectedSize, expectedSize)
+            return destination
+        }
+        val temporary = File(directory, "$fileName.download")
+        val partCount = minOf(APK_DOWNLOAD_PARTS.toLong(), expectedSize).toInt()
+        val partSize = (expectedSize + partCount - 1) / partCount
+        val partFiles = (0 until partCount).map { File(directory, "$fileName.part-$it") }
+        val partRanges = partFiles.mapIndexed { index, file ->
+            val start = index * partSize
+            val end = minOf(expectedSize - 1, start + partSize - 1)
+            val length = end - start + 1
+            if (file.exists() && file.length() > length && !file.delete()) {
+                throw IOException("Unable to reset an invalid partial APK download.")
+            }
+            Triple(file, start, end)
+        }
+        val alreadyDownloaded = partFiles.sumOf { it.length() }
+        val downloadedBytes = AtomicLong(alreadyDownloaded)
+        publishApkProgress(alreadyDownloaded, expectedSize)
+        val executor = Executors.newFixedThreadPool(partCount)
+        val futures = try {
+            partRanges.map { (part, start, end) ->
+                executor.submit(Callable {
+                    downloadApkPart(uri, part, start, end, expectedSize, downloadedBytes)
+                })
+            }
+        } catch (error: Exception) {
+            executor.shutdownNow()
+            throw error
+        }
+        try {
+            futures.forEach { future ->
+                try {
+                    future.get()
+                } catch (error: java.util.concurrent.ExecutionException) {
+                    futures.forEach { it.cancel(true) }
+                    throw (error.cause ?: error)
                 }
             }
-            Thread.sleep(1000)
+        } finally {
+            executor.shutdownNow()
         }
-        throw IllegalStateException("APK download timed out.")
+        temporary.outputStream().buffered().use { output ->
+            partFiles.forEach { part -> part.inputStream().buffered().use { it.copyTo(output) } }
+        }
+        if (temporary.length() != expectedSize || sha256File(temporary) != expectedSha256) {
+            temporary.delete()
+            partFiles.forEach { it.delete() }
+            throw IOException("Downloaded APK failed size or SHA-256 verification.")
+        }
+        if (destination.exists() && !destination.delete()) {
+            throw IOException("Unable to replace the previous APK download.")
+        }
+        if (!temporary.renameTo(destination)) {
+            throw IOException("Unable to finalize the downloaded APK.")
+        }
+        partFiles.forEach { it.delete() }
+        publishApkProgress(expectedSize, expectedSize)
+        return destination
+    }
+
+    private fun downloadApkPart(
+        uri: Uri,
+        partFile: File,
+        partStart: Long,
+        partEnd: Long,
+        totalSize: Long,
+        downloadedBytes: AtomicLong,
+    ) {
+        val partLength = partEnd - partStart + 1
+        var failures = 0
+        while (partFile.length() < partLength) {
+            if (!isWifiConnected()) throw WifiRequiredException()
+            val rangeStart = partStart + partFile.length()
+            var connection: HttpURLConnection? = null
+            try {
+                connection = URL(uri.toString()).openConnection() as HttpURLConnection
+                connection.connectTimeout = 20_000
+                connection.readTimeout = 30_000
+                connection.instanceFollowRedirects = false
+                connection.setRequestProperty("Accept-Encoding", "identity")
+                connection.setRequestProperty("Range", "bytes=$rangeStart-$partEnd")
+                if (connection.responseCode != HttpURLConnection.HTTP_PARTIAL ||
+                    connection.getHeaderField("Content-Range") != "bytes $rangeStart-$partEnd/$totalSize") {
+                    throw IOException("The APK server did not honor the requested byte range.")
+                }
+                connection.inputStream.use { input ->
+                    FileOutputStream(partFile, true).use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        while (true) {
+                            if (!isWifiConnected()) throw WifiRequiredException()
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            if (partFile.length() + count > partLength) {
+                                throw IOException("The APK server returned too many bytes for a range.")
+                            }
+                            output.write(buffer, 0, count)
+                            downloadedBytes.addAndGet(count.toLong())
+                            publishApkProgress(downloadedBytes.get(), totalSize)
+                        }
+                    }
+                }
+                if (partFile.length() < partLength) {
+                    throw IOException("The APK server ended a byte range early.")
+                }
+                failures = 0
+            } catch (error: WifiRequiredException) {
+                throw error
+            } catch (error: Exception) {
+                if (Thread.currentThread().isInterrupted) throw IOException("APK download was interrupted.", error)
+                failures++
+                if (failures >= 5) throw error
+                Thread.sleep(1000L * failures)
+            } finally {
+                connection?.disconnect()
+            }
+        }
+    }
+
+    private fun publishApkProgress(downloaded: Long, total: Long) {
+        runOnUiThread {
+            appUpdateChannel?.invokeMethod(
+                "downloadProgress",
+                mapOf("bytesDownloaded" to downloaded, "totalBytes" to total),
+            )
+        }
     }
 
     private fun handleInstallApk(

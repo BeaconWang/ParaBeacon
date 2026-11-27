@@ -6734,6 +6734,12 @@ abstract class AppLocalizations {
   /// **'Download over Wi-Fi'**
   String get appUpdateDownloadOverWifi;
 
+  /// No description provided for @appUpdateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading version {version}'**
+  String appUpdateDownloading(String version);
+
   /// No description provided for @appUpdateInstall.
   ///
   /// In en, this message translates to:

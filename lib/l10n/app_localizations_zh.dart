@@ -3434,6 +3434,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appUpdateDownloadOverWifi => '通过 Wi-Fi 下载';
 
   @override
+  String appUpdateDownloading(String version) {
+    return '正在下载版本 $version';
+  }
+
+  @override
   String get appUpdateInstall => '安装';
 
   @override

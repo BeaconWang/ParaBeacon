@@ -13,7 +13,9 @@ void main() {
     'checks latest version on Android but never downloads off Wi-Fi',
     () async {
       final platform = _FakeAppUpdatePlatform()..wifi = false;
+      var updateCheckCalls = 0;
       final client = MockClient((request) async {
+        updateCheckCalls++;
         expect(request.method, 'GET');
         expect(request.url, Uri.parse('$baseUri/api/v1/app/releases/latest'));
         return http.Response(
@@ -48,9 +50,11 @@ void main() {
       expect(platform.downloadCalls, 0);
 
       platform.wifi = true;
-      await service.checkForUpdate();
+      await service.downloadAvailableUpdate();
 
+      expect(updateCheckCalls, 1);
       expect(service.status, AppUpdateStatus.downloaded);
+      expect(service.downloadProgress, 1);
       expect(platform.downloadCalls, 1);
       expect(platform.requestedSize, 900);
       expect(platform.requestedSha256, checksum);
@@ -67,6 +71,40 @@ void main() {
       expect(service.hasPendingInstall, isTrue);
     },
   );
+
+  test('restores a completed APK for the next app startup', () async {
+    final platform = _FakeAppUpdatePlatform()
+      ..pendingApk = {
+        'version_name': '1.2.3',
+        'version_code': 18,
+        'package_name': 'com.beacon.parabeacon',
+        'size_bytes': 900,
+        'sha256': checksum,
+        'download_url': '/api/v1/app/releases/18/download',
+        'file_path': r'C:\private\parabeacon-18.apk',
+      };
+    final client = MockClient(
+      (_) async => throw StateError('unexpected request'),
+    );
+    final service = AppUpdateService(
+      apiBaseUri: Uri.parse(baseUri),
+      httpClient: client,
+      platform: platform,
+      installedVersion: () async => const InstalledAppVersion(
+        packageName: 'com.beacon.parabeacon',
+        versionName: '1.2.2',
+        versionCode: 17,
+      ),
+    );
+    addTearDown(client.close);
+    addTearDown(service.dispose);
+
+    await service.restorePendingUpdate();
+
+    expect(service.status, AppUpdateStatus.downloaded);
+    expect(service.hasPendingInstall, isTrue);
+    expect(service.availableRelease?.versionCode, 18);
+  });
 
   test('rejects a download URL outside the configured HTTPS origin', () async {
     final platform = _FakeAppUpdatePlatform()..wifi = true;
@@ -142,6 +180,7 @@ void main() {
 class _FakeAppUpdatePlatform implements AppUpdatePlatform {
   bool wifi = false;
   bool airplaneMode = false;
+  Map<String, Object?>? pendingApk;
   int downloadCalls = 0;
   int installCalls = 0;
   int? requestedSize;
@@ -153,12 +192,25 @@ class _FakeAppUpdatePlatform implements AppUpdatePlatform {
   bool get isAndroid => true;
 
   @override
+  Future<Map<String, Object?>?> getPendingApk() async => pendingApk;
+
+  @override
+  Future<bool> showUpdateReadyNotification({
+    required String title,
+    required String body,
+  }) async => true;
+
+  @override
   Future<String> downloadApk({
     required Uri url,
     required Uri serverBaseUri,
     required String fileName,
+    required String versionName,
+    required int versionCode,
+    required String packageName,
     required int sizeBytes,
     required String sha256Hex,
+    required void Function(double progress) onProgress,
   }) async {
     downloadCalls++;
     requestedSize = sizeBytes;
@@ -166,7 +218,11 @@ class _FakeAppUpdatePlatform implements AppUpdatePlatform {
     requestedFileName = fileName;
     requestedServerBaseUri = serverBaseUri;
     expect(url.host, '8.8.8.8');
+    expect(versionName, '1.2.3');
+    expect(versionCode, 18);
+    expect(packageName, 'com.beacon.parabeacon');
     expect(serverBaseUri, Uri.parse('http://8.8.8.8:8080'));
+    onProgress(0.5);
     return r'C:\private\parabeacon-18.apk';
   }
 

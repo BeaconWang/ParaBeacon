@@ -11,6 +11,7 @@ import 'audio/vario_audio_service.dart';
 import 'audio/vario_sound_settings.dart';
 import 'controls/announcement_caption_overlay.dart';
 import 'controls/app_notice.dart';
+import 'controls/app_update_progress_overlay.dart';
 import 'controls/chat_incoming_message_overlay.dart';
 import 'controls/map_picker_sheet.dart' show MapPickerDefaults;
 import 'controls/position_sharing_dialog.dart';
@@ -159,6 +160,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   bool _appUpdateMonitorBusy = false;
   Timer? _appUpdateMonitor;
   String? _lastAppUpdatePromptKey;
+  int? _updateReadyNotifiedVersionCode;
+  bool _appUpdateNeedsLandingNotice = false;
 
   @override
   void initState() {
@@ -707,12 +710,16 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       );
       _landingPromptVisible = false;
       _flightRecorder.resolveLandingConfirmation(landed == true);
-      if (mounted) unawaited(_showAppUpdatePrompt());
+      if (mounted && landed == true) {
+        unawaited(_showAppUpdatePrompt(landingNotification: true));
+      }
     });
   }
 
   Future<void> _checkForAppUpdateAfter(Future<void> startupPrompt) async {
     await startupPrompt;
+    final updater = AppUpdateService.instance;
+    await updater.restorePendingUpdate();
     await _checkForAppUpdate();
   }
 
@@ -726,9 +733,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
 
   void _updateAppUpdateMonitor() {
     final updater = AppUpdateService.instance;
-    final needsMonitoring =
-        updater.status == AppUpdateStatus.waitingForWifi ||
-        updater.hasPendingInstall;
+    final needsMonitoring = updater.status == AppUpdateStatus.waitingForWifi;
     if (!mounted ||
         WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed ||
         !needsMonitoring) {
@@ -750,9 +755,8 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
         return;
       }
-      if (updater.status == AppUpdateStatus.waitingForWifi &&
-          await updater.isWifiConnected()) {
-        await updater.checkForUpdate();
+      if (updater.status == AppUpdateStatus.waitingForWifi) {
+        await updater.downloadAvailableUpdate();
       }
       if (updater.hasPendingInstall) await _showAppUpdatePrompt();
     } finally {
@@ -761,28 +765,65 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     }
   }
 
-  Future<void> _showAppUpdatePrompt() async {
+  Future<void> _notifyAppUpdateReady(
+    AppUpdateRelease release, {
+    bool force = false,
+  }) async {
+    if (!force && _updateReadyNotifiedVersionCode == release.versionCode) {
+      return;
+    }
+    final context = _navigatorKey.currentContext;
+    if (context == null || !context.mounted) return;
+    _updateReadyNotifiedVersionCode = release.versionCode;
+    final l10n = AppLocalizations.of(context);
+    final body = l10n.appUpdateDownloadedBody(release.versionName);
+    var shown = await AppUpdateService.instance.showUpdateReadyNotification(
+      title: l10n.appUpdateAvailableTitle,
+      body: body,
+    );
+    if (!shown && await ChatNotificationService.instance.requestPermission()) {
+      shown = await AppUpdateService.instance.showUpdateReadyNotification(
+        title: l10n.appUpdateAvailableTitle,
+        body: body,
+      );
+    }
+    if (!shown) AppNotice.show(body, duration: const Duration(seconds: 8));
+  }
+
+  Future<void> _showAppUpdatePrompt({bool landingNotification = false}) async {
     if (!mounted ||
         _appUpdatePromptVisible ||
         _landingPromptVisible ||
-        _androidPermissionRationaleVisible) {
+        _androidPermissionRationaleVisible ||
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
       return;
     }
     final updater = AppUpdateService.instance;
     final release = updater.availableRelease;
     final status = updater.status;
     if (release == null ||
-        (status != AppUpdateStatus.waitingForWifi &&
-            status != AppUpdateStatus.downloaded &&
+        !updater.hasPendingInstall ||
+        (status != AppUpdateStatus.downloaded &&
             status != AppUpdateStatus.installPermissionRequired)) {
       return;
     }
-    if ((status == AppUpdateStatus.downloaded ||
-            status == AppUpdateStatus.installPermissionRequired) &&
-        await updater.isAirplaneModeEnabled()) {
+    final airplaneMode = await updater.isAirplaneModeEnabled();
+    if (!mounted) return;
+    if (landingNotification) {
+      _appUpdateNeedsLandingNotice = false;
+      await _notifyAppUpdateReady(release, force: true);
       return;
     }
-    if (!mounted) return;
+    if (airplaneMode) {
+      _appUpdateNeedsLandingNotice = true;
+      await _notifyAppUpdateReady(release);
+      return;
+    }
+    if (_appUpdateNeedsLandingNotice) {
+      _appUpdateNeedsLandingNotice = false;
+      await _notifyAppUpdateReady(release, force: true);
+      return;
+    }
     final promptKey = '${release.versionCode}:${status.name}';
     if (_lastAppUpdatePromptKey == promptKey) return;
     final context = _navigatorKey.currentContext;
@@ -794,52 +835,29 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     try {
       action = await showDialog<String>(
         context: context,
-        builder: (dialogContext) {
-          final body = switch (status) {
-            AppUpdateStatus.waitingForWifi => l10n.appUpdateWifiRequired(
-              release.versionName,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.appUpdateAvailableTitle),
+          content: Text(
+            status == AppUpdateStatus.installPermissionRequired
+                ? l10n.appUpdateInstallPermissionBody
+                : l10n.appUpdateDownloadedBody(release.versionName),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop('later'),
+              child: Text(l10n.appUpdateLater),
             ),
-            AppUpdateStatus.installPermissionRequired =>
-              l10n.appUpdateInstallPermissionBody,
-            _ => l10n.appUpdateDownloadedBody(release.versionName),
-          };
-          return AlertDialog(
-            title: Text(l10n.appUpdateAvailableTitle),
-            content: Text(body),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop('later'),
-                child: Text(l10n.appUpdateLater),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(
-                  status == AppUpdateStatus.waitingForWifi
-                      ? 'download'
-                      : 'install',
-                ),
-                child: Text(
-                  status == AppUpdateStatus.waitingForWifi
-                      ? l10n.appUpdateDownloadOverWifi
-                      : l10n.appUpdateInstall,
-                ),
-              ),
-            ],
-          );
-        },
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop('install'),
+              child: Text(l10n.appUpdateInstall),
+            ),
+          ],
+        ),
       );
     } finally {
       _appUpdatePromptVisible = false;
     }
-    if (!mounted) return;
-    if (action == 'download') {
-      await updater.checkForUpdate();
-      if (updater.status == AppUpdateStatus.downloaded) {
-        _lastAppUpdatePromptKey = null;
-        await _showAppUpdatePrompt();
-      }
-    } else if (action == 'install') {
-      await updater.installPendingApk();
-    }
+    if (mounted && action == 'install') await updater.installPendingApk();
   }
 
   void _maintainChatPresence() {
@@ -869,9 +887,10 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       if (updater.hasPendingInstall) {
         _lastAppUpdatePromptKey = null;
         unawaited(_showAppUpdatePrompt());
-        _updateAppUpdateMonitor();
-      } else {
-        unawaited(_checkForAppUpdate());
+      }
+      _updateAppUpdateMonitor();
+      if (updater.status == AppUpdateStatus.waitingForWifi) {
+        unawaited(_pollAppUpdate());
       }
     } else {
       _appUpdateMonitor?.cancel();
@@ -904,49 +923,53 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             // App notices, pilot-chat alerts, and voice-announcement captions
             // stay visible above every route, including sheets and dialogs.
-            builder: (context, child) => AppNoticeOverlay(
-              child: ChatIncomingMessageOverlay(
-                messages: ChatService.instance.incomingChatMessages,
-                onAlert: () => unawaited(
-                  VarioAudioService.instance.playChime().catchError(
-                    (Object _) {},
-                  ),
-                ),
-                onBackgroundMessage: (message) {
-                  if (!ChatNotificationSettings.instance.allows(message)) {
-                    return;
-                  }
-                  final l10n = AppLocalizations.of(context);
-                  final sourceLabel = switch (message.scope) {
-                    'public' => l10n.chatNotificationWorldwide,
-                    'channel' => l10n.chatNotificationChannel,
-                    'direct' => l10n.chatNotificationDirect,
-                    _ => '',
-                  };
-                  unawaited(
-                    ChatNotificationService.instance.showIncomingMessage(
-                      message: message,
-                      title: l10n.chatNewMessageFrom(message.senderName),
-                      sourceLabel: sourceLabel,
-                      body: message.text.trim().isNotEmpty
-                          ? message.text
-                          : switch (message.kind) {
-                              'image' => l10n.chatImageMessage,
-                              'voice' => l10n.chatVoiceMessage,
-                              'location' => l10n.chatLocationMessage,
-                              _ => '',
-                            },
-                      channelName: l10n.chatNotificationChannelName,
-                      channelDescription:
-                          l10n.chatNotificationChannelDescription,
+            builder: (context, child) => AppUpdateProgressOverlay(
+              child: AppNoticeOverlay(
+                child: ChatIncomingMessageOverlay(
+                  messages: ChatService.instance.incomingChatMessages,
+                  onAlert: () => unawaited(
+                    VarioAudioService.instance.playChime().catchError(
+                      (Object _) {},
                     ),
-                  );
-                },
-                child: Stack(
-                  children: [
-                    ?child,
-                    const Positioned.fill(child: AnnouncementCaptionOverlay()),
-                  ],
+                  ),
+                  onBackgroundMessage: (message) {
+                    if (!ChatNotificationSettings.instance.allows(message)) {
+                      return;
+                    }
+                    final l10n = AppLocalizations.of(context);
+                    final sourceLabel = switch (message.scope) {
+                      'public' => l10n.chatNotificationWorldwide,
+                      'channel' => l10n.chatNotificationChannel,
+                      'direct' => l10n.chatNotificationDirect,
+                      _ => '',
+                    };
+                    unawaited(
+                      ChatNotificationService.instance.showIncomingMessage(
+                        message: message,
+                        title: l10n.chatNewMessageFrom(message.senderName),
+                        sourceLabel: sourceLabel,
+                        body: message.text.trim().isNotEmpty
+                            ? message.text
+                            : switch (message.kind) {
+                                'image' => l10n.chatImageMessage,
+                                'voice' => l10n.chatVoiceMessage,
+                                'location' => l10n.chatLocationMessage,
+                                _ => '',
+                              },
+                        channelName: l10n.chatNotificationChannelName,
+                        channelDescription:
+                            l10n.chatNotificationChannelDescription,
+                      ),
+                    );
+                  },
+                  child: Stack(
+                    children: [
+                      ?child,
+                      const Positioned.fill(
+                        child: AnnouncementCaptionOverlay(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

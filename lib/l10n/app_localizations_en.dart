@@ -3596,6 +3596,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appUpdateDownloadOverWifi => 'Download over Wi-Fi';
 
   @override
+  String appUpdateDownloading(String version) {
+    return 'Downloading version $version';
+  }
+
+  @override
   String get appUpdateInstall => 'Install';
 
   @override

@@ -82,6 +82,65 @@ void main() {
     await settings.setShareLocationPublicly(false);
   });
 
+  test(
+    'explicit ParaBeacon opt-out deletes server data without a local session',
+    () async {
+      final requests = <http.Request>[];
+      final client = MockClient((request) async {
+        requests.add(request);
+        expect(request.method, 'DELETE');
+        expect(request.headers['authorization'], 'Bearer proxy-test-token');
+        expect(request.url.path, '/api/v1/tracking/location-data');
+        return http.Response('', 204);
+      });
+      final service = LiveTrackingService(
+        config: _config(),
+        authProvider: _TestProxyAuthProvider(),
+        pointStore: _MemoryProxyPointStore(),
+        httpClient: client,
+      );
+
+      await service.disableParaBeaconAndDeleteLocationData(
+        disableSetting: () async {},
+      );
+
+      expect(requests, hasLength(1));
+      expect(service.sessionId, isNull);
+      expect(service.lastErrorCode, isNull);
+      await service.shutdown();
+      client.close();
+    },
+  );
+
+  test(
+    'failed explicit opt-out records an error and schedules retry',
+    () async {
+      final requests = <http.Request>[];
+      final client = MockClient((request) async {
+        requests.add(request);
+        return http.Response('temporarily unavailable', 503);
+      });
+      final service = LiveTrackingService(
+        config: _config(),
+        authProvider: _TestProxyAuthProvider(),
+        pointStore: _MemoryProxyPointStore(),
+        httpClient: client,
+      );
+      var settingDisabled = false;
+
+      await service.disableParaBeaconAndDeleteLocationData(
+        disableSetting: () async => settingDisabled = true,
+      );
+
+      expect(settingDisabled, isTrue);
+      expect(requests, hasLength(1));
+      expect(requests.single.method, 'DELETE');
+      expect(service.lastErrorCode, 'location_data_delete_http_503');
+      await service.shutdown();
+      client.close();
+    },
+  );
+
   test('loads endpoints and settings from the bundled JSON asset', () async {
     final config = await LiveTrackingConfigLoader().load();
 

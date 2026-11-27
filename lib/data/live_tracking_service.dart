@@ -535,6 +535,8 @@ enum LiveTrackingConnectionState {
 /// Sends authenticated flight sessions and batched telemetry points directly
 /// to the ParaBeacon Server REST API.
 class LiveTrackingService extends ChangeNotifier {
+  static const _pendingLocationDeletionKeyPrefix =
+      'ParaBeacon.LiveTracking.PendingLocationDeletion.v1';
   LiveTrackingService({
     required LiveTrackingConfig config,
     required LiveTrackingProxyAuthProvider authProvider,
@@ -574,6 +576,10 @@ class LiveTrackingService extends ChangeNotifier {
   String? get lastErrorCode => _lastErrorCode;
   String? _sessionId;
   String? get sessionId => _sessionId;
+  bool _manualLocationDataDeletion = false;
+  Future<void>? _locationDataDeletionFuture;
+  Timer? _locationDataDeletionRetryTimer;
+  int _locationDataDeletionRetryAttempt = 0;
   bool _sessionIsGroundPresence = false;
   DateTime? _lastGroundPresenceSentAt;
   bool get isConfigured => _configured;
@@ -734,6 +740,162 @@ class LiveTrackingService extends ChangeNotifier {
     _queueLifecycleSync();
   }
 
+  void _scheduleLocationDataDeletionRetry() {
+    if (_disposed || _locationDataDeletionRetryTimer != null) return;
+    final delaySeconds = (1 << _locationDataDeletionRetryAttempt.clamp(0, 6))
+        .clamp(1, 60);
+    _locationDataDeletionRetryAttempt++;
+    _locationDataDeletionRetryTimer = Timer(
+      Duration(seconds: delaySeconds),
+      () {
+        _locationDataDeletionRetryTimer = null;
+        if (_manualLocationDataDeletion || _disposed) return;
+        unawaited(_retryLocationDataDeletion());
+      },
+    );
+  }
+
+  String? _pendingLocationDeletionPreferenceKey() {
+    final accountID = ParaBeaconAccountService.instance.user?.id;
+    if (accountID == null || accountID.isEmpty || !_configured) return null;
+    return '$_pendingLocationDeletionKeyPrefix:${Uri.encodeComponent(_config.apiBaseUri.origin)}:$accountID';
+  }
+
+  Future<bool> _hasPendingLocationDataDeletion() async {
+    final key = _pendingLocationDeletionPreferenceKey();
+    if (key == null) return false;
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      return preferences.getBool(key) == true;
+    } on Object {
+      return false;
+    }
+  }
+
+  Future<void> _setPendingLocationDataDeletion(bool pending) async {
+    final key = _pendingLocationDeletionPreferenceKey();
+    if (key == null) return;
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      if (pending) {
+        await preferences.setBool(key, true);
+      } else {
+        await preferences.remove(key);
+      }
+    } on Object {
+      return;
+    }
+  }
+
+  Future<bool> _retryPendingLocationDataDeletion() async {
+    if (_manualLocationDataDeletion || _locationDataDeletionFuture != null) {
+      return true;
+    }
+    if (!await _hasPendingLocationDataDeletion()) return false;
+    _manualLocationDataDeletion = true;
+    try {
+      await _retryLocationDataDeletion();
+    } finally {
+      _manualLocationDataDeletion = false;
+    }
+    return await _hasPendingLocationDataDeletion();
+  }
+
+  Future<void> _retryLocationDataDeletion() async {
+    if (!_configured) {
+      _scheduleLocationDataDeletionRetry();
+      return;
+    }
+    try {
+      final response = await _sendJson(
+        method: 'DELETE',
+        uri: _config.apiBaseUri.resolve('/api/v1/tracking/location-data'),
+        body: const {},
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw LiveTrackingProxyException(
+          'location_data_delete_http_${response.statusCode}',
+        );
+      }
+      _locationDataDeletionRetryAttempt = 0;
+      await _setPendingLocationDataDeletion(false);
+      _lastErrorCode = null;
+      _notify();
+      if (!_manualLocationDataDeletion && !_disposed) _queueLifecycleSync();
+    } on Object catch (error) {
+      _lastErrorCode = _errorCode(error);
+      _notify();
+      _scheduleLocationDataDeletionRetry();
+    }
+  }
+
+  Future<void> disableParaBeaconAndDeleteLocationData({
+    required Future<void> Function() disableSetting,
+  }) {
+    final existing = _locationDataDeletionFuture;
+    if (existing != null) return existing;
+    _manualLocationDataDeletion = true;
+    _bindingEpoch++;
+    final operation = _disableAndDeleteLocationData(disableSetting);
+    _locationDataDeletionFuture = operation;
+    return operation;
+  }
+
+  Future<void> _disableAndDeleteLocationData(
+    Future<void> Function() disableSetting,
+  ) async {
+    try {
+      await _setPendingLocationDataDeletion(true);
+      await disableSetting();
+      _queueLifecycleSync();
+      await _syncTail.catchError((Object _) {});
+      final upload = _uploadFuture;
+      if (upload != null) await upload.catchError((Object _) {});
+      _sessionId = null;
+      _sessionIsGroundPresence = false;
+      _sessionPubliclyShared = null;
+      _lastGroundPresenceSentAt = null;
+      _lastPointTimestamp = null;
+      _flushWhileIdle = false;
+      _retryTimer?.cancel();
+      _retryTimer = null;
+      _uploadTimer?.cancel();
+      _uploadTimer = null;
+      _pending.clear();
+      await _persistQueue();
+      final socket = _roomSocket;
+      if (socket != null) await socket.leaveRoom();
+      _locationThrottler.reset();
+      _setState(LiveTrackingConnectionState.disconnected);
+      if (!_configured) {
+        throw const LiveTrackingProxyException('tracking_config_unavailable');
+      }
+      final response = await _sendJson(
+        method: 'DELETE',
+        uri: _config.apiBaseUri.resolve('/api/v1/tracking/location-data'),
+        body: const {},
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw LiveTrackingProxyException(
+          'location_data_delete_http_${response.statusCode}',
+        );
+      }
+      _locationDataDeletionRetryTimer?.cancel();
+      _locationDataDeletionRetryTimer = null;
+      _locationDataDeletionRetryAttempt = 0;
+      await _setPendingLocationDataDeletion(false);
+      _lastErrorCode = null;
+    } on Object catch (error) {
+      _lastErrorCode = _errorCode(error);
+      _scheduleLocationDataDeletionRetry();
+    } finally {
+      _manualLocationDataDeletion = false;
+      _locationDataDeletionFuture = null;
+      _notify();
+      if (!_disposed) _queueLifecycleSync();
+    }
+  }
+
   Future<void> closeForSignOut() async {
     if (_starting) await _syncTail.catchError((Object _) {});
     final sessionId = _sessionId;
@@ -811,7 +973,7 @@ class LiveTrackingService extends ChangeNotifier {
         .catchError((Object error) {
           _lastErrorCode = _errorCode(error);
           _setState(LiveTrackingConnectionState.reconnecting);
-          _scheduleRetry();
+          if (!_manualLocationDataDeletion) _scheduleRetry();
         });
   }
 
@@ -835,8 +997,27 @@ class LiveTrackingService extends ChangeNotifier {
 
   Future<void> _syncLifecycle() async {
     if (!_configured) return;
+    if (_locationDataDeletionRetryTimer != null) {
+      _locationDataDeletionRetryTimer?.cancel();
+      _locationDataDeletionRetryTimer = null;
+      await _retryLocationDataDeletion();
+      return;
+    }
+    if (await _retryPendingLocationDataDeletion()) return;
     if (!_loadedQueue) {
       await _loadQueue();
+      return;
+    }
+    if (_manualLocationDataDeletion) {
+      _sessionId = null;
+      _sessionIsGroundPresence = false;
+      _lastGroundPresenceSentAt = null;
+      _retryTimer?.cancel();
+      _retryTimer = null;
+      _uploadTimer?.cancel();
+      _uploadTimer = null;
+      _leaveRoomSocket();
+      _setState(LiveTrackingConnectionState.disconnected);
       return;
     }
     if (_shouldTrack) {
@@ -986,7 +1167,9 @@ class LiveTrackingService extends ChangeNotifier {
       if (bindingEpoch != _bindingEpoch ||
           !_shouldTrack ||
           groundPresence != _currentModeIsGroundPresence) {
-        _queueSessionEnd(sessionId.trim());
+        if (!_manualLocationDataDeletion) {
+          _queueSessionEnd(sessionId.trim());
+        }
         _setState(LiveTrackingConnectionState.disconnected);
         return;
       }
@@ -1274,6 +1457,8 @@ class LiveTrackingService extends ChangeNotifier {
     unbind();
     _retryTimer?.cancel();
     _uploadTimer?.cancel();
+    _locationDataDeletionRetryTimer?.cancel();
+    _locationDataDeletionRetryTimer = null;
     await _sessionEndTail.catchError((Object _) {});
     await _saveTail.catchError((Object _) {});
     _disposeRoomSocket();
@@ -1289,6 +1474,8 @@ class LiveTrackingService extends ChangeNotifier {
       _disposed = true;
       _retryTimer?.cancel();
       _uploadTimer?.cancel();
+      _locationDataDeletionRetryTimer?.cancel();
+      _locationDataDeletionRetryTimer = null;
       _disposeRoomSocket();
       if (_ownsHttpClient) _httpClient.close();
     }

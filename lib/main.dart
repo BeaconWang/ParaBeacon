@@ -424,11 +424,28 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
           await settings.setXContestEnabled(result.syncToXContest);
         }
         if (serverAccount.isSignedIn) {
-          await settings.setParaBeaconEnabled(result.syncToParaBeacon);
+          if (result.syncToParaBeacon) {
+            await settings.setParaBeaconEnabled(true);
+          } else {
+            await LiveTrackingService.instance
+                .disableParaBeaconAndDeleteLocationData(
+                  disableSetting: () => settings.setParaBeaconEnabled(false),
+                );
+          }
         }
         await settings.setTemporaryDontShare(false);
       case PositionSharingChoice.disable:
-        await settings.setTemporaryDontShare(true);
+        if (serverAccount.isSignedIn) {
+          await LiveTrackingService.instance
+              .disableParaBeaconAndDeleteLocationData(
+                disableSetting: () async {
+                  await settings.setParaBeaconEnabled(false);
+                  await settings.setTemporaryDontShare(true);
+                },
+              );
+        } else {
+          await settings.setTemporaryDontShare(true);
+        }
       case PositionSharingChoice.timedOut:
         break;
     }

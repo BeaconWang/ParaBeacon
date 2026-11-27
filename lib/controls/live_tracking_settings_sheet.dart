@@ -266,7 +266,21 @@ class _LiveTrackingSettingsSheetState
                                       setState(
                                         () => _parabeaconEnabled = value,
                                       );
-                                      settings.setParaBeaconEnabled(value);
+                                      if (value) {
+                                        settings.setParaBeaconEnabled(true);
+                                      } else {
+                                        unawaited(
+                                          server_tracking
+                                              .LiveTrackingService
+                                              .instance
+                                              .disableParaBeaconAndDeleteLocationData(
+                                                disableSetting: () => settings
+                                                    .setParaBeaconEnabled(
+                                                      false,
+                                                    ),
+                                              ),
+                                        );
+                                      }
                                     },
                             ),
                             const Divider(height: 1),

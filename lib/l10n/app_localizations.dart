@@ -1703,7 +1703,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingParaBeaconSyncSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Send live flight data to ParaBeacon Server.'**
+  /// **'Send live flight data to ParaBeacon.'**
   String get liveTrackingParaBeaconSyncSubtitle;
 
   /// No description provided for @liveTrackingParaBeaconSignInRequired.
@@ -1829,7 +1829,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingShareLocationPubliclySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.'**
+  /// **'Show your name and latest location to signed-in ParaBeacon pilots.'**
   String get liveTrackingShareLocationPubliclySubtitle;
 
   /// No description provided for @liveTrackingShareLocationWhileNotFlying.
@@ -1841,7 +1841,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingShareLocationWhileNotFlyingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.'**
+  /// **'Keep sharing your location between flights.'**
   String get liveTrackingShareLocationWhileNotFlyingSubtitle;
 
   /// No description provided for @liveTrackingChannelNumber.
@@ -1853,7 +1853,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTrackingChannelNumberSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose your radio frequency to filter the map and use Channel chat. With 000000, the map shows all public pilots in range and Channel chat is hidden.'**
+  /// **'Filter the map and Channel chat by radio channel. 000000 shows all pilots.'**
   String get liveTrackingChannelNumberSubtitle;
 
   /// No description provided for @liveTrackingChannelNumberSaveFailed.

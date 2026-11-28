@@ -835,8 +835,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveTrackingParaBeaconSync => '同步至 ParaBeacon';
 
   @override
-  String get liveTrackingParaBeaconSyncSubtitle =>
-      '将实时飞行数据发送到 ParaBeacon Server。';
+  String get liveTrackingParaBeaconSyncSubtitle => '将实时飞行数据发送到 ParaBeacon。';
 
   @override
   String get liveTrackingParaBeaconSignInRequired => '请登录 ParaBeacon 后启用此开关。';
@@ -905,21 +904,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveTrackingShareLocationPubliclySubtitle =>
-      '开启后，已登录的 ParaBeacon 地图用户可以看到你活动飞行中的名称和最新位置。默认关闭，可随时关闭。';
+      '向已登录的 ParaBeacon 飞行员显示名称和最新位置。';
 
   @override
   String get liveTrackingShareLocationWhileNotFlying => '非飞行时也分享位置';
 
   @override
-  String get liveTrackingShareLocationWhileNotFlyingSubtitle =>
-      '在两次飞行之间继续公开最新位置。需要启用 ParaBeacon 同步和公开位置分享；暂停或关闭分享、或开始飞行时即停止。';
+  String get liveTrackingShareLocationWhileNotFlyingSubtitle => '在飞行之间继续分享位置。';
 
   @override
   String get liveTrackingChannelNumber => '频道编号';
 
   @override
   String get liveTrackingChannelNumberSubtitle =>
-      '选择无线电频率以筛选地图和使用频道聊天。设置为 000000 时，地图会显示范围内所有公开飞行员，并隐藏频道聊天。';
+      '按无线电频道筛选地图和频道聊天，000000 显示全部飞行员。';
 
   @override
   String get liveTrackingChannelNumberSaveFailed => '无法保存频道编号，请检查网络后重试。';

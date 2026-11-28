@@ -884,7 +884,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingParaBeaconSyncSubtitle =>
-      'Send live flight data to ParaBeacon Server.';
+      'Send live flight data to ParaBeacon.';
 
   @override
   String get liveTrackingParaBeaconSignInRequired =>
@@ -963,7 +963,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingShareLocationPubliclySubtitle =>
-      'When on, your name and latest location from active flights are visible to signed-in ParaBeacon map users. Off by default; turn off anytime.';
+      'Show your name and latest location to signed-in ParaBeacon pilots.';
 
   @override
   String get liveTrackingShareLocationWhileNotFlying =>
@@ -971,14 +971,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTrackingShareLocationWhileNotFlyingSubtitle =>
-      'Keep your fresh live location visible between flights. Requires ParaBeacon sync and public location sharing; stops when sharing is paused, disabled, or you start a flight.';
+      'Keep sharing your location between flights.';
 
   @override
   String get liveTrackingChannelNumber => 'Channel number';
 
   @override
   String get liveTrackingChannelNumberSubtitle =>
-      'Choose your radio frequency to filter the map and use Channel chat. With 000000, the map shows all public pilots in range and Channel chat is hidden.';
+      'Filter the map and Channel chat by radio channel. 000000 shows all pilots.';
 
   @override
   String get liveTrackingChannelNumberSaveFailed =>

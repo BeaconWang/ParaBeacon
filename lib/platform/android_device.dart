@@ -31,15 +31,28 @@ class AndroidDevice {
   /// off Android.
   static Future<bool> get isHuaweiOrHarmony async {
     final info = await _info();
-    if (info == null) return false;
-    String str(String key) => (info[key] as String? ?? '').toLowerCase();
-    final manufacturer = str('manufacturer');
-    final brand = str('brand');
+    return info != null && isHuaweiOrHarmonyInfo(info);
+  }
+
+  @visibleForTesting
+  static bool isHuaweiOrHarmonyInfo(Map<String, dynamic> info) {
+    String str(String key) => info[key]?.toString().toLowerCase() ?? '';
+    final identifiers = [
+      str('manufacturer'),
+      str('brand'),
+      str('model'),
+      str('product'),
+      str('device'),
+      str('display'),
+    ];
     return info['isHarmonyOS'] == true ||
-        manufacturer.contains('huawei') ||
-        manufacturer.contains('honor') ||
-        brand.contains('huawei') ||
-        brand.contains('honor');
+        identifiers.any(
+          (value) =>
+              value.contains('huawei') ||
+              value.contains('honor') ||
+              value.contains('harmony') ||
+              value.contains('hongmeng'),
+        );
   }
 
   static Future<Map<String, dynamic>?> _info() async {

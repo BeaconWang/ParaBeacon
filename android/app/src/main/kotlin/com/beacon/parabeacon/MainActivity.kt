@@ -653,8 +653,12 @@ class MainActivity : FlutterActivity() {
     /// them and fall back to the engine-default (media) usage.
     private fun getDeviceInfo(): Map<String, Any> {
         return mapOf(
-            "manufacturer" to (Build.MANUFACTURER ?: ""),
-            "brand" to (Build.BRAND ?: ""),
+            "manufacturer" to Build.MANUFACTURER.orEmpty(),
+            "brand" to Build.BRAND.orEmpty(),
+            "model" to Build.MODEL.orEmpty(),
+            "product" to Build.PRODUCT.orEmpty(),
+            "device" to Build.DEVICE.orEmpty(),
+            "display" to Build.DISPLAY.orEmpty(),
             "isHarmonyOS" to isHarmonyOS(),
         )
     }

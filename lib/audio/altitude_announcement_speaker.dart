@@ -260,14 +260,15 @@ class AltitudeAnnouncementSpeaker extends ChangeNotifier {
     AnnouncementLanguage? language;
     if (_isAndroid) {
       final engines = await _androidEngines();
-      if (engines.isEmpty) {
-        // No text-to-speech engine installed at all.
-        return null;
-      }
       if (_currentEngine == null) {
         final defaultEngine = await _call<dynamic>(() => _tts.getDefaultEngine);
-        if (defaultEngine is String) _currentEngine = defaultEngine;
+        if (defaultEngine is String && defaultEngine.isNotEmpty) {
+          _currentEngine = defaultEngine;
+        }
       }
+      // Some HarmonyOS builds bind the system TTS service successfully but
+      // return an empty engine list. Keep using the already-bound default
+      // engine in that case instead of declaring voice announcements absent.
       await _applyAndroidAudioAttributes();
       language = await _selectLanguage(preferred);
       if (language == null) {

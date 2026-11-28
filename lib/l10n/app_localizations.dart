@@ -6782,6 +6782,12 @@ abstract class AppLocalizations {
   /// **'Version {version} is available. Connect to Wi-Fi to download the APK.'**
   String appUpdateWifiRequired(String version);
 
+  /// No description provided for @appUpdateMobileDataPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is available. Download it now using mobile data? This may use your mobile data allowance.'**
+  String appUpdateMobileDataPrompt(String version);
+
   /// No description provided for @appUpdateDownloadedBody.
   ///
   /// In en, this message translates to:
@@ -6799,6 +6805,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download over Wi-Fi'**
   String get appUpdateDownloadOverWifi;
+
+  /// No description provided for @appUpdateDownloadOverMobileData.
+  ///
+  /// In en, this message translates to:
+  /// **'Download over mobile data'**
+  String get appUpdateDownloadOverMobileData;
 
   /// No description provided for @appUpdateDownloading.
   ///

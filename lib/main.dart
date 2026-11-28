@@ -160,6 +160,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
   bool _appUpdateMonitorBusy = false;
   Timer? _appUpdateMonitor;
   String? _lastAppUpdatePromptKey;
+  bool _deferredAppUpdatePromptUntilLaunch = false;
   int? _updateReadyNotifiedVersionCode;
   bool _appUpdateNeedsLandingNotice = false;
 
@@ -768,6 +769,9 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       }
       if (updater.status == AppUpdateStatus.waitingForWifi) {
         await updater.downloadAvailableUpdate();
+        if (updater.status == AppUpdateStatus.waitingForWifi) {
+          await _showAppUpdatePrompt();
+        }
       }
       if (updater.hasPendingInstall) await _showAppUpdatePrompt();
     } finally {
@@ -812,8 +816,53 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     final updater = AppUpdateService.instance;
     final release = updater.availableRelease;
     final status = updater.status;
-    if (release == null ||
-        !updater.hasPendingInstall ||
+    if (release == null || _deferredAppUpdatePromptUntilLaunch) {
+      return;
+    }
+    if (status == AppUpdateStatus.waitingForWifi) {
+      if (!await updater.isMobileDataConnected() || !mounted) return;
+      final promptKey = '${release.versionCode}:mobile-data';
+      if (_lastAppUpdatePromptKey == promptKey) return;
+      final context = _navigatorKey.currentContext;
+      if (!mounted || context == null || !context.mounted) return;
+      final l10n = AppLocalizations.of(context);
+      _appUpdatePromptVisible = true;
+      _lastAppUpdatePromptKey = promptKey;
+      String? action;
+      try {
+        action = await showDialog<String>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(l10n.appUpdateAvailableTitle),
+            content: Text(l10n.appUpdateMobileDataPrompt(release.versionName)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop('later'),
+                child: Text(l10n.appUpdateLater),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop('mobile'),
+                child: Text(l10n.appUpdateDownloadOverMobileData),
+              ),
+            ],
+          ),
+        );
+      } finally {
+        _appUpdatePromptVisible = false;
+      }
+      if (action == 'later') {
+        _deferredAppUpdatePromptUntilLaunch = true;
+      }
+      if (mounted && action == 'mobile') {
+        await updater.downloadAvailableUpdate(allowMobileData: true);
+        if (updater.status == AppUpdateStatus.waitingForWifi) {
+          _lastAppUpdatePromptKey = null;
+        }
+        _updateAppUpdateMonitor();
+      }
+      return;
+    }
+    if (!updater.hasPendingInstall ||
         (status != AppUpdateStatus.downloaded &&
             status != AppUpdateStatus.installPermissionRequired)) {
       return;
@@ -868,7 +917,13 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
     } finally {
       _appUpdatePromptVisible = false;
     }
-    if (mounted && action == 'install') await updater.installPendingApk();
+    if (action == 'later') {
+      _deferredAppUpdatePromptUntilLaunch = true;
+    }
+    if (mounted && action == 'install') {
+      await updater.installPendingApk();
+      if (updater.hasPendingInstall) _lastAppUpdatePromptKey = null;
+    }
   }
 
   void _maintainChatPresence() {
@@ -896,7 +951,6 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
       final updater = AppUpdateService.instance;
       if (updater.hasPendingInstall) {
-        _lastAppUpdatePromptKey = null;
         unawaited(_showAppUpdatePrompt());
       }
       _updateAppUpdateMonitor();

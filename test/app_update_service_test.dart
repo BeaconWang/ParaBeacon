@@ -72,6 +72,48 @@ void main() {
     },
   );
 
+  test('cellular downloads require an explicit opt-in', () async {
+    final platform = _FakeAppUpdatePlatform()..mobileData = true;
+    final client = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'version_name': '1.2.3',
+          'version_code': 18,
+          'package_name': 'com.beacon.parabeacon',
+          'size_bytes': 900,
+          'sha256': checksum,
+          'download_url': '/api/v1/app/releases/18/download',
+        }),
+        200,
+      ),
+    );
+    final service = AppUpdateService(
+      apiBaseUri: Uri.parse(baseUri),
+      httpClient: client,
+      platform: platform,
+      installedVersion: () async => const InstalledAppVersion(
+        packageName: 'com.beacon.parabeacon',
+        versionName: '1.2.2',
+        versionCode: 17,
+      ),
+    );
+    addTearDown(client.close);
+    addTearDown(service.dispose);
+
+    await service.checkForUpdate();
+    expect(service.status, AppUpdateStatus.waitingForWifi);
+    expect(await service.isMobileDataConnected(), isTrue);
+
+    await service.downloadAvailableUpdate();
+    expect(service.status, AppUpdateStatus.waitingForWifi);
+    expect(platform.downloadCalls, 0);
+
+    await service.downloadAvailableUpdate(allowMobileData: true);
+    expect(service.status, AppUpdateStatus.downloaded);
+    expect(platform.downloadCalls, 1);
+    expect(platform.requestedAllowMobileData, isTrue);
+  });
+
   test('restores a completed APK for the next app startup', () async {
     final platform = _FakeAppUpdatePlatform()
       ..pendingApk = {
@@ -179,6 +221,7 @@ void main() {
 
 class _FakeAppUpdatePlatform implements AppUpdatePlatform {
   bool wifi = false;
+  bool mobileData = false;
   bool airplaneMode = false;
   Map<String, Object?>? pendingApk;
   int downloadCalls = 0;
@@ -187,6 +230,7 @@ class _FakeAppUpdatePlatform implements AppUpdatePlatform {
   String? requestedSha256;
   String? requestedFileName;
   Uri? requestedServerBaseUri;
+  bool? requestedAllowMobileData;
 
   @override
   bool get isAndroid => true;
@@ -210,9 +254,11 @@ class _FakeAppUpdatePlatform implements AppUpdatePlatform {
     required String packageName,
     required int sizeBytes,
     required String sha256Hex,
+    required bool allowMobileData,
     required void Function(double progress) onProgress,
   }) async {
     downloadCalls++;
+    requestedAllowMobileData = allowMobileData;
     requestedSize = sizeBytes;
     requestedSha256 = sha256Hex;
     requestedFileName = fileName;
@@ -228,6 +274,9 @@ class _FakeAppUpdatePlatform implements AppUpdatePlatform {
 
   @override
   Future<bool> isWifiConnected() async => wifi;
+
+  @override
+  Future<bool> isMobileDataConnected() async => mobileData;
 
   @override
   Future<bool> isAirplaneModeEnabled() async => airplaneMode;

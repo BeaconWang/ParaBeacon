@@ -1304,6 +1304,14 @@
   "settingShowPilotSpeed": "Show pilot speed",
   "appUpdateAvailableTitle": "Update available",
   "appUpdateWifiRequired": "Version {version} is available. Connect to Wi-Fi to download the APK.",
+  "appUpdateMobileDataPrompt": "Version {version} is available. Download it now using mobile data? This may use your mobile data allowance.",
+  "@appUpdateMobileDataPrompt": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "@appUpdateWifiRequired": {
     "placeholders": {
       "version": {
@@ -1321,6 +1329,7 @@
   },
   "appUpdateInstallPermissionBody": "Allow ParaBeacon to install APK updates in Android settings, then return and tap Install.",
   "appUpdateDownloadOverWifi": "Download over Wi-Fi",
+  "appUpdateDownloadOverMobileData": "Download over mobile data",
   "appUpdateDownloading": "Downloading version {version}",
   "@appUpdateDownloading": {
     "placeholders": {

@@ -3461,6 +3461,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String appUpdateMobileDataPrompt(String version) {
+    return '发现版本 $version。要现在使用移动数据下载吗？这可能会消耗你的移动数据流量。';
+  }
+
+  @override
   String appUpdateDownloadedBody(String version) {
     return '版本 $version 已下载。Android 将提示你确认安装。';
   }
@@ -3471,6 +3476,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appUpdateDownloadOverWifi => '通过 Wi-Fi 下载';
+
+  @override
+  String get appUpdateDownloadOverMobileData => '通过移动数据下载';
 
   @override
   String appUpdateDownloading(String version) {

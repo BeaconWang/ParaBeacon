@@ -13,6 +13,7 @@ const int maxAndroidApkSizeBytes = 512 * 1024 * 1024;
 abstract interface class AppUpdatePlatform {
   bool get isAndroid;
   Future<bool> isWifiConnected();
+  Future<bool> isMobileDataConnected();
   Future<bool> isAirplaneModeEnabled();
   Future<Map<String, Object?>?> getPendingApk();
   Future<bool> showUpdateReadyNotification({
@@ -28,6 +29,7 @@ abstract interface class AppUpdatePlatform {
     required String packageName,
     required int sizeBytes,
     required String sha256Hex,
+    required bool allowMobileData,
     required void Function(double progress) onProgress,
   });
   Future<InstallApkResult> installApk({
@@ -138,6 +140,15 @@ class AppUpdateService extends ChangeNotifier {
     if (!_platform.isAndroid) return false;
     try {
       return await _platform.isWifiConnected();
+    } on Object {
+      return false;
+    }
+  }
+
+  Future<bool> isMobileDataConnected() async {
+    if (!_platform.isAndroid) return false;
+    try {
+      return await _platform.isMobileDataConnected();
     } on Object {
       return false;
     }
@@ -264,23 +275,35 @@ class AppUpdateService extends ChangeNotifier {
     }
   }
 
-  Future<void> downloadAvailableUpdate() async {
+  Future<void> downloadAvailableUpdate({bool allowMobileData = false}) async {
     final release = _release;
     final baseUri = _apiBaseUri;
     if (!_platform.isAndroid ||
         release == null ||
         baseUri == null ||
-        _status != AppUpdateStatus.waitingForWifi ||
-        !await isWifiConnected()) {
+        _status != AppUpdateStatus.waitingForWifi) {
       return;
     }
-    await _startDownload(release, baseUri);
+    final wifiConnected = await isWifiConnected();
+    if (!wifiConnected &&
+        (!allowMobileData || !await isMobileDataConnected())) {
+      return;
+    }
+    await _startDownload(release, baseUri, allowMobileData: allowMobileData);
   }
 
-  Future<void> _startDownload(AppUpdateRelease release, Uri baseUri) async {
+  Future<void> _startDownload(
+    AppUpdateRelease release,
+    Uri baseUri, {
+    bool allowMobileData = false,
+  }) async {
     final existing = _downloadFuture;
     if (existing != null) return existing;
-    final future = _download(release, baseUri);
+    final future = _download(
+      release,
+      baseUri,
+      allowMobileData: allowMobileData,
+    );
     _downloadFuture = future;
     try {
       await future;
@@ -289,7 +312,11 @@ class AppUpdateService extends ChangeNotifier {
     }
   }
 
-  Future<void> _download(AppUpdateRelease release, Uri baseUri) async {
+  Future<void> _download(
+    AppUpdateRelease release,
+    Uri baseUri, {
+    required bool allowMobileData,
+  }) async {
     _downloadGeneration++;
     _downloadProgress = 0;
     _errorCode = null;
@@ -304,6 +331,7 @@ class AppUpdateService extends ChangeNotifier {
         packageName: release.packageName,
         sizeBytes: release.sizeBytes,
         sha256Hex: release.sha256Hex,
+        allowMobileData: allowMobileData,
         onProgress: (value) {
           if (!value.isFinite) return;
           _downloadProgress = value.clamp(0.0, 1.0).toDouble();
@@ -442,6 +470,13 @@ class _MethodChannelAppUpdatePlatform implements AppUpdatePlatform {
       false;
 
   @override
+  Future<bool> isMobileDataConnected() async =>
+      await AppUpdateService._channel.invokeMethod<bool>(
+        'isMobileDataConnected',
+      ) ??
+      false;
+
+  @override
   Future<bool> isAirplaneModeEnabled() async =>
       await AppUpdateService._channel.invokeMethod<bool>(
         'isAirplaneModeEnabled',
@@ -474,6 +509,7 @@ class _MethodChannelAppUpdatePlatform implements AppUpdatePlatform {
     required String packageName,
     required int sizeBytes,
     required String sha256Hex,
+    required bool allowMobileData,
     required void Function(double progress) onProgress,
   }) async {
     AppUpdateService._channel.setMethodCallHandler((call) async {
@@ -496,6 +532,7 @@ class _MethodChannelAppUpdatePlatform implements AppUpdatePlatform {
             'packageName': packageName,
             'sizeBytes': sizeBytes,
             'sha256': sha256Hex,
+            'allowMobileData': allowMobileData,
           });
       if (path == null || path.isEmpty) {
         throw const _AppUpdateException('update_download_failed');

@@ -3625,6 +3625,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String appUpdateMobileDataPrompt(String version) {
+    return 'Version $version is available. Download it now using mobile data? This may use your mobile data allowance.';
+  }
+
+  @override
   String appUpdateDownloadedBody(String version) {
     return 'Version $version has been downloaded. Android will ask you to confirm installation.';
   }
@@ -3635,6 +3640,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appUpdateDownloadOverWifi => 'Download over Wi-Fi';
+
+  @override
+  String get appUpdateDownloadOverMobileData => 'Download over mobile data';
 
   @override
   String appUpdateDownloading(String version) {

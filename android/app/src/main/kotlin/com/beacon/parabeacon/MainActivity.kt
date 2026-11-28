@@ -103,6 +103,7 @@ class MainActivity : FlutterActivity() {
             channel.setMethodCallHandler { call, result ->
                 when (call.method) {
                     "isWifiConnected" -> result.success(isWifiConnected())
+                    "isMobileDataConnected" -> result.success(isMobileDataConnected())
                     "isAirplaneModeEnabled" -> result.success(isAirplaneModeEnabled())
                     "getPendingApk" -> result.success(getPendingApk())
                     "downloadApk" -> handleApkDownload(call, result)
@@ -207,6 +208,14 @@ class MainActivity : FlutterActivity() {
         val network = manager.activeNetwork ?: return false
         val capabilities = manager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+    }
+
+    private fun isMobileDataConnected(): Boolean {
+        val manager = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return false
+        val network = manager.activeNetwork ?: return false
+        val capabilities = manager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
     }
 
     private fun isAirplaneModeEnabled(): Boolean =
@@ -319,6 +328,7 @@ class MainActivity : FlutterActivity() {
         val versionName = call.argument<String>("versionName")
         val versionCode = call.argument<Number>("versionCode")?.toInt()
         val expectedPackage = call.argument<String>("packageName")
+        val allowMobileData = call.argument<Boolean>("allowMobileData") == true
         val rawServerOrigin = call.argument<String>("serverOrigin")
         val uri = rawUrl?.let { runCatching { Uri.parse(it) }.getOrNull() }
         val serverOrigin = rawServerOrigin?.let { runCatching { Uri.parse(it) }.getOrNull() }
@@ -359,8 +369,12 @@ class MainActivity : FlutterActivity() {
             result.error("INVALID_UPDATE", "The update metadata is invalid.", null)
             return
         }
-        if (!isWifiConnected()) {
-            result.error("WIFI_REQUIRED", "APK updates are downloaded over Wi-Fi only.", null)
+        if (!isWifiConnected() && !(allowMobileData && isMobileDataConnected())) {
+            result.error(
+                "WIFI_REQUIRED",
+                "Wi-Fi or explicitly approved mobile data is required to download updates.",
+                null,
+            )
             return
         }
         val downloadDirectory = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
@@ -377,6 +391,7 @@ class MainActivity : FlutterActivity() {
                     fileName!!,
                     expectedSize,
                     expectedSha256!!,
+                    allowMobileData,
                 )
                 getSharedPreferences(APP_UPDATE_PREFERENCES, Context.MODE_PRIVATE).edit()
                     .putString("versionName", versionName!!)
@@ -404,7 +419,10 @@ class MainActivity : FlutterActivity() {
         }.start()
     }
 
-    private class WifiRequiredException : IOException("Wi-Fi is required to download updates.")
+    private class WifiRequiredException : IOException("An approved network is required to download updates.")
+
+    private fun isApprovedUpdateNetwork(allowMobileData: Boolean): Boolean =
+        isWifiConnected() || (allowMobileData && isMobileDataConnected())
 
     private fun downloadApkWithRanges(
         uri: Uri,
@@ -412,6 +430,7 @@ class MainActivity : FlutterActivity() {
         fileName: String,
         expectedSize: Long,
         expectedSha256: String,
+        allowMobileData: Boolean,
     ): File {
         val destination = File(directory, fileName)
         if (destination.isFile && destination.length() == expectedSize &&
@@ -439,7 +458,15 @@ class MainActivity : FlutterActivity() {
         val futures = try {
             partRanges.map { (part, start, end) ->
                 executor.submit(Callable {
-                    downloadApkPart(uri, part, start, end, expectedSize, downloadedBytes)
+                    downloadApkPart(
+                        uri,
+                        part,
+                        start,
+                        end,
+                        expectedSize,
+                        downloadedBytes,
+                        allowMobileData,
+                    )
                 })
             }
         } catch (error: Exception) {
@@ -484,11 +511,12 @@ class MainActivity : FlutterActivity() {
         partEnd: Long,
         totalSize: Long,
         downloadedBytes: AtomicLong,
+        allowMobileData: Boolean,
     ) {
         val partLength = partEnd - partStart + 1
         var failures = 0
         while (partFile.length() < partLength) {
-            if (!isWifiConnected()) throw WifiRequiredException()
+            if (!isApprovedUpdateNetwork(allowMobileData)) throw WifiRequiredException()
             val rangeStart = partStart + partFile.length()
             var connection: HttpURLConnection? = null
             try {
@@ -506,7 +534,9 @@ class MainActivity : FlutterActivity() {
                     FileOutputStream(partFile, true).use { output ->
                         val buffer = ByteArray(64 * 1024)
                         while (true) {
-                            if (!isWifiConnected()) throw WifiRequiredException()
+                            if (!isApprovedUpdateNetwork(allowMobileData)) {
+                                throw WifiRequiredException()
+                            }
                             val count = input.read(buffer)
                             if (count < 0) break
                             if (partFile.length() + count > partLength) {

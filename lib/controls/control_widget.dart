@@ -510,6 +510,9 @@ class ControlWidget extends StatelessWidget {
               'showPilotSpeed',
               fallback: true,
             ),
+            pilotTrailOpacity:
+                control.doubleSetting('pilotTrailOpacity', fallback: 50.0) /
+                100.0,
             pilotArrowCoef:
                 control.doubleSetting('pilotArrowCoef', fallback: 100.0) /
                 100.0,

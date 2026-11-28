@@ -3617,6 +3617,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingShowPilotSpeed => 'Show pilot speed';
 
   @override
+  String get settingPilotTrailOpacity => 'Pilot flight path opacity';
+
+  @override
   String get appUpdateAvailableTitle => 'Update available';
 
   @override

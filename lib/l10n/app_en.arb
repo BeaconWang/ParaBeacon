@@ -1302,6 +1302,7 @@
   "settingShowPilotName": "Show pilot name",
   "settingShowPilotAltitude": "Show pilot altitude",
   "settingShowPilotSpeed": "Show pilot speed",
+  "settingPilotTrailOpacity": "Pilot flight path opacity",
   "appUpdateAvailableTitle": "Update available",
   "appUpdateWifiRequired": "Version {version} is available. Connect to Wi-Fi to download the APK.",
   "appUpdateMobileDataPrompt": "Version {version} is available. Download it now using mobile data? This may use your mobile data allowance.",

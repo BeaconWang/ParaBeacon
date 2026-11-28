@@ -155,6 +155,47 @@ void main() {
     },
   );
 
+  test('pilot flight path opacity defaults to 50% and persists', () async {
+    final setting = settingsSchemaFor(
+      'map',
+    ).singleWhere((setting) => setting.key == 'pilotTrailOpacity');
+    final english = await AppLocalizations.delegate.load(const Locale('en'));
+    final chinese = await AppLocalizations.delegate.load(const Locale('zh'));
+    final map = PlacedControl.fromType(
+      ControlCatalog.byId('map')!,
+      instanceId: 'map-pilot-trail-opacity',
+    );
+    final restoredMap = PlacedControl.fromJson({
+      'typeId': 'map',
+      'settings': <String, dynamic>{},
+    })!;
+
+    expect(setting.defaultValue, 50.0);
+    expect(setting.min, 0.0);
+    expect(setting.max, 100.0);
+    expect(setting.unit, '%');
+    expect(setting.visibleWhenKey, 'showPublicPilots');
+    expect(setting.labelOf(english), 'Pilot flight path opacity');
+    expect(setting.labelOf(chinese), '飞行员航迹透明度');
+    expect(map.doubleSetting('pilotTrailOpacity'), 50.0);
+    expect(restoredMap.doubleSetting('pilotTrailOpacity'), 50.0);
+
+    map.settings['pilotTrailOpacity'] = 75.0;
+    final savedMap = PlacedControl.fromJson({
+      'typeId': 'map',
+      'settings': map.settings,
+    })!;
+    expect(savedMap.doubleSetting('pilotTrailOpacity'), 75.0);
+  });
+
+  test('pilot trail opacity maps percent to alpha safely', () {
+    expect(pilotTrailAlpha(0.5), 128);
+    expect(pilotTrailAlpha(0), 0);
+    expect(pilotTrailAlpha(1), 255);
+    expect(pilotTrailAlpha(-1), 0);
+    expect(pilotTrailAlpha(2), 255);
+  });
+
   test('offline pilot visibility can be enabled independently', () {
     expect(
       shouldShowOfflinePilot(isOffline: false, showOfflinePilots: false),
@@ -435,6 +476,15 @@ void main() {
     expect(control.boolSetting('showPilotName'), isFalse);
     expect(control.boolSetting('showPilotAltitude'), isFalse);
     expect(control.boolSetting('showPilotSpeed'), isFalse);
+
+    await reveal('Pilot flight path opacity');
+    final pilotTrailOpacitySlider = find.byWidgetPredicate(
+      (widget) => widget is Slider && widget.value == 50.0,
+    );
+    expect(pilotTrailOpacitySlider, findsOneWidget);
+    tester.widget<Slider>(pilotTrailOpacitySlider).onChanged!(75.0);
+    await tester.pump();
+    expect(control.doubleSetting('pilotTrailOpacity'), 75.0);
 
     await reveal('Show take-off point');
     expect(find.text('Take-off marker color'), findsOneWidget);

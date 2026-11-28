@@ -70,6 +70,8 @@ Color _publicPilotColor(String pilotName) => HSVColor.fromAHSV(
   0.95,
 ).toColor();
 
+int pilotTrailAlpha(double opacity) => (opacity.clamp(0.0, 1.0) * 255).round();
+
 double? _publicPilotCourse(
   server_tracking.PublicPilotLocation pilot,
   DateTime now,
@@ -376,6 +378,7 @@ class MapControl extends StatefulWidget {
   final bool showPilotName;
   final bool showPilotAltitude;
   final bool showPilotSpeed;
+  final double pilotTrailOpacity;
 
   /// Optional WGS-84 location marker, for map-based selection flows.
   final LatLng? selectionMarker;
@@ -426,6 +429,7 @@ class MapControl extends StatefulWidget {
     this.showPilotName = true,
     this.showPilotAltitude = true,
     this.showPilotSpeed = true,
+    this.pilotTrailOpacity = 0.5,
     this.selectionMarker,
   }) : _tileSource = tileSource;
 
@@ -1308,7 +1312,9 @@ class _MapControlState extends State<MapControl> {
                 ),
             ],
             strokeWidth: 3.0 * widget.lineThickness,
-            color: _publicPilotColor(pilot.pilotName).withAlpha(190),
+            color: _publicPilotColor(
+              pilot.pilotName,
+            ).withAlpha(pilotTrailAlpha(widget.pilotTrailOpacity)),
           ),
     ];
     final otherPilotMarkers = <Marker>[

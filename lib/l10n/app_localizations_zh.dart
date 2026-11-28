@@ -3453,6 +3453,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingShowPilotSpeed => '显示飞行员速度';
 
   @override
+  String get settingPilotTrailOpacity => '飞行员航迹透明度';
+
+  @override
   String get appUpdateAvailableTitle => '发现新版本';
 
   @override

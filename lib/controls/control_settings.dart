@@ -76,10 +76,10 @@ class ControlSetting {
     required this.max,
     this.divisions,
     this.unit = '',
+    this.visibleWhenKey,
   }) : kind = SettingKind.slider,
        options = const {},
-       maxDecimalPlaces = 0,
-       visibleWhenKey = null;
+       maxDecimalPlaces = 0;
 
   const ControlSetting.choice({
     required this.key,
@@ -263,6 +263,8 @@ String? _settingLabel(AppLocalizations l10n, String key) {
       return l10n.settingShowPilotAltitude;
     case 'showPilotSpeed':
       return l10n.settingShowPilotSpeed;
+    case 'pilotTrailOpacity':
+      return l10n.settingPilotTrailOpacity;
     case 'pilotArrowCoef':
       return l10n.settingPilotArrowSize;
     case 'lineThickness':
@@ -1051,6 +1053,16 @@ const Map<String, List<ControlSetting>> _typeSettings = {
       key: 'showPilotSpeed',
       label: 'Show pilot speed',
       defaultValue: true,
+      visibleWhenKey: 'showPublicPilots',
+    ),
+    ControlSetting.slider(
+      key: 'pilotTrailOpacity',
+      label: 'Pilot flight path opacity',
+      defaultValue: 50.0,
+      min: 0.0,
+      max: 100.0,
+      divisions: 20,
+      unit: '%',
       visibleWhenKey: 'showPublicPilots',
     ),
     ControlSetting.slider(

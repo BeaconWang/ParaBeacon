@@ -6770,6 +6770,12 @@ abstract class AppLocalizations {
   /// **'Show pilot speed'**
   String get settingShowPilotSpeed;
 
+  /// No description provided for @settingPilotTrailOpacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Pilot flight path opacity'**
+  String get settingPilotTrailOpacity;
+
   /// No description provided for @appUpdateAvailableTitle.
   ///
   /// In en, this message translates to:

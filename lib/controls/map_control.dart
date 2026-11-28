@@ -63,12 +63,37 @@ bool shouldShowOfflinePilot({
   required bool showOfflinePilots,
 }) => showOfflinePilots || !isOffline;
 
-Color _publicPilotColor(String pilotName) => HSVColor.fromAHSV(
-  1,
-  (pilotName.hashCode & 0x7fffffff) % 360,
-  0.78,
-  0.95,
-).toColor();
+class PilotMapColorAllocator {
+  PilotMapColorAllocator({math.Random? random})
+    : _random = random ?? math.Random();
+
+  final math.Random _random;
+  final Map<String, Color> _colorsByIdentity = <String, Color>{};
+  final Set<int> _allocatedColorValues = <int>{};
+
+  Color colorFor(String pilotIdentity) {
+    final existing = _colorsByIdentity[pilotIdentity];
+    if (existing != null) return existing;
+
+    late Color color;
+    do {
+      color = HSVColor.fromAHSV(
+        1,
+        _random.nextDouble() * 360,
+        0.72 + _random.nextDouble() * 0.25,
+        0.85 + _random.nextDouble() * 0.15,
+      ).toColor();
+    } while (!_allocatedColorValues.add(color.toARGB32()));
+
+    _colorsByIdentity[pilotIdentity] = color;
+    return color;
+  }
+}
+
+final PilotMapColorAllocator _pilotMapColorAllocator = PilotMapColorAllocator();
+
+Color _pilotMapColor(String source, String identity) =>
+    _pilotMapColorAllocator.colorFor('$source:$identity');
 
 int pilotTrailAlpha(double opacity) => (opacity.clamp(0.0, 1.0) * 255).round();
 
@@ -1312,8 +1337,9 @@ class _MapControlState extends State<MapControl> {
                 ),
             ],
             strokeWidth: 3.0 * widget.lineThickness,
-            color: _publicPilotColor(
-              pilot.pilotName,
+            color: _pilotMapColor(
+              'parabeacon',
+              pilot.trackingIdentity,
             ).withAlpha(pilotTrailAlpha(widget.pilotTrailOpacity)),
           ),
     ];
@@ -1327,7 +1353,7 @@ class _MapControlState extends State<MapControl> {
           child: LivePilotMapMarker(
             name: pilot.name,
             showName: widget.showPilotName,
-            color: Color(pilot.colorArgb),
+            color: _pilotMapColor('xcontest', pilot.flightId),
             landed: pilot.landed,
             flightInfo: formatPilotFlightInfo(
               altitudeMeters: pilot.altitude.toDouble(),
@@ -1347,7 +1373,7 @@ class _MapControlState extends State<MapControl> {
           child: LivePilotMapMarker(
             name: pilot.pilotName,
             showName: widget.showPilotName,
-            color: _publicPilotColor(pilot.pilotName),
+            color: _pilotMapColor('parabeacon', pilot.trackingIdentity),
             landed: false,
             avatarId: pilot.avatarId,
             profileImageUrl: pilot.profileImageUrl,

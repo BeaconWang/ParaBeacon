@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parabeacon/controls/control_catalog.dart';
@@ -9,6 +11,20 @@ import 'package:parabeacon/controls/placed_control.dart';
 import 'package:parabeacon/l10n/app_localizations.dart';
 
 void main() {
+  test('pilot colors are random, unique, and stable by identity', () {
+    final allocator = PilotMapColorAllocator(random: math.Random(2026));
+    final colors = [
+      for (var index = 0; index < 100; index++)
+        allocator.colorFor('parabeacon:pilot:$index'),
+    ];
+    final colorValues = colors.map((color) => color.toARGB32()).toSet();
+
+    expect(colorValues, hasLength(colors.length));
+    expect(colors.every((color) => (color.toARGB32() >> 24) == 0xFF), isTrue);
+    expect(allocator.colorFor('parabeacon:pilot:42'), colors[42]);
+    expect(allocator.colorFor('xcontest:flight:42'), isNot(colors[42]));
+  });
+
   test('formats pilot altitude and speed independently', () {
     expect(
       formatPilotFlightInfo(

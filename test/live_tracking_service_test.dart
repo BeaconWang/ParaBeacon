@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:parabeacon/data/flight_data.dart';
+import 'package:parabeacon/data/flight_recorder.dart';
 import 'package:parabeacon/data/flight_state.dart';
 import 'package:parabeacon/data/live_tracking_config.dart';
 import 'package:parabeacon/data/live_tracking_proxy_auth_service.dart';
@@ -621,6 +622,7 @@ void main() {
     () async {
       final startTime = DateTime.utc(2026, 3, 4, 5, 6, 7);
       final requests = <http.Request>[];
+      final uploadedPointBatches = <List<Map<String, dynamic>>>[];
       var sharePublicly = true;
       final eligibilitySource = ChangeNotifier();
       final client = MockClient((request) async {
@@ -654,37 +656,48 @@ void main() {
         final body = jsonDecode(request.body) as Map<String, dynamic>;
         expect(body['session_id'], 'session-123');
         final points = body['trackpoints'] as List<dynamic>;
-        expect(points, hasLength(1));
-        expect(points.single, {
-          'lat': 47.1,
-          'lon': 8.5,
-          'altitude': 1200,
-          'speed': 5.0,
-          'timestamp': '2026-03-04T05:06:09.000Z',
-          'vertical_speed': 0.0,
-          'gps_altitude': 1200.0,
-          'heading': 123.4,
-          'bearing': 123.4,
-          'wind_speed': 0.0,
-          'wind_direction': 0.0,
-        });
+        uploadedPointBatches.add(
+          points
+              .map((point) => Map<String, dynamic>.from(point as Map))
+              .toList(growable: false),
+        );
         return http.Response('', 204);
       });
 
       final data = _MutableFlightDataView(
         FlightData(
           hasFix: true,
-          latitude: 47.1,
-          longitude: 8.5,
-          gpsAltitude: 1200,
-          groundSpeed: 18,
-          heading: 123.4,
-          hasHeading: true,
-          gpsTimestamp: startTime.add(const Duration(seconds: 2)),
+          latitude: 48.0,
+          longitude: 9.0,
+          gpsAltitude: 1500,
+          groundSpeed: 30,
+          gpsTimestamp: startTime.add(const Duration(seconds: 4)),
         ),
       );
+      FlightSample recordedSample(int index) {
+        final timestamp = startTime.add(Duration(seconds: index + 2));
+        return FlightSample(
+          time: timestamp,
+          data: FlightData(
+            hasFix: true,
+            latitude: 47.1 + index * 0.001,
+            longitude: 8.5,
+            altitude: 1200,
+            gpsAltitude: 1200,
+            groundSpeed: 18,
+            verticalSpeed: 0,
+            heading: 123.4,
+            hasHeading: true,
+            gpsTimestamp: timestamp,
+          ),
+        );
+      }
+
+      final recordedSamples = _MutableFlightSampleSource([
+        for (var index = 0; index < 3; index++) recordedSample(index),
+      ]);
       final service = LiveTrackingService(
-        config: _config(channelIds: ['live-main']),
+        config: _config(channelIds: ['live-main'], maximumBatchPoints: 3),
         authProvider: _TestProxyAuthProvider(),
         pointStore: _MemoryProxyPointStore(),
         httpClient: client,
@@ -697,12 +710,19 @@ void main() {
         pilotDisplayName: () => 'Sky Rider',
         isPubliclyShared: () => sharePublicly,
         eligibilitySource: eligibilitySource,
+        flightSampleSource: recordedSamples,
       );
 
       FlightState.instance.start(at: startTime);
       await pumpEventQueue(times: 20);
 
-      expect(service.lastErrorCode, isNull);
+      expect(
+        service.lastErrorCode,
+        isNull,
+        reason: requests
+            .map((request) => '${request.url.path}: ${request.body}')
+            .join('\n'),
+      );
       expect(service.state, LiveTrackingConnectionState.active);
       expect(service.sessionId, 'session-123');
       expect(service.pendingPointCount, 0);
@@ -715,6 +735,43 @@ void main() {
         'start_time': startTime.toIso8601String(),
         'publicly_share': true,
       });
+      expect(uploadedPointBatches, hasLength(1));
+      expect(
+        uploadedPointBatches.single.map(
+          (point) => (point['lat'] as num).toStringAsFixed(3),
+        ),
+        ['47.100', '47.101', '47.102'],
+      );
+      expect(uploadedPointBatches.first.first, {
+        'lat': 47.1,
+        'lon': 8.5,
+        'altitude': 1200.0,
+        'speed': 5.0,
+        'timestamp': '2026-03-04T05:06:09.000Z',
+        'vertical_speed': 0.0,
+        'gps_altitude': 1200.0,
+        'heading': 123.4,
+        'bearing': 123.4,
+        'wind_speed': 0.0,
+        'wind_direction': 0.0,
+      });
+
+      recordedSamples.currentFlightSamples.addAll([
+        for (var index = 3; index < 6; index++) recordedSample(index),
+      ]);
+      recordedSamples.notifyListeners();
+      await pumpEventQueue(times: 20);
+      expect(service.lastErrorCode, isNull);
+      expect(uploadedPointBatches, hasLength(2));
+      expect(
+        uploadedPointBatches
+            .expand((batch) => batch)
+            .map((point) => DateTime.parse(point['timestamp'] as String)),
+        [
+          for (var index = 0; index < 6; index++)
+            startTime.add(Duration(seconds: index + 2)),
+        ],
+      );
 
       sharePublicly = false;
       eligibilitySource.notifyListeners();
@@ -735,6 +792,7 @@ void main() {
       client.close();
       data.dispose();
       eligibilitySource.dispose();
+      recordedSamples.dispose();
     },
   );
 
@@ -778,6 +836,7 @@ Map<String, Object?> _configJson({
   String? authEndpoint,
   String? webSocketUrl,
   List<Object> channelIds = const [],
+  int maximumBatchPoints = 50,
 }) => {
   'session_start_endpoint': '/api/v1/tracking/sessions',
   'session_stop_endpoint': '/api/v1/tracking/sessions/{session_id}/stop',
@@ -787,12 +846,16 @@ Map<String, Object?> _configJson({
   'channel_ids': channelIds,
   'request_timeout_seconds': 15,
   'upload_interval_seconds': 5,
-  'maximum_batch_points': 50,
+  'maximum_batch_points': maximumBatchPoints,
   'maximum_buffered_points': 5000,
 };
 
-LiveTrackingConfig _config({List<Object> channelIds = const []}) =>
-    LiveTrackingConfig.fromJson(_configJson(channelIds: channelIds));
+LiveTrackingConfig _config({
+  List<Object> channelIds = const [],
+  int maximumBatchPoints = 50,
+}) => LiveTrackingConfig.fromJson(
+  _configJson(channelIds: channelIds, maximumBatchPoints: maximumBatchPoints),
+);
 
 class _TestProxyAuthProvider implements LiveTrackingProxyAuthProvider {
   @override
@@ -811,6 +874,14 @@ class _MemoryProxyPointStore implements LiveTrackingProxyPointStore {
   Future<void> save(List<QueuedProxyPoint> points) async {
     stored = List.of(points);
   }
+}
+
+class _MutableFlightSampleSource extends ChangeNotifier
+    implements FlightSampleSource {
+  _MutableFlightSampleSource(this.currentFlightSamples);
+
+  @override
+  final List<FlightSample> currentFlightSamples;
 }
 
 class _MutableFlightDataView extends ChangeNotifier implements FlightDataView {

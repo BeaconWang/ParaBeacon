@@ -8,5 +8,5 @@
   "request_timeout_seconds": 15,
   "upload_interval_seconds": 3,
   "maximum_batch_points": 50,
-  "maximum_buffered_points": 5000
+  "maximum_buffered_points": 100000
 }

@@ -46,6 +46,10 @@ class FlightSample {
   }
 }
 
+abstract interface class FlightSampleSource implements Listenable {
+  List<FlightSample> get currentFlightSamples;
+}
+
 /// A period inside a flight track with no recorded data, e.g. the ground time
 /// between two flights that were merged into one record. [start] is the last
 /// sample before the gap and [end] the first sample after it.
@@ -759,7 +763,7 @@ class FlightTransition {
   final FlightTrack? track;
 }
 
-class FlightRecorder extends ChangeNotifier {
+class FlightRecorder extends ChangeNotifier implements FlightSampleSource {
   FlightRecorder._();
   static final FlightRecorder instance = FlightRecorder._();
 
@@ -1071,6 +1075,10 @@ class FlightRecorder extends ChangeNotifier {
 
   /// The in-progress track, or null when not recording.
   FlightTrack? get currentTrack => _current;
+
+  @override
+  List<FlightSample> get currentFlightSamples =>
+      _current?.samples ?? const <FlightSample>[];
 
   bool get isRecording => _current != null;
   int get pointCount => _current?.pointCount ?? 0;

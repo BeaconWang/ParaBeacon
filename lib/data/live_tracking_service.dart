@@ -9,6 +9,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'debug_settings.dart';
 import 'flight_data.dart';
+import 'flight_recorder.dart';
 import 'location_share_throttler.dart';
 import 'flight_state.dart';
 import 'live_tracking_settings.dart';
@@ -693,6 +694,7 @@ class LiveTrackingService extends ChangeNotifier {
 
   FlightDataView? _data;
   FlightState? _flightState;
+  FlightSampleSource? _flightSampleSource;
   Listenable? _eligibilitySource;
   bool Function()? _isEnabled;
   String? Function()? _pilotId;
@@ -711,6 +713,7 @@ class LiveTrackingService extends ChangeNotifier {
   int _retryAttempt = 0;
   int _bindingEpoch = 0;
   DateTime? _lastPointTimestamp;
+  int _flightSampleCursor = 0;
   Timer? _uploadTimer;
   Timer? _retryTimer;
   Future<void> _syncTail = Future<void>.value();
@@ -724,6 +727,7 @@ class LiveTrackingService extends ChangeNotifier {
     String? Function()? pilotDisplayName,
     bool Function()? isPubliclyShared,
     Listenable? eligibilitySource,
+    FlightSampleSource? flightSampleSource,
   }) {
     unbind();
     _data = data;
@@ -732,8 +736,10 @@ class LiveTrackingService extends ChangeNotifier {
     _pilotId = pilotId;
     _pilotDisplayName = pilotDisplayName;
     _isPubliclyShared = isPubliclyShared;
+    _flightSampleSource = flightSampleSource;
     _eligibilitySource = eligibilitySource;
     data.addListener(_onDataChanged);
+    flightSampleSource?.addListener(_onFlightSamplesChanged);
     flightState.addListener(_queueLifecycleSync);
     eligibilitySource?.addListener(_queueLifecycleSync);
     unawaited(_loadQueue());
@@ -928,10 +934,12 @@ class LiveTrackingService extends ChangeNotifier {
     _retryTimer?.cancel();
     _retryTimer = null;
     _data?.removeListener(_onDataChanged);
+    _flightSampleSource?.removeListener(_onFlightSamplesChanged);
     _flightState?.removeListener(_queueLifecycleSync);
     _eligibilitySource?.removeListener(_queueLifecycleSync);
     _data = null;
     _flightState = null;
+    _flightSampleSource = null;
     _eligibilitySource = null;
     _isEnabled = null;
     _pilotId = null;
@@ -1184,6 +1192,7 @@ class LiveTrackingService extends ChangeNotifier {
       _sessionPubliclyShared = publiclyShare;
       _flushWhileIdle = false;
       _lastPointTimestamp = null;
+      _flightSampleCursor = 0;
       _locationThrottler.reset();
       _lastErrorCode = null;
       _retryAttempt = 0;
@@ -1192,16 +1201,69 @@ class LiveTrackingService extends ChangeNotifier {
       _uploadTimer = Timer.periodic(_config.uploadInterval, (_) {
         unawaited(_flushPending());
       });
-      _onDataChanged();
+      if (!groundPresence && _flightSampleSource != null) {
+        _onFlightSamplesChanged();
+      } else {
+        _onDataChanged();
+      }
       unawaited(_flushPending());
     } finally {
       _starting = false;
     }
   }
 
+  void _onFlightSamplesChanged() {
+    final sessionId = _sessionId;
+    final source = _flightSampleSource;
+    if (!_shouldTrack ||
+        _currentModeIsGroundPresence ||
+        _sessionIsGroundPresence ||
+        sessionId == null ||
+        source == null) {
+      return;
+    }
+
+    final flightStartedAt = _flightState?.startedAt;
+    final samples = source.currentFlightSamples;
+    final startIndex = _flightSampleCursor <= samples.length
+        ? _flightSampleCursor
+        : 0;
+    _flightSampleCursor = samples.length;
+    var addedPoint = false;
+    for (var index = startIndex; index < samples.length; index++) {
+      final sample = samples[index];
+      if (flightStartedAt != null && sample.time.isBefore(flightStartedAt)) {
+        continue;
+      }
+      final point = LiveTrackpoint.fromFlightData(
+        sample.data,
+        allowMockLocation: DebugSettings.instance.simulatorEnabled,
+      );
+      if (point == null) continue;
+      final previous = _lastPointTimestamp;
+      if (previous != null && !point.timestamp.isAfter(previous)) continue;
+
+      _lastPointTimestamp = point.timestamp;
+      _roomSocket?.sendLocation(point);
+      _pending.add(QueuedProxyPoint(sessionId: sessionId, point: point));
+      addedPoint = true;
+    }
+    if (!addedPoint) return;
+    if (_pending.length > _config.maximumBufferedPoints) {
+      _pending.removeRange(0, _pending.length - _config.maximumBufferedPoints);
+      _lastErrorCode = 'queue_limit_reached';
+    }
+    _notify();
+    unawaited(_persistQueue());
+    if (_pending.length >= _config.maximumBatchPoints) {
+      unawaited(_flushPending());
+    }
+  }
+
   void _onDataChanged() {
     if (!_shouldTrack || _sessionId == null) return;
     if (_sessionIsGroundPresence != _currentModeIsGroundPresence) return;
+    if (!_sessionIsGroundPresence && _flightSampleSource != null) return;
     final snapshot = _data?.data;
     if (snapshot == null) return;
     final point = LiveTrackpoint.fromFlightData(

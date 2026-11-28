@@ -302,6 +302,7 @@ class _ParaBeaconAppState extends State<ParaBeaconApp>
         LiveTrackingSettings.instance,
         ParaBeaconAccountService.instance,
       ]),
+      flightSampleSource: FlightRecorder.instance,
     );
 
     // Continuously record the full flight-data feed while a flight is in

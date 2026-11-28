@@ -11,6 +11,7 @@ class LivePilotMapMarker extends StatelessWidget {
     required this.name,
     required this.color,
     required this.landed,
+    this.offline = false,
     this.showName = true,
     this.avatarId = PilotAvatar.defaultId,
     this.profileImageUrl,
@@ -30,10 +31,15 @@ class LivePilotMapMarker extends StatelessWidget {
   );
 
   static const liveIndicatorColor = Color(0xff36c878);
+  static const offlineIndicatorColor = Color(0xff9aa0a6);
 
   final String name;
   final Color color;
   final bool landed;
+
+  /// The pilot is no longer reporting, but still shares its last known
+  /// position. Rendered like a landed pilot: translucent with a muted avatar.
+  final bool offline;
   final bool showName;
   final int avatarId;
   final String? profileImageUrl;
@@ -44,9 +50,14 @@ class LivePilotMapMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: landed ? 0.45 : 1,
+      opacity: landed || offline ? 0.45 : 1,
       child: Semantics(
-        label: '$name, ${landed ? 'landed' : 'sharing live location'}',
+        label:
+            '$name, ${offline
+                ? 'offline'
+                : landed
+                ? 'landed'
+                : 'sharing live location'}',
         excludeSemantics: true,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -57,7 +68,9 @@ class LivePilotMapMarker extends StatelessWidget {
                 alignment: Alignment.center,
                 clipBehavior: Clip.none,
                 children: [
-                  if (headingDegrees != null && headingDegrees!.isFinite)
+                  if (!offline &&
+                      headingDegrees != null &&
+                      headingDegrees!.isFinite)
                     PilotDirectionIndicator(
                       headingDegrees: headingDegrees!,
                       mapRotationDegrees: screenRotationDegrees,
@@ -79,14 +92,7 @@ class LivePilotMapMarker extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: PilotAvatarPicture(
-                      avatarId: avatarId,
-                      profileImageUrl: profileImageUrl,
-                      size: 28,
-                      circular: true,
-                      backgroundColor: color.withValues(alpha: 0.14),
-                      iconColor: color,
-                    ),
+                    child: _buildAvatar(),
                   ),
                 ],
               ),
@@ -98,10 +104,12 @@ class LivePilotMapMarker extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.circle,
                       size: 7,
-                      color: liveIndicatorColor,
+                      color: offline
+                          ? offlineIndicatorColor
+                          : liveIndicatorColor,
                     ),
                     const SizedBox(width: 4),
                     Flexible(
@@ -136,6 +144,30 @@ class LivePilotMapMarker extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildAvatar() {
+    final avatar = PilotAvatarPicture(
+      avatarId: avatarId,
+      profileImageUrl: profileImageUrl,
+      size: 28,
+      circular: true,
+      backgroundColor: color.withValues(alpha: 0.14),
+      iconColor: color,
+    );
+    if (!offline) return avatar;
+    return ColorFiltered(
+      colorFilter: const ColorFilter.matrix(_grayscaleMatrix),
+      child: avatar,
+    );
+  }
+
+  /// Luminance matrix that drains color from an offline pilot's avatar.
+  static const List<double> _grayscaleMatrix = <double>[
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0, 0, 0, 1, 0, //
+  ];
 
   Widget _buildBadge({required Widget child}) => Container(
     constraints: const BoxConstraints(maxWidth: markerWidth - 12),

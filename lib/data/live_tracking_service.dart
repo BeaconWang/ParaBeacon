@@ -223,6 +223,7 @@ class PublicPilotLocation {
     this.altitudeMeters,
     this.groundSpeedMetersPerSecond,
     this.verticalSpeedMetersPerSecond,
+    this.isOnline = true,
     this.path = const [],
   });
 
@@ -235,6 +236,11 @@ class PublicPilotLocation {
   final int channelNumber;
   final int avatarId;
   final String? profileImageUrl;
+
+  /// Whether the server still considers the sharing session online. Pilots
+  /// that drop off the network keep sharing their last known position with
+  /// [isOnline] set to false until they stop sharing explicitly.
+  final bool isOnline;
 
   /// GPS course over ground in degrees clockwise from north, when available.
   final double? headingDegrees;
@@ -250,13 +256,20 @@ class PublicPilotLocation {
   bool belongsToLiveRoom(String? roomId) =>
       roomId != null && liveRoomId == roomId;
 
-  bool isVisibleOnMap({required DateTime now, String? ownLiveRoomId}) {
+  bool isVisibleOnMap({
+    required DateTime now,
+    String? ownLiveRoomId,
+    bool showOfflinePilots = false,
+  }) {
     if (belongsToLiveRoom(ownLiveRoomId)) return false;
     final currentTime = now.toUtc();
     final observedAtUtc = observedAt.toUtc();
+    if (observedAtUtc.isAfter(currentTime.add(const Duration(seconds: 5)))) {
+      return false;
+    }
+    if (showOfflinePilots) return true;
     final age = currentTime.difference(observedAtUtc);
-    return age <= const Duration(seconds: 90) &&
-        !observedAtUtc.isAfter(currentTime.add(const Duration(seconds: 5)));
+    return isOnline && age <= const Duration(seconds: 90);
   }
 
   static PublicPilotLocation? fromJson(Object? value) {
@@ -344,6 +357,7 @@ class PublicPilotLocation {
       altitudeMeters: optionalNumber('altitude'),
       groundSpeedMetersPerSecond: optionalNumber('speed'),
       verticalSpeedMetersPerSecond: optionalNumber('vertical_speed'),
+      isOnline: value['is_online'] is bool ? value['is_online'] as bool : true,
       path: List.unmodifiable(path),
     );
   }
@@ -632,6 +646,9 @@ class LiveTrackingService extends ChangeNotifier {
         'south': south.toStringAsPrecision(12),
         'east': east.toStringAsPrecision(12),
         'north': north.toStringAsPrecision(12),
+        // Offline pilots keep sharing their last known position; fetch them
+        // too and let the map overlay decide whether to render them.
+        'show_offline': 'true',
         ...?(taskOwnerId == null ? null : {'task_owner_id': taskOwnerId}),
         ...?(cursor == null ? null : {'cursor': cursor}),
       };

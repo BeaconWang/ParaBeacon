@@ -97,6 +97,15 @@ Color _pilotMapColor(String source, String identity) =>
 
 int pilotTrailAlpha(double opacity) => (opacity.clamp(0.0, 1.0) * 255).round();
 
+/// Muted tint for pilots that stopped reporting but still share their last
+/// known position and flight trail.
+const Color offlinePilotColor = Color(0xff9aa0a6);
+
+Color _publicPilotColor(server_tracking.PublicPilotLocation pilot) =>
+    pilot.isOnline
+    ? _pilotMapColor('parabeacon', pilot.trackingIdentity)
+    : offlinePilotColor;
+
 double? _publicPilotCourse(
   server_tracking.PublicPilotLocation pilot,
   DateTime now,
@@ -1321,6 +1330,7 @@ class _MapControlState extends State<MapControl> {
                 (pilot) => pilot.isVisibleOnMap(
                   now: publicPilotNow,
                   ownLiveRoomId: ownLiveRoomId,
+                  showOfflinePilots: widget.showOfflinePilots,
                 ),
               )
               .toList(growable: false)
@@ -1337,9 +1347,8 @@ class _MapControlState extends State<MapControl> {
                 ),
             ],
             strokeWidth: 3.0 * widget.lineThickness,
-            color: _pilotMapColor(
-              'parabeacon',
-              pilot.trackingIdentity,
+            color: _publicPilotColor(
+              pilot,
             ).withAlpha(pilotTrailAlpha(widget.pilotTrailOpacity)),
           ),
     ];
@@ -1373,8 +1382,9 @@ class _MapControlState extends State<MapControl> {
           child: LivePilotMapMarker(
             name: pilot.pilotName,
             showName: widget.showPilotName,
-            color: _pilotMapColor('parabeacon', pilot.trackingIdentity),
+            color: _publicPilotColor(pilot),
             landed: false,
+            offline: !pilot.isOnline,
             avatarId: pilot.avatarId,
             profileImageUrl: pilot.profileImageUrl,
             flightInfo: formatPilotFlightInfo(

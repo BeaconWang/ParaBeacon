@@ -332,6 +332,7 @@ void main() {
         expect(request.url.queryParameters['south'], '47.0000000000');
         expect(request.url.queryParameters['east'], '9.00000000000');
         expect(request.url.queryParameters['north'], '48.0000000000');
+        expect(request.url.queryParameters['show_offline'], 'true');
         expect(
           request.url.queryParameters['task_owner_id'],
           '11111111-1111-4111-8111-111111111111',
@@ -451,6 +452,46 @@ void main() {
         ),
         isFalse,
         reason: 'server-authorized fixes still expire when stale',
+      );
+
+      final offlinePilot = PublicPilotLocation.fromJson({
+        'pilot_name': 'Offline pilot',
+        'live_room_id': 'offline-room',
+        'lat': 47.1,
+        'lon': 8.5,
+        'observed_at': '2026-03-04T05:06:09.000Z',
+        'is_online': false,
+      });
+      expect(offlinePilot?.isOnline, isFalse);
+      expect(
+        offlinePilot!.isVisibleOnMap(now: DateTime.utc(2026, 3, 4, 5, 6, 10)),
+        isFalse,
+        reason: 'offline pilots stay hidden while the overlay is disabled',
+      );
+      expect(
+        offlinePilot.isVisibleOnMap(
+          now: DateTime.utc(2026, 3, 4, 5, 6, 10),
+          showOfflinePilots: true,
+        ),
+        isTrue,
+        reason: 'offline pilots keep sharing their last known position',
+      );
+      expect(
+        offlinePilot.isVisibleOnMap(
+          now: DateTime.utc(2026, 3, 5),
+          showOfflinePilots: true,
+        ),
+        isTrue,
+        reason: 'retained positions are shown until sharing stops',
+      );
+      expect(
+        offlinePilot.isVisibleOnMap(
+          now: DateTime.utc(2026, 3, 5),
+          showOfflinePilots: true,
+          ownLiveRoomId: 'offline-room',
+        ),
+        isFalse,
+        reason: 'own live room is always excluded',
       );
 
       expect(

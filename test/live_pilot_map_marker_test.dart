@@ -145,4 +145,41 @@ void main() {
       );
     }
   });
+
+  testWidgets('renders offline pilots as a gray translucent avatar', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: LivePilotMapMarker(
+            name: 'Offline Pilot',
+            color: LivePilotMapMarker.offlineIndicatorColor,
+            landed: false,
+            offline: true,
+            headingDegrees: 125,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Offline Pilot'), findsOneWidget);
+    expect(find.byType(ClipOval), findsOneWidget);
+    expect(
+      find.byType(PilotDirectionIndicator),
+      findsNothing,
+      reason: 'stale headings are not shown for offline pilots',
+    );
+    expect(tester.widget<Opacity>(find.byType(Opacity).first).opacity, 0.45);
+    expect(
+      find.byType(ColorFiltered),
+      findsOneWidget,
+      reason: 'the avatar is desaturated while offline',
+    );
+    expect(find.bySemanticsLabel('Offline Pilot, offline'), findsOneWidget);
+    final indicator = tester.widget<Icon>(find.byIcon(Icons.circle));
+    expect(indicator.color, LivePilotMapMarker.offlineIndicatorColor);
+    semantics.dispose();
+  });
 }
